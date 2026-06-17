@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sthara-blue: #002147;
+  --color-sthara-white: #ffffff;
+  --color-sthara-crimson: #dc143c;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: #f8fafc; /* Very light slate background, pure white for cards */
+  --foreground: #002147;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #001229; /* Darker blue for dark mode background */
+    --foreground: #ffffff;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}

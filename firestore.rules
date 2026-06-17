@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/superadmins/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/global_users/$(request.auth.uid)).data;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // Global users: users can read their own profile
+    match /global_users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isSuperAdmin(); // Usually written by Admin/SuperAdmin/Cloud Functions
+    }
+
+    // Superadmins: only SuperAdmins can read this to prevent mapping
+    match /superadmins/{userId} {
+      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow write: if false; // Only manageable from Admin SDK / Console
+    }
+
+    // Schools: anyone authenticated can read basic school info
+    match /schools/{schoolId} {
+      allow read: if isAuthenticated();
+      
+      // School specific data
+      match /classes/{classId} {
+        allow read: if isAuthenticated();
+      }
+
+      match /users/{userId} {
+        // User can read themselves, admins can read all users in their school
+        allow read: if isAuthenticated() && (
+          request.auth.uid == userId || 
+          getUserData().role == 'admin'
+        );
+      }
+
+      match /assignments/{assignmentId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && (
+          getUserData().role == 'teacher' || 
+          getUserData().role == 'admin'
+        );
+      }
+
+      match /assignments/{assignmentId}/submissions/{submissionId} {
+        allow read: if isAuthenticated();
+        // Students can write their own submissions
+        allow write: if isAuthenticated() && (
+          getUserData().role == 'student' && submissionId == request.auth.uid
+        );
+      }
+    }
+
+    // Content Library (Videos): Students can read
+    match /content_library/{curriculum}/classes/{classStr}/subjects/{subjectId}/videos/{videoId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

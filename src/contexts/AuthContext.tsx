@@ -85,9 +85,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               linkedStudents: data.linkedStudents
             });
           } else {
-             // User exists in Auth but not in our DB logic. Might be incomplete registration.
-             console.warn("User profile not found in global_users or superadmins");
-             setProfile(null);
+             // Check 'users' collection where the seed script places them
+             const userRef = doc(db, 'users', firebaseUser.uid);
+             const userSnap = await getDoc(userRef);
+             if (userSnap.exists()) {
+               const data = userSnap.data();
+               setProfile({ 
+                 uid: firebaseUser.uid, 
+                 email: firebaseUser.email || '', 
+                 role: data.role as any, 
+                 schoolId: data.schoolId, 
+                 name: data.name,
+                 studentClass: data.studentClass || data.teacherClass,
+                 customStudentId: data.customStudentId,
+                 assignments: data.assignments,
+                 linkedStudents: data.linkedStudents
+               });
+             } else {
+               console.warn("User profile not found in global_users, superadmins, or users");
+               setProfile(null);
+             }
           }
           
         } catch (error) {

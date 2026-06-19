@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
+import { auth, db } from '@/lib/firebase/config';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
 
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [schoolCodeError, setSchoolCodeError] = useState('');
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
 
   const handleSchoolCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Auto-capitalize and strip any special characters (only allow letters and numbers)
@@ -37,7 +39,7 @@ export default function LoginPage() {
     setSchoolCode(alphanumericOnly);
   };
 
-  const handleSchoolCodeSubmit = (e: React.FormEvent) => {
+  const handleSchoolCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schoolCode.trim()) {
       setSchoolCodeError('School code cannot be empty');
@@ -51,12 +53,31 @@ export default function LoginPage() {
     
     // Check if user is logging into the unified portal without a school code
     if (schoolCode === 'ADMIN') {
-      // In a real app, this would route to a global admin login, but we'll just show role select for now
-      // SuperAdmins should simply enter 'ADMIN' and log in to get routed by AuthContext
+      setSchoolCodeError('');
+      setStep('ROLE_SELECT');
+      return;
     }
 
+    setIsVerifyingCode(true);
     setSchoolCodeError('');
-    setStep('ROLE_SELECT');
+
+    try {
+      const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        setSchoolCodeError('School Code Not Found. Please check and try again.');
+        setIsVerifyingCode(false);
+        return;
+      }
+      
+      setStep('ROLE_SELECT');
+    } catch (err) {
+      console.error(err);
+      setSchoolCodeError('Network error. Please try again.');
+    } finally {
+      setIsVerifyingCode(false);
+    }
   };
 
   const handleRoleSelect = (selectedRole: any) => {
@@ -156,11 +177,11 @@ export default function LoginPage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={!schoolCode.trim()}
-                  className="w-full flex items-center justify-center space-x-2 bg-white text-[#002147] py-3 rounded-xl font-semibold hover:bg-white/90 transition-colors disabled:opacity-50"
+                  disabled={!schoolCode.trim() || isVerifyingCode}
+                  className="w-full flex items-center justify-center space-x-2 bg-white text-[#002147] py-3 rounded-xl font-semibold hover:bg-white/90 focus:ring-4 focus:ring-white/40 active:scale-95 transition-all disabled:opacity-50"
                 >
-                  <span>Continue</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>{isVerifyingCode ? 'Verifying...' : 'Continue'}</span>
+                  {!isVerifyingCode && <ArrowRight className="w-4 h-4" />}
                 </button>
               </form>
             </div>

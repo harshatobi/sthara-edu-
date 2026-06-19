@@ -19,17 +19,43 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [schoolCodeError, setSchoolCodeError] = useState('');
+
+  const handleSchoolCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Auto-capitalize and strip any special characters (only allow letters and numbers)
+    const rawValue = e.target.value.toUpperCase();
+    const alphanumericOnly = rawValue.replace(/[^A-Z0-9]/g, '');
+    
+    // Check if user tried to type special characters
+    if (rawValue !== alphanumericOnly && rawValue.length > 0) {
+      setSchoolCodeError('Only letters and numbers are allowed');
+    } else {
+      setSchoolCodeError('');
+    }
+
+    // Apply max length constraint implicitly via state slicing or just let maxLength HTML attribute handle it
+    setSchoolCode(alphanumericOnly);
+  };
 
   const handleSchoolCodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolCode.trim()) return;
+    if (!schoolCode.trim()) {
+      setSchoolCodeError('School code cannot be empty');
+      return;
+    }
+    
+    if (schoolCode.length < 3) {
+      setSchoolCodeError('School code is too short');
+      return;
+    }
     
     // Check if user is logging into the unified portal without a school code
-    if (schoolCode.toUpperCase() === 'ADMIN') {
+    if (schoolCode === 'ADMIN') {
       // In a real app, this would route to a global admin login, but we'll just show role select for now
       // SuperAdmins should simply enter 'ADMIN' and log in to get routed by AuthContext
     }
 
+    setSchoolCodeError('');
     setStep('ROLE_SELECT');
   };
 
@@ -113,10 +139,20 @@ export default function LoginPage() {
                   <input
                     type="text"
                     value={schoolCode}
-                    onChange={(e) => setSchoolCode(e.target.value)}
-                    placeholder="e.g. STHARA-001"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20 uppercase"
+                    onChange={handleSchoolCodeChange}
+                    placeholder="e.g. DPS101"
+                    maxLength={10}
+                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 uppercase transition-colors ${
+                      schoolCodeError 
+                        ? 'border-[#dc143c] focus:ring-[#dc143c]/50' 
+                        : 'border-white/10 focus:ring-white/20'
+                    }`}
                   />
+                  {schoolCodeError && (
+                    <p className="text-[#dc143c] text-sm mt-2 font-medium" data-testid="school-code-error">
+                      {schoolCodeError}
+                    </p>
+                  )}
                 </div>
                 <button
                   type="submit"

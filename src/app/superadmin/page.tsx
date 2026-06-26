@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Users, FileVideo, PlusCircle, X } from 'lucide-react';
+import { Building2, Users, FileVideo, PlusCircle, X, Globe, Sparkles, Activity, Search, ShieldCheck } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ interface School {
   adminEmail: string;
   studentsCount: number;
   status: string;
+  licenseTier: string;
 }
 
 export default function SuperAdminDashboard() {
@@ -65,6 +66,7 @@ export default function SuperAdminDashboard() {
         adminEmail,
         studentsCount: 0,
         status: 'Active',
+        licenseTier: 'Pro', // Defaulting to Pro for dummy billing
         createdAt: serverTimestamp()
       });
 
@@ -82,156 +84,228 @@ export default function SuperAdminDashboard() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 relative">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-[#002147]">Global Overview</h1>
-          <p className="text-[#002147]/60 mt-1">Platform-wide metrics across all onboarded institutions.</p>
+    <div className="min-h-screen bg-gray-50 pb-16 font-sans">
+      {/* Premium Header */}
+      <div className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-40 backdrop-blur-xl bg-white/80">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-br from-[#002147] to-indigo-900 rounded-2xl shadow-inner border border-indigo-400/30">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-1">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Super Admin Portal</span>
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-[#002147]">Global Overview</h1>
+              <p className="text-sm font-medium text-gray-500 mt-0.5">Platform-wide metrics across all onboarded institutions.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="group bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center space-x-2 hover:shadow-lg hover:shadow-emerald-500/30 transition-all overflow-hidden relative"
+          >
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+            <PlusCircle className="w-5 h-5 relative z-10" />
+            <span className="relative z-10">Onboard New School</span>
+          </button>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[#dc143c] text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 hover:bg-[#dc143c]/90 transition-colors shadow-sm shadow-[#dc143c]/20"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Onboard New School</span>
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#002147]/10 flex items-center space-x-4">
-          <div className="p-4 bg-[#002147]/5 rounded-xl">
-            <Building2 className="w-8 h-8 text-[#002147]" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8 animate-in fade-in duration-500">
+        
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200/60 flex items-center space-x-5 relative overflow-hidden group">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-indigo-50 rounded-full blur-2xl -mr-10 -mt-10 opacity-50 group-hover:scale-150 transition-transform"></div>
+            <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl relative z-10">
+              <Building2 className="w-8 h-8 text-indigo-600" />
+            </div>
+            <div className="relative z-10">
+              <p className="text-sm text-gray-500 font-bold uppercase tracking-wider">Active Schools</p>
+              <p className="text-4xl font-black text-[#002147] mt-1">{loading ? '...' : schools.length}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-[#002147]/60 font-medium">Active Schools</p>
-            <p className="text-2xl font-bold text-[#002147]">{loading ? '...' : schools.length}</p>
-          </div>
-        </div>
-        {/* Placeholder stats for now */}
-        <Link href="/superadmin/directory" className="bg-white p-6 rounded-2xl shadow-sm border border-[#002147]/10 flex items-center space-x-4 hover:bg-[#f8fafc] transition-colors cursor-pointer group">
-          <div className="p-4 bg-green-50 rounded-xl group-hover:scale-105 transition-transform">
-            <Users className="w-8 h-8 text-green-600" />
-          </div>
-          <div>
-            <p className="text-sm text-[#002147]/60 font-medium">Global Student Directory</p>
-            <p className="text-2xl font-bold text-[#002147]">View All</p>
-          </div>
-        </Link>
-        <Link href="/superadmin/content" className="bg-white p-6 rounded-2xl shadow-sm border border-[#002147]/10 flex items-center space-x-4 hover:bg-[#f8fafc] transition-colors cursor-pointer group">
-          <div className="p-4 bg-purple-50 rounded-xl group-hover:scale-105 transition-transform">
-            <FileVideo className="w-8 h-8 text-purple-600" />
-          </div>
-          <div>
-            <p className="text-sm text-[#002147]/60 font-medium">Global Video CMS</p>
-            <p className="text-2xl font-bold text-[#002147]">Manage</p>
-          </div>
-        </Link>
-      </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-[#002147]/10 overflow-hidden">
-        <div className="p-6 border-b border-[#002147]/5">
-          <h2 className="text-lg font-bold text-[#002147]">Recent School Onboardings</h2>
+          <Link href="/superadmin/directory" className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200/60 flex items-center space-x-5 relative overflow-hidden group cursor-pointer hover:border-emerald-200 transition-colors">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10 opacity-50 group-hover:scale-150 transition-transform"></div>
+            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl relative z-10 group-hover:scale-110 transition-transform">
+              <Users className="w-8 h-8 text-emerald-600" />
+            </div>
+            <div className="relative z-10">
+              <p className="text-sm text-gray-500 font-bold uppercase tracking-wider">Global Directory</p>
+              <div className="flex items-center space-x-2 mt-1">
+                <p className="text-2xl font-bold text-[#002147]">View All</p>
+                <div className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">Live</div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/superadmin/content" className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200/60 flex items-center space-x-5 relative overflow-hidden group cursor-pointer hover:border-purple-200 transition-colors">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-purple-50 rounded-full blur-2xl -mr-10 -mt-10 opacity-50 group-hover:scale-150 transition-transform"></div>
+            <div className="p-4 bg-purple-50 border border-purple-100 rounded-2xl relative z-10 group-hover:scale-110 transition-transform">
+              <FileVideo className="w-8 h-8 text-purple-600" />
+            </div>
+            <div className="relative z-10">
+              <p className="text-sm text-gray-500 font-bold uppercase tracking-wider">Global Video CMS</p>
+              <p className="text-2xl font-bold text-[#002147] mt-1">Manage</p>
+            </div>
+          </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-[#002147]/80">
-            <thead className="bg-[#f8fafc] text-xs uppercase font-semibold text-[#002147]/60 border-b border-[#002147]/10">
-              <tr>
-                <th className="px-6 py-4">School Code</th>
-                <th className="px-6 py-4">Institution Name</th>
-                <th className="px-6 py-4">Admin Email</th>
-                <th className="px-6 py-4">Students</th>
-                <th className="px-6 py-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+
+        {/* Data Table */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-200/60 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+            <Activity className="w-64 h-64 text-gray-400" />
+          </div>
+          
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center relative z-10 bg-white/50 backdrop-blur-sm">
+            <div>
+              <h2 className="text-xl font-bold text-[#002147]">Recent School Onboardings</h2>
+              <p className="text-sm text-gray-500 font-medium">Manage and monitor all institutions in your network.</p>
+            </div>
+            <div className="bg-gray-100 p-2 rounded-xl flex items-center space-x-2">
+              <Search className="w-5 h-5 text-gray-400 ml-2" />
+              <input type="text" placeholder="Search schools..." className="bg-transparent border-none focus:ring-0 text-sm font-medium w-48 text-[#002147]" />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto relative z-10">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-200">
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-[#002147]/50">Loading schools...</td>
+                  <th className="px-6 py-4">School Code</th>
+                  <th className="px-6 py-4">Institution Name</th>
+                  <th className="px-6 py-4">Admin Email</th>
+                  <th className="px-6 py-4">Students</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">License</th>
                 </tr>
-              ) : schools.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-[#002147]/50">No schools onboarded yet. Click "Onboard New School" to start.</td>
-                </tr>
-              ) : (
-                schools.map((school) => (
-                  <tr 
-                    key={school.id} 
-                    onClick={() => router.push(`/superadmin/schools/manage?id=${school.id}`)}
-                    className="border-b border-[#002147]/5 hover:bg-[#f8fafc] transition-colors cursor-pointer"
-                  >
-                    <td className="px-6 py-4 font-bold text-[#002147]">{school.id}</td>
-                    <td className="px-6 py-4">{school.name}</td>
-                    <td className="px-6 py-4">{school.adminEmail}</td>
-                    <td className="px-6 py-4">{school.studentsCount || 0}</td>
-                    <td className="px-6 py-4">
-                      <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">{school.status}</span>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                        <p className="text-indigo-600 font-bold">Loading Network Data...</p>
+                      </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : schools.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400 font-medium">
+                      No schools onboarded yet. Click "Onboard New School" to start.
+                    </td>
+                  </tr>
+                ) : (
+                  schools.map((school) => (
+                    <tr 
+                      key={school.id} 
+                      onClick={() => router.push(`/superadmin/schools/manage?id=${school.id}`)}
+                      className="hover:bg-indigo-50/50 transition-colors cursor-pointer group"
+                    >
+                      <td className="px-6 py-5 font-black text-[#002147] tracking-wider">{school.id}</td>
+                      <td className="px-6 py-5 font-bold text-gray-700">{school.name}</td>
+                      <td className="px-6 py-5 text-gray-500">{school.adminEmail}</td>
+                      <td className="px-6 py-5 font-semibold text-gray-700">{school.studentsCount || 0}</td>
+                      <td className="px-6 py-5">
+                        <div className="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-200">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <span>{school.status}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="bg-purple-50 text-purple-700 text-xs font-bold px-2.5 py-1 rounded-full border border-purple-200 flex inline-flex items-center space-x-1">
+                          <Sparkles className="w-3 h-3 text-purple-500" />
+                          <span>{school.licenseTier || 'Pro'}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Onboarding Modal */}
+      {/* Modern Glassmorphic Onboarding Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-[#001229]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-[#002147]/10 flex justify-between items-center bg-[#f8fafc]">
-              <h3 className="text-xl font-bold text-[#002147]">Onboard New School</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-[#002147]/40 hover:text-[#dc143c] transition-colors">
-                <X className="w-6 h-6" />
+        <div className="fixed inset-0 bg-[#001229]/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-indigo-100 rounded-xl">
+                  <Building2 className="w-5 h-5 text-indigo-600" />
+                </div>
+                <h3 className="text-xl font-black text-[#002147]">New Institution</h3>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6">
-              <form onSubmit={handleOnboardSchool} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#002147]/70 mb-1">Institution Name</label>
+            
+            <div className="p-8">
+              <form onSubmit={handleOnboardSchool} className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-[#002147]">Institution Name</label>
                   <input
                     type="text"
                     value={institutionName}
                     onChange={(e) => setInstitutionName(e.target.value)}
                     placeholder="e.g. Sthara Demo Academy"
-                    className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#002147]/70 mb-1">School Code (Unique ID)</label>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-[#002147]">School Code (Unique ID)</label>
                   <input
                     type="text"
                     value={schoolCode}
                     onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
                     placeholder="e.g. STHARA-001"
-                    className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20 uppercase font-mono"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm uppercase tracking-wider"
                   />
+                  <p className="text-xs text-gray-500 font-medium">This code will be used by students and teachers to log in.</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#002147]/70 mb-1">Primary Admin Email</label>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-[#002147]">Primary Admin Email</label>
                   <input
                     type="email"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     placeholder="principal@stharademo.edu"
-                    className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                   />
                 </div>
                 
-                {error && <p className="text-[#dc143c] text-sm text-center bg-[#dc143c]/10 p-2 rounded-lg">{error}</p>}
+                {error && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 font-bold text-sm flex items-center space-x-2 animate-in fade-in">
+                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span>{error}</span>
+                  </div>
+                )}
                 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#002147] text-white py-3 rounded-xl font-semibold hover:bg-[#002147]/90 transition-colors mt-6 disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-[#002147] to-indigo-900 text-white py-4 rounded-xl font-black hover:shadow-lg hover:shadow-indigo-900/20 transition-all mt-6 disabled:opacity-70 flex justify-center items-center space-x-2"
                 >
-                  {isSubmitting ? 'Creating...' : 'Onboard Institution'}
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-indigo-200 border-t-white rounded-full animate-spin" />
+                      <span>Creating Institution...</span>
+                    </>
+                  ) : (
+                    <span>Onboard Institution</span>
+                  )}
                 </button>
               </form>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

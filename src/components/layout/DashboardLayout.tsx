@@ -40,7 +40,7 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex">
+    <div className="min-h-screen bg-[#f8fafc] flex print:block">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 flex md:hidden">
@@ -101,7 +101,7 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
       )}
 
       {/* Desktop Sidebar */}
-      <div className="w-64 bg-[#002147] text-white flex flex-col shadow-2xl z-10 hidden md:flex">
+      <div className="w-64 bg-[#002147] text-white flex flex-col shadow-2xl z-10 hidden md:flex print:hidden">
         <div className="h-20 flex flex-col justify-center px-6 border-b border-white/10">
           <h1 className="text-2xl font-bold tracking-tight text-white">Sthara</h1>
           <p className="text-[#dc143c] text-xs font-semibold uppercase tracking-wider">{subtitle}</p>
@@ -143,9 +143,9 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden print:overflow-visible print:block">
         {/* Mobile Header */}
-        <div className="md:hidden h-16 bg-[#002147] flex items-center justify-between px-4 z-20">
+        <div className="md:hidden h-16 bg-[#002147] flex items-center justify-between px-4 z-20 print:hidden">
           <div className="flex flex-col">
             <h1 className="text-xl font-bold tracking-tight text-white">Sthara</h1>
             <p className="text-[#dc143c] text-[10px] font-semibold uppercase tracking-wider">{subtitle}</p>

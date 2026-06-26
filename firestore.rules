@@ -1,75 +1,108 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    
+    // Function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
+    // Function to check if user is a superadmin
     function isSuperAdmin() {
       return isAuthenticated() && exists(/databases/$(database)/documents/superadmins/$(request.auth.uid));
     }
 
-    function getUserData() {
-      return get(/databases/$(database)/documents/global_users/$(request.auth.uid)).data;
+    // Function to get the user's role
+    function getRole() {
+      return get(/databases/$(database)/documents/global_users/$(request.auth.uid)).data.role;
     }
 
-    // Default deny
-    match /{document=**} {
-      allow read, write: if isSuperAdmin();
+    // Function to get the user's schoolId
+    function userSchoolId() {
+      return get(/databases/$(database)/documents/global_users/$(request.auth.uid)).data.schoolId;
     }
 
-    // Global users: users can read their own profile
+    // global_users collection
     match /global_users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isSuperAdmin(); // Usually written by Admin/SuperAdmin/Cloud Functions
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
     }
 
-    // Superadmins: only SuperAdmins can read this to prevent mapping
-    match /superadmins/{userId} {
-      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      allow write: if false; // Only manageable from Admin SDK / Console
-    }
-
-    // Schools: anyone authenticated can read basic school info
-    match /schools/{schoolId} {
+    // root users collection (where seed script creates data)
+    match /users/{userId} {
       allow read: if isAuthenticated();
-      
-      // School specific data
-      match /classes/{classId} {
-        allow read: if isAuthenticated();
-      }
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
+    }
 
+    // superadmins collection
+    match /superadmins/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if false; // Only manageable via Firebase Console or Admin SDK
+    }
+
+    // schools collection
+    match /schools/{schoolId} {
+      // Anyone can read school docs (needed for login check logic on the landing page)
+      allow read: if true; 
+      allow write: if isSuperAdmin();
+
+      // users subcollection inside school
       match /users/{userId} {
-        // User can read themselves, admins can read all users in their school
         allow read: if isAuthenticated() && (
           request.auth.uid == userId || 
-          getUserData().role == 'admin'
+          isSuperAdmin() ||
+          userSchoolId() == schoolId
+        );
+        
+        allow write: if isAuthenticated() && (
+          request.auth.uid == userId || 
+          isSuperAdmin() ||
+          (userSchoolId() == schoolId && getRole() == 'admin')
         );
       }
 
+      // assignments subcollection inside school
       match /assignments/{assignmentId} {
-        allow read: if isAuthenticated();
+        // Anyone in the school can read assignments
+        allow read: if isAuthenticated() && (userSchoolId() == schoolId || isSuperAdmin());
+        
+        // Only teachers and admins can create/update assignments
         allow write: if isAuthenticated() && (
-          getUserData().role == 'teacher' || 
-          getUserData().role == 'admin'
+          isSuperAdmin() || 
+          (userSchoolId() == schoolId && getRole() in ['teacher', 'admin'])
+        );
+
+        match /submissions/{studentId} {
+          allow read: if isAuthenticated() && (
+            request.auth.uid == studentId || 
+            isSuperAdmin() ||
+            userSchoolId() == schoolId
+          );
+          allow write: if isAuthenticated() && (
+            request.auth.uid == studentId || 
+            isSuperAdmin() ||
+            (userSchoolId() == schoolId && getRole() in ['teacher', 'admin'])
+          );
+        }
+      }
+
+      // materials subcollection inside school
+      match /materials/{materialId} {
+        allow read: if isAuthenticated() && (userSchoolId() == schoolId || isSuperAdmin());
+        allow write: if isAuthenticated() && (
+          isSuperAdmin() || 
+          (userSchoolId() == schoolId && getRole() in ['teacher', 'admin'])
         );
       }
 
-      match /assignments/{assignmentId}/submissions/{submissionId} {
-        allow read: if isAuthenticated();
-        // Students can write their own submissions
+      // notifications subcollection inside school
+      match /notifications/{notificationId} {
+        allow read: if isAuthenticated() && (userSchoolId() == schoolId || isSuperAdmin());
         allow write: if isAuthenticated() && (
-          getUserData().role == 'student' && submissionId == request.auth.uid
+          isSuperAdmin() || 
+          (userSchoolId() == schoolId && getRole() in ['teacher', 'admin'])
         );
       }
-    }
-
-    // Content Library (Videos): Students can read
-    match /content_library/{curriculum}/classes/{classStr}/subjects/{subjectId}/videos/{videoId} {
-      allow read: if isAuthenticated();
-      allow write: if isSuperAdmin();
     }
   }
 }

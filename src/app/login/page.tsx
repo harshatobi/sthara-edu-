@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 
 type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
 
@@ -19,23 +19,23 @@ export default function LoginPage() {
   const [role, setRole] = useState<'student' | 'teacher' | 'admin' | 'parent' | 'superadmin' | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [schoolCodeError, setSchoolCodeError] = useState('');
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const handleSchoolCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Auto-capitalize and strip any special characters (only allow letters and numbers)
     const rawValue = e.target.value.toUpperCase();
     const alphanumericOnly = rawValue.replace(/[^A-Z0-9]/g, '');
     
-    // Check if user tried to type special characters
     if (rawValue !== alphanumericOnly && rawValue.length > 0) {
       setSchoolCodeError('Only letters and numbers are allowed');
     } else {
       setSchoolCodeError('');
     }
 
-    // Apply max length constraint implicitly via state slicing or just let maxLength HTML attribute handle it
     setSchoolCode(alphanumericOnly);
   };
 
@@ -51,7 +51,6 @@ export default function LoginPage() {
       return;
     }
     
-    // Check if user is logging into the unified portal without a school code
     if (schoolCode === 'ADMIN') {
       setSchoolCodeError('');
       setStep('ROLE_SELECT');
@@ -94,34 +93,78 @@ export default function LoginPage() {
       return;
     }
 
+    setIsSigningIn(true);
     try {
-      // Login with Firebase
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      let cred;
+      try {
+        cred = await signInWithEmailAndPassword(auth, email, password);
+      } catch (err: any) {
+        // Auto-seed demo accounts if they don't exist
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+          if (['parent1@sthara.com', 'admin@sthara.com'].includes(email)) {
+            try {
+              cred = await createUserWithEmailAndPassword(auth, email, password);
+            } catch (createErr: any) {
+              if (createErr.code === 'auth/email-already-in-use') {
+                throw err; // Password was probably just wrong
+              }
+              throw createErr;
+            }
+          } else {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
       
-      // Temporary setup hook for the newly created admin account
+      // Temporary setup hook for demo accounts
       if (email === 'admin@sthara.com') {
-        const { setDoc, doc } = await import('firebase/firestore');
-        await setDoc(doc(auth.app ? (await import('@/lib/firebase/config')).db : {} as any, 'superadmins', cred.user.uid), {
+        await setDoc(doc(db, 'superadmins', cred.user.uid), {
           email: 'admin@sthara.com',
           role: 'superadmin',
           createdAt: new Date()
         }).catch(e => console.error("Setup doc error:", e));
         
-        await setDoc(doc(auth.app ? (await import('@/lib/firebase/config')).db : {} as any, 'global_users', cred.user.uid), {
+        await setDoc(doc(db, 'global_users', cred.user.uid), {
           email: 'admin@sthara.com',
           role: 'superadmin',
           name: 'Super Admin'
         }).catch(e => console.error("Setup doc error:", e));
       }
+      
+      if (email === 'parent1@sthara.com') {
+        await setDoc(doc(db, 'users', cred.user.uid), {
+          email: 'parent1@sthara.com',
+          role: 'parent',
+          name: 'Demo Parent',
+          schoolId: schoolCode
+        }).catch(e => console.error("Setup doc error:", e));
+      }
 
-      // We will let the useEffect handle the routing based on the actual profile role
     } catch (err: any) {
       console.error(err);
       setError('Invalid credentials or school mapping.');
+      setIsSigningIn(false);
     }
   };
 
-  // Listen for profile changes to route accurately based on true database role
+  const handleForgotPassword = async () => {
+    setError('');
+    setResetMessage('');
+    if (!email) {
+      setError('Please enter your email first to reset your password.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetMessage('Password reset email sent! Check your inbox.');
+    } catch (err: any) {
+      console.error(err);
+      setError('Failed to send reset email. Make sure your email is correct.');
+    }
+  };
+
   useEffect(() => {
     if (profile) {
       if (profile.role === 'superadmin') router.push('/superadmin');
@@ -232,22 +275,48 @@ export default function LoginPage() {
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
                 </div>
-                <div>
+                <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
                 {error && <p className="text-[#dc143c] text-sm text-center font-medium bg-[#dc143c]/10 p-2 rounded-lg">{error}</p>}
+                {resetMessage && <p className="text-green-400 text-sm text-center font-medium bg-green-400/10 p-2 rounded-lg">{resetMessage}</p>}
                 
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-white/60 hover:text-white text-sm transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
                 <button
                   type="submit"
-                  className="w-full bg-white text-[#002147] py-3 rounded-xl font-semibold hover:bg-white/90 transition-colors mt-4"
+                  disabled={isSigningIn || !email || !password}
+                  className="w-full flex items-center justify-center space-x-2 bg-white text-[#002147] py-3 rounded-xl font-semibold hover:bg-white/90 transition-colors mt-4 disabled:opacity-50 disabled:bg-white/50"
                 >
-                  Sign In
+                  {isSigningIn ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-[#002147]/30 border-t-[#002147] rounded-full animate-spin" />
+                      <span>Signing you in...</span>
+                    </>
+                  ) : (
+                    <span>Sign In</span>
+                  )}
                 </button>
               </form>
             </div>

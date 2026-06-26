@@ -5,11 +5,13 @@ export async function POST(request: Request) {
   try {
     const { topic, subject } = await request.json();
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+    if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `You are a teacher. A student just watched an educational video on the topic: "${topic}" in the subject "${subject}".
 Generate a short 3-question multiple-choice quiz to test their understanding.

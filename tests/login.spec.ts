@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Login Screen UI/UX', () => {
   test.beforeEach(async ({ page }) => {
-    // Assuming the application runs locally on port 3000
-    await page.goto('http://localhost:3000/login');
+    // Navigate to the live login page
+    await page.goto('https://sthara.in/login');
   });
 
   test('1. Logo and main text are present and visible', async ({ page }) => {

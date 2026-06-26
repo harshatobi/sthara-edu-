@@ -2,34 +2,34 @@
 
 import { useState } from 'react';
 import { db, auth } from '@/lib/firebase/config';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
 
-const SCHOOL_ID = 'sch-real';
-const SCHOOL_CODE = 'REAL101';
+const SCHOOL_ID = 'sch-test-batch';
+const SCHOOL_CODE = 'TEST100';
 const PASSWORD = '1234567890';
 
 const USERS = [
-  {
-    email: '23B61A05E3@sthara.com',
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    email: `teststu${i + 1}@gmail.com`,
     role: 'student',
-    name: 'Student (23B61A05E3)',
-    customStudentId: '23B61A05E3',
+    name: `Test Student ${i + 1}`,
+    customStudentId: `STU00${i + 1}`,
     studentClass: 'Class 10'
-  },
+  })),
   {
-    email: '23B61A05J3@sthara.com',
-    role: 'student',
-    name: 'Student (23B61A05J3)',
-    customStudentId: '23B61A05J3',
-    studentClass: 'Class 10'
-  },
-  {
-    email: '23B61A05H0@sthara.com',
+    email: 'testteacher1@gmail.com',
     role: 'teacher',
     name: 'Maths Teacher',
     teacherClass: 'Class 10',
     subject: 'Mathematics'
+  },
+  {
+    email: 'testteacher2@gmail.com',
+    role: 'teacher',
+    name: 'Social Teacher',
+    teacherClass: 'Class 10',
+    subject: 'Social Studies'
   }
 ];
 
@@ -39,9 +39,9 @@ export default function SeedRealPage() {
   const runSeeding = async () => {
     setStatus('Running... Please wait.');
     try {
-      setStatus('Creating Real Testing School...');
+      setStatus('Creating Test School...');
       await setDoc(doc(db, 'schools', SCHOOL_ID), {
-        name: 'Real Testing School',
+        name: 'Test Data School',
         code: SCHOOL_CODE,
         curriculum: 'CBSE',
         createdAt: serverTimestamp()
@@ -52,10 +52,14 @@ export default function SeedRealPage() {
         
         let uid;
         try {
+          // Attempt to create user
           const cred = await createUserWithEmailAndPassword(auth, u.email, PASSWORD);
           uid = cred.user.uid;
         } catch (e: any) {
           if (e.code === 'auth/email-already-in-use') {
+             // If already exists, we will query Firestore for this user to update them instead of failing, 
+             // but Auth client SDK doesn't let us get the UID easily if they already exist unless we sign in.
+             // Since we know the password, we could sign in, but it's better to just error clearly for testing.
              setStatus(`Error: User ${u.email} already exists in Auth. You must delete them in Firebase Auth first if you want to recreate them.`);
              return;
           } else {
@@ -84,7 +88,7 @@ export default function SeedRealPage() {
         await setDoc(doc(db, 'users', uid), userData);
       }
       
-      setStatus('DONE! Your real users have been successfully created.');
+      setStatus('DONE! Your 10 test students and 2 test teachers have been successfully created.');
     } catch (error: any) {
       console.error(error);
       setStatus(`Error: ${error.message}`);
@@ -94,13 +98,12 @@ export default function SeedRealPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#001229] p-6 text-white font-sans">
       <div className="bg-white/10 p-8 rounded-2xl w-full max-w-lg text-center">
-        <h1 className="text-3xl font-bold mb-4">Create Real Testing Data</h1>
+        <h1 className="text-3xl font-bold mb-4">Create Test Batch Data</h1>
         <p className="text-white/60 mb-8 text-sm">
           This will create:
-          <br/>Teacher: 23B61A05H0 (Maths, Class 10)
-          <br/>Student: 23B61A05E3 (Class 10)
-          <br/>Student: 23B61A05J3 (Class 10)
-          <br/>School Code: REAL101
+          <br/>School Code: {SCHOOL_CODE}
+          <br/>10 Students: teststu1@gmail.com - teststu10@gmail.com (Class 10)
+          <br/>2 Teachers: testteacher1@gmail.com (Math) & testteacher2@gmail.com (Social)
           <br/>Password: {PASSWORD}
         </p>
         
@@ -108,7 +111,7 @@ export default function SeedRealPage() {
           onClick={runSeeding}
           className="w-full bg-[#1e88e5] text-white py-4 rounded-xl font-bold hover:bg-[#1565c0] transition-colors mb-4"
         >
-          Create Real Users Now
+          Create Test Users Now
         </button>
         
         <div className="mt-4 p-4 bg-black/20 rounded-xl text-sm font-mono min-h-[60px] flex items-center justify-center">

@@ -305,6 +305,38 @@ export default function StudentDashboard() {
 
   if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Student Portal...</div>;
 
+  const pendingTasksCount = assignments.filter((a: any) => !a.submission).length;
+  const gradedSubmissions = assignments.filter((a: any) => a.submission && a.submission.score !== undefined);
+  
+  let masteryText = 'N/A';
+  let recentScoreText = '-';
+  let recentTopicText = 'No Recent';
+
+  if (gradedSubmissions.length > 0) {
+    let totalScore = 0;
+    let totalMax = 0;
+    gradedSubmissions.forEach(a => {
+      totalScore += a.submission.score;
+      totalMax += a.submission.maxScore || a.submission.total || 100;
+    });
+    masteryText = Math.round((totalScore / totalMax) * 100) + '%';
+    
+    const recent = [...gradedSubmissions].sort((a, b) => {
+      const timeA = a.submission.submittedAt?.seconds || 0;
+      const timeB = b.submission.submittedAt?.seconds || 0;
+      return timeB - timeA;
+    })[0];
+    
+    const percent = Math.round((recent.submission.score / (recent.submission.maxScore || recent.submission.total || 100)) * 100);
+    let grade = 'F';
+    if (percent >= 90) grade = 'A';
+    else if (percent >= 80) grade = 'B';
+    else if (percent >= 70) grade = 'C';
+    else if (percent >= 60) grade = 'D';
+    recentScoreText = grade;
+    recentTopicText = recent.title || recent.topic || 'Assignment';
+  }
+
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto pb-16">
       
@@ -363,23 +395,28 @@ export default function StudentDashboard() {
             <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
               <TrendingUp className="w-6 h-6" />
             </div>
-            <span className="bg-green-50 text-green-600 text-xs font-bold px-2.5 py-1 rounded-full border border-green-100">
-              +2% this week
-            </span>
+            {masteryText !== 'N/A' && (
+              <span className="bg-green-50 text-green-600 text-xs font-bold px-2.5 py-1 rounded-full border border-green-100">
+                Active Learner
+              </span>
+            )}
           </div>
           <h3 className="text-gray-500 font-bold text-sm uppercase tracking-wider mb-1">Overall Mastery</h3>
-          <p className="text-4xl font-extrabold text-[#002147]">84%</p>
+          <p className="text-4xl font-extrabold text-[#002147]">{masteryText}</p>
         </div>
 
         <div 
           className="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all hover:-translate-y-1 cursor-pointer"
-          onClick={() => setShowPendingModal(true)}
+          onClick={() => {
+            const hwSection = document.getElementById('homework');
+            if (hwSection) hwSection.scrollIntoView({ behavior: 'smooth' });
+          }}
         >
           <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-2xl ${assignments.length > 0 ? 'bg-orange-50 text-orange-600' : 'bg-gray-50 text-gray-400'}`}>
-              <Calendar className="w-6 h-6" />
+            <div className="bg-orange-50 p-3 rounded-2xl text-orange-600">
+              <Target className="w-6 h-6" />
             </div>
-            {assignments.length > 0 && (
+            {pendingTasksCount > 0 && (
               <span className="flex h-3 w-3 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
@@ -387,7 +424,7 @@ export default function StudentDashboard() {
             )}
           </div>
           <h3 className="text-gray-500 font-bold text-sm uppercase tracking-wider mb-1">Pending Tasks</h3>
-          <p className="text-4xl font-extrabold text-[#002147]">{assignments.length}</p>
+          <p className="text-4xl font-extrabold text-[#002147]">{pendingTasksCount}</p>
           <p className="text-sm font-medium text-gray-400 mt-2">Active assignments</p>
         </div>
 
@@ -397,12 +434,14 @@ export default function StudentDashboard() {
         >
           <div className="flex justify-between items-start mb-4">
             <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600">
-              <CheckCircle2 className="w-6 h-6" />
+              <Award className="w-6 h-6" />
             </div>
+            <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200 truncate max-w-[120px]">
+              {recentTopicText}
+            </span>
           </div>
-          <h3 className="text-gray-500 font-bold text-sm uppercase tracking-wider mb-1">Recent Scores</h3>
-          <p className="text-4xl font-extrabold text-[#002147]">A-</p>
-          <p className="text-sm font-medium text-gray-400 mt-2 truncate">Math: Quadratic Eq</p>
+          <h3 className="text-gray-500 font-bold text-sm uppercase tracking-wider mb-1">Recent Score</h3>
+          <p className="text-4xl font-extrabold text-emerald-600">{recentScoreText}</p>
         </div>
       </div>
 

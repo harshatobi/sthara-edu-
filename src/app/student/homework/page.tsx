@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, orderBy, setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, CheckCircle, Clock, ChevronRight, FileText, Activity } from 'lucide-react';
 import Link from 'next/link';
-import { v4 as uuidv4 } from 'uuid';
 
 export default function StudentHomework() {
   const { profile } = useAuth();
@@ -16,75 +15,45 @@ export default function StudentHomework() {
 
   useEffect(() => {
     const fetchHomework = async () => {
-      if (!profile?.uid) return;
+      if (!profile?.schoolId || !profile?.studentClass || !profile?.uid) return;
       try {
-        const q = query(
-          collection(db, 'homework_assignments'),
-          where('studentId', '==', profile.uid),
-          orderBy('createdAt', 'desc')
+        const classQuery = query(
+          collection(db, 'schools', profile.schoolId, 'assignments'),
+          where('class', '==', profile.studentClass)
         );
-        const snap = await getDocs(q);
-        const items: any[] = [];
-        snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+        const targetedQuery = query(
+          collection(db, 'schools', profile.schoolId, 'assignments'),
+          where('targetStudentId', '==', profile.uid)
+        );
+        
+        const [classSnap, targetedSnap] = await Promise.all([
+          getDocs(classQuery),
+          getDocs(targetedQuery)
+        ]);
 
-        // Dynamic Seeding for Demo Purposes
-        if (items.length === 0) {
-          console.log("No assignments found. Seeding dummy assignments for demo.");
-          
-          const dummyAssignments = [
-            {
-              id: uuidv4(),
-              studentId: profile.uid,
-              topic: 'Polynomial Division and Remainder Theorem',
-              subject: 'Mathematics',
-              status: 'pending',
-              questions: [
-                'Use long division to divide P(x) = x³ - 4x² + 2x - 3 by (x - 2).',
-                'State the Remainder Theorem.',
-                'Use the Remainder Theorem to find the remainder when P(x) = x⁴ - 2x³ + x - 1 is divided by (x + 1).'
-              ],
-              createdAt: serverTimestamp(),
-              dueDate: new Date(Date.now() + 86400000 * 2).toISOString() // 2 days from now
-            },
-            {
-              id: uuidv4(),
-              studentId: profile.uid,
-              topic: 'Chemical Bonding: Ionic vs Covalent',
-              subject: 'Science',
-              status: 'pending',
-              questions: [
-                'Explain the primary difference between an ionic bond and a covalent bond.',
-                'Draw the Lewis dot structure for Water (H2O).',
-                'Why do ionic compounds typically have higher melting points than covalent compounds?'
-              ],
-              createdAt: serverTimestamp(),
-              dueDate: new Date(Date.now() + 86400000).toISOString() // Tomorrow
-            },
-            {
-              id: uuidv4(),
-              studentId: profile.uid,
-              topic: 'Literary Devices in Poetry',
-              subject: 'English',
-              status: 'completed',
-              grade: 'A-',
-              feedback: 'Great job identifying metaphors and similes. Make sure to provide more context when explaining personification in stanza 3.',
-              questions: [
-                'Define a metaphor and provide an example from "The Road Not Taken".',
-                'How does the author use personification to set the mood of the poem?'
-              ],
-              createdAt: serverTimestamp(),
-              dueDate: new Date(Date.now() - 86400000 * 5).toISOString() // 5 days ago
-            }
-          ];
-
-          for (const hw of dummyAssignments) {
-            await setDoc(doc(db, 'homework_assignments', hw.id), hw);
-            items.push(hw);
+        const tasks: any[] = [];
+        const processDoc = async (docSnap: any) => {
+          const taskData = { id: docSnap.id, topic: docSnap.data().title, subject: docSnap.data().subject, dueDate: docSnap.data().dueDate, ...docSnap.data() };
+          const subDocRef = doc(db, 'schools', profile.schoolId, 'assignments', docSnap.id, 'submissions', profile.uid);
+          const subDoc = await getDoc(subDocRef);
+          if (subDoc.exists()) {
+            taskData.status = 'completed';
+            taskData.grade = subDoc.data().score;
+          } else {
+            taskData.status = 'pending';
           }
-        }
+          if (!tasks.some((t: any) => t.id === taskData.id)) {
+            tasks.push(taskData);
+          }
+        };
 
-        const uniqueItems = Array.from(new Map(items.map(item => [item.topic, item])).values());
-        setAssignments(uniqueItems);
+        await Promise.all([
+          ...classSnap.docs.map(processDoc),
+          ...targetedSnap.docs.map(processDoc)
+        ]);
+        
+        tasks.sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        setAssignments(tasks);
       } catch (err) {
         console.error(err);
       } finally {

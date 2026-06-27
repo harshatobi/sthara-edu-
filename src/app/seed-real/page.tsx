@@ -15,20 +15,20 @@ const USERS = [
     role: 'student',
     name: `Test Student ${i + 1}`,
     customStudentId: `STU00${i + 1}`,
-    studentClass: 'Class 10'
+    studentClass: '10A'
   })),
   {
     email: 'testteacher1@gmail.com',
     role: 'teacher',
     name: 'Moses',
-    teacherClass: 'Class 10',
+    teacherClass: '10A',
     subject: 'Mathematics'
   },
   {
     email: 'testteacher2@gmail.com',
     role: 'teacher',
     name: 'Joshua',
-    teacherClass: 'Class 10',
+    teacherClass: '10A',
     subject: 'Social Studies'
   }
 ];
@@ -56,7 +56,7 @@ export default function SeedRealPage() {
           uid = cred.user.uid;
         } catch (e: any) {
           if (e.code === 'auth/email-already-in-use') {
-            setStatus(`Error: ${u.email} already exists. Use the green "Update Names" button below to fix names for existing users.`);
+            setStatus(`Error: ${u.email} already exists. Use the buttons below to fix names or classes for existing users.`);
             return;
           } else {
             throw e;
@@ -84,35 +84,69 @@ export default function SeedRealPage() {
         await setDoc(doc(db, 'users', uid), userData);
       }
       
-      setStatus('DONE! 10 students and 2 teachers created successfully.');
+      setStatus('DONE! 10 students (Class 10A) and 2 teachers created successfully.');
     } catch (error: any) {
       console.error(error);
       setStatus(`Error: ${error.message}`);
     }
   };
 
-  // Updates names of existing users in Firestore by querying by email
+  // Updates names for existing users
   const updateNames = async () => {
     setStatus('Updating names...');
     try {
-      const namesToUpdate = [
+      const updates = [
         { email: 'testteacher1@gmail.com', name: 'Moses' },
         { email: 'testteacher2@gmail.com', name: 'Joshua' },
       ];
-
-      for (const u of namesToUpdate) {
-        setStatus(`Updating ${u.email} → "${u.name}"...`);
+      for (const u of updates) {
+        setStatus(`Updating name: ${u.email} → "${u.name}"...`);
         const q = query(collection(db, 'users'), where('email', '==', u.email));
         const snap = await getDocs(q);
         if (!snap.empty) {
           await updateDoc(snap.docs[0].ref, { name: u.name });
         } else {
-          setStatus(`Could not find ${u.email} in Firestore. Create users first.`);
+          setStatus(`Could not find ${u.email}. Create users first.`);
           return;
         }
       }
+      setStatus('DONE! Names updated: Moses (Maths) and Joshua (Social).');
+    } catch (error: any) {
+      console.error(error);
+      setStatus(`Error: ${error.message}`);
+    }
+  };
 
-      setStatus('DONE! Names updated. Moses (Maths) and Joshua (Social) are ready. Log out and log back in to see the changes.');
+  // Updates class assignment for all existing users to 10A
+  const updateClasses = async () => {
+    setStatus('Updating class assignments to 10A...');
+    try {
+      // Update all 10 students
+      for (let i = 1; i <= 10; i++) {
+        const email = `teststu${i}@gmail.com`;
+        setStatus(`Updating class for ${email}...`);
+        const q = query(collection(db, 'users'), where('email', '==', email));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          await updateDoc(snap.docs[0].ref, { studentClass: '10A' });
+        }
+      }
+
+      // Update both teachers
+      const teachers = [
+        { email: 'testteacher1@gmail.com', subject: 'Mathematics' },
+        { email: 'testteacher2@gmail.com', subject: 'Social Studies' },
+      ];
+      for (const t of teachers) {
+        setStatus(`Updating class for ${t.email}...`);
+        const q = query(collection(db, 'users'), where('email', '==', t.email));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          await updateDoc(snap.docs[0].ref, { teacherClass: '10A', subject: t.subject });
+        }
+      }
+
+      setStatus('DONE! All students and teachers are now assigned to Class 10A. Log out and log back in to see the changes.');
     } catch (error: any) {
       console.error(error);
       setStatus(`Error: ${error.message}`);
@@ -125,6 +159,7 @@ export default function SeedRealPage() {
         <h1 className="text-3xl font-bold mb-4">Create Test Batch Data</h1>
         <p className="text-white/60 mb-8 text-sm">
           School Code: <strong>{SCHOOL_CODE}</strong>
+          <br />Class: <strong>10A</strong>
           <br />10 Students: teststu1@gmail.com – teststu10@gmail.com
           <br />Teacher 1: testteacher1@gmail.com — <strong>Moses</strong> (Maths)
           <br />Teacher 2: testteacher2@gmail.com — <strong>Joshua</strong> (Social)
@@ -142,7 +177,14 @@ export default function SeedRealPage() {
           onClick={updateNames}
           className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-colors mb-4"
         >
-          ✏️ Update Names (for existing users)
+          ✏️ Update Names (Moses & Joshua)
+        </button>
+
+        <button 
+          onClick={updateClasses}
+          className="w-full bg-purple-600 text-white py-4 rounded-xl font-bold hover:bg-purple-700 transition-colors mb-4"
+        >
+          🏫 Update Classes → 10A (for existing users)
         </button>
         
         <div className="mt-4 p-4 bg-black/20 rounded-xl text-sm font-mono min-h-[60px] flex items-center justify-center text-center">

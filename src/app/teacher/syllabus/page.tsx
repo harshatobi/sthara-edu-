@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, BookOpen, Calendar, Plus, MoreVertical, X, BrainCircuit, Loader2, Sparkles, Target, FileText, Lightbulb, PlayCircle, FileCheck, Trash2, CheckSquare, Send } from 'lucide-react';
 import Link from 'next/link';
 import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs, doc, setDoc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
 
 // Intelligent Mock data generation for AI paths based on Topic
 const generateMockAIPath = (topic: string) => ({
@@ -74,11 +74,15 @@ export default function TeacherSyllabus() {
       return;
     }
 
-    // Load syllabus from Firestore
-    if (profile?.schoolId) {
+    // Load only THIS teacher's syllabus entries
+    if (profile?.schoolId && profile?.uid) {
       const fetchSyllabus = async () => {
         try {
-          const snap = await getDocs(collection(db, 'schools', profile.schoolId, 'syllabus'));
+          const q = query(
+            collection(db, 'schools', profile.schoolId, 'syllabus'),
+            where('teacherId', '==', profile.uid)
+          );
+          const snap = await getDocs(q);
           const loaded: { [key: string]: any[] } = {
             'August': [], 'September': [], 'October': [], 'November': [], 'December': []
           };
@@ -158,6 +162,7 @@ export default function TeacherSyllabus() {
     await simulateAIGeneration(async () => {
       const newId = Date.now().toString();
       const newMod = {
+        teacherId: profile.uid,
         month: targetMonth,
         topic: newTopic,
         weeks: newWeeks || 'Week 1',
@@ -187,6 +192,7 @@ export default function TeacherSyllabus() {
       const derivedTopic = quickAddPrompt.length > 30 ? quickAddPrompt.substring(0, 30) + '...' : quickAddPrompt;
       const newId = Date.now().toString();
       const newMod = {
+        teacherId: profile.uid,
         month: quickAddMonth,
         topic: derivedTopic,
         weeks: 'TBD',

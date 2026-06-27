@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { db, auth } from '@/lib/firebase/config';
-import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 const SCHOOL_ID = 'sch-test-batch';
 const SCHOOL_CODE = 'TEST100';
@@ -20,7 +20,7 @@ const USERS = [
   {
     email: 'testteacher1@gmail.com',
     role: 'teacher',
-    name: 'Maths Teacher',
+    name: 'Moses',
     teacherClass: 'Class 10',
     subject: 'Mathematics'
   },
@@ -48,22 +48,18 @@ export default function SeedRealPage() {
       });
 
       for (const u of USERS) {
-        setStatus(`Creating ${u.role} ${u.email}...`);
+        setStatus(`Creating ${u.role}: ${u.email}...`);
         
         let uid;
         try {
-          // Attempt to create user
           const cred = await createUserWithEmailAndPassword(auth, u.email, PASSWORD);
           uid = cred.user.uid;
         } catch (e: any) {
           if (e.code === 'auth/email-already-in-use') {
-             // If already exists, we will query Firestore for this user to update them instead of failing, 
-             // but Auth client SDK doesn't let us get the UID easily if they already exist unless we sign in.
-             // Since we know the password, we could sign in, but it's better to just error clearly for testing.
-             setStatus(`Error: User ${u.email} already exists in Auth. You must delete them in Firebase Auth first if you want to recreate them.`);
-             return;
+            setStatus(`Error: ${u.email} already exists. Use the green "Update Names" button below to fix names for existing users.`);
+            return;
           } else {
-             throw e;
+            throw e;
           }
         }
         
@@ -76,19 +72,47 @@ export default function SeedRealPage() {
         };
         
         if (u.role === 'student') {
-          userData.studentClass = u.studentClass;
-          userData.customStudentId = u.customStudentId;
+          userData.studentClass = (u as any).studentClass;
+          userData.customStudentId = (u as any).customStudentId;
         }
         
         if (u.role === 'teacher') {
-          userData.teacherClass = u.teacherClass;
-          userData.subject = u.subject;
+          userData.teacherClass = (u as any).teacherClass;
+          userData.subject = (u as any).subject;
         }
         
         await setDoc(doc(db, 'users', uid), userData);
       }
       
-      setStatus('DONE! Your 10 test students and 2 test teachers have been successfully created.');
+      setStatus('DONE! 10 students and 2 teachers created successfully.');
+    } catch (error: any) {
+      console.error(error);
+      setStatus(`Error: ${error.message}`);
+    }
+  };
+
+  // Updates names of existing users in Firestore by querying by email
+  const updateNames = async () => {
+    setStatus('Updating names...');
+    try {
+      const namesToUpdate = [
+        { email: 'testteacher1@gmail.com', name: 'Moses' },
+        { email: 'testteacher2@gmail.com', name: 'Social Teacher' },
+      ];
+
+      for (const u of namesToUpdate) {
+        setStatus(`Updating ${u.email} → "${u.name}"...`);
+        const q = query(collection(db, 'users'), where('email', '==', u.email));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          await updateDoc(snap.docs[0].ref, { name: u.name });
+        } else {
+          setStatus(`Could not find ${u.email} in Firestore. Create users first.`);
+          return;
+        }
+      }
+
+      setStatus('DONE! Names updated. Moses is now the Maths teacher. Log out and log back in to see the change.');
     } catch (error: any) {
       console.error(error);
       setStatus(`Error: ${error.message}`);
@@ -100,11 +124,11 @@ export default function SeedRealPage() {
       <div className="bg-white/10 p-8 rounded-2xl w-full max-w-lg text-center">
         <h1 className="text-3xl font-bold mb-4">Create Test Batch Data</h1>
         <p className="text-white/60 mb-8 text-sm">
-          This will create:
-          <br/>School Code: {SCHOOL_CODE}
-          <br/>10 Students: teststu1@gmail.com - teststu10@gmail.com (Class 10)
-          <br/>2 Teachers: testteacher1@gmail.com (Math) & testteacher2@gmail.com (Social)
-          <br/>Password: {PASSWORD}
+          School Code: <strong>{SCHOOL_CODE}</strong>
+          <br />10 Students: teststu1@gmail.com – teststu10@gmail.com
+          <br />Teacher 1: testteacher1@gmail.com — <strong>Moses</strong> (Maths)
+          <br />Teacher 2: testteacher2@gmail.com (Social)
+          <br />Password for all: <strong>{PASSWORD}</strong>
         </p>
         
         <button 
@@ -113,8 +137,15 @@ export default function SeedRealPage() {
         >
           Create Test Users Now
         </button>
+
+        <button 
+          onClick={updateNames}
+          className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-colors mb-4"
+        >
+          ✏️ Update Names (for existing users)
+        </button>
         
-        <div className="mt-4 p-4 bg-black/20 rounded-xl text-sm font-mono min-h-[60px] flex items-center justify-center">
+        <div className="mt-4 p-4 bg-black/20 rounded-xl text-sm font-mono min-h-[60px] flex items-center justify-center text-center">
           {status}
         </div>
       </div>

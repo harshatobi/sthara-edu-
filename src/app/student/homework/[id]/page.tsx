@@ -34,11 +34,18 @@ export default function HomeworkAssignment() {
   }, [assignment]);
 
   useEffect(() => {
+    if (!profile?.schoolId) return;
     const fetchAssignment = async () => {
       try {
-        const d = await getDoc(doc(db, 'homework_assignments', id));
+        // Assignments are stored under schools/{schoolId}/assignments/{id}
+        const d = await getDoc(doc(db, 'schools', profile.schoolId, 'assignments', id));
         if (d.exists()) {
-          setAssignment({ id: d.id, ...d.data() });
+          const data = d.data();
+          setAssignment({ 
+            id: d.id, 
+            topic: data.title || data.topic,
+            ...data 
+          });
         }
       } catch (err) {
         console.error(err);
@@ -47,7 +54,7 @@ export default function HomeworkAssignment() {
       }
     };
     fetchAssignment();
-  }, [id]);
+  }, [id, profile?.schoolId]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -80,9 +87,12 @@ export default function HomeworkAssignment() {
 
         const data = await res.json();
         if (data.success) {
-          // Re-fetch assignment
-          const d = await getDoc(doc(db, 'homework_assignments', id));
-          if (d.exists()) setAssignment({ id: d.id, ...d.data() });
+          // Re-fetch assignment from correct path
+          const d = await getDoc(doc(db, 'schools', profile.schoolId!, 'assignments', id));
+          if (d.exists()) {
+            const ddata = d.data();
+            setAssignment({ id: d.id, topic: ddata.title || ddata.topic, ...ddata });
+          }
         } else {
           alert('Grading failed: ' + data.error);
         }
@@ -175,6 +185,14 @@ export default function HomeworkAssignment() {
               {assignment.topic}
             </h1>
 
+            {/* Description from Teacher */}
+            {assignment.description && (
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-6">
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">Assignment Instructions</p>
+                <p className="text-[#002147]/80 font-medium leading-relaxed text-base whitespace-pre-line">{assignment.description}</p>
+              </div>
+            )}
+
             {/* Questions List */}
             <div className="space-y-6 relative">
               <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gray-100"></div>
@@ -188,7 +206,13 @@ export default function HomeworkAssignment() {
                   </div>
                 </div>
               ))}
+
+              {/* Fallback if no questions and no description */}
+              {(!assignment.questions || assignment.questions.length === 0) && !assignment.description && (
+                <p className="text-[#002147]/50 font-medium italic text-center py-4">No specific questions — submit your work as an image below.</p>
+              )}
             </div>
+
           </div>
         </div>
 

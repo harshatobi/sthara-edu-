@@ -111,21 +111,33 @@ export default function StudentAITutor() {
         ...doc.data()
       })) as ChatMessage[];
 
-      // Seed initial greeting if completely empty
       if (fetchedMessages.length === 0 && !isTyping) {
-        try {
-          await addDoc(messagesRef, {
-            role: 'ai',
-            text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
-            createdAt: serverTimestamp()
-          });
-        } catch (e) {
-          console.error("Failed to seed initial message", e);
-        }
+        // Show chat immediately, try to seed greeting in background
+        setIsDBReady(true);
+        setMessages([{
+          id: 'welcome',
+          role: 'model',
+          text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
+        }]);
+        // Try to persist greeting (may fail if Firestore rules restrict it)
+        addDoc(messagesRef, {
+          role: 'ai',
+          text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
+          createdAt: serverTimestamp()
+        }).catch(e => console.warn("Could not persist greeting:", e));
       } else {
         setMessages(fetchedMessages);
         setIsDBReady(true);
       }
+    }, (err) => {
+      // If Firestore permission denied, still show the chat with a local welcome
+      console.warn('Firestore chat read error:', err);
+      setMessages([{
+        id: 'welcome',
+        role: 'model',
+        text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today?",
+      }]);
+      setIsDBReady(true);
     });
 
     return () => unsubscribe();

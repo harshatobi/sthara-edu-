@@ -56,9 +56,15 @@ RULES:
       }
     }
 
+    // Prepend the system instruction to the very first user message 
+    // to match the Teacher Assistant API pattern and avoid endpoint restrictions
+    const firstUserMsgIndex = mergedContents.findIndex(c => c.role === 'user');
+    if (firstUserMsgIndex !== -1) {
+      mergedContents[firstUserMsgIndex].parts[0].text = systemInstruction + '\n\n' + mergedContents[firstUserMsgIndex].parts[0].text;
+    }
+
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-pro',
-      systemInstruction: systemInstruction,
     });
 
     // Primary Call: Answer Student

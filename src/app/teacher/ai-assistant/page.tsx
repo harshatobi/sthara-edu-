@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 const QuizWorksheet = ({ data }: { data: any }) => {
   return (
@@ -111,9 +112,13 @@ export default function TeacherAIAssistant() {
     await new Promise(r => setTimeout(r, 1000));
 
     try {
+      const authToken = await getAuthToken();
       const response = await fetch('/api/teacher/assistant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({ topic, gradeLevel, tone, outputFormat })
       });
 

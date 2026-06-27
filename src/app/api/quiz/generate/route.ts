@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const token = await verifyApiToken(request);
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { topic, subject } = await request.json();
 

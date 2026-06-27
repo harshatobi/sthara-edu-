@@ -45,11 +45,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      // Clear the session cookie so middleware redirects to login
+      document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
       setProfile(null);
       setUser(null);
       router.push('/login');
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error('Error signing out:', error);
     }
   };
 
@@ -57,6 +59,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
+        // Set a lightweight session cookie for the Next.js middleware
+        // (middleware cannot access Firebase IndexedDB, so we use a cookie)
+        const token = await firebaseUser.getIdToken();
+        document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Strict`;
         try {
           // 1. Check if user is a global Super Admin
           const superAdminRef = doc(db, 'superadmins', firebaseUser.uid);
@@ -116,6 +122,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setProfile(null);
         }
       } else {
+        // Clear session cookie on logout
+        document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
         setProfile(null);
       }
       setLoading(false);

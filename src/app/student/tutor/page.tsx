@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 import { Sparkles, ArrowLeft, Send, User, AlertTriangle, PlayCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
@@ -27,31 +28,25 @@ function YouTubeSearchWidget({ query }: { query: string }) {
 
   useEffect(() => {
     let isMounted = true;
-    fetch(`/api/youtube?q=${encodeURIComponent(query)}`)
-      .then(async res => {
-        if (!res.ok) {
-          if (isMounted) setError(true);
-          return null;
-        }
-        return res.json();
+    getAuthToken().then(authToken => {
+      fetch(`/api/youtube?q=${encodeURIComponent(query)}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
       })
-      .then(data => {
-        if (!data) return;
-        if (isMounted) {
+        .then(async res => {
+          if (!res.ok) { if (isMounted) setError(true); return null; }
+          return res.json();
+        })
+        .then(data => {
+          if (!data || !isMounted) return;
           if (data.videos) setVideos(data.videos);
           else setError(true);
-        }
-      })
-      .catch(err => {
-        console.error("YouTube search error:", err);
-        if (isMounted) setError(true);
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-      
+        })
+        .catch(() => { if (isMounted) setError(true); })
+        .finally(() => { if (isMounted) setLoading(false); });
+    });
     return () => { isMounted = false; };
   }, [query]);
+
 
   if (loading) return <div className="flex space-x-2 my-4 items-center text-sm text-[#002147]/60"><Loader2 className="w-4 h-4 animate-spin" /><span>Searching for videos about "{query}"...</span></div>;
   if (error || videos.length === 0) return <div className="flex space-x-2 my-4 items-center text-sm text-red-500"><AlertTriangle className="w-4 h-4" /><span>Could not load videos for "{query}".</span></div>;
@@ -169,10 +164,14 @@ export default function StudentAITutor() {
       // 2. Build context payload (cap to last 30 messages to save API limits)
       const contextMessages = [...messages.slice(-30), { role: 'user', text: userMsg }];
       
-      // 3. Call AI Backend
+      // 3. Call AI Backend with auth token
+      const authToken = await getAuthToken();
       const res = await fetch('/api/tutor', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({
           messages: contextMessages.map(m => ({ sender: m.role, text: m.text })),
           studentId: profile.uid,

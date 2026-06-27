@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { db } from '@/lib/firebase/config';
+import { db, storage } from '@/lib/firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 import {
   Upload, CheckCircle, ArrowLeft, Loader2, FileText,
   Camera, BookOpen, Clock, ChevronLeft, AlertTriangle,
@@ -104,15 +106,20 @@ export default function HomeworkAssignment() {
 
   const handleSubmit = async () => {
     if (!file || !assignment || !profile) return;
-    if (file.size > 4 * 1024 * 1024) { alert('File too large. Max 4MB.'); return; }
+    if (file.size > 8 * 1024 * 1024) { alert('File too large. Max 8MB.'); return; }
 
     setUploading(true);
     setProgress(0);
     setStageIdx(0);
 
     try {
-      // Read file as base64
+      // Step 1: Upload image to Firebase Storage
       animateToStage(0);
+      const storageRef = ref(storage, `submissions/${profile.uid}/${id}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const imageUrl = await getDownloadURL(storageRef);
+
+      // Step 2: Read file as base64 for Gemini Vision API
       const base64String = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
@@ -122,9 +129,14 @@ export default function HomeworkAssignment() {
 
       animateToStage(1);
 
+      // Step 3: Call grading API with auth token
+      const authToken = await getAuthToken();
       const res = await fetch('/api/grade-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({
           imageBase64: base64String,
           mimeType: file.type,
@@ -144,7 +156,7 @@ export default function HomeworkAssignment() {
 
       const gradeStr = data.grade || `${data.totalScore}/${data.maxTotalScore}`;
 
-      // Write to submissions subcollection — this is what the teacher queue reads
+      // Step 4: Write to Firestore with Storage URL (not base64)
       try {
         await setDoc(
           doc(db, 'schools', profile.schoolId!, 'assignments', id, 'submissions', profile.uid),
@@ -157,6 +169,9 @@ export default function HomeworkAssignment() {
             grade: gradeStr,
             totalScore: data.totalScore,
             maxTotalScore: data.maxTotalScore,
+            imageUrl,          // ✅ Storage URL — not base64
+            score: data.totalScore,
+            maxScore: data.maxTotalScore,
             aiResult: {
               questions: data.questions,
               totalScore: data.totalScore,
@@ -170,7 +185,7 @@ export default function HomeworkAssignment() {
           }
         );
       } catch (fsErr) {
-        console.warn('Firestore submission write failed (non-critical):', fsErr);
+        console.warn('Firestore submission write failed:', fsErr);
       }
 
       animateToStage(4);
@@ -185,6 +200,7 @@ export default function HomeworkAssignment() {
         summary: data.summary,
         weaknessTags: data.weaknessTags || [],
         recommendedVideos: data.recommendedVideos || [],
+        imageUrl,
       });
       setAssignment((prev: any) => ({ ...prev, status: 'completed', grade: gradeStr }));
 

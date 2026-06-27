@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 // Removed 'edge' runtime — edge has payload size limits that break base64 image uploads
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const token = await verifyApiToken(request);
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     if (!GEMINI_API_KEY) {
       return NextResponse.json({ error: 'Gemini API Key is not configured on server.' }, { status: 500 });

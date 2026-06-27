@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import ytSearch from 'yt-search';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 // Simple in-memory cache to prevent YouTube rate limits on chat re-renders
 const searchCache = new Map<string, any>();
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const token = await verifyApiToken(request);
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q');
 

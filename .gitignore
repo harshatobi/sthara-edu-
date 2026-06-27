@@ -49,3 +49,7 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+test-gemini.js
+models.txt
+

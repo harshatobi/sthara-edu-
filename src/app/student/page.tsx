@@ -11,6 +11,7 @@ import RecentScoresModal from './RecentScoresModal';
 import { db, storage } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, getDoc, orderBy, setDoc, doc, serverTimestamp, arrayUnion, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 interface Assignment {
   id: string;
@@ -83,60 +84,33 @@ export default function StudentDashboard() {
       }
 
       if (attachmentFile) {
-        setSubmitStatus('Processing document locally...');
+        setSubmitStatus('Uploading to secure storage...');
         
-        // Compress image using canvas before converting to base64, unless it's a PDF
+        // Upload to Firebase Storage — avoids Firestore 1MB document limit
+        const storageRef = ref(storage, `submissions/${profile.uid}/${selectedTask.id}/${Date.now()}_${attachmentFile.name}`);
+        await uploadBytes(storageRef, attachmentFile);
+        const imageUrl = await getDownloadURL(storageRef);
+        submissionData.imageUrl = imageUrl;   // ✅ Storage URL only — no base64
+
+        // Read as base64 only for sending to Gemini API
         const base64Data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          reader.onloadend = () => {
-            if (attachmentFile.type === 'application/pdf') {
-              resolve(reader.result as string);
-              return;
-            }
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const MAX_WIDTH = 1000;
-              const MAX_HEIGHT = 1000;
-              let width = img.width;
-              let height = img.height;
-
-              if (width > height) {
-                if (width > MAX_WIDTH) {
-                  height *= MAX_WIDTH / width;
-                  width = MAX_WIDTH;
-                }
-              } else {
-                if (height > MAX_HEIGHT) {
-                  width *= MAX_HEIGHT / height;
-                  height = MAX_HEIGHT;
-                }
-              }
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx?.drawImage(img, 0, 0, width, height);
-              const dataUrl = canvas.toDataURL(attachmentFile.type, 0.7); // 70% quality
-              resolve(dataUrl);
-            };
-            img.onerror = reject;
-            img.src = reader.result as string;
-          };
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
           reader.onerror = reject;
           reader.readAsDataURL(attachmentFile);
         });
-
-        // Store compressed image URL (data URI) in the database so the teacher can view it
-        submissionData.attachmentUrl = base64Data;
-        const b64 = base64Data.split(',')[1];
         
         setSubmitStatus('Diagnostic Engine is scanning your work...');
         try {
+          const authToken = await getAuthToken();
           const response = await fetch('/api/grade-image', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`,
+            },
             body: JSON.stringify({ 
-              imageBase64: b64,
+              imageBase64: base64Data,
               mimeType: attachmentFile.type,
               assignmentTitle: selectedTask.title,
               assignmentDescription: selectedTask.description,
@@ -149,12 +123,9 @@ export default function StudentDashboard() {
             submissionData.aiGraded = true;
             submissionData.aiResult = aiData;
             
-            // As per the rubric, calculate the score deterministically to avoid AI hallucination
             let calcTotalScore = 0;
             if (aiData.questions && Array.isArray(aiData.questions)) {
-              aiData.questions.forEach((q: any) => {
-                calcTotalScore += (q.awardedScore || 0);
-              });
+              aiData.questions.forEach((q: any) => { calcTotalScore += (q.awardedScore || 0); });
             } else {
               calcTotalScore = aiData.totalScore || 0;
             }
@@ -167,30 +138,31 @@ export default function StudentDashboard() {
             if (aiData.weaknessTags && aiData.weaknessTags.length > 0) {
               const userRef = doc(db, 'users', profile.uid);
               try {
-                await updateDoc(userRef, {
-                  historicalWeaknesses: arrayUnion(...aiData.weaknessTags)
-                });
+                await updateDoc(userRef, { historicalWeaknesses: arrayUnion(...aiData.weaknessTags) });
               } catch (updateErr) {
-                console.error("Failed to update user weaknesses:", updateErr);
+                console.error('Failed to update user weaknesses:', updateErr);
               }
             }
           } else {
             submissionData.aiGraded = false;
-            const errBody = await response.json().catch(()=>({}));
+            const errBody = await response.json().catch(() => ({}));
             alert('Evaluation failed: ' + (errBody.error || 'Unknown error'));
           }
         } catch (apiErr) {
-          console.error("Auto-grade failed:", apiErr);
+          console.error('Auto-grade failed:', apiErr);
           submissionData.aiGraded = false;
-          alert('Evaluation failed due to network error.');
         }
       } else if (selectedTask.questions && selectedTask.questions.length > 0) {
-        // AI Evaluation for multiple choice without rough work
+        // AI Evaluation for multiple choice
         setSubmitStatus('Diagnostic Engine is analyzing your answers...');
         try {
+          const authToken = await getAuthToken();
           const response = await fetch('/api/quiz/grade', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`,
+            },
             body: JSON.stringify({ 
               title: selectedTask.title,
               description: selectedTask.description,
@@ -207,16 +179,14 @@ export default function StudentDashboard() {
             if (aiData.weaknessTags && aiData.weaknessTags.length > 0) {
               const userRef = doc(db, 'users', profile.uid);
               try {
-                await updateDoc(userRef, {
-                  historicalWeaknesses: arrayUnion(...aiData.weaknessTags)
-                });
+                await updateDoc(userRef, { historicalWeaknesses: arrayUnion(...aiData.weaknessTags) });
               } catch (updateErr) {
-                console.error("Failed to update user weaknesses:", updateErr);
+                console.error('Failed to update user weaknesses:', updateErr);
               }
             }
           }
         } catch (apiErr) {
-          console.error("Quiz evaluation failed:", apiErr);
+          console.error('Quiz evaluation failed:', apiErr);
         }
       }
 

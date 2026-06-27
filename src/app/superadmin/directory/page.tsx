@@ -53,7 +53,7 @@ export default function GlobalDirectoryPage() {
           data.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
           data.schoolId?.toLowerCase().includes(searchQuery.toLowerCase())
         ) {
-          results.push({ id: doc.id, ...data });
+          results.push({ ...data, id: doc.id });
         }
       });
       setUsers(results);

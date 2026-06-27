@@ -16,14 +16,16 @@ export default function StudentHomework() {
   useEffect(() => {
     const fetchHomework = async () => {
       if (!profile?.schoolId || !profile?.studentClass || !profile?.uid) return;
+      const schoolId = profile.schoolId;
+      const uid = profile.uid;
       try {
         const classQuery = query(
-          collection(db, 'schools', profile.schoolId, 'assignments'),
+          collection(db, 'schools', schoolId, 'assignments'),
           where('class', '==', profile.studentClass)
         );
         const targetedQuery = query(
-          collection(db, 'schools', profile.schoolId, 'assignments'),
-          where('targetStudentId', '==', profile.uid)
+          collection(db, 'schools', schoolId, 'assignments'),
+          where('targetStudentId', '==', uid)
         );
         
         const [classSnap, targetedSnap] = await Promise.all([
@@ -34,7 +36,7 @@ export default function StudentHomework() {
         const tasks: any[] = [];
         const processDoc = async (docSnap: any) => {
           const taskData = { id: docSnap.id, topic: docSnap.data().title || docSnap.data().topic, subject: docSnap.data().subject, dueDate: docSnap.data().dueDate, ...docSnap.data() };
-          const subDocRef = doc(db, 'schools', profile.schoolId, 'assignments', docSnap.id, 'submissions', profile.uid);
+          const subDocRef = doc(db, 'schools', schoolId, 'assignments', docSnap.id, 'submissions', uid);
           const subDoc = await getDoc(subDocRef);
           if (subDoc.exists()) {
             const subData = subDoc.data();

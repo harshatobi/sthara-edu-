@@ -53,10 +53,12 @@ export default function GradingGalleryPage() {
   }, [profile?.schoolId]);
 
   const fetchQueue = async () => {
+    const schoolId = profile?.schoolId;
+    if (!schoolId) return;
     setFetching(true);
     try {
       const assignmentsSnap = await getDocs(
-        collection(db, 'schools', profile!.schoolId, 'assignments')
+        collection(db, 'schools', schoolId, 'assignments')
       );
 
       const pending: Submission[] = [];
@@ -64,7 +66,7 @@ export default function GradingGalleryPage() {
       for (const aDoc of assignmentsSnap.docs) {
         const aData = aDoc.data();
         const subsSnap = await getDocs(
-          collection(db, 'schools', profile!.schoolId, 'assignments', aDoc.id, 'submissions')
+          collection(db, 'schools', schoolId, 'assignments', aDoc.id, 'submissions')
         );
 
         subsSnap.forEach(sDoc => {
@@ -115,6 +117,7 @@ export default function GradingGalleryPage() {
 
   const handleApprove = async () => {
     if (!active || !profile?.schoolId) return;
+    const schoolId = profile.schoolId;
     setSaving(true);
     try {
       const finalScore = overrideScore !== ''
@@ -122,7 +125,7 @@ export default function GradingGalleryPage() {
         : active.totalScore;
 
       const subRef = doc(
-        db, 'schools', profile.schoolId,
+        db, 'schools', schoolId,
         'assignments', active.assignmentId,
         'submissions', active.id
       );

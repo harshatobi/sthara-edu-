@@ -13,6 +13,8 @@ export interface UserProfile {
   schoolId?: string;
   name?: string;
   studentClass?: string;
+  teacherClass?: string;
+  subjectsTaught?: string[];
   customStudentId?: string;
   assignments?: { class: string; subject: string }[];
   linkedStudents?: string[];
@@ -96,7 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                  role: data.role as any, 
                  schoolId: data.schoolId, 
                  name: data.name,
-                 studentClass: data.studentClass || data.teacherClass,
+                 studentClass: data.studentClass,
+                 teacherClass: data.teacherClass,
+                 subjectsTaught: data.subjectsTaught,
                  customStudentId: data.customStudentId,
                  assignments: data.assignments,
                  linkedStudents: data.linkedStudents

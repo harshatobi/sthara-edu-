@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         system: systemPrompt,
         prompt: prompt,
       });
-      return result.toDataStreamResponse();
+      return result.toTextStreamResponse();
     } else {
       const result = await generateText({
         model,

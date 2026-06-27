@@ -41,12 +41,13 @@ export default function TeacherHeatmap() {
   useEffect(() => {
     const fetchHeatmapData = async () => {
       if (!profile?.schoolId || !selectedClass) return;
+      const schoolId = profile.schoolId;
       setIsLoadingData(true);
 
       try {
         const studentsSnap = await getDocs(query(
           collection(db, 'users'),
-          where('schoolId', '==', profile.schoolId),
+          where('schoolId', '==', schoolId),
           where('role', '==', 'student'),
           where('studentClass', '==', selectedClass)
         ));
@@ -55,7 +56,7 @@ export default function TeacherHeatmap() {
         studentsSnap.forEach(s => students.push({ id: s.id, ...s.data(), grades: {} }));
 
         const assignmentsSnap = await getDocs(query(
-          collection(db, 'schools', profile.schoolId, 'assignments'),
+          collection(db, 'schools', schoolId, 'assignments'),
           where('class', '==', selectedClass)
         ));
 
@@ -65,7 +66,7 @@ export default function TeacherHeatmap() {
         setAssignmentsList(assignments);
 
         const submissionPromises = assignments.map(async (task) => {
-          const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', task.id, 'submissions'));
+          const subsSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments', task.id, 'submissions'));
           subsSnap.forEach(sub => {
             const studentId = sub.id;
             const student = students.find(s => s.id === studentId);
@@ -130,11 +131,12 @@ export default function TeacherHeatmap() {
 
   const handleSeedData = async () => {
     if (!profile?.schoolId || !selectedClass) return;
+    const schoolId = profile.schoolId;
     setIsSeeding(true);
     try {
       const studentsSnap = await getDocs(query(
         collection(db, 'users'),
-        where('schoolId', '==', profile.schoolId),
+        where('schoolId', '==', schoolId),
         where('role', '==', 'student'),
         where('studentClass', '==', selectedClass)
       ));
@@ -142,20 +144,20 @@ export default function TeacherHeatmap() {
       const students = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       
       if (students.length === 0) {
-        alert("Failed to seed data: No students found in this class.");
+        alert('Failed to seed data: No students found in this class.');
         setIsSeeding(false);
         return;
       }
 
       const fakeAssignments = [
-        { title: "Algebra Quiz 1", type: "Quiz", subject: "Math" },
-        { title: "Essay Draft", type: "Homework", subject: "English" },
-        { title: "Midterm Exam", type: "Exam", subject: "Science" },
-        { title: "History Project", type: "Project", subject: "History" },
-        { title: "Lab Report", type: "Homework", subject: "Science" },
+        { title: 'Algebra Quiz 1', type: 'Quiz', subject: 'Math' },
+        { title: 'Essay Draft', type: 'Homework', subject: 'English' },
+        { title: 'Midterm Exam', type: 'Exam', subject: 'Science' },
+        { title: 'History Project', type: 'Project', subject: 'History' },
+        { title: 'Lab Report', type: 'Homework', subject: 'Science' },
       ];
 
-      const assignmentRefs = [];
+      const assignmentRefs: string[] = [];
 
       for (let i = 0; i < fakeAssignments.length; i++) {
         const a = fakeAssignments[i];
@@ -163,14 +165,14 @@ export default function TeacherHeatmap() {
         d.setDate(d.getDate() - (10 - i * 2));
         const dueDate = d.toISOString().split('T')[0];
 
-        const assignmentRef = await addDoc(collection(db, 'schools', profile.schoolId, 'assignments'), {
+        const assignmentRef = await addDoc(collection(db, 'schools', schoolId, 'assignments'), {
           title: a.title,
           type: a.type,
           subject: a.subject,
           class: selectedClass,
           description: `Auto-generated demo assignment for ${selectedClass}`,
-          teacherId: profile.uid || "demo-teacher",
-          teacherName: profile.name || "Demo Teacher",
+          teacherId: profile.uid || 'demo-teacher',
+          teacherName: profile.name || 'Demo Teacher',
           dueDate: dueDate,
           createdAt: serverTimestamp()
         });
@@ -186,22 +188,25 @@ export default function TeacherHeatmap() {
           if (grade > 100) grade = 100;
           if (grade < 30) grade = 30;
 
-          await setDoc(doc(db, 'schools', profile.schoolId, 'assignments', assignmentId, 'submissions', student.id), {
+          await setDoc(doc(db, 'schools', schoolId, 'assignments', assignmentId, 'submissions', student.id), {
             studentId: student.id,
-            studentName: (student as any).name || "Unknown Student",
+            studentName: (student as any).name || 'Unknown Student',
             studentClass: (student as any).studentClass || selectedClass,
-            text: "Demo submission text.",
+            text: 'Demo submission text.',
             grade: grade,
+            teacherApproved: true,
+            score: grade,
+            maxScore: 100,
             gradedAt: serverTimestamp(),
             submittedAt: serverTimestamp()
           });
         }
       }
 
-      window.location.reload(); 
+      window.location.reload();
     } catch (err) {
       console.error(err);
-      alert("An error occurred while seeding data.");
+      alert('An error occurred while seeding data.');
     } finally {
       setIsSeeding(false);
     }

@@ -15,13 +15,14 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 interface Assignment {
   id: string;
   title: string;
+  topic?: string;  // some docs use topic as alias for title
   type: string;
   dueDate: string;
   description: string;
   subject: string;
   teacherName: string;
-  questions?: any[]; // For AI generated quizzes
-  submission?: any; // To hold existing submission if completed
+  questions?: any[];
+  submission?: any;
 }
 
 export default function StudentDashboard() {
@@ -252,17 +253,19 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (!profile?.schoolId || !profile?.studentClass) return;
+    const schoolId = profile.schoolId;
+    const uid = profile.uid;
 
     const fetchAssignments = async () => {
       try {
         const classQuery = query(
-          collection(db, 'schools', profile.schoolId, 'assignments'),
+          collection(db, 'schools', schoolId, 'assignments'),
           where('class', '==', profile.studentClass)
         );
         
         const targetedQuery = query(
-          collection(db, 'schools', profile.schoolId, 'assignments'),
-          where('targetStudentId', '==', profile.uid)
+          collection(db, 'schools', schoolId, 'assignments'),
+          where('targetStudentId', '==', uid)
         );
         
         const [classSnap, targetedSnap] = await Promise.all([
@@ -274,7 +277,7 @@ export default function StudentDashboard() {
         const processDoc = async (docSnap: any) => {
           const taskData = { id: docSnap.id, ...docSnap.data() } as Assignment;
           // Check if the student has already submitted this task
-          const subDocRef = doc(db, 'schools', profile.schoolId, 'assignments', docSnap.id, 'submissions', profile.uid);
+          const subDocRef = doc(db, 'schools', schoolId, 'assignments', docSnap.id, 'submissions', uid);
           const subDoc = await getDoc(subDocRef);
           if (subDoc.exists()) {
             taskData.submission = subDoc.data();

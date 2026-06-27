@@ -57,11 +57,12 @@ export default function AcademicResults() {
 
   useEffect(() => {
     if (!profile?.schoolId) return;
+    const schoolId = profile.schoolId;
 
     const fetchAllData = async () => {
       setIsLoading(true);
       try {
-        const assignSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments'));
+        const assignSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments'));
         const assignsList: Assignment[] = [];
         
         const studentAggregates: Record<string, {
@@ -97,7 +98,7 @@ export default function AcademicResults() {
         const classAggregates: Record<string, { obtained: number, max: number }> = {};
 
         for (const task of assignsList) {
-          const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', task.id, 'submissions'));
+          const subsSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments', task.id, 'submissions'));
           subsSnap.forEach(subDoc => {
              const sub = subDoc.data();
              if (sub.teacherApproved && sub.maxScore > 0) {
@@ -178,15 +179,16 @@ export default function AcademicResults() {
 
   useEffect(() => {
     if (!profile?.schoolId || !selectedAssignment) return;
+    const schoolId = profile.schoolId;
 
     const loadSingleAssignment = async () => {
-       const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', selectedAssignment, 'submissions'));
+       const subsSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments', selectedAssignment, 'submissions'));
        
        const usersSnap = await getDocs(collection(db, 'users'));
        const studentMap: Record<string, {name: string, class: string}> = {};
        usersSnap.forEach(uDoc => {
           const d = uDoc.data();
-          if (d.role === 'student' && d.schoolId === profile.schoolId) {
+          if (d.role === 'student' && d.schoolId === schoolId) {
              studentMap[uDoc.id] = { name: d.name, class: d.studentClass || 'N/A' };
           }
        });

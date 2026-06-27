@@ -82,9 +82,9 @@ function SchoolRosterContent() {
   if (loading || !profile) return <div className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#002147]" /></div>;
 
   const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) || 
-    s.email.toLowerCase().includes(search.toLowerCase()) ||
-    s.studentClass.toLowerCase().includes(search.toLowerCase())
+    s.name?.toLowerCase().includes(search.toLowerCase()) || 
+    s.email?.toLowerCase().includes(search.toLowerCase()) ||
+    s.studentClass?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

@@ -61,15 +61,16 @@ export default function HomeworkAssignment() {
   // Fetch assignment
   useEffect(() => {
     if (!profile?.schoolId) return;
+    const schoolId = profile.schoolId;
     const fetchAssignment = async () => {
       try {
-        const d = await getDoc(doc(db, 'schools', profile.schoolId, 'assignments', id));
+        const d = await getDoc(doc(db, 'schools', schoolId, 'assignments', id));
         if (d.exists()) {
           const data = d.data();
           setAssignment({ id: d.id, topic: data.title || data.topic, ...data });
 
           // Check for existing submission
-          const subDoc = await getDoc(doc(db, 'schools', profile.schoolId, 'assignments', id, 'submissions', profile.uid));
+          const subDoc = await getDoc(doc(db, 'schools', schoolId, 'assignments', id, 'submissions', profile.uid));
           if (subDoc.exists()) {
             const sub = subDoc.data();
             if (sub.aiResult) {

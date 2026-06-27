@@ -210,10 +210,10 @@ export default function ParentDashboard() {
       // Update Parent Doc
       let parentRef;
       if (profile.schoolId) {
-        parentRef = doc(db, 'schools', profile.schoolId, 'users', profile.uid || profile.id);
+        parentRef = doc(db, 'schools', profile.schoolId, 'users', profile.uid);
       } else {
         // Try global users if schoolId missing
-        parentRef = doc(db, 'users', profile.uid || profile.id || profile.email); 
+        parentRef = doc(db, 'users', profile.uid || profile.email || 'unknown');
       }
       
       try {

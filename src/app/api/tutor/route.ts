@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey: apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     // Fetch memory
     let memoryData = { known: [], struggling: [] };
@@ -56,32 +56,35 @@ RULES:
       }
     }
 
-    // Primary Call: Answer Student
-    const response = await ai.models.generateContent({
+    const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
+      systemInstruction: systemInstruction,
+    });
+
+    // Primary Call: Answer Student
+    const response = await model.generateContent({
       contents: mergedContents,
-      config: {
-        systemInstruction: systemInstruction,
+      generationConfig: {
         temperature: 0.7,
       }
     });
 
-    const aiText = response.text;
+    const aiText = response.response.text();
 
     // Background Call: Update Memory
     if (studentId && adminDb) {
       // Don't await this so it doesn't block the response to the user
       // However, in serverless environments, background promises might be killed.
       // Next.js app router API can use `waitUntil` but here we just fire it.
-      ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+      const memModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      memModel.generateContent({
         contents: [
           { role: 'user', parts: [{ text: `Analyze this recent interaction between a student and an AI tutor.\n\nInteraction:\n${messages.map((m: any) => `${m.sender}: ${m.text}`).join('\n')}\nAI response: ${aiText}\n\nBased on this interaction, output a JSON object representing the student's updated understanding. It should have two arrays: "known" (topics they seem to understand) and "struggling" (topics they are having trouble with). Only include newly discovered information or reinforcement of existing topics. Return purely valid JSON, no markdown blocks.` }] }
         ],
-        config: { temperature: 0.1, responseMimeType: 'application/json' }
+        generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
       }).then(async (memRes) => {
         try {
-          const parsed = JSON.parse(memRes.text || '{}');
+          const parsed = JSON.parse(memRes.response.text() || '{}');
           if (parsed.known || parsed.struggling) {
             // Merge with existing
             const newKnown = Array.from(new Set([...(memoryData.known || []), ...(parsed.known || [])]));

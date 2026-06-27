@@ -58,12 +58,11 @@ RULES:
 
     // Primary Call: Answer Student
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: mergedContents,
       config: {
         systemInstruction: systemInstruction,
         temperature: 0.7,
-        tools: [{ googleSearch: {} }],
       }
     });
 
@@ -75,7 +74,7 @@ RULES:
       // However, in serverless environments, background promises might be killed.
       // Next.js app router API can use `waitUntil` but here we just fire it.
       ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         contents: [
           { role: 'user', parts: [{ text: `Analyze this recent interaction between a student and an AI tutor.\n\nInteraction:\n${messages.map((m: any) => `${m.sender}: ${m.text}`).join('\n')}\nAI response: ${aiText}\n\nBased on this interaction, output a JSON object representing the student's updated understanding. It should have two arrays: "known" (topics they seem to understand) and "struggling" (topics they are having trouble with). Only include newly discovered information or reinforcement of existing topics. Return purely valid JSON, no markdown blocks.` }] }
         ],

@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(request: Request) {
   try {
     const { weaknesses, subject, studentClass } = await request.json();
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     const prompt = `You are an expert tutor. A student in ${studentClass} studying ${subject} has been identified to have weaknesses in the following concepts: ${weaknesses.join(', ')}.
 Generate a highly targeted 3-question multiple-choice practice module to help them overcome these specific weaknesses.
@@ -24,13 +24,13 @@ Each question should have:
 
 Output ONLY valid JSON, no markdown.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: { responseMimeType: 'application/json', temperature: 0.4 }
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-pro',
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.4 }
     });
 
-    const rawText = response.text || '{"questions": []}';
+    const response = await model.generateContent(prompt);
+    const rawText = response.response.text() || '{"questions": []}';
     const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(jsonStr);
     return NextResponse.json(parsed);

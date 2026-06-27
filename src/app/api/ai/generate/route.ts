@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Fetch global model preference from Firestore
-    let modelId = 'gemini-2.5-flash'; // default fallback
+    let modelId = 'gemini-2.5-pro'; // default fallback
     try {
       const docRef = doc(db, 'platform', 'settings');
       const docSnap = await getDoc(docRef);

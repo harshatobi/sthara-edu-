@@ -22,7 +22,7 @@ const mistral = createMistral({
 
 export const getAIProvider = (modelId: string): LanguageModel => {
   switch (modelId) {
-    case 'gemini-2.5-flash': return google('gemini-2.5-flash');
+    case 'gemini-2.5-flash': return google('gemini-2.5-pro'); // redirect flash to pro since flash not available on this key
     case 'gemini-2.5-pro': return google('gemini-2.5-pro');
     case 'gpt-4o': return openai('gpt-4o');
     case 'gpt-4-turbo': return openai('gpt-4-turbo');
@@ -35,7 +35,7 @@ export const getAIProvider = (modelId: string): LanguageModel => {
       console.warn('Llama provider not installed. Falling back to gpt-4o-mini.');
       return openai('gpt-4o-mini');
     default:
-      console.warn(`Model ${modelId} not mapped, falling back to gemini-2.5-flash`);
-      return google('gemini-2.5-flash');
+      console.warn(`Model ${modelId} not mapped, falling back to gemini-2.5-pro`);
+      return google('gemini-2.5-pro');
   }
 };

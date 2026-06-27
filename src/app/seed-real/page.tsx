@@ -27,7 +27,7 @@ const USERS = [
   {
     email: 'testteacher2@gmail.com',
     role: 'teacher',
-    name: 'Social Teacher',
+    name: 'Joshua',
     teacherClass: 'Class 10',
     subject: 'Social Studies'
   }
@@ -97,7 +97,7 @@ export default function SeedRealPage() {
     try {
       const namesToUpdate = [
         { email: 'testteacher1@gmail.com', name: 'Moses' },
-        { email: 'testteacher2@gmail.com', name: 'Social Teacher' },
+        { email: 'testteacher2@gmail.com', name: 'Joshua' },
       ];
 
       for (const u of namesToUpdate) {
@@ -112,7 +112,7 @@ export default function SeedRealPage() {
         }
       }
 
-      setStatus('DONE! Names updated. Moses is now the Maths teacher. Log out and log back in to see the change.');
+      setStatus('DONE! Names updated. Moses (Maths) and Joshua (Social) are ready. Log out and log back in to see the changes.');
     } catch (error: any) {
       console.error(error);
       setStatus(`Error: ${error.message}`);
@@ -127,7 +127,7 @@ export default function SeedRealPage() {
           School Code: <strong>{SCHOOL_CODE}</strong>
           <br />10 Students: teststu1@gmail.com – teststu10@gmail.com
           <br />Teacher 1: testteacher1@gmail.com — <strong>Moses</strong> (Maths)
-          <br />Teacher 2: testteacher2@gmail.com (Social)
+          <br />Teacher 2: testteacher2@gmail.com — <strong>Joshua</strong> (Social)
           <br />Password for all: <strong>{PASSWORD}</strong>
         </p>
         

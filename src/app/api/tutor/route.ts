@@ -57,7 +57,7 @@ RULES:
     }
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       systemInstruction: systemInstruction,
     });
 
@@ -76,7 +76,7 @@ RULES:
       // Don't await this so it doesn't block the response to the user
       // However, in serverless environments, background promises might be killed.
       // Next.js app router API can use `waitUntil` but here we just fire it.
-      const memModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const memModel = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
       memModel.generateContent({
         contents: [
           { role: 'user', parts: [{ text: `Analyze this recent interaction between a student and an AI tutor.\n\nInteraction:\n${messages.map((m: any) => `${m.sender}: ${m.text}`).join('\n')}\nAI response: ${aiText}\n\nBased on this interaction, output a JSON object representing the student's updated understanding. It should have two arrays: "known" (topics they seem to understand) and "struggling" (topics they are having trouble with). Only include newly discovered information or reinforcement of existing topics. Return purely valid JSON, no markdown blocks.` }] }

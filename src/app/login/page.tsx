@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [loginAttempted, setLoginAttempted] = useState(false);
 
   const handleSchoolCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.toUpperCase();
@@ -146,7 +147,10 @@ export default function LoginPage() {
       console.error(err);
       setError('Invalid credentials or school mapping.');
       setIsSigningIn(false);
+      return;
     }
+    // Signal that we just completed a login — useEffect will redirect
+    setLoginAttempted(true);
   };
 
   const handleForgotPassword = async () => {
@@ -165,13 +169,24 @@ export default function LoginPage() {
     }
   };
 
-  // When the login page is visited, sign out any existing session first.
-  // This allows switching between different user roles cleanly.
+  // If the user just logged in successfully, redirect them to their dashboard.
+  // If they visited /login while already logged in (different session), sign them out first.
   useEffect(() => {
-    if (!loading && profile) {
+    if (loading) return;
+    if (!profile) return;
+
+    if (loginAttempted) {
+      // Redirect after successful login
+      if (profile.role === 'superadmin') router.push('/superadmin');
+      else if (profile.role === 'student') router.push('/student');
+      else if (profile.role === 'teacher') router.push('/teacher');
+      else if (profile.role === 'admin') router.push('/admin');
+      else if (profile.role === 'parent') router.push('/parent');
+    } else {
+      // User arrived at /login while already logged in — sign them out
       signOut(auth).catch(err => console.error('Sign out error:', err));
     }
-  }, [loading, profile]);
+  }, [loading, profile, loginAttempted, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#001229] to-[#002147] p-6">

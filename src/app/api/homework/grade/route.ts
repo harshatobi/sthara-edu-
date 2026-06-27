@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
     const { assignmentId, studentId, imageBase64, mimeType, questions } = await request.json();
 
-    if (!adminDb || !process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!adminDb || !apiKey) {
       return NextResponse.json({ error: 'Server not configured properly' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     const prompt = `You are an expert, supportive AI Teacher grading a student's handwritten homework.
 Here are the questions they were assigned:
@@ -29,22 +30,22 @@ Output your response ONLY as a JSON object with this exact structure:
   "newStruggling": ["concept 2"]
 }`;
 
-    // Note: If using gemini-2.5-flash with image, we construct the part
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: prompt },
-            { inlineData: { data: imageBase64, mimeType } }
-          ]
-        }
-      ],
-      config: { responseMimeType: 'application/json', temperature: 0.2 }
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-pro',
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
     });
 
-    const parsed = JSON.parse(response.text || '{}');
+    const response = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: imageBase64,
+          mimeType: mimeType
+        }
+      }
+    ]);
+
+    const parsed = JSON.parse(response.response.text() || '{}');
 
     // Update Assignment
     await adminDb.collection('homework_assignments').doc(assignmentId).update({
@@ -72,8 +73,8 @@ Output your response ONLY as a JSON object with this exact structure:
 
     return NextResponse.json({ success: true, grade: parsed.grade });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Grading Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error: ' + error.message }, { status: 500 });
   }
 }

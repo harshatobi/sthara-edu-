@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(request: Request) {
   try {
     const { grade, difficulty, chapters } = await request.json();
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
         { error: 'Gemini API key not configured on server.' },
         { status: 500 }
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     const prompt = `You are an expert exam paper generator. 
 Create a 5-question multiple choice quiz for ${grade} based on the following chapters: ${chapters.join(', ')}.
@@ -31,15 +32,13 @@ Each object must have the following structure:
   "correctOptionId": "b"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        temperature: 0.2, // Low temp for more structured/predictable output
-      }
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-pro',
     });
 
-    let jsonStr = response.text || "[]";
+    const response = await model.generateContent(prompt);
+
+    let jsonStr = response.response.text() || "[]";
     
     // Clean up any potential markdown formatting the model might still add
     jsonStr = jsonStr.replace(/^```json/m, '').replace(/^```/m, '').trim();
@@ -58,7 +57,7 @@ Each object must have the following structure:
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate paper' },
+      { error: 'Failed to generate paper: ' + error.message },
       { status: 500 }
     );
   }

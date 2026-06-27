@@ -14,16 +14,7 @@ interface ScoreEntry {
   feedback: string;
 }
 
-const mockHistory: ScoreEntry[] = [
-  { id: 'h1', title: 'Quadratic Equations Final', subject: 'Mathematics', type: 'Test', score: 'A-', numericScore: 92, date: '2026-06-20', feedback: 'Great understanding of roots. Review the discriminant for next time.' },
-  { id: 'h2', title: 'Chemical Bonding Check', subject: 'Science', type: 'Quiz', score: 'B+', numericScore: 88, date: '2026-06-18', feedback: 'Solid grasp on covalent bonds. Ionic bonding needs a bit more review.' },
-  { id: 'h3', title: 'Poetry Analysis Essay', subject: 'English', type: 'Project', score: 'A+', numericScore: 98, date: '2026-06-15', feedback: 'Exceptional analysis and brilliant use of vocabulary. Flawless structure.' },
-  { id: 'h4', title: 'Polynomials Practice', subject: 'Mathematics', type: 'Homework', score: 'C', numericScore: 75, date: '2026-06-12', feedback: 'Struggled with the Remainder Theorem. Recommended to re-watch the Chapter 2 videos.' },
-  { id: 'h5', title: 'Life Processes Midterm', subject: 'Science', type: 'Test', score: 'A', numericScore: 94, date: '2026-06-10', feedback: 'Excellent diagram of the human heart! Perfect scores on the respiration section.' },
-  { id: 'h6', title: 'Tenses and Grammar', subject: 'English', type: 'Quiz', score: 'A-', numericScore: 90, date: '2026-06-05', feedback: 'Perfect active/passive voice conversions. Missed one irregular verb.' },
-  { id: 'h7', title: 'Coordinate Geometry Basics', subject: 'Mathematics', type: 'Homework', score: 'B', numericScore: 85, date: '2026-06-01', feedback: 'Good work on the distance formula. Make sure to double-check signs in the midpoint formula.' },
-  { id: 'h8', title: 'Acids & Bases Lab Report', subject: 'Science', type: 'Project', score: 'A', numericScore: 95, date: '2026-05-28', feedback: 'Very thorough observation table. The conclusion was well-reasoned and accurate.' },
-];
+const mockHistory: ScoreEntry[] = [];
 
 export default function RecentScoresModal({ onClose }: { onClose: () => void }) {
   const [filter, setFilter] = useState<'All' | 'Mathematics' | 'Science' | 'English'>('All');

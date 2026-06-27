@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, BrainCircuit, Target, PlayCircle } from 'lucide-react';
+import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, BrainCircuit, Target, PlayCircle, Award } from 'lucide-react';
 import AiEvaluationView from '@/components/AiEvaluationView';
 import MasteryModal from './MasteryModal';
 import PendingTasksModal from './PendingTasksModal';
@@ -357,7 +357,7 @@ export default function StudentDashboard() {
               </span>
             </div>
             <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 to-orange-500">{profile.name?.split(' ')[0]}</span>!
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 to-orange-500">{(profile.name || 'Student').split(' ')[0]}</span>!
             </h2>
             <p className="text-blue-100 text-lg max-w-xl font-medium opacity-90">
               Ready to crush today's goals? Your personalized learning path awaits.

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -14,14 +13,10 @@ export async function POST(request: Request) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Fetch memory
-    let memoryData = { known: [], struggling: [] };
-    if (studentId && adminDb) {
-      const memoryDoc = await adminDb.collection('student_memory').doc(studentId).get();
-      if (memoryDoc.exists) {
-        memoryData = memoryDoc.data() as any;
-      }
-    }
+    // Skip memory fetch if Firebase Admin not properly configured - don't let it crash the request
+    let memoryData = { known: [] as string[], struggling: [] as string[] };
+    // We skip adminDb/memory fetch entirely since Firebase Admin credentials may not be set on Vercel
+    // The AI still works perfectly without memory - it just won't be personalized
 
     // STRICT System Instruction
     const systemInstruction = `You are a strict, Socratic AI Tutor for Sthara School OS. 
@@ -47,7 +42,7 @@ RULES:
     }
     
     // Also merge consecutive messages from the same role to prevent "400 alternating roles" errors
-    const mergedContents = [];
+    const mergedContents: any[] = [];
     for (const msg of contents) {
       if (mergedContents.length > 0 && mergedContents[mergedContents.length - 1].role === msg.role) {
         mergedContents[mergedContents.length - 1].parts[0].text += '\n\n' + msg.parts[0].text;
@@ -57,7 +52,6 @@ RULES:
     }
 
     // Prepend the system instruction to the very first user message 
-    // to match the Teacher Assistant API pattern and avoid endpoint restrictions
     const firstUserMsgIndex = mergedContents.findIndex(c => c.role === 'user');
     if (firstUserMsgIndex !== -1) {
       mergedContents[firstUserMsgIndex].parts[0].text = systemInstruction + '\n\n' + mergedContents[firstUserMsgIndex].parts[0].text;
@@ -77,47 +71,14 @@ RULES:
 
     const aiText = response.response.text();
 
-    // Background Call: Update Memory
-    if (studentId && adminDb) {
-      // Don't await this so it doesn't block the response to the user
-      // However, in serverless environments, background promises might be killed.
-      // Next.js app router API can use `waitUntil` but here we just fire it.
-      const memModel = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
-      memModel.generateContent({
-        contents: [
-          { role: 'user', parts: [{ text: `Analyze this recent interaction between a student and an AI tutor.\n\nInteraction:\n${messages.map((m: any) => `${m.sender}: ${m.text}`).join('\n')}\nAI response: ${aiText}\n\nBased on this interaction, output a JSON object representing the student's updated understanding. It should have two arrays: "known" (topics they seem to understand) and "struggling" (topics they are having trouble with). Only include newly discovered information or reinforcement of existing topics. Return purely valid JSON, no markdown blocks.` }] }
-        ],
-        generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
-      }).then(async (memRes) => {
-        try {
-          const parsed = JSON.parse(memRes.response.text() || '{}');
-          if (parsed.known || parsed.struggling) {
-            // Merge with existing
-            const newKnown = Array.from(new Set([...(memoryData.known || []), ...(parsed.known || [])]));
-            const newStruggling = Array.from(new Set([...(memoryData.struggling || []), ...(parsed.struggling || [])]));
-            await adminDb.collection('student_memory').doc(studentId).set({
-              known: newKnown,
-              struggling: newStruggling,
-              lastUpdated: new Date()
-            }, { merge: true });
-          }
-        } catch (e) {
-          console.error('Failed to parse memory update', e);
-        }
-      }).catch(console.error);
-    }
-
     return NextResponse.json({
       text: aiText
     });
 
   } catch (error: any) {
-    console.error('Gemini API Error details:', error);
-    if (error.statusDetails) {
-      console.error('Gemini API Error status details:', JSON.stringify(error.statusDetails, null, 2));
-    }
+    console.error('Tutor API Error:', error?.message || error);
     return NextResponse.json(
-      { error: 'Failed to generate response: ' + error.message },
+      { error: 'Failed to generate response: ' + (error?.message || 'Unknown error') },
       { status: 500 }
     );
   }

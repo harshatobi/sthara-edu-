@@ -9,28 +9,34 @@ import { collection, query, where, getDocs, doc, getDoc, addDoc, serverTimestamp
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- Syllabus Definition ---
-// This acts as the structural foundation for the Knowledge Graph.
-const SYLLABUS = [
-  {
-    id: 'c1',
-    name: 'Algebra',
-    color: '#3b82f6', // blue
-    topics: ['Linear Equations', 'Quadratic Equations', 'Polynomials', 'Factoring']
-  },
-  {
-    id: 'c2',
-    name: 'Geometry',
-    color: '#8b5cf6', // purple
-    topics: ['Coordinate Geometry', 'Triangles', 'Circles', 'Trigonometry']
-  },
-  {
-    id: 'c3',
-    name: 'Data & Stats',
-    color: '#f59e0b', // amber
-    topics: ['Probability', 'Statistics', 'Data Interpretation']
-  }
-];
+// --- Syllabus Definitions per Subject ---
+const SYLLABI: Record<string, { id: string; name: string; color: string; topics: string[] }[]> = {
+  'Mathematics': [
+    { id: 'c1', name: 'Algebra', color: '#3b82f6', topics: ['Linear Equations', 'Quadratic Equations', 'Polynomials', 'Factoring'] },
+    { id: 'c2', name: 'Geometry', color: '#8b5cf6', topics: ['Coordinate Geometry', 'Triangles', 'Circles', 'Trigonometry'] },
+    { id: 'c3', name: 'Data & Stats', color: '#f59e0b', topics: ['Probability', 'Statistics', 'Data Interpretation'] }
+  ],
+  'Social Studies': [
+    { id: 'c1', name: 'History', color: '#ef4444', topics: ['Ancient Civilizations', 'Medieval Period', 'Modern History', 'World Wars'] },
+    { id: 'c2', name: 'Civics', color: '#10b981', topics: ['Government & Democracy', 'Constitution', 'Rights & Duties', 'Local Governance'] },
+    { id: 'c3', name: 'Geography', color: '#f59e0b', topics: ['Physical Geography', 'Climate & Weather', 'Natural Resources', 'Map Reading'] },
+    { id: 'c4', name: 'Economics', color: '#8b5cf6', topics: ['Basic Economics', 'Supply & Demand', 'Trade & Commerce'] }
+  ],
+  'Science': [
+    { id: 'c1', name: 'Physics', color: '#3b82f6', topics: ['Motion & Forces', 'Electricity', 'Light & Sound', 'Energy'] },
+    { id: 'c2', name: 'Chemistry', color: '#10b981', topics: ['Atoms & Elements', 'Chemical Reactions', 'Acids & Bases', 'Periodic Table'] },
+    { id: 'c3', name: 'Biology', color: '#f59e0b', topics: ['Cell Biology', 'Human Body', 'Ecosystems', 'Evolution'] }
+  ],
+  'English': [
+    { id: 'c1', name: 'Grammar', color: '#3b82f6', topics: ['Parts of Speech', 'Tenses', 'Sentence Structure', 'Punctuation'] },
+    { id: 'c2', name: 'Literature', color: '#8b5cf6', topics: ['Poetry', 'Prose', 'Drama', 'Short Stories'] },
+    { id: 'c3', name: 'Writing', color: '#f59e0b', topics: ['Essay Writing', 'Creative Writing', 'Letter Writing', 'Comprehension'] }
+  ]
+};
+
+// Default fallback syllabus
+const DEFAULT_SYLLABUS = SYLLABI['Mathematics'];
+
 
 // Helper to deterministically generate a score for a topic based on student ID and topic name
 // In a real app, this would be strictly calculated from AI assignment evaluations.
@@ -296,8 +302,12 @@ function MasteryTrackerContent() {
         // Calculate actual overall percentage
         const realPercentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) : 0;
 
+        // Pick the correct syllabus based on the teacher's subject
+        const teacherSubject = profile.assignments?.[0]?.subject || 'Mathematics';
+        const subjectSyllabus = SYLLABI[teacherSubject] || DEFAULT_SYLLABUS;
+
         // Build Chapter Data
-        const chaptersData = SYLLABUS.map(chapter => {
+        const chaptersData = subjectSyllabus.map(chapter => {
           const topicsData = chapter.topics.map(topic => {
             let mastery = 0;
             if (evaluatedCount > 0) {
@@ -405,7 +415,7 @@ function MasteryTrackerContent() {
                   {selectedStudent.name.charAt(0)}
                 </div>
                 <h2 className="text-2xl font-bold mb-1">{selectedStudent.name}</h2>
-                <p className="text-blue-200 font-medium mb-2">{selectedStudent.studentClass} • Mathematics</p>
+                <p className="text-blue-200 font-medium mb-2">{selectedStudent.studentClass} • {profile.assignments?.[0]?.subject || 'Mathematics'}</p>
                 <div className="inline-block bg-white/10 px-3 py-1 rounded-full text-xs font-bold text-white mb-8 border border-white/20">
                   {selectedStudent.totalEvaluated} Assignments Evaluated
                 </div>

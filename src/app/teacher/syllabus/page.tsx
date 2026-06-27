@@ -99,7 +99,42 @@ export default function TeacherSyllabus() {
   }, [profile, loading, router]);
 
   const handleExport = () => {
-    window.print();
+    // Build a text summary of the entire syllabus for download
+    let content = 'STHARA CURRICULUM PLANNER — FALL SEMESTER 2026\n';
+    content += `Teacher: ${profile?.name || ''}  |  School: ${profile?.schoolId || ''}\n`;
+    content += '='.repeat(60) + '\n\n';
+
+    months.forEach(month => {
+      const items = syllabus[month] || [];
+      content += `📅 ${month.toUpperCase()}\n`;
+      content += '-'.repeat(40) + '\n';
+      if (items.length === 0) {
+        content += '  (No modules planned)\n';
+      } else {
+        items.forEach((item, i) => {
+          content += `  ${i + 1}. ${item.topic}\n`;
+          content += `     Timeline : ${item.weeks}\n`;
+          content += `     Status   : ${item.status}\n`;
+          if (item.aiPath?.overview) {
+            content += `     Overview : ${item.aiPath.overview.substring(0, 120)}...\n`;
+          }
+        });
+      }
+      content += '\n';
+    });
+
+    content += `\nExported on ${new Date().toLocaleDateString()} via Sthara School OS`;
+
+    // Trigger file download — works on mobile and desktop
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Sthara_Syllabus_${profile?.name?.replace(' ', '_') || 'Teacher'}_2026.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const simulateAIGeneration = async (callback: () => void) => {

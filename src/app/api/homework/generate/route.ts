@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const { class: className, subject, topic, teacherId } = await request.json();
 
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!adminDb) {
       return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
     }

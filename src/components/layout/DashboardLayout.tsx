@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { LucideIcon, LogOut, Menu, X, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/contexts/AuthContext';
+import TrialBanner from '@/components/ui/TrialBanner';
 
 interface NavItem {
   name: string;
@@ -40,7 +41,7 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex print:block">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col print:block">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 flex md:hidden">
@@ -158,10 +159,14 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
           </button>
         </div>
 
+        {/* Trial warning banner — shown when ≤7 days left or expired */}
+        <TrialBanner />
+
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}
         </main>
+
       </div>
     </div>
   );

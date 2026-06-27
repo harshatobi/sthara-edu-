@@ -2,41 +2,51 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Next.js Proxy (previously Middleware) — Server-side route protection.
- * Redirects unauthenticated users (no Firebase session cookie) to /login.
+ * Next.js Proxy — Server-side route protection.
  *
- * The __session cookie is set by AuthContext.tsx after a successful Firebase login.
- * This gives us a lightweight server-edge auth check without needing the Admin SDK here.
+ * Responsibilities:
+ *  1. Redirect unauthenticated users (no __session cookie) to /login
+ *  2. Redirect expired-trial users to /trial-expired
+ *
+ * The __session cookie is set by AuthContext.tsx on login.
+ * The __trial_ok cookie is set by AuthContext.tsx after verifying trial status.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protected route prefixes — anything under these requires a session cookie
-  const protectedPrefixes = [
-    '/student',
-    '/teacher',
-    '/admin',
-    '/superadmin',
-    '/parent',
-  ];
+  // ── Public routes — always allowed ─────────────────────────────────────────
+  const publicPrefixes = ['/login', '/onboard', '/privacy', '/terms', '/_next', '/api', '/trial-expired'];
+  if (publicPrefixes.some(p => pathname.startsWith(p)) || pathname === '/') {
+    return NextResponse.next();
+  }
 
-  const isProtected = protectedPrefixes.some(prefix => pathname.startsWith(prefix));
+  // ── Protected routes — require session ─────────────────────────────────────
+  const protectedPrefixes = ['/student', '/teacher', '/admin', '/superadmin', '/parent'];
+  const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
   if (!isProtected) return NextResponse.next();
 
-  // Check for our lightweight session cookie (set by AuthContext on login)
+  // 1. Auth check — must have session cookie
   const sessionCookie = request.cookies.get('__session')?.value;
-
   if (!sessionCookie) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
+  // 2. Trial check — superadmins are exempt; regular school users must have active trial/plan
+  // The __trial_ok cookie is set client-side by AuthContext after checking Firestore.
+  // Superadmins never have a schoolId so they're always exempt.
+  const trialOk = request.cookies.get('__trial_ok')?.value;
+  const isSuperadminPath = pathname.startsWith('/superadmin');
+
+  if (!isSuperadminPath && trialOk === 'expired') {
+    return NextResponse.redirect(new URL('/trial-expired', request.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  // Only run on these route patterns — avoids running on API, _next, or static files
   matcher: [
     '/student/:path*',
     '/teacher/:path*',

@@ -33,12 +33,15 @@ export default function StudentHomework() {
 
         const tasks: any[] = [];
         const processDoc = async (docSnap: any) => {
-          const taskData = { id: docSnap.id, topic: docSnap.data().title, subject: docSnap.data().subject, dueDate: docSnap.data().dueDate, ...docSnap.data() };
+          const taskData = { id: docSnap.id, topic: docSnap.data().title || docSnap.data().topic, subject: docSnap.data().subject, dueDate: docSnap.data().dueDate, ...docSnap.data() };
           const subDocRef = doc(db, 'schools', profile.schoolId, 'assignments', docSnap.id, 'submissions', profile.uid);
           const subDoc = await getDoc(subDocRef);
           if (subDoc.exists()) {
+            const subData = subDoc.data();
             taskData.status = 'completed';
-            taskData.grade = subDoc.data().score;
+            // grade is now stored as a string like '8/10' or 'totalScore/maxTotalScore'
+            taskData.grade = subData.grade || (subData.totalScore !== undefined ? `${subData.totalScore}/${subData.maxTotalScore}` : subData.score || 'Graded');
+            taskData.teacherApproved = subData.teacherApproved || false;
           } else {
             taskData.status = 'pending';
           }

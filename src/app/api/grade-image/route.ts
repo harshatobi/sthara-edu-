@@ -1,165 +1,149 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
-
+// Removed 'edge' runtime — edge has payload size limits that break base64 image uploads
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 export async function POST(request: Request) {
   try {
     if (!GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'Gemini API Key is not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Gemini API Key is not configured on server.' }, { status: 500 });
     }
 
     const body = await request.json();
-    const { imageUrl, imageBase64: directBase64, mimeType: directMime, assignmentTitle, assignmentDescription, assignmentQuestions } = body;
+    const {
+      imageBase64,
+      mimeType: directMime,
+      imageUrl,
+      assignmentTitle,
+      assignmentDescription,
+      assignmentSubject,
+      assignmentQuestions,
+    } = body;
 
     let base64Image = '';
     let mimeType = 'image/jpeg';
 
-    if (directBase64) {
-      base64Image = directBase64;
+    if (imageBase64) {
+      base64Image = imageBase64;
       mimeType = directMime || 'image/jpeg';
     } else if (imageUrl) {
-      // 1. Fetch the image and convert to Base64
       const imageResponse = await fetch(imageUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image from URL: ${imageResponse.statusText}`);
-      }
+      if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
       const arrayBuffer = await imageResponse.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      base64Image = buffer.toString('base64');
+      base64Image = Buffer.from(arrayBuffer).toString('base64');
       mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
     } else {
-      return NextResponse.json({ error: 'Missing imageUrl or imageBase64 in request' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing imageBase64 or imageUrl' }, { status: 400 });
     }
 
-    // 2. Prepare the prompt
+    // Build context string from assignment metadata
+    const subject = assignmentSubject || 'General';
     let contextStr = '';
     if (assignmentTitle) contextStr += `Assignment Title: ${assignmentTitle}\n`;
-    if (assignmentDescription) contextStr += `Assignment Description: ${assignmentDescription}\n`;
+    if (assignmentSubject) contextStr += `Subject: ${assignmentSubject}\n`;
+    if (assignmentDescription) contextStr += `Instructions: ${assignmentDescription}\n`;
     if (assignmentQuestions && assignmentQuestions.length > 0) {
-      contextStr += `Assignment Questions:\n`;
-      assignmentQuestions.forEach((q: any, idx: number) => {
-        contextStr += `Q${idx + 1}: ${q.text}\n`;
+      contextStr += `Questions:\n`;
+      assignmentQuestions.forEach((q: string, idx: number) => {
+        contextStr += `Q${idx + 1}: ${q}\n`;
       });
     }
 
-    const systemPrompt = `
-      You are an elite, strict High School Mathematics Teacher named "Diagnostic Engine".
-      I am providing you with an image of a student's handwritten math assignment.
-      
-      CONTEXT OF ASSIGNMENT:
-      ${contextStr}
+    const systemPrompt = `You are an elite AI academic evaluator and diagnostic engine. A student has submitted a photo of their handwritten work.
 
-      Your task is to transcribe the student's work exactly step-by-step and grade it against the questions provided in the context (if any). If no questions are provided, extract them from the image.
-      Analyze their logic deeply. Distinguish between 'logic_error' (e.g. wrong formula, sign error) and 'procedural_error' (e.g. getting the correct final answer but using mathematically illegal cancellations or fake math).
-      
-      STRICT GRADING RULE: You must evaluate the student's work based on the following exact rubric:
-      - 5 marks awarded for every correct answer with correct procedure.
-      - 0 marks awarded for a wrong answer AND wrong procedure.
-      - Partial marks (e.g. 1 to 4 marks) awarded if the student gets the correct answer with the wrong procedure, or if they have the right procedure but made a calculation mistake. Penalize based on the severity of the procedural mistakes.
-      - The maximum score for EACH question is 5.
-      - The maxTotalScore MUST be exactly (Number of Questions * 5).
+ASSIGNMENT CONTEXT:
+${contextStr || 'No specific context provided — extract questions directly from the image.'}
 
+YOUR TASK:
+1. Carefully read and transcribe every piece of work in the image
+2. For each question or task found, analyze the student's approach step by step
+3. Classify each step as: "correct", "logic_error" (wrong formula/concept), or "procedural_error" (right concept but execution mistake)
+4. Award marks using this rubric:
+   - Full marks (5): Correct answer with correct procedure
+   - Partial marks (1-4): Right procedure, wrong answer OR right answer, wrong procedure
+   - Zero (0): Wrong answer AND wrong procedure
+   - Max per question: 5 marks
 
-      You MUST output ONLY valid JSON using this exact structure:
-      {
-        "questions": [
-          {
-            "questionText": "The transcribed question text (e.g., Solve 2x^2 - 5x + 3 = 0)",
-            "steps": [
-              { 
-                "text": "The exact step the student wrote", 
-                "type": "correct" | "logic_error" | "procedural_error",
-                "explanation": "If error, explain why. If correct, omit or null",
-                "penalty": "If error, amount of points deducted (e.g. 2). If correct, 0"
-              }
-            ],
-            "finalAnswer": "The student's final circled/underlined answer",
-            "isFinalAnswerCorrect": boolean,
-            "aiCorrectedSolution": [
-              "Line 1 of correct procedure",
-              "Line 2 of correct procedure"
-            ],
-            "maxScore": 5,
-            "awardedScore": 3
-          }
-        ],
-        "totalScore": 8,
-        "maxTotalScore": 15,
-        "summary": "Brief 1-sentence summary of overall performance (e.g. 'Errors in Q2 discriminant calculation.')",
-        "weaknessTags": ["list", "of", "core", "weaknesses", "like", "sign_errors", "fractions", "algebraic_manipulation"],
-        "recommendedVideos": [
-          {
-            "title": "Title of a highly relevant tutorial video",
-            "duration": "e.g., 5 min tutorial"
-          }
-        ]
-      }
+IMPORTANT: Be subject-agnostic. This could be Math, Science, English essays, History, etc. Adapt your analysis accordingly.
+For essay/written answers: analyze argument quality, evidence, structure, and accuracy.
+For math/science: analyze computation steps, formulas, and logical derivations.
 
-      Do NOT wrap the output in markdown code blocks like \`\`\`json. Return pure JSON.
-    `;
+OUTPUT: Return ONLY valid JSON in this exact structure, no markdown wrappers:
+{
+  "questions": [
+    {
+      "questionText": "Transcribed question text",
+      "steps": [
+        {
+          "text": "Exact step/sentence/working the student wrote",
+          "type": "correct" | "logic_error" | "procedural_error",
+          "explanation": "If error: why it's wrong and what should be done. If correct: null",
+          "penalty": 0
+        }
+      ],
+      "finalAnswer": "Student's final answer or conclusion",
+      "isFinalAnswerCorrect": true,
+      "awardedScore": 4,
+      "maxScore": 5,
+      "aiCorrectedSolution": ["Correct step 1", "Correct step 2", "Correct final answer"]
+    }
+  ],
+  "totalScore": 12,
+  "maxTotalScore": 15,
+  "summary": "One sentence overall performance summary, encouraging but honest",
+  "weaknessTags": ["concept_or_skill_they_struggle_with", "another_weakness"],
+  "recommendedVideos": [
+    { "title": "Specific tutorial topic to help with their weakness", "duration": "~8 min" },
+    { "title": "Another targeted video topic", "duration": "~12 min" }
+  ]
+}`;
 
-    // 3. Call Gemini Vision API
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
-    
+
     const geminiPayload = {
       contents: [
         {
           parts: [
             { text: systemPrompt },
-            {
-              inlineData: {
-                mimeType: mimeType,
-                data: base64Image
-              }
-            }
+            { inlineData: { mimeType, data: base64Image } }
           ]
         }
       ],
       generationConfig: {
         temperature: 0.1,
-        responseMimeType: "application/json"
+        responseMimeType: 'application/json'
       }
     };
 
-    let textOutput = '';
+    const geminiResponse = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiPayload)
+    });
 
-    try {
-      const geminiResponse = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(geminiPayload)
-      });
-
-      if (!geminiResponse.ok) {
-        const err = await geminiResponse.text();
-        console.error('Gemini API Error:', err);
-        throw new Error(`Gemini API failed (${geminiResponse.status}): ${err}`);
-      }
-
-      const geminiData = await geminiResponse.json();
-      textOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } catch (apiError: any) {
-      console.error("API error:", apiError);
-      return NextResponse.json({ error: apiError.message || 'Gemini API failed' }, { status: 500 });
+    if (!geminiResponse.ok) {
+      const errText = await geminiResponse.text();
+      console.error('Gemini API Error:', errText);
+      throw new Error(`Gemini API failed (${geminiResponse.status}): ${errText}`);
     }
 
-    if (!textOutput) {
-      throw new Error('No valid text returned from Gemini and fallback failed.');
-    }
+    const geminiData = await geminiResponse.json();
+    let textOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Clean markdown if present (though responseMimeType should prevent it)
-    textOutput = textOutput.replace(/^```json/g, '').replace(/```$/g, '').trim();
+    if (!textOutput) throw new Error('No output returned from Gemini Vision API.');
 
-    const resultJson = JSON.parse(textOutput);
+    // Strip markdown wrappers if present despite responseMimeType setting
+    textOutput = textOutput.replace(/^```json\s*/g, '').replace(/\s*```$/g, '').trim();
 
-    return NextResponse.json(resultJson);
+    const result = JSON.parse(textOutput);
+
+    // Ensure grade string is computed
+    result.grade = `${result.totalScore}/${result.maxTotalScore}`;
+
+    return NextResponse.json({ success: true, ...result });
 
   } catch (error: any) {
     console.error('Grade Image Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

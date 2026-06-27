@@ -1,9 +1,10 @@
-import { Check, X, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Check, X, AlertCircle, AlertTriangle, PlayCircle, Tag } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface Step {
   type: 'correct' | 'logic_error' | 'procedural_error';
   text: string;
-  explanation?: string;
+  explanation?: string | null;
   penalty?: number;
 }
 
@@ -12,6 +13,8 @@ export interface Question {
   steps: Step[];
   finalAnswer: string;
   isFinalAnswerCorrect: boolean;
+  awardedScore?: number;
+  maxScore?: number;
   aiCorrectedSolution?: string[];
 }
 
@@ -21,123 +24,216 @@ export interface AiResult {
   maxTotalScore: number;
   summary: string;
   weaknessTags?: string[];
+  recommendedVideos?: { title: string; duration: string }[];
+}
+
+function AnimatedScore({ value, max }: { value: number; max: number }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (start === end) return;
+    const duration = 1200;
+    const step = (timestamp: number, startTime: number) => {
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      setDisplay(Math.round(progress * end));
+      if (progress < 1) requestAnimationFrame(ts => step(ts, startTime));
+    };
+    requestAnimationFrame(ts => step(ts, ts));
+  }, [value]);
+
+  const pct = max > 0 ? (display / max) * 100 : 0;
+  const circumference = 2 * Math.PI * 70;
+  const scoreColor = pct >= 80 ? '#10b981' : pct >= 60 ? '#f59e0b' : '#dc143c';
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-44 h-44">
+        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="70" stroke="#f1f5f9" strokeWidth="12" fill="transparent" />
+          <circle
+            cx="80" cy="80" r="70"
+            stroke={scoreColor}
+            strokeWidth="12"
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference - (circumference * pct) / 100}
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 1.2s ease-out, stroke 0.5s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-5xl font-black tracking-tighter" style={{ color: scoreColor }}>{display}</span>
+          <span className="text-sm font-bold text-gray-400 mt-0.5">out of {max}</span>
+        </div>
+      </div>
+      <div className="mt-3 text-sm font-bold px-4 py-1.5 rounded-full" style={{ backgroundColor: `${scoreColor}20`, color: scoreColor }}>
+        {pct >= 90 ? '🏆 Excellent' : pct >= 75 ? '✨ Good Job' : pct >= 60 ? '📈 Keep Going' : '⚠️ Needs Review'}
+      </div>
+    </div>
+  );
 }
 
 export default function AiEvaluationView({ scanResult }: { scanResult: AiResult }) {
   if (!scanResult || !scanResult.questions) return null;
 
+  const pct = scanResult.maxTotalScore > 0 ? (scanResult.totalScore / scanResult.maxTotalScore) * 100 : 0;
+
   return (
-    <div className="w-full bg-[#f4f4f0] shadow-xl rounded-md relative z-10" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #cbd5e1 31px, #cbd5e1 32px)', backgroundPositionY: '40px' }}>
-      <div className="p-6 md:p-12 text-[#111] font-mono text-base md:text-lg space-y-16">
-        
-        {scanResult.questions.map((q: Question, i: number) => (
-          <div key={i}>
-            <div className="font-bold text-xl mb-6">Q{i+1}: {q.questionText}</div>
-            
-            <div className="space-y-6">
-              {q.steps?.map((step: Step, j: number) => (
-                <div key={j} className="flex flex-col md:flex-row items-start justify-between gap-4">
-                  {/* Correct Step */}
-                  {step.type === 'correct' && (
-                    <div className="md:ml-6 leading-loose text-blue-900/80 flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 w-full">
-                      <div className="flex-1 overflow-x-auto w-full">{step.text}</div>
-                      <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-200 shrink-0 self-start md:self-auto">
-                        <Check className="w-5 h-5 font-bold" />
-                        <span className="font-sans text-sm font-bold tracking-wide">Verified</span>
-                      </div>
-                    </div>
-                  )}
+    <div className="w-full space-y-8 font-sans">
 
-                  {/* Logic Error Step */}
-                  {step.type === 'logic_error' && (
-                    <div className="md:ml-6 flex flex-col md:flex-row items-start gap-4 md:gap-8 w-full">
-                      <div className="flex-1 w-full bg-red-500/5 border-2 border-[#dc143c]/40 rounded-lg p-4 leading-loose text-blue-900/80 relative overflow-x-auto">
-                        <div className="absolute -top-3 -right-3 bg-[#dc143c] text-white p-1 rounded-full shadow-lg">
-                          <X className="w-4 h-4" />
-                        </div>
-                        <span className="text-[#dc143c] font-bold line-through decoration-2 whitespace-nowrap">{step.text}</span>
-                      </div>
-                      <div className="flex-1 w-full bg-white border border-[#002147]/10 p-5 rounded-xl shadow-sm relative overflow-hidden">
-                        <div className="absolute left-0 top-0 w-1 h-full bg-[#dc143c]"></div>
-                        <div className="flex items-center space-x-2 text-[#dc143c] font-bold uppercase tracking-wider text-xs mb-2">
-                          <AlertCircle className="w-4 h-4" /> Logic Error
-                        </div>
-                        <p className="font-sans text-[#002147] text-sm leading-relaxed mb-3">
-                          {step.explanation}
-                        </p>
-                        {step.penalty !== undefined && step.penalty > 0 && (
-                          <div className="inline-flex text-[#dc143c] font-bold bg-[#dc143c]/10 px-3 py-1 rounded">
-                            -{step.penalty} Penalty
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+      {/* Score Hero + Summary */}
+      <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 flex flex-col md:flex-row items-center gap-8">
+        <AnimatedScore value={scanResult.totalScore} max={scanResult.maxTotalScore} />
+        <div className="flex-1 space-y-4">
+          <p className="text-gray-600 leading-relaxed text-base italic border-l-4 border-blue-500 pl-4">"{scanResult.summary}"</p>
 
-                  {/* Procedural Error Step */}
-                  {step.type === 'procedural_error' && (
-                    <div className="md:ml-6 flex flex-col md:flex-row items-start gap-4 md:gap-8 w-full">
-                      <div className="flex-1 w-full bg-orange-500/5 border-2 border-orange-500/40 rounded-lg p-4 leading-loose text-blue-900/80 relative overflow-x-auto">
-                        <div className="absolute -top-3 -right-3 bg-orange-500 text-white p-1 rounded-full shadow-lg">
-                          <AlertTriangle className="w-4 h-4" />
-                        </div>
-                        <span className="text-orange-700 font-bold whitespace-nowrap">{step.text}</span>
-                      </div>
-                      <div className="flex-1 w-full bg-white border border-[#002147]/10 p-5 rounded-xl shadow-sm relative overflow-hidden">
-                        <div className="absolute left-0 top-0 w-1 h-full bg-orange-500"></div>
-                        <div className="flex items-center space-x-2 text-orange-600 font-bold uppercase tracking-wider text-xs mb-2">
-                          <AlertTriangle className="w-4 h-4" /> Procedural Error
-                        </div>
-                        <p className="font-sans text-[#002147] text-sm leading-relaxed mb-3">
-                          {step.explanation}
-                        </p>
-                        {step.penalty !== undefined && step.penalty > 0 && (
-                          <div className="inline-flex text-orange-600 font-bold bg-orange-500/10 px-3 py-1 rounded">
-                            -{step.penalty} Penalty
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+          {/* Weakness Tags */}
+          {scanResult.weaknessTags && scanResult.weaknessTags.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5" /> Areas to Improve
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {scanResult.weaknessTags.map((tag, i) => (
+                  <span key={i} className="px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded-full text-xs font-bold capitalize">
+                    {tag.replace(/_/g, ' ')}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recommended Videos */}
+          {scanResult.recommendedVideos && scanResult.recommendedVideos.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1.5">
+                <PlayCircle className="w-3.5 h-3.5" /> Recommended Watchlist
+              </p>
+              <div className="space-y-1.5">
+                {scanResult.recommendedVideos.map((v, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                    <PlayCircle className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="text-sm font-medium text-blue-900 flex-1">{v.title}</span>
+                    <span className="text-xs text-blue-400 font-bold shrink-0">{v.duration}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Question-by-Question Breakdown */}
+      {scanResult.questions.map((q: Question, i: number) => {
+        const qPct = (q.maxScore || 5) > 0 ? ((q.awardedScore || 0) / (q.maxScore || 5)) * 100 : 0;
+        const qColor = qPct >= 80 ? 'emerald' : qPct >= 50 ? 'amber' : 'red';
+        const colorMap: Record<string, string> = {
+          emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          amber: 'bg-amber-50 text-amber-700 border-amber-200',
+          red: 'bg-red-50 text-red-700 border-red-200',
+        };
+
+        return (
+          <div key={i} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Question Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#002147] text-white flex items-center justify-center font-black text-sm shrink-0">
+                  Q{i + 1}
                 </div>
-              ))}
-              
-              {/* Final Answer */}
-              <div className="md:ml-6 mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <span className="font-bold text-black border-2 border-blue-500/30 px-3 py-1 bg-blue-500/10 rounded break-all">Answer: {q.finalAnswer}</span>
+                <p className="font-bold text-[#002147] text-base leading-snug">{q.questionText}</p>
+              </div>
+              {q.awardedScore !== undefined && (
+                <div className={`shrink-0 ml-4 px-4 py-1.5 rounded-xl border font-black text-sm ${colorMap[qColor]}`}>
+                  {q.awardedScore}/{q.maxScore || 5}
+                </div>
+              )}
+            </div>
+
+            {/* Steps */}
+            <div className="p-6 space-y-4 font-mono text-sm">
+              {q.steps?.map((step: Step, j: number) => {
+                if (step.type === 'correct') return (
+                  <div key={j} className="flex items-start gap-3 group">
+                    <div className="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-gray-700 leading-relaxed flex-1">{step.text}</span>
+                    <span className="shrink-0 text-xs font-sans font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">Verified ✓</span>
+                  </div>
+                );
+
+                if (step.type === 'logic_error') return (
+                  <div key={j} className="space-y-2">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                        <X className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-red-600 line-through decoration-2 flex-1 leading-relaxed">{step.text}</span>
+                      {(step.penalty ?? 0) > 0 && (
+                        <span className="shrink-0 text-xs font-sans font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                          -{step.penalty}pts
+                        </span>
+                      )}
+                    </div>
+                    {step.explanation && (
+                      <div className="ml-9 bg-red-50 border border-red-200 rounded-xl p-3 font-sans text-xs text-red-800 flex gap-2">
+                        <AlertCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                        <span><strong>Logic Error:</strong> {step.explanation}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+
+                if (step.type === 'procedural_error') return (
+                  <div key={j} className="space-y-2">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-amber-700 flex-1 leading-relaxed">{step.text}</span>
+                      {(step.penalty ?? 0) > 0 && (
+                        <span className="shrink-0 text-xs font-sans font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                          -{step.penalty}pts
+                        </span>
+                      )}
+                    </div>
+                    {step.explanation && (
+                      <div className="ml-9 bg-amber-50 border border-amber-200 rounded-xl p-3 font-sans text-xs text-amber-800 flex gap-2">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                        <span><strong>Procedural Error:</strong> {step.explanation}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+                return null;
+              })}
+
+              {/* Final Answer Row */}
+              <div className="pt-4 mt-4 border-t border-gray-100 flex flex-wrap items-center gap-3 font-sans">
+                <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Final Answer:</span>
+                <span className="font-mono font-bold text-[#002147] bg-gray-100 px-3 py-1 rounded-lg text-sm">{q.finalAnswer || '—'}</span>
                 {q.isFinalAnswerCorrect ? (
-                   <div className="inline-flex items-center text-sm font-bold text-green-600 bg-green-50 px-3 py-1 border border-green-200 rounded shrink-0">
-                     Correct Final Answer
-                   </div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">✓ Correct</span>
                 ) : (
-                   <div className="inline-flex items-center text-sm font-bold text-[#dc143c] bg-[#dc143c]/5 px-3 py-1 border border-[#dc143c]/20 rounded shrink-0">
-                     Incorrect Final Answer
-                   </div>
+                  <span className="text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-3 py-1 rounded-full">✗ Incorrect</span>
                 )}
               </div>
             </div>
-          </div>
-        ))}
 
-        {/* Final Solution Breakout Box */}
-        <div className="mt-12 bg-[#002147] text-white p-6 md:p-8 rounded-xl shadow-lg border border-[#002147]/20 relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/20 blur-3xl pointer-events-none"></div>
-          <h4 className="font-sans font-bold text-blue-300 uppercase tracking-widest text-sm mb-6">AI Corrected Solutions</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {scanResult.questions.map((q: Question, i: number) => (
-              <div key={i}>
-                <div className="font-bold text-blue-300 mb-2">Q{i+1} Correct Method</div>
-                <div className="font-mono leading-loose text-white/90 overflow-x-auto">
-                  {q.aiCorrectedSolution?.map((line: string, j: number) => (
-                    <div key={j} className="whitespace-nowrap">{line}</div>
-                  ))}
-                </div>
+            {/* AI Corrected Solution */}
+            {q.aiCorrectedSolution && q.aiCorrectedSolution.length > 0 && (
+              <div className="bg-[#002147] p-6 font-mono text-sm space-y-1.5">
+                <p className="text-blue-300 text-xs font-sans font-bold uppercase tracking-widest mb-3">✦ AI Correct Method</p>
+                {q.aiCorrectedSolution.map((line: string, k: number) => (
+                  <div key={k} className="text-white/80 leading-relaxed">{line}</div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        </div>
-
-      </div>
+        );
+      })}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, AlertTriangle, CheckCircle, ArrowLeft, Loader2, FileText, Camera, BookOpen, Clock, ChevronLeft } from 'lucide-react';
@@ -87,12 +87,24 @@ export default function HomeworkAssignment() {
 
         const data = await res.json();
         if (data.success) {
-          // Re-fetch assignment from correct path
-          const d = await getDoc(doc(db, 'schools', profile.schoolId!, 'assignments', id));
-          if (d.exists()) {
-            const ddata = d.data();
-            setAssignment({ id: d.id, topic: ddata.title || ddata.topic, ...ddata });
+          // Write grade to Firestore client-side (since Firebase Admin may not be configured on Vercel)
+          try {
+            await updateDoc(doc(db, 'schools', profile.schoolId!, 'assignments', id), {
+              status: 'completed',
+              grade: data.grade || 'N/A',
+              feedback: data.feedback || 'Graded successfully.',
+              completedAt: new Date().toISOString()
+            });
+          } catch (fsErr) {
+            console.warn('Firestore update failed (non-critical):', fsErr);
           }
+          // Update local state directly so graded view shows immediately
+          setAssignment((prev: any) => ({
+            ...prev,
+            status: 'completed',
+            grade: data.grade || 'N/A',
+            feedback: data.feedback || 'Graded successfully.'
+          }));
         } else {
           alert('Grading failed: ' + data.error);
         }

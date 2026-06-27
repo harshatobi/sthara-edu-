@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp, where } from 'firebase/firestore';
-import { Heart, Wind, PenTool, Activity, MessageCircle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Heart, Wind, Activity, CheckCircle2, ChevronRight } from 'lucide-react';
 
 const MOODS = [
   { label: 'Great', icon: '🤩', color: 'bg-green-100 text-green-600 border-green-200', hover: 'hover:bg-green-50', value: 100 },
@@ -20,9 +20,7 @@ export default function WellnessPage() {
   const [todaysMood, setTodaysMood] = useState<number | null>(null);
   const [history, setHistory] = useState<{date: string, value: number}[]>([]);
   
-  // Journal state
-  const [journalText, setJournalText] = useState('');
-  const [journalSaved, setJournalSaved] = useState(false);
+
 
   // Breathing state
   const [isBreathing, setIsBreathing] = useState(false);
@@ -82,21 +80,6 @@ export default function WellnessPage() {
     }
   };
 
-  const handleJournalSubmit = async () => {
-    if (!journalText.trim()) return;
-    try {
-      await addDoc(collection(db, 'journal_entries'), {
-        userId: profile?.uid,
-        text: journalText,
-        createdAt: serverTimestamp()
-      });
-      setJournalText('');
-      setJournalSaved(true);
-      setTimeout(() => setJournalSaved(false), 3000);
-    } catch (err) {
-      console.error("Failed to save journal", err);
-    }
-  };
 
   // Breathing Animation Loop
   useEffect(() => {
@@ -250,41 +233,6 @@ export default function WellnessPage() {
             </button>
           </div>
 
-          {/* Journaling */}
-          <div className="bg-[#f8fafc] p-6 rounded-xl border border-[#002147]/5">
-            <h3 className="font-semibold text-[#002147] mb-2 flex items-center space-x-2">
-              <PenTool className="w-5 h-5 text-indigo-600" />
-              <span>Private Journal</span>
-            </h3>
-            <p className="text-[11px] text-[#002147]/60 mb-4 bg-indigo-50 text-indigo-800 p-2 rounded-lg border border-indigo-100">
-              <span className="font-semibold">Transparency Note:</span> Your teachers and counselors can read these entries to better understand and support your well-being.
-            </p>
-            
-            <textarea
-              value={journalText}
-              onChange={(e) => setJournalText(e.target.value)}
-              placeholder="How are you feeling right now? Unload your thoughts here..."
-              className="w-full h-24 p-3 bg-white border border-[#002147]/10 rounded-lg focus:ring-1 focus:ring-[#002147] focus:border-[#002147] outline-none resize-none text-sm placeholder:text-[#002147]/30 mb-3"
-            ></textarea>
-            
-            <div className="flex items-center justify-between">
-              <a href="mailto:counselor@sthara.edu" className="text-sm font-medium text-[#dc143c] hover:underline flex items-center space-x-1">
-                <MessageCircle className="w-4 h-4" />
-                <span>Chat with Counselor</span>
-              </a>
-              <button 
-                onClick={handleJournalSubmit}
-                disabled={!journalText.trim() || journalSaved}
-                className="py-2 px-4 bg-[#002147] text-white rounded-lg text-sm font-medium hover:bg-[#003b80] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-              >
-                {journalSaved ? (
-                  <><CheckCircle2 className="w-4 h-4" /> <span>Saved</span></>
-                ) : (
-                  <span>Save Entry</span>
-                )}
-              </button>
-            </div>
-          </div>
 
         </div>
       </div>

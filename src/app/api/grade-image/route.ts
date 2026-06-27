@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     `;
 
     // 3. Call Gemini Vision API
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
     
     const geminiPayload = {
       contents: [

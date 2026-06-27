@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(request: Request) {
   try {
     const { title, description, questions, studentAnswers } = await request.json();
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     const prompt = `You are an expert diagnostic AI teacher.
     A student has just submitted a multiple choice quiz.
@@ -48,16 +48,14 @@ export async function POST(request: Request) {
     }
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.2
-      }
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-pro',
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
     });
 
-    const rawText = response.text || '{}';
+    const response = await model.generateContent(prompt);
+
+    const rawText = response.response.text() || '{}';
     const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(jsonStr);
 

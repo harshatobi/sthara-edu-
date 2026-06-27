@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 // Removed 'edge' runtime — edge has payload size limits that break base64 image uploads
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
@@ -7,6 +8,16 @@ const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 export async function POST(request: NextRequest) {
   const token = await verifyApiToken(request);
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Rate limit: 10 grading requests per minute per IP (Vision API is expensive)
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`grade:${ip}`, 10, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Please wait before submitting again.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } }
+    );
+  }
 
   try {
     if (!GEMINI_API_KEY) {

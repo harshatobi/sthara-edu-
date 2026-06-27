@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+
 
 type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
 
@@ -96,61 +98,21 @@ export default function LoginPage() {
 
     setIsSigningIn(true);
     try {
-      let cred;
-      try {
-        cred = await signInWithEmailAndPassword(auth, email, password);
-      } catch (err: any) {
-        // Auto-seed demo accounts if they don't exist
-        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
-          if (['parent1@sthara.com', 'admin@sthara.com'].includes(email)) {
-            try {
-              cred = await createUserWithEmailAndPassword(auth, email, password);
-            } catch (createErr: any) {
-              if (createErr.code === 'auth/email-already-in-use') {
-                throw err; // Password was probably just wrong
-              }
-              throw createErr;
-            }
-          } else {
-            throw err;
-          }
-        } else {
-          throw err;
-        }
-      }
-      
-      // Temporary setup hook for demo accounts
-      if (email === 'admin@sthara.com') {
-        await setDoc(doc(db, 'superadmins', cred.user.uid), {
-          email: 'admin@sthara.com',
-          role: 'superadmin',
-          createdAt: new Date()
-        }).catch(e => console.error("Setup doc error:", e));
-        
-        await setDoc(doc(db, 'global_users', cred.user.uid), {
-          email: 'admin@sthara.com',
-          role: 'superadmin',
-          name: 'Super Admin'
-        }).catch(e => console.error("Setup doc error:", e));
-      }
-      
-      if (email === 'parent1@sthara.com') {
-        await setDoc(doc(db, 'users', cred.user.uid), {
-          email: 'parent1@sthara.com',
-          role: 'parent',
-          name: 'Demo Parent',
-          schoolId: schoolCode
-        }).catch(e => console.error("Setup doc error:", e));
-      }
-
+      await signInWithEmailAndPassword(auth, email, password);
+      // Signal that we just completed a login — useEffect will redirect
+      setLoginAttempted(true);
     } catch (err: any) {
       console.error(err);
-      setError('Invalid credentials or school mapping.');
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Incorrect email or password. Please try again.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please reset your password or try again later.');
+      } else {
+        setError('Sign in failed. Please check your connection and try again.');
+      }
       setIsSigningIn(false);
       return;
     }
-    // Signal that we just completed a login — useEffect will redirect
-    setLoginAttempted(true);
   };
 
   const handleForgotPassword = async () => {
@@ -336,10 +298,26 @@ export default function LoginPage() {
           )}
 
         </div>
+
+        {/* Register your school / privacy links */}
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-white/40 text-sm font-medium">
+            New school?{' '}
+            <Link href="/onboard" className="text-white font-bold hover:underline">
+              Register for a free 30-day trial →
+            </Link>
+          </p>
+          <p className="text-white/30 text-xs">
+            <Link href="/privacy" className="hover:text-white/50 transition-colors">Privacy Policy</Link>
+            {' · '}
+            <Link href="/terms" className="hover:text-white/50 transition-colors">Terms of Service</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function RoleCard({ onClick, icon: Icon, title, subtitle }: { onClick: () => void; icon: any; title: string; subtitle: string }) {
   return (

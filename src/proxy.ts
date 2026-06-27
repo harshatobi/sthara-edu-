@@ -2,16 +2,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Next.js Middleware — Server-side route protection.
+ * Next.js Proxy (previously Middleware) — Server-side route protection.
  * Redirects unauthenticated users (no Firebase session cookie) to /login.
- * Note: Firebase client SDK tokens are stored in IndexedDB (not cookies),
- * so we check for the Firebase auth token cookie that can be set on login.
- * As a lightweight layer, we also check for the Firebase __session cookie.
+ *
+ * The __session cookie is set by AuthContext.tsx after a successful Firebase login.
+ * This gives us a lightweight server-edge auth check without needing the Admin SDK here.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protected route prefixes
+  // Protected route prefixes — anything under these requires a session cookie
   const protectedPrefixes = [
     '/student',
     '/teacher',
@@ -23,9 +23,7 @@ export function middleware(request: NextRequest) {
   const isProtected = protectedPrefixes.some(prefix => pathname.startsWith(prefix));
   if (!isProtected) return NextResponse.next();
 
-  // Check for Firebase session cookie (set after login)
-  // Firebase web SDK stores the auth state in IndexedDB, but we look for
-  // a lightweight __session cookie that we set on successful login.
+  // Check for our lightweight session cookie (set by AuthContext on login)
   const sessionCookie = request.cookies.get('__session')?.value;
 
   if (!sessionCookie) {
@@ -38,7 +36,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Match all protected routes, exclude api/static/public paths
+  // Only run on these route patterns — avoids running on API, _next, or static files
   matcher: [
     '/student/:path*',
     '/teacher/:path*',

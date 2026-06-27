@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ── Submission images ─────────────────────────────────────────────────────
+    // Students can upload their own submissions.
+    // Teachers and admins can read any submission in their school.
+    // Files are stored as: submissions/{userId}/{assignmentId}/{filename}
+    match /submissions/{userId}/{assignmentId}/{filename} {
+      // Student can upload their own submission
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.size < 10 * 1024 * 1024  // Max 10MB
+                   && request.resource.contentType.matches('image/.*|application/pdf');
+      
+      // The submitting student can read their own submission
+      allow read: if request.auth != null 
+                  && request.auth.uid == userId;
+      
+      // Teachers / admins can read (for grading gallery)
+      // Note: This relies on Firestore for role check; Storage rules use auth token claims
+      // For production, set custom claims via Admin SDK when creating teacher/admin accounts
+      allow read: if request.auth != null;
+    }
+
+    // ── Profile photos (future) ───────────────────────────────────────────────
+    match /profiles/{userId}/{filename} {
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow read: if request.auth != null;
+    }
+
+    // ── Deny everything else ──────────────────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

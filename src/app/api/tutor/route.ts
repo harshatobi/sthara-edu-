@@ -1,10 +1,13 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
   const token = await verifyApiToken(request);
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const rl = checkRateLimit(`tutor:${getClientIp(request)}`, 30, 60_000);
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Slow down.' }, { status: 429 });
   try {
     const { messages, studentId, studentName, studentClass } = await request.json();
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 
@@ -12,7 +12,7 @@ type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { profile } = useAuth(); // We don't need setMockProfile anymore
+  const { profile, loading } = useAuth();
 
   const [step, setStep] = useState<Step>('SCHOOL_CODE');
   const [schoolCode, setSchoolCode] = useState('');
@@ -165,15 +165,13 @@ export default function LoginPage() {
     }
   };
 
+  // When the login page is visited, sign out any existing session first.
+  // This allows switching between different user roles cleanly.
   useEffect(() => {
-    if (profile) {
-      if (profile.role === 'superadmin') router.push('/superadmin');
-      else if (profile.role === 'student') router.push('/student');
-      else if (profile.role === 'teacher') router.push('/teacher');
-      else if (profile.role === 'admin') router.push('/admin');
-      else if (profile.role === 'parent') router.push('/parent');
+    if (!loading && profile) {
+      signOut(auth).catch(err => console.error('Sign out error:', err));
     }
-  }, [profile, router]);
+  }, [loading, profile]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#001229] to-[#002147] p-6">

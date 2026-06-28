@@ -59,13 +59,69 @@ export default function StudentDashboard() {
     setSelectedAnswers(prev => ({ ...prev, [questionId]: optionId }));
   };
 
+  // Compress image to max ~800KB before sending to Gemini API
+  // Firebase Storage still receives the ORIGINAL full-quality file
+  const compressImageForApi = (file: File): Promise<{ base64: string; mimeType: string }> => {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith('image/')) {
+        // Non-image: read as-is (PDF etc.)
+        const reader = new FileReader();
+        reader.onloadend = () => resolve({
+          base64: (reader.result as string).split(',')[1],
+          mimeType: file.type,
+        });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const img = new window.Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        let { width, height } = img;
+        const MAX_DIM = 1600; // px — enough for Gemini to read handwriting clearly
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width >= height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { reject(new Error('Canvas compression failed')); return; }
+            const reader = new FileReader();
+            reader.onloadend = () => resolve({
+              base64: (reader.result as string).split(',')[1],
+              mimeType: 'image/jpeg',
+            });
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          },
+          'image/jpeg',
+          0.8   // 80% quality — readable by Gemini, small enough for API
+        );
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
     setAttachmentFiles(prev => {
       const combined = [...prev, ...newFiles];
       return combined.slice(0, 6); // max 6 pages
     });
-    // Reset input so same files can be re-added after removal
+    // Reset input so same file can be added again after removal
     e.target.value = '';
   };
 
@@ -136,16 +192,13 @@ export default function StudentDashboard() {
           );
         }
 
-        // ── Step 2: Send FIRST page to Gemini for AI grading ──
+        // ── Step 2: Compress page 1 & send to Gemini for AI grading ──
         if (submissionData.imageUrl) {
-          setSubmitStatus('Diagnostic Engine is scanning your work...');
+          setSubmitStatus('Compressing & scanning your work...');
           try {
-            const base64Data = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-              reader.onerror = reject;
-              reader.readAsDataURL(attachmentFiles[0]);
-            });
+
+            // Compress to ~800KB before sending — avoids "file too large" API error
+            const compressed = await compressImageForApi(attachmentFiles[0]);
 
             const authToken = await getAuthToken();
             const response = await fetch('/api/grade-image', {
@@ -155,11 +208,12 @@ export default function StudentDashboard() {
                 Authorization: `Bearer ${authToken}`,
               },
               body: JSON.stringify({
-                imageBase64: base64Data,
-                mimeType: attachmentFiles[0].type,
+                imageBase64: compressed.base64,
+                mimeType: compressed.mimeType,
                 assignmentTitle: selectedTask.title,
                 assignmentDescription: selectedTask.description,
                 assignmentQuestions: selectedTask.questions || [],
+
               }),
             });
 

@@ -287,9 +287,15 @@ function MasteryTrackerContent() {
     const loadStudentData = async (uid: string) => {
       setIsLoading(true);
       try {
-        const docRef = doc(db, 'users', uid);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) return;
+        // Try /users first, then fallback to /global_users
+        let docSnap = await getDoc(doc(db, 'users', uid));
+        if (!docSnap.exists()) {
+          docSnap = await getDoc(doc(db, 'global_users', uid));
+        }
+        if (!docSnap.exists()) {
+          setIsLoading(false);
+          return;
+        }
         
         const studentData = { id: docSnap.id, ...docSnap.data() };
 

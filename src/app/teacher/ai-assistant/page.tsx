@@ -791,9 +791,19 @@ export default function TeacherAIAssistant() {
         </div>
 
         {/* OUTPUT PANEL */}
-        <div className={`print:w-full ${isFullscreen ? 'fixed inset-0 z-[100] bg-gray-100 overflow-y-auto p-4 md:p-8' : 'lg:w-2/3'}`}>
+        <div className={`print:w-full ${isFullscreen ? 'fixed inset-0 z-[100] bg-gray-100 overflow-y-auto' : 'lg:w-2/3'}`}>
+          {/* Fullscreen close button overlay */}
+          {isFullscreen && (
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="fixed top-4 right-4 z-[110] flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-lg text-gray-700 font-bold text-sm hover:bg-gray-50 transition-all"
+            >
+              <Minimize className="w-4 h-4" />
+              Exit Fullscreen
+            </button>
+          )}
           {generatedContent ? (
-            <div className={`bg-white overflow-hidden print:border-none print:shadow-none print:rounded-none ${isFullscreen ? 'min-h-screen max-w-5xl mx-auto rounded-2xl shadow-2xl border border-gray-200' : 'rounded-2xl shadow-lg border border-gray-200'}`}>
+            <div className={`bg-white overflow-hidden print:border-none print:shadow-none print:rounded-none ${isFullscreen ? 'min-h-screen max-w-5xl mx-auto mt-0 rounded-none shadow-none border-0' : 'rounded-2xl shadow-lg border border-gray-200'}`}>
 
               {/* Top action bar */}
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center print:hidden">

@@ -844,61 +844,6 @@ export default function StudentDashboard() {
                     </div>
                   )}
 
-                  {(() => {
-                    const weaknesses = quizResult.aiResult?.weaknessTags || [];
-                    const videos = quizResult.aiResult?.recommendedVideos && quizResult.aiResult.recommendedVideos.length > 0 
-                      ? quizResult.aiResult.recommendedVideos 
-                      : weaknesses.length > 0 
-                        ? weaknesses.slice(0, 2).map((tag: string) => ({ title: tag.replace(/_/g, ' ') + ' Basics', duration: '5 min tutorial' }))
-                        : [
-                            { title: "Fixing Basics", duration: "5 min tutorial" },
-                            { title: "Mastering Fundamentals", duration: "8 min tutorial" }
-                          ];
-                    
-                    return (
-                      <div className="w-full text-left bg-gradient-to-r from-blue-600 to-[#002147] rounded-3xl p-6 text-white shadow-lg relative overflow-hidden mb-8">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                          <BrainCircuit className="w-48 h-48" />
-                        </div>
-                        <div className="relative z-10">
-                          <div className="flex items-center space-x-3 mb-4">
-                            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                              <Target className="w-6 h-6 text-blue-200" />
-                            </div>
-                            <h2 className="text-2xl font-bold">AI Learning Path</h2>
-                          </div>
-                          
-                          <p className="text-blue-100 text-sm max-w-lg leading-relaxed mb-6">
-                            {weaknesses.length > 0 
-                              ? `Based on your recent performance, our Diagnostic Engine suggests focusing on ${weaknesses[0].replace(/_/g, ' ')} to strengthen your foundation.`
-                              : "Based on your recent performance, our Diagnostic Engine suggests focusing on the following topics to strengthen your foundation."}
-                          </p>
-  
-                          <div className="space-y-3">
-                            <h3 className="text-blue-200 text-xs font-bold uppercase tracking-wider flex items-center space-x-2">
-                              <PlayCircle className="w-4 h-4" />
-                              <span>Suggested Remedial Content</span>
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {videos.map((video: any, idx: number) => (
-                                <div key={idx} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden hover:bg-white/20 transition-all cursor-pointer group shadow-sm">
-                                  <div className="h-24 relative flex items-center justify-center overflow-hidden bg-[#002147]/40">
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#002147]/80 to-transparent z-10" />
-                                    <PlayCircle className="w-10 h-10 text-white opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all z-20 drop-shadow-md" />
-                                  </div>
-                                  <div className="p-3 bg-white/5">
-                                    <div className="text-sm font-bold text-white mb-1 line-clamp-1 capitalize">{video.title}</div>
-                                    <div className="text-xs text-blue-200 font-medium">{video.duration}</div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
                    {quizResult.attachmentUrl && quizResult.attachmentUrl !== 'uploaded_via_api' && (
                      <div className="w-full text-left mb-8 max-w-full overflow-hidden">
                         <h4 className="font-bold text-[#002147] mb-4 text-lg border-b border-[#002147]/10 pb-2">Your Attached Rough Work</h4>

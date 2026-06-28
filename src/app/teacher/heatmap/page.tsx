@@ -25,22 +25,11 @@ export default function TeacherHeatmap() {
     }
   }, [profile, loading, router]);
 
-  useEffect(() => {
-    if (profile?.schoolId) {
-      if (profile.teacherClass) {
-        setAvailableClasses([profile.teacherClass]);
-        setSelectedClass(profile.teacherClass);
-      } else {
-        const defaultClasses = ['Class 10', 'Class 11'];
-        setAvailableClasses(defaultClasses);
-        setSelectedClass(defaultClasses[0]);
-      }
-    }
-  }, [profile]);
+  // Class list is populated dynamically after fetching students — no hardcoded defaults
 
   useEffect(() => {
     const fetchHeatmapData = async () => {
-      if (!profile?.schoolId || !selectedClass) return;
+      if (!profile?.schoolId) return;
       const schoolId = profile.schoolId;
       setIsLoadingData(true);
 
@@ -59,18 +48,53 @@ export default function TeacherHeatmap() {
         addStudents(usersSnap);
         addStudents(globalUsersSnap);
 
-        // Filter by class client-side (handles missing/undefined studentClass gracefully)
-        const students = selectedClass
-          ? allStudents.filter(s => !s.studentClass || s.studentClass.toLowerCase() === selectedClass.toLowerCase())
+        // Dynamically build class list from actual student data
+        const classSet = new Set<string>();
+        allStudents.forEach(s => { if (s.studentClass) classSet.add(s.studentClass); });
+        const discoveredClasses = Array.from(classSet).sort();
+
+        // If teacher has a specific class assigned, use only that; otherwise use discovered ones
+        const classesToShow = profile.teacherClass ? [profile.teacherClass] : discoveredClasses;
+        setAvailableClasses(classesToShow);
+
+        // Auto-select class: keep current if valid, else pick first
+        const activeClass = selectedClass && classesToShow.some(c => c.toLowerCase() === selectedClass.toLowerCase())
+          ? selectedClass
+          : (classesToShow[0] || '');
+
+        if (activeClass !== selectedClass) {
+          setSelectedClass(activeClass);
+          // setSelectedClass triggers this effect again, so we stop here to avoid double-render
+          setIsLoadingData(false);
+          return;
+        }
+
+        // Filter students by the active class (case-insensitive)
+        const students = activeClass
+          ? allStudents.filter(s => !s.studentClass || s.studentClass.toLowerCase() === activeClass.toLowerCase())
           : allStudents;
 
-        const assignmentsSnap = await getDocs(query(
-          collection(db, 'schools', schoolId, 'assignments'),
-          where('class', '==', selectedClass)
-        ));
+        // Fetch assignments — try matching the class exactly, then case-insensitive fallback
+        let assignments: any[] = [];
+        const tryClasses = activeClass
+          ? [activeClass, ...discoveredClasses.filter(c => c !== activeClass)]
+          : discoveredClasses;
 
-        const assignments: any[] = [];
-        assignmentsSnap.forEach(a => assignments.push({ id: a.id, ...a.data() }));
+        for (const cls of tryClasses) {
+          const aSnap = await getDocs(query(
+            collection(db, 'schools', schoolId, 'assignments'),
+            where('class', '==', cls)
+          ));
+          if (!aSnap.empty) {
+            aSnap.forEach(a => assignments.push({ id: a.id, ...a.data() }));
+            break;
+          }
+        }
+        // If still no assignments, fetch all for the school
+        if (assignments.length === 0) {
+          const allASnap = await getDocs(collection(db, 'schools', schoolId, 'assignments'));
+          allASnap.forEach(a => assignments.push({ id: a.id, ...a.data() }));
+        }
         assignments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
         setAssignmentsList(assignments);
 
@@ -115,6 +139,7 @@ export default function TeacherHeatmap() {
 
     fetchHeatmapData();
   }, [profile?.schoolId, selectedClass]);
+
 
   const getHeatmapStyle = (scoreVal: string | number | null | undefined) => {
     if (scoreVal === null || scoreVal === undefined || scoreVal === '') 

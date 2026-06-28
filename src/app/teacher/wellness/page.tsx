@@ -5,8 +5,8 @@ import { db } from '@/lib/firebase/config';
 import { collection, query, getDocs, where, updateDoc, doc } from 'firebase/firestore';
 
 import { 
-  Heart, Activity, PenTool, AlertTriangle,
-  ArrowLeft, ChevronDown, MessageCircle, BrainCircuit, CheckCircle2
+  Heart, Activity, AlertTriangle,
+  ArrowLeft, ChevronDown, MessageCircle, CheckCircle2
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,14 +21,6 @@ interface WellnessLog {
   createdAt: any;
 }
 
-interface JournalEntry {
-  id: string;
-  userId: string;
-  text: string;
-  sentiment?: string;
-  resolved?: boolean;
-  createdAt: any;
-}
 
 interface StudentData {
   id: string;
@@ -43,7 +35,6 @@ export default function TeacherWellnessDashboard() {
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<Record<string, StudentData>>({});
   const [logs, setLogs] = useState<WellnessLog[]>([]);
-  const [journals, setJournals] = useState<JournalEntry[]>([]);
   
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
@@ -117,7 +108,6 @@ export default function TeacherWellnessDashboard() {
         // If no students, clear data and return
         if (Object.keys(studentMap).length === 0) {
           setLogs([]);
-          setJournals([]);
           setLoading(false);
           return;
         }
@@ -139,21 +129,6 @@ export default function TeacherWellnessDashboard() {
         
         setLogs(fetchedLogs);
 
-        // 3. Fetch Journals — same approach
-        const journalSnap = await getDocs(query(
-          collection(db, 'journal_entries'),
-          where('schoolId', '==', profile.schoolId)
-        ));
-        const fetchedJournals = journalSnap.docs
-          .map(d => ({ id: d.id, ...d.data() } as JournalEntry))
-          .filter(j => studentMap[j.userId])
-          .sort((a, b) => {
-            const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
-            const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
-            return bTime - aTime;
-          });
-          
-        setJournals(fetchedJournals);
 
       } catch (err) {
         console.error("Error fetching wellness data:", err);
@@ -166,15 +141,6 @@ export default function TeacherWellnessDashboard() {
 
 
 
-  const handleResolveJournal = async (id: string) => {
-    // Optimistic UI update by setting resolved locally
-    setJournals(prev => prev.map(j => j.id === id ? { ...j, resolved: true } : j));
-    try {
-      await updateDoc(doc(db, 'journal_entries', id), { resolved: true });
-    } catch (err) {
-      console.error("Failed to resolve journal", err);
-    }
-  };
 
   const handleResolveLog = async (id: string) => {
     // Optimistic UI update
@@ -211,7 +177,6 @@ export default function TeacherWellnessDashboard() {
     : 0;
 
   const unresolvedLogs = logs.filter(l => !l.resolved);
-  const unresolvedJournals = journals.filter(j => !j.resolved);
   
   const lowEnergyCount = unresolvedLogs.filter(l => l.moodValue <= 40).length;
 
@@ -313,139 +278,74 @@ export default function TeacherWellnessDashboard() {
 
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-              
-              {/* Recent Journals */}
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/60">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-lg font-bold text-[#002147] flex items-center space-x-2">
-                    <PenTool className="w-5 h-5 text-indigo-500" />
-                    <span>Unreviewed Journals</span>
-                  </h2>
-                  <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1 rounded-full border border-indigo-100">
-                    AI Analyzed
-                  </span>
-                </div>
-                
-                <div className="space-y-4">
-                  {unresolvedJournals.length === 0 ? (
-                    <div className="text-sm text-gray-500 text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">No unreviewed journal entries!</div>
-                  ) : (
-                    unresolvedJournals.map(journal => {
-                      const studentName = students[journal.userId]?.name || 'Unknown Student';
-                      const date = journal.createdAt ? journal.createdAt.toDate().toLocaleString() : 'Just now';
-                      const sentiment = journal.sentiment || 'Reflective';
-                      
-                      return (
-                        <div key={journal.id} className="p-5 rounded-2xl border border-gray-200/60 hover:border-indigo-300 hover:shadow-md transition-all bg-white group relative overflow-hidden">
-                          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200 shadow-inner">
-                                {studentName.charAt(0)}
-                              </div>
-                              <div>
-                                <span className="font-bold text-[#002147] block">{studentName}</span>
-                                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{date}</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end space-y-2">
-                              <div className="flex items-center space-x-1.5">
-                                <BrainCircuit className="w-3.5 h-3.5 text-gray-400" />
-                                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md border ${getSentimentStyle(sentiment)}`}>
-                                  {sentiment}
-                                </span>
-                              </div>
-                              <button 
-                                onClick={() => handleResolveJournal(journal.id)}
-                                className="text-xs font-bold text-gray-500 hover:text-indigo-600 transition-colors flex items-center space-x-1"
-                              >
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Mark Reviewed</span>
-                              </button>
-                            </div>
+            {/* Energy Logs — full width */}
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/60">
+              <h2 className="text-lg font-bold text-[#002147] mb-8 flex items-center space-x-2">
+                <Activity className="w-5 h-5 text-emerald-500" />
+                <span>Unresolved Energy Check-ins</span>
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {unresolvedLogs.length === 0 ? (
+                  <div className="col-span-2 text-sm text-gray-500 text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">No unresolved energy logs!</div>
+                ) : (
+                  unresolvedLogs.map(log => {
+                    const studentName = students[log.userId]?.name || 'Unknown Student';
+                    const date = log.createdAt ? log.createdAt.toDate().toLocaleString() : 'Just now';
+                    
+                    let colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    let barColor = 'bg-emerald-500';
+                    if (log.moodValue <= 40) {
+                      colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                      barColor = 'bg-amber-500';
+                    }
+                    if (log.moodValue <= 20) {
+                      colorClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                      barColor = 'bg-rose-500';
+                    }
+                    
+                    return (
+                      <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-gray-200/60 hover:bg-gray-50 transition-colors gap-4">
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center border font-black shadow-sm ${colorClass}`}>
+                            <span className="text-lg leading-none">{log.moodValue}</span>
+                            <span className="text-[9px] uppercase tracking-widest opacity-80 mt-0.5">%</span>
                           </div>
-                          <p className="text-gray-700 leading-relaxed font-medium">
-                            "{journal.text}"
-                          </p>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Energy Logs List */}
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/60">
-                <h2 className="text-lg font-bold text-[#002147] mb-8 flex items-center space-x-2">
-                  <Activity className="w-5 h-5 text-emerald-500" />
-                  <span>Unresolved Energy Check-ins</span>
-                </h2>
-
-                <div className="space-y-4">
-                  {unresolvedLogs.length === 0 ? (
-                    <div className="text-sm text-gray-500 text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">No unresolved energy logs!</div>
-                  ) : (
-                    unresolvedLogs.map(log => {
-                      const studentName = students[log.userId]?.name || 'Unknown Student';
-                      const date = log.createdAt ? log.createdAt.toDate().toLocaleString() : 'Just now';
-                      
-                      let colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                      let barColor = 'bg-emerald-500';
-                      if (log.moodValue <= 40) {
-                        colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
-                        barColor = 'bg-amber-500';
-                      }
-                      if (log.moodValue <= 20) {
-                        colorClass = 'bg-rose-50 text-rose-700 border-rose-200';
-                        barColor = 'bg-rose-500';
-                      }
-                      
-                      return (
-                        <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-gray-200/60 hover:bg-gray-50 transition-colors gap-4">
-                          
-                          <div className="flex items-center space-x-4">
-                            <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center border font-black shadow-sm ${colorClass}`}>
-                              <span className="text-lg leading-none">{log.moodValue}</span>
-                              <span className="text-[9px] uppercase tracking-widest opacity-80 mt-0.5">%</span>
-                            </div>
-                            <div>
-                              <div className="font-bold text-[#002147]">{studentName}</div>
-                              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-0.5">{date}</div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-3 w-full sm:w-auto">
-                            {/* Visual Bar representing energy */}
-                            <div className="hidden sm:block w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div className={`h-full ${barColor}`} style={{ width: `${log.moodValue}%` }} />
-                            </div>
-
-                            {log.moodValue <= 40 ? (
-                              <button 
-                                onClick={() => handleResolveLog(log.id)}
-                                className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-2"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                <span>Check-in</span>
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={() => handleResolveLog(log.id)}
-                                className="flex-1 sm:flex-none px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 text-xs font-bold rounded-xl text-center flex items-center justify-center space-x-1"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Acknowledge</span>
-                              </button>
-                            )}
+                          <div>
+                            <div className="font-bold text-[#002147]">{studentName}</div>
+                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-0.5">{date}</div>
                           </div>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
+                        
+                        <div className="flex items-center space-x-3 w-full sm:w-auto">
+                          <div className="hidden sm:block w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full ${barColor}`} style={{ width: `${log.moodValue}%` }} />
+                          </div>
 
+                          {log.moodValue <= 40 ? (
+                            <button 
+                              onClick={() => handleResolveLog(log.id)}
+                              className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-2"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>Check-in</span>
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleResolveLog(log.id)}
+                              className="flex-1 sm:flex-none px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 text-xs font-bold rounded-xl text-center flex items-center justify-center space-x-1"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Acknowledge</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         )}

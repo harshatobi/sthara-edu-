@@ -114,15 +114,6 @@ export default function RegulatoryVaultPage() {
 
       const avgEnergy = totalLogs > 0 ? (totalEnergy / totalLogs).toFixed(1) : 'N/A';
 
-      const journalsSnap = await getDocs(query(
-        collection(db, 'journal_entries'),
-        where('schoolId', '==', profile.schoolId)
-      ));
-      let totalJournals = 0;
-      journalsSnap.forEach(d => {
-        const uid = d.data().userId || d.data().studentId;
-        if (studentMap[uid]) totalJournals++;
-      });
 
 
       const htmlContent = `
@@ -137,7 +128,6 @@ export default function RegulatoryVaultPage() {
           <tr><td>Total AI Wellness Logs Captured</td><td>${totalLogs}</td></tr>
           <tr><td>Average Institutional Energy Level</td><td>${avgEnergy}%</td></tr>
           <tr><td>Critical Interventions Logged (<40% Energy)</td><td>${criticalLogs}</td></tr>
-          <tr><td>Total Private Journals Submitted</td><td>${totalJournals}</td></tr>
         </table>
         
         <h2>Compliance Statement</h2>
@@ -281,7 +271,7 @@ export default function RegulatoryVaultPage() {
                 <FileCheck2 className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors" />
               </div>
               <h3 className="text-xl font-bold text-[#002147] mb-2">CBSE Wellness Report</h3>
-              <p className="text-gray-500 text-sm font-medium">Aggregates all student wellness journals, AI energy logs, and required critical interventions for the academic year.</p>
+              <p className="text-gray-500 text-sm font-medium">Aggregates all student wellness logs, AI energy check-ins, and required critical interventions for the academic year.</p>
             </div>
             <button 
               onClick={generateWellnessReport}

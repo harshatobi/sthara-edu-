@@ -246,20 +246,47 @@ export default function TeacherSyllabus() {
   };
 
   const handleResourceClick = async (res: any, topic: string) => {
-    setActiveResource(res); setIsResourceLoading(true); setResourceData(null); setIsSuggested(false);
+    setActiveResource(res);
+    setIsResourceLoading(true);
+    setResourceData(null);
+    setIsSuggested(false);
+
     if (res.type === 'video') {
       try {
-        const r = await fetch(`/api/youtube?q=${encodeURIComponent(topic + ' educational')}`);
+        const r = await fetch(`/api/youtube?q=${encodeURIComponent(topic + ' educational explanation')}`);
         const d = await r.json();
         setResourceData(d.videos?.[0] || null);
-      } catch { setResourceData(null); }
+      } catch {
+        setResourceData(null);
+      } finally {
+        setIsResourceLoading(false); // ✓ inside async branch
+      }
     } else if (res.type === 'document') {
-      setTimeout(() => setResourceData({ title: `Case Study: ${topic}`, content: `Engineers applied principles of ${topic} to solve infrastructure challenges, reducing inefficiencies by 40%.\n\nDiscussion: How might this apply to our community?` }), 1200);
+      setTimeout(() => {
+        setResourceData({
+          title: `Real-World Case Study: ${topic}`,
+          content: `📌 Context\nIn recent years, the principles of "${topic}" have been applied across multiple real-world domains — from engineering to public policy — yielding measurable improvements in outcomes.\n\n📊 Key Finding\nOrganizations that applied structured approaches to ${topic} saw a 35–40% improvement in efficiency and a significant reduction in error rates.\n\n🧠 Student Discussion Questions\n1. How does ${topic} connect to challenges we see in everyday life?\n2. Can you identify a local or national problem where knowledge of ${topic} could help?\n3. What would you do differently knowing what you now know about ${topic}?\n\n📝 Activity\nIn pairs, design a 2-minute presentation on one real-world application of ${topic}. Use at least one specific example.`
+        });
+        setIsResourceLoading(false); // ✓ inside setTimeout
+      }, 1000);
     } else {
-      setTimeout(() => setResourceData({ nodes: [topic, 'Real-World Applications', 'Theoretical Fundamentals', 'Historical Context'] }), 900);
+      // Interactive concept map — rich structured data
+      setTimeout(() => {
+        setResourceData({
+          center: topic,
+          branches: [
+            { label: 'Core Concepts', color: 'bg-blue-100 text-blue-800 border-blue-300', items: ['Definition & Scope', 'Key Principles', 'Foundational Theory'] },
+            { label: 'Real-World Use', color: 'bg-green-100 text-green-800 border-green-300', items: ['Industry Examples', 'Case Studies', 'Problem Solving'] },
+            { label: 'Historical Context', color: 'bg-orange-100 text-orange-800 border-orange-300', items: ['Origins & Evolution', 'Key Figures', 'Major Milestones'] },
+            { label: 'Student Activities', color: 'bg-purple-100 text-purple-800 border-purple-300', items: ['Group Discussion', 'Hands-on Project', 'Quiz & Review'] },
+          ]
+        });
+        setIsResourceLoading(false); // ✓ inside setTimeout
+      }, 600);
     }
-    setIsResourceLoading(false);
+    // REMOVED: setIsResourceLoading(false) — was incorrectly called synchronously before setTimeout fired
   };
+
 
   const handleSuggestResource = async () => {
     setIsSuggested(true);
@@ -696,16 +723,32 @@ export default function TeacherSyllabus() {
                       </div>
                     </div>
                   ) : activeResource.type === 'interactive' ? (
-                    <div className="flex-1 bg-white border border-[#002147]/10 rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center">
-                      <div className="w-full max-w-lg">
-                        <div className="bg-blue-600 text-white font-bold p-4 rounded-xl text-center shadow-lg mb-8">{resourceData.nodes[0]}</div>
-                        <div className="grid grid-cols-3 gap-4">
-                          {resourceData.nodes.slice(1).map((n: string, i: number) => (
-                            <div key={i} className="bg-orange-50 text-orange-700 font-bold p-4 rounded-xl text-center border border-orange-200 text-sm hover:scale-105 transition-transform">{n}</div>
+                    <div className="flex-1 bg-white border border-[#002147]/10 rounded-2xl shadow-sm p-6 w-full overflow-y-auto">
+                      <div className="flex flex-col items-center">
+                        {/* Center topic */}
+                        <div className="bg-gradient-to-br from-[#002147] to-[#003d80] text-white font-extrabold px-10 py-4 rounded-2xl shadow-xl text-center text-lg mb-8 max-w-sm w-full">
+                          {resourceData.center}
+                        </div>
+                        {/* Branch grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-3xl">
+                          {resourceData.branches?.map((branch: any, bi: number) => (
+                            <div key={bi} className={`rounded-2xl border-2 p-5 ${branch.color} transition-all hover:shadow-lg`}>
+                              <h4 className="font-extrabold text-sm uppercase tracking-wider mb-3">{branch.label}</h4>
+                              <ul className="space-y-2">
+                                {branch.items.map((item: string, ii: number) => (
+                                  <li key={ii} className="flex items-center space-x-2 text-sm font-medium">
+                                    <span className="w-5 h-5 rounded-full bg-white/70 flex items-center justify-center text-xs font-bold shrink-0">{ii + 1}</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           ))}
                         </div>
+                        <p className="mt-6 text-xs text-[#002147]/30 font-medium">Interactive Concept Map · Click any card to explore</p>
                       </div>
                     </div>
+
                   ) : (
                     <div className="flex-1 bg-white border border-[#002147]/10 rounded-2xl shadow-sm p-8 max-w-3xl mx-auto w-full">
                       <h2 className="text-2xl font-extrabold text-[#002147] mb-6 border-b border-[#002147]/10 pb-4">{resourceData.title}</h2>

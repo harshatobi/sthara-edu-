@@ -145,16 +145,24 @@ export default function StudentDashboard() {
       };
 
       if (selectedTask.questions && selectedTask.questions.length > 0) {
-        // MCQ quiz — auto-score
+        // Detect format: new format uses correctAnswerIndex, old uses correctOptionId
         let score = 0;
-        selectedTask.questions.forEach((q: any) => {
-          if (selectedAnswers[q.id] === q.correctOptionId) score++;
+        selectedTask.questions.forEach((q: any, qIdx: number) => {
+          const selectedVal = selectedAnswers[q.id || String(qIdx)];
+          if (q.correctAnswerIndex !== undefined) {
+            // New format: correctAnswerIndex (integer)
+            if (Number(selectedVal) === q.correctAnswerIndex) score++;
+          } else {
+            // Old format: correctOptionId (string)
+            if (selectedVal === q.correctOptionId) score++;
+          }
         });
         submissionData = {
           ...submissionData,
           type: 'quiz',
           answers: selectedAnswers,
           score,
+          maxScore: selectedTask.questions.length,
           total: selectedTask.questions.length,
         };
       } else {
@@ -306,13 +314,18 @@ export default function StudentDashboard() {
 
       // Show result
       if (selectedTask.questions && selectedTask.questions.length > 0) {
+        const qs = selectedTask.questions;
+        const isNewFormat = qs[0]?.correctAnswerIndex !== undefined;
         // Quiz → show score screen
         setQuizResult({
           score: submissionData.score ?? 0,
-          total: submissionData.maxScore || submissionData.total || selectedTask.questions.length,
+          total: submissionData.maxScore || submissionData.total || qs.length,
           aiResult: submissionData.aiResult,
           attachmentUrl: submissionData.imageUrl || null,
           isHomework: false,
+          questions: qs,
+          answers: selectedAnswers,
+          isNewFormat,
         });
       } else {
         // Homework → show success screen (score given by teacher later)
@@ -905,14 +918,53 @@ export default function StudentDashboard() {
                   ) : (
                     /* ── Quiz score screen ── */
                     <>
-                      <div className="inline-flex items-center justify-center w-24 h-24 bg-[#dc143c]/10 rounded-full mb-6">
-                        <span className="text-3xl font-bold text-[#dc143c]">{quizResult.score ?? 0}/{quizResult.total ?? 0}</span>
+                      <div className="inline-flex items-center justify-center w-28 h-28 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full mb-6 shadow-2xl">
+                        <span className="text-2xl font-black text-white">{quizResult.score ?? 0}/{quizResult.total ?? 0}</span>
                       </div>
-                      <h3 className="text-2xl font-bold text-[#002147] mb-2">Quiz Completed!</h3>
-                      <p className="text-[#002147]/60 mb-8">Your score has been automatically saved and graded.</p>
+                      <h3 className="text-2xl font-black text-[#002147] mb-2">Quiz Complete! 🎉</h3>
+                      <p className="text-gray-500 mb-2">
+                        You scored <span className="font-black text-[#002147]">{Math.round(((quizResult.score ?? 0) / (quizResult.total || 1)) * 100)}%</span>
+                      </p>
+                      <p className="text-sm text-[#002147]/50 mb-6">Score automatically saved and sent to your teacher.</p>
+
+                      {/* Answer review */}
+                      {quizResult.questions && quizResult.questions.length > 0 && (
+                        <div className="w-full text-left space-y-3 mb-8">
+                          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Answer Review</p>
+                          {quizResult.questions.map((q: any, idx: number) => {
+                            const qKey = q.id || String(idx);
+                            const studentAns = Number(quizResult.answers?.[qKey]);
+                            const correct = q.correctAnswerIndex ?? -1;
+                            const isCorrect = studentAns === correct;
+                            return (
+                              <div key={idx} className={`p-4 rounded-xl border text-sm ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                                <p className="font-bold text-[#002147] mb-2">{idx+1}. {q.question || q.text || q.questionText}</p>
+                                <div className="flex flex-col gap-1">
+                                  {q.options.map((opt: any, oIdx: number) => {
+                                    const optText = typeof opt === 'string' ? opt : (opt.text || opt);
+                                    const isStudentChoice = studentAns === oIdx;
+                                    const isCorrectOpt = oIdx === correct;
+                                    return (
+                                      <div key={oIdx} className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 ${
+                                        isCorrectOpt ? 'bg-emerald-200 text-emerald-900 font-bold' :
+                                        isStudentChoice ? 'bg-rose-200 text-rose-900' :
+                                        'text-gray-600'
+                                      }`}>
+                                        <span className="font-black">{String.fromCharCode(65+oIdx)}.</span> {optText}
+                                        {isCorrectOpt && <span className="ml-auto text-emerald-700 font-black">✓</span>}
+                                        {isStudentChoice && !isCorrectOpt && <span className="ml-auto text-rose-700">✗</span>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {q.explanation && <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">💡 {q.explanation}</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </>
-                  
-                  )}
+)}
                   {quizResult.aiResult && (
                     <div className="w-full text-left mb-8 max-w-full overflow-hidden">
                        <h4 className="font-bold text-[#002147] mb-4 text-lg border-b border-[#002147]/10 pb-2">AI Diagnostic Report</h4>
@@ -947,81 +999,45 @@ export default function StudentDashboard() {
               ) : (
                 <form onSubmit={handleSubmitTask} className="space-y-6">
                   {selectedTask.questions && selectedTask.questions.length > 0 ? (
-                    <div className="space-y-8">
-                      {selectedTask.questions.map((q: any, i: number) => (
-                        <div key={q.id} className="bg-[#f8fafc] border border-[#002147]/10 p-5 rounded-xl">
-                          <p className="font-bold text-[#002147] mb-4">Q{i + 1}: {q.text || q.questionText}</p>
-                          <div className="space-y-2">
-                            {q.options.map((opt: any, optIdx: number) => {
-                              const optId = opt.id || ['a', 'b', 'c', 'd'][optIdx] || String(optIdx);
-                              const optText = opt.text || (typeof opt === 'string' ? opt : 'Option');
-                              return (
-                                <label key={optId} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${selectedAnswers[q.id] === optId ? 'bg-[#dc143c]/5 border-[#dc143c] text-[#dc143c]' : 'bg-white border-[#002147]/10 text-[#002147] hover:border-[#002147]/30'}`}>
-                                  <input 
-                                    type="radio" 
-                                    name={`question-${q.id}`} 
-                                    value={optId}
-                                    checked={selectedAnswers[q.id] === optId}
-                                    onChange={() => handleSelectAnswer(q.id, optId)}
-                                    className="w-4 h-4 mr-3 text-[#dc143c] focus:ring-[#dc143c]"
-                                    required
-                                  />
-                                  <span className="font-medium">{optId.toUpperCase()}) {optText}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Multi-page attachment uploader */}
-                      <div className="bg-[#f8fafc] border border-[#002147]/10 p-5 rounded-xl mt-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-sm font-medium text-[#002147]/70">Attach Rough Work Pages (Images)</label>
-                          <span className="text-xs text-[#002147]/40">{attachmentFiles.length}/6 pages</span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3 mb-3">
-                          {attachmentFiles.map((file, idx) => (
-                            <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#002147]/10 bg-white shadow-sm group">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`Page ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] text-center py-0.5 font-bold">Pg {idx + 1}</div>
-                              <button
-                                type="button"
-                                onClick={() => removeAttachmentFile(idx)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black"
-                              >
-                                ×
-                              </button>
+                    <div className="space-y-6">
+                      {selectedTask.questions.map((q: any, i: number) => {
+                        // Support both formats
+                        const isNewFmt = q.correctAnswerIndex !== undefined;
+                        const qKey = q.id || String(i);
+                        const questionText = q.question || q.text || q.questionText || 'Question';
+                        return (
+                          <div key={qKey} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                            <div className="flex items-start gap-3 mb-4">
+                              <div className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{i+1}</div>
+                              <p className="font-bold text-[#002147] text-base leading-relaxed">{questionText}</p>
                             </div>
-                          ))}
-
-                          {attachmentFiles.length < 6 && (
-                            <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#002147]/20 flex flex-col items-center justify-center cursor-pointer hover:border-[#dc143c]/50 hover:bg-red-50/30 transition-all bg-white">
-                              <span className="text-2xl text-[#002147]/30 leading-none">+</span>
-                              <span className="text-[9px] text-[#002147]/40 mt-1 font-medium">Add Page</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="sr-only"
-                                onChange={handleFileChange}
-                              />
-                            </label>
-                          )}
-                        </div>
-
-                        {attachmentFiles.length > 0 && (
-                          <p className="text-[10px] text-[#002147]/40">
-                            📷 Page 1 will be analyzed by the AI Diagnostic Engine
-                          </p>
-                        )}
-                      </div>
-
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 ml-11">
+                              {q.options.map((opt: any, optIdx: number) => {
+                                const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
+                                const optKey = isNewFmt ? String(optIdx) : (opt.id || ['a','b','c','d'][optIdx] || String(optIdx));
+                                const isSelected = selectedAnswers[qKey] === optKey;
+                                return (
+                                  <button
+                                    key={optKey}
+                                    type="button"
+                                    onClick={() => setSelectedAnswers(prev => ({ ...prev, [qKey]: optKey }))}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${
+                                      isSelected
+                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                                        : 'bg-gray-50 border-gray-200 text-[#002147] hover:border-indigo-300 hover:bg-indigo-50'
+                                    }`}
+                                  >
+                                    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 ${
+                                      isSelected ? 'border-white bg-white text-indigo-600' : 'border-gray-300 text-gray-500'
+                                    }`}>{String.fromCharCode(65+optIdx)}</span>
+                                    {optText}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div>

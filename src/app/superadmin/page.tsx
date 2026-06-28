@@ -48,14 +48,18 @@ export default function SuperAdminDashboard() {
   };
 
   useEffect(() => {
-    if (!authLoading && profile && profile.role !== 'superadmin') {
+    if (!authLoading && (!profile || profile.role !== 'superadmin')) {
       router.push('/login');
     }
   }, [profile, authLoading, router]);
 
+
   useEffect(() => {
-    fetchSchools();
-  }, []);
+    if (profile?.role === 'superadmin') {
+      fetchSchools();
+    }
+  }, [profile?.role]);
+
 
   const handleOnboardSchool = async (e: React.FormEvent) => {
     e.preventDefault();

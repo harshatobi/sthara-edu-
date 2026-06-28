@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -31,13 +32,18 @@ export default function StudentVideos() {
   const [quizData, setQuizData] = useState<any>(null);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [quizScore, setQuizScore] = useState<number | null>(null);
+  // useRef to track score synchronously — avoids stale closure bug with async state
+  const scoreRef = useRef(0);
+
 
   const handleVideoEnd = async (video: VideoFile) => {
     setCurrentVideo(video);
     setShowQuiz(true);
     setGeneratingQuiz(true);
     setQuizScore(null);
+    setQuizData(null); // clear stale quiz while loading new one
     setCurrentQuestionIdx(0);
+    scoreRef.current = 0; // reset score ref for the new quiz
 
     try {
       const res = await fetch('/api/quiz/generate', {
@@ -46,7 +52,11 @@ export default function StudentVideos() {
         body: JSON.stringify({ topic: video.title, subject: activeSubject })
       });
       const data = await res.json();
-      setQuizData(data);
+      if (data?.questions?.length) {
+        setQuizData(data);
+      } else {
+        console.warn('Quiz API returned no questions:', data);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -54,16 +64,19 @@ export default function StudentVideos() {
     }
   };
 
+
   const handleAnswer = async (index: number) => {
+    if (!quizData?.questions?.length) return;
     const isCorrect = index === quizData.questions[currentQuestionIdx].correctAnswerIndex;
-    const newScore = isCorrect ? (quizScore || 0) + 1 : (quizScore || 0);
+    // Synchronously update score via ref to avoid stale closure bug
+    if (isCorrect) scoreRef.current += 1;
     
     if (currentQuestionIdx < quizData.questions.length - 1) {
-      if (isCorrect) setQuizScore(newScore);
+      setQuizScore(scoreRef.current);
       setCurrentQuestionIdx(idx => idx + 1);
     } else {
-      // Quiz complete — compute final score and save to Firestore
-      const finalScore = isCorrect ? newScore : (quizScore || 0);
+      // Quiz complete — use scoreRef for accurate final score
+      const finalScore = scoreRef.current;
       setQuizScore(finalScore);
       if (profile?.uid && profile?.schoolId) {
         try {
@@ -84,6 +97,7 @@ export default function StudentVideos() {
       }
     }
   };
+
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'student')) {

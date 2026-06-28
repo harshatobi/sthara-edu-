@@ -59,7 +59,9 @@ export async function POST(request: NextRequest) {
       if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
       const arrayBuffer = await imageResponse.arrayBuffer();
       base64Image = Buffer.from(arrayBuffer).toString('base64');
-      mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+      // Strip charset/boundary from content-type (e.g., 'image/jpeg; charset=utf-8' → 'image/jpeg')
+      mimeType = (imageResponse.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+
     } else {
       return NextResponse.json({ error: 'Missing imageBase64 or imageUrl' }, { status: 400 });
     }

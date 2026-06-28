@@ -250,7 +250,7 @@ export default function RegulatoryVaultPage() {
                 <Sparkles className="w-4 h-4" />
                 <span>Compliance Center</span>
               </div>
-              <h1 className="text-2xl font-black tracking-tight text-[#002147]">2026 Regulatory Vault</h1>
+              <h1 className="text-2xl font-black tracking-tight text-[#002147]">{academicYear} Regulatory Vault</h1>
               <p className="text-sm font-medium text-gray-500 mt-0.5">One-click generation of mandatory compliance reports</p>
             </div>
           </div>

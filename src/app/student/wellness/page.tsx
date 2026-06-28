@@ -37,7 +37,10 @@ export default function WellnessPage() {
         const q = query(logsRef, where('userId', '==', profile?.uid), orderBy('createdAt', 'desc'), limit(7));
         const snapshot = await getDocs(q);
         
+        const todayString = new Date().toDateString();
+        const loadedHistory: {date: string, value: number}[] = [];
         let foundToday = false;
+
         snapshot.docs.forEach(doc => {
           const data = doc.data();
           if (data.createdAt) {
@@ -54,6 +57,7 @@ export default function WellnessPage() {
         });
         
         setHistory(loadedHistory.reverse());
+
       } catch (err) {
         console.error("Failed to load wellness history", err);
       } finally {
@@ -64,7 +68,8 @@ export default function WellnessPage() {
   }, [profile?.uid]);
 
   const handleMoodSelect = async (value: number) => {
-    if (todaysMood) return; // already logged today
+    if (todaysMood !== null) return; // already logged today
+
     setTodaysMood(value);
     
     try {

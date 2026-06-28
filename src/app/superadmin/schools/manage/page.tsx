@@ -80,14 +80,18 @@ function SchoolManagementContent() {
     if (!decodedSchoolId) return;
     setDeletingId(userId);
     try {
-      // Delete from both possible locations
-      await Promise.allSettled([
+      const results = await Promise.allSettled([
         deleteDoc(doc(db, 'global_users', userId)),
         deleteDoc(doc(db, 'schools', decodedSchoolId, 'users', userId)),
       ]);
-      setUsers(prev => prev.filter(u => u.id !== userId));
-      setSuccessMsg('User removed successfully.');
-      setTimeout(() => setSuccessMsg(''), 3000);
+      const anyFailed = results.some(r => r.status === 'rejected');
+      if (anyFailed) {
+        setError('Partial delete failure — user may still exist in one location. Please try again.');
+      } else {
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        setSuccessMsg('User removed successfully.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
     } catch (err) {
       console.error(err);
       setError('Failed to delete user. Try again.');
@@ -96,6 +100,7 @@ function SchoolManagementContent() {
       setConfirmDelete(null);
     }
   };
+
 
 
 

@@ -48,20 +48,28 @@ export default function StudentHomework() {
           where('targetStudentId', '==', uid)
         );
         
-        const [classSnap, targetedSnap] = await Promise.all([
+        const targetClassQuery = query(
+          collection(db, 'schools', schoolId, 'assignments'),
+          where('targetClass', '==', profile.studentClass)
+        );
+
+        const [classSnap, targetedSnap, targetClassSnap] = await Promise.all([
           getDocs(classQuery),
-          getDocs(targetedQuery)
+          getDocs(targetedQuery),
+          getDocs(targetClassQuery),
         ]);
+
 
         // Collect all unique docs first, then process — avoids race-condition dedup
         const seen = new Set<string>();
         const allDocs: typeof classSnap.docs = [];
-        [...classSnap.docs, ...targetedSnap.docs].forEach(docSnap => {
+        [...classSnap.docs, ...targetedSnap.docs, ...targetClassSnap.docs].forEach(docSnap => {
           if (!seen.has(docSnap.id)) {
             seen.add(docSnap.id);
             allDocs.push(docSnap);
           }
         });
+
 
         const processDoc = async (docSnap: (typeof allDocs)[0]): Promise<Assignment> => {
           const data = docSnap.data();

@@ -14,10 +14,27 @@ export default function PaperGenPage() {
   const [error, setError] = useState('');
   const { profile } = useAuth();
 
-  const [grade, setGrade] = useState('10th Grade Mathematics');
+  const [sectionClass, setSectionClass] = useState(''); // e.g. '10A', '11B'
+  const [subject, setSubject] = useState('Mathematics');
   const [difficulty, setDifficulty] = useState('CBSE Standard (30% Easy, 50% Med, 20% Hard)');
   const [chapters, setChapters] = useState<string[]>(['Quadratic Equations']);
   const [questionCount, setQuestionCount] = useState(5);
+
+  const CHAPTER_MAP: Record<string, string[]> = {
+    'Mathematics': ['Real Numbers', 'Polynomials', 'Quadratic Equations', 'Arithmetic Progressions', 'Triangles', 'Coordinate Geometry', 'Introduction to Trigonometry', 'Statistics', 'Probability'],
+    'Science': ['Chemical Reactions', 'Acids, Bases & Salts', 'Metals & Non-metals', 'Carbon Compounds', 'Life Processes', 'Control & Coordination', 'Reproduction', 'Heredity & Evolution', 'Electricity', 'Magnetic Effects'],
+    'Physics': ['Electric Charges', 'Current Electricity', 'Moving Charges & Magnetism', 'Optics', 'Wave Optics', 'Atoms & Nuclei', 'Semiconductor Devices', 'Communication Systems'],
+    'Chemistry': ['Solid State', 'Solutions', 'Electrochemistry', 'Chemical Kinetics', 'Surface Chemistry', 'p-Block Elements', 'd & f-Block Elements', 'Coordination Compounds', 'Alcohols, Phenols & Ethers'],
+    'Biology': ['Reproduction in Organisms', 'Human Reproduction', 'Genetics & Inheritance', 'Evolution', 'Human Health & Disease', 'Microbes in Human Welfare', 'Biotechnology', 'Ecosystem & Biodiversity'],
+    'English': ['Reading Comprehension', 'Grammar & Usage', 'Writing Skills', 'Literature — Prose', 'Literature — Poetry', 'Supplementary Reader'],
+    'Social Studies': ['Indian History', 'Geography of India', 'Political Science', 'Economics', 'Disaster Management'],
+    'Hindi': ['गद्य (Gadya)', 'पद्य (Padya)', 'व्याकरण (Vyakaran)', 'रचना (Rachna)', 'अपठित गद्यांश'],
+    'Sanskrit': ['गद्यम् (Prose)', 'पद्यम् (Poetry)', 'व्याकरण (Grammar)', 'रचना (Composition)'],
+    'Computer Science': ['Python Programming', 'Data Structures', 'DBMS & SQL', 'Networking Concepts', 'Boolean Algebra', 'OOP Concepts'],
+  };
+
+  const availableChapters = CHAPTER_MAP[subject] || [];
+
 
   const toggleChapter = (chapter: string) => {
     setChapters(prev => 
@@ -28,16 +45,21 @@ export default function PaperGenPage() {
   };
 
   const handleGenerate = async () => {
-    if (chapters.length === 0) {
-      setError("Please select at least one chapter.");
+    if (!sectionClass.trim()) {
+      setError('Please enter the class/section (e.g. 10A, 11B).');
       return;
     }
+    if (chapters.length === 0) {
+      setError('Please select at least one chapter.');
+      return;
+    }
+
     setError('');
     setGenerating(true);
     setGeneratedData(null);
     
     try {
-      const prompt = `Generate a quiz for ${grade} covering chapters: ${chapters.join(', ')}. 
+      const prompt = `Generate a quiz for Class ${sectionClass.trim()} - ${subject} covering chapters: ${chapters.join(', ')}. 
       Difficulty: ${difficulty}. 
       Generate EXACTLY ${questionCount} multiple choice questions.
       Return the result as a strict JSON array of objects, where each object has:
@@ -90,17 +112,14 @@ export default function PaperGenPage() {
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dueDateStr = tomorrow.toISOString().split('T')[0];
 
-      // Derive class and subject from the selected grade string
-      // e.g. '10th Grade Mathematics' → class: 'Class 10', subject: 'Mathematics'
-      const gradeMatch = grade.match(/(\d+)th Grade (.+)/);
-      const classLabel = gradeMatch ? `Class ${gradeMatch[1]}` : grade;
-      const subjectLabel = gradeMatch ? gradeMatch[2] : 'General';
+      const classLabel = sectionClass.trim();
+      const subjectLabel = subject;
 
       const assignmentsRef = collection(db, 'schools', profile.schoolId, 'assignments');
       await addDoc(assignmentsRef, {
-        title: `${classLabel} ${subjectLabel} - ${chapters.join(', ')} Quiz`,
-        grade,
+        title: `${classLabel} - ${subjectLabel}: ${chapters.join(', ')} Quiz`,
         class: classLabel,
+        targetClass: classLabel, // store in both fields for compatibility
         subject: subjectLabel,
         type: 'quiz',
         dueDate: dueDateStr,
@@ -157,30 +176,32 @@ export default function PaperGenPage() {
               <div className="space-y-3">
                 <label className="text-sm font-bold text-[#002147] flex items-center space-x-2">
                   <BookOpen className="w-4 h-4 text-indigo-500" />
-                  <span>Grade & Subject</span>
+                  <span>Class / Section</span>
                 </label>
-                <select 
-                  value={grade}
-                  onChange={e => setGrade(e.target.value)}
+                <input
+                  type="text"
+                  value={sectionClass}
+                  onChange={e => setSectionClass(e.target.value)}
+                  placeholder="e.g. 10A, 10B, 11A, 12C"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm placeholder-gray-400"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-[#002147] flex items-center space-x-2">
+                  <BookOpen className="w-4 h-4 text-indigo-500" />
+                  <span>Subject</span>
+                </label>
+                <select
+                  value={subject}
+                  onChange={e => {
+                    setSubject(e.target.value);
+                    setChapters([]); // reset chapter selection on subject change
+                  }}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                 >
-                 <option>10th Grade Mathematics</option>
-                  <option>10th Grade Science</option>
-                  <option>10th Grade English</option>
-                  <option>10th Grade Social Studies</option>
-                  <option>10th Grade Hindi</option>
-                  <option>9th Grade Mathematics</option>
-                  <option>9th Grade Science</option>
-                  <option>9th Grade English</option>
-                  <option>9th Grade Social Studies</option>
-                  <option>11th Grade Mathematics</option>
-                  <option>11th Grade Physics</option>
-                  <option>11th Grade Chemistry</option>
-                  <option>11th Grade Biology</option>
-                  <option>12th Grade Mathematics</option>
-                  <option>12th Grade Physics</option>
-                  <option>12th Grade Chemistry</option>
-                  <option>12th Grade Biology</option>
+                  {Object.keys(CHAPTER_MAP).map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-3">
@@ -222,7 +243,7 @@ export default function PaperGenPage() {
                 <span>Select Syllabus Chapters</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {['Real Numbers', 'Polynomials', 'Quadratic Equations', 'Arithmetic Progressions', 'Triangles', 'Coordinate Geometry'].map(chapter => {
+                {availableChapters.map(chapter => {
                   const isSelected = chapters.includes(chapter);
                   return (
                     <label 
@@ -347,7 +368,7 @@ export default function PaperGenPage() {
                   <div className="text-center space-y-2">
                     <a href="/admin/results" className="text-indigo-600 font-bold hover:underline text-sm mt-2 block">View in Results Dashboard →</a>
                     <button
-                      onClick={() => { setSaveSuccess(false); setGeneratedData(null); setChapters(['Quadratic Equations']); }}
+                      onClick={() => { setSaveSuccess(false); setGeneratedData(null); setSectionClass(''); setSubject('Mathematics'); setChapters([]); }}
                       className="px-6 py-2.5 bg-gray-100 text-[#002147] font-bold rounded-xl hover:bg-gray-200 transition-colors"
                     >
                       Generate Another Quiz

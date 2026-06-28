@@ -4,7 +4,8 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, UserPlus, GraduationCap, Users, BookOpen, Plus, Trash2, Link as LinkIcon, CheckSquare, Square } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
+
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 
@@ -41,6 +42,9 @@ function SchoolManagementContent() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // userId to delete
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
 
   // Extended Data Fields
   const [studentClass, setStudentClass] = useState('');
@@ -72,9 +76,33 @@ function SchoolManagementContent() {
     fetchSchoolData();
   }, [decodedSchoolId]);
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!decodedSchoolId) return;
+    setDeletingId(userId);
+    try {
+      // Delete from both possible locations
+      await Promise.allSettled([
+        deleteDoc(doc(db, 'global_users', userId)),
+        deleteDoc(doc(db, 'schools', decodedSchoolId, 'users', userId)),
+      ]);
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      setSuccessMsg('User removed successfully.');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete user. Try again.');
+    } finally {
+      setDeletingId(null);
+      setConfirmDelete(null);
+    }
+  };
+
+
+
   const handleAddAssignmentRow = () => {
     setTeacherAssignments([...teacherAssignments, { class: '', subject: '' }]);
   };
+
 
   const handleRemoveAssignmentRow = (index: number) => {
     const newArr = [...teacherAssignments];
@@ -462,6 +490,33 @@ function SchoolManagementContent() {
                                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize bg-purple-100 text-purple-800`}>
                                   Administrator
                                 </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 w-12 text-right">
+                              {confirmDelete === u.id ? (
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => handleDeleteUser(u.id)}
+                                    disabled={deletingId === u.id}
+                                    className="text-xs px-2 py-1 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50"
+                                  >
+                                    {deletingId === u.id ? '...' : 'Yes'}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDelete(null)}
+                                    className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300"
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmDelete(u.id)}
+                                  className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete user"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               )}
                             </td>
                           </tr>

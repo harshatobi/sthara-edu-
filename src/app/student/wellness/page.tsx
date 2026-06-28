@@ -24,7 +24,8 @@ export default function WellnessPage() {
 
   // Breathing state
   const [isBreathing, setIsBreathing] = useState(false);
-  const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale' | 'Idle'>('Idle');
+  const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale' | 'Hold2' | 'Idle'>('Idle');
+
   
   // Load initial data
   useEffect(() => {
@@ -36,9 +37,7 @@ export default function WellnessPage() {
         const q = query(logsRef, where('userId', '==', profile?.uid), orderBy('createdAt', 'desc'), limit(7));
         const snapshot = await getDocs(q);
         
-        const loadedHistory: {date: string, value: number}[] = [];
-        const todayString = new Date().toDateString();
-
+        let foundToday = false;
         snapshot.docs.forEach(doc => {
           const data = doc.data();
           if (data.createdAt) {
@@ -47,7 +46,8 @@ export default function WellnessPage() {
               date: dateObj.toISOString(),
               value: data.moodValue
             });
-            if (dateObj.toDateString() === todayString && !todaysMood) {
+            if (dateObj.toDateString() === todayString && !foundToday) {
+              foundToday = true;
               setTodaysMood(data.moodValue);
             }
           }
@@ -70,9 +70,11 @@ export default function WellnessPage() {
     try {
       await addDoc(collection(db, 'wellness_logs'), {
         userId: profile?.uid,
+        schoolId: profile?.schoolId,
         moodValue: value,
         createdAt: serverTimestamp()
       });
+
       
       setHistory(prev => [...prev, { date: new Date().toISOString(), value }]);
     } catch (err) {
@@ -81,11 +83,12 @@ export default function WellnessPage() {
   };
 
 
-  // Breathing Animation Loop
   useEffect(() => {
-    let interval: any;
     let timeout1: any;
     let timeout2: any;
+    let timeout3: any;
+    let timeout4: any;
+    let cycleInterval: any;
 
     if (isBreathing) {
       const cycle = () => {
@@ -94,22 +97,28 @@ export default function WellnessPage() {
           setBreathPhase('Hold');
           timeout2 = setTimeout(() => {
             setBreathPhase('Exhale');
-          }, 2000);
+            timeout3 = setTimeout(() => {
+              setBreathPhase('Hold2');
+            }, 4000);
+          }, 4000);
         }, 4000);
       };
-      
+
       cycle();
-      interval = setInterval(cycle, 10000);
+      cycleInterval = setInterval(cycle, 16000); // 4+4+4+4 = 16s
     } else {
       setBreathPhase('Idle');
     }
 
     return () => {
-      clearInterval(interval);
+      clearInterval(cycleInterval);
       clearTimeout(timeout1);
       clearTimeout(timeout2);
+      clearTimeout(timeout3);
+      clearTimeout(timeout4);
     };
   }, [isBreathing]);
+
 
   if (loading) {
     return <div className="p-8 text-center text-[#002147]/60">Loading wellness dashboard...</div>;
@@ -214,13 +223,14 @@ export default function WellnessPage() {
                   ${breathPhase === 'Inhale' ? 'scale-[1.5]' : ''}
                   ${breathPhase === 'Hold' ? 'scale-[1.5] opacity-90' : ''}
                   ${breathPhase === 'Exhale' ? 'scale-100' : ''}
+                  ${breathPhase === 'Hold2' ? 'scale-100 opacity-80' : ''}
                 `}
                 style={{
-                  transitionDuration: breathPhase === 'Hold' ? '2000ms' : (isBreathing ? '4000ms' : '500ms')
+                  transitionDuration: (breathPhase === 'Hold' || breathPhase === 'Hold2') ? '4000ms' : (isBreathing ? '4000ms' : '500ms')
                 }}
               >
                 <span className={`${isBreathing ? 'scale-75 transition-transform' : ''}`}>
-                  {isBreathing ? breathPhase : 'Start'}
+                  {isBreathing ? (breathPhase === 'Hold2' ? 'Hold' : breathPhase) : 'Start'}
                 </span>
               </div>
             </div>

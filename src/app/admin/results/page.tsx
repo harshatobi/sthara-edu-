@@ -241,10 +241,13 @@ export default function AcademicResults() {
   }, [overallLeaderboard, selectedClassFilter, searchQuery]);
 
   const filteredAssignmentSubs = useMemo(() => {
-    return assignmentSubmissions.filter(sub => 
-      sub.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [assignmentSubmissions, searchQuery]);
+    return assignmentSubmissions.filter(sub => {
+      const matchClass = selectedClassFilter === 'All Classes' || sub.className === selectedClassFilter;
+      const matchSearch = sub.studentName.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchClass && matchSearch;
+    });
+  }, [assignmentSubmissions, selectedClassFilter, searchQuery]);
+
 
   if (isLoading) {
     return (
@@ -398,18 +401,17 @@ export default function AcademicResults() {
           </div>
 
           <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
-            {activeTab === 'leaderboard' && (
-              <div className="relative">
-                <select
-                  value={selectedClassFilter}
-                  onChange={(e) => setSelectedClassFilter(e.target.value)}
-                  className="w-full sm:w-48 appearance-none bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl pl-4 pr-10 py-2.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer text-sm"
-                >
-                  {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-            )}
+            <div className="relative">
+              <select
+                value={selectedClassFilter}
+                onChange={(e) => setSelectedClassFilter(e.target.value)}
+                className="w-full sm:w-48 appearance-none bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl pl-4 pr-10 py-2.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer text-sm"
+              >
+                {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+
             <div className="relative w-full sm:w-64">
               <input
                 type="text"

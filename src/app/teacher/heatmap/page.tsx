@@ -53,8 +53,19 @@ export default function TeacherHeatmap() {
         allStudents.forEach(s => { if (s.studentClass) classSet.add(s.studentClass); });
         const discoveredClasses = Array.from(classSet).sort();
 
-        // If teacher has a specific class assigned, use only that; otherwise use discovered ones
-        const classesToShow = profile.teacherClass ? [profile.teacherClass] : discoveredClasses;
+        // Determine which classes THIS teacher is assigned to:
+        //   1. profile.assignments[].class  (set by superadmin portal)
+        //   2. profile.teacherClass         (legacy single-class field)
+        //   3. Fallback: all classes in the school
+        const teacherAssignedClasses = [
+          ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
+          ...(profile.teacherClass ? [profile.teacherClass] : []),
+        ];
+        const uniqueTeacherClasses = [...new Set(teacherAssignedClasses)];
+
+        const classesToShow = uniqueTeacherClasses.length > 0
+          ? uniqueTeacherClasses  // only the teacher's assigned classes
+          : discoveredClasses;    // fallback: all classes (admin/unassigned teachers)
         setAvailableClasses(classesToShow);
 
         // Auto-select class: keep current if valid, else pick first
@@ -64,15 +75,15 @@ export default function TeacherHeatmap() {
 
         if (activeClass !== selectedClass) {
           setSelectedClass(activeClass);
-          // setSelectedClass triggers this effect again, so we stop here to avoid double-render
           setIsLoadingData(false);
           return;
         }
 
-        // Filter students by the active class (case-insensitive)
+        // Filter students by the active class (case-insensitive) — only show assigned students
         const students = activeClass
-          ? allStudents.filter(s => !s.studentClass || s.studentClass.toLowerCase() === activeClass.toLowerCase())
+          ? allStudents.filter(s => s.studentClass && s.studentClass.toLowerCase() === activeClass.toLowerCase())
           : allStudents;
+
 
         // Fetch assignments — try matching the class exactly, then case-insensitive fallback
         let assignments: any[] = [];

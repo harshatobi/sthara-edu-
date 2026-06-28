@@ -160,7 +160,7 @@ function MasteryTrackerContent() {
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
 
-  // Fetch all students for the dropdown
+  // Fetch students assigned to this teacher
   useEffect(() => {
     if (!profile?.schoolId) return;
     const fetchStudents = async () => {
@@ -171,18 +171,33 @@ function MasteryTrackerContent() {
           getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
         ]);
         const seen = new Set<string>();
-        const students: any[] = [];
+        let students: any[] = [];
         [...usersSnap.docs, ...globalUsersSnap.docs].forEach(s => {
           if (!seen.has(s.id)) { seen.add(s.id); students.push({ id: s.id, ...s.data() }); }
         });
+
+        // Filter by teacher's assigned classes (from superadmin portal assignments)
+        const teacherClasses = [
+          ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
+          ...(profile.teacherClass ? [profile.teacherClass] : []),
+        ];
+        const uniqueClasses = [...new Set(teacherClasses)].map(c => c.toLowerCase());
+
+        if (uniqueClasses.length > 0) {
+          students = students.filter(s =>
+            s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase())
+          );
+        }
+        // If no assignments configured, show all students in school (fallback)
+
         setStudentsList(students);
       } catch (err) {
         console.error(err);
       }
     };
     fetchStudents();
-
   }, [profile]);
+
 
   const handleGeneratePractice = async () => {
     if (!selectedStudent) return;

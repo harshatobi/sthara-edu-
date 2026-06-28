@@ -41,7 +41,8 @@ export default function StudentDashboard() {
   const [submitStatus, setSubmitStatus] = useState('');
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [quizResult, setQuizResult] = useState<any>(null);
-  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+
   const [showMasteryModal, setShowMasteryModal] = useState(false);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showScoresModal, setShowScoresModal] = useState(false);
@@ -58,10 +59,25 @@ export default function StudentDashboard() {
     setSelectedAnswers(prev => ({ ...prev, [questionId]: optionId }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files || []);
+    setAttachmentFiles(prev => {
+      const combined = [...prev, ...newFiles];
+      return combined.slice(0, 6); // max 6 pages
+    });
+    // Reset input so same files can be re-added after removal
+    e.target.value = '';
+  };
+
+  const removeAttachmentFile = (idx: number) => {
+    setAttachmentFiles(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSubmitTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.schoolId || !selectedTask) return;
     setIsSubmitting(true);
+    setSubmitStatus('');
     
     try {
       let submissionData: any = {
@@ -73,19 +89,17 @@ export default function StudentDashboard() {
       };
 
       if (selectedTask.questions && selectedTask.questions.length > 0) {
-        // Auto-grade the quiz
+        // MCQ quiz — auto-score
         let score = 0;
         selectedTask.questions.forEach((q: any) => {
-          if (selectedAnswers[q.id] === q.correctOptionId) {
-            score++;
-          }
+          if (selectedAnswers[q.id] === q.correctOptionId) score++;
         });
         submissionData = {
           ...submissionData,
           type: 'quiz',
           answers: selectedAnswers,
-          score: score,
-          total: selectedTask.questions.length
+          score,
+          total: selectedTask.questions.length,
         };
       } else {
         submissionData = {
@@ -95,77 +109,96 @@ export default function StudentDashboard() {
         };
       }
 
-      if (attachmentFile) {
-        setSubmitStatus('Uploading to secure storage...');
+      // ── Step 1: Upload all attachment pages to Firebase Storage ──
+      if (attachmentFiles.length > 0) {
+        setSubmitStatus(`Uploading ${attachmentFiles.length} page(s) to secure storage...`);
         
-        // Upload to Firebase Storage — avoids Firestore 1MB document limit
-        const storageRef = ref(storage, `submissions/${profile.uid}/${selectedTask.id}/${Date.now()}_${attachmentFile.name}`);
-        await uploadBytes(storageRef, attachmentFile);
-        const imageUrl = await getDownloadURL(storageRef);
-        submissionData.imageUrl = imageUrl;   // ✅ Storage URL only — no base64
-
-        // Read as base64 only for sending to Gemini API
-        const base64Data = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(attachmentFile);
-        });
-        
-        setSubmitStatus('Diagnostic Engine is scanning your work...');
         try {
-          const authToken = await getAuthToken();
-          const response = await fetch('/api/grade-image', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`,
-            },
-            body: JSON.stringify({ 
-              imageBase64: base64Data,
-              mimeType: attachmentFile.type,
-              assignmentTitle: selectedTask.title,
-              assignmentDescription: selectedTask.description,
-              assignmentQuestions: selectedTask.questions || []
+          const uploadResults = await Promise.all(
+            attachmentFiles.map(async (file, idx) => {
+              const storageRef = ref(
+                storage,
+                `submissions/${profile.uid}/${selectedTask.id}/${Date.now()}_page${idx + 1}_${file.name}`
+              );
+              await uploadBytes(storageRef, file);
+              return getDownloadURL(storageRef);
             })
-          });
+          );
           
-          if (response.ok) {
-            const aiData = await response.json();
-            submissionData.aiGraded = true;
-            submissionData.aiResult = aiData;
-            
-            let calcTotalScore = 0;
-            if (aiData.questions && Array.isArray(aiData.questions)) {
-              aiData.questions.forEach((q: any) => { calcTotalScore += (q.awardedScore || 0); });
-            } else {
-              calcTotalScore = aiData.totalScore || 0;
-            }
-            const calcMaxScore = selectedTask.questions?.length ? selectedTask.questions.length * 5 : 15;
-            
-            submissionData.score = calcTotalScore;
-            submissionData.maxScore = calcMaxScore;
-            submissionData.total = calcMaxScore;
-            
-            if (aiData.weaknessTags && aiData.weaknessTags.length > 0) {
-              const userRef = doc(db, 'users', profile.uid);
-              try {
-                await updateDoc(userRef, { historicalWeaknesses: arrayUnion(...aiData.weaknessTags) });
-              } catch (updateErr) {
-                console.error('Failed to update user weaknesses:', updateErr);
-              }
-            }
-          } else {
-            submissionData.aiGraded = false;
-            const errBody = await response.json().catch(() => ({}));
-            alert('Evaluation failed: ' + (errBody.error || 'Unknown error'));
-          }
-        } catch (apiErr) {
-          console.error('Auto-grade failed:', apiErr);
-          submissionData.aiGraded = false;
+          submissionData.imageUrls = uploadResults;        // all pages
+          submissionData.imageUrl = uploadResults[0];      // backwards-compat primary
+        } catch (storageErr: any) {
+          console.error('Storage upload failed:', storageErr);
+          // Don't block submission — save without images, alert teacher
+          alert(
+            'Warning: Could not upload images (' + (storageErr?.message || 'storage error') + '). ' +
+            'Your text submission will still be saved. Please check Firebase Storage rules.'
+          );
         }
+
+        // ── Step 2: Send FIRST page to Gemini for AI grading ──
+        if (submissionData.imageUrl) {
+          setSubmitStatus('Diagnostic Engine is scanning your work...');
+          try {
+            const base64Data = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+              reader.onerror = reject;
+              reader.readAsDataURL(attachmentFiles[0]);
+            });
+
+            const authToken = await getAuthToken();
+            const response = await fetch('/api/grade-image', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify({
+                imageBase64: base64Data,
+                mimeType: attachmentFiles[0].type,
+                assignmentTitle: selectedTask.title,
+                assignmentDescription: selectedTask.description,
+                assignmentQuestions: selectedTask.questions || [],
+              }),
+            });
+
+            if (response.ok) {
+              const aiData = await response.json();
+              submissionData.aiGraded = true;
+              submissionData.aiResult = aiData;
+
+              let calcTotalScore = 0;
+              if (aiData.questions && Array.isArray(aiData.questions)) {
+                aiData.questions.forEach((q: any) => { calcTotalScore += q.awardedScore || 0; });
+              } else {
+                calcTotalScore = aiData.totalScore || 0;
+              }
+              const calcMaxScore = selectedTask.questions?.length
+                ? selectedTask.questions.length * 5
+                : 15;
+
+              submissionData.score = calcTotalScore;
+              submissionData.maxScore = calcMaxScore;
+              submissionData.total = calcMaxScore;
+
+              if (aiData.weaknessTags?.length > 0) {
+                updateDoc(doc(db, 'users', profile.uid), {
+                  historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
+                }).catch(console.warn);
+              }
+            } else {
+              submissionData.aiGraded = false;
+              console.warn('AI grading returned non-OK:', response.status);
+            }
+          } catch (apiErr) {
+            console.error('Auto-grade failed:', apiErr);
+            submissionData.aiGraded = false;
+          }
+        }
+
       } else if (selectedTask.questions && selectedTask.questions.length > 0) {
-        // AI Evaluation for multiple choice
+        // MCQ with no attachment — AI quiz evaluation
         setSubmitStatus('Diagnostic Engine is analyzing your answers...');
         try {
           const authToken = await getAuthToken();
@@ -173,28 +206,25 @@ export default function StudentDashboard() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`,
+              Authorization: `Bearer ${authToken}`,
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               title: selectedTask.title,
               description: selectedTask.description,
               questions: selectedTask.questions,
-              studentAnswers: selectedAnswers
-            })
+              studentAnswers: selectedAnswers,
+            }),
           });
-          
+
           if (response.ok) {
             const aiData = await response.json();
             submissionData.aiGraded = true;
             submissionData.aiResult = aiData;
-            
-            if (aiData.weaknessTags && aiData.weaknessTags.length > 0) {
-              const userRef = doc(db, 'users', profile.uid);
-              try {
-                await updateDoc(userRef, { historicalWeaknesses: arrayUnion(...aiData.weaknessTags) });
-              } catch (updateErr) {
-                console.error('Failed to update user weaknesses:', updateErr);
-              }
+
+            if (aiData.weaknessTags?.length > 0) {
+              updateDoc(doc(db, 'users', profile.uid), {
+                historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
+              }).catch(console.warn);
             }
           }
         } catch (apiErr) {
@@ -202,30 +232,38 @@ export default function StudentDashboard() {
         }
       }
 
+      // ── Step 3: Always save to Firestore ──
       setSubmitStatus('Saving submission...');
-      await setDoc(doc(db, 'schools', profile.schoolId, 'assignments', selectedTask.id, 'submissions', profile.uid), submissionData);
-      
-      // If it's a text submission, close immediately. If quiz, we keep it open to show the score.
+      await setDoc(
+        doc(db, 'schools', profile.schoolId, 'assignments', selectedTask.id, 'submissions', profile.uid),
+        submissionData
+      );
+
+      // Reset file list
+      setAttachmentFiles([]);
+
       if (!selectedTask.questions) {
         setSelectedTask(null);
         setSubmissionText('');
         setSubmitStatus('');
       } else {
-        // Show the quiz result UI ONLY after successful upload and DB save!
-        setQuizResult({ 
-          score: submissionData.score, 
+        setQuizResult({
+          score: submissionData.score,
           total: submissionData.maxScore || submissionData.total,
           aiResult: submissionData.aiResult,
-          attachmentUrl: submissionData.attachmentUrl
+          attachmentUrl: submissionData.imageUrl || null,
         });
       }
+
     } catch (err: any) {
-      console.error(err);
-      alert('Failed to submit task: ' + (err.message || 'Unknown error. Have you enabled Firebase Storage in your console?'));
+      console.error('Submission failed:', err);
+      alert('Submission failed: ' + (err?.message || 'Unknown error. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
   };
+
+
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'student')) {
@@ -859,15 +897,54 @@ export default function StudentDashboard() {
                         </div>
                       ))}
                       
+                      {/* Multi-page attachment uploader */}
                       <div className="bg-[#f8fafc] border border-[#002147]/10 p-5 rounded-xl mt-4">
-                        <label className="block text-sm font-medium text-[#002147]/70 mb-2">Optional: Attach Rough Work (Image/PDF)</label>
-                        <input 
-                          type="file" 
-                          accept="image/*,.pdf"
-                          onChange={(e) => setAttachmentFile(e.target.files ? e.target.files[0] : null)}
-                          className="w-full text-sm text-[#002147]/60 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#002147]/5 file:text-[#002147] hover:file:bg-[#002147]/10 transition-colors"
-                        />
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="block text-sm font-medium text-[#002147]/70">Attach Rough Work Pages (Images)</label>
+                          <span className="text-xs text-[#002147]/40">{attachmentFiles.length}/6 pages</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 mb-3">
+                          {attachmentFiles.map((file, idx) => (
+                            <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#002147]/10 bg-white shadow-sm group">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Page ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] text-center py-0.5 font-bold">Pg {idx + 1}</div>
+                              <button
+                                type="button"
+                                onClick={() => removeAttachmentFile(idx)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+
+                          {attachmentFiles.length < 6 && (
+                            <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#002147]/20 flex flex-col items-center justify-center cursor-pointer hover:border-[#dc143c]/50 hover:bg-red-50/30 transition-all bg-white">
+                              <span className="text-2xl text-[#002147]/30 leading-none">+</span>
+                              <span className="text-[9px] text-[#002147]/40 mt-1 font-medium">Add Page</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="sr-only"
+                                onChange={handleFileChange}
+                              />
+                            </label>
+                          )}
+                        </div>
+
+                        {attachmentFiles.length > 0 && (
+                          <p className="text-[10px] text-[#002147]/40">
+                            📷 Page 1 will be analyzed by the AI Diagnostic Engine
+                          </p>
+                        )}
                       </div>
+
                     </div>
                   ) : (
                     <div>
@@ -880,15 +957,52 @@ export default function StudentDashboard() {
                         className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20" 
                       />
                       
+                      {/* Multi-page attachment uploader (text submission) */}
                       <div className="mt-4">
-                        <label className="block text-sm font-medium text-[#002147]/70 mb-2">Optional: Attach Rough Work (Image/PDF)</label>
-                        <input 
-                          type="file" 
-                          accept="image/*,.pdf"
-                          onChange={(e) => setAttachmentFile(e.target.files ? e.target.files[0] : null)}
-                          className="w-full text-sm text-[#002147]/60 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#002147]/5 file:text-[#002147] hover:file:bg-[#002147]/10 transition-colors"
-                        />
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="block text-sm font-medium text-[#002147]/70">Attach Homework Pages (Images)</label>
+                          <span className="text-xs text-[#002147]/40">{attachmentFiles.length}/6 pages</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 mb-2">
+                          {attachmentFiles.map((file, idx) => (
+                            <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#002147]/10 bg-white shadow-sm group">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Page ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] text-center py-0.5 font-bold">Pg {idx + 1}</div>
+                              <button
+                                type="button"
+                                onClick={() => removeAttachmentFile(idx)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+
+                          {attachmentFiles.length < 6 && (
+                            <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#002147]/20 flex flex-col items-center justify-center cursor-pointer hover:border-[#dc143c]/50 hover:bg-red-50/30 transition-all bg-white">
+                              <span className="text-2xl text-[#002147]/30 leading-none">+</span>
+                              <span className="text-[9px] text-[#002147]/40 mt-1 font-medium">Add Page</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="sr-only"
+                                onChange={handleFileChange}
+                              />
+                            </label>
+                          )}
+                        </div>
+
+                        {attachmentFiles.length === 0 && (
+                          <p className="text-xs text-[#002147]/40 mt-1">📎 Upload your written homework pages here (up to 6 images)</p>
+                        )}
                       </div>
+
                     </div>
                   )}
                   

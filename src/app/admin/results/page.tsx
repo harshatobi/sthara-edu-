@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import { 
   Award, BookOpen, Download, Search, AlertCircle, ChevronDown, 
-  Sparkles, TrendingUp, Medal, Users, GraduationCap, CheckCircle
+  Sparkles, TrendingUp, Medal, Users, GraduationCap, CheckCircle, FileText
 } from 'lucide-react';
 
 interface Assignment {
@@ -79,15 +79,19 @@ export default function AcademicResults() {
             id: taskDoc.id,
             title: taskData.title,
             subject: taskData.subject,
-            targetClass: taskData.targetClass
+            targetClass: taskData.class || taskData.targetClass || 'N/A'
           });
         });
         
-        const usersSnap = await getDocs(collection(db, 'users'));
+        // Fetch students from both collections, filtered by schoolId
+        const [usersSnap, globalSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('role', '==', 'student'), where('schoolId', '==', schoolId))),
+          getDocs(query(collection(db, 'global_users'), where('role', '==', 'student'), where('schoolId', '==', schoolId))),
+        ]);
         const studentMap: Record<string, {name: string, class: string}> = {};
-        usersSnap.forEach(uDoc => {
-          const d = uDoc.data();
-          if (d.role === 'student' && d.schoolId === profile.schoolId) {
+        [...usersSnap.docs, ...globalSnap.docs].forEach(uDoc => {
+          if (!studentMap[uDoc.id]) {
+            const d = uDoc.data();
             studentMap[uDoc.id] = { name: d.name, class: d.studentClass || 'N/A' };
           }
         });
@@ -184,13 +188,17 @@ export default function AcademicResults() {
     const loadSingleAssignment = async () => {
        const subsSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments', selectedAssignment, 'submissions'));
        
-       const usersSnap = await getDocs(collection(db, 'users'));
+       // Fetch students from both collections, filtered by schoolId
+       const [usersSnap, globalSnap] = await Promise.all([
+         getDocs(query(collection(db, 'users'), where('role', '==', 'student'), where('schoolId', '==', schoolId))),
+         getDocs(query(collection(db, 'global_users'), where('role', '==', 'student'), where('schoolId', '==', schoolId))),
+       ]);
        const studentMap: Record<string, {name: string, class: string}> = {};
-       usersSnap.forEach(uDoc => {
-          const d = uDoc.data();
-          if (d.role === 'student' && d.schoolId === schoolId) {
-             studentMap[uDoc.id] = { name: d.name, class: d.studentClass || 'N/A' };
-          }
+       [...usersSnap.docs, ...globalSnap.docs].forEach(uDoc => {
+         if (!studentMap[uDoc.id]) {
+           const d = uDoc.data();
+           studentMap[uDoc.id] = { name: d.name, class: d.studentClass || 'N/A' };
+         }
        });
 
        const subs: StudentSubmission[] = [];
@@ -415,7 +423,20 @@ export default function AcademicResults() {
           </div>
         </div>
 
+        {/* Empty State — no assignments at all */}
+        {assignments.length === 0 && !isLoading && (
+          <div className="py-24 flex flex-col items-center justify-center text-center bg-white rounded-2xl border border-gray-200/60 shadow-sm">
+            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+              <FileText className="w-10 h-10 text-indigo-400" />
+            </div>
+            <h3 className="text-xl font-bold text-[#002147] mb-2">No Assignments Yet</h3>
+            <p className="text-gray-500 max-w-sm mb-6">Generate quizzes and assignments using the AI Paper Generator, then results will appear here.</p>
+            <a href="/admin/paper-gen" className="px-6 py-3 bg-[#002147] text-white font-bold rounded-xl hover:bg-[#003366] transition-colors">Go to Paper Generator</a>
+          </div>
+        )}
+
         {/* Content Area */}
+        {assignments.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
           {activeTab === 'assignments' ? (
             <div>
@@ -603,6 +624,7 @@ export default function AcademicResults() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

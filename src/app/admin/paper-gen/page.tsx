@@ -17,6 +17,7 @@ export default function PaperGenPage() {
   const [grade, setGrade] = useState('10th Grade Mathematics');
   const [difficulty, setDifficulty] = useState('CBSE Standard (30% Easy, 50% Med, 20% Hard)');
   const [chapters, setChapters] = useState<string[]>(['Quadratic Equations']);
+  const [questionCount, setQuestionCount] = useState(5);
 
   const toggleChapter = (chapter: string) => {
     setChapters(prev => 
@@ -38,7 +39,7 @@ export default function PaperGenPage() {
     try {
       const prompt = `Generate a quiz for ${grade} covering chapters: ${chapters.join(', ')}. 
       Difficulty: ${difficulty}. 
-      Generate exactly 3 multiple choice questions.
+      Generate EXACTLY ${questionCount} multiple choice questions.
       Return the result as a strict JSON array of objects, where each object has:
       - "id": a unique string (e.g. "q1")
       - "text": the question text
@@ -122,7 +123,7 @@ export default function PaperGenPage() {
     <div className="min-h-screen bg-gray-50 pb-16 font-sans">
       
       {/* Premium Header Banner */}
-      <div className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-40 backdrop-blur-xl bg-white/80">
+      <div className="bg-white/80 border-b border-gray-200/60 shadow-sm sticky top-0 z-40 backdrop-blur-xl">
         <div className="max-w-[1200px] mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-inner border border-indigo-400">
@@ -197,6 +198,22 @@ export default function PaperGenPage() {
                   <option>Foundational (50% Easy, 40% Med, 10% Hard)</option>
                 </select>
               </div>
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-[#002147] flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-500" />
+                  <span>Number of Questions</span>
+                </label>
+                <select
+                  value={questionCount}
+                  onChange={e => setQuestionCount(Number(e.target.value))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                >
+                  <option value={3}>3 Questions (Quick)</option>
+                  <option value={5}>5 Questions (Standard)</option>
+                  <option value={10}>10 Questions (Comprehensive)</option>
+                  <option value={15}>15 Questions (Full Test)</option>
+                </select>
+              </div>
             </div>
 
             <div className="relative z-10 space-y-4">
@@ -249,7 +266,7 @@ export default function PaperGenPage() {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 text-indigo-200 group-hover:scale-110 transition-transform" />
-                  <span>Generate Live Quiz</span>
+                  <span>Generate Quiz</span>
                 </>
               )}
             </button>
@@ -326,6 +343,17 @@ export default function PaperGenPage() {
                     <><Save className="w-5 h-5" /><span>Publish Assignment</span></>
                   )}
                 </button>
+                {saveSuccess && (
+                  <div className="text-center space-y-2">
+                    <a href="/admin/results" className="text-indigo-600 font-bold hover:underline text-sm mt-2 block">View in Results Dashboard →</a>
+                    <button
+                      onClick={() => { setSaveSuccess(false); setGeneratedData(null); setChapters(['Quadratic Equations']); }}
+                      className="px-6 py-2.5 bg-gray-100 text-[#002147] font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                    >
+                      Generate Another Quiz
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

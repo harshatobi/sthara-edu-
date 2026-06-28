@@ -42,6 +42,19 @@ export async function POST(request: NextRequest) {
       base64Image = imageBase64;
       mimeType = directMime || 'image/jpeg';
     } else if (imageUrl) {
+      // Validate imageUrl is from Firebase Storage to prevent SSRF
+      const ALLOWED_HOSTS = [
+        'firebasestorage.googleapis.com',
+        'storage.googleapis.com',
+      ];
+      try {
+        const parsed = new URL(imageUrl);
+        if (!ALLOWED_HOSTS.some(h => parsed.hostname.endsWith(h))) {
+          return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
+      }
       const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
       const arrayBuffer = await imageResponse.arrayBuffer();

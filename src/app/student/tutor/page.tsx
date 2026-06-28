@@ -116,10 +116,11 @@ export default function StudentAITutor() {
         }]);
         // Try to persist greeting (may fail if Firestore rules restrict it)
         addDoc(messagesRef, {
-          role: 'ai',
+          role: 'model',
           text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
           createdAt: serverTimestamp()
         }).catch(e => console.warn("Could not persist greeting:", e));
+
       } else {
         setMessages(fetchedMessages);
         setIsDBReady(true);
@@ -136,7 +137,8 @@ export default function StudentAITutor() {
     });
 
     return () => unsubscribe();
-  }, [profile?.uid, isTyping]);
+  }, [profile?.uid]);
+
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -185,10 +187,11 @@ export default function StudentAITutor() {
       if (res.ok && data.text) {
         // 4. Save AI Response to Firestore
         await addDoc(messagesRef, {
-          role: 'ai',
+          role: 'model',
           text: data.text,
           createdAt: serverTimestamp()
         });
+
       } else {
         console.error('AI Error:', data.error);
         setErrorMsg(data.error || 'Failed to connect to AI. Please check your API key.');

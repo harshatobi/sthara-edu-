@@ -3,12 +3,23 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+
 import { Download, ShieldCheck, FileCheck2, Users, FileText, Sparkles, Server } from 'lucide-react';
 
 export default function RegulatoryVaultPage() {
   const { profile } = useAuth();
   const [generatingReport, setGeneratingReport] = useState<string | null>(null);
+  const [reportsGenerated, setReportsGenerated] = useState(0);
+
+  // Compute academic year dynamically
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed
+  const year = now.getFullYear();
+  // Academic year starts in June (month 5)
+  const academicYearStart = month >= 5 ? year : year - 1;
+  const academicYear = `${academicYearStart}-${academicYearStart + 1}`;
+
 
   const openPrintWindow = (title: string, htmlContent: string) => {
     // Remove existing iframe if it exists
@@ -82,31 +93,41 @@ export default function RegulatoryVaultPage() {
         if (d.data().role === 'student') studentMap[d.id] = d.data();
       });
 
-      const logsSnap = await getDocs(query(collection(db, 'wellness_logs')));
+      const logsSnap = await getDocs(query(
+        collection(db, 'wellness_logs'),
+        where('schoolId', '==', profile.schoolId)
+      ));
       let totalLogs = 0;
       let totalEnergy = 0;
       let criticalLogs = 0;
 
       logsSnap.forEach(d => {
         const data = d.data();
-        if (studentMap[data.studentId]) {
+        const uid = data.userId || data.studentId;
+        if (studentMap[uid]) {
           totalLogs++;
-          totalEnergy += data.energyLevel;
-          if (data.energyLevel <= 40) criticalLogs++;
+          totalEnergy += (data.moodValue || data.energyLevel || 0);
+          if ((data.moodValue || data.energyLevel || 0) <= 40) criticalLogs++;
         }
       });
 
+
       const avgEnergy = totalLogs > 0 ? (totalEnergy / totalLogs).toFixed(1) : 'N/A';
 
-      const journalsSnap = await getDocs(query(collection(db, 'journals')));
+      const journalsSnap = await getDocs(query(
+        collection(db, 'journal_entries'),
+        where('schoolId', '==', profile.schoolId)
+      ));
       let totalJournals = 0;
       journalsSnap.forEach(d => {
-        if (studentMap[d.data().studentId]) totalJournals++;
+        const uid = d.data().userId || d.data().studentId;
+        if (studentMap[uid]) totalJournals++;
       });
 
+
       const htmlContent = `
-        <h1>CBSE Wellness & Mental Health Report</h1>
-        <p><strong>Reporting Period:</strong> 2025-2026 Academic Year</p>
+        <h1>CBSE Wellness &amp; Mental Health Report</h1>
+        <p><strong>Reporting Period:</strong> ${academicYear} Academic Year</p>
         <p>This report aggregates student mental health and wellness data to ensure compliance with CBSE holistic education guidelines.</p>
         
         <h2>Executive Summary</h2>
@@ -124,6 +145,8 @@ export default function RegulatoryVaultPage() {
       `;
 
       openPrintWindow('CBSE Wellness Report', htmlContent);
+      setReportsGenerated(r => r + 1);
+
     } catch (err) {
       console.error(err);
       alert('Failed to generate report.');
@@ -144,14 +167,14 @@ export default function RegulatoryVaultPage() {
       let rows = '';
       teachers.forEach((t, i) => {
         const assignmentsStr = t.assignments ? t.assignments.map((a:any) => `${a.subject} (${a.class})`).join(', ') : 'None';
-        const mockHours = Math.floor(Math.random() * 20) + 30; 
-        rows += `<tr><td>${i+1}</td><td>${t.name}</td><td>${assignmentsStr}</td><td>${mockHours} Hrs</td><td>Verified</td></tr>`;
+        rows += `<tr><td>${i+1}</td><td>${t.name}</td><td>${assignmentsStr}</td><td>N/A (manual entry)</td><td>Active</td></tr>`;
+
       });
 
       const htmlContent = `
-        <h1>NEP 2020 Staff Training & Deployment Log</h1>
-        <p><strong>Reporting Period:</strong> 2025-2026 Academic Year</p>
-        <p>Official roster of teaching staff, active subject deployments, and logged professional development hours.</p>
+        <h1>NEP 2020 Staff Training &amp; Deployment Log</h1>
+        <p><strong>Reporting Period:</strong> ${academicYear} Academic Year</p>
+        <p>Official roster of teaching staff and active subject deployments. Professional development hours require manual entry by the institution.</p>
         
         <h2>Staff Roster</h2>
         <table>
@@ -165,6 +188,8 @@ export default function RegulatoryVaultPage() {
       `;
 
       openPrintWindow('Staff Training Logs', htmlContent);
+      setReportsGenerated(r => r + 1);
+
     } catch (err) {
       console.error(err);
       alert('Failed to generate report.');
@@ -179,24 +204,29 @@ export default function RegulatoryVaultPage() {
     
     try {
       const htmlContent = `
-        <h1>Digital Infrastructure & Security Audit</h1>
+        <h1>Digital Infrastructure &amp; Security Audit</h1>
         <p><strong>Audit Date:</strong> ${new Date().toLocaleDateString()}</p>
-        <p>Automated verification of platform infrastructure, data privacy, and proctoring systems.</p>
+        <p><strong>Platform:</strong> Sthara School OS (Firebase / Vercel)</p>
+        <p>This document certifies that the Sthara platform operates on Google Firebase infrastructure with role-based access control and encrypted data transmission (HTTPS/TLS).</p>
         
-        <h2>System Status</h2>
+        <h2>Platform Architecture</h2>
         <table>
-          <tr><th>System Component</th><th>Status</th><th>Last Verified</th></tr>
-          <tr><td>End-to-End Encryption</td><td style="color: green; font-weight: bold;">Active</td><td>${new Date().toLocaleDateString()}</td></tr>
-          <tr><td>AI Proctoring Modules</td><td style="color: green; font-weight: bold;">Active</td><td>${new Date().toLocaleDateString()}</td></tr>
-          <tr><td>Database Backups</td><td style="color: green; font-weight: bold;">Verified (Daily)</td><td>${new Date().toLocaleDateString()}</td></tr>
-          <tr><td>Role-Based Access Control</td><td style="color: green; font-weight: bold;">Enforced</td><td>${new Date().toLocaleDateString()}</td></tr>
+          <tr><th>Component</th><th>Provider</th><th>Notes</th></tr>
+          <tr><td>Authentication</td><td>Firebase Authentication</td><td>Email/password with session tokens</td></tr>
+          <tr><td>Database</td><td>Cloud Firestore (Google)</td><td>NoSQL, encrypted at rest by Google</td></tr>
+          <tr><td>File Storage</td><td>Firebase Storage</td><td>Encrypted at rest</td></tr>
+          <tr><td>Hosting</td><td>Vercel (Edge Network)</td><td>HTTPS enforced, global CDN</td></tr>
+          <tr><td>AI Processing</td><td>Google Gemini API</td><td>No student data retained by Google</td></tr>
+          <tr><td>Access Control</td><td>Firestore Security Rules</td><td>Role-based (student/teacher/admin/superadmin)</td></tr>
         </table>
         
-        <h2>Security Statement</h2>
-        <p>All student and institutional data is securely encrypted in transit and at rest. Sthara School OS complies with required educational data privacy mandates.</p>
+        <h2>Data Privacy Statement</h2>
+        <p>All student and institutional data is stored on Google Cloud infrastructure subject to Google's data processing terms. Data is encrypted in transit (TLS 1.3) and at rest (AES-256). No student data is shared with third parties.</p>
       `;
 
       openPrintWindow('Infrastructure Audit', htmlContent);
+      setReportsGenerated(r => r + 1);
+
     } catch (err) {
       console.error(err);
       alert('Failed to generate report.');
@@ -225,10 +255,15 @@ export default function RegulatoryVaultPage() {
             </div>
           </div>
 
-          <div className="px-5 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl font-bold flex items-center space-x-2 shadow-sm">
+          <div className={`px-5 py-2.5 border rounded-xl font-bold flex items-center space-x-2 shadow-sm ${
+            reportsGenerated > 0
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-amber-50 border-amber-200 text-amber-700'
+          }`}>
             <ShieldCheck className="w-5 h-5" />
-            <span>Fully Compliant</span>
+            <span>{reportsGenerated > 0 ? 'Reports Generated' : 'Reports Pending'}</span>
           </div>
+
         </div>
       </div>
 

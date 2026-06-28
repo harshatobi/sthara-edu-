@@ -1,11 +1,9 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import { PlayCircle, Clock, BookOpen, Star, Loader2, HelpCircle, CheckCircle } from 'lucide-react';
+import { collection, query, orderBy, getDocs, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { PlayCircle, BookOpen, Star, Loader2, HelpCircle, CheckCircle, X } from 'lucide-react';
 
 interface VideoFile {
   id: string;
@@ -18,7 +16,8 @@ export default function StudentVideos() {
   const { profile, loading } = useAuth();
   const router = useRouter();
   
-  const [activeSubject, setActiveSubject] = useState('Mathematics');
+  const [activeSubject, setActiveSubject] = useState('');
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>(['Mathematics', 'Science', 'English']);
   const [videos, setVideos] = useState<VideoFile[]>([]);
   const [fetching, setFetching] = useState(true);
 
@@ -52,19 +51,34 @@ export default function StudentVideos() {
     }
   };
 
-  const handleAnswer = (index: number) => {
+  const handleAnswer = async (index: number) => {
     const isCorrect = index === quizData.questions[currentQuestionIdx].correctAnswerIndex;
-    if (isCorrect) {
-      setQuizScore(s => (s || 0) + 1);
-    }
+    const newScore = isCorrect ? (quizScore || 0) + 1 : (quizScore || 0);
     
     if (currentQuestionIdx < quizData.questions.length - 1) {
+      if (isCorrect) setQuizScore(newScore);
       setCurrentQuestionIdx(idx => idx + 1);
     } else {
-      // Quiz complete!
-      // Here we would typically send the score to /api/tutor or memory endpoint to update student_memory.
-      // For now, we just display it.
-      setQuizScore(s => (s !== null ? s : 0));
+      // Quiz complete — compute final score and save to Firestore
+      const finalScore = isCorrect ? newScore : (quizScore || 0);
+      setQuizScore(finalScore);
+      if (profile?.uid && profile?.schoolId) {
+        try {
+          await addDoc(collection(db, 'schools', profile.schoolId, 'masteryScores'), {
+            studentId: profile.uid,
+            studentName: profile.name || '',
+            studentClass: profile.studentClass || '',
+            subject: activeSubject,
+            videoTitle: currentVideo?.title || '',
+            score: finalScore,
+            total: quizData.questions.length,
+            percentage: Math.round((finalScore / quizData.questions.length) * 100),
+            completedAt: serverTimestamp(),
+          });
+        } catch (e) {
+          console.warn('Could not save quiz score:', e);
+        }
+      }
     }
   };
 
@@ -73,6 +87,34 @@ export default function StudentVideos() {
       router.push('/login');
     }
   }, [profile, loading, router]);
+
+  // Derive available subjects from teacher assignments in this school
+  useEffect(() => {
+    if (!profile?.schoolId || !profile?.studentClass) return;
+    const fetchSubjects = async () => {
+      try {
+        const teachersSnap = await getDocs(query(
+          collection(db, 'global_users'),
+          where('schoolId', '==', profile.schoolId),
+          where('role', '==', 'teacher')
+        ));
+        const subjectSet = new Set<string>();
+        teachersSnap.docs.forEach(d => {
+          const assigns: { class: string; subject: string }[] = d.data().assignments || [];
+          assigns.forEach(a => {
+            if (a.class === profile.studentClass) subjectSet.add(a.subject);
+          });
+        });
+        const subjects = subjectSet.size > 0 ? Array.from(subjectSet).sort() : ['Mathematics', 'Science', 'English'];
+        setAvailableSubjects(subjects);
+        setActiveSubject(subjects[0]);
+      } catch {
+        setAvailableSubjects(['Mathematics', 'Science', 'English']);
+        setActiveSubject('Mathematics');
+      }
+    };
+    fetchSubjects();
+  }, [profile?.schoolId, profile?.studentClass]);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -116,7 +158,7 @@ export default function StudentVideos() {
       </div>
 
       <div className="flex space-x-2 overflow-x-auto pb-2">
-        {['Mathematics', 'Science', 'English'].map((subject) => (
+        {availableSubjects.map((subject) => (
           <button
             key={subject}
             onClick={() => setActiveSubject(subject)}
@@ -143,7 +185,7 @@ export default function StudentVideos() {
           </div>
           <h2 className="text-xl font-bold text-[#002147] mb-2">No Videos Available Yet</h2>
           <p className="text-[#002147]/60 max-w-md mx-auto">
-            Your school hasn't uploaded any {activeSubject} videos for Class {profile.studentClass} yet. Check back later!
+            Your school hasn't uploaded any {activeSubject} videos for {profile.studentClass ? `Class ${profile.studentClass}` : 'your class'} yet. Check back later!
           </p>
         </div>
       ) : (
@@ -192,6 +234,13 @@ export default function StudentVideos() {
                 </h2>
                 <p className="text-white/70 text-sm mt-1">{currentVideo?.title}</p>
               </div>
+              <button
+                onClick={() => setShowQuiz(false)}
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                title="Close quiz"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
             </div>
             
             <div className="p-8">
@@ -237,8 +286,12 @@ export default function StudentVideos() {
                   </div>
                 )
               ) : (
-                <div className="text-center text-red-500 py-10">Failed to load quiz.</div>
+                <div className="text-center py-10">
+                  <p className="text-red-500 mb-4">Failed to load quiz.</p>
+                  <button onClick={() => setShowQuiz(false)} className="px-6 py-2 bg-gray-100 text-[#002147] font-bold rounded-xl hover:bg-gray-200 transition-colors">Close</button>
+                </div>
               )}
+
             </div>
           </div>
         </div>

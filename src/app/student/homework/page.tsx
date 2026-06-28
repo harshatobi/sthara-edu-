@@ -7,9 +7,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, CheckCircle, Clock, ChevronRight, FileText, Activity } from 'lucide-react';
 import Link from 'next/link';
 
+interface Assignment {
+  id: string;
+  topic: string;
+  subject: string;
+  dueDate: string;
+  status: 'pending' | 'completed';
+  grade?: string;
+  teacherApproved?: boolean;
+  questions?: string[];
+  [key: string]: unknown;
+}
+
+// Helper: is a due date in the past?
+const isOverdue = (dateStr: string) => {
+  const due = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return due < today;
+};
+
 export default function StudentHomework() {
   const { profile } = useAuth();
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
 
@@ -33,32 +53,41 @@ export default function StudentHomework() {
           getDocs(targetedQuery)
         ]);
 
-        const tasks: any[] = [];
-        const processDoc = async (docSnap: any) => {
-          const taskData = { id: docSnap.id, topic: docSnap.data().title || docSnap.data().topic, subject: docSnap.data().subject, dueDate: docSnap.data().dueDate, ...docSnap.data() };
+        // Collect all unique docs first, then process — avoids race-condition dedup
+        const seen = new Set<string>();
+        const allDocs: typeof classSnap.docs = [];
+        [...classSnap.docs, ...targetedSnap.docs].forEach(docSnap => {
+          if (!seen.has(docSnap.id)) {
+            seen.add(docSnap.id);
+            allDocs.push(docSnap);
+          }
+        });
+
+        const processDoc = async (docSnap: (typeof allDocs)[0]): Promise<Assignment> => {
+          const data = docSnap.data();
+          const taskData: Assignment = {
+            id: docSnap.id,
+            topic: data.title || data.topic,
+            subject: data.subject,
+            dueDate: data.dueDate,
+            status: 'pending',
+            ...data,
+          };
           const subDocRef = doc(db, 'schools', schoolId, 'assignments', docSnap.id, 'submissions', uid);
           const subDoc = await getDoc(subDocRef);
           if (subDoc.exists()) {
             const subData = subDoc.data();
             taskData.status = 'completed';
-            // grade is now stored as a string like '8/10' or 'totalScore/maxTotalScore'
+            // grade is stored as a string like '8/10'
             taskData.grade = subData.grade || (subData.totalScore !== undefined ? `${subData.totalScore}/${subData.maxTotalScore}` : subData.score || 'Graded');
             taskData.teacherApproved = subData.teacherApproved || false;
-          } else {
-            taskData.status = 'pending';
           }
-          if (!tasks.some((t: any) => t.id === taskData.id)) {
-            tasks.push(taskData);
-          }
+          return taskData;
         };
 
-        await Promise.all([
-          ...classSnap.docs.map(processDoc),
-          ...targetedSnap.docs.map(processDoc)
-        ]);
-        
-        tasks.sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-        setAssignments(tasks);
+        const allTasks = await Promise.all(allDocs.map(processDoc));
+        allTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        setAssignments(allTasks);
       } catch (err) {
         console.error(err);
       } finally {
@@ -174,7 +203,7 @@ export default function StudentHomework() {
                   ) : (
                     <div>
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Due Date</span>
-                      <span className="text-sm font-bold text-red-500">
+                      <span className={`text-sm font-medium ${a.dueDate && isOverdue(a.dueDate) ? 'text-red-500' : 'text-emerald-600'}`}>
                         {a.dueDate ? new Date(a.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No Due Date'}
                       </span>
                     </div>

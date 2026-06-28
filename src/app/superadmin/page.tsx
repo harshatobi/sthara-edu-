@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface School {
   id: string;
@@ -18,9 +19,11 @@ interface School {
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
+  const { profile, loading: authLoading } = useAuth();
   const [schools, setSchools] = useState<School[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form State
   const [schoolCode, setSchoolCode] = useState('');
@@ -43,6 +46,12 @@ export default function SuperAdminDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!authLoading && profile && profile.role !== 'superadmin') {
+      router.push('/login');
+    }
+  }, [profile, authLoading, router]);
 
   useEffect(() => {
     fetchSchools();
@@ -122,7 +131,7 @@ export default function SuperAdminDashboard() {
               <Building2 className="w-8 h-8 text-indigo-600" />
             </div>
             <div className="relative z-10">
-              <p className="text-sm text-gray-500 font-bold uppercase tracking-wider">Active Schools</p>
+              <p className="text-sm text-gray-500 font-bold uppercase tracking-wider">Total Schools</p>
               <p className="text-4xl font-black text-[#002147] mt-1">{loading ? '...' : schools.length}</p>
             </div>
           </div>
@@ -166,7 +175,7 @@ export default function SuperAdminDashboard() {
             </div>
             <div className="bg-gray-100 p-2 rounded-xl flex items-center space-x-2">
               <Search className="w-5 h-5 text-gray-400 ml-2" />
-              <input type="text" placeholder="Search schools..." className="bg-transparent border-none focus:ring-0 text-sm font-medium w-48 text-[#002147]" />
+              <input type="text" placeholder="Search schools..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-transparent border-none focus:ring-0 text-sm font-medium w-48 text-[#002147]" />
             </div>
           </div>
 
@@ -199,7 +208,10 @@ export default function SuperAdminDashboard() {
                     </td>
                   </tr>
                 ) : (
-                  schools.map((school) => (
+                  schools.filter(s =>
+                    s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    s.id?.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).map((school) => (
                     <tr 
                       key={school.id} 
                       onClick={() => router.push(`/superadmin/schools/manage?id=${school.id}`)}

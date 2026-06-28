@@ -4,27 +4,33 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import {
-  Check, ChevronRight, ArrowLeft, Loader2, BrainCircuit,
-  FileText, Users, Inbox, BadgeCheck, AlertTriangle, Edit3, MessageSquare
+  Check, ArrowLeft, Loader2, BrainCircuit,
+  FileText, Users, Inbox, BadgeCheck, AlertTriangle,
+  Edit3, MessageSquare, Image as ImageIcon, X, ChevronLeft, ChevronRight,
+  BookOpen, CheckSquare
 } from 'lucide-react';
 import AiEvaluationView from '@/components/AiEvaluationView';
 import Link from 'next/link';
 
 interface Submission {
-  id: string;               // student uid
+  id: string;
   assignmentId: string;
   assignmentTitle: string;
   assignmentSubject: string;
   studentName: string;
   studentClass: string;
   customStudentId: string;
+  score: number;
+  maxScore: number;
   grade: string;
-  totalScore: number;
-  maxTotalScore: number;
   aiResult: any;
-  status: string;
+  aiGraded: boolean;
+  type: string;           // 'homework' | 'quiz' | 'image'
+  text?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
   teacherApproved: boolean;
   submittedAt?: any;
 }
@@ -41,15 +47,16 @@ export default function GradingGalleryPage() {
   const [overrideScore, setOverrideScore] = useState('');
   const [teacherNote, setTeacherNote] = useState('');
   const [saving, setSaving] = useState(false);
-  const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
+
+  // Image lightbox
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'teacher')) router.push('/login');
   }, [profile, loading, router]);
 
   useEffect(() => {
-    if (!profile?.schoolId) return;
-    fetchQueue();
+    if (profile?.schoolId) fetchQueue();
   }, [profile?.schoolId]);
 
   const fetchQueue = async () => {
@@ -63,7 +70,8 @@ export default function GradingGalleryPage() {
 
       const pending: Submission[] = [];
 
-      for (const aDoc of assignmentsSnap.docs) {
+      // Fetch all submissions in parallel across all assignments
+      await Promise.all(assignmentsSnap.docs.map(async (aDoc) => {
         const aData = aDoc.data();
         const subsSnap = await getDocs(
           collection(db, 'schools', schoolId, 'assignments', aDoc.id, 'submissions')
@@ -71,8 +79,12 @@ export default function GradingGalleryPage() {
 
         subsSnap.forEach(sDoc => {
           const s = sDoc.data();
-          // Pick up submissions that have aiResult and are not yet teacher-approved
-          if (s.aiResult && !s.teacherApproved) {
+          // Show all un-approved submissions (not just AI-graded)
+          if (!s.teacherApproved) {
+            const score    = s.score    ?? s.totalScore    ?? 0;
+            const maxScore = s.maxScore ?? s.maxTotalScore ?? (s.aiGraded ? 15 : 0);
+            const imgs: string[] = s.imageUrls || (s.imageUrl ? [s.imageUrl] : []);
+
             pending.push({
               id: sDoc.id,
               assignmentId: aDoc.id,
@@ -81,25 +93,24 @@ export default function GradingGalleryPage() {
               studentName: s.studentName || 'Student',
               studentClass: s.studentClass || '',
               customStudentId: s.customStudentId || '',
-              grade: s.grade || `${s.totalScore}/${s.maxTotalScore}`,
-              totalScore: s.totalScore ?? 0,
-              maxTotalScore: s.maxTotalScore ?? 0,
-              aiResult: s.aiResult,
-              status: s.status || 'ai_graded',
+              score,
+              maxScore,
+              grade: maxScore > 0 ? `${score}/${maxScore}` : 'Pending',
+              aiResult: s.aiResult || null,
+              aiGraded: !!s.aiGraded,
+              type: imgs.length > 0 ? 'image' : (s.type === 'quiz' ? 'quiz' : 'homework'),
+              text: s.text || '',
+              imageUrl: imgs[0] || '',
+              imageUrls: imgs,
               teacherApproved: false,
               submittedAt: s.submittedAt,
             });
           }
         });
-      }
+      }));
 
-      // Sort by submission time descending
-      pending.sort((a, b) => {
-        const ta = a.submittedAt?.seconds || 0;
-        const tb = b.submittedAt?.seconds || 0;
-        return tb - ta;
-      });
-
+      // Newest first
+      pending.sort((a, b) => (b.submittedAt?.seconds || 0) - (a.submittedAt?.seconds || 0));
       setQueue(pending);
       if (pending.length > 0) setActive(pending[0]);
     } catch (err) {
@@ -113,41 +124,36 @@ export default function GradingGalleryPage() {
     setActive(sub);
     setOverrideScore('');
     setTeacherNote('');
+    setLightboxIdx(null);
   };
 
   const handleApprove = async () => {
     if (!active || !profile?.schoolId) return;
-    const schoolId = profile.schoolId;
     setSaving(true);
     try {
-      const finalScore = overrideScore !== ''
-        ? Number(overrideScore)
-        : active.totalScore;
+      const finalScore = overrideScore !== '' ? Number(overrideScore) : active.score;
 
-      const subRef = doc(
-        db, 'schools', schoolId,
-        'assignments', active.assignmentId,
-        'submissions', active.id
+      await updateDoc(
+        doc(db, 'schools', profile.schoolId, 'assignments', active.assignmentId, 'submissions', active.id),
+        {
+          teacherApproved: true,
+          status: 'teacher_approved',
+          score: finalScore,
+          maxScore: active.maxScore,
+          teacherNote: teacherNote || null,
+          approvedAt: new Date(),
+        }
       );
 
-      await updateDoc(subRef, {
-        teacherApproved: true,
-        status: 'teacher_approved',
-        teacherScore: finalScore,
-        teacherNote: teacherNote || null,
-        score: finalScore,
-        maxScore: active.maxTotalScore,
-        approvedAt: new Date(),
-      });
-
-      setApprovedIds(prev => new Set([...prev, `${active.assignmentId}-${active.id}`]));
-      const remaining = queue.filter(q => !(q.id === active.id && q.assignmentId === active.assignmentId));
+      const remaining = queue.filter(
+        q => !(q.id === active.id && q.assignmentId === active.assignmentId)
+      );
       setQueue(remaining);
       setActive(remaining.length > 0 ? remaining[0] : null);
       setOverrideScore('');
       setTeacherNote('');
+      setLightboxIdx(null);
     } catch (err: any) {
-      console.error(err);
       alert('Failed to save: ' + err.message);
     } finally {
       setSaving(false);
@@ -160,13 +166,61 @@ export default function GradingGalleryPage() {
     </div>
   );
 
-  const scorePercent = active && active.maxTotalScore > 0
-    ? Math.round((active.totalScore / active.maxTotalScore) * 100)
-    : 0;
+  const scorePercent = active && active.maxScore > 0
+    ? Math.round((active.score / active.maxScore) * 100)
+    : null;
+
+  const activeImages = active?.imageUrls || (active?.imageUrl ? [active.imageUrl] : []);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-      {/* Top Header Bar */}
+
+      {/* Lightbox */}
+      {lightboxIdx !== null && activeImages.length > 0 && (
+        <div
+          className="fixed inset-0 bg-black/90 z-[999] flex items-center justify-center"
+          onClick={() => setLightboxIdx(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 rounded-full p-2"
+            onClick={() => setLightboxIdx(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {activeImages.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 text-white/80 hover:text-white bg-white/10 rounded-full p-3 disabled:opacity-30"
+                onClick={(e) => { e.stopPropagation(); setLightboxIdx(Math.max(0, lightboxIdx - 1)); }}
+                disabled={lightboxIdx === 0}
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                className="absolute right-4 text-white/80 hover:text-white bg-white/10 rounded-full p-3 disabled:opacity-30"
+                onClick={(e) => { e.stopPropagation(); setLightboxIdx(Math.min(activeImages.length - 1, lightboxIdx + 1)); }}
+                disabled={lightboxIdx === activeImages.length - 1}
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          <div className="max-w-4xl max-h-[90vh] px-4" onClick={e => e.stopPropagation()}>
+            <img
+              src={activeImages[lightboxIdx]}
+              alt={`Page ${lightboxIdx + 1}`}
+              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+            />
+            <p className="text-white/60 text-center text-sm mt-3">
+              Page {lightboxIdx + 1} of {activeImages.length}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <div className="bg-white border-b border-gray-200/70 sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -181,9 +235,15 @@ export default function GradingGalleryPage() {
               <h1 className="text-xl font-black text-[#002147]">Grading Gallery</h1>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchQueue}
+              className="text-sm font-bold text-[#002147]/60 hover:text-[#002147] border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition-all"
+            >
+              Refresh
+            </button>
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-center">
-              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Pending Review</p>
+              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Pending</p>
               <p className="text-2xl font-black text-amber-700">{queue.length}</p>
             </div>
           </div>
@@ -194,15 +254,10 @@ export default function GradingGalleryPage() {
 
         {/* LEFT SIDEBAR — Queue */}
         <div className="w-80 shrink-0 bg-white border-r border-gray-200/70 flex flex-col sticky top-[73px] h-[calc(100vh-73px)] overflow-hidden">
-          <div className="p-5 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h2 className="font-black text-[#002147] flex items-center gap-2">
-                <Users className="w-4 h-4" /> Student Queue
-              </h2>
-              <button onClick={fetchQueue} className="text-xs text-gray-400 hover:text-[#002147] font-bold transition-colors">
-                Refresh
-              </button>
-            </div>
+          <div className="p-4 border-b border-gray-100">
+            <h2 className="font-black text-[#002147] flex items-center gap-2 text-sm">
+              <Users className="w-4 h-4" /> Student Queue
+            </h2>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -216,39 +271,46 @@ export default function GradingGalleryPage() {
                   <Inbox className="w-8 h-8 text-emerald-400" />
                 </div>
                 <p className="font-bold text-gray-500">Queue is empty</p>
-                <p className="text-xs text-gray-400 mt-1">All submissions have been reviewed.</p>
+                <p className="text-xs text-gray-400 mt-1">All submissions reviewed.</p>
               </div>
             ) : (
               queue.map(sub => {
                 const isActive = active?.id === sub.id && active?.assignmentId === sub.assignmentId;
-                const pct = sub.maxTotalScore > 0 ? Math.round((sub.totalScore / sub.maxTotalScore) * 100) : 0;
-                const chipColor = pct >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                const pct = sub.maxScore > 0 ? Math.round((sub.score / sub.maxScore) * 100) : null;
+                const chipColor = pct === null ? 'text-gray-500 bg-gray-50 border-gray-200'
+                  : pct >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
                   : pct >= 60 ? 'text-amber-700 bg-amber-50 border-amber-200'
                   : 'text-red-700 bg-red-50 border-red-200';
+
+                const typeIcon = sub.type === 'image'
+                  ? <ImageIcon className="w-3 h-3" />
+                  : sub.type === 'quiz'
+                  ? <CheckSquare className="w-3 h-3" />
+                  : <BookOpen className="w-3 h-3" />;
 
                 return (
                   <button
                     key={`${sub.assignmentId}-${sub.id}`}
                     onClick={() => handleSelectSubmission(sub)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all group ${
+                    className={`w-full text-left p-4 rounded-2xl border transition-all ${
                       isActive
-                        ? 'bg-[#002147] border-[#002147] shadow-lg shadow-[#002147]/10'
+                        ? 'bg-[#002147] border-[#002147] shadow-lg'
                         : 'bg-white border-gray-200 hover:border-[#002147]/40 hover:shadow-sm'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className={`font-black text-sm truncate ${isActive ? 'text-white' : 'text-[#002147]'}`}>
                           {sub.studentName}
                         </p>
                         <p className={`text-xs truncate mt-0.5 ${isActive ? 'text-blue-200' : 'text-gray-400'}`}>
                           {sub.assignmentTitle}
                         </p>
-                        {sub.assignmentSubject && (
-                          <p className={`text-xs font-bold mt-1 ${isActive ? 'text-blue-300' : 'text-gray-400'}`}>
-                            {sub.assignmentSubject} · {sub.studentClass}
-                          </p>
-                        )}
+                        <div className={`flex items-center gap-1 mt-1.5 text-xs font-bold ${isActive ? 'text-blue-300' : 'text-gray-400'}`}>
+                          {typeIcon}
+                          <span className="capitalize">{sub.type}</span>
+                          {sub.studentClass && <span>· {sub.studentClass}</span>}
+                        </div>
                       </div>
                       <div className={`shrink-0 px-2 py-0.5 rounded-lg border text-xs font-black ${
                         isActive ? 'bg-white/20 border-white/20 text-white' : chipColor
@@ -256,6 +318,14 @@ export default function GradingGalleryPage() {
                         {sub.grade}
                       </div>
                     </div>
+
+                    {/* Page count badge for image submissions */}
+                    {sub.imageUrls && sub.imageUrls.length > 0 && (
+                      <div className={`mt-2 flex items-center gap-1 text-[10px] font-bold ${isActive ? 'text-blue-200' : 'text-gray-400'}`}>
+                        <ImageIcon className="w-3 h-3" />
+                        {sub.imageUrls.length} page{sub.imageUrls.length > 1 ? 's' : ''} attached
+                      </div>
+                    )}
                   </button>
                 );
               })
@@ -271,17 +341,21 @@ export default function GradingGalleryPage() {
                 <BadgeCheck className="w-12 h-12 text-gray-300" />
               </div>
               <h2 className="text-2xl font-black text-[#002147] mb-2">All Caught Up!</h2>
-              <p className="text-gray-500 font-medium max-w-sm">No submissions are waiting for review. Students' work will appear here once they submit.</p>
+              <p className="text-gray-500 font-medium max-w-sm">
+                No submissions waiting for review. Students' work will appear here once they submit.
+              </p>
             </div>
           ) : (
-            <div className="p-8 space-y-8 max-w-4xl mx-auto">
+            <div className="p-8 space-y-6 max-w-4xl mx-auto">
 
               {/* Submission Header */}
               <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold uppercase tracking-widest text-blue-600">{active.assignmentSubject}</span>
-                    <span className="text-gray-300">·</span>
+                    {active.assignmentSubject && (
+                      <span className="text-xs font-bold uppercase tracking-widest text-blue-600">{active.assignmentSubject}</span>
+                    )}
+                    {active.assignmentSubject && active.studentClass && <span className="text-gray-300">·</span>}
                     <span className="text-xs font-bold text-gray-400">{active.studentClass}</span>
                   </div>
                   <h2 className="text-xl font-black text-[#002147]">{active.assignmentTitle}</h2>
@@ -289,29 +363,110 @@ export default function GradingGalleryPage() {
                     Submitted by <strong className="text-[#002147]">{active.studentName}</strong>
                     {active.customStudentId && <span className="text-gray-400"> · #{active.customStudentId}</span>}
                   </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className={`px-5 py-2 rounded-2xl font-black text-xl border-2 ${
-                    scorePercent >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                    : scorePercent >= 60 ? 'text-amber-700 bg-amber-50 border-amber-200'
-                    : 'text-red-700 bg-red-50 border-red-200'
+                  <div className={`inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-bold border ${
+                    active.type === 'image' ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : active.type === 'quiz' ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-gray-50 text-gray-600 border-gray-200'
                   }`}>
-                    {active.grade}
+                    {active.type === 'image' ? <ImageIcon className="w-3 h-3" />
+                      : active.type === 'quiz' ? <CheckSquare className="w-3 h-3" />
+                      : <FileText className="w-3 h-3" />}
+                    {active.type === 'image' ? 'Image Submission' : active.type === 'quiz' ? 'Quiz' : 'Text Submission'}
+                    {active.aiGraded && <span className="ml-1 text-[10px] font-black uppercase">· AI Graded</span>}
                   </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black" style={{
-                      background: `conic-gradient(${scorePercent >= 80 ? '#10b981' : scorePercent >= 60 ? '#f59e0b' : '#dc143c'} ${scorePercent}%, #f1f5f9 0)`,
-                    }}>
+                </div>
+
+                {scorePercent !== null && (
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className={`px-5 py-2 rounded-2xl font-black text-xl border-2 ${
+                      scorePercent >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                      : scorePercent >= 60 ? 'text-amber-700 bg-amber-50 border-amber-200'
+                      : 'text-red-700 bg-red-50 border-red-200'
+                    }`}>
+                      {active.grade}
+                    </div>
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center"
+                      style={{
+                        background: `conic-gradient(${scorePercent >= 80 ? '#10b981' : scorePercent >= 60 ? '#f59e0b' : '#dc143c'} ${scorePercent}%, #f1f5f9 0)`,
+                      }}
+                    >
                       <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center">
                         <span className="text-xs font-black text-gray-700">{scorePercent}%</span>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
+              {/* ── Submitted Images Gallery ── */}
+              {activeImages.length > 0 && (
+                <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
+                  <h3 className="font-black text-[#002147] text-base flex items-center gap-2 mb-4">
+                    <ImageIcon className="w-5 h-5 text-purple-500" />
+                    Student's Submitted Work
+                    <span className="ml-1 text-xs font-bold text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+                      {activeImages.length} page{activeImages.length > 1 ? 's' : ''}
+                    </span>
+                  </h3>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {activeImages.map((url, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setLightboxIdx(idx)}
+                        className="group relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-gray-100 hover:border-purple-400 hover:shadow-lg transition-all bg-gray-50"
+                      >
+                        <img
+                          src={url}
+                          alt={`Page ${idx + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                          <span className="text-white text-xs font-bold">Click to enlarge</span>
+                        </div>
+                        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm rounded-lg px-2 py-0.5 text-xs font-black text-gray-700">
+                          Pg {idx + 1}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Text submission (when no image) */}
+              {active.type === 'homework' && active.text && !active.imageUrl && (
+                <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
+                  <h3 className="font-black text-[#002147] text-base flex items-center gap-2 mb-4">
+                    <FileText className="w-5 h-5 text-blue-500" />
+                    Student's Answer
+                  </h3>
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{active.text}</p>
+                  </div>
+                </div>
+              )}
+
               {/* AI Evaluation Report */}
-              {active.aiResult && <AiEvaluationView scanResult={active.aiResult} />}
+              {active.aiResult && (
+                <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
+                  <h3 className="font-black text-[#002147] text-base flex items-center gap-2 mb-4">
+                    <BrainCircuit className="w-5 h-5 text-blue-600" />
+                    AI Diagnostic Report
+                  </h3>
+                  <AiEvaluationView scanResult={active.aiResult} />
+                </div>
+              )}
+
+              {!active.aiResult && !active.imageUrl && !active.text && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-amber-800 text-sm">No AI evaluation available</p>
+                    <p className="text-amber-700 text-xs mt-1">This submission has no attached work or AI grading. Use the manual score below.</p>
+                  </div>
+                </div>
+              )}
 
               {/* Teacher Action Panel */}
               <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-8 space-y-6">
@@ -323,23 +478,30 @@ export default function GradingGalleryPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    Override AI Score
-                    <span className="font-normal text-gray-400">(optional — AI gave {active.grade})</span>
+                    {active.aiGraded ? 'Override AI Score' : 'Assign Score'}
+                    {active.aiGraded && (
+                      <span className="font-normal text-gray-400">(optional — AI gave {active.grade})</span>
+                    )}
                   </label>
                   <div className="flex items-center gap-3">
                     <input
                       type="number"
                       min="0"
-                      max={active.maxTotalScore}
+                      max={active.maxScore || 100}
                       value={overrideScore}
                       onChange={e => setOverrideScore(e.target.value)}
-                      placeholder={`AI: ${active.totalScore}`}
-                      className="w-32 border border-gray-200 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] text-center text-xl"
+                      placeholder={active.aiGraded ? `AI: ${active.score}` : 'Enter score'}
+                      className="w-36 border border-gray-200 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] text-center text-xl"
                     />
-                    <span className="text-gray-400 font-bold">/ {active.maxTotalScore}</span>
+                    {active.maxScore > 0 && (
+                      <span className="text-gray-400 font-bold text-lg">/ {active.maxScore}</span>
+                    )}
                     {overrideScore !== '' && (
-                      <button onClick={() => setOverrideScore('')} className="text-xs text-gray-400 hover:text-red-500 font-bold transition-colors">
-                        Clear override
+                      <button
+                        onClick={() => setOverrideScore('')}
+                        className="text-xs text-gray-400 hover:text-red-500 font-bold transition-colors"
+                      >
+                        Clear
                       </button>
                     )}
                   </div>
@@ -355,7 +517,7 @@ export default function GradingGalleryPage() {
                   <textarea
                     value={teacherNote}
                     onChange={e => setTeacherNote(e.target.value)}
-                    placeholder="Add a personal comment, encouragement, or specific correction for this student…"
+                    placeholder="Add encouragement, corrections, or specific feedback for this student…"
                     rows={3}
                     className="w-full border border-gray-200 rounded-2xl px-5 py-3 text-[#002147] font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] resize-none placeholder:text-gray-300"
                   />
@@ -375,9 +537,10 @@ export default function GradingGalleryPage() {
                 </button>
 
                 <p className="text-center text-xs text-gray-400 font-medium">
-                  Once approved, this grade is recorded in the student's permanent record and the class heatmap.
+                  Once approved, this grade is recorded in the student's permanent record and class heatmap.
                 </p>
               </div>
+
             </div>
           )}
         </div>

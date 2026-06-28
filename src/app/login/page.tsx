@@ -7,7 +7,7 @@ import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, Eye
 import { useAuth } from '@/contexts/AuthContext';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
 
 type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
@@ -64,16 +64,20 @@ export default function LoginPage() {
     setSchoolCodeError('');
 
     try {
-      const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        setSchoolCodeError('School Code Not Found. Please check and try again.');
-        setIsVerifyingCode(false);
+      // First try direct doc lookup (schoolCode IS the docId — used by superadmin portal)
+      const directSnap = await getDoc(doc(db, 'schools', schoolCode));
+      if (directSnap.exists()) {
+        setStep('ROLE_SELECT');
         return;
       }
-      
-      setStep('ROLE_SELECT');
+      // Fallback: query by 'code' field (legacy schools)
+      const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        setStep('ROLE_SELECT');
+        return;
+      }
+      setSchoolCodeError('School Code Not Found. Please check and try again.');
     } catch (err) {
       console.error(err);
       setSchoolCodeError('Network error. Please try again.');

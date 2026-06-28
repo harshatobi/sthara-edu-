@@ -41,7 +41,7 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col print:block">
+    <div className="min-h-screen bg-[#f8fafc] flex print:block">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 flex md:hidden">

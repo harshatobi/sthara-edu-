@@ -101,7 +101,8 @@ export default function AcademicResults() {
         let grandTotalMax = 0;
         const classAggregates: Record<string, { obtained: number, max: number }> = {};
 
-        for (const task of assignsList) {
+        // Parallel fetch for all assignment submissions (was a serial N+1 loop)
+        await Promise.all(assignsList.map(async (task) => {
           const subsSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments', task.id, 'submissions'));
           subsSnap.forEach(subDoc => {
              const sub = subDoc.data();
@@ -133,7 +134,8 @@ export default function AcademicResults() {
                 classAggregates[studentInfo.class].max += Number(sub.maxScore);
              }
           });
-        }
+        }));
+
 
         const ranks: OverallRank[] = Object.keys(studentAggregates).map(sId => {
            const agg = studentAggregates[sId];
@@ -260,21 +262,30 @@ export default function AcademicResults() {
     );
   }
 
+  const escapeCsv = (val: string | number) => {
+    const s = String(val);
+    // RFC 4180: wrap in quotes if contains comma, quote, or newline; escape internal quotes
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+
   const exportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     
     if (activeTab === 'assignments') {
       const a = assignments.find(x => x.id === selectedAssignment);
-      csvContent += `Assignment: ${a?.title} (${a?.targetClass})\n`;
+      csvContent += `Assignment: ${escapeCsv(a?.title ?? '')} (${escapeCsv(a?.targetClass ?? '')})\n`;
       csvContent += "Rank,Student Name,Class,Marks Obtained,Max Marks,Percentage\n";
       filteredAssignmentSubs.forEach((sub, i) => {
-        csvContent += `${i + 1},${sub.studentName},${sub.className},${sub.marksObtained},${sub.maxMarks},${sub.percentage.toFixed(1)}%\n`;
+        csvContent += `${i + 1},${escapeCsv(sub.studentName)},${escapeCsv(sub.className)},${sub.marksObtained},${sub.maxMarks},${sub.percentage.toFixed(1)}%\n`;
       });
     } else {
-      csvContent += `Leaderboard Filter: ${selectedClassFilter}\n`;
+      csvContent += `Leaderboard Filter: ${escapeCsv(selectedClassFilter)}\n`;
       csvContent += "Rank,Student Name,Class,Total Marks Obtained,Total Max Marks,Overall Percentage,Assignments Appeared\n";
       filteredLeaderboard.forEach((rank, i) => {
-        csvContent += `${i + 1},${rank.studentName},${rank.className},${rank.totalMarksObtained},${rank.totalMaxMarks},${rank.averagePercentage.toFixed(1)}%,${rank.assignmentsAppeared}\n`;
+        csvContent += `${i + 1},${escapeCsv(rank.studentName)},${escapeCsv(rank.className)},${rank.totalMarksObtained},${rank.totalMaxMarks},${rank.averagePercentage.toFixed(1)}%,${rank.assignmentsAppeared}\n`;
       });
     }
 
@@ -286,6 +297,7 @@ export default function AcademicResults() {
     link.click();
     document.body.removeChild(link);
   };
+
 
   const getProgressColor = (percentage: number) => {
     if (percentage >= 80) return 'bg-emerald-500';

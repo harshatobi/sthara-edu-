@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, query, getDocs, addDoc, serverTimestamp, where } from 'firebase/firestore';
+
 import { Heart, Wind, Activity, CheckCircle2, ChevronRight } from 'lucide-react';
 
 const MOODS = [
@@ -34,29 +35,36 @@ export default function WellnessPage() {
     async function loadWellness() {
       try {
         const logsRef = collection(db, 'wellness_logs');
-        const q = query(logsRef, where('userId', '==', profile?.uid), orderBy('createdAt', 'desc'), limit(7));
+        // Use only 'where' to avoid composite index requirement; sort & slice in-memory
+        const q = query(logsRef, where('userId', '==', profile?.uid));
         const snapshot = await getDocs(q);
+        
+        // Sort by createdAt descending in-memory, take last 7
+        const sortedDocs = snapshot.docs
+          .filter(d => d.data().createdAt)
+          .sort((a, b) => b.data().createdAt.toMillis() - a.data().createdAt.toMillis())
+          .slice(0, 7);
         
         const todayString = new Date().toDateString();
         const loadedHistory: {date: string, value: number}[] = [];
         let foundToday = false;
 
-        snapshot.docs.forEach(doc => {
+        sortedDocs.forEach(doc => {
           const data = doc.data();
-          if (data.createdAt) {
-            const dateObj = data.createdAt.toDate();
-            loadedHistory.push({
-              date: dateObj.toISOString(),
-              value: data.moodValue
-            });
-            if (dateObj.toDateString() === todayString && !foundToday) {
-              foundToday = true;
-              setTodaysMood(data.moodValue);
-            }
+          const dateObj = data.createdAt.toDate();
+          loadedHistory.push({
+            date: dateObj.toISOString(),
+            value: data.moodValue
+          });
+          if (dateObj.toDateString() === todayString && !foundToday) {
+            foundToday = true;
+            setTodaysMood(data.moodValue);
           }
         });
         
+        // sortedDocs is newest-first; reverse for chronological chart display
         setHistory(loadedHistory.reverse());
+
 
       } catch (err) {
         console.error("Failed to load wellness history", err);

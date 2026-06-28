@@ -5,9 +5,10 @@ import { db } from '@/lib/firebase/config';
 import { collection, query, getDocs, where, updateDoc, doc } from 'firebase/firestore';
 
 import { 
-  Heart, Activity, PenTool, AlertTriangle, User, 
-  ArrowLeft, ChevronDown, MessageCircle, Sparkles, BrainCircuit, CheckCircle2
+  Heart, Activity, PenTool, AlertTriangle,
+  ArrowLeft, ChevronDown, MessageCircle, BrainCircuit, CheckCircle2
 } from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -234,19 +235,6 @@ export default function TeacherWellnessDashboard() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button 
-              onClick={handleSimulateData}
-              disabled={isSimulating}
-              className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 text-[#002147] rounded-xl font-bold hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
-            >
-              {isSimulating ? (
-                <div className="w-4 h-4 border-2 border-[#002147]/30 border-t-[#002147] rounded-full animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4 text-purple-500" />
-              )}
-              <span>Simulate Data</span>
-            </button>
-
             <div className="relative">
               <select 
                 value={selectedClass}
@@ -260,6 +248,7 @@ export default function TeacherWellnessDashboard() {
               <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
           </div>
+
         </div>
       </div>
 

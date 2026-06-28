@@ -61,38 +61,49 @@ export default function TeacherDashboard() {
     if (!profile?.schoolId) return;
     
     try {
-      // 1. Fetch Students in this class
-      const usersQ = query(
-        collection(db, 'users'), 
-        where('schoolId', '==', profile.schoolId), 
-        where('role', '==', 'student'), 
-        where('studentClass', '==', className)
-      );
-      const usersSnap = await getDocs(usersQ);
+      // 1. Fetch Students from BOTH collections (users + global_users)
+      const [usersSnap, globalSnap] = await Promise.all([
+        getDocs(query(
+          collection(db, 'users'),
+          where('schoolId', '==', profile.schoolId),
+          where('role', '==', 'student'),
+          where('studentClass', '==', className)
+        )),
+        getDocs(query(
+          collection(db, 'global_users'),
+          where('schoolId', '==', profile.schoolId),
+          where('role', '==', 'student'),
+          where('studentClass', '==', className)
+        )),
+      ]);
+      const seen = new Set<string>();
       const students: any[] = [];
-      usersSnap.forEach(d => students.push({ id: d.id, ...d.data() }));
+      [...usersSnap.docs, ...globalSnap.docs].forEach(d => {
+        if (!seen.has(d.id)) { seen.add(d.id); students.push({ id: d.id, ...d.data() }); }
+      });
       setClassStudents(students);
 
-      // 2. Fetch Assignments
-      const q = query(
+      // 2. Fetch Assignments for this class + subject
+      const snap = await getDocs(query(
         collection(db, 'schools', profile.schoolId, 'assignments'),
         where('class', '==', className),
         where('subject', '==', subjectName)
-      );
-      const snap = await getDocs(q);
+      ));
       const tasks: any[] = [];
       snap.forEach(d => tasks.push({ id: d.id, ...d.data() }));
       
-      // 3. Fetch submissions for each task to determine completion
+      // 3. Fetch submissions for each task with full submission data
       const tasksWithStats = await Promise.all(tasks.map(async (task) => {
          const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', task.id, 'submissions'));
          const submittedStudentIds = new Set<string>();
+         const submissionsMap: Record<string, any> = {};
          subsSnap.forEach(s => {
-            submittedStudentIds.add(s.id); 
+            submittedStudentIds.add(s.id);
+            submissionsMap[s.id] = { id: s.id, ...s.data() };
          });
          
          const isCompleted = students.length > 0 && submittedStudentIds.size >= students.length;
-         return { ...task, submittedStudentIds, isCompleted };
+         return { ...task, submittedStudentIds, submissionsMap, isCompleted };
       }));
 
       setClassTasks(tasksWithStats);
@@ -388,69 +399,117 @@ export default function TeacherDashboard() {
               <div className="md:col-span-8 p-6 lg:p-8 bg-white overflow-y-auto relative">
                 {selectedTask ? (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="flex justify-between items-start mb-8 bg-[#f8fafc] p-6 rounded-2xl border border-[#002147]/5">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-6 bg-[#f8fafc] p-6 rounded-2xl border border-[#002147]/5">
                       <div>
                         <div className="inline-block px-3 py-1 bg-white border border-[#002147]/10 rounded-lg text-xs font-bold uppercase tracking-wider text-[#002147]/60 mb-3">{selectedTask.type}</div>
-                        <h4 className="font-extrabold text-3xl text-[#002147] tracking-tight">{selectedTask.title}</h4>
-                        <div className="text-[#002147]/60 mt-2 font-medium">Due: {new Date(selectedTask.dueDate).toLocaleDateString()}</div>
+                        <h4 className="font-extrabold text-2xl text-[#002147] tracking-tight">{selectedTask.title}</h4>
+                        <div className="text-[#002147]/60 mt-1 font-medium text-sm">Due: {new Date(selectedTask.dueDate).toLocaleDateString()}</div>
                       </div>
-                      
-                      <div className="flex flex-col items-end">
-                        <div className="text-sm font-bold text-[#002147] mb-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-[#002147]/5">
-                          <span className="text-xl text-[#dc143c] mr-1">{selectedTask.submittedStudentIds.size}</span> / {classStudents.length} Submitted
+                      {/* Submission counter - clear and correct */}
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="bg-white border border-[#002147]/10 rounded-xl px-4 py-2 text-center shadow-sm">
+                          <div className="text-2xl font-black text-[#002147]">
+                            <span className="text-emerald-600">{selectedTask.submittedStudentIds.size}</span>
+                            <span className="text-gray-300 mx-1">/</span>
+                            <span>{classStudents.length}</span>
+                          </div>
+                          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Students Submitted</div>
                         </div>
                         {selectedTask.isCompleted && (
-                          <button 
+                          <button
                             onClick={() => handleDeleteTask(selectedTask.id)}
-                            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center space-x-2 active:scale-95"
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all flex items-center space-x-1.5"
                           >
-                            <CheckSquare className="w-4 h-4" />
-                            <span>Approve & Delete</span>
+                            <CheckSquare className="w-3.5 h-3.5" />
+                            <span>Archive Task</span>
                           </button>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10">
-                      {/* Completed List */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Submitted */}
                       <div>
-                        <h5 className="font-bold text-green-700 mb-4 flex items-center text-lg pb-2 border-b border-green-100"><CheckSquare className="w-5 h-5 mr-2"/> Completed</h5>
-                        <div className="space-y-3">
+                        <h5 className="font-bold text-emerald-700 mb-3 flex items-center text-sm pb-2 border-b border-emerald-100">
+                          <CheckSquare className="w-4 h-4 mr-2"/>Submitted ({selectedTask.submittedStudentIds.size})
+                        </h5>
+                        <div className="space-y-2">
                           {classStudents.filter(s => selectedTask.submittedStudentIds.has(s.id)).length === 0 && (
                             <div className="text-sm text-gray-400 italic p-4 bg-gray-50 rounded-xl text-center">No one has submitted yet.</div>
                           )}
-                          {classStudents.filter(s => selectedTask.submittedStudentIds.has(s.id)).map(student => (
-                            <div 
-                              key={student.id} 
-                              onClick={() => router.push(`/teacher/grading?focus=${student.id}&task=${selectedTask.id}`)}
-                              className="bg-white border border-green-200/60 shadow-sm p-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-green-50 hover:border-green-300 transition-all group"
-                            >
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">{student.name.charAt(0)}</div>
-                                <span className="font-bold text-[#002147]">{student.name}</span>
+                          {classStudents.filter(s => selectedTask.submittedStudentIds.has(s.id)).map(student => {
+                            const sub = selectedTask.submissionsMap?.[student.id];
+                            const imgs: string[] = sub?.imageUrls || (sub?.imageUrl ? [sub.imageUrl] : []);
+                            const score = sub?.score ?? null;
+                            const maxScore = sub?.maxScore || sub?.total || null;
+                            const approved = sub?.teacherApproved;
+                            return (
+                              <div
+                                key={student.id}
+                                className="bg-white border border-emerald-200/60 shadow-sm p-3 rounded-xl group"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center space-x-2 min-w-0">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs shrink-0">{student.name.charAt(0)}</div>
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-[#002147] text-sm truncate">{student.name}</p>
+                                      <p className="text-xs text-gray-400">{student.studentClass}</p>
+                                    </div>
+                                  </div>
+                                  {/* Score badge */}
+                                  {approved && score !== null && maxScore ? (
+                                    <span className="shrink-0 bg-emerald-100 text-emerald-700 font-black text-xs px-2 py-1 rounded-lg">{score}/{maxScore}</span>
+                                  ) : sub?.aiGraded && score !== null ? (
+                                    <span className="shrink-0 bg-blue-50 text-blue-600 font-black text-xs px-2 py-1 rounded-lg">AI: {score}/{maxScore}</span>
+                                  ) : (
+                                    <span className="shrink-0 bg-amber-50 text-amber-600 font-bold text-xs px-2 py-1 rounded-lg">Pending Grade</span>
+                                  )}
+                                </div>
+                                {/* Thumbnails */}
+                                {imgs.length > 0 && (
+                                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                                    {imgs.slice(0, 4).map((url, i) => (
+                                      <img key={i} src={url} alt={`pg${i+1}`} className="w-10 h-10 object-cover rounded-lg border border-gray-100" />
+                                    ))}
+                                    {imgs.length > 4 && <span className="text-xs text-gray-400 self-center">+{imgs.length - 4} more</span>}
+                                  </div>
+                                )}
+                                {/* Text preview */}
+                                {!imgs.length && sub?.text && (
+                                  <p className="text-xs text-gray-500 mt-1 line-clamp-1 italic">"{sub.text}"</p>
+                                )}
+                                {/* Grade button */}
+                                <button
+                                  onClick={() => router.push(`/teacher/grading`)}
+                                  className="mt-2 w-full text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg py-1.5 transition-colors"
+                                >
+                                  {approved ? '✓ Graded — View' : '→ Grade Now'}
+                                </button>
                               </div>
-                              <span className="text-xs font-bold text-green-600 opacity-0 group-hover:opacity-100 transition-opacity bg-green-100 px-3 py-1.5 rounded-lg">Grade &rarr;</span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
 
-                      {/* Not Completed List */}
+                      {/* Not Submitted */}
                       <div>
-                        <h5 className="font-bold text-amber-600 mb-4 flex items-center text-lg pb-2 border-b border-amber-100"><Activity className="w-5 h-5 mr-2"/> Not Completed</h5>
-                        <div className="space-y-3">
+                        <h5 className="font-bold text-amber-600 mb-3 flex items-center text-sm pb-2 border-b border-amber-100">
+                          <Activity className="w-4 h-4 mr-2"/>Not Submitted ({classStudents.filter(s => !selectedTask.submittedStudentIds.has(s.id)).length})
+                        </h5>
+                        <div className="space-y-2">
                           {classStudents.filter(s => !selectedTask.submittedStudentIds.has(s.id)).length === 0 && (
-                            <div className="text-sm text-gray-400 italic p-4 bg-gray-50 rounded-xl text-center">Everyone submitted!</div>
+                            <div className="text-sm text-gray-400 italic p-4 bg-gray-50 rounded-xl text-center">Everyone submitted! 🎉</div>
                           )}
                           {classStudents.filter(s => !selectedTask.submittedStudentIds.has(s.id)).map(student => (
-                            <div key={student.id} className="bg-white border border-amber-200/60 shadow-sm p-4 rounded-xl flex justify-between items-center group">
-                              <div className="flex items-center space-x-3">
+                            <div key={student.id} className="bg-white border border-amber-200/60 shadow-sm p-3 rounded-xl flex justify-between items-center">
+                              <div className="flex items-center space-x-2">
                                 <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 font-bold text-xs">{student.name.charAt(0)}</div>
-                                <span className="font-bold text-[#002147]">{student.name}</span>
+                                <p className="font-bold text-[#002147] text-sm">{student.name}</p>
                               </div>
-                              <button 
+                              <button
                                 onClick={() => handleSendReminder(student.name)}
-                                className="text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors active:scale-95"
+                                className="text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors"
                               >
                                 Remind
                               </button>
@@ -459,7 +518,6 @@ export default function TeacherDashboard() {
                         </div>
                       </div>
                     </div>
-
                   </div>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-[#002147]/40 text-center p-12 bg-[#f8fafc] rounded-3xl border-2 border-dashed border-[#002147]/10">

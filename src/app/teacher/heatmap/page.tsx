@@ -45,18 +45,23 @@ export default function TeacherHeatmap() {
       setIsLoadingData(true);
 
       try {
-        // Fetch all students for the school (avoids 3-field composite index requirement)
-        const studentsSnap = await getDocs(query(
-          collection(db, 'users'),
-          where('schoolId', '==', schoolId),
-          where('role', '==', 'student')
-        ));
-        
+        // Query BOTH collections — users (old) and global_users (new signup flow)
+        const [usersSnap, globalUsersSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
+          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
+        ]);
+
+        const seenIds = new Set<string>();
         const allStudents: any[] = [];
-        studentsSnap.forEach(s => allStudents.push({ id: s.id, ...s.data(), grades: {} }));
+        const addStudents = (snap: any) => snap.forEach((s: any) => {
+          if (!seenIds.has(s.id)) { seenIds.add(s.id); allStudents.push({ id: s.id, ...s.data(), grades: {} }); }
+        });
+        addStudents(usersSnap);
+        addStudents(globalUsersSnap);
+
         // Filter by class client-side (handles missing/undefined studentClass gracefully)
         const students = selectedClass
-          ? allStudents.filter(s => !s.studentClass || s.studentClass === selectedClass)
+          ? allStudents.filter(s => !s.studentClass || s.studentClass.toLowerCase() === selectedClass.toLowerCase())
           : allStudents;
 
         const assignmentsSnap = await getDocs(query(
@@ -138,15 +143,15 @@ export default function TeacherHeatmap() {
     const schoolId = profile.schoolId;
     setIsSeeding(true);
     try {
-      const studentsSnap = await getDocs(query(
-        collection(db, 'users'),
-        where('schoolId', '==', schoolId),
-        where('role', '==', 'student')
-      ));
-
-      const allS = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const [usSnap, guSnap] = await Promise.all([
+        getDocs(query(collection(db, 'users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
+        getDocs(query(collection(db, 'global_users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
+      ]);
+      const seenS = new Set<string>();
+      const allS: any[] = [];
+      [...usSnap.docs, ...guSnap.docs].forEach(d => { if (!seenS.has(d.id)) { seenS.add(d.id); allS.push({ id: d.id, ...d.data() }); } });
       const students = selectedClass
-        ? allS.filter((s: any) => !s.studentClass || s.studentClass === selectedClass)
+        ? allS.filter((s: any) => !s.studentClass || s.studentClass.toLowerCase() === selectedClass.toLowerCase())
         : allS;
       
       if (students.length === 0) {

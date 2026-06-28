@@ -165,19 +165,23 @@ function MasteryTrackerContent() {
     if (!profile?.schoolId) return;
     const fetchStudents = async () => {
       try {
-        const snap = await getDocs(query(
-          collection(db, 'users'),
-          where('schoolId', '==', profile.schoolId),
-          where('role', '==', 'student')
-        ));
+        // Query BOTH collections — some users are in 'users', newer ones in 'global_users'
+        const [usersSnap, globalUsersSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
+          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
+        ]);
+        const seen = new Set<string>();
         const students: any[] = [];
-        snap.forEach(s => students.push({ id: s.id, ...s.data() }));
+        [...usersSnap.docs, ...globalUsersSnap.docs].forEach(s => {
+          if (!seen.has(s.id)) { seen.add(s.id); students.push({ id: s.id, ...s.data() }); }
+        });
         setStudentsList(students);
       } catch (err) {
         console.error(err);
       }
     };
     fetchStudents();
+
   }, [profile]);
 
   const handleGeneratePractice = async () => {

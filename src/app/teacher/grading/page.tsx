@@ -45,6 +45,7 @@ export default function GradingGalleryPage() {
 
   // Teacher override
   const [overrideScore, setOverrideScore] = useState('');
+  const [overrideMax, setOverrideMax] = useState('');
   const [teacherNote, setTeacherNote] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -123,23 +124,29 @@ export default function GradingGalleryPage() {
   const handleSelectSubmission = (sub: Submission) => {
     setActive(sub);
     setOverrideScore('');
+    setOverrideMax('');
     setTeacherNote('');
     setLightboxIdx(null);
   };
 
   const handleApprove = async () => {
     if (!active || !profile?.schoolId) return;
+    const finalScore = overrideScore !== '' ? Number(overrideScore) : active.score;
+    // For homework with no AI maxScore, teacher must enter it
+    const finalMax = overrideMax !== '' ? Number(overrideMax) : (active.maxScore > 0 ? active.maxScore : 10);
+    if (active.maxScore === 0 && overrideScore !== '' && overrideMax === '') {
+      alert('Please also enter the "Out of" value (total marks) for this homework.');
+      return;
+    }
     setSaving(true);
     try {
-      const finalScore = overrideScore !== '' ? Number(overrideScore) : active.score;
-
       await updateDoc(
         doc(db, 'schools', profile.schoolId, 'assignments', active.assignmentId, 'submissions', active.id),
         {
           teacherApproved: true,
           status: 'teacher_approved',
           score: finalScore,
-          maxScore: active.maxScore,
+          maxScore: finalMax,
           teacherNote: teacherNote || null,
           approvedAt: new Date(),
         }
@@ -151,6 +158,7 @@ export default function GradingGalleryPage() {
       setQueue(remaining);
       setActive(remaining.length > 0 ? remaining[0] : null);
       setOverrideScore('');
+      setOverrideMax('');
       setTeacherNote('');
       setLightboxIdx(null);
     } catch (err: any) {
@@ -483,28 +491,43 @@ export default function GradingGalleryPage() {
                       <span className="font-normal text-gray-400">(optional — AI gave {active.grade})</span>
                     )}
                   </label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <input
                       type="number"
                       min="0"
-                      max={active.maxScore || 100}
+                      max={overrideMax !== '' ? Number(overrideMax) : (active.maxScore || 100)}
                       value={overrideScore}
                       onChange={e => setOverrideScore(e.target.value)}
-                      placeholder={active.aiGraded ? `AI: ${active.score}` : 'Enter score'}
-                      className="w-36 border border-gray-200 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] text-center text-xl"
+                      placeholder={active.aiGraded ? `AI: ${active.score}` : 'Score'}
+                      className="w-28 border border-gray-200 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] text-center text-xl"
                     />
-                    {active.maxScore > 0 && (
-                      <span className="text-gray-400 font-bold text-lg">/ {active.maxScore}</span>
+                    <span className="text-gray-400 font-bold text-lg">/</span>
+                    {active.maxScore > 0 ? (
+                      <span className="text-gray-600 font-black text-xl">{active.maxScore}</span>
+                    ) : (
+                      <input
+                        type="number"
+                        min="1"
+                        value={overrideMax}
+                        onChange={e => setOverrideMax(e.target.value)}
+                        placeholder="Out of"
+                        className="w-28 border-2 border-amber-300 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-amber-300 text-center text-xl bg-amber-50"
+                      />
                     )}
                     {overrideScore !== '' && (
                       <button
-                        onClick={() => setOverrideScore('')}
+                        onClick={() => { setOverrideScore(''); setOverrideMax(''); }}
                         className="text-xs text-gray-400 hover:text-red-500 font-bold transition-colors"
                       >
                         Clear
                       </button>
                     )}
                   </div>
+                  {active.maxScore === 0 && (
+                    <p className="text-xs text-amber-600 font-medium">
+                      📝 Enter the score and total marks for this homework (e.g. 8 / 10)
+                    </p>
+                  )}
                 </div>
 
                 {/* Teacher Note */}

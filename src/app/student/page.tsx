@@ -293,19 +293,37 @@ export default function StudentDashboard() {
         submissionData
       );
 
-      // Reset file list
-      setAttachmentFiles([]);
+      // ── Step 4: Update local assignments state so UI reflects submission immediately ──
+      setAssignments(prev => prev.map(a =>
+        a.id === selectedTask.id
+          ? { ...a, submission: { ...submissionData, submittedAt: new Date() } }
+          : a
+      ));
 
-      if (!selectedTask.questions) {
-        setSelectedTask(null);
-        setSubmissionText('');
-        setSubmitStatus('');
-      } else {
+      setAttachmentFiles([]);
+      setSubmissionText('');
+      setSubmitStatus('');
+
+      // Show result
+      if (selectedTask.questions && selectedTask.questions.length > 0) {
+        // Quiz → show score screen
         setQuizResult({
-          score: submissionData.score,
-          total: submissionData.maxScore || submissionData.total,
+          score: submissionData.score ?? 0,
+          total: submissionData.maxScore || submissionData.total || selectedTask.questions.length,
           aiResult: submissionData.aiResult,
           attachmentUrl: submissionData.imageUrl || null,
+          isHomework: false,
+        });
+      } else {
+        // Homework → show success screen (score given by teacher later)
+        setQuizResult({
+          score: null,
+          total: null,
+          aiResult: submissionData.aiResult,
+          attachmentUrl: submissionData.imageUrl || null,
+          isHomework: true,
+          aiGraded: !!submissionData.aiGraded,
+          imageUrls: submissionData.imageUrls || [],
         });
       }
 
@@ -458,7 +476,9 @@ export default function StudentDashboard() {
 
   if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Student Portal...</div>;
 
-  const pendingTasksCount = assignments.filter((a: any) => !a.submission).length;
+  const pendingTasks = assignments.filter((a: any) => !a.submission);
+  const submittedTasks = assignments.filter((a: any) => !!a.submission);
+  const pendingTasksCount = pendingTasks.length;
   const gradedSubmissions = assignments.filter((a: any) => a.submission && a.submission.score !== undefined);
   
   let masteryText = 'N/A';
@@ -763,8 +783,8 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="hidden sm:block">
-            <span className="bg-gray-100 text-gray-600 font-bold px-4 py-2 rounded-xl text-sm">
-              {assignments.length} Total
+            <span className="bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-xl text-sm">
+              {pendingTasksCount} Pending
             </span>
           </div>
         </div>
@@ -775,39 +795,64 @@ export default function StudentDashboard() {
               <Loader2 className="w-10 h-10 animate-spin text-blue-500 mb-4" />
               <span className="text-gray-500 font-medium">Syncing with Diagnostic Engine...</span>
             </div>
-          ) : assignments.length === 0 ? (
+          ) : pendingTasksCount === 0 && submittedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-dashed border-gray-200">
               <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />
               </div>
               <h4 className="text-xl font-bold text-[#002147] mb-2">You're all caught up!</h4>
               <p className="text-gray-500 font-medium text-center max-w-sm">
-                Hooray! You have no pending tasks. Enjoy your free time or explore the Video Library for extra credit.
+                No tasks assigned yet. Enjoy your free time!
               </p>
             </div>
           ) : (
-            assignments.map((task) => (
-              <TaskItem 
-                key={task.id} 
-                title={`${task.subject || 'Assignment'}: ${task.title}`} 
-                time={`Due: ${task.dueDate || 'No Set Date'} • Posted by ${task.teacherName || 'Teacher'}`} 
-                type={task.type as 'homework' | 'video' | 'announcement'} 
-                status={task.submission ? 'completed' : 'pending'}
-                onClick={() => {
-                  setSelectedTask(task);
-                  if (task.submission) {
-                     setQuizResult({
-                        score: task.submission.score,
-                        total: task.submission.maxScore || task.submission.total,
-                        aiResult: task.submission.aiResult,
-                        attachmentUrl: task.submission.attachmentUrl
-                     });
-                  } else {
-                     setQuizResult(null);
-                  }
-                }}
-              />
-            ))
+            <>
+              {/* Pending tasks */}
+              {pendingTasks.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-black text-amber-600 uppercase tracking-widest px-1">⏳ Pending Submission</p>
+                  {pendingTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      title={`${task.subject || 'Assignment'}: ${task.title}`}
+                      time={`Due: ${task.dueDate || 'No Set Date'} • Posted by ${task.teacherName || 'Teacher'}`}
+                      type={task.type as 'homework' | 'video' | 'announcement'}
+                      status="pending"
+                      onClick={() => { setSelectedTask(task); setQuizResult(null); }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Submitted tasks */}
+              {submittedTasks.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  <p className="text-xs font-black text-emerald-600 uppercase tracking-widest px-1">✅ Submitted</p>
+                  {submittedTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      title={`${task.subject || 'Assignment'}: ${task.title}`}
+                      time={`Submitted • Posted by ${task.teacherName || 'Teacher'}`}
+                      type={task.type as 'homework' | 'video' | 'announcement'}
+                      status="completed"
+                      onClick={() => {
+                        setSelectedTask(task);
+                        const sub = task.submission;
+                        setQuizResult({
+                          score: sub?.score ?? null,
+                          total: sub?.maxScore || sub?.total || null,
+                          aiResult: sub?.aiResult,
+                          attachmentUrl: sub?.imageUrl || null,
+                          imageUrls: sub?.imageUrls || [],
+                          isHomework: !task.questions?.length,
+                          aiGraded: !!sub?.aiGraded,
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -829,12 +874,45 @@ export default function StudentDashboard() {
             <div className="p-6 max-h-[70vh] overflow-y-auto">
               {quizResult ? (
                 <div className="text-center py-8 flex flex-col items-center">
-                  <div className="inline-flex items-center justify-center w-24 h-24 bg-[#dc143c]/10 rounded-full mb-6">
-                    <span className="text-4xl font-bold text-[#dc143c]">{quizResult.score}/{quizResult.total}</span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-[#002147] mb-2">Quiz Completed!</h3>
-                  <p className="text-[#002147]/60 mb-8">Your score has been automatically saved and graded.</p>
+                  {quizResult.isHomework ? (
+                    /* ── Homework success screen ── */
+                    <>
+                      <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
+                        <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-[#002147] mb-2">Homework Submitted!</h3>
+                      <p className="text-[#002147]/60 mb-2">Your work has been sent to your teacher for review.</p>
+                      {quizResult.aiGraded && (
+                        <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full mb-6">
+                          🤖 AI Pre-scan complete — teacher will review and confirm your grade
+                        </span>
+                      )}
+                      {!quizResult.aiGraded && <div className="mb-6" />}
+                      {/* Show uploaded pages */}
+                      {quizResult.imageUrls && quizResult.imageUrls.length > 0 && (
+                        <div className="w-full text-left mb-6">
+                          <p className="text-sm font-bold text-gray-500 mb-3">Pages uploaded ({quizResult.imageUrls.length}):</p>
+                          <div className="flex flex-wrap gap-3">
+                            {quizResult.imageUrls.map((url: string, idx: number) => (
+                              <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                                <img src={url} alt={`Page ${idx+1}`} className="w-20 h-20 object-cover rounded-xl border-2 border-gray-100 hover:border-blue-400 transition-colors" />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* ── Quiz score screen ── */
+                    <>
+                      <div className="inline-flex items-center justify-center w-24 h-24 bg-[#dc143c]/10 rounded-full mb-6">
+                        <span className="text-3xl font-bold text-[#dc143c]">{quizResult.score ?? 0}/{quizResult.total ?? 0}</span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-[#002147] mb-2">Quiz Completed!</h3>
+                      <p className="text-[#002147]/60 mb-8">Your score has been automatically saved and graded.</p>
+                    </>
                   
+                  )}
                   {quizResult.aiResult && (
                     <div className="w-full text-left mb-8 max-w-full overflow-hidden">
                        <h4 className="font-bold text-[#002147] mb-4 text-lg border-b border-[#002147]/10 pb-2">AI Diagnostic Report</h4>
@@ -1029,7 +1107,7 @@ export default function StudentDashboard() {
       )}
 
       {showPendingModal && (
-        <PendingTasksModal assignments={assignments} onClose={() => setShowPendingModal(false)} />
+        <PendingTasksModal assignments={pendingTasks} onClose={() => setShowPendingModal(false)} />
       )}
 
       {showScoresModal && (

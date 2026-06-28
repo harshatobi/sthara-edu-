@@ -45,15 +45,19 @@ export default function TeacherHeatmap() {
       setIsLoadingData(true);
 
       try {
+        // Fetch all students for the school (avoids 3-field composite index requirement)
         const studentsSnap = await getDocs(query(
           collection(db, 'users'),
           where('schoolId', '==', schoolId),
-          where('role', '==', 'student'),
-          where('studentClass', '==', selectedClass)
+          where('role', '==', 'student')
         ));
         
-        const students: any[] = [];
-        studentsSnap.forEach(s => students.push({ id: s.id, ...s.data(), grades: {} }));
+        const allStudents: any[] = [];
+        studentsSnap.forEach(s => allStudents.push({ id: s.id, ...s.data(), grades: {} }));
+        // Filter by class client-side (handles missing/undefined studentClass gracefully)
+        const students = selectedClass
+          ? allStudents.filter(s => !s.studentClass || s.studentClass === selectedClass)
+          : allStudents;
 
         const assignmentsSnap = await getDocs(query(
           collection(db, 'schools', schoolId, 'assignments'),
@@ -137,14 +141,16 @@ export default function TeacherHeatmap() {
       const studentsSnap = await getDocs(query(
         collection(db, 'users'),
         where('schoolId', '==', schoolId),
-        where('role', '==', 'student'),
-        where('studentClass', '==', selectedClass)
+        where('role', '==', 'student')
       ));
 
-      const students = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allS = studentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const students = selectedClass
+        ? allS.filter((s: any) => !s.studentClass || s.studentClass === selectedClass)
+        : allS;
       
       if (students.length === 0) {
-        alert('Failed to seed data: No students found in this class.');
+        alert('Failed to seed data: No students found for this school.');
         setIsSeeding(false);
         return;
       }

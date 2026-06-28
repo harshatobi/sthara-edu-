@@ -378,15 +378,20 @@ function MasteryTrackerContent() {
         {/* Student Selector */}
         <div className="bg-white border border-[#002147]/10 p-2 rounded-xl shadow-sm flex items-center space-x-3 px-4">
           <label className="text-xs font-bold text-[#002147] uppercase tracking-wider">Viewing:</label>
-          <select 
-            value={studentIdParam || selectedStudent?.id || ''}
-            onChange={(e) => router.push(`/teacher/mastery?studentId=${e.target.value}`)}
-            className="bg-transparent border-none text-[#002147] font-bold focus:ring-0 cursor-pointer outline-none"
-          >
-            {studentsList.map(s => (
-              <option key={s.id} value={s.id}>{s.name} ({s.studentClass})</option>
-            ))}
-          </select>
+          {studentsList.length === 0 ? (
+            <span className="text-sm text-[#002147]/40 font-medium italic">No students yet</span>
+          ) : (
+            <select 
+              value={studentIdParam || selectedStudent?.id || ''}
+              onChange={(e) => router.push(`/teacher/mastery?studentId=${e.target.value}`)}
+              className="bg-transparent border-none text-[#002147] font-bold focus:ring-0 cursor-pointer outline-none"
+            >
+              <option value="">— Select Student —</option>
+              {studentsList.map(s => (
+                <option key={s.id} value={s.id}>{s.name}{s.studentClass ? ` (${s.studentClass})` : ''}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -396,8 +401,20 @@ function MasteryTrackerContent() {
           <div className="text-[#002147]/50 font-bold animate-pulse">Synthesizing Knowledge Vectors...</div>
         </div>
       ) : !selectedStudent ? (
-        <div className="py-20 text-center text-[#002147]/50 font-medium bg-white rounded-2xl border border-[#002147]/10">
-          No student selected or data available.
+        <div className="py-20 text-center bg-white rounded-2xl border border-[#002147]/10 flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
+            <BrainCircuit className="w-8 h-8 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-[#002147] font-bold text-lg mb-1">
+              {studentsList.length === 0 ? 'No Students Found' : 'Select a Student Above'}
+            </p>
+            <p className="text-[#002147]/50 text-sm max-w-sm">
+              {studentsList.length === 0
+                ? 'No students are linked to your school yet. Students need to sign up and select your school during registration.'
+                : 'Choose a student from the dropdown above to view their knowledge graph.'}
+            </p>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

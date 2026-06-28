@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
+
 import { auth, db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
@@ -150,7 +151,8 @@ export default function LoginPage() {
       else if (profile.role === 'parent') router.push('/parent');
     } else {
       // User arrived at /login while already logged in — sign them out
-      signOut(auth).catch(err => console.error('Sign out error:', err));
+      signOut(auth).catch((err: unknown) => console.error('Sign out error:', err));
+
     }
   }, [loading, profile, loginAttempted, router]);
 

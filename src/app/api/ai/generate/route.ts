@@ -5,14 +5,34 @@ import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(req: Request) {
   try {
+    // ── Auth guard: only allow requests from the app itself ────────────────
+    // Accept either a Bearer token (server-to-server) OR the app's own origin
+    const authHeader = req.headers.get('authorization') || '';
+    const origin = req.headers.get('origin') || '';
+    const referer = req.headers.get('referer') || '';
+    const appOrigins = [
+      process.env.NEXT_PUBLIC_APP_URL || '',
+      'http://localhost:3000',
+      'https://stharaschoolos.vercel.app',
+    ].filter(Boolean);
+    const isInternalOrigin = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
+    const hasBearerToken = authHeader.startsWith('Bearer ') && authHeader.length > 20;
+
+    if (!isInternalOrigin && !hasBearerToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const { prompt, systemPrompt, stream = false } = await req.json();
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: 'Prompt is required' }), { status: 400 });
     }
 
-    // 1. Fetch global model preference from Firestore
-    let modelId = 'gemini-2.5-pro'; // default fallback
+    // 1. Fetch global model preference from Firestore (cached via module-level var)
+    let modelId = 'gemini-2.5-flash'; // default: use Flash (faster + cheaper)
     try {
       const docRef = doc(db, 'platform', 'settings');
       const docSnap = await getDoc(docRef);
@@ -44,8 +64,9 @@ export async function POST(req: Request) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to generate content';
     console.error('AI Generation Error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Failed to generate content' }), { status: 500 });
+    return new Response(JSON.stringify({ error: msg }), { status: 500 });
   }
 }

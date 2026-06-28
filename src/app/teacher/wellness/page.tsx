@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, getDocs, where, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, where, updateDoc, doc } from 'firebase/firestore';
 import { 
   Heart, Activity, PenTool, AlertTriangle, User, 
   ArrowLeft, ChevronDown, MessageCircle, Sparkles, BrainCircuit, CheckCircle2
@@ -45,7 +45,7 @@ export default function TeacherWellnessDashboard() {
   
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
-  const [isSimulating, setIsSimulating] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && (!profile || profile.role !== 'teacher')) {
@@ -53,18 +53,33 @@ export default function TeacherWellnessDashboard() {
     }
   }, [profile, authLoading, router]);
 
+  // Classes discovered dynamically from student data (same pattern as heatmap)
   useEffect(() => {
-    if (profile?.schoolId) {
-      if (profile.teacherClass) {
-        setAvailableClasses([profile.teacherClass]);
-        setSelectedClass(profile.teacherClass);
-      } else {
-        const defaultClasses = ['Class 10', 'Class 11'];
-        setAvailableClasses(defaultClasses);
-        setSelectedClass(defaultClasses[0]);
-      }
-    }
+    if (!profile?.schoolId) return;
+    const discoverClasses = async () => {
+      try {
+        const [usSnap, guSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
+          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
+        ]);
+        const classSet = new Set<string>();
+        [...usSnap.docs, ...guSnap.docs].forEach(d => {
+          const c = d.data().studentClass;
+          if (c) classSet.add(c);
+        });
+        const teacherClasses = [
+          ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
+          ...(profile.teacherClass ? [profile.teacherClass] : []),
+        ];
+        const unique = [...new Set(teacherClasses)];
+        const classes = unique.length > 0 ? unique : Array.from(classSet).sort();
+        setAvailableClasses(classes);
+        if (classes.length > 0 && !selectedClass) setSelectedClass(classes[0]);
+      } catch {}
+    };
+    discoverClasses();
   }, [profile]);
+
 
   useEffect(() => {
     async function fetchData() {
@@ -122,58 +137,6 @@ export default function TeacherWellnessDashboard() {
     fetchData();
   }, [profile?.schoolId, selectedClass]);
 
-  const handleSimulateData = async () => {
-    if (!profile?.schoolId || !selectedClass) return;
-    setIsSimulating(true);
-
-    try {
-      const studentIds = Object.keys(students);
-      if (studentIds.length === 0) {
-        alert(`No students found in ${selectedClass} to attach data to.`);
-        setIsSimulating(false);
-        return;
-      }
-
-      const fakeJournals = [
-        { text: "I felt really overwhelmed by the physics assignment today. Too many formulas.", sentiment: "Stressed" },
-        { text: "The group project is going well! I finally understand factorization.", sentiment: "Positive" },
-        { text: "Just tired today. Didn't sleep well because of exam anxiety.", sentiment: "Anxious" },
-        { text: "I'm starting to enjoy literature more. The new book is interesting.", sentiment: "Reflective" },
-        { text: "I can't seem to focus in the mornings. Everything is a blur.", sentiment: "Low Energy" }
-      ];
-
-      for (const fj of fakeJournals) {
-        const randomStudentId = studentIds[Math.floor(Math.random() * studentIds.length)];
-        await addDoc(collection(db, 'journal_entries'), {
-          userId: randomStudentId,
-          text: fj.text,
-          sentiment: fj.sentiment,
-          resolved: false,
-          createdAt: serverTimestamp()
-        });
-      }
-
-      for (let i = 0; i < 10; i++) {
-        const randomStudentId = studentIds[Math.floor(Math.random() * studentIds.length)];
-        const energyLevels = [20, 35, 50, 65, 80, 95];
-        const randomEnergy = energyLevels[Math.floor(Math.random() * energyLevels.length)];
-        
-        await addDoc(collection(db, 'wellness_logs'), {
-          userId: randomStudentId,
-          moodValue: randomEnergy,
-          resolved: false,
-          createdAt: serverTimestamp()
-        });
-      }
-
-      window.location.reload();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to simulate data.");
-    } finally {
-      setIsSimulating(false);
-    }
-  };
 
   const handleResolveJournal = async (id: string) => {
     // Optimistic UI update by setting resolved locally

@@ -178,18 +178,7 @@ export default function SituationalFeedPage() {
             </div>
           </div>
 
-          <button 
-            onClick={handleSimulateDiagnostics}
-            disabled={isSimulating}
-            className="flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-50"
-          >
-            {isSimulating ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            <span>{isSimulating ? 'Analyzing...' : 'Run AI Diagnostics'}</span>
-          </button>
+
         </div>
       </div>
 

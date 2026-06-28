@@ -89,12 +89,18 @@ export default function PaperGenPage() {
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dueDateStr = tomorrow.toISOString().split('T')[0];
 
+      // Derive class and subject from the selected grade string
+      // e.g. '10th Grade Mathematics' → class: 'Class 10', subject: 'Mathematics'
+      const gradeMatch = grade.match(/(\d+)th Grade (.+)/);
+      const classLabel = gradeMatch ? `Class ${gradeMatch[1]}` : grade;
+      const subjectLabel = gradeMatch ? gradeMatch[2] : 'General';
+
       const assignmentsRef = collection(db, 'schools', profile.schoolId, 'assignments');
       await addDoc(assignmentsRef, {
-        title: `${grade} - ${chapters.join(', ')} Quiz`,
+        title: `${classLabel} ${subjectLabel} - ${chapters.join(', ')} Quiz`,
         grade,
-        class: 'Class 10', // Target Class 10 so demo students can see it
-        subject: 'Mathematics', // Important so the Math teacher sees it
+        class: classLabel,
+        subject: subjectLabel,
         type: 'quiz',
         dueDate: dueDateStr,
         difficulty,
@@ -157,9 +163,23 @@ export default function PaperGenPage() {
                   onChange={e => setGrade(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                 >
-                  <option>10th Grade Mathematics</option>
+                 <option>10th Grade Mathematics</option>
                   <option>10th Grade Science</option>
+                  <option>10th Grade English</option>
+                  <option>10th Grade Social Studies</option>
+                  <option>10th Grade Hindi</option>
                   <option>9th Grade Mathematics</option>
+                  <option>9th Grade Science</option>
+                  <option>9th Grade English</option>
+                  <option>9th Grade Social Studies</option>
+                  <option>11th Grade Mathematics</option>
+                  <option>11th Grade Physics</option>
+                  <option>11th Grade Chemistry</option>
+                  <option>11th Grade Biology</option>
+                  <option>12th Grade Mathematics</option>
+                  <option>12th Grade Physics</option>
+                  <option>12th Grade Chemistry</option>
+                  <option>12th Grade Biology</option>
                 </select>
               </div>
               <div className="space-y-3">

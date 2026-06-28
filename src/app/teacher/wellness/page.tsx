@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, getDocs, where, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, getDocs, where, updateDoc, doc } from 'firebase/firestore';
+
 import { 
   Heart, Activity, PenTool, AlertTriangle, User, 
   ArrowLeft, ChevronDown, MessageCircle, Sparkles, BrainCircuit, CheckCircle2
@@ -87,18 +88,28 @@ export default function TeacherWellnessDashboard() {
       setLoading(true);
 
       try {
-        // 1. Fetch Students in this class
-        const usersSnap = await getDocs(query(
-          collection(db, 'users'),
-          where('schoolId', '==', profile.schoolId),
-          where('role', '==', 'student'),
-          where('studentClass', '==', selectedClass)
-        ));
+        // 1. Fetch Students from BOTH collections (same as heatmap)
+        const [usSnap, guSnap] = await Promise.all([
+          getDocs(query(
+            collection(db, 'users'),
+            where('schoolId', '==', profile.schoolId),
+            where('role', '==', 'student'),
+            where('studentClass', '==', selectedClass)
+          )),
+          getDocs(query(
+            collection(db, 'global_users'),
+            where('schoolId', '==', profile.schoolId),
+            where('role', '==', 'student'),
+            where('studentClass', '==', selectedClass)
+          )),
+        ]);
         
         const studentMap: Record<string, StudentData> = {};
-        usersSnap.docs.forEach(doc => {
-          const data = doc.data();
-          studentMap[doc.id] = { id: doc.id, name: data.name, email: data.email };
+        [...usSnap.docs, ...guSnap.docs].forEach(docSnap => {
+          if (!studentMap[docSnap.id]) {
+            const data = docSnap.data();
+            studentMap[docSnap.id] = { id: docSnap.id, name: data.name, email: data.email };
+          }
         });
         setStudents(studentMap);
 
@@ -110,21 +121,36 @@ export default function TeacherWellnessDashboard() {
           return;
         }
 
-        // 2. Fetch Wellness Logs
-        const logsQ = query(collection(db, 'wellness_logs'), orderBy('createdAt', 'desc'));
-        const logsSnap = await getDocs(logsQ);
+        // 2. Fetch Wellness Logs — filter by schoolId only (no orderBy = no composite index needed)
+        //    Sort in memory instead
+        const logsSnap = await getDocs(query(
+          collection(db, 'wellness_logs'),
+          where('schoolId', '==', profile.schoolId)
+        ));
         const fetchedLogs = logsSnap.docs
           .map(d => ({ id: d.id, ...d.data() } as WellnessLog))
-          .filter(l => studentMap[l.userId]); // Keep all logs for accurate averages
+          .filter(l => studentMap[l.userId])
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
+            const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
+            return bTime - aTime;
+          });
         
         setLogs(fetchedLogs);
 
-        // 3. Fetch Journals
-        const journalQ = query(collection(db, 'journal_entries'), orderBy('createdAt', 'desc'));
-        const journalSnap = await getDocs(journalQ);
+        // 3. Fetch Journals — same approach
+        const journalSnap = await getDocs(query(
+          collection(db, 'journal_entries'),
+          where('schoolId', '==', profile.schoolId)
+        ));
         const fetchedJournals = journalSnap.docs
           .map(d => ({ id: d.id, ...d.data() } as JournalEntry))
-          .filter(j => studentMap[j.userId]); 
+          .filter(j => studentMap[j.userId])
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
+            const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
+            return bTime - aTime;
+          });
           
         setJournals(fetchedJournals);
 
@@ -136,6 +162,7 @@ export default function TeacherWellnessDashboard() {
     }
     fetchData();
   }, [profile?.schoolId, selectedClass]);
+
 
 
   const handleResolveJournal = async (id: string) => {

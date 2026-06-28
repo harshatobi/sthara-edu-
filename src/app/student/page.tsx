@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, BrainCircuit, Target, PlayCircle, Award } from 'lucide-react';
+import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, BrainCircuit, Target, PlayCircle, Award, ChevronRight, X } from 'lucide-react';
+
 import AiEvaluationView from '@/components/AiEvaluationView';
 import MasteryModal from './MasteryModal';
 import PendingTasksModal from './PendingTasksModal';
@@ -12,6 +13,9 @@ import { db, storage } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, getDoc, orderBy, setDoc, doc, serverTimestamp, arrayUnion, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
 
 interface Assignment {
   id: string;
@@ -41,6 +45,14 @@ export default function StudentDashboard() {
   const [showMasteryModal, setShowMasteryModal] = useState(false);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showScoresModal, setShowScoresModal] = useState(false);
+
+  // Teacher Resources
+  const [resources, setResources] = useState<any[]>([]);
+  const [selectedResource, setSelectedResource] = useState<any | null>(null);
+  const [resourceQuizAnswers, setResourceQuizAnswers] = useState<number[]>([]);
+  const [isSubmittingResourceQuiz, setIsSubmittingResourceQuiz] = useState(false);
+  const [resourceQuizResult, setResourceQuizResult] = useState<{score: number; total: number} | null>(null);
+
 
   const handleSelectAnswer = (questionId: string, optionId: string) => {
     setSelectedAnswers(prev => ({ ...prev, [questionId]: optionId }));
@@ -276,6 +288,82 @@ export default function StudentDashboard() {
     fetchAssignments();
   }, [profile?.schoolId, profile?.studentClass]);
 
+  // Fetch teacher resources for student's class
+  useEffect(() => {
+    if (!profile?.schoolId || !profile?.studentClass) return;
+    const fetchResources = async () => {
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'schools', profile.schoolId, 'teacherResources'),
+          where('targetClass', '==', profile.studentClass)
+        ));
+        const res = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Sort newest first
+        res.sort((a: any, b: any) => {
+          const aT = a.createdAt?.seconds ?? 0;
+          const bT = b.createdAt?.seconds ?? 0;
+          return bT - aT;
+        });
+        setResources(res);
+      } catch (e) {
+        console.error('Failed to fetch teacher resources:', e);
+      }
+    };
+    fetchResources();
+  }, [profile?.schoolId, profile?.studentClass]);
+
+  const handleOpenResource = async (resource: any) => {
+    setSelectedResource(resource);
+    setResourceQuizAnswers(new Array(resource.quizQuestions?.length || 0).fill(-1));
+    setResourceQuizResult(null);
+    // Mark as read in Firestore
+    if (profile?.uid && profile?.schoolId) {
+      try {
+        await setDoc(
+          doc(db, 'schools', profile.schoolId, 'teacherResources', resource.id, 'reads', profile.uid),
+          { readAt: serverTimestamp(), studentName: profile.name || profile.uid, studentId: profile.uid }
+        );
+        // Mark locally so the badge updates
+        setResources(prev => prev.map(r => r.id === resource.id ? { ...r, isRead: true } : r));
+      } catch (e) {
+        console.warn('Could not mark resource as read:', e);
+      }
+    }
+  };
+
+  const handleSubmitResourceQuiz = async () => {
+    if (!selectedResource || !profile?.uid || !profile?.schoolId) return;
+    const questions = selectedResource.quizQuestions || [];
+    if (resourceQuizAnswers.some(a => a === -1)) {
+      alert('Please answer all questions before submitting.');
+      return;
+    }
+    setIsSubmittingResourceQuiz(true);
+    try {
+      let score = 0;
+      questions.forEach((q: any, i: number) => {
+        if (resourceQuizAnswers[i] === q.correctIndex) score++;
+      });
+      await setDoc(
+        doc(db, 'schools', profile.schoolId, 'teacherResources', selectedResource.id, 'quizResponses', profile.uid),
+        {
+          studentId: profile.uid,
+          studentName: profile.name || profile.uid,
+          score,
+          total: questions.length,
+          answers: resourceQuizAnswers,
+          submittedAt: serverTimestamp(),
+        }
+      );
+      setResourceQuizResult({ score, total: questions.length });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmittingResourceQuiz(false);
+    }
+  };
+
+
   if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Student Portal...</div>;
 
   const pendingTasksCount = assignments.filter((a: any) => !a.submission).length;
@@ -418,7 +506,159 @@ export default function StudentDashboard() {
         </div>
       </div>
 
+      {/* ── Teacher Resources Section ── */}
+      {resources.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="bg-indigo-50 p-2.5 rounded-xl">
+              <Bell className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[#002147]">From Your Teacher</h3>
+              <p className="text-sm text-gray-500">Click a resource to read it</p>
+            </div>
+            {resources.filter((r: any) => !r.isRead).length > 0 && (
+              <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                {resources.filter((r: any) => !r.isRead).length} New
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {resources.map((resource: any) => (
+              <button
+                key={resource.id}
+                onClick={() => handleOpenResource(resource)}
+                className={`text-left p-4 rounded-2xl border transition-all hover:-translate-y-0.5 hover:shadow-md group ${
+                  resource.isRead
+                    ? 'bg-white border-gray-200 hover:border-indigo-300'
+                    : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200 shadow-sm'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      {!resource.isRead && (
+                        <span className="inline-block w-2 h-2 bg-red-500 rounded-full shrink-0" />
+                      )}
+                      <p className="font-bold text-gray-800 text-sm truncate">{resource.title}</p>
+                    </div>
+                    <p className="text-xs text-gray-500 line-clamp-1">{resource.summary || 'Tap to view'}</p>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                        {resource.withQuiz ? '📝 Quiz Attached' : '📖 Reading'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {resource.teacherName || 'Teacher'}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 shrink-0 mt-1" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Resource Modal */}
+      {selectedResource && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedResource(null)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Resource Modal Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 rounded-t-2xl flex items-start justify-between">
+              <div>
+                <p className="text-indigo-200 text-xs font-bold uppercase tracking-wider mb-1">From {selectedResource.teacherName}</p>
+                <h2 className="text-white font-bold text-lg leading-snug">{selectedResource.title}</h2>
+              </div>
+              <button onClick={() => setSelectedResource(null)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 shrink-0 ml-3">
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Resource Content */}
+              <div className="prose prose-sm max-w-none text-gray-800 bg-gray-50 rounded-xl p-4 border border-gray-200 max-h-64 overflow-y-auto">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedResource.content || ''}</ReactMarkdown>
+              </div>
+
+              {/* Quiz Section */}
+              {selectedResource.withQuiz && selectedResource.quizQuestions?.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <span className="text-purple-600 font-bold text-xs">Q</span>
+                    </div>
+                    <h3 className="font-bold text-gray-800">Comprehension Quiz</h3>
+                  </div>
+
+                  {resourceQuizResult ? (
+                    <div className={`p-6 rounded-2xl text-center border-2 ${
+                      resourceQuizResult.score / resourceQuizResult.total >= 0.7
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      <p className="text-4xl font-black text-[#002147] mb-1">
+                        {resourceQuizResult.score}/{resourceQuizResult.total}
+                      </p>
+                      <p className="font-bold text-gray-600">
+                        {Math.round((resourceQuizResult.score / resourceQuizResult.total) * 100)}% — {
+                          resourceQuizResult.score / resourceQuizResult.total >= 0.7 ? 'Great job! 🎉' : 'Keep practicing!'
+                        }
+                      </p>
+                      <p className="text-sm text-gray-500 mt-2">Score sent to your teacher</p>
+                    </div>
+                  ) : (
+                    <>
+                      {selectedResource.quizQuestions.map((q: any, qIdx: number) => (
+                        <div key={qIdx} className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-3">
+                          <p className="font-bold text-gray-800 text-sm">{qIdx + 1}. {q.question}</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {q.options.map((opt: string, optIdx: number) => (
+                              <button
+                                key={optIdx}
+                                onClick={() => {
+                                  const newAnswers = [...resourceQuizAnswers];
+                                  newAnswers[qIdx] = optIdx;
+                                  setResourceQuizAnswers(newAnswers);
+                                }}
+                                className={`text-left px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                                  resourceQuizAnswers[qIdx] === optIdx
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                }`}
+                              >
+                                <span className="font-bold mr-2">{String.fromCharCode(65 + optIdx)}.</span>{opt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+
+                      <button
+                        onClick={handleSubmitResourceQuiz}
+                        disabled={isSubmittingResourceQuiz || resourceQuizAnswers.some(a => a === -1)}
+                        className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+                      >
+                        {isSubmittingResourceQuiz
+                          ? <Loader2 className="w-5 h-5 animate-spin" />
+                          : <CheckCircle2 className="w-5 h-5" />}
+                        <span>{isSubmittingResourceQuiz ? 'Submitting...' : 'Submit Quiz'}</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
+
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
           <div className="flex items-center space-x-4">

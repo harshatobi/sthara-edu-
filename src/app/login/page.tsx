@@ -143,7 +143,16 @@ export default function LoginPage() {
     if (!profile) return;
 
     if (loginAttempted) {
-      // Redirect after successful login
+      // Verify selected role matches actual role in Firestore
+      if (role && profile.role !== role) {
+        signOut(auth).then(() => {
+          setError(`This account is not registered as a ${role}. Please go back and select the correct role.`);
+          setIsSigningIn(false);
+          setLoginAttempted(false);
+        }).catch(console.error);
+        return;
+      }
+      // Correct role — redirect to dashboard
       if (profile.role === 'superadmin') router.push('/superadmin');
       else if (profile.role === 'student') router.push('/student');
       else if (profile.role === 'teacher') router.push('/teacher');
@@ -152,9 +161,9 @@ export default function LoginPage() {
     } else {
       // User arrived at /login while already logged in — sign them out
       signOut(auth).catch((err: unknown) => console.error('Sign out error:', err));
-
     }
-  }, [loading, profile, loginAttempted, router]);
+  }, [loading, profile, loginAttempted, router, role]);
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#001229] to-[#002147] p-6">

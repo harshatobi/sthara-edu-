@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { 
   TrendingUp, Users, BookOpen, UserPlus, Trash2, Plus, 
   Link as LinkIcon, CheckSquare, Square, Building2, 
-  GraduationCap, ShieldAlert, Sparkles, ChevronRight
+  GraduationCap, ShieldAlert, Sparkles, ChevronRight, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
@@ -37,6 +37,7 @@ export default function AdminDashboard() {
   const [schoolName, setSchoolName] = useState('Loading...');
   const [users, setUsers] = useState<UserData[]>([]);
   const [totalAssignments, setTotalAssignments] = useState<number | string>('--');
+  const [statsLoading, setStatsLoading] = useState(true);
   
   // New User Form State
   const [email, setEmail] = useState('');
@@ -62,6 +63,7 @@ export default function AdminDashboard() {
     if (!profile?.schoolId) return;
     
     const fetchSchoolData = async () => {
+      setStatsLoading(true);
       try {
         const schoolDoc = await getDoc(doc(db, 'schools', profile.schoolId));
         if (schoolDoc.exists()) {
@@ -70,17 +72,44 @@ export default function AdminDashboard() {
           setSchoolName('School Not Found');
         }
 
-        const usersSnap = await getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId)));
+        // Query BOTH collections — users are written to both in some flows
+        const [usersSnap, globalSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId))),
+          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId))),
+        ]);
+
+        // Merge, deduplicating by UID
+        const seen = new Set<string>();
         const usersList: UserData[] = [];
-        usersSnap.forEach((doc) => {
-          usersList.push({ id: doc.id, ...doc.data() } as UserData);
-        });
+        const addUser = (docId: string, data: any) => {
+          if (!seen.has(docId)) {
+            seen.add(docId);
+            usersList.push({ id: docId, ...data } as UserData);
+          }
+        };
+        usersSnap.forEach(d => addUser(d.id, d.data()));
+        globalSnap.forEach(d => addUser(d.id, d.data()));
+
+        // Fallback: if still 0, scan all users and filter client-side
+        if (usersList.length === 0) {
+          const allUsersSnap = await getDocs(collection(db, 'users'));
+          allUsersSnap.forEach(d => {
+            const data = d.data();
+            if (data.schoolId === profile.schoolId || data.school === profile.schoolId) {
+              addUser(d.id, data);
+            }
+          });
+        }
+
+        console.log('[admin] users found:', usersList.length, usersList.map(u => `${u.name}(${u.role})`));
         setUsers(usersList);
 
         const assignSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments'));
         setTotalAssignments(assignSnap.size);
       } catch (err) {
-        console.error(err);
+        console.error('[admin] fetchSchoolData error:', err);
+      } finally {
+        setStatsLoading(false);
       }
     };
     fetchSchoolData();
@@ -253,7 +282,14 @@ export default function AdminDashboard() {
                 <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
                   <Users className="w-6 h-6 text-emerald-600" />
                 </div>
-                <h3 className="text-4xl font-black text-[#002147] mb-1">{totalStudents}</h3>
+                {statsLoading ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                    <span className="text-lg font-bold text-gray-400">Loading...</span>
+                  </div>
+                ) : (
+                  <h3 className="text-4xl font-black text-[#002147] mb-1">{totalStudents}</h3>
+                )}
                 <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Students</p>
                 <div className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
                   <TrendingUp className="w-3 h-3" />
@@ -273,7 +309,14 @@ export default function AdminDashboard() {
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 border border-blue-100">
                   <GraduationCap className="w-6 h-6 text-blue-600" />
                 </div>
-                <h3 className="text-4xl font-black text-[#002147] mb-1">{totalTeachers}</h3>
+                {statsLoading ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+                    <span className="text-lg font-bold text-gray-400">Loading...</span>
+                  </div>
+                ) : (
+                  <h3 className="text-4xl font-black text-[#002147] mb-1">{totalTeachers}</h3>
+                )}
                 <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</p>
                 <div className="inline-flex items-center space-x-1 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
                   <Users className="w-3 h-3" />

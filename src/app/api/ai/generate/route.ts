@@ -14,11 +14,15 @@ export async function POST(req: Request) {
       process.env.NEXT_PUBLIC_APP_URL || '',
       'http://localhost:3000',
       'https://stharaschoolos.vercel.app',
+      'https://sthara.in',
+      'https://www.sthara.in',
     ].filter(Boolean);
     const isInternalOrigin = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
     const hasBearerToken = authHeader.startsWith('Bearer ') && authHeader.length > 20;
+    // Also allow if no origin at all (server-to-server) or same-site
+    const noOrigin = !origin;
 
-    if (!isInternalOrigin && !hasBearerToken) {
+    if (!isInternalOrigin && !hasBearerToken && !noOrigin) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },

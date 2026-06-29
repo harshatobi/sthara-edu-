@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   TrendingUp, Users, BookOpen, UserPlus, Trash2, Plus, 
   Link as LinkIcon, CheckSquare, Square, Building2, 
@@ -241,56 +242,67 @@ export default function AdminDashboard() {
         
         {/* Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group">
-            <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
-              <Users className="w-40 h-40 text-emerald-500" />
-            </div>
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
-                <Users className="w-6 h-6 text-emerald-600" />
-              </div>
-              <h3 className="text-4xl font-black text-[#002147] mb-1">{totalStudents}</h3>
-              <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Students</p>
-              <div className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
-                <TrendingUp className="w-3 h-3" />
-                <span>Active Enrollment</span>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group">
-            <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
-              <GraduationCap className="w-40 h-40 text-blue-500" />
-            </div>
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 border border-blue-100">
-                <GraduationCap className="w-6 h-6 text-blue-600" />
+          {/* Students */}
+          <Link href="/admin" className="block">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-200 transition-all duration-200">
+              <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
+                <Users className="w-40 h-40 text-emerald-500" />
               </div>
-              <h3 className="text-4xl font-black text-[#002147] mb-1">{totalTeachers}</h3>
-              <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</p>
-              <div className="inline-flex items-center space-x-1 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
-                <Users className="w-3 h-3" />
-                <span>Staff Accounts</span>
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
+                  <Users className="w-6 h-6 text-emerald-600" />
+                </div>
+                <h3 className="text-4xl font-black text-[#002147] mb-1">{totalStudents}</h3>
+                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Students</p>
+                <div className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>View Directory →</span>
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-gradient-to-br from-[#002147] to-indigo-900 rounded-2xl shadow-lg border border-indigo-800 p-6 relative overflow-hidden group">
-            <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 group-hover:opacity-20 transition-all duration-500">
-              <BookOpen className="w-40 h-40 text-white" />
-            </div>
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-4 border border-white/20 backdrop-blur-sm">
-                <BookOpen className="w-6 h-6 text-indigo-200" />
+          {/* Teachers */}
+          <Link href="/admin" className="block">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-blue-200 transition-all duration-200">
+              <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
+                <GraduationCap className="w-40 h-40 text-blue-500" />
               </div>
-              <h3 className="text-4xl font-black text-white mb-1">{totalAssignments}</h3>
-              <p className="text-sm font-bold text-indigo-200 uppercase tracking-wider mb-2">Active Assignments</p>
-              <div className="inline-flex items-center space-x-1 text-xs font-bold text-indigo-100 bg-indigo-950/50 px-2 py-1 rounded-md border border-indigo-800">
-                <TrendingUp className="w-3 h-3" />
-                <span>Platform-wide Tasks</span>
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 border border-blue-100">
+                  <GraduationCap className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="text-4xl font-black text-[#002147] mb-1">{totalTeachers}</h3>
+                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</p>
+                <div className="inline-flex items-center space-x-1 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+                  <Users className="w-3 h-3" />
+                  <span>Manage Staff →</span>
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
+
+          {/* Assignments */}
+          <Link href="/admin/results" className="block">
+            <div className="bg-gradient-to-br from-[#002147] to-indigo-900 rounded-2xl shadow-lg border border-indigo-800 p-6 relative overflow-hidden group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200">
+              <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 group-hover:opacity-20 transition-all duration-500">
+                <BookOpen className="w-40 h-40 text-white" />
+              </div>
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-4 border border-white/20 backdrop-blur-sm">
+                  <BookOpen className="w-6 h-6 text-indigo-200" />
+                </div>
+                <h3 className="text-4xl font-black text-white mb-1">{totalAssignments}</h3>
+                <p className="text-sm font-bold text-indigo-200 uppercase tracking-wider mb-2">Active Assignments</p>
+                <div className="inline-flex items-center space-x-1 text-xs font-bold text-indigo-100 bg-indigo-950/50 px-2 py-1 rounded-md border border-indigo-800">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>View Results →</span>
+                </div>
+              </div>
+            </div>
+          </Link>
+
         </div>
 
         {/* Directory Management Table */}

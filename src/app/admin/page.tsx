@@ -273,11 +273,8 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           {/* Students */}
-          <div
-            className="block cursor-pointer"
-            onClick={() => document.getElementById('directory-section')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group hover:shadow-md hover:ring-2 hover:ring-emerald-200 transition-all duration-200">
+          <Link href="/admin/directory" className="block">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-200 transition-all duration-200">
               <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
                 <Users className="w-40 h-40 text-emerald-500" />
               </div>
@@ -300,14 +297,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Teachers */}
-          <div
-            className="block cursor-pointer"
-            onClick={() => document.getElementById('directory-section')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group hover:shadow-md hover:ring-2 hover:ring-blue-200 transition-all duration-200">
+          <Link href="/admin/directory" className="block">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-blue-200 transition-all duration-200">
               <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
                 <GraduationCap className="w-40 h-40 text-blue-500" />
               </div>
@@ -330,7 +324,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Assignments */}
           <Link href="/admin/results" className="block">

@@ -55,7 +55,7 @@ export default function LoginPage() {
       return;
     }
     
-    if (schoolCode === 'ADMIN') {
+    if (schoolCode === 'STHARA' || schoolCode === 'ADMIN') {
       setSchoolCodeError('');
       setStep('ROLE_SELECT');
       return;
@@ -144,7 +144,10 @@ export default function LoginPage() {
 
     if (loginAttempted) {
       // Verify selected role matches actual role in Firestore
-      if (role && profile.role !== role) {
+      // Allow superadmin to log in via either 'admin' or 'superadmin' role selection
+      const isRoleMismatch = role && profile.role !== role &&
+        !(profile.role === 'superadmin' && (role === 'admin' || role === 'superadmin'));
+      if (isRoleMismatch) {
         signOut(auth).then(() => {
           setError(`This account is not registered as a ${role}. Please go back and select the correct role.`);
           setIsSigningIn(false);
@@ -237,6 +240,9 @@ export default function LoginPage() {
                 <RoleCard onClick={() => handleRoleSelect('teacher')} icon={GraduationCap} title="Teacher" subtitle="Diagnostic Engine" />
                 <RoleCard onClick={() => handleRoleSelect('admin')} icon={Shield} title="Admin" subtitle="Command Center" />
                 <RoleCard onClick={() => handleRoleSelect('parent')} icon={Users} title="Parent" subtitle="Growth Feed" />
+                {(schoolCode === 'STHARA' || schoolCode === 'ADMIN') && (
+                  <RoleCard onClick={() => handleRoleSelect('superadmin')} icon={Shield} title="Super Admin" subtitle="Platform Control" />
+                )}
               </div>
             </div>
           )}

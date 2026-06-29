@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import {
   Check, ArrowLeft, Loader2, BrainCircuit,
   FileText, Users, Inbox, BadgeCheck, AlertTriangle,
@@ -110,7 +110,16 @@ export default function GradingGalleryPage() {
               aiResult: s.aiResult || null,
               aiGraded: !!s.aiGraded,
               type: imgs.length > 0 ? 'image' : (s.type === 'quiz' ? 'quiz' : 'homework'),
-              text: s.text || '',
+              // Serialize quiz answers map + any free text into a single scannable string
+              text: (() => {
+                if (s.text && s.text.trim()) return s.text;
+                // Quiz answers: { questionId: 'selectedOption' } or array of { questionId, answer }
+                const ans = s.answers || s.studentAnswers || s.quizAnswers;
+                if (!ans) return '';
+                if (Array.isArray(ans)) return ans.map((a: any) => `Q: ${a.question || a.questionText || ''} A: ${a.answer || a.studentAnswer || ''}`).join('\n');
+                if (typeof ans === 'object') return Object.entries(ans).map(([qId, a]) => `Q${qId}: ${a}`).join('\n');
+                return String(ans);
+              })(),
               imageUrl: imgs[0] || '',
               imageUrls: imgs,
               teacherApproved: false,
@@ -140,8 +149,22 @@ export default function GradingGalleryPage() {
     setIntegrityResult(null);
 
     if (!profile?.schoolId) return;
-    setIntegrityLoading(true);
 
+    // ── Load any previously saved integrity result first (shows immediately) ──
+    try {
+      const subSnap = await getDoc(
+        doc(db, 'schools', profile.schoolId, 'assignments', sub.assignmentId, 'submissions', sub.id)
+      );
+      if (subSnap.exists()) {
+        const saved = subSnap.data()?.integrityResult;
+        if (saved) {
+          setIntegrityResult(saved);
+          return; // Already have result — don't re-scan
+        }
+      }
+    } catch {/* ignore */}
+
+    setIntegrityLoading(true);
     try {
       // ── IMAGE submission: fetch base64, compare against other image subs ──
       if (sub.imageUrl) {
@@ -576,7 +599,7 @@ export default function GradingGalleryPage() {
                         </div>
                         <p className="text-red-700 font-medium text-sm mt-0.5">{integrityResult.aiReason}</p>
                         <p className="text-red-400 text-xs font-semibold mt-1">
-                          This image may not be the student's genuine handwritten work.
+                          This submission may contain AI-generated content, not the student's own work.
                         </p>
                       </div>
                     </div>
@@ -626,12 +649,12 @@ export default function GradingGalleryPage() {
                 </div>
               )}
 
-              {/* Text submission (when no image) */}
-              {active.type === 'homework' && active.text && !active.imageUrl && (
+              {/* Text / Quiz answer submission display */}
+              {(active.type === 'homework' || active.type === 'quiz') && active.text && !active.imageUrl && (
                 <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
                   <h3 className="font-black text-[#002147] text-base flex items-center gap-2 mb-4">
                     <FileText className="w-5 h-5 text-blue-500" />
-                    Student's Answer
+                    Student's {active.type === 'quiz' ? 'Quiz Answers' : 'Answer'}
                   </h3>
                   <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
                     <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{active.text}</p>

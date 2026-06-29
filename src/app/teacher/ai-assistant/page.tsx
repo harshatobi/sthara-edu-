@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import {
   Sparkles, ArrowLeft, Copy, CheckCircle, BrainCircuit, Download, SendIcon,
   Loader2, Maximize, Minimize, History, X, ChevronRight, BookOpen,
-  Users, BarChart2, Eye, Plus, Trash2, ToggleLeft, ToggleRight
+  Users, BarChart2, Eye, Plus, Trash2, ToggleLeft, ToggleRight,
+  ClipboardList, Zap, Calendar, Clock, Star, FileText, Send
 } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
@@ -531,6 +532,202 @@ function HistoryDrawer({
   );
 }
 
+/* ─────────────── QUICK PUBLISH BUTTON ─────────────── */
+function QuickPublishButton({
+  profile,
+  data,
+  type,
+  onPublished,
+}: {
+  profile: any;
+  data: any;
+  type: 'quiz' | 'assignment';
+  onPublished: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [targetClass, setTargetClass] = useState('');
+  const [customClass, setCustomClass] = useState('');
+  const [dueDate, setDueDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  });
+  const [timeLimit, setTimeLimit] = useState(data?.timeLimit || 15);
+
+  const teacherClasses: string[] = Array.from(new Set(
+    (profile.assignments || []).map((a: any) => a.class).filter(Boolean)
+  ));
+  const effectiveClass = teacherClasses.length > 0 ? targetClass || teacherClasses[0] : customClass;
+
+  const handlePublish = async () => {
+    const cls = effectiveClass.trim();
+    if (!cls) { alert('Please select or enter a target class.'); return; }
+    setPublishing(true);
+    try {
+      let docData: any = {};
+      if (type === 'quiz') {
+        docData = {
+          title: data.title,
+          subject: data.subject || 'General',
+          targetClass: cls,
+          type: 'quiz',
+          dueDate,
+          timeLimit: Number(timeLimit),
+          questions: data.questions,
+          directions: data.directions,
+          createdBy: profile.uid,
+          teacherName: profile.name || 'Teacher',
+          createdAt: serverTimestamp(),
+          status: 'published',
+        };
+      } else {
+        docData = {
+          title: data.title,
+          subject: data.subject || 'General',
+          targetClass: cls,
+          class: cls,
+          type: 'homework',
+          dueDate,
+          tasks: data.tasks,
+          instructions: data.instructions,
+          objectives: data.objectives || [],
+          totalMarks: data.totalMarks || 0,
+          estimatedTime: data.estimatedTime || '',
+          rubric: data.rubric || '',
+          createdBy: profile.uid,
+          teacherName: profile.name || 'Teacher',
+          createdAt: serverTimestamp(),
+          status: 'published',
+        };
+      }
+      const ref = await addDoc(
+        collection(db, 'schools', profile.schoolId, 'assignments'),
+        docData
+      );
+      onPublished(ref.id);
+      setOpen(false);
+    } catch (e: any) {
+      alert('Failed to publish: ' + e.message);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white shadow-md hover:-translate-y-0.5 transition-all ${
+          type === 'quiz'
+            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
+            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+        }`}
+      >
+        {type === 'quiz' ? <Zap className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
+        <span>Publish {type === 'quiz' ? 'Quiz' : 'Assignment'} to Class</span>
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className={`px-6 py-5 rounded-t-2xl flex items-center justify-between ${
+              type === 'quiz' ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : 'bg-gradient-to-r from-amber-500 to-orange-500'
+            }`}>
+              <div>
+                <h2 className="text-white font-bold text-lg">
+                  {type === 'quiz' ? 'Publish Quiz' : 'Publish Assignment'}
+                </h2>
+                <p className="text-white/70 text-sm mt-0.5 truncate max-w-[260px]">{data?.title}</p>
+              </div>
+              <button onClick={() => setOpen(false)} className="p-2 rounded-full bg-white/10 hover:bg-white/20">
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Class selector */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Target Class</label>
+                {teacherClasses.length > 0 ? (
+                  <select
+                    value={targetClass || teacherClasses[0]}
+                    onChange={e => setTargetClass(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    {teacherClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={customClass}
+                    onChange={e => setCustomClass(e.target.value)}
+                    placeholder="e.g. 10A, 11B"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                )}
+              </div>
+
+              {/* Due date */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" /> Due Date
+                </label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Time limit for quiz */}
+              {type === 'quiz' && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4" /> Time Limit (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={120}
+                    value={timeLimit}
+                    onChange={e => setTimeLimit(Number(e.target.value))}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              )}
+
+              {/* Summary */}
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 border border-gray-100">
+                <p className="font-bold text-gray-700 mb-1">Publishing:</p>
+                <p>📚 {data?.title}</p>
+                {type === 'quiz' && <p>❓ {data?.questions?.length} questions · {timeLimit} min limit</p>}
+                {type === 'assignment' && <p>✏️ {data?.tasks?.length} tasks · {data?.totalMarks} marks total</p>}
+              </div>
+
+              <button
+                onClick={handlePublish}
+                disabled={publishing}
+                className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all ${
+                  type === 'quiz'
+                    ? 'bg-purple-600 hover:bg-purple-700'
+                    : 'bg-amber-500 hover:bg-amber-600'
+                } disabled:opacity-60`}
+              >
+                {publishing ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /><span>Publishing...</span></>
+                ) : (
+                  <><Send className="w-5 h-5" /><span>Publish to Students Now</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 /* ─────────────── MAIN PAGE ─────────────── */
 export default function TeacherAIAssistant() {
   const { profile, loading } = useAuth();
@@ -643,16 +840,21 @@ export default function TeacherAIAssistant() {
     setPostedResourceId(null);
   };
 
-  // Safe JSON parser for Quiz Worksheet
-  let parsedQuizData = null;
-  if (generatedContent && outputFormat.includes('Quiz')) {
+  // Parse assignment data
+  let parsedAssignmentData: any = null;
+  let parsedInteractiveQuizData: any = null;
+  let parsedQuizData: any = null;
+
+  if (generatedContent) {
     try {
       let c = generatedContent.trim();
       const m = c.match(/```json\n([\s\S]*?)\n```/);
       if (m?.[1]) c = m[1];
       else if (c.startsWith('```json')) c = c.replace(/^```json\n?/, '').replace(/\n?```$/, '');
       const d = JSON.parse(c);
-      if (d.isQuiz) parsedQuizData = d;
+      if (d.isQuiz && outputFormat.includes('Quiz') && !d.isInteractiveQuiz) parsedQuizData = d;
+      if (d.isInteractiveQuiz) parsedInteractiveQuizData = d;
+      if (d.isAssignment) parsedAssignmentData = d;
     } catch { /* ignore */ }
   }
 
@@ -771,7 +973,7 @@ export default function TeacherAIAssistant() {
                   onChange={e => setOutputFormat(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                 >
-                  {['Standard Lesson Plan','Grading Rubric Table','Multiple Choice Quiz','Bullet-point Summary'].map(f => (
+                  {['Standard Lesson Plan','Grading Rubric Table','Multiple Choice Quiz','Bullet-point Summary','Homework Assignment','Interactive Quiz'].map(f => (
                     <option key={f}>{f}</option>
                   ))}
                 </select>
@@ -835,34 +1037,123 @@ export default function TeacherAIAssistant() {
 
               {/* Content */}
               <div className="p-8 md:p-12 print:p-0">
-                {parsedQuizData
-                  ? <QuizWorksheet data={parsedQuizData} />
-                  : (
-                    <div className="prose prose-lg max-w-none text-gray-800">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          h1: ({ node, ...props }) => <h1 className="text-3xl font-black mb-6 text-[#002147]" {...props} />,
-                          h2: ({ node, ...props }) => <h2 className="text-2xl font-bold mt-8 mb-4 text-[#002147] border-b pb-2" {...props} />,
-                          h3: ({ node, ...props }) => <h3 className="text-xl font-bold mt-6 mb-3 text-gray-800" {...props} />,
-                          p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
-                          ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
-                          li: ({ node, ...props }) => <li className="pl-2" {...props} />,
-                          table: ({ node, ...props }) => (
-                            <div className="my-8 w-full overflow-x-auto rounded-xl border border-gray-200">
-                              <table className="w-full text-left border-collapse min-w-[800px]" {...props} />
-                            </div>
-                          ),
-                          thead: ({ node, ...props }) => <thead className="bg-[#002147] text-white" {...props} />,
-                          th: ({ node, ...props }) => <th className="p-4 font-bold tracking-wider text-white" {...props} />,
-                          td: ({ node, ...props }) => <td className="p-4 border-t border-gray-200 align-top bg-white" {...props} />,
-                          tr: ({ node, ...props }) => <tr className="even:bg-gray-50/50" {...props} />,
-                        }}
-                      >
-                        {generatedContent}
-                      </ReactMarkdown>
+                {parsedInteractiveQuizData ? (
+                  /* ── Interactive Quiz Preview ── */
+                  <div className="space-y-6">
+                    <div className="text-center pb-6 border-b border-gray-100">
+                      <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                        <Zap className="w-3 h-3" />
+                        <span>INTERACTIVE QUIZ</span>
+                      </div>
+                      <h1 className="text-2xl font-black text-[#002147]">{parsedInteractiveQuizData.title}</h1>
+                      <div className="flex items-center justify-center gap-6 mt-3 text-sm text-gray-500">
+                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{parsedInteractiveQuizData.timeLimit} min</span>
+                        <span className="flex items-center gap-1"><Star className="w-4 h-4" />{parsedInteractiveQuizData.questions?.length} questions</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-2 italic">{parsedInteractiveQuizData.directions}</p>
                     </div>
-                  )}
+                    <div className="space-y-4">
+                      {parsedInteractiveQuizData.questions?.map((q: any, i: number) => (
+                        <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                          <p className="font-bold text-gray-800 mb-3">Q{i+1}. {q.text}</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {q.options?.map((opt: any) => (
+                              <div key={opt.id} className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm font-medium ${
+                                opt.id === q.correctOptionId
+                                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                                  : 'border-gray-200 bg-white text-gray-700'
+                              }`}>
+                                <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs font-black flex items-center justify-center shrink-0">{opt.id.toUpperCase()}</span>
+                                {opt.text}
+                                {opt.id === q.correctOptionId && <CheckCircle className="w-4 h-4 text-emerald-500 ml-auto shrink-0" />}
+                              </div>
+                            ))}
+                          </div>
+                          {q.explanation && (
+                            <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mt-3 border border-blue-100">
+                              💡 {q.explanation}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : parsedAssignmentData ? (
+                  /* ── Homework Assignment Preview ── */
+                  <div className="space-y-6">
+                    <div className="text-center pb-6 border-b border-gray-100">
+                      <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                        <ClipboardList className="w-3 h-3" />
+                        <span>HOMEWORK ASSIGNMENT</span>
+                      </div>
+                      <h1 className="text-2xl font-black text-[#002147]">{parsedAssignmentData.title}</h1>
+                      <div className="flex items-center justify-center gap-6 mt-3 text-sm text-gray-500">
+                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{parsedAssignmentData.estimatedTime}</span>
+                        <span className="flex items-center gap-1"><Star className="w-4 h-4" />{parsedAssignmentData.totalMarks} marks total</span>
+                      </div>
+                    </div>
+                    {parsedAssignmentData.objectives?.length > 0 && (
+                      <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                        <h3 className="font-bold text-blue-800 text-sm mb-2">Learning Objectives</h3>
+                        <ul className="space-y-1">
+                          {parsedAssignmentData.objectives.map((obj: string, i: number) => (
+                            <li key={i} className="text-sm text-blue-700 flex items-start gap-2">
+                              <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />{obj}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm text-gray-600 mb-4 italic border-l-4 border-amber-300 pl-3">{parsedAssignmentData.instructions}</p>
+                      <div className="space-y-3">
+                        {parsedAssignmentData.tasks?.map((task: any, i: number) => (
+                          <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                              <span className="w-7 h-7 rounded-full bg-[#002147] text-white text-xs font-black flex items-center justify-center shrink-0">{task.number}</span>
+                              <span className="text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">{task.type?.replace('-', ' ')}</span>
+                              <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 ml-auto">{task.marks} marks</span>
+                            </div>
+                            <p className="text-gray-800 font-medium text-sm ml-10">{task.question}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {parsedAssignmentData.rubric && (
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <h3 className="font-bold text-gray-700 text-sm mb-2">📋 Grading Rubric</h3>
+                        <p className="text-sm text-gray-600">{parsedAssignmentData.rubric}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : parsedQuizData ? (
+                  <QuizWorksheet data={parsedQuizData} />
+                ) : (
+                  <div className="prose prose-lg max-w-none text-gray-800">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({ node, ...props }) => <h1 className="text-3xl font-black mb-6 text-[#002147]" {...props} />,
+                        h2: ({ node, ...props }) => <h2 className="text-2xl font-bold mt-8 mb-4 text-[#002147] border-b pb-2" {...props} />,
+                        h3: ({ node, ...props }) => <h3 className="text-xl font-bold mt-6 mb-3 text-gray-800" {...props} />,
+                        p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
+                        li: ({ node, ...props }) => <li className="pl-2" {...props} />,
+                        table: ({ node, ...props }) => (
+                          <div className="my-8 w-full overflow-x-auto rounded-xl border border-gray-200">
+                            <table className="w-full text-left border-collapse min-w-[800px]" {...props} />
+                          </div>
+                        ),
+                        thead: ({ node, ...props }) => <thead className="bg-[#002147] text-white" {...props} />,
+                        th: ({ node, ...props }) => <th className="p-4 font-bold tracking-wider text-white" {...props} />,
+                        td: ({ node, ...props }) => <td className="p-4 border-t border-gray-200 align-top bg-white" {...props} />,
+                        tr: ({ node, ...props }) => <tr className="even:bg-gray-50/50" {...props} />,
+                      }}
+                    >
+                      {generatedContent}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
 
               {/* Bottom Action Bar */}
@@ -871,7 +1162,7 @@ export default function TeacherAIAssistant() {
                   <>
                     <div className="flex items-center space-x-2 text-emerald-600 font-bold">
                       <CheckCircle className="w-5 h-5" />
-                      <span>Posted to Students!</span>
+                      <span>Published Successfully!</span>
                     </div>
                     <button
                       onClick={() => setShowStatsModal(true)}
@@ -884,19 +1175,31 @@ export default function TeacherAIAssistant() {
                       onClick={() => { setPostedResourceId(null); setShowPostModal(true); }}
                       className="flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
                     >
-                      <SendIcon className="w-4 h-4" />
+                      <Send className="w-4 h-4" />
                       <span>Post Again</span>
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={() => setShowPostModal(true)}
-                    disabled={!generatedContent}
-                    className="flex items-center space-x-2 px-8 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 transition-all shadow-md disabled:opacity-50"
-                  >
-                    <SendIcon className="w-5 h-5" />
-                    <span>Post to Students</span>
-                  </button>
+                  <>
+                    {/* Direct Publish for Assignment/Quiz */}
+                    {(parsedAssignmentData || parsedInteractiveQuizData) && (
+                      <QuickPublishButton
+                        profile={profile}
+                        data={parsedAssignmentData || parsedInteractiveQuizData}
+                        type={parsedInteractiveQuizData ? 'quiz' : 'assignment'}
+                        onPublished={(id) => { setPostedResourceId(id); }}
+                      />
+                    )}
+                    {/* Generic Post to Students */}
+                    <button
+                      onClick={() => setShowPostModal(true)}
+                      disabled={!generatedContent}
+                      className="flex items-center space-x-2 px-6 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 transition-all shadow-md disabled:opacity-50"
+                    >
+                      <Send className="w-5 h-5" />
+                      <span>Post as Resource</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>

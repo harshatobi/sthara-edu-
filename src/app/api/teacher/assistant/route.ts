@@ -54,6 +54,65 @@ Structure:
   ]
 }
 
+IF FORMAT IS "Interactive Quiz":
+You MUST output your response STRICTLY as a JSON object wrapped in \`\`\`json code blocks.
+Generate 8-10 high-quality multiple choice questions. Structure:
+{
+  "isInteractiveQuiz": true,
+  "title": "A relevant quiz title",
+  "subject": "inferred subject",
+  "directions": "Attempt all questions. Each carries equal marks.",
+  "timeLimit": 15,
+  "questions": [
+    {
+      "id": "q1",
+      "text": "The question text?",
+      "options": [
+        {"id": "a", "text": "Option A"},
+        {"id": "b", "text": "Option B"},
+        {"id": "c", "text": "Option C"},
+        {"id": "d", "text": "Option D"}
+      ],
+      "correctOptionId": "a",
+      "explanation": "Brief explanation of correct answer."
+    }
+  ]
+}
+
+IF FORMAT IS "Homework Assignment":
+You MUST output your response STRICTLY as a JSON object wrapped in \`\`\`json code blocks.
+Generate a complete, detailed homework assignment. Structure:
+{
+  "isAssignment": true,
+  "title": "Assignment title",
+  "subject": "inferred subject",
+  "estimatedTime": "30-45 minutes",
+  "objectives": ["Learning objective 1", "Learning objective 2"],
+  "instructions": "Overall instructions for the assignment",
+  "tasks": [
+    {
+      "number": 1,
+      "type": "short-answer",
+      "marks": 5,
+      "question": "Full question text with all details the student needs"
+    },
+    {
+      "number": 2,
+      "type": "long-answer",
+      "marks": 10,
+      "question": "Full question text"
+    },
+    {
+      "number": 3,
+      "type": "diagram",
+      "marks": 5,
+      "question": "Draw and label..."
+    }
+  ],
+  "totalMarks": 20,
+  "rubric": "Brief grading rubric highlighting key expectations"
+}
+
 IF FORMAT IS "Grading Rubric Table":
 You must output a highly detailed Markdown table. The columns MUST be: Criteria, Exemplary (4), Proficient (3), Developing (2), Beginning (1).
 CRITICAL RULE FOR RUBRIC CONTENT: 
@@ -61,6 +120,7 @@ Do NOT write meta-descriptions of student performance like "Presents a clear the
 Instead, the cells must literally just be the EXACT raw factual answers and subject matter you expect them to write. It should read like an answer key.
 For example, instead of writing "Thesis argues that the social structure caused the revolution", you MUST write: "The rigid social structure of the Ancien Régime, crippling state debt, and Enlightenment ideals were the primary drivers."
 Every cell must contain pure historical facts, concepts, and arguments relevant to the topic. Do not write about HOW the student should write it. Just give the teacher the WHAT.
+
 IF FORMAT IS "Standard Lesson Plan":
 Output beautifully formatted Markdown with headers (## Overview, ## Objectives, ## Key Vocabulary, ## Activities, ## Assessment). Include highly specific facts and deep content.
 

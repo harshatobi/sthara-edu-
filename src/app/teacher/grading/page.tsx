@@ -9,7 +9,7 @@ import {
   Check, ArrowLeft, Loader2, BrainCircuit,
   FileText, Users, Inbox, BadgeCheck, AlertTriangle,
   Edit3, MessageSquare, Image as ImageIcon, X, ChevronLeft, ChevronRight,
-  BookOpen, CheckSquare
+  BookOpen, CheckSquare, ShieldAlert, Bot, Copy
 } from 'lucide-react';
 import AiEvaluationView from '@/components/AiEvaluationView';
 import Link from 'next/link';
@@ -51,6 +51,15 @@ export default function GradingGalleryPage() {
 
   // Image lightbox
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  // ── Integrity Check State ────────────────────────────────
+  const [integrityLoading, setIntegrityLoading] = useState(false);
+  const [integrityResult, setIntegrityResult] = useState<{
+    isAiGenerated: boolean;
+    aiConfidence: number;
+    aiReason: string;
+    duplicateOf: string[];
+  } | null>(null);
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'teacher')) router.push('/login');
@@ -121,12 +130,75 @@ export default function GradingGalleryPage() {
     }
   };
 
-  const handleSelectSubmission = (sub: Submission) => {
+  const handleSelectSubmission = async (sub: Submission) => {
     setActive(sub);
     setOverrideScore('');
     setOverrideMax('');
     setTeacherNote('');
     setLightboxIdx(null);
+    setIntegrityResult(null);
+
+    // Auto-run integrity check if image submission
+    if (sub.imageUrl && profile?.schoolId) {
+      setIntegrityLoading(true);
+      try {
+        // Fetch image as base64
+        const imgResp = await fetch(sub.imageUrl);
+        const blob = await imgResp.blob();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        const mimeType = blob.type || 'image/jpeg';
+
+        // Get all other submissions for the same assignment (for duplicate check)
+        const otherSubs = queue
+          .filter(q => q.assignmentId === sub.assignmentId && q.id !== sub.id && q.imageUrl)
+          .slice(0, 4); // limit to 4 others to avoid too many API calls
+
+        const othersWithBase64 = await Promise.all(
+          otherSubs.map(async (o) => {
+            try {
+              const r = await fetch(o.imageUrl!);
+              const b = await r.blob();
+              const b64 = await new Promise<string>((res, rej) => {
+                const rd = new FileReader();
+                rd.onloadend = () => res((rd.result as string).split(',')[1]);
+                rd.onerror = rej;
+                rd.readAsDataURL(b);
+              });
+              return { submissionId: o.id, studentName: o.studentName, imageBase64: b64, mimeType: b.type || 'image/jpeg' };
+            } catch { return null; }
+          })
+        ).then(results => results.filter(Boolean));
+
+        const resp = await fetch('/api/homework/integrity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            submissionId: sub.id,
+            imageBase64: base64,
+            mimeType,
+            allSubmissions: othersWithBase64,
+          }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+          setIntegrityResult({
+            isAiGenerated: data.isAiGenerated,
+            aiConfidence: data.aiConfidence,
+            aiReason: data.aiReason,
+            duplicateOf: data.duplicateOf || [],
+          });
+        }
+      } catch (e) {
+        console.warn('[grading] Integrity check error:', e);
+      } finally {
+        setIntegrityLoading(false);
+      }
+    }
   };
 
   const handleApprove = async () => {
@@ -405,7 +477,67 @@ export default function GradingGalleryPage() {
                     </div>
                   </div>
                 )}
-              </div>
+                </div>
+
+              {/* ── Integrity Warnings ── */}
+              {(integrityLoading || integrityResult) && (
+                <div className="space-y-3">
+                  {integrityLoading && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3 animate-pulse">
+                      <Loader2 className="w-5 h-5 text-blue-500 animate-spin shrink-0" />
+                      <div>
+                        <p className="text-blue-800 font-black text-sm">Scanning for integrity issues…</p>
+                        <p className="text-blue-500 text-xs font-medium">AI is checking for copies and AI-generated content</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!integrityLoading && integrityResult && integrityResult.duplicateOf.length > 0 && (
+                    <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 flex items-start gap-3">
+                      <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center shrink-0 border border-orange-200">
+                        <Copy className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-orange-900 font-black text-sm uppercase tracking-wide">⚠ Similarity / Copy Alert</p>
+                        <p className="text-orange-700 font-medium text-sm mt-0.5">
+                          This submission appears to match the work submitted by:{' '}
+                          <span className="font-black">{integrityResult.duplicateOf.join(', ')}</span>
+                        </p>
+                        <p className="text-orange-500 text-xs font-semibold mt-1">
+                          Please review both submissions before approving grades.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!integrityLoading && integrityResult && integrityResult.isAiGenerated && (
+                    <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 flex items-start gap-3">
+                      <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center shrink-0 border border-red-200">
+                        <Bot className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-red-900 font-black text-sm uppercase tracking-wide">🤖 AI Generated Content Detected</p>
+                          <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                            {integrityResult.aiConfidence}% confidence
+                          </span>
+                        </div>
+                        <p className="text-red-700 font-medium text-sm mt-0.5">{integrityResult.aiReason}</p>
+                        <p className="text-red-400 text-xs font-semibold mt-1">
+                          This image may not be the student's genuine handwritten work.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!integrityLoading && integrityResult && !integrityResult.isAiGenerated && integrityResult.duplicateOf.length === 0 && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-center gap-3">
+                      <BadgeCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <p className="text-emerald-800 font-bold text-sm">Integrity check passed — no issues detected</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── Submitted Images Gallery ── */}
               {activeImages.length > 0 && (

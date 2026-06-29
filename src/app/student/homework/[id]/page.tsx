@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { db, storage } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +10,7 @@ import { getAuthToken } from '@/lib/auth/getAuthToken';
 import {
   Upload, CheckCircle, ArrowLeft, Loader2, FileText,
   Camera, BookOpen, Clock, ChevronLeft, AlertTriangle,
-  Image as ImageIcon, X, Sparkles, Eye
+  Image as ImageIcon, X, Sparkles, Eye, Maximize2, ShieldAlert
 } from 'lucide-react';
 import Link from 'next/link';
 import AiEvaluationView from '@/components/AiEvaluationView';
@@ -42,9 +42,43 @@ export default function HomeworkAssignment() {
 
   // Results
   const [aiResult, setAiResult] = useState<any>(null);
-  const [violations, setViolations] = useState(0);
 
-  // Generate preview when file changes
+  // ── Proctoring State ─────────────────────────────────────
+  const [violations, setViolations] = useState(0);
+  const [violationLog, setViolationLog] = useState<{type: string; ts: number}[]>([]);
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const proctoringActive = useRef(false);
+
+  const logViolation = useCallback(async (type: string) => {
+    if (!proctoringActive.current) return;
+    const entry = { type, ts: Date.now() };
+    setViolations(v => v + 1);
+    setViolationLog(prev => [...prev, entry]);
+
+    // Write to Firestore
+    if (profile?.schoolId && profile?.uid) {
+      try {
+        await updateDoc(
+          doc(db, 'schools', profile.schoolId, 'assignments', id, 'submissions', profile.uid),
+          {
+            proctoringViolations: arrayUnion({ ...entry }),
+            violationCount: violations + 1,
+          }
+        );
+      } catch {
+        // Submission doc might not exist yet — create a proctoring-only doc
+        try {
+          await setDoc(
+            doc(db, 'schools', profile.schoolId, 'assignments', id, 'proctoring', profile.uid),
+            { violations: arrayUnion({ ...entry }), studentId: profile.uid, studentName: profile.name },
+            { merge: true }
+          );
+        } catch {/* ignore */}
+      }
+    }
+  }, [profile, id, violations]);
+
   useEffect(() => {
     if (!file) { setPreview(null); return; }
     const url = URL.createObjectURL(file);
@@ -52,13 +86,44 @@ export default function HomeworkAssignment() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // Proctoring
+  // ── Comprehensive Proctoring ──────────────────────────────
   useEffect(() => {
-    if (aiResult) return;
-    const handler = () => setViolations(v => v + 1);
-    window.addEventListener('blur', handler);
-    return () => window.removeEventListener('blur', handler);
-  }, [aiResult]);
+    if (aiResult) { proctoringActive.current = false; return; }
+    if (!assignment) return;
+    proctoringActive.current = true;
+
+    // Prompt fullscreen for quizzes
+    if (assignment.type === 'quiz' && !document.fullscreenElement) {
+      setShowFullscreenPrompt(true);
+    }
+
+    const onBlur = () => logViolation('window_blur');
+    const onVisibility = () => { if (document.hidden) logViolation('tab_switch'); };
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v' || e.key === 'a')) {
+        logViolation('copy_paste_attempt');
+      }
+    };
+    const onCtxMenu = (e: MouseEvent) => { if (proctoringActive.current) { e.preventDefault(); logViolation('right_click'); } };
+    const onFSChange = () => {
+      const isFS = !!document.fullscreenElement;
+      setIsFullscreen(isFS);
+      if (!isFS && assignment.type === 'quiz') logViolation('fullscreen_exit');
+    };
+
+    window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('contextmenu', onCtxMenu);
+    document.addEventListener('fullscreenchange', onFSChange);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('contextmenu', onCtxMenu);
+      document.removeEventListener('fullscreenchange', onFSChange);
+    };
+  }, [aiResult, assignment, logViolation]);
 
   // Fetch assignment
   useEffect(() => {
@@ -231,7 +296,42 @@ export default function HomeworkAssignment() {
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-16">
 
-      {/* Nav + Proctor Bar */}
+      {/* ── Fullscreen Prompt Modal (quiz only) ── */}
+      {showFullscreenPrompt && !isFullscreen && (
+        <div className="fixed inset-0 z-[999] bg-[#002147]/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 border-2 border-red-100">
+              <ShieldAlert className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-black text-[#002147] mb-2">Proctored Quiz</h2>
+            <p className="text-gray-500 font-medium text-sm mb-6">
+              This quiz is proctored. Tab switching, copy-paste, right-clicking, and exiting fullscreen will be logged and reported to your teacher.
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await document.documentElement.requestFullscreen();
+                    setIsFullscreen(true);
+                  } catch {}
+                  setShowFullscreenPrompt(false);
+                }}
+                className="w-full bg-[#002147] text-white py-3.5 rounded-2xl font-black text-base hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <Maximize2 className="w-5 h-5" /> Enter Fullscreen &amp; Start
+              </button>
+              <button
+                onClick={() => setShowFullscreenPrompt(false)}
+                className="w-full text-gray-400 text-sm font-semibold py-2 hover:text-gray-600 transition-colors"
+              >
+                Continue without fullscreen (violations will still be logged)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Nav + Proctor Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <Link href="/student/homework" className="inline-flex items-center space-x-2 text-[#002147]/60 hover:text-[#002147] font-bold bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md max-w-fit">
           <ChevronLeft className="w-5 h-5" />
@@ -240,11 +340,13 @@ export default function HomeworkAssignment() {
         {!aiResult && violations > 0 && (
           <div className="flex items-center space-x-3 bg-red-50 border border-red-200 px-5 py-3 rounded-xl shadow-sm animate-in slide-in-from-top-4">
             <div className="bg-red-100 p-2 rounded-lg text-red-600">
-              <AlertTriangle className="w-5 h-5" />
+              <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-red-800 font-black text-sm uppercase tracking-wider">Proctor Warning</p>
-              <p className="text-red-600 font-medium text-xs">Tab switched {violations} times during session.</p>
+              <p className="text-red-800 font-black text-sm uppercase tracking-wider">⚠ Proctor Alert — {violations} violation{violations > 1 ? 's' : ''} logged</p>
+              <p className="text-red-600 font-medium text-xs">
+                {violationLog.slice(-1)[0]?.type?.replace(/_/g, ' ')} detected. This is recorded.
+              </p>
             </div>
           </div>
         )}

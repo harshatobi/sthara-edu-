@@ -33,6 +33,7 @@ interface Submission {
   imageUrl?: string;
   imageUrls?: string[];
   teacherApproved: boolean;
+  teacherNote?: string | null;   // ← ADDED
   submittedAt?: any;
 }
 
@@ -123,6 +124,7 @@ export default function GradingGalleryPage() {
             imageUrl: imgs[0] || '',
             imageUrls: imgs,
             teacherApproved: !!s.teacherApproved,
+            teacherNote: s.teacherNote || null,   // ← persist teacher note in queue
             submittedAt: s.submittedAt,
           });
         });
@@ -146,23 +148,27 @@ export default function GradingGalleryPage() {
     setActive(sub);
     setOverrideScore('');
     setOverrideMax('');
-    setTeacherNote(sub.teacherApproved ? (sub as any).teacherNote || '' : '');
+    // Pre-fill from queue (will be overridden by Firestore read below)
+    setTeacherNote(sub.teacherNote || '');
     setLightboxIdx(null);
     setIntegrityResult(null);
     setIsEditMode(false);
 
     if (!profile?.schoolId) return;
 
-    // ── Load any previously saved integrity result first (shows immediately) ──
+    // ── Load latest data from Firestore (teacherNote + integrityResult) ──
     try {
       const subSnap = await getDoc(
         doc(db, 'schools', profile.schoolId, 'assignments', sub.assignmentId, 'submissions', sub.id)
       );
       if (subSnap.exists()) {
-        const saved = subSnap.data()?.integrityResult;
-        if (saved) {
-          setIntegrityResult(saved);
-          return; // Already have result — don't re-scan
+        const data = subSnap.data();
+        // Always load latest teacherNote from Firestore (source of truth)
+        if (data.teacherNote) setTeacherNote(data.teacherNote);
+        // Load cached integrity result if available
+        if (data.integrityResult) {
+          setIntegrityResult(data.integrityResult);
+          return; // Have cached scan result — skip re-scan
         }
       }
     } catch {/* ignore */}

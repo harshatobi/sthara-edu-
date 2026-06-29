@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { db, storage } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, arrayUnion, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -127,45 +127,58 @@ export default function HomeworkAssignment() {
     };
   }, [aiResult, assignment, logViolation]);
 
-  // Fetch assignment
+  // Fetch assignment + real-time submission listener
   useEffect(() => {
-    if (!profile?.schoolId) return;
+    if (!profile?.schoolId || !profile?.uid) return;
     const schoolId = profile.schoolId;
-    const fetchAssignment = async () => {
+    let unsubscribe: (() => void) | null = null;
+
+    const init = async () => {
       try {
+        // Fetch the assignment details (one-time)
         const d = await getDoc(doc(db, 'schools', schoolId, 'assignments', id));
         if (d.exists()) {
           const data = d.data();
           setAssignment({ id: d.id, topic: data.title || data.topic, ...data });
-
-          // Check for existing submission
-          const subDoc = await getDoc(doc(db, 'schools', schoolId, 'assignments', id, 'submissions', profile.uid));
-          if (subDoc.exists()) {
-            const sub = subDoc.data();
-            if (sub.teacherNote) setTeacherNote(sub.teacherNote);
-            if (sub.teacherApproved) setTeacherApproved(true);
-            
-            // Show graded card if AI result exists OR teacher has approved/scored
-            if (sub.aiResult) {
-              setAiResult(sub.aiResult);
-            } else if (sub.teacherApproved || sub.score !== undefined) {
-              // No AI result but teacher graded manually — create minimal aiResult
-              setAiResult({ summary: sub.teacherNote || 'Teacher graded your submission.' });
-            }
-            // Always update grade from submission doc
-            const gradeStr = sub.grade || (sub.score !== undefined && sub.maxScore !== undefined ? `${sub.score}/${sub.maxScore}` : null);
-            if (gradeStr) {
-              setAssignment((prev: any) => ({ ...prev, status: 'completed', grade: gradeStr }));
-            }
-          }
         }
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
+
+      // ── Real-time listener on the student's submission doc ──
+      // Fires immediately with current data AND whenever teacher updates it
+      unsubscribe = onSnapshot(
+        doc(db, 'schools', schoolId, 'assignments', id, 'submissions', profile.uid),
+        (snap) => {
+          if (!snap.exists()) return;
+          const sub = snap.data();
+
+          // Always sync teacher note (shows as soon as teacher saves)
+          setTeacherNote(sub.teacherNote || null);
+          setTeacherApproved(!!sub.teacherApproved);
+
+          // Show graded result card
+          if (sub.aiResult) {
+            setAiResult(sub.aiResult);
+          } else if (sub.teacherApproved || sub.score !== undefined) {
+            setAiResult((prev: any) => prev || { summary: sub.teacherNote || 'Your submission has been graded.' });
+          }
+
+          // Always sync the grade displayed
+          const gradeStr = sub.grade ||
+            (sub.score !== undefined && sub.maxScore !== undefined ? `${sub.score}/${sub.maxScore}` : null);
+          if (gradeStr) {
+            setAssignment((prev: any) => prev ? { ...prev, status: 'completed', grade: gradeStr } : prev);
+          }
+        },
+        (err) => console.error('[submission listener]', err)
+      );
     };
-    fetchAssignment();
+
+    init();
+    return () => { if (unsubscribe) unsubscribe(); };
   }, [id, profile?.schoolId, profile?.uid]);
 
   // Animated progress bar during grading

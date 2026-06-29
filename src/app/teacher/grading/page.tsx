@@ -59,6 +59,7 @@ export default function GradingGalleryPage() {
     aiConfidence: number;
     aiReason: string;
     duplicateOf: string[];
+    similarPairs?: { name: string; similarity: number }[];
   } | null>(null);
 
   useEffect(() => {
@@ -138,11 +139,12 @@ export default function GradingGalleryPage() {
     setLightboxIdx(null);
     setIntegrityResult(null);
 
-    // Auto-run integrity check if image submission
-    if (sub.imageUrl && profile?.schoolId) {
-      setIntegrityLoading(true);
-      try {
-        // Fetch image as base64
+    if (!profile?.schoolId) return;
+    setIntegrityLoading(true);
+
+    try {
+      // ── IMAGE submission: fetch base64, compare against other image subs ──
+      if (sub.imageUrl) {
         const imgResp = await fetch(sub.imageUrl);
         const blob = await imgResp.blob();
         const base64 = await new Promise<string>((resolve, reject) => {
@@ -153,10 +155,9 @@ export default function GradingGalleryPage() {
         });
         const mimeType = blob.type || 'image/jpeg';
 
-        // Get all other submissions for the same assignment (for duplicate check)
         const otherSubs = queue
           .filter(q => q.assignmentId === sub.assignmentId && q.id !== sub.id && q.imageUrl)
-          .slice(0, 4); // limit to 4 others to avoid too many API calls
+          .slice(0, 4);
 
         const othersWithBase64 = await Promise.all(
           otherSubs.map(async (o) => {
@@ -177,27 +178,63 @@ export default function GradingGalleryPage() {
         const resp = await fetch('/api/homework/integrity', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            submissionId: sub.id,
-            imageBase64: base64,
-            mimeType,
-            allSubmissions: othersWithBase64,
-          }),
+          body: JSON.stringify({ submissionId: sub.id, imageBase64: base64, mimeType, allSubmissions: othersWithBase64 }),
         });
         const data = await resp.json();
         if (data.success) {
-          setIntegrityResult({
+          const ir = {
             isAiGenerated: data.isAiGenerated,
             aiConfidence: data.aiConfidence,
             aiReason: data.aiReason,
             duplicateOf: data.duplicateOf || [],
-          });
+            similarPairs: data.similarPairs || [],
+          };
+          setIntegrityResult(ir);
+          // Persist to Firestore
+          await updateDoc(
+            doc(db, 'schools', profile.schoolId, 'assignments', sub.assignmentId, 'submissions', sub.id),
+            { integrityResult: ir }
+          ).catch(() => {});
         }
-      } catch (e) {
-        console.warn('[grading] Integrity check error:', e);
-      } finally {
+      }
+
+      // ── TEXT submission: compare text against other text subs ──
+      else if (sub.text && sub.text.trim().length > 20) {
+        const otherTextSubs = queue
+          .filter(q => q.assignmentId === sub.assignmentId && q.id !== sub.id && q.text && q.text.trim().length > 20)
+          .slice(0, 6)
+          .map(o => ({ submissionId: o.id, studentName: o.studentName, text: o.text }));
+
+        const resp = await fetch('/api/homework/integrity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submissionId: sub.id, text: sub.text, allSubmissions: otherTextSubs }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+          const ir = {
+            isAiGenerated: data.isAiGenerated,
+            aiConfidence: data.aiConfidence,
+            aiReason: data.aiReason,
+            duplicateOf: data.duplicateOf || [],
+            similarPairs: data.similarPairs || [],
+          };
+          setIntegrityResult(ir);
+          // Persist to Firestore
+          await updateDoc(
+            doc(db, 'schools', profile.schoolId, 'assignments', sub.assignmentId, 'submissions', sub.id),
+            { integrityResult: ir }
+          ).catch(() => {});
+        }
+      }
+      // ── No scannable content (quiz answers stored differently) ──
+      else {
         setIntegrityLoading(false);
       }
+    } catch (e) {
+      console.warn('[grading] Integrity check error:', e);
+    } finally {
+      setIntegrityLoading(false);
     }
   };
 
@@ -503,8 +540,23 @@ export default function GradingGalleryPage() {
                           This submission appears to match the work submitted by:{' '}
                           <span className="font-black">{integrityResult.duplicateOf.join(', ')}</span>
                         </p>
-                        <p className="text-orange-500 text-xs font-semibold mt-1">
-                          Please review both submissions before approving grades.
+                        {/* Per-student similarity badges */}
+                        {integrityResult.similarPairs && integrityResult.similarPairs.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {integrityResult.similarPairs.map((p, i) => (
+                              <span key={i} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black border ${
+                                p.similarity >= 90 ? 'bg-red-100 text-red-700 border-red-300'
+                                : p.similarity >= 75 ? 'bg-orange-100 text-orange-700 border-orange-300'
+                                : 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                              }`}>
+                                <Copy className="w-3 h-3" />
+                                {p.name} — {p.similarity}% similar
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-orange-500 text-xs font-semibold mt-2">
+                          Review both submissions carefully before approving grades.
                         </p>
                       </div>
                     </div>

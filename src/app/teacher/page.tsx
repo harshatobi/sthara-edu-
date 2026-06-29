@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Activity, AlertTriangle, Users, BookOpen, LogOut, Plus, X, Send, CheckSquare } from 'lucide-react';
+import { Activity, AlertTriangle, Users, BookOpen, LogOut, Plus, X, Send, CheckSquare,
+  ChevronLeft, MessageSquare, Star, Image as ImageIcon, FileText, CheckCircle, ArrowRight } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 import Link from 'next/link';
@@ -36,6 +37,9 @@ export default function TeacherDashboard() {
   // Platform average stat
   const [platformAvg, setPlatformAvg] = useState<number | null>(null);
   const [platformLoading, setPlatformLoading] = useState(true);
+
+  // Submission detail viewer
+  const [viewSubmission, setViewSubmission] = useState<{ sub: any; student: any; taskId: string } | null>(null);
 
   useEffect(() => {
     if (!profile?.schoolId || !profile?.assignments?.length) { setPlatformLoading(false); return; }
@@ -516,12 +520,19 @@ export default function TeacherDashboard() {
                                 {!imgs.length && sub?.text && (
                                   <p className="text-xs text-gray-500 mt-1 line-clamp-1 italic">"{sub.text}"</p>
                                 )}
-                                {/* Grade button */}
+                                {/* Grade / View button */}
                                 <button
-                                  onClick={() => router.push(`/teacher/grading`)}
-                                  className="mt-2 w-full text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg py-1.5 transition-colors"
+                                  onClick={() => approved
+                                    ? setViewSubmission({ sub, student, taskId: selectedTask.id })
+                                    : router.push(`/teacher/grading`)
+                                  }
+                                  className={`mt-2 w-full text-xs font-bold rounded-lg py-1.5 transition-colors ${
+                                    approved
+                                      ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                      : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                                  }`}
                                 >
-                                  {approved ? '✓ Graded — View' : '→ Grade Now'}
+                                  {approved ? '✓ Graded — View Details' : '→ Grade Now'}
                                 </button>
                               </div>
                             );
@@ -570,6 +581,153 @@ export default function TeacherDashboard() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════
+          SUBMISSION DETAIL OVERLAY
+      ═══════════════════════════════════════════════════════ */}
+      {viewSubmission && (() => {
+        const { sub, student } = viewSubmission;
+        const imgs: string[] = sub?.imageUrls || (sub?.imageUrl ? [sub.imageUrl] : []);
+        const score = sub?.score ?? sub?.totalScore ?? null;
+        const maxScore = sub?.maxScore ?? sub?.maxTotalScore ?? null;
+        const pct = score !== null && maxScore ? Math.round((score / maxScore) * 100) : null;
+        const aiR = sub?.aiResult;
+        return (
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setViewSubmission(null)}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}>
+
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setViewSubmission(null)}
+                    className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors">
+                    <ChevronLeft className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <div>
+                    <p className="font-black text-[#002147] text-base">{student.name}</p>
+                    <p className="text-xs text-gray-400 font-medium">{student.studentClass}</p>
+                  </div>
+                </div>
+                {score !== null && maxScore ? (
+                  <div className={`px-4 py-2 rounded-2xl font-black text-lg border-2 ${
+                    pct! >= 80 ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                    : pct! >= 60 ? 'text-amber-700 bg-amber-50 border-amber-200'
+                    : 'text-red-700 bg-red-50 border-red-200'
+                  }`}>
+                    {score}/{maxScore}
+                    {pct !== null && <span className="text-xs font-bold ml-1 opacity-70">({pct}%)</span>}
+                  </div>
+                ) : (
+                  <span className="px-4 py-2 rounded-2xl bg-blue-50 text-blue-600 text-sm font-black border-2 border-blue-200">AI Graded</span>
+                )}
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+
+                {/* Images */}
+                {imgs.length > 0 && (
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5" /> Submitted Images
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {imgs.map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noreferrer">
+                          <img src={url} alt={`Page ${i+1}`}
+                            className="w-full aspect-[3/4] object-cover rounded-xl border border-gray-100 hover:scale-105 transition-transform" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Text answer */}
+                {!imgs.length && sub?.text && (
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" /> Student's Answer
+                    </p>
+                    <p className="text-sm text-[#002147]/80 font-medium leading-relaxed whitespace-pre-line">{sub.text}</p>
+                  </div>
+                )}
+
+                {/* AI Evaluation */}
+                {aiR && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5" /> AI Evaluation
+                    </p>
+
+                    {/* Per-question breakdown */}
+                    {Array.isArray(aiR.questions) && aiR.questions.length > 0 && (
+                      <div className="space-y-2">
+                        {aiR.questions.map((q: any, i: number) => {
+                          const qPct = q.maxScore > 0 ? Math.round((q.score / q.maxScore) * 100) : 0;
+                          return (
+                            <div key={i} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <p className="text-xs font-bold text-[#002147] flex-1 leading-relaxed">{q.question}</p>
+                                <span className={`shrink-0 text-xs font-black px-2 py-0.5 rounded-lg ${
+                                  qPct >= 80 ? 'bg-emerald-50 text-emerald-700'
+                                  : qPct >= 50 ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-red-50 text-red-700'
+                                }`}>{q.score}/{q.maxScore}</span>
+                              </div>
+                              {q.feedback && <p className="text-[11px] text-gray-500 font-medium leading-relaxed">{q.feedback}</p>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Summary */}
+                    {aiR.summary && (
+                      <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                        <p className="text-xs font-black text-blue-400 uppercase tracking-wider mb-1">AI Summary</p>
+                        <p className="text-sm text-blue-900 font-medium leading-relaxed">{aiR.summary}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Teacher note */}
+                {sub?.teacherNote && (
+                  <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200">
+                    <p className="text-xs font-black text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" /> Your Note to Student
+                    </p>
+                    <p className="text-sm text-amber-900 font-medium leading-relaxed whitespace-pre-line">{sub.teacherNote}</p>
+                  </div>
+                )}
+
+                {/* Status badge */}
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold ${
+                  sub?.teacherApproved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-blue-50 text-blue-700 border border-blue-200'
+                }`}>
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  {sub?.teacherApproved ? 'Teacher reviewed & approved' : 'AI graded — awaiting teacher review'}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-gray-100 flex gap-3">
+                <button onClick={() => setViewSubmission(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-colors">
+                  Close
+                </button>
+                <button onClick={() => { setViewSubmission(null); router.push('/teacher/grading'); }}
+                  className="flex-1 py-2.5 rounded-xl bg-[#002147] text-white font-bold text-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
+                  Open in Grading Gallery <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

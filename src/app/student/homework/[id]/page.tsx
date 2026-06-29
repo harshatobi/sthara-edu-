@@ -144,9 +144,18 @@ export default function HomeworkAssignment() {
             const sub = subDoc.data();
             if (sub.teacherNote) setTeacherNote(sub.teacherNote);
             if (sub.teacherApproved) setTeacherApproved(true);
+            
+            // Show graded card if AI result exists OR teacher has approved/scored
             if (sub.aiResult) {
               setAiResult(sub.aiResult);
-              setAssignment((prev: any) => ({ ...prev, status: 'completed', grade: sub.grade }));
+            } else if (sub.teacherApproved || sub.score !== undefined) {
+              // No AI result but teacher graded manually — create minimal aiResult
+              setAiResult({ summary: sub.teacherNote || 'Teacher graded your submission.' });
+            }
+            // Always update grade from submission doc
+            const gradeStr = sub.grade || (sub.score !== undefined && sub.maxScore !== undefined ? `${sub.score}/${sub.maxScore}` : null);
+            if (gradeStr) {
+              setAssignment((prev: any) => ({ ...prev, status: 'completed', grade: gradeStr }));
             }
           }
         }

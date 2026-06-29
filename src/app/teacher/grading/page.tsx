@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
+import { getAuth } from 'firebase/auth';
 import { collection, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import {
   Check, ArrowLeft, Loader2, BrainCircuit,
@@ -42,12 +43,14 @@ export default function GradingGalleryPage() {
   const [queue, setQueue] = useState<Submission[]>([]);
   const [fetching, setFetching] = useState(true);
   const [active, setActive] = useState<Submission | null>(null);
+  const [queueFilter, setQueueFilter] = useState<'pending' | 'reviewed' | 'all'>('pending');
 
   // Teacher override
   const [overrideScore, setOverrideScore] = useState('');
   const [overrideMax, setOverrideMax] = useState('');
   const [teacherNote, setTeacherNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Image lightbox
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -90,49 +93,48 @@ export default function GradingGalleryPage() {
 
         subsSnap.forEach(sDoc => {
           const s = sDoc.data();
-          // Show all un-approved submissions (not just AI-graded)
-          if (!s.teacherApproved) {
-            const score    = s.score    ?? s.totalScore    ?? 0;
-            const maxScore = s.maxScore ?? s.maxTotalScore ?? (s.aiGraded ? 15 : 0);
-            const imgs: string[] = s.imageUrls || (s.imageUrl ? [s.imageUrl] : []);
+          // Show ALL submissions (pending + reviewed)
+          const score    = s.score    ?? s.totalScore    ?? 0;
+          const maxScore = s.maxScore ?? s.maxTotalScore ?? (s.aiGraded ? 15 : 0);
+          const imgs: string[] = s.imageUrls || (s.imageUrl ? [s.imageUrl] : []);
 
-            pending.push({
-              id: sDoc.id,
-              assignmentId: aDoc.id,
-              assignmentTitle: aData.title || aData.topic || 'Untitled',
-              assignmentSubject: aData.subject || '',
-              studentName: s.studentName || 'Student',
-              studentClass: s.studentClass || '',
-              customStudentId: s.customStudentId || '',
-              score,
-              maxScore,
-              grade: maxScore > 0 ? `${score}/${maxScore}` : 'Pending',
-              aiResult: s.aiResult || null,
-              aiGraded: !!s.aiGraded,
-              type: imgs.length > 0 ? 'image' : (s.type === 'quiz' ? 'quiz' : 'homework'),
-              // Serialize quiz answers map + any free text into a single scannable string
-              text: (() => {
-                if (s.text && s.text.trim()) return s.text;
-                // Quiz answers: { questionId: 'selectedOption' } or array of { questionId, answer }
-                const ans = s.answers || s.studentAnswers || s.quizAnswers;
-                if (!ans) return '';
-                if (Array.isArray(ans)) return ans.map((a: any) => `Q: ${a.question || a.questionText || ''} A: ${a.answer || a.studentAnswer || ''}`).join('\n');
-                if (typeof ans === 'object') return Object.entries(ans).map(([qId, a]) => `Q${qId}: ${a}`).join('\n');
-                return String(ans);
-              })(),
-              imageUrl: imgs[0] || '',
-              imageUrls: imgs,
-              teacherApproved: false,
-              submittedAt: s.submittedAt,
-            });
-          }
+          pending.push({
+            id: sDoc.id,
+            assignmentId: aDoc.id,
+            assignmentTitle: aData.title || aData.topic || 'Untitled',
+            assignmentSubject: aData.subject || '',
+            studentName: s.studentName || 'Student',
+            studentClass: s.studentClass || '',
+            customStudentId: s.customStudentId || '',
+            score,
+            maxScore,
+            grade: maxScore > 0 ? `${score}/${maxScore}` : 'Pending',
+            aiResult: s.aiResult || null,
+            aiGraded: !!s.aiGraded,
+            type: imgs.length > 0 ? 'image' : (s.type === 'quiz' ? 'quiz' : 'homework'),
+            text: (() => {
+              if (s.text && s.text.trim()) return s.text;
+              const ans = s.answers || s.studentAnswers || s.quizAnswers;
+              if (!ans) return '';
+              if (Array.isArray(ans)) return ans.map((a: any) => `Q: ${a.question || a.questionText || ''} A: ${a.answer || a.studentAnswer || ''}`).join('\n');
+              if (typeof ans === 'object') return Object.entries(ans).map(([qId, a]) => `Q${qId}: ${a}`).join('\n');
+              return String(ans);
+            })(),
+            imageUrl: imgs[0] || '',
+            imageUrls: imgs,
+            teacherApproved: !!s.teacherApproved,
+            submittedAt: s.submittedAt,
+          });
         });
       }));
 
       // Newest first
       pending.sort((a, b) => (b.submittedAt?.seconds || 0) - (a.submittedAt?.seconds || 0));
       setQueue(pending);
-      if (pending.length > 0) setActive(pending[0]);
+      // Start on first pending item
+      const firstPending = pending.find(s => !s.teacherApproved);
+      if (firstPending) setActive(firstPending);
+      else if (pending.length > 0) setActive(pending[0]);
     } catch (err) {
       console.error('Fetch queue error:', err);
     } finally {
@@ -144,9 +146,10 @@ export default function GradingGalleryPage() {
     setActive(sub);
     setOverrideScore('');
     setOverrideMax('');
-    setTeacherNote('');
+    setTeacherNote(sub.teacherApproved ? (sub as any).teacherNote || '' : '');
     setLightboxIdx(null);
     setIntegrityResult(null);
+    setIsEditMode(false);
 
     if (!profile?.schoolId) return;
 
@@ -198,9 +201,14 @@ export default function GradingGalleryPage() {
           })
         ).then(results => results.filter(Boolean));
 
+        // Get auth token for integrity API
+        const authToken = await getAuth().currentUser?.getIdToken();
         const resp = await fetch('/api/homework/integrity', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+          },
           body: JSON.stringify({ submissionId: sub.id, imageBase64: base64, mimeType, allSubmissions: othersWithBase64 }),
         });
         const data = await resp.json();
@@ -228,9 +236,14 @@ export default function GradingGalleryPage() {
           .slice(0, 6)
           .map(o => ({ submissionId: o.id, studentName: o.studentName, text: o.text }));
 
+        // Get auth token for integrity API
+        const authToken2 = await getAuth().currentUser?.getIdToken();
         const resp = await fetch('/api/homework/integrity', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken2 ? { 'Authorization': `Bearer ${authToken2}` } : {}),
+          },
           body: JSON.stringify({ submissionId: sub.id, text: sub.text, allSubmissions: otherTextSubs }),
         });
         const data = await resp.json();
@@ -264,7 +277,6 @@ export default function GradingGalleryPage() {
   const handleApprove = async () => {
     if (!active || !profile?.schoolId) return;
     const finalScore = overrideScore !== '' ? Number(overrideScore) : active.score;
-    // For homework with no AI maxScore, teacher must enter it
     const finalMax = overrideMax !== '' ? Number(overrideMax) : (active.maxScore > 0 ? active.maxScore : 10);
     if (active.maxScore === 0 && overrideScore !== '' && overrideMax === '') {
       alert('Please also enter the "Out of" value (total marks) for this homework.');
@@ -272,6 +284,7 @@ export default function GradingGalleryPage() {
     }
     setSaving(true);
     try {
+      const gradeStr = `${finalScore}/${finalMax}`;
       await updateDoc(
         doc(db, 'schools', profile.schoolId, 'assignments', active.assignmentId, 'submissions', active.id),
         {
@@ -279,22 +292,59 @@ export default function GradingGalleryPage() {
           status: 'teacher_approved',
           score: finalScore,
           maxScore: finalMax,
+          grade: gradeStr,
           teacherNote: teacherNote || null,
           approvedAt: new Date(),
         }
       );
-
-      const remaining = queue.filter(
-        q => !(q.id === active.id && q.assignmentId === active.assignmentId)
-      );
-      setQueue(remaining);
-      setActive(remaining.length > 0 ? remaining[0] : null);
+      // Update queue item in-place (keep it visible, mark as approved)
+      setQueue(prev => prev.map(q =>
+        q.id === active.id && q.assignmentId === active.assignmentId
+          ? { ...q, teacherApproved: true, score: finalScore, maxScore: finalMax, grade: gradeStr }
+          : q
+      ));
+      setActive(prev => prev ? { ...prev, teacherApproved: true, score: finalScore, maxScore: finalMax, grade: gradeStr } : prev);
       setOverrideScore('');
       setOverrideMax('');
       setTeacherNote('');
-      setLightboxIdx(null);
+      setIsEditMode(false);
     } catch (err: any) {
       alert('Failed to save: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Edit already-approved submission ──────────────────────────────────────
+  const handleSaveEdit = async () => {
+    if (!active || !profile?.schoolId) return;
+    const finalScore = overrideScore !== '' ? Number(overrideScore) : active.score;
+    const finalMax = overrideMax !== '' ? Number(overrideMax) : active.maxScore;
+    const gradeStr = `${finalScore}/${finalMax}`;
+    setSaving(true);
+    try {
+      await updateDoc(
+        doc(db, 'schools', profile.schoolId, 'assignments', active.assignmentId, 'submissions', active.id),
+        {
+          score: finalScore,
+          maxScore: finalMax,
+          grade: gradeStr,
+          teacherNote: teacherNote || null,
+          editedAt: new Date(),
+        }
+      );
+      setQueue(prev => prev.map(q =>
+        q.id === active.id && q.assignmentId === active.assignmentId
+          ? { ...q, score: finalScore, maxScore: finalMax, grade: gradeStr }
+          : q
+      ));
+      setActive(prev => prev ? { ...prev, score: finalScore, maxScore: finalMax, grade: gradeStr } : prev);
+      setOverrideScore('');
+      setOverrideMax('');
+      setIsEditMode(false);
+      alert('Updated! The student will see the new score and note.');
+    } catch (err: any) {
+      alert('Failed to update: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -395,9 +445,22 @@ export default function GradingGalleryPage() {
         {/* LEFT SIDEBAR — Queue */}
         <div className="w-80 shrink-0 bg-white border-r border-gray-200/70 flex flex-col sticky top-[73px] h-[calc(100vh-73px)] overflow-hidden">
           <div className="p-4 border-b border-gray-100">
-            <h2 className="font-black text-[#002147] flex items-center gap-2 text-sm">
+            <h2 className="font-black text-[#002147] flex items-center gap-2 text-sm mb-3">
               <Users className="w-4 h-4" /> Student Queue
             </h2>
+            {/* Filter tabs */}
+            <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+              {(['pending', 'reviewed', 'all'] as const).map(f => (
+                <button key={f} onClick={() => setQueueFilter(f)}
+                  className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-all capitalize ${
+                    queueFilter === f ? 'bg-white text-[#002147] shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  }`}>
+                  {f === 'pending' ? `Pending (${queue.filter(s => !s.teacherApproved).length})`
+                    : f === 'reviewed' ? `Done (${queue.filter(s => s.teacherApproved).length})`
+                    : `All (${queue.length})`}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -410,11 +473,26 @@ export default function GradingGalleryPage() {
                 <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
                   <Inbox className="w-8 h-8 text-emerald-400" />
                 </div>
-                <p className="font-bold text-gray-500">Queue is empty</p>
-                <p className="text-xs text-gray-400 mt-1">All submissions reviewed.</p>
+                <p className="font-bold text-gray-500">No submissions yet</p>
+                <p className="text-xs text-gray-400 mt-1">Submissions appear here once students submit.</p>
               </div>
-            ) : (
-              queue.map(sub => {
+            ) : (() => {
+              const filtered = queue.filter(sub =>
+                queueFilter === 'all' ? true
+                : queueFilter === 'pending' ? !sub.teacherApproved
+                : sub.teacherApproved
+              );
+              if (filtered.length === 0) return (
+                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                    <BadgeCheck className="w-6 h-6 text-gray-300" />
+                  </div>
+                  <p className="font-bold text-gray-400 text-sm">
+                    {queueFilter === 'pending' ? 'All caught up!' : 'None reviewed yet'}
+                  </p>
+                </div>
+              );
+              return filtered.map(sub => {
                 const isActive = active?.id === sub.id && active?.assignmentId === sub.assignmentId;
                 const pct = sub.maxScore > 0 ? Math.round((sub.score / sub.maxScore) * 100) : null;
                 const chipColor = pct === null ? 'text-gray-500 bg-gray-50 border-gray-200'
@@ -466,10 +544,16 @@ export default function GradingGalleryPage() {
                         {sub.imageUrls.length} page{sub.imageUrls.length > 1 ? 's' : ''} attached
                       </div>
                     )}
+                    {/* Approved badge */}
+                    {sub.teacherApproved && (
+                      <div className={`mt-2 flex items-center gap-1 text-[10px] font-bold ${isActive ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                        <BadgeCheck className="w-3 h-3" /> Reviewed
+                      </div>
+                    )}
                   </button>
                 );
               })
-            )}
+            })()}
           </div>
         </div>
 
@@ -672,7 +756,6 @@ export default function GradingGalleryPage() {
                   <AiEvaluationView scanResult={active.aiResult} />
                 </div>
               )}
-
               {!active.aiResult && !active.imageUrl && !active.text && (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
@@ -685,90 +768,155 @@ export default function GradingGalleryPage() {
 
               {/* Teacher Action Panel */}
               <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-8 space-y-6">
-                <h3 className="font-black text-[#002147] text-lg flex items-center gap-2">
-                  <Edit3 className="w-5 h-5" /> Teacher Review
-                </h3>
-
-                {/* Override Score */}
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    {active.aiGraded ? 'Override AI Score' : 'Assign Score'}
-                    {active.aiGraded && (
-                      <span className="font-normal text-gray-400">(optional — AI gave {active.grade})</span>
-                    )}
-                  </label>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <input
-                      type="number"
-                      min="0"
-                      max={overrideMax !== '' ? Number(overrideMax) : (active.maxScore || 100)}
-                      value={overrideScore}
-                      onChange={e => setOverrideScore(e.target.value)}
-                      placeholder={active.aiGraded ? `AI: ${active.score}` : 'Score'}
-                      className="w-28 border border-gray-200 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] text-center text-xl"
-                    />
-                    <span className="text-gray-400 font-bold text-lg">/</span>
-                    {active.maxScore > 0 ? (
-                      <span className="text-gray-600 font-black text-xl">{active.maxScore}</span>
-                    ) : (
-                      <input
-                        type="number"
-                        min="1"
-                        value={overrideMax}
-                        onChange={e => setOverrideMax(e.target.value)}
-                        placeholder="Out of"
-                        className="w-28 border-2 border-amber-300 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-amber-300 text-center text-xl bg-amber-50"
-                      />
-                    )}
-                    {overrideScore !== '' && (
+                <div className="flex items-center justify-between">
+                  <h3 className="font-black text-[#002147] text-lg flex items-center gap-2">
+                    <Edit3 className="w-5 h-5" /> Teacher Review
+                  </h3>
+                  {active.teacherApproved && !isEditMode && (
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                        <BadgeCheck className="w-3.5 h-3.5" /> Approved
+                      </span>
                       <button
-                        onClick={() => { setOverrideScore(''); setOverrideMax(''); }}
-                        className="text-xs text-gray-400 hover:text-red-500 font-bold transition-colors"
+                        onClick={() => {
+                          setIsEditMode(true);
+                          setOverrideScore(String(active.score));
+                          setOverrideMax(String(active.maxScore));
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-3 py-1.5 hover:bg-blue-100 transition-colors"
                       >
-                        Clear
+                        <Edit3 className="w-3.5 h-3.5" /> Edit Score & Note
+                      </button>
+                    </div>
+                  )}
+                  {isEditMode && (
+                    <button
+                      onClick={() => { setIsEditMode(false); setOverrideScore(''); setOverrideMax(''); }}
+                      className="text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+
+                {/* Show form for: (a) pending submissions, or (b) edit mode */}
+                {(!active.teacherApproved || isEditMode) && (
+                  <>
+                    {/* Override Score */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        {active.aiGraded ? 'Override AI Score' : 'Assign Score'}
+                        {active.aiGraded && !isEditMode && (
+                          <span className="font-normal text-gray-400">(optional — AI gave {active.grade})</span>
+                        )}
+                      </label>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <input
+                          type="number"
+                          min="0"
+                          max={overrideMax !== '' ? Number(overrideMax) : (active.maxScore || 100)}
+                          value={overrideScore}
+                          onChange={e => setOverrideScore(e.target.value)}
+                          placeholder={active.aiGraded ? `AI: ${active.score}` : 'Score'}
+                          className="w-28 border border-gray-200 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] text-center text-xl"
+                        />
+                        <span className="text-gray-400 font-bold text-lg">/</span>
+                        {active.maxScore > 0 && !isEditMode ? (
+                          <span className="text-gray-600 font-black text-xl">{active.maxScore}</span>
+                        ) : (
+                          <input
+                            type="number"
+                            min="1"
+                            value={overrideMax}
+                            onChange={e => setOverrideMax(e.target.value)}
+                            placeholder="Out of"
+                            className="w-28 border border-gray-200 rounded-xl px-4 py-2.5 text-[#002147] font-bold focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] text-center text-xl"
+                          />
+                        )}
+                        {overrideScore !== '' && (
+                          <button
+                            onClick={() => { setOverrideScore(''); setOverrideMax(''); }}
+                            className="text-xs text-gray-400 hover:text-red-500 font-bold transition-colors"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                      {active.maxScore === 0 && !isEditMode && (
+                        <p className="text-xs text-amber-600 font-medium">
+                          📝 Enter the score and total marks for this homework (e.g. 8 / 10)
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Teacher Note */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-blue-500" />
+                        Personal Note for Student
+                        <span className="font-normal text-gray-400">(optional)</span>
+                      </label>
+                      <textarea
+                        value={teacherNote}
+                        onChange={e => setTeacherNote(e.target.value)}
+                        placeholder="Add encouragement, corrections, or specific feedback for this student…"
+                        rows={3}
+                        className="w-full border border-gray-200 rounded-2xl px-5 py-3 text-[#002147] font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] resize-none placeholder:text-gray-300"
+                      />
+                    </div>
+
+                    {/* Action Button — Approve (new) or Save Edit (already approved) */}
+                    {isEditMode ? (
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={saving}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-black text-lg hover:shadow-xl hover:shadow-blue-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait"
+                      >
+                        {saving ? (
+                          <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</>
+                        ) : (
+                          <><Check className="w-5 h-5" /> Save Changes</>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleApprove}
+                        disabled={saving}
+                        className="w-full py-4 bg-gradient-to-r from-[#002147] to-blue-700 text-white rounded-2xl font-black text-lg hover:shadow-xl hover:shadow-blue-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait"
+                      >
+                        {saving ? (
+                          <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</>
+                        ) : (
+                          <><Check className="w-5 h-5" /> Approve & Save Grade</>
+                        )}
                       </button>
                     )}
-                  </div>
-                  {active.maxScore === 0 && (
-                    <p className="text-xs text-amber-600 font-medium">
-                      📝 Enter the score and total marks for this homework (e.g. 8 / 10)
+
+                    <p className="text-center text-xs text-gray-400 font-medium">
+                      {isEditMode
+                        ? 'Changes will reflect immediately on the student portal.'
+                        : 'Once approved, this grade is recorded in the student\'s permanent record and class heatmap.'}
                     </p>
-                  )}
-                </div>
+                  </>
+                )}
 
-                {/* Teacher Note */}
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-blue-500" />
-                    Personal Note for Student
-                    <span className="font-normal text-gray-400">(optional)</span>
-                  </label>
-                  <textarea
-                    value={teacherNote}
-                    onChange={e => setTeacherNote(e.target.value)}
-                    placeholder="Add encouragement, corrections, or specific feedback for this student…"
-                    rows={3}
-                    className="w-full border border-gray-200 rounded-2xl px-5 py-3 text-[#002147] font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20 focus:border-[#002147] resize-none placeholder:text-gray-300"
-                  />
-                </div>
-
-                {/* Approve Button */}
-                <button
-                  onClick={handleApprove}
-                  disabled={saving}
-                  className="w-full py-4 bg-gradient-to-r from-[#002147] to-blue-700 text-white rounded-2xl font-black text-lg hover:shadow-xl hover:shadow-blue-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-wait"
-                >
-                  {saving ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</>
-                  ) : (
-                    <><Check className="w-5 h-5" /> Approve & Save Grade</>
-                  )}
-                </button>
-
-                <p className="text-center text-xs text-gray-400 font-medium">
-                  Once approved, this grade is recorded in the student's permanent record and class heatmap.
-                </p>
+                {/* Already approved — show current grade summary */}
+                {active.teacherApproved && !isEditMode && (
+                  <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-200 space-y-2">
+                    <p className="text-xs font-black uppercase tracking-wider text-emerald-600">Current Grade</p>
+                    <p className="text-3xl font-black text-emerald-800">{active.grade}</p>
+                    {teacherNote && (
+                      <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 mt-3">
+                        <p className="text-xs font-black text-amber-600 mb-1">Note to Student</p>
+                        <p className="text-sm text-amber-800 font-medium">{teacherNote}</p>
+                      </div>
+                    )}
+                    <p className="text-xs text-emerald-600 font-medium pt-1">
+                      Click "Edit Score & Note" above to make changes.
+                    </p>
+                  </div>
+                )}
               </div>
 
             </div>

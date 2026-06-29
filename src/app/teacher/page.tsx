@@ -33,6 +33,39 @@ export default function TeacherDashboard() {
   const [classTasks, setClassTasks] = useState<any[]>([]);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
+  // Platform average stat
+  const [platformAvg, setPlatformAvg] = useState<number | null>(null);
+  const [platformLoading, setPlatformLoading] = useState(true);
+
+  useEffect(() => {
+    if (!profile?.schoolId || !profile?.assignments?.length) { setPlatformLoading(false); return; }
+    const compute = async () => {
+      try {
+        const classes = [...new Set(profile.assignments.map((a: any) => a.class).filter(Boolean))];
+        let totalScore = 0, totalMax = 0;
+        await Promise.all(classes.map(async (cls: string) => {
+          const assignSnap = await getDocs(query(
+            collection(db, 'schools', profile.schoolId, 'assignments'),
+            where('class', '==', cls)
+          ));
+          await Promise.all(assignSnap.docs.map(async (aDoc) => {
+            const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', aDoc.id, 'submissions'));
+            subsSnap.forEach(s => {
+              const d = s.data();
+              if (d.score !== undefined && d.maxScore) {
+                totalScore += d.score;
+                totalMax += d.maxScore;
+              }
+            });
+          }));
+        }));
+        setPlatformAvg(totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : null);
+      } catch (e) { console.warn('Platform avg error:', e); }
+      finally { setPlatformLoading(false); }
+    };
+    compute();
+  }, [profile?.schoolId, profile?.assignments]);
+
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'teacher')) {
       router.push('/login');
@@ -184,9 +217,13 @@ export default function TeacherDashboard() {
         <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12">
           <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl flex items-center justify-between hover:bg-white/15 transition-colors">
             <div>
-              <div className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-1">Platform Averages</div>
-              <div className="text-3xl font-bold">--</div>
-              <div className="text-sm text-white/50 mt-1">Awaiting student data</div>
+              <div className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-1">Platform Average</div>
+              <div className="text-3xl font-bold">
+                {platformLoading ? '...' : platformAvg !== null ? `${platformAvg}%` : '--'}
+              </div>
+              <div className="text-sm text-white/50 mt-1">
+                {platformAvg !== null ? (platformAvg >= 75 ? 'Class performing well ✓' : platformAvg >= 55 ? 'Needs attention' : 'At risk — review topics') : 'No graded submissions yet'}
+              </div>
             </div>
             <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
               <Users className="w-6 h-6 text-blue-200" />

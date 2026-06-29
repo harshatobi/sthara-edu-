@@ -251,8 +251,8 @@ export default function TeacherHeatmap() {
           </div>
         ) : (
           <div className="space-y-3">
-            {/* ── Column headers ─────────────────────────────────────── */}
-            <div className="flex items-center gap-4 px-5 pb-1">
+            {/* ── Column headers (desktop only) ─────────────────────────── */}
+            <div className="hidden md:flex items-center gap-4 px-5 pb-1">
               <div className="w-48 shrink-0" />
               {subjectColumns.map(col => (
                 <div key={col.subject} className="flex-1 text-center">
@@ -269,7 +269,7 @@ export default function TeacherHeatmap() {
             </div>
 
             {/* ── Student rows ───────────────────────────────────────── */}
-            {students.map((student, idx) => {
+            {students.map((student) => {
               const overall = getOverallAvg(student.id);
               const overallColor = getScoreColor(overall);
               const isAtRisk = overall !== null && overall < 55;
@@ -277,14 +277,14 @@ export default function TeacherHeatmap() {
               return (
                 <div
                   key={student.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-200 flex items-center gap-4 px-5 py-4"
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-200 p-4 sm:p-5"
                 >
-                  {/* Student name */}
-                  <div className="w-48 shrink-0 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 border border-blue-300 flex items-center justify-center text-blue-700 font-bold text-sm shadow-inner">
+                  {/* Top row: avatar + name + overall badge */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 border border-blue-300 flex items-center justify-center text-blue-700 font-bold text-sm shadow-inner shrink-0">
                       {student.name?.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
+                    <div className="flex-1 min-w-0">
                       <p className="font-bold text-[#002147] truncate text-sm">{student.name}</p>
                       {isAtRisk && (
                         <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wide flex items-center gap-1">
@@ -293,53 +293,33 @@ export default function TeacherHeatmap() {
                         </span>
                       )}
                     </div>
+                    {/* Overall score — always visible */}
+                    <Link href={`/teacher/mastery?studentId=${student.id}`}>
+                      <div className={`rounded-xl border ${overallColor.bg} ${overallColor.border} px-3 py-2 text-center min-w-[60px] hover:shadow-md transition-all`}>
+                        <div className={`text-base font-black ${overallColor.text}`}>
+                          {overall !== null ? `${overall}%` : '—'}
+                        </div>
+                        <div className={`text-[9px] font-bold uppercase tracking-wide ${overallColor.text} opacity-70`}>Overall</div>
+                      </div>
+                    </Link>
                   </div>
 
-                  {/* Subject blocks */}
-                  {subjectColumns.map(col => {
-                    const score = col.scores[student.id];
-                    const c = getScoreColor(score);
-                    return (
-                      <div key={col.subject} className={`flex-1 rounded-xl border ${c.bg} ${c.border} p-3 transition-all duration-200 hover:scale-105 hover:shadow-md`}>
-                        <div className={`text-lg font-black text-center ${c.text}`}>
-                          {score !== null ? `${score}%` : '—'}
-                        </div>
-                        <div className="mt-1.5 w-full h-1.5 bg-white/70 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${c.bar} transition-all duration-700`}
-                            style={{ width: score !== null ? `${score}%` : '0%' }}
-                          />
-                        </div>
-                        <div className={`text-[10px] font-bold text-center mt-1 uppercase tracking-wide ${c.text} opacity-70`}>
-                          {c.label}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {subjectColumns.length === 0 && (
-                    <div className="flex-1 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-center">
-                      <p className="text-xs text-gray-400">No subjects configured</p>
+                  {/* Subject chips row */}
+                  {subjectColumns.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {subjectColumns.map(col => {
+                        const score = col.scores[student.id];
+                        const c = getScoreColor(score);
+                        return (
+                          <div key={col.subject} className={`flex items-center gap-1.5 rounded-xl border ${c.bg} ${c.border} px-3 py-1.5`}>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">{col.subject}:</span>
+                            <span className={`text-sm font-black ${c.text}`}>{score !== null ? `${score}%` : '—'}</span>
+                            <span className={`text-[9px] font-bold ${c.text} opacity-60`}>{c.label}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
-
-                  {/* Overall score */}
-                  <Link href={`/teacher/mastery?studentId=${student.id}`} className="w-28 shrink-0">
-                    <div className={`rounded-xl border ${overallColor.bg} ${overallColor.border} p-3 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden`}>
-                      <div className={`text-xl font-black text-center ${overallColor.text}`}>
-                        {overall !== null ? `${overall}%` : '—'}
-                      </div>
-                      <div className="mt-1.5 w-full h-1.5 bg-white/70 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${overallColor.bar} transition-all duration-700`}
-                          style={{ width: overall !== null ? `${overall}%` : '0%' }}
-                        />
-                      </div>
-                      <div className="absolute inset-0 bg-blue-600/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
-                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide bg-white/90 px-2 py-0.5 rounded shadow-sm">View</span>
-                      </div>
-                    </div>
-                  </Link>
                 </div>
               );
             })}

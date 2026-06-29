@@ -413,14 +413,18 @@ export default function StudentDashboard() {
 
   // Fetch teacher resources for student's class
   useEffect(() => {
-    if (!profile?.schoolId || !profile?.studentClass) return;
+    if (!profile?.schoolId || !profile?.studentClass || !profile?.uid) return;
     const fetchResources = async () => {
       try {
         const snap = await getDocs(query(
           collection(db, 'schools', profile.schoolId, 'teacherResources'),
           where('targetClass', '==', profile.studentClass)
         ));
-        const res = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // For each resource, check if the student has already read it
+        const res = await Promise.all(snap.docs.map(async (d) => {
+          const readDoc = await getDoc(doc(db, 'schools', profile.schoolId, 'teacherResources', d.id, 'reads', profile.uid));
+          return { id: d.id, ...d.data(), isRead: readDoc.exists() };
+        }));
         // Sort newest first
         res.sort((a: any, b: any) => {
           const aT = a.createdAt?.seconds ?? 0;

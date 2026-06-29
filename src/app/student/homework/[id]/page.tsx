@@ -10,7 +10,7 @@ import { getAuthToken } from '@/lib/auth/getAuthToken';
 import {
   Upload, CheckCircle, ArrowLeft, Loader2, FileText,
   Camera, BookOpen, Clock, ChevronLeft, AlertTriangle,
-  Image as ImageIcon, X, Sparkles, Eye, Maximize2, ShieldAlert
+  Image as ImageIcon, X, Sparkles, Eye, Maximize2, ShieldAlert, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import AiEvaluationView from '@/components/AiEvaluationView';
@@ -42,6 +42,8 @@ export default function HomeworkAssignment() {
 
   // Results
   const [aiResult, setAiResult] = useState<any>(null);
+  const [teacherNote, setTeacherNote] = useState<string | null>(null);
+  const [teacherApproved, setTeacherApproved] = useState(false);
 
   // ── Proctoring State ─────────────────────────────────────
   const [violations, setViolations] = useState(0);
@@ -140,6 +142,8 @@ export default function HomeworkAssignment() {
           const subDoc = await getDoc(doc(db, 'schools', schoolId, 'assignments', id, 'submissions', profile.uid));
           if (subDoc.exists()) {
             const sub = subDoc.data();
+            if (sub.teacherNote) setTeacherNote(sub.teacherNote);
+            if (sub.teacherApproved) setTeacherApproved(true);
             if (sub.aiResult) {
               setAiResult(sub.aiResult);
               setAssignment((prev: any) => ({ ...prev, status: 'completed', grade: sub.grade }));
@@ -540,8 +544,12 @@ export default function HomeworkAssignment() {
                       <CheckCircle className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-emerald-900 font-black text-xl">Graded!</h3>
-                      <p className="text-emerald-700/80 font-bold text-sm">AI Evaluation Complete</p>
+                      <h3 className="text-emerald-900 font-black text-xl">
+                        {teacherApproved ? 'Teacher Reviewed!' : 'Graded!'}
+                      </h3>
+                      <p className="text-emerald-700/80 font-bold text-sm">
+                        {teacherApproved ? 'AI + Teacher Evaluation' : 'AI Evaluation Complete'}
+                      </p>
                     </div>
                   </div>
 
@@ -554,6 +562,21 @@ export default function HomeworkAssignment() {
                       </p>
                     )}
                   </div>
+
+                  {/* ── Teacher Personal Note ── */}
+                  {teacherNote && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 mb-4 animate-in slide-in-from-bottom-4 duration-500">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="bg-amber-100 p-2 rounded-xl">
+                          <MessageSquare className="w-4 h-4 text-amber-700" />
+                        </div>
+                        <p className="font-black text-amber-900 text-sm uppercase tracking-wider">Note from your Teacher</p>
+                      </div>
+                      <p className="text-amber-800 font-medium leading-relaxed text-sm whitespace-pre-line">
+                        {teacherNote}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-5 border border-emerald-200/50 text-sm text-emerald-800 leading-relaxed font-medium">
                     <p className="font-black text-emerald-900 mb-2 text-xs uppercase tracking-wider">AI Summary</p>

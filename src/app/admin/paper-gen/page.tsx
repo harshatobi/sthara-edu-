@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Settings, FileText, CheckCircle2, Loader2, Save, Sparkles, BookOpen, BrainCircuit } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, FileText, CheckCircle2, Loader2, Save, Sparkles, BookOpen, BrainCircuit, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -13,12 +14,20 @@ export default function PaperGenPage() {
   const [generatedData, setGeneratedData] = useState<any>(null);
   const [error, setError] = useState('');
   const { profile } = useAuth();
+  const router = useRouter();
 
-  const [sectionClass, setSectionClass] = useState(''); // e.g. '10A', '11B'
+  useEffect(() => {
+    if (profile && profile.role !== 'admin') router.push('/login');
+  }, [profile, router]);
+
+  const [sectionClass, setSectionClass] = useState('');
   const [subject, setSubject] = useState('Mathematics');
   const [difficulty, setDifficulty] = useState('CBSE Standard (30% Easy, 50% Med, 20% Hard)');
   const [chapters, setChapters] = useState<string[]>(['Quadratic Equations']);
   const [questionCount, setQuestionCount] = useState(5);
+  // Due date: default 7 days from today
+  const defaultDue = new Date(); defaultDue.setDate(defaultDue.getDate() + 7);
+  const [dueDate, setDueDate] = useState(defaultDue.toISOString().split('T')[0]);
 
   const CHAPTER_MAP: Record<string, string[]> = {
     'Mathematics': ['Real Numbers', 'Polynomials', 'Quadratic Equations', 'Arithmetic Progressions', 'Triangles', 'Coordinate Geometry', 'Introduction to Trigonometry', 'Statistics', 'Probability'],
@@ -107,22 +116,16 @@ export default function PaperGenPage() {
     if (!generatedData || !profile?.schoolId) return;
     setSaving(true);
     try {
-      // Calculate tomorrow's date for the dueDate
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dueDateStr = tomorrow.toISOString().split('T')[0];
-
       const classLabel = sectionClass.trim();
       const subjectLabel = subject;
-
       const assignmentsRef = collection(db, 'schools', profile.schoolId, 'assignments');
       await addDoc(assignmentsRef, {
         title: `${classLabel} - ${subjectLabel}: ${chapters.join(', ')} Quiz`,
         class: classLabel,
-        targetClass: classLabel, // store in both fields for compatibility
+        targetClass: classLabel,
         subject: subjectLabel,
         type: 'quiz',
-        dueDate: dueDateStr,
+        dueDate,
         difficulty,
         questions: generatedData,
         createdBy: profile.uid,
@@ -206,10 +209,23 @@ export default function PaperGenPage() {
               </div>
               <div className="space-y-3">
                 <label className="text-sm font-bold text-[#002147] flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-indigo-500" />
+                  <span>Due Date</span>
+                </label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-[#002147] flex items-center space-x-2">
                   <Settings className="w-4 h-4 text-indigo-500" />
                   <span>Difficulty Distribution</span>
                 </label>
-                <select 
+                <select
                   value={difficulty}
                   onChange={e => setDifficulty(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"

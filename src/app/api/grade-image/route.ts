@@ -102,6 +102,17 @@ IMPORTANT: Be subject-agnostic. This could be Math, Science, English essays, His
 For essay/written answers: analyze argument quality, evidence, structure, and accuracy.
 For math/science: analyze computation steps, formulas, and logical derivations.
 
+MATH FORMATTING (critical): Write ALL mathematical expressions in plain readable text using Unicode symbols.
+- Use x² not x^2 or x^{2}
+- Use √(x) not sqrt(x) or \sqrt{x}
+- Use × not * or \times
+- Use ÷ not / (when meaning division in steps)
+- Use ± not +/-
+- Use π not pi or \pi
+- Use ≥ ≤ ≠ ≈ not >= <= != ~=
+- Do NOT use LaTeX notation like \( \) \[ \] \frac{}{} at all
+- Write fractions as (numerator)/(denominator) e.g. (−2 ± √8) / 2
+
 OUTPUT: Return ONLY valid JSON in this exact structure, no markdown wrappers:
 {
   "questions": [

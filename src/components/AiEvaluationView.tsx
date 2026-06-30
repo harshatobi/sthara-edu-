@@ -1,6 +1,45 @@
 import { Check, X, AlertCircle, AlertTriangle, PlayCircle, Tag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+/* ── Convert LaTeX / programmer notation → readable Unicode math ── */
+function cleanMath(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/\\\\/g, '\n')
+    .replace(/\\\(|\\\)/g, '')
+    .replace(/\\\[|\\\]/g, '')
+    .replace(/\\text\{([^}]*)\}/g, '$1')
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1⁄$2)')
+    .replace(/\\sqrt\{([^}]*)\}/g, '√($1)')
+    .replace(/\\sqrt/g, '√')
+    // Superscripts: x^2 or x^{2}
+    .replace(/\^\{2\}|\^2(?![\d.])/g, '²')
+    .replace(/\^\{3\}|\^3(?![\d.])/g, '³')
+    .replace(/\^\{4\}|\^4(?![\d.])/g, '⁴')
+    .replace(/\^\{([^}]+)\}/g, '^$1')
+    // sqrt() function notation (not LaTeX)
+    .replace(/sqrt\(([^)]+)\)/g, '√($1)')
+    // Operators
+    .replace(/\\times/g, '×')
+    .replace(/\\div/g, '÷')
+    .replace(/\\cdot/g, '·')
+    .replace(/\\pm/g, '±')
+    .replace(/\\geq|>=/g, '≥')
+    .replace(/\\leq|<=/g, '≤')
+    .replace(/\\neq/g, '≠')
+    .replace(/\\approx/g, '≈')
+    .replace(/\\infty/g, '∞')
+    .replace(/\\pi/g, 'π')
+    .replace(/\\alpha/g, 'α')
+    .replace(/\\beta/g, 'β')
+    .replace(/\\theta/g, 'θ')
+    .replace(/\\Delta/g, 'Δ')
+    .replace(/\\delta/g, 'δ')
+    .replace(/\\([a-zA-Z])/g, '$1')
+    .trim();
+}
+
+
 export interface Step {
   type: 'correct' | 'logic_error' | 'procedural_error';
   text: string;
@@ -142,7 +181,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
                 <div className="w-9 h-9 rounded-xl bg-[#002147] text-white flex items-center justify-center font-black text-sm shrink-0">
                   Q{i + 1}
                 </div>
-                <p className="font-bold text-[#002147] text-base leading-snug">{q.questionText}</p>
+                <p className="font-bold text-[#002147] text-base leading-snug">{cleanMath(q.questionText)}</p>
               </div>
               {q.awardedScore !== undefined && (
                 <div className={`shrink-0 ml-4 px-4 py-1.5 rounded-xl border font-black text-sm ${colorMap[qColor]}`}>
@@ -159,7 +198,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
                     <div className="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
                       <Check className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-gray-700 leading-relaxed flex-1">{step.text}</span>
+                    <span className="text-gray-700 leading-relaxed flex-1">{cleanMath(step.text)}</span>
                     <span className="shrink-0 text-xs font-sans font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">Verified ✓</span>
                   </div>
                 );
@@ -170,7 +209,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
                       <div className="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
                         <X className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-red-600 line-through decoration-2 flex-1 leading-relaxed">{step.text}</span>
+                      <span className="text-red-600 line-through decoration-2 flex-1 leading-relaxed">{cleanMath(step.text)}</span>
                       {(step.penalty ?? 0) > 0 && (
                         <span className="shrink-0 text-xs font-sans font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
                           -{step.penalty}pts
@@ -180,7 +219,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
                     {step.explanation && (
                       <div className="ml-9 bg-red-50 border border-red-200 rounded-xl p-3 font-sans text-xs text-red-800 flex gap-2">
                         <AlertCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
-                        <span><strong>Logic Error:</strong> {step.explanation}</span>
+                        <span><strong>Logic Error:</strong> {cleanMath(step.explanation || '')}</span>
                       </div>
                     )}
                   </div>
@@ -192,7 +231,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
                       <div className="mt-0.5 shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
                         <AlertTriangle className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-amber-700 flex-1 leading-relaxed">{step.text}</span>
+                      <span className="text-amber-700 flex-1 leading-relaxed">{cleanMath(step.text)}</span>
                       {(step.penalty ?? 0) > 0 && (
                         <span className="shrink-0 text-xs font-sans font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                           -{step.penalty}pts
@@ -202,7 +241,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
                     {step.explanation && (
                       <div className="ml-9 bg-amber-50 border border-amber-200 rounded-xl p-3 font-sans text-xs text-amber-800 flex gap-2">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                        <span><strong>Procedural Error:</strong> {step.explanation}</span>
+                        <span><strong>Procedural Error:</strong> {cleanMath(step.explanation || '')}</span>
                       </div>
                     )}
                   </div>
@@ -213,7 +252,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
               {/* Final Answer Row */}
               <div className="pt-4 mt-4 border-t border-gray-100 flex flex-wrap items-center gap-3 font-sans">
                 <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Final Answer:</span>
-                <span className="font-mono font-bold text-[#002147] bg-gray-100 px-3 py-1 rounded-lg text-sm">{q.finalAnswer || '—'}</span>
+                <span className="font-mono font-bold text-[#002147] bg-gray-100 px-3 py-1 rounded-lg text-sm">{cleanMath(q.finalAnswer || '—')}</span>
                 {q.isFinalAnswerCorrect ? (
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">✓ Correct</span>
                 ) : (
@@ -227,7 +266,7 @@ export default function AiEvaluationView({ scanResult }: { scanResult: AiResult 
               <div className="bg-[#002147] p-6 font-mono text-sm space-y-1.5">
                 <p className="text-blue-300 text-xs font-sans font-bold uppercase tracking-widest mb-3">✦ AI Correct Method</p>
                 {q.aiCorrectedSolution.map((line: string, k: number) => (
-                  <div key={k} className="text-white/80 leading-relaxed">{line}</div>
+                  <div key={k} className="text-white/80 leading-relaxed">{cleanMath(line)}</div>
                 ))}
               </div>
             )}

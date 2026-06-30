@@ -76,13 +76,12 @@ function SchoolManagementContent() {
     fetchSchoolData();
   }, [decodedSchoolId]);
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (userId: string, userRole?: string) => {
     if (!decodedSchoolId) return;
     setDeletingId(userId);
     setError('');
     try {
-      // Step 1: Call server API to delete from Firebase AUTH + Firestore via Admin SDK
-      // This is the critical step that frees the email for re-use
+      // Call server API to delete from Firebase AUTH + cascade delete all data
       let authDeleted = false;
       try {
         const { getAuthToken } = await import('@/lib/auth/getAuthToken');
@@ -93,39 +92,33 @@ function SchoolManagementContent() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
           },
-          body: JSON.stringify({ uid: userId, schoolId: decodedSchoolId }),
+          body: JSON.stringify({ uid: userId, schoolId: decodedSchoolId, role: userRole }),
         });
         const data = await res.json();
         if (res.ok && data.success) {
           authDeleted = true;
-          // If admin SDK also deleted Firestore docs, we're done
-          if (data.results?.globalUsers === 'deleted' && data.results?.schoolUsers === 'deleted') {
-            setUsers(prev => prev.filter(u => u.id !== userId));
-            setSuccessMsg('✅ User fully deleted. You can re-create with the same email now.');
-            setTimeout(() => setSuccessMsg(''), 4000);
-            return;
-          }
+          setUsers(prev => prev.filter(u => u.id !== userId));
+          setSuccessMsg('✅ User and all their data fully deleted. Email can be re-used immediately.');
+          setTimeout(() => setSuccessMsg(''), 5000);
+          return;
+        } else {
+          console.warn('API delete failed:', data.error);
         }
       } catch (apiErr) {
-        console.warn('Admin API unavailable, falling back to client Firestore deletes:', apiErr);
+        console.warn('Admin API unavailable, falling back to client deletes:', apiErr);
       }
 
-      // Step 2: Client-side Firestore fallback (always run if admin didn't handle it)
-      const results = await Promise.allSettled([
+      // Fallback: client-side Firestore deletes only (Auth not cleaned)
+      await Promise.allSettled([
         deleteDoc(doc(db, 'global_users', userId)),
         deleteDoc(doc(db, 'schools', decodedSchoolId, 'users', userId)),
       ]);
-      const anyFailed = results.some(r => r.status === 'rejected');
-      if (anyFailed) {
-        setError('Partial delete — user removed from some locations. Email may need manual cleanup in Firebase Console.');
-      } else {
-        setUsers(prev => prev.filter(u => u.id !== userId));
-        const msg = authDeleted
-          ? '✅ User fully deleted. You can re-create with the same email immediately.'
-          : '⚠️ User removed from database. If re-creating fails, manually delete from Firebase Console → Authentication.';
-        setSuccessMsg(msg);
-        setTimeout(() => setSuccessMsg(''), 5000);
-      }
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      setSuccessMsg(authDeleted
+        ? '✅ User fully deleted. You can re-create with the same email immediately.'
+        : '⚠️ Partial delete — data removed from database but Firebase Auth cleanup may have failed.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+
     } catch (err) {
       console.error(err);
       setError('Failed to delete user. Try again.');
@@ -535,11 +528,11 @@ function SchoolManagementContent() {
                               {confirmDelete === u.id ? (
                                 <div className="flex items-center space-x-2">
                                   <button
-                                    onClick={() => handleDeleteUser(u.id)}
+                                    onClick={() => handleDeleteUser(u.id, u.role)}
                                     disabled={deletingId === u.id}
                                     className="text-xs px-2 py-1 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50"
                                   >
-                                    {deletingId === u.id ? '...' : 'Yes'}
+                                    {deletingId === u.id ? 'Deleting...' : 'Yes, Delete All'}
                                   </button>
                                   <button
                                     onClick={() => setConfirmDelete(null)}

@@ -52,7 +52,10 @@ export default function TeacherQuizPage() {
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [subject, setSubject] = useState('');
   const [quizTitle, setQuizTitle] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  });
   const [questions, setQuestions] = useState<Question[]>([]);
   const [generating, setGenerating] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -161,17 +164,24 @@ export default function TeacherQuizPage() {
 
   const handlePostQuiz = async () => {
     if (!profile?.schoolId) return;
-    if (!dueDate) { alert('Please set a due date.'); return; }
+    if (!dueDate) { alert('Please set a due date first.'); return; }
     if (!quizTitle.trim()) { alert('Please set a quiz title.'); return; }
+
+    // Auto-select first class if teacher hasn't checked any
+    const classesToPost = selectedClasses.length > 0 ? selectedClasses : availableClasses.slice(0, 1);
+    if (classesToPost.length === 0) { alert('No classes found. Please ensure students are enrolled in your school.'); return; }
+    if (selectedClasses.length === 0) setSelectedClasses(classesToPost);
+
     setPosting(true);
     try {
       const qs = mode === 'manual' ? manualQ.filter(q => q.question.trim()) : questions;
-      await Promise.all(selectedClasses.map(cls =>
+      await Promise.all(classesToPost.map(cls =>
         addDoc(collection(db, 'schools', profile.schoolId, 'assignments'), {
           title: quizTitle,
           type: 'quiz',
           subject: subject || 'General',
           class: cls,
+          targetClass: cls,
           difficulty,
           dueDate,
           teacherId: profile.uid,
@@ -181,6 +191,7 @@ export default function TeacherQuizPage() {
           maxScore: qs.length,
           generatedBy: mode === 'manual' ? 'teacher' : 'ai',
           createdAt: serverTimestamp(),
+          status: 'published',
         })
       ));
       setPosted(true);

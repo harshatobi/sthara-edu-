@@ -23,6 +23,47 @@ const LOADING_STAGES = [
   { label: 'Finalising report…', pct: 95 },
 ];
 
+/* ── Clean LaTeX notation into plain readable math ── */
+function cleanMath(text: string): string {
+  if (!text) return text;
+  return text
+    // Remove inline LaTeX delimiters  \( ... \)  and  \[ ... \]
+    .replace(/\\\\/g, '\n')
+    .replace(/\\\(|\\\)/g, '')
+    .replace(/\\\[|\\\]/g, '')
+    // Remove \text{} wrapper
+    .replace(/\\text\{([^}]*)\}/g, '$1')
+    // Fractions: \frac{a}{b} → (a/b)
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1⁄$2)')
+    // Square roots: \sqrt{x} → √x
+    .replace(/\\sqrt\{([^}]*)\}/g, '√($1)')
+    .replace(/\\sqrt/g, '√')
+    // Superscripts
+    .replace(/\^\{2\}|\^2/g, '²')
+    .replace(/\^\{3\}|\^3/g, '³')
+    .replace(/\^\{4\}|\^4/g, '⁴')
+    .replace(/\^\{([^}]+)\}/g, '^$1')
+    // Math symbols
+    .replace(/\\times/g, '×')
+    .replace(/\\div/g, '÷')
+    .replace(/\\cdot/g, '·')
+    .replace(/\\pm/g, '±')
+    .replace(/\\geq/g, '≥')
+    .replace(/\\leq/g, '≤')
+    .replace(/\\neq/g, '≠')
+    .replace(/\\approx/g, '≈')
+    .replace(/\\infty/g, '∞')
+    .replace(/\\pi/g, 'π')
+    .replace(/\\alpha/g, 'α')
+    .replace(/\\beta/g, 'β')
+    .replace(/\\theta/g, 'θ')
+    .replace(/\\Delta/g, 'Δ')
+    .replace(/\\delta/g, 'δ')
+    // Clean up leftover backslashes before letters (e.g. \x → x)
+    .replace(/\\([a-zA-Z])/g, '$1')
+    .trim();
+}
+
 export default function HomeworkAssignment() {
   const params = useParams();
   const id = params.id as string;
@@ -407,7 +448,7 @@ export default function HomeworkAssignment() {
             {assignment.description && (
               <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">Assignment Instructions</p>
-                <p className="text-[#002147]/80 font-medium leading-relaxed text-base whitespace-pre-line">{assignment.description}</p>
+                <p className="text-[#002147]/80 font-medium leading-relaxed text-base whitespace-pre-line">{cleanMath(assignment.description)}</p>
               </div>
             )}
 
@@ -417,7 +458,7 @@ export default function HomeworkAssignment() {
                 {assignment.questions.map((q: string, idx: number) => (
                   <div key={idx} className="relative flex space-x-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100/50">
                     <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#002147] text-white font-black flex items-center justify-center shadow-md">{idx + 1}</div>
-                    <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed">{q}</div>
+                    <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed">{cleanMath(q)}</div>
                   </div>
                 ))}
               </div>

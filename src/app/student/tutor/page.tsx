@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
-import { Sparkles, ArrowLeft, Send, User, AlertTriangle, PlayCircle, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowLeft, Send, User, AlertTriangle, PlayCircle, Loader2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -85,6 +85,7 @@ export default function StudentAITutor() {
   const [isTyping, setIsTyping] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isDBReady, setIsDBReady] = useState(false);
+  const [violationCount, setViolationCount] = useState(0);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -178,19 +179,53 @@ export default function StudentAITutor() {
           messages: contextMessages.map(m => ({ sender: m.role, text: m.text })),
           studentId: profile.uid,
           studentName: profile.name || profile.email,
-          studentClass: profile.studentClass || 'General'
+          studentClass: profile.studentClass || 'General',
+          schoolId: profile.schoolId,
+          violationCount,
         })
       });
       
       const data = await res.json();
       
       if (res.ok && data.text) {
-        // 4. Save AI Response to Firestore
-        await addDoc(messagesRef, {
-          role: 'model',
-          text: data.text,
-          createdAt: serverTimestamp()
-        });
+        // Handle foul language warning
+        if (data.isFoulWarning) {
+          setViolationCount(data.newViolationCount || violationCount + 1);
+          // Save the warning as an AI message
+          await addDoc(messagesRef, {
+            role: 'model',
+            text: data.text,
+            createdAt: serverTimestamp()
+          });
+
+          // If teacher needs to be notified (2nd offense)
+          if (data.notifyTeacher && profile.schoolId) {
+            try {
+              await addDoc(
+                collection(db, 'schools', profile.schoolId, 'notifications'),
+                {
+                  type: 'foul_language',
+                  title: '⚠️ Student Misconduct Alert',
+                  message: `${data.studentName || profile.name} (${data.studentClass || profile.studentClass}) used inappropriate language in the AI Tutor — 2nd offense.`,
+                  studentId: profile.uid,
+                  studentName: profile.name,
+                  studentClass: profile.studentClass,
+                  read: false,
+                  createdAt: serverTimestamp(),
+                }
+              );
+            } catch (e) {
+              console.warn('Could not send teacher notification:', e);
+            }
+          }
+        } else {
+          // 4. Save AI Response to Firestore normally
+          await addDoc(messagesRef, {
+            role: 'model',
+            text: data.text,
+            createdAt: serverTimestamp()
+          });
+        }
 
       } else {
         console.error('AI Error:', data.error);

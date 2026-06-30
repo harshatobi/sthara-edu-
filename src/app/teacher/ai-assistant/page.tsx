@@ -71,7 +71,16 @@ function parseGeneratedContent(text: string): any | null {
 
 /* ─── Detect navigation intent ─── */
 function detectNavIntent(text: string): string | null {
-  const lower = text.toLowerCase();
+  // Only detect nav intent on SHORT explicit navigation responses
+  // Avoid triggering on welcome messages or long explanations that mention these words
+  const displayContent = text.replace(/```json[\s\S]*?```/g, '').trim();
+  if (displayContent.length > 200) return null; // too long to be a nav response
+
+  const lower = displayContent.toLowerCase();
+  // Must contain explicit navigation verbs
+  const hasNavVerb = /\b(open|go to|navigate|take you|opening|heading|directing|here is the link|click here)\b/i.test(lower);
+  if (!hasNavVerb) return null;
+
   for (const [key, path] of Object.entries(NAV_LINKS)) {
     if (lower.includes(key)) return path;
   }

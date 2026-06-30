@@ -328,8 +328,22 @@ function MasteryTrackerContent() {
         const realPercentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) : 0;
 
         // Pick the correct syllabus based on the teacher's subject
-        const teacherSubject = profile.assignments?.[0]?.subject || 'Mathematics';
-        const subjectSyllabus = SYLLABI[teacherSubject] || DEFAULT_SYLLABUS;
+        // Try multiple fields where subject could be stored
+        const teacherSubject =
+          profile.assignments?.[0]?.subject ||
+          profile.subject ||
+          profile.teacherSubject ||
+          profile.assignments?.[0]?.subjectName ||
+          'Mathematics';
+
+        // Find matching syllabus — case-insensitive partial match
+        const syllabusKey = Object.keys(SYLLABI).find(key =>
+          key.toLowerCase() === teacherSubject.toLowerCase() ||
+          teacherSubject.toLowerCase().includes(key.toLowerCase()) ||
+          key.toLowerCase().includes(teacherSubject.toLowerCase())
+        ) || 'Mathematics';
+
+        const subjectSyllabus = SYLLABI[syllabusKey] || DEFAULT_SYLLABUS;
 
         // Build Chapter Data
         const chaptersData = subjectSyllabus.map(chapter => {

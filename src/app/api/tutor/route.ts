@@ -3,13 +3,58 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
+/* ── Foul language word list (common profanity) ── */
+const FOUL_WORDS = [
+  'fuck', 'shit', 'damn', 'bitch', 'ass', 'bastard', 'crap', 'piss',
+  'cock', 'dick', 'pussy', 'cunt', 'asshole', 'motherfucker', 'wtf',
+  'hell', 'sex', 'nude', 'porn', 'bullshit', 'whore', 'slut',
+  // Telugu / Hinglish common slurs (transliterated)
+  'madarchod', 'bsdk', 'bhosdi', 'chutiya', 'randi', 'lund', 'gaand',
+  'harami', 'mc', 'bc', 'sala', 'saala', 'maryadaga',
+];
+
+function containsFoulLanguage(text: string): boolean {
+  const lower = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+  return FOUL_WORDS.some(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    return regex.test(lower) || lower.includes(word);
+  });
+}
+
 export async function POST(request: NextRequest) {
   const token = await verifyApiToken(request);
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const rl = checkRateLimit(`tutor:${getClientIp(request)}`, 30, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Slow down.' }, { status: 429 });
   try {
-    const { messages, studentId, studentName, studentClass } = await request.json();
+    const { messages, studentId, studentName, studentClass, schoolId, violationCount = 0 } = await request.json();
+
+    // ── FOUL LANGUAGE CHECK ──
+    const lastUserMessage = [...messages].reverse().find((m: any) => m.sender === 'user');
+    if (lastUserMessage && containsFoulLanguage(lastUserMessage.text)) {
+      const newViolationCount = violationCount + 1;
+      
+      // First warning
+      if (newViolationCount === 1) {
+        return NextResponse.json({
+          text: `⚠️ **Please watch your language.**\n\nThis is a school learning environment and I'm here to help you study. Using inappropriate or offensive language is not acceptable here.\n\n**This is your first warning.** Please keep our conversation respectful so I can help you learn better! 📚`,
+          isFoulWarning: true,
+          newViolationCount,
+        });
+      }
+
+      // Second offense — notify teacher via Firestore notification (done on client), still warn
+      return NextResponse.json({
+        text: `⛔ **This is your second warning for inappropriate language.**\n\nYour teacher has been notified of this behavior. Please remember that respectful communication is important in every learning space.\n\nIf you'd like to continue learning, please ask your academic question politely.`,
+        isFoulWarning: true,
+        notifyTeacher: true,
+        newViolationCount,
+        studentId,
+        studentName,
+        studentClass,
+        schoolId,
+      });
+    }
 
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -44,7 +89,7 @@ CORE RULES:
    What they struggle with: ${memoryData.struggling?.join(', ') || 'Not yet assessed'}
    Keep responses concise, encouraging, and at their level.
 
-5. FORMATTING: Use clear markdown. For math, use proper notation. Keep explanations structured.`;
+5. FORMATTING: Use clear markdown. For math, write equations in plain readable text using × ÷ ² ³ √ symbols — do NOT use LaTeX notation like \\( \\) or x^2. Write x² not x^2, write √x not \\sqrt{x}.`;
 
 
     let contents = messages.map((msg: any) => ({

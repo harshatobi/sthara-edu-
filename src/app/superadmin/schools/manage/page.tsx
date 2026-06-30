@@ -79,18 +79,52 @@ function SchoolManagementContent() {
   const handleDeleteUser = async (userId: string) => {
     if (!decodedSchoolId) return;
     setDeletingId(userId);
+    setError('');
     try {
+      // Step 1: Call server API to delete from Firebase AUTH + Firestore via Admin SDK
+      // This is the critical step that frees the email for re-use
+      let authDeleted = false;
+      try {
+        const { getAuthToken } = await import('@/lib/auth/getAuthToken');
+        const authToken = await getAuthToken();
+        const res = await fetch('/api/superadmin/delete-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ uid: userId, schoolId: decodedSchoolId }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          authDeleted = true;
+          // If admin SDK also deleted Firestore docs, we're done
+          if (data.results?.globalUsers === 'deleted' && data.results?.schoolUsers === 'deleted') {
+            setUsers(prev => prev.filter(u => u.id !== userId));
+            setSuccessMsg('✅ User fully deleted. You can re-create with the same email now.');
+            setTimeout(() => setSuccessMsg(''), 4000);
+            return;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('Admin API unavailable, falling back to client Firestore deletes:', apiErr);
+      }
+
+      // Step 2: Client-side Firestore fallback (always run if admin didn't handle it)
       const results = await Promise.allSettled([
         deleteDoc(doc(db, 'global_users', userId)),
         deleteDoc(doc(db, 'schools', decodedSchoolId, 'users', userId)),
       ]);
       const anyFailed = results.some(r => r.status === 'rejected');
       if (anyFailed) {
-        setError('Partial delete failure — user may still exist in one location. Please try again.');
+        setError('Partial delete — user removed from some locations. Email may need manual cleanup in Firebase Console.');
       } else {
         setUsers(prev => prev.filter(u => u.id !== userId));
-        setSuccessMsg('User removed successfully.');
-        setTimeout(() => setSuccessMsg(''), 3000);
+        const msg = authDeleted
+          ? '✅ User fully deleted. You can re-create with the same email immediately.'
+          : '⚠️ User removed from database. If re-creating fails, manually delete from Firebase Console → Authentication.';
+        setSuccessMsg(msg);
+        setTimeout(() => setSuccessMsg(''), 5000);
       }
     } catch (err) {
       console.error(err);

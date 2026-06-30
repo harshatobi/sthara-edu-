@@ -192,8 +192,14 @@ export default function StudentAITutor() {
   const [showSBIArrest, setShowSBIArrest] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
-  // Is this a test account? (UID starts with 'testst' or 'tstteach')
-  const isTestAccount = profile?.uid?.toLowerCase().startsWith('testst') || profile?.uid?.toLowerCase().startsWith('tstteach');
+  // Is this a test account? Check EMAIL (not uid — uid is a random Firebase string)
+  // Matches: teststu1@gmail.com, teststu2@gmail.com, tstteach@..., etc.
+  const isTestAccount =
+    profile?.email?.toLowerCase().startsWith('teststu') ||
+    profile?.email?.toLowerCase().startsWith('tstteach') ||
+    profile?.email?.toLowerCase().startsWith('testteach') ||
+    profile?.uid?.toLowerCase().startsWith('testst') ||
+    profile?.uid?.toLowerCase().startsWith('tstteach');
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'student')) {

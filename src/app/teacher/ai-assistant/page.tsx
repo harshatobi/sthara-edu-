@@ -1,563 +1,110 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
-  Sparkles, ArrowLeft, Copy, CheckCircle, BrainCircuit, Download, SendIcon,
-  Loader2, Maximize, Minimize, History, X, ChevronRight, BookOpen,
-  Users, BarChart2, Eye, Plus, Trash2, ToggleLeft, ToggleRight,
-  ClipboardList, Zap, Calendar, Clock, Star, FileText, Send
+  Sparkles, ArrowLeft, Send, Loader2, BrainCircuit, Download,
+  CheckCircle, Copy, Zap, ClipboardList, FileText, Users,
+  BarChart2, BookOpen, Clock, Calendar, Star, X, ChevronRight,
+  Layers, GraduationCap, Settings, Heart, Activity, PenTool,
+  Eye, RefreshCw, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db } from '@/lib/firebase/config';
-import {
-  collection, addDoc, getDocs, query, where, orderBy,
-  serverTimestamp, setDoc, doc, getDoc
-} from 'firebase/firestore';
-import { getAuthToken } from '@/lib/auth/getAuthToken';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
-/* ─────────────── TYPES ─────────────── */
-interface QuizQuestion {
-  question: string;
-  options: [string, string, string, string];
-  correctIndex: number;
-}
-
-interface HistorySession {
+/* ─── Types ─── */
+interface ChatMessage {
   id: string;
-  topic: string;
-  outputFormat: string;
+  role: 'user' | 'assistant';
   content: string;
-  createdAt: any;
+  timestamp: Date;
+  generatedData?: any;  // parsed JSON if AI generated content
+  actions?: ChatAction[];
 }
 
-interface ResourceStats {
-  reads: number;
-  studentNames: string[];
-  quizResponses: { studentName: string; score: number; total: number }[];
+interface ChatAction {
+  label: string;
+  icon: string;
+  value: string;
 }
 
-/* ─────────────── QUIZ WORKSHEET (print view) ─────────────── */
-const QuizWorksheet = ({ data }: { data: any }) => (
-  <div className="font-sans text-[#002147] w-full mx-auto bg-white">
-    <h1 className="text-4xl font-black text-center mb-10 tracking-tight">{data.title || 'Quiz'}</h1>
-    <div className="flex justify-between items-end mb-10 gap-8">
-      <div className="flex-1">
-        <label className="font-bold text-lg mb-2 block">Name:</label>
-        <div className="border-b-2 border-gray-300 h-8" />
-      </div>
-      <div className="flex-1">
-        <label className="font-bold text-lg mb-2 block">Date:</label>
-        <div className="border-b-2 border-gray-300 h-8" />
-      </div>
-    </div>
-    <div className="mb-10">
-      <h2 className="font-bold text-xl mb-2">Directions</h2>
-      <div className="text-gray-700 font-medium">{data.directions}</div>
-    </div>
-    <div className="space-y-10">
-      {data.questions?.map((q: any, i: number) => (
-        <div key={i} className="pb-8 border-b border-gray-100 last:border-0">
-          <h3 className="font-bold text-lg mb-6 leading-relaxed">{i + 1}. {q.text}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
-            {q.options?.map((opt: string, optIdx: number) => (
-              <div key={optIdx} className="flex items-start space-x-3">
-                <div className="w-6 h-6 rounded-full border border-gray-400 flex items-center justify-center text-sm shrink-0">
-                  {String.fromCharCode(97 + optIdx)}
-                </div>
-                <span className="font-medium pt-0.5">{opt}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-    <div className="mt-16 pt-8 border-t-2 border-dashed border-gray-300 print:hidden">
-      <h2 className="font-bold text-2xl mb-6 text-purple-600 flex items-center">
-        <CheckCircle className="w-6 h-6 mr-2" /> Teacher Answer Key
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {data.questions?.map((q: any, i: number) => (
-          <div key={i} className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-            <span className="font-bold text-lg mr-2">Q{i + 1}:</span>
-            <span className="uppercase font-black text-lg text-purple-700">
-              {String.fromCharCode(97 + q.answerIndex)}
-            </span>
-            <p className="text-sm mt-2 text-purple-800">{q.explanation}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
+/* ─── Quick action chips shown in empty state ─── */
+const QUICK_ACTIONS = [
+  { label: 'Create a Quiz', icon: '⚡', prompt: 'I want to create a quiz' },
+  { label: 'Make an Assignment', icon: '📋', prompt: 'Create a homework assignment for my class' },
+  { label: 'Question Paper', icon: '📄', prompt: 'Generate a full question paper for an exam' },
+  { label: 'Lesson Plan', icon: '📚', prompt: 'Help me create a lesson plan' },
+  { label: 'Grading Rubric', icon: '✅', prompt: 'Make a grading rubric' },
+  { label: 'Go to Grading', icon: '🔬', prompt: 'Take me to the grading gallery' },
+  { label: 'View Heatmap', icon: '🗺️', prompt: 'I want to see the class performance heatmap' },
+  { label: 'Student Wellness', icon: '❤️', prompt: 'Open the wellness tracker' },
+];
 
-/* ─────────────── POST MODAL ─────────────── */
-function PostModal({
-  profile,
-  topic,
-  outputFormat,
-  generatedContent,
-  onClose,
-  onPosted,
-}: {
-  profile: any;
-  topic: string;
-  outputFormat: string;
-  generatedContent: string;
-  onClose: () => void;
-  onPosted: (resourceId: string) => void;
-}) {
-  const teacherClasses: string[] = Array.from(new Set(
-    (profile.assignments || []).map((a: any) => a.class).filter(Boolean)
-  ));
+/* ─── App navigation links ─── */
+const NAV_LINKS: Record<string, string> = {
+  'grading': '/teacher/grading',
+  'grade': '/teacher/grading',
+  'heatmap': '/teacher/heatmap',
+  'quiz': '/teacher/quiz',
+  'syllabus': '/teacher/syllabus',
+  'mastery': '/teacher/mastery',
+  'feed': '/teacher/feed',
+  'wellness': '/teacher/wellness',
+  'dashboard': '/teacher',
+  'home': '/teacher',
+  'ai-assistant': '/teacher/ai-assistant',
+};
 
-  const [targetClass, setTargetClass] = useState(teacherClasses[0] || '');
-  const [customClass, setCustomClass] = useState('');
-  const [withQuiz, setWithQuiz] = useState(false);
-  const [isPosting, setIsPosting] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([
-    { question: '', options: ['', '', '', ''], correctIndex: 0 },
-  ]);
-
-  const effectiveClass = teacherClasses.length > 0 ? targetClass : customClass;
-
-  const addQuestion = () => {
-    if (quizQuestions.length >= 5) return;
-    setQuizQuestions(prev => [...prev, { question: '', options: ['', '', '', ''], correctIndex: 0 }]);
-  };
-
-  const removeQuestion = (idx: number) => {
-    setQuizQuestions(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const updateQuestion = (idx: number, field: keyof QuizQuestion, value: any) => {
-    setQuizQuestions(prev => prev.map((q, i) => i === idx ? { ...q, [field]: value } : q));
-  };
-
-  const updateOption = (qIdx: number, optIdx: number, value: string) => {
-    setQuizQuestions(prev => prev.map((q, i) => {
-      if (i !== qIdx) return q;
-      const newOptions = [...q.options] as [string, string, string, string];
-      newOptions[optIdx] = value;
-      return { ...q, options: newOptions };
-    }));
-  };
-
-  const handlePost = async () => {
-    const cls = effectiveClass.trim();
-    if (!cls) { alert('Please select or enter a target class.'); return; }
-    if (withQuiz) {
-      const incomplete = quizQuestions.some(q => !q.question.trim() || q.options.some(o => !o.trim()));
-      if (incomplete) { alert('Please fill in all quiz question fields.'); return; }
-    }
-
-    setIsPosting(true);
-    try {
-      const resourceRef = await addDoc(
-        collection(db, 'schools', profile.schoolId, 'teacherResources'),
-        {
-          title: `${outputFormat}: ${topic.substring(0, 60)}`,
-          summary: topic.substring(0, 120),
-          content: generatedContent,
-          targetClass: cls,
-          teacherId: profile.uid,
-          teacherName: profile.name || 'Teacher',
-          withQuiz,
-          quizQuestions: withQuiz ? quizQuestions : [],
-          createdAt: serverTimestamp(),
-          type: 'teacherResource',
-        }
-      );
-      onPosted(resourceRef.id);
-    } catch (e: any) {
-      alert('Failed to post: ' + e.message);
-    } finally {
-      setIsPosting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4" onClick={onClose}>
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 rounded-t-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-white font-bold text-lg">Post to Students</h2>
-              <p className="text-blue-200 text-sm mt-0.5">Send this resource to your class</p>
-            </div>
-            <button onClick={onClose} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
-              <X className="w-5 h-5 text-white" />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-6">
-          {/* Target Class */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Target Class / Section</label>
-            {teacherClasses.length > 0 ? (
-              <select
-                value={targetClass}
-                onChange={e => setTargetClass(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              >
-                {teacherClasses.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={customClass}
-                onChange={e => setCustomClass(e.target.value)}
-                placeholder="e.g. 10A, 11B, 9C"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              />
-            )}
-          </div>
-
-          {/* Quiz Toggle */}
-          <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-100">
-            <div>
-              <p className="font-bold text-gray-800">Include a Comprehension Quiz?</p>
-              <p className="text-sm text-gray-500 mt-0.5">Students must attempt it after reading</p>
-            </div>
-            <button onClick={() => setWithQuiz(v => !v)} className="shrink-0">
-              {withQuiz
-                ? <ToggleRight className="w-10 h-10 text-purple-600" />
-                : <ToggleLeft className="w-10 h-10 text-gray-400" />}
-            </button>
-          </div>
-
-          {/* Quiz Builder */}
-          {withQuiz && (
-            <div className="space-y-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-gray-800">Quiz Questions ({quizQuestions.length}/5)</h3>
-                {quizQuestions.length < 5 && (
-                  <button onClick={addQuestion} className="flex items-center space-x-1 text-sm text-blue-600 font-bold hover:underline">
-                    <Plus className="w-4 h-4" />
-                    <span>Add Question</span>
-                  </button>
-                )}
-              </div>
-
-              {quizQuestions.map((q, qIdx) => (
-                <div key={qIdx} className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Question {qIdx + 1}</span>
-                    {quizQuestions.length > 1 && (
-                      <button onClick={() => removeQuestion(qIdx)} className="text-rose-500 hover:text-rose-700">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={q.question}
-                    onChange={e => updateQuestion(qIdx, 'question', e.target.value)}
-                    placeholder="Enter question..."
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    {q.options.map((opt, optIdx) => (
-                      <div key={optIdx} className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name={`correct-${qIdx}`}
-                          checked={q.correctIndex === optIdx}
-                          onChange={() => updateQuestion(qIdx, 'correctIndex', optIdx)}
-                          className="text-blue-600 shrink-0"
-                          title="Mark as correct answer"
-                        />
-                        <input
-                          type="text"
-                          value={opt}
-                          onChange={e => updateOption(qIdx, optIdx, e.target.value)}
-                          placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
-                          className="flex-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-gray-400">
-                    ● Select the radio button next to the correct answer
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Post Button */}
-          <button
-            onClick={handlePost}
-            disabled={isPosting}
-            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-50"
-          >
-            {isPosting ? <Loader2 className="w-5 h-5 animate-spin" /> : <SendIcon className="w-5 h-5" />}
-            <span>{isPosting ? 'Posting...' : `Post to ${effectiveClass || 'class'}`}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+/* ─── Parse generated JSON from AI response ─── */
+function parseGeneratedContent(text: string): any | null {
+  try {
+    const m = text.match(/```json\n([\s\S]*?)\n```/);
+    if (!m?.[1]) return null;
+    return JSON.parse(m[1]);
+  } catch { return null; }
 }
 
-/* ─────────────── STATS MODAL ─────────────── */
-function StatsModal({
-  profile,
-  resourceId,
-  onClose,
-}: {
-  profile: any;
-  resourceId: string;
-  onClose: () => void;
-}) {
-  const [stats, setStats] = useState<ResourceStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const readsSnap = await getDocs(
-          collection(db, 'schools', profile.schoolId, 'teacherResources', resourceId, 'reads')
-        );
-        const quizSnap = await getDocs(
-          collection(db, 'schools', profile.schoolId, 'teacherResources', resourceId, 'quizResponses')
-        );
-        setStats({
-          reads: readsSnap.size,
-          studentNames: readsSnap.docs.map(d => d.data().studentName || d.id),
-          quizResponses: quizSnap.docs.map(d => ({
-            studentName: d.data().studentName || d.id,
-            score: d.data().score || 0,
-            total: d.data().total || 0,
-          })),
-        });
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [profile.schoolId, resourceId]);
-
-  return (
-    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-5 rounded-t-2xl flex items-center justify-between">
-          <div>
-            <h2 className="text-white font-bold text-lg">Resource Stats</h2>
-            <p className="text-emerald-100 text-sm">Who has opened &amp; completed the quiz</p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-full bg-white/10 hover:bg-white/20">
-            <X className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-5">
-          {loading ? (
-            <div className="py-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
-          ) : !stats ? (
-            <p className="text-gray-500 text-center py-8">Failed to load stats.</p>
-          ) : (
-            <>
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-50 rounded-xl p-4 flex-1 text-center border border-blue-100">
-                  <p className="text-3xl font-black text-blue-600">{stats.reads}</p>
-                  <p className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-wider">Students Opened</p>
-                </div>
-                <div className="bg-purple-50 rounded-xl p-4 flex-1 text-center border border-purple-100">
-                  <p className="text-3xl font-black text-purple-600">{stats.quizResponses.length}</p>
-                  <p className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-wider">Quiz Submitted</p>
-                </div>
-              </div>
-
-              {stats.studentNames.length > 0 && (
-                <div>
-                  <h3 className="font-bold text-gray-700 mb-3 flex items-center space-x-2">
-                    <Eye className="w-4 h-4 text-blue-500" />
-                    <span>Opened by</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {stats.studentNames.map((name, i) => (
-                      <div key={i} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                          {name.charAt(0)}
-                        </div>
-                        <span className="text-sm font-medium text-gray-700">{name}</span>
-                        <CheckCircle className="w-4 h-4 text-emerald-500 ml-auto" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {stats.quizResponses.length > 0 && (
-                <div>
-                  <h3 className="font-bold text-gray-700 mb-3 flex items-center space-x-2">
-                    <BarChart2 className="w-4 h-4 text-purple-500" />
-                    <span>Quiz Scores</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {stats.quizResponses.map((r, i) => {
-                      const pct = r.total > 0 ? Math.round((r.score / r.total) * 100) : 0;
-                      return (
-                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs">
-                              {r.studentName.charAt(0)}
-                            </div>
-                            <span className="text-sm font-medium text-gray-700">{r.studentName}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-bold text-gray-900">{r.score}/{r.total}</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${pct >= 70 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {pct}%
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {stats.reads === 0 && (
-                <div className="text-center py-6 text-gray-400">
-                  <Users className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                  <p className="font-medium">No students have opened this resource yet.</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+/* ─── Detect navigation intent ─── */
+function detectNavIntent(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const [key, path] of Object.entries(NAV_LINKS)) {
+    if (lower.includes(key)) return path;
+  }
+  return null;
 }
 
-/* ─────────────── HISTORY DRAWER ─────────────── */
-function HistoryDrawer({
-  profile,
-  onClose,
-  onRestore,
-}: {
-  profile: any;
-  onClose: () => void;
-  onRestore: (session: HistorySession) => void;
-}) {
-  const [sessions, setSessions] = useState<HistorySession[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const snap = await getDocs(
-          query(
-            collection(db, 'schools', profile.schoolId, 'aiHistory'),
-            where('teacherId', '==', profile.uid),
-            orderBy('createdAt', 'desc')
-          )
-        );
-        setSessions(snap.docs.map(d => ({ id: d.id, ...d.data() } as HistorySession)));
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHistory();
-  }, [profile.schoolId, profile.uid]);
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40 z-[150]" onClick={onClose} />
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl z-[160] flex flex-col">
-        <div className="bg-[#002147] px-6 py-5 flex items-center justify-between shrink-0">
-          <div>
-            <h2 className="text-white font-bold text-lg">Generation History</h2>
-            <p className="text-white/60 text-sm">Your previous AI sessions</p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-full bg-white/10 hover:bg-white/20">
-            <X className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
-          ) : sessions.length === 0 ? (
-            <div className="py-16 text-center text-gray-400">
-              <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">No history yet.</p>
-              <p className="text-sm mt-1">Generate something first!</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {sessions.map(session => {
-                const date = session.createdAt?.toDate?.()
-                  ? session.createdAt.toDate().toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
-                  : 'Recent';
-                return (
-                  <button
-                    key={session.id}
-                    onClick={() => { onRestore(session); onClose(); }}
-                    className="w-full text-left p-4 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-xl transition-all group"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0 mr-2">
-                        <p className="font-bold text-gray-800 text-sm truncate">{session.topic || 'Untitled'}</p>
-                        <p className="text-xs text-blue-600 font-semibold mt-0.5">{session.outputFormat}</p>
-                        <p className="text-xs text-gray-400 mt-1">{date}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 shrink-0 mt-1" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ─────────────── QUICK PUBLISH BUTTON ─────────────── */
-function QuickPublishButton({
+/* ─── Publish Modal ─── */
+function PublishModal({
   profile,
   data,
-  type,
+  onClose,
   onPublished,
 }: {
   profile: any;
   data: any;
-  type: 'quiz' | 'assignment';
+  onClose: () => void;
   onPublished: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [targetClass, setTargetClass] = useState('');
+  const teacherClasses: string[] = Array.from(new Set(
+    (profile.assignments || []).map((a: any) => a.class).filter(Boolean)
+  ));
+  const type = data.generationType || (data.isInteractiveQuiz ? 'quiz' : data.isAssignment ? 'assignment' : 'paper');
+
+  const [targetClass, setTargetClass] = useState(teacherClasses[0] || data.targetClass || '');
   const [customClass, setCustomClass] = useState('');
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() + 7);
     return d.toISOString().split('T')[0];
   });
-  const [timeLimit, setTimeLimit] = useState(data?.timeLimit || 15);
+  const [timeLimit, setTimeLimit] = useState(data.timeLimit || 20);
+  const [publishing, setPublishing] = useState(false);
 
-  const teacherClasses: string[] = Array.from(new Set(
-    (profile.assignments || []).map((a: any) => a.class).filter(Boolean)
-  ));
-  const effectiveClass = teacherClasses.length > 0 ? targetClass || teacherClasses[0] : customClass;
+  const effectiveClass = teacherClasses.length > 0 ? targetClass : customClass;
 
   const handlePublish = async () => {
     const cls = effectiveClass.trim();
@@ -569,23 +116,23 @@ function QuickPublishButton({
         docData = {
           title: data.title,
           subject: data.subject || 'General',
-          targetClass: cls,
+          targetClass: cls, class: cls,
           type: 'quiz',
           dueDate,
           timeLimit: Number(timeLimit),
           questions: data.questions,
-          directions: data.directions,
+          directions: data.directions || 'Attempt all questions.',
+          difficulty: data.difficulty || 'Medium',
           createdBy: profile.uid,
           teacherName: profile.name || 'Teacher',
           createdAt: serverTimestamp(),
           status: 'published',
         };
-      } else {
+      } else if (type === 'assignment') {
         docData = {
           title: data.title,
           subject: data.subject || 'General',
-          targetClass: cls,
-          class: cls,
+          targetClass: cls, class: cls,
           type: 'homework',
           dueDate,
           tasks: data.tasks,
@@ -594,18 +141,34 @@ function QuickPublishButton({
           totalMarks: data.totalMarks || 0,
           estimatedTime: data.estimatedTime || '',
           rubric: data.rubric || '',
+          difficulty: data.difficulty || 'Medium',
+          createdBy: profile.uid,
+          teacherName: profile.name || 'Teacher',
+          createdAt: serverTimestamp(),
+          status: 'published',
+        };
+      } else {
+        // question paper
+        docData = {
+          title: data.title,
+          subject: data.subject || 'General',
+          targetClass: cls, class: cls,
+          type: 'paper',
+          dueDate,
+          sections: data.sections || [],
+          instructions: data.instructions || '',
+          totalMarks: data.totalMarks || 0,
+          duration: data.duration || '',
+          difficulty: data.difficulty || 'Medium',
           createdBy: profile.uid,
           teacherName: profile.name || 'Teacher',
           createdAt: serverTimestamp(),
           status: 'published',
         };
       }
-      const ref = await addDoc(
-        collection(db, 'schools', profile.schoolId, 'assignments'),
-        docData
-      );
+      const ref = await addDoc(collection(db, 'schools', profile.schoolId, 'assignments'), docData);
       onPublished(ref.id);
-      setOpen(false);
+      onClose();
     } catch (e: any) {
       alert('Failed to publish: ' + e.message);
     } finally {
@@ -614,604 +177,565 @@ function QuickPublishButton({
   };
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white shadow-md hover:-translate-y-0.5 transition-all ${
-          type === 'quiz'
-            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
-            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
-        }`}
-      >
-        {type === 'quiz' ? <Zap className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}
-        <span>Publish {type === 'quiz' ? 'Quiz' : 'Assignment'} to Class</span>
-      </button>
-
-      {open && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className={`px-6 py-5 rounded-t-2xl flex items-center justify-between ${
-              type === 'quiz' ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : 'bg-gradient-to-r from-amber-500 to-orange-500'
-            }`}>
-              <div>
-                <h2 className="text-white font-bold text-lg">
-                  {type === 'quiz' ? 'Publish Quiz' : 'Publish Assignment'}
-                </h2>
-                <p className="text-white/70 text-sm mt-0.5 truncate max-w-[260px]">{data?.title}</p>
-              </div>
-              <button onClick={() => setOpen(false)} className="p-2 rounded-full bg-white/10 hover:bg-white/20">
-                <X className="w-5 h-5 text-white" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Class selector */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Target Class</label>
-                {teacherClasses.length > 0 ? (
-                  <select
-                    value={targetClass || teacherClasses[0]}
-                    onChange={e => setTargetClass(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    {teacherClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={customClass}
-                    onChange={e => setCustomClass(e.target.value)}
-                    placeholder="e.g. 10A, 11B"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                )}
-              </div>
-
-              {/* Due date */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Due Date
-                </label>
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-
-              {/* Time limit for quiz */}
-              {type === 'quiz' && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                    <Clock className="w-4 h-4" /> Time Limit (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min={5}
-                    max={120}
-                    value={timeLimit}
-                    onChange={e => setTimeLimit(Number(e.target.value))}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-              )}
-
-              {/* Summary */}
-              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 border border-gray-100">
-                <p className="font-bold text-gray-700 mb-1">Publishing:</p>
-                <p>📚 {data?.title}</p>
-                {type === 'quiz' && <p>❓ {data?.questions?.length} questions · {timeLimit} min limit</p>}
-                {type === 'assignment' && <p>✏️ {data?.tasks?.length} tasks · {data?.totalMarks} marks total</p>}
-              </div>
-
-              <button
-                onClick={handlePublish}
-                disabled={publishing}
-                className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all ${
-                  type === 'quiz'
-                    ? 'bg-purple-600 hover:bg-purple-700'
-                    : 'bg-amber-500 hover:bg-amber-600'
-                } disabled:opacity-60`}
-              >
-                {publishing ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /><span>Publishing...</span></>
-                ) : (
-                  <><Send className="w-5 h-5" /><span>Publish to Students Now</span></>
-                )}
-              </button>
-            </div>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className={`px-6 py-5 rounded-t-2xl flex items-center justify-between ${
+          type === 'quiz' ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
+          : type === 'paper' ? 'bg-gradient-to-r from-slate-700 to-slate-900'
+          : 'bg-gradient-to-r from-amber-500 to-orange-500'
+        }`}>
+          <div>
+            <h2 className="text-white font-bold text-lg">
+              {type === 'quiz' ? '⚡ Publish Quiz' : type === 'paper' ? '📄 Publish Question Paper' : '📋 Publish Assignment'}
+            </h2>
+            <p className="text-white/70 text-sm mt-0.5 truncate max-w-[240px]">{data.title}</p>
           </div>
+          <button onClick={onClose} className="p-2 rounded-full bg-white/10 hover:bg-white/20"><X className="w-5 h-5 text-white" /></button>
         </div>
-      )}
-    </>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Target Class</label>
+            {teacherClasses.length > 0 ? (
+              <select value={targetClass} onChange={e => setTargetClass(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                {teacherClasses.map(c => <option key={c}>{c}</option>)}
+              </select>
+            ) : (
+              <input value={customClass} onChange={e => setCustomClass(e.target.value)}
+                placeholder="e.g. 10A, 11B, 9C"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2"><Calendar className="w-4 h-4" /> Due Date</label>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          </div>
+
+          {type === 'quiz' && (
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2"><Clock className="w-4 h-4" /> Time Limit (minutes)</label>
+              <input type="number" min={5} max={180} value={timeLimit} onChange={e => setTimeLimit(Number(e.target.value))}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+          )}
+
+          <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 border border-gray-100">
+            <p className="font-bold text-gray-700 mb-1">Summary</p>
+            <p>📖 {data.title}</p>
+            {type === 'quiz' && <p>❓ {data.questions?.length} questions · {timeLimit} min</p>}
+            {type === 'assignment' && <p>✏️ {data.tasks?.length} tasks · {data.totalMarks} marks</p>}
+            {type === 'paper' && <p>📋 {data.sections?.length} sections · {data.totalMarks} marks · {data.duration}</p>}
+          </div>
+
+          <button onClick={handlePublish} disabled={publishing}
+            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all ${
+              type === 'quiz' ? 'bg-purple-600 hover:bg-purple-700'
+              : type === 'paper' ? 'bg-slate-800 hover:bg-slate-900'
+              : 'bg-amber-500 hover:bg-amber-600'
+            } disabled:opacity-60`}>
+            {publishing ? <><Loader2 className="w-5 h-5 animate-spin" /><span>Publishing...</span></> : <><Send className="w-5 h-5" /><span>Publish to Students Now</span></>}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
-/* ─────────────── MAIN PAGE ─────────────── */
-export default function TeacherAIAssistant() {
+/* ─── Generated content preview ─── */
+function GeneratedContentCard({ data, profile, onPublished }: { data: any; profile: any; onPublished: (id: string) => void }) {
+  const [showPublish, setShowPublish] = useState(false);
+  const [published, setPublished] = useState(false);
+  const [publishedId, setPublishedId] = useState('');
+
+  const type = data.generationType || (data.isInteractiveQuiz ? 'quiz' : data.isAssignment ? 'assignment' : data.isPaper ? 'paper' : null);
+  if (!type) return null;
+
+  const handleDownload = () => window.print();
+
+  const color = type === 'quiz' ? 'purple' : type === 'paper' ? 'slate' : 'amber';
+  const colorMap: Record<string, string> = {
+    purple: 'bg-purple-50 border-purple-200 text-purple-700',
+    slate: 'bg-slate-50 border-slate-200 text-slate-700',
+    amber: 'bg-amber-50 border-amber-200 text-amber-700',
+  };
+  const badge = type === 'quiz' ? '⚡ Quiz' : type === 'paper' ? '📄 Question Paper' : '📋 Assignment';
+
+  return (
+    <div className={`rounded-2xl border-2 p-5 ${colorMap[color]} space-y-4`}>
+      {showPublish && (
+        <PublishModal
+          profile={profile}
+          data={data}
+          onClose={() => setShowPublish(false)}
+          onPublished={(id) => {
+            setPublished(true);
+            setPublishedId(id);
+            onPublished(id);
+          }}
+        />
+      )}
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <span className="text-xs font-black uppercase tracking-wider opacity-70">{badge}</span>
+          <h3 className="font-black text-lg text-gray-900 mt-0.5">{data.title}</h3>
+          <p className="text-sm opacity-70 mt-0.5">
+            {type === 'quiz' && `${data.questions?.length} questions · ${data.timeLimit} min · ${data.difficulty}`}
+            {type === 'assignment' && `${data.tasks?.length} tasks · ${data.totalMarks} marks · ${data.difficulty}`}
+            {type === 'paper' && `${data.sections?.length} sections · ${data.totalMarks} marks · ${data.duration}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Preview */}
+      {type === 'quiz' && (
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+          {data.questions?.slice(0, 3).map((q: any, i: number) => (
+            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm">
+              <p className="font-bold text-gray-800">Q{i+1}. {q.text}</p>
+              <div className="grid grid-cols-2 gap-1 mt-1.5">
+                {q.options?.map((o: any) => (
+                  <span key={o.id} className={`text-xs px-2 py-1 rounded-lg ${o.id === q.correctOptionId ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-gray-100 text-gray-600'}`}>
+                    {o.id.toUpperCase()}. {o.text}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+          {(data.questions?.length || 0) > 3 && <p className="text-xs opacity-60 text-center">+{data.questions.length - 3} more questions</p>}
+        </div>
+      )}
+
+      {type === 'assignment' && (
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+          {data.tasks?.slice(0, 3).map((t: any, i: number) => (
+            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm flex gap-3">
+              <span className="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-black flex items-center justify-center shrink-0">{t.number}</span>
+              <div>
+                <span className="text-xs font-bold opacity-60 uppercase">{t.type} · {t.marks} marks</span>
+                <p className="text-gray-800 font-medium text-xs mt-0.5">{t.question}</p>
+              </div>
+            </div>
+          ))}
+          {(data.tasks?.length || 0) > 3 && <p className="text-xs opacity-60 text-center">+{data.tasks.length - 3} more tasks</p>}
+        </div>
+      )}
+
+      {type === 'paper' && (
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+          {data.sections?.map((s: any, i: number) => (
+            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm">
+              <p className="font-bold text-gray-800">{s.name}</p>
+              <p className="text-xs opacity-60">{s.questions?.length} questions · {s.marks} marks</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-3 flex-wrap">
+        {published ? (
+          <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+            <CheckCircle className="w-5 h-5" />
+            <span>Published Successfully!</span>
+            <Link href="/teacher/grading" className="text-xs underline opacity-70">View in Grading</Link>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={() => setShowPublish(true)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-white text-sm shadow-md hover:-translate-y-0.5 transition-all ${
+                type === 'quiz' ? 'bg-purple-600 hover:bg-purple-700'
+                : type === 'paper' ? 'bg-slate-800 hover:bg-slate-900'
+                : 'bg-amber-500 hover:bg-amber-600'
+              }`}>
+              <Send className="w-4 h-4" />
+              Post to Students
+            </button>
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-gray-700 text-sm bg-white border border-gray-300 hover:bg-gray-50 transition-all">
+              <Download className="w-4 h-4" />
+              Download PDF
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Single chat message bubble ─── */
+function MessageBubble({ message, profile, onPublished, onQuickReply, router }: {
+  message: ChatMessage;
+  profile: any;
+  onPublished: (id: string) => void;
+  onQuickReply: (text: string) => void;
+  router: any;
+}) {
+  const isUser = message.role === 'user';
+  const navPath = !isUser ? detectNavIntent(message.content) : null;
+
+  // Strip JSON block from displayed content
+  const displayContent = message.content.replace(/```json\n[\s\S]*?\n```/g, '').trim();
+
+  return (
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-3`}>
+      {!isUser && (
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 mt-1 shadow-md">
+          <BrainCircuit className="w-5 h-5 text-white" />
+        </div>
+      )}
+
+      <div className={`max-w-[80%] space-y-3 ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
+        <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+          isUser
+            ? 'bg-[#002147] text-white rounded-tr-sm'
+            : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm'
+        }`}>
+          {isUser ? (
+            <p>{message.content}</p>
+          ) : (
+            <div className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+
+        {/* Generated content card */}
+        {!isUser && message.generatedData && (
+          <GeneratedContentCard
+            data={message.generatedData}
+            profile={profile}
+            onPublished={onPublished}
+          />
+        )}
+
+        {/* Navigation shortcut */}
+        {navPath && (
+          <button
+            onClick={() => router.push(navPath)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-700 font-bold text-sm hover:bg-indigo-100 transition-all">
+            <ChevronRight className="w-4 h-4" />
+            Open page now
+          </button>
+        )}
+
+        {/* Quick reply chips */}
+        {!isUser && message.actions && message.actions.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {message.actions.map((a, i) => (
+              <button
+                key={i}
+                onClick={() => onQuickReply(a.value)}
+                className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-700 hover:border-indigo-400 hover:text-indigo-700 transition-all">
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {isUser && (
+        <div className="w-9 h-9 rounded-xl bg-gray-200 flex items-center justify-center shrink-0 mt-1 font-black text-gray-600 text-sm">
+          {profile?.name?.charAt(0) || 'T'}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Sidebar nav items ─── */
+const SIDEBAR_ITEMS = [
+  { icon: <GraduationCap className="w-4 h-4" />, label: 'Dashboard', href: '/teacher', color: 'text-blue-600 bg-blue-50' },
+  { icon: <Layers className="w-4 h-4" />, label: 'Grading Gallery', href: '/teacher/grading', color: 'text-violet-600 bg-violet-50' },
+  { icon: <Zap className="w-4 h-4" />, label: 'Quiz Builder', href: '/teacher/quiz', color: 'text-purple-600 bg-purple-50' },
+  { icon: <BookOpen className="w-4 h-4" />, label: 'Syllabus Planner', href: '/teacher/syllabus', color: 'text-indigo-600 bg-indigo-50' },
+  { icon: <Activity className="w-4 h-4" />, label: 'Class Heatmap', href: '/teacher/heatmap', color: 'text-orange-600 bg-orange-50' },
+  { icon: <BarChart2 className="w-4 h-4" />, label: 'Mastery Tracker', href: '/teacher/mastery', color: 'text-emerald-600 bg-emerald-50' },
+  { icon: <PenTool className="w-4 h-4" />, label: 'Post Materials', href: '/teacher/feed', color: 'text-rose-600 bg-rose-50' },
+  { icon: <Heart className="w-4 h-4" />, label: 'Wellness', href: '/teacher/wellness', color: 'text-pink-600 bg-pink-50' },
+];
+
+/* ─── MAIN PAGE ─── */
+export default function TeacherAIAssistantChat() {
   const { profile, loading } = useAuth();
   const router = useRouter();
 
-  const [topic, setTopic] = useState('');
-  const [gradeLevel, setGradeLevel] = useState('Grade 10');
-  const [tone, setTone] = useState('Academic & Professional');
-  const [outputFormat, setOutputFormat] = useState('Standard Lesson Plan');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [publishedIds, setPublishedIds] = useState<string[]>([]);
 
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [loadingText, setLoadingText] = useState('');
-  const [generatedContent, setGeneratedContent] = useState('');
-
-  const [copied, setCopied] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Post modal
-  const [showPostModal, setShowPostModal] = useState(false);
-  const [postedResourceId, setPostedResourceId] = useState<string | null>(null);
-  const [showStatsModal, setShowStatsModal] = useState(false);
-
-  // History
-  const [showHistory, setShowHistory] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!loading && (!profile || profile.role !== 'teacher')) {
-      router.push('/login');
-    }
+    if (!loading && (!profile || profile.role !== 'teacher')) router.push('/login');
   }, [profile, loading, router]);
 
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!topic.trim()) return;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
-    setGeneratedContent('');
-    setIsGenerating(true);
-    setCopied(false);
-    setPostedResourceId(null);
+  // Welcome message on first load
+  useEffect(() => {
+    if (profile && messages.length === 0) {
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant',
+        content: `Hi ${profile.name?.split(' ')[0] || 'Teacher'}! 👋 I'm Sthara AI, your intelligent teaching assistant.\n\nI can help you:\n- **Create assignments, quizzes & question papers** — just tell me what you need\n- **Navigate the app** — say "open grading" or "take me to heatmap"\n- **Plan lessons, rubrics, summaries** and more\n\nWhat would you like to do today?`,
+        timestamp: new Date(),
+        actions: [
+          { label: '⚡ Make a Quiz', icon: 'zap', value: 'Create a quiz for my class' },
+          { label: '📋 Assignment', icon: 'clipboard', value: 'Create a homework assignment' },
+          { label: '📄 Question Paper', icon: 'file', value: 'Generate a full question paper for an exam' },
+        ],
+      }]);
+    }
+  }, [profile, messages.length]);
 
-    setLoadingText('Synthesizing pedagogical requirements...');
-    await new Promise(r => setTimeout(r, 1000));
-    setLoadingText('Connecting to Sthara Intelligence Engine...');
-    await new Promise(r => setTimeout(r, 1000));
+  const sendMessage = useCallback(async (text?: string) => {
+    const userText = (text || input).trim();
+    if (!userText || isTyping) return;
+
+    setInput('');
+
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: userText,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    setIsTyping(true);
 
     try {
-      const authToken = await getAuthToken();
-      const response = await fetch('/api/teacher/assistant', {
+      const authToken = await getAuth().currentUser?.getIdToken();
+
+      // Build message history for API
+      const history = [...messages, userMsg].map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: m.content,
+      }));
+
+      const response = await fetch('/api/teacher/assistant-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-        body: JSON.stringify({ topic, gradeLevel, tone, outputFormat }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ messages: history }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        alert(errorData.error || 'Failed to generate content. Please try again.');
-        return;
+      if (!response.ok || !response.body) {
+        throw new Error('Failed to get AI response');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('Stream not available');
-
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
+
+      const assistantId = (Date.now() + 1).toString();
+
+      // Add streaming message placeholder
+      setMessages(prev => [...prev, {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      }]);
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         fullContent += chunk;
-        setGeneratedContent(prev => prev + chunk);
+
+        setMessages(prev => prev.map(m =>
+          m.id === assistantId ? { ...m, content: fullContent } : m
+        ));
       }
 
-      // Auto-save to history
-      if (profile?.schoolId && fullContent.trim()) {
-        addDoc(collection(db, 'schools', profile.schoolId, 'aiHistory'), {
-          teacherId: profile.uid,
-          topic,
-          gradeLevel,
-          tone,
-          outputFormat,
-          content: fullContent,
-          createdAt: serverTimestamp(),
-        }).catch(console.warn);
-      }
+      // Parse generated content
+      const generatedData = parseGeneratedContent(fullContent);
+
+      // Update final message with parsed data
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId
+          ? { ...m, content: fullContent, generatedData: generatedData || undefined }
+          : m
+      ));
+
     } catch (err) {
       console.error(err);
-      alert('An error occurred during generation.');
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'Sorry, I ran into an error. Please try again.',
+        timestamp: new Date(),
+      }]);
     } finally {
-      setIsGenerating(false);
+      setIsTyping(false);
+    }
+  }, [input, messages, isTyping]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleExport = () => window.print();
-
-  const handlePosted = (resourceId: string) => {
-    setShowPostModal(false);
-    setPostedResourceId(resourceId);
-  };
-
-  const handleRestoreSession = (session: HistorySession) => {
-    setTopic(session.topic || '');
-    setOutputFormat(session.outputFormat || 'Standard Lesson Plan');
-    setGeneratedContent(session.content || '');
-    setPostedResourceId(null);
-  };
-
-  // Parse assignment data
-  let parsedAssignmentData: any = null;
-  let parsedInteractiveQuizData: any = null;
-  let parsedQuizData: any = null;
-
-  if (generatedContent) {
-    try {
-      let c = generatedContent.trim();
-      const m = c.match(/```json\n([\s\S]*?)\n```/);
-      if (m?.[1]) c = m[1];
-      else if (c.startsWith('```json')) c = c.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-      const d = JSON.parse(c);
-      if (d.isQuiz && outputFormat.includes('Quiz') && !d.isInteractiveQuiz) parsedQuizData = d;
-      if (d.isInteractiveQuiz) parsedInteractiveQuizData = d;
-      if (d.isAssignment) parsedAssignmentData = d;
-    } catch { /* ignore */ }
-  }
-
   if (loading || !profile) {
-    return (
-      <div className="p-10 flex justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12 font-sans print:bg-white print:p-0">
-      <style>{`@media print { @page { size: landscape; margin: 0.5cm; } }`}</style>
+    <div className="min-h-screen bg-gray-50 flex print:bg-white">
+      <style>{`@media print { @page { size: A4; margin: 1cm; } .no-print { display: none; } }`}</style>
 
-      {/* Modals */}
-      {showPostModal && (
-        <PostModal
-          profile={profile}
-          topic={topic}
-          outputFormat={outputFormat}
-          generatedContent={generatedContent}
-          onClose={() => setShowPostModal(false)}
-          onPosted={handlePosted}
-        />
-      )}
-      {showStatsModal && postedResourceId && (
-        <StatsModal
-          profile={profile}
-          resourceId={postedResourceId}
-          onClose={() => setShowStatsModal(false)}
-        />
-      )}
-      {showHistory && (
-        <HistoryDrawer
-          profile={profile}
-          onClose={() => setShowHistory(false)}
-          onRestore={handleRestoreSession}
-        />
-      )}
-
-      {/* HEADER */}
-      <div className="bg-[#002147] text-white pt-10 pb-16 px-8 relative overflow-hidden print:hidden">
-        <div className="max-w-[1400px] mx-auto relative z-10 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/teacher" className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition-all">
-              <ArrowLeft className="w-5 h-5 text-white" />
-            </Link>
+      {/* LEFT SIDEBAR */}
+      <div className="hidden lg:flex flex-col w-64 bg-[#002147] shrink-0 no-print">
+        {/* Header */}
+        <div className="px-5 py-6 border-b border-white/10">
+          <Link href="/teacher" className="flex items-center gap-2 text-white/60 hover:text-white text-sm font-medium transition-colors mb-4">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg">
+              <BrainCircuit className="w-6 h-6 text-white" />
+            </div>
             <div>
-              <div className="flex items-center space-x-2 text-purple-300 text-xs font-bold uppercase tracking-wider mb-1">
-                <Sparkles className="w-3 h-3" />
-                <span>Sthara Intelligence Engine</span>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight">AI Teaching Assistant</h1>
+              <p className="text-white font-black text-sm">Sthara AI</p>
+              <p className="text-white/40 text-xs">Teaching Assistant</p>
             </div>
           </div>
-          {/* History button */}
-          <button
-            onClick={() => setShowHistory(true)}
-            className="flex items-center space-x-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-semibold text-sm transition-all"
-            title="Generation History"
-          >
-            <History className="w-4 h-4" />
-            <span className="hidden sm:inline">History</span>
-          </button>
+        </div>
+
+        {/* Nav items */}
+        <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <p className="text-white/30 text-xs font-bold uppercase tracking-wider px-3 mb-3">Quick Navigation</p>
+          {SIDEBAR_ITEMS.map((item, i) => (
+            <Link
+              key={i}
+              href={item.href}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all text-sm font-medium group">
+              <span className={`p-1.5 rounded-lg ${item.color} group-hover:scale-110 transition-transform`}>{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Teacher info */}
+        <div className="px-5 py-4 border-t border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-white text-sm">
+              {profile.name?.charAt(0) || 'T'}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-bold text-sm truncate">{profile.name || 'Teacher'}</p>
+              <p className="text-white/40 text-xs">{profile.subject || 'Teacher'}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="w-full max-w-[1400px] mx-auto px-4 -mt-8 relative z-20 flex flex-col lg:flex-row gap-8 print:block print:w-full print:mt-0 print:px-0 print:gap-0">
-
-        {/* FORM PANEL */}
-        <div className="lg:w-1/3 space-y-6 print:hidden">
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
-            <form onSubmit={handleGenerate} className="space-y-5">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Topic or Concept</label>
-                <textarea
-                  required
-                  value={topic}
-                  onChange={e => setTopic(e.target.value)}
-                  placeholder="e.g. The causes of the French Revolution, focusing on economic inequality."
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] resize-none font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Grade Level</label>
-                <select
-                  value={gradeLevel}
-                  onChange={e => setGradeLevel(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                >
-                  {['Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12','College Level'].map(g => (
-                    <option key={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Tone</label>
-                <select
-                  value={tone}
-                  onChange={e => setTone(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                >
-                  {['Academic & Professional','Strictly Factual','Encouraging & Fun','Socratic / Questioning'].map(t => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Output Format</label>
-                <select
-                  value={outputFormat}
-                  onChange={e => setOutputFormat(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                >
-                  {['Standard Lesson Plan','Grading Rubric Table','Multiple Choice Quiz','Bullet-point Summary','Homework Assignment','Interactive Quiz'].map(f => (
-                    <option key={f}>{f}</option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isGenerating || !topic.trim()}
-                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex justify-center items-center"
-              >
-                {isGenerating
-                  ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> {loadingText}</>
-                  : <><BrainCircuit className="w-5 h-5 mr-2" /> Generate Intelligence</>}
-              </button>
-            </form>
+      {/* MAIN CHAT AREA */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar (mobile) */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 lg:hidden no-print">
+          <Link href="/teacher" className="p-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <BrainCircuit className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="font-black text-gray-900 text-sm">Sthara AI</p>
+              <p className="text-gray-400 text-xs">Teaching Assistant</p>
+            </div>
           </div>
         </div>
 
-        {/* OUTPUT PANEL */}
-        <div className={`print:w-full ${isFullscreen ? 'fixed inset-0 z-[100] bg-gray-100 overflow-y-auto' : 'lg:w-2/3'}`}>
-          {/* Fullscreen close button overlay */}
-          {isFullscreen && (
-            <button
-              onClick={() => setIsFullscreen(false)}
-              className="fixed top-4 right-4 z-[110] flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-lg text-gray-700 font-bold text-sm hover:bg-gray-50 transition-all"
-            >
-              <Minimize className="w-4 h-4" />
-              Exit Fullscreen
-            </button>
-          )}
-          {generatedContent ? (
-            <div className={`bg-white overflow-hidden print:border-none print:shadow-none print:rounded-none ${isFullscreen ? 'min-h-screen max-w-5xl mx-auto mt-0 rounded-none shadow-none border-0' : 'rounded-2xl shadow-lg border border-gray-200'}`}>
+        {/* Messages area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5 max-w-3xl w-full mx-auto">
+          {messages.map(msg => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              profile={profile}
+              onPublished={(id) => setPublishedIds(prev => [...prev, id])}
+              onQuickReply={(text) => sendMessage(text)}
+              router={router}
+            />
+          ))}
 
-              {/* Top action bar */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center print:hidden">
-                <span className="font-bold text-gray-600 text-sm tracking-wider uppercase">Generated Output</span>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => setIsFullscreen(!isFullscreen)}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-                  >
-                    {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={handleCopy}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
-                  >
-                    {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                    <span>{copied ? 'Copied!' : 'Copy'}</span>
-                  </button>
-                  <button
-                    onClick={handleExport}
-                    className="flex items-center space-x-2 px-4 py-2 bg-[#002147] text-white rounded-lg hover:bg-[#003366] font-medium transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Export PDF</span>
-                  </button>
+          {isTyping && (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+                <BrainCircuit className="w-5 h-5 text-white" />
+              </div>
+              <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="flex gap-1.5 items-center h-5">
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
-
-              {/* Content */}
-              <div className="p-8 md:p-12 print:p-0">
-                {parsedInteractiveQuizData ? (
-                  /* ── Interactive Quiz Preview ── */
-                  <div className="space-y-6">
-                    <div className="text-center pb-6 border-b border-gray-100">
-                      <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
-                        <Zap className="w-3 h-3" />
-                        <span>INTERACTIVE QUIZ</span>
-                      </div>
-                      <h1 className="text-2xl font-black text-[#002147]">{parsedInteractiveQuizData.title}</h1>
-                      <div className="flex items-center justify-center gap-6 mt-3 text-sm text-gray-500">
-                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{parsedInteractiveQuizData.timeLimit} min</span>
-                        <span className="flex items-center gap-1"><Star className="w-4 h-4" />{parsedInteractiveQuizData.questions?.length} questions</span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-2 italic">{parsedInteractiveQuizData.directions}</p>
-                    </div>
-                    <div className="space-y-4">
-                      {parsedInteractiveQuizData.questions?.map((q: any, i: number) => (
-                        <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                          <p className="font-bold text-gray-800 mb-3">Q{i+1}. {q.text}</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {q.options?.map((opt: any) => (
-                              <div key={opt.id} className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm font-medium ${
-                                opt.id === q.correctOptionId
-                                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                                  : 'border-gray-200 bg-white text-gray-700'
-                              }`}>
-                                <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs font-black flex items-center justify-center shrink-0">{opt.id.toUpperCase()}</span>
-                                {opt.text}
-                                {opt.id === q.correctOptionId && <CheckCircle className="w-4 h-4 text-emerald-500 ml-auto shrink-0" />}
-                              </div>
-                            ))}
-                          </div>
-                          {q.explanation && (
-                            <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mt-3 border border-blue-100">
-                              💡 {q.explanation}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : parsedAssignmentData ? (
-                  /* ── Homework Assignment Preview ── */
-                  <div className="space-y-6">
-                    <div className="text-center pb-6 border-b border-gray-100">
-                      <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
-                        <ClipboardList className="w-3 h-3" />
-                        <span>HOMEWORK ASSIGNMENT</span>
-                      </div>
-                      <h1 className="text-2xl font-black text-[#002147]">{parsedAssignmentData.title}</h1>
-                      <div className="flex items-center justify-center gap-6 mt-3 text-sm text-gray-500">
-                        <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{parsedAssignmentData.estimatedTime}</span>
-                        <span className="flex items-center gap-1"><Star className="w-4 h-4" />{parsedAssignmentData.totalMarks} marks total</span>
-                      </div>
-                    </div>
-                    {parsedAssignmentData.objectives?.length > 0 && (
-                      <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                        <h3 className="font-bold text-blue-800 text-sm mb-2">Learning Objectives</h3>
-                        <ul className="space-y-1">
-                          {parsedAssignmentData.objectives.map((obj: string, i: number) => (
-                            <li key={i} className="text-sm text-blue-700 flex items-start gap-2">
-                              <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />{obj}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm text-gray-600 mb-4 italic border-l-4 border-amber-300 pl-3">{parsedAssignmentData.instructions}</p>
-                      <div className="space-y-3">
-                        {parsedAssignmentData.tasks?.map((task: any, i: number) => (
-                          <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                            <div className="flex items-start justify-between gap-3 mb-2">
-                              <span className="w-7 h-7 rounded-full bg-[#002147] text-white text-xs font-black flex items-center justify-center shrink-0">{task.number}</span>
-                              <span className="text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">{task.type?.replace('-', ' ')}</span>
-                              <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 ml-auto">{task.marks} marks</span>
-                            </div>
-                            <p className="text-gray-800 font-medium text-sm ml-10">{task.question}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {parsedAssignmentData.rubric && (
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <h3 className="font-bold text-gray-700 text-sm mb-2">📋 Grading Rubric</h3>
-                        <p className="text-sm text-gray-600">{parsedAssignmentData.rubric}</p>
-                      </div>
-                    )}
-                  </div>
-                ) : parsedQuizData ? (
-                  <QuizWorksheet data={parsedQuizData} />
-                ) : (
-                  <div className="prose prose-lg max-w-none text-gray-800">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        h1: ({ node, ...props }) => <h1 className="text-3xl font-black mb-6 text-[#002147]" {...props} />,
-                        h2: ({ node, ...props }) => <h2 className="text-2xl font-bold mt-8 mb-4 text-[#002147] border-b pb-2" {...props} />,
-                        h3: ({ node, ...props }) => <h3 className="text-xl font-bold mt-6 mb-3 text-gray-800" {...props} />,
-                        p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
-                        ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
-                        li: ({ node, ...props }) => <li className="pl-2" {...props} />,
-                        table: ({ node, ...props }) => (
-                          <div className="my-8 w-full overflow-x-auto rounded-xl border border-gray-200">
-                            <table className="w-full text-left border-collapse min-w-[800px]" {...props} />
-                          </div>
-                        ),
-                        thead: ({ node, ...props }) => <thead className="bg-[#002147] text-white" {...props} />,
-                        th: ({ node, ...props }) => <th className="p-4 font-bold tracking-wider text-white" {...props} />,
-                        td: ({ node, ...props }) => <td className="p-4 border-t border-gray-200 align-top bg-white" {...props} />,
-                        tr: ({ node, ...props }) => <tr className="even:bg-gray-50/50" {...props} />,
-                      }}
-                    >
-                      {generatedContent}
-                    </ReactMarkdown>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom Action Bar */}
-              <div className="bg-gray-50 px-6 py-5 border-t border-gray-200 flex items-center justify-center gap-4 print:hidden flex-wrap">
-                {postedResourceId ? (
-                  <>
-                    <div className="flex items-center space-x-2 text-emerald-600 font-bold">
-                      <CheckCircle className="w-5 h-5" />
-                      <span>Published Successfully!</span>
-                    </div>
-                    <button
-                      onClick={() => setShowStatsModal(true)}
-                      className="flex items-center space-x-2 px-5 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors"
-                    >
-                      <BarChart2 className="w-4 h-4 text-purple-500" />
-                      <span>View Stats</span>
-                    </button>
-                    <button
-                      onClick={() => { setPostedResourceId(null); setShowPostModal(true); }}
-                      className="flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                      <span>Post Again</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    {/* Direct Publish for Assignment/Quiz */}
-                    {(parsedAssignmentData || parsedInteractiveQuizData) && (
-                      <QuickPublishButton
-                        profile={profile}
-                        data={parsedAssignmentData || parsedInteractiveQuizData}
-                        type={parsedInteractiveQuizData ? 'quiz' : 'assignment'}
-                        onPublished={(id) => { setPostedResourceId(id); }}
-                      />
-                    )}
-                    {/* Generic Post to Students */}
-                    <button
-                      onClick={() => setShowPostModal(true)}
-                      disabled={!generatedContent}
-                      className="flex items-center space-x-2 px-6 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 transition-all shadow-md disabled:opacity-50"
-                    >
-                      <Send className="w-5 h-5" />
-                      <span>Post as Resource</span>
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-center p-12 bg-white rounded-2xl shadow-sm border border-dashed border-gray-300 print:hidden">
-              <BrainCircuit className="w-16 h-16 text-gray-200 mb-4" />
-              <h3 className="text-xl font-bold text-gray-400 mb-2">Awaiting Instructions</h3>
-              <p className="text-gray-400 max-w-sm">
-                Fill out the prompt configuration on the left and hit generate to create spectacular educational material.
-              </p>
             </div>
           )}
+
+          {/* Quick actions in empty-ish state */}
+          {messages.length <= 1 && !isTyping && (
+            <div className="mt-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 text-center">Quick actions</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {QUICK_ACTIONS.map((action, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(action.prompt)}
+                    className="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl hover:border-indigo-300 hover:bg-indigo-50 transition-all group text-center">
+                    <span className="text-2xl group-hover:scale-110 transition-transform">{action.icon}</span>
+                    <span className="text-xs font-bold text-gray-700 group-hover:text-indigo-700">{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input box */}
+        <div className="border-t border-gray-200 bg-white px-4 py-4 no-print">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex gap-3 items-end bg-gray-50 border border-gray-200 rounded-2xl p-3 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask me to create a quiz, assignment, question paper, or navigate the app…"
+                rows={1}
+                className="flex-1 bg-transparent resize-none focus:outline-none text-gray-800 placeholder-gray-400 text-sm leading-relaxed max-h-32"
+                style={{ minHeight: '24px' }}
+              />
+              <button
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || isTyping}
+                className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#002147] text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 shadow-md hover:-translate-y-0.5">
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 text-center mt-2">Press Enter to send · Shift+Enter for new line</p>
+          </div>
         </div>
       </div>
     </div>

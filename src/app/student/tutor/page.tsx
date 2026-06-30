@@ -13,6 +13,109 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
+/* ─────────────────────────────────────────────────────────
+   🚨 SBI — Sthara Bureau of Investigation
+   EASTER EGG: Only shown to test accounts (uid starts with 'testst')
+   Real students NEVER see this — they get the normal polite warning
+───────────────────────────────────────────────────────── */
+function SBIArrestModal({ onClose, studentName }: { onClose: () => void; studentName: string }) {
+  const caseNo = `SBI-${Date.now().toString().slice(-6)}`;
+  const [countdown, setCountdown] = useState(10);
+
+  useEffect(() => {
+    const t = setInterval(() => setCountdown(c => c > 0 ? c - 1 : 0), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+      <div className="relative w-full max-w-md animate-bounce-once">
+        {/* Red flashing border */}
+        <div className="absolute inset-0 rounded-3xl border-4 border-red-500 animate-pulse" />
+
+        <div className="relative bg-[#0a0a0a] rounded-3xl overflow-hidden shadow-2xl shadow-red-900/50">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-red-900 via-red-700 to-red-900 px-6 py-4 flex items-center justify-between border-b border-red-500/50">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl animate-pulse">🚨</div>
+              <div>
+                <p className="text-red-200 text-[10px] font-black uppercase tracking-[0.3em]">Official Notice</p>
+                <p className="text-white font-black text-lg leading-none">STHARA BUREAU OF INVESTIGATION</p>
+                <p className="text-red-300 text-[10px] font-bold">Dept. of Digital Misconduct & Grammar Crimes</p>
+              </div>
+            </div>
+            <div className="text-5xl">⚖️</div>
+          </div>
+
+          {/* Badge */}
+          <div className="flex justify-center py-5">
+            <div className="relative">
+              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-xl shadow-amber-900/50 border-4 border-amber-300 animate-pulse">
+                <div className="text-center">
+                  <div className="text-4xl">🔍</div>
+                  <p className="text-[8px] font-black text-amber-900 uppercase tracking-widest">SBI</p>
+                </div>
+              </div>
+              <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-red-400 animate-bounce">ACTIVE</div>
+            </div>
+          </div>
+
+          {/* Arrest notice */}
+          <div className="px-6 pb-2 space-y-3 text-center">
+            <div className="bg-red-950/60 border border-red-700/50 rounded-2xl p-4">
+              <p className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">🚨 ARREST WARRANT #{caseNo} 🚨</p>
+              <p className="text-white font-black text-xl mb-1">{studentName || 'SUSPECT'}</p>
+              <p className="text-red-300 text-sm font-bold">YOU HAVE BEEN CAUGHT RED-HANDED!</p>
+            </div>
+
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 text-left space-y-2">
+              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">📋 Charges Filed</p>
+              <div className="space-y-1">
+                {[
+                  '• Section 420-SBI: Criminal use of foul language',
+                  '• Section 69-STHR: Attempted corruption of AI Tutor',
+                  '• Section 1337: Digital misconduct in a school zone',
+                ].map((charge, i) => (
+                  <p key={i} className="text-red-300 text-xs font-mono">{charge}</p>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-amber-950/40 border border-amber-700/40 rounded-2xl p-4">
+              <p className="text-amber-400 text-xs font-black uppercase tracking-widest mb-1">⚖️ Sentence Declared</p>
+              <p className="text-white font-black text-2xl">100 YEARS</p>
+              <p className="text-amber-300 text-sm font-bold">in Sthara Maximum Security Jail 🏛️</p>
+              <p className="text-amber-500/70 text-[10px] mt-1">(WiFi not included. No YouTube allowed.)</p>
+            </div>
+
+            <div className="bg-red-950/40 border border-red-800/40 rounded-2xl p-3">
+              <p className="text-red-400 text-[10px] font-black uppercase tracking-widest mb-1">🔥 Additional Penalty</p>
+              <p className="text-white font-bold text-sm">FIRED as Sthara Tester</p>
+              <p className="text-red-400 text-[10px]">Badge confiscated. Access revoked. Reputation: destroyed.</p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 pb-6 pt-3 space-y-3">
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-black rounded-2xl transition-all text-sm border border-red-500/50 shadow-lg"
+            >
+              {countdown > 0
+                ? `😭 I CONFESS! Release me in ${countdown}s...`
+                : '🙏 I PROMISE TO BEHAVE — Let me go!'}
+            </button>
+            <p className="text-center text-gray-600 text-[10px] font-mono">
+              This is a test environment prank. No actual jails or firings occurred. Probably. — SBI HQ
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'model';
@@ -86,7 +189,11 @@ export default function StudentAITutor() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isDBReady, setIsDBReady] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
+  const [showSBIArrest, setShowSBIArrest] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+
+  // Is this a test account? (UID starts with 'testst' or 'tstteach')
+  const isTestAccount = profile?.uid?.toLowerCase().startsWith('testst') || profile?.uid?.toLowerCase().startsWith('tstteach');
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'student')) {
@@ -191,7 +298,15 @@ export default function StudentAITutor() {
         // Handle foul language warning
         if (data.isFoulWarning) {
           setViolationCount(data.newViolationCount || violationCount + 1);
-          // Save the warning as an AI message
+
+          // 🚨 TEST ACCOUNTS: Show the SBI Arrest Modal instead of the normal warning
+          if (isTestAccount) {
+            setShowSBIArrest(true);
+            setIsTyping(false);
+            return; // Don't save warning to chat, just show the modal
+          }
+
+          // Real students: Save the polite warning as an AI message
           await addDoc(messagesRef, {
             role: 'model',
             text: data.text,
@@ -243,6 +358,15 @@ export default function StudentAITutor() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto py-8 px-4 h-[calc(100vh-80px)] flex flex-col">
+
+      {/* 🚨 SBI Arrest Modal — test accounts only */}
+      {showSBIArrest && (
+        <SBIArrestModal
+          studentName={profile.name || profile.email || 'SUSPECT'}
+          onClose={() => setShowSBIArrest(false)}
+        />
+      )}
+
       <div className="flex items-center justify-between shrink-0 mb-2">
         <div className="flex items-center space-x-4">
           <Link href="/student" className="p-2 bg-white rounded-full border border-[#002147]/10 hover:bg-[#f8fafc] transition-colors text-[#002147]">

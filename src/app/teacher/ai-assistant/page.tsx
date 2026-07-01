@@ -605,55 +605,8 @@ export default function TeacherAIAssistantChat() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex print:bg-white">
+    <div className="flex flex-col h-[calc(100vh-0px)] bg-gray-50 print:bg-white">
       <style>{`@media print { @page { size: A4; margin: 1cm; } .no-print { display: none; } }`}</style>
-
-      {/* LEFT SIDEBAR */}
-      <div className="hidden lg:flex flex-col w-64 bg-[#002147] shrink-0 no-print">
-        {/* Header */}
-        <div className="px-5 py-6 border-b border-white/10">
-          <Link href="/teacher" className="flex items-center gap-2 text-white/60 hover:text-white text-sm font-medium transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg">
-              <BrainCircuit className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-white font-black text-sm">Sthara AI</p>
-              <p className="text-white/40 text-xs">Teaching Assistant</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Nav items */}
-        <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <p className="text-white/30 text-xs font-bold uppercase tracking-wider px-3 mb-3">Quick Navigation</p>
-          {SIDEBAR_ITEMS.map((item, i) => (
-            <Link
-              key={i}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all text-sm font-medium group">
-              <span className={`p-1.5 rounded-lg ${item.color} group-hover:scale-110 transition-transform`}>{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Teacher info */}
-        <div className="px-5 py-4 border-t border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-white text-sm">
-              {profile.name?.charAt(0) || 'T'}
-            </div>
-            <div className="min-w-0">
-              <p className="text-white font-bold text-sm truncate">{profile.name || 'Teacher'}</p>
-              <p className="text-white/40 text-xs">{profile.subject || 'Teacher'}</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* MAIN CHAT AREA */}
       <div className="flex-1 flex flex-col min-w-0">

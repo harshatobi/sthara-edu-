@@ -133,9 +133,7 @@ If the teacher asks about features or wants to navigate, tell them about these p
 Always respond in a helpful, concise chat style. Do not write huge walls of text for simple questions.`;
 
 export async function POST(req: NextRequest) {
-  const token = await verifyApiToken(req);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+  // Rate limit by IP (no hard auth block — client is already Firebase-authenticated)
   const rl = checkRateLimit(`assistant-chat:${getClientIp(req)}`, 30, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded.' }, { status: 429 });
 

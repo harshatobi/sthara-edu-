@@ -137,6 +137,12 @@ export async function POST(req: NextRequest) {
   const rl = checkRateLimit(`assistant-chat:${getClientIp(req)}`, 30, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded.' }, { status: 429 });
 
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error('[assistant-chat] GEMINI_API_KEY is not set');
+    return NextResponse.json({ error: 'AI not configured' }, { status: 503 });
+  }
+
   try {
     const { messages } = await req.json() as { messages: { role: 'user' | 'model'; parts: string }[] };
 
@@ -144,10 +150,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Messages required' }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const ai = new GoogleGenerativeAI(apiKey);
+
+    const model = ai.getGenerativeModel({
       model: 'gemini-2.5-flash',
       systemInstruction: SYSTEM_PROMPT,
-      generationConfig: { temperature: 0.7 },
+      generationConfig: {
+        temperature: 1,
+        thinkingConfig: { thinkingBudget: 0 },
+      } as any,
     });
 
     // Convert our messages to Gemini format
@@ -168,7 +180,8 @@ export async function POST(req: NextRequest) {
             controller.enqueue(new TextEncoder().encode(chunk.text()));
           }
           controller.close();
-        } catch (e) {
+        } catch (e: any) {
+          console.error('[assistant-chat] Stream error:', e?.message);
           controller.error(e);
         }
       },
@@ -181,7 +194,9 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
-    console.error('[assistant-chat]', err);
+    console.error('[assistant-chat] FULL ERROR:', err?.message || err);
+    console.error('[assistant-chat] STATUS:', err?.status);
+    console.error('[assistant-chat] STACK:', err?.stack?.substring(0, 500));
     return NextResponse.json({ error: 'AI error. Try again.' }, { status: 503 });
   }
 }

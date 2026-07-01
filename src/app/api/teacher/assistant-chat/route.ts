@@ -1,11 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const maxDuration = 60;
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const SYSTEM_PROMPT = `You are Sthara AI, an elite school teaching assistant. You help teachers create assignments, quizzes, question papers, lesson plans, and manage their classroom through conversation.
 
@@ -150,23 +147,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Messages required' }, { status: 400 });
     }
 
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const ai = new GoogleGenerativeAI(apiKey);
-
     const model = ai.getGenerativeModel({
       model: 'gemini-2.5-flash',
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: {
-        temperature: 1,
-        thinkingConfig: { thinkingBudget: 0 },
-      } as any,
+        temperature: 0.7,
+      },
     });
 
-    // Convert our messages to Gemini format
-    const history = messages.slice(0, -1).map(m => ({
-      role: m.role,
-      parts: [{ text: m.parts }],
-    }));
+    // Convert and filter history to strictly alternate starting with 'user'
+    const history: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
+    let expectedRole: 'user' | 'model' = 'user';
+    
+    for (const m of messages.slice(0, -1)) {
+      const role = m.role === 'model' ? 'model' : 'user';
+      if (role === expectedRole) {
+        history.push({
+          role,
+          parts: [{ text: m.parts }],
+        });
+        expectedRole = role === 'user' ? 'model' : 'user';
+      }
+    }
 
     const lastMessage = messages[messages.length - 1].parts;
 

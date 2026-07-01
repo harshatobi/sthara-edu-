@@ -262,7 +262,116 @@ function GeneratedContentCard({ data, profile, onPublished }: { data: any; profi
   const type = data.generationType || (data.isInteractiveQuiz ? 'quiz' : data.isAssignment ? 'assignment' : data.isPaper ? 'paper' : null);
   if (!type) return null;
 
-  const handleDownload = () => window.print();
+  const handleDownload = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let htmlContent = `
+      <html>
+        <head>
+          <title>${data.title || 'Sthara Educational Document'}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1a202c; padding: 40px; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+            h1 { font-size: 26px; font-weight: 800; border-bottom: 2px solid #1a202c; padding-bottom: 12px; margin-bottom: 8px; color: #111827; }
+            .meta { font-size: 13px; color: #4b5563; margin-bottom: 30px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+            .question-block { margin-bottom: 24px; padding: 16px; border-radius: 8px; border: 1px solid #f3f4f6; page-break-inside: avoid; background-color: #fafafa; }
+            .question-title { font-weight: 700; font-size: 15px; color: #1f2937; }
+            .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+            .option { padding: 8px 14px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; background-color: #ffffff; color: #374151; }
+            .correct { background-color: #ecfdf5; border-color: #10b981; color: #065f46; font-weight: 700; }
+            .section-title { font-size: 18px; font-weight: 800; color: #111827; background: #e5e7eb; padding: 8px 16px; margin-top: 32px; margin-bottom: 16px; border-radius: 6px; }
+            .instructions { font-style: italic; color: #4b5563; font-size: 14px; margin-bottom: 24px; padding: 12px; border-left: 4px solid #9ca3af; background-color: #f9fafb; }
+            .task-marks { float: right; font-weight: 800; color: #374151; font-size: 13px; background-color: #f3f4f6; padding: 2px 8px; border-radius: 4px; }
+            .explanation { font-size: 13px; color: #047857; font-style: italic; margin-top: 8px; padding: 8px; background-color: #f0fdf4; border-radius: 4px; border-left: 3px solid #10b981; }
+          </style>
+        </head>
+        <body>
+          <h1>${data.title || 'Untitled Document'}</h1>
+          <div class="meta">
+            Subject: ${data.subject || 'N/A'} &nbsp;|&nbsp; 
+            Class: ${data.targetClass || 'N/A'} &nbsp;|&nbsp; 
+            Difficulty: ${data.difficulty || 'Medium'}
+            ${data.timeLimit ? `&nbsp;|&nbsp; Time Limit: ${data.timeLimit} mins` : ''}
+            ${data.totalMarks ? `&nbsp;|&nbsp; Total Marks: ${data.totalMarks}` : ''}
+            ${data.duration ? `&nbsp;|&nbsp; Duration: ${data.duration}` : ''}
+          </div>
+    `;
+
+    if (type === 'quiz') {
+      data.questions?.forEach((q: any, i: number) => {
+        htmlContent += `
+          <div class="question-block">
+            <div class="question-title">Q${i + 1}. ${q.text}</div>
+            <div class="options-grid">
+              ${q.options?.map((o: any) => `
+                <div class="option ${o.id === q.correctOptionId ? 'correct' : ''}">
+                  ${o.id.toUpperCase()}. ${o.text}
+                </div>
+              `).join('')}
+            </div>
+            ${q.explanation ? `<div class="explanation"><strong>Explanation:</strong> ${q.explanation}</div>` : ''}
+          </div>
+        `;
+      });
+    } else if (type === 'assignment') {
+      if (data.instructions) {
+        htmlContent += `<div class="instructions"><strong>Instructions:</strong> ${data.instructions}</div>`;
+      }
+      data.tasks?.forEach((t: any) => {
+        htmlContent += `
+          <div class="question-block">
+            <span class="task-marks">${t.marks} Marks</span>
+            <div class="question-title">Task ${t.number}. ${t.question}</div>
+            <div style="font-size: 12px; color: #6b7280; margin-top: 6px; font-weight: 500;">Type: ${t.type}</div>
+          </div>
+        `;
+      });
+      if (data.rubric) {
+        htmlContent += `
+          <div class="section-title">Grading Rubric</div>
+          <p style="white-space: pre-wrap; font-size: 14px; color: #374151; background-color: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">${data.rubric}</p>
+        `;
+      }
+    } else if (type === 'paper') {
+      if (data.instructions) {
+        htmlContent += `<div class="instructions"><strong>Instructions:</strong> ${data.instructions}</div>`;
+      }
+      data.sections?.forEach((s: any) => {
+        htmlContent += `<div class="section-title">${s.name} (${s.marks} Marks)</div>`;
+        s.questions?.forEach((q: any) => {
+          htmlContent += `
+            <div class="question-block">
+              <span class="task-marks">${q.marks} Marks</span>
+              <div class="question-title">Q${q.number}. ${q.text}</div>
+              ${q.options ? `
+                <div class="options-grid">
+                  ${q.options.map((o: any, idx: number) => `
+                    <div class="option ${o === q.answer ? 'correct' : ''}">
+                      ${String.fromCharCode(65 + idx)}. ${o}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+              ${q.answer ? `<div class="explanation"><strong>Answer/Key Points:</strong> ${q.answer}</div>` : ''}
+            </div>
+          `;
+        });
+      });
+    }
+
+    htmlContent += `
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
 
   const color = type === 'quiz' ? 'purple' : type === 'paper' ? 'slate' : 'amber';
   const colorMap: Record<string, string> = {

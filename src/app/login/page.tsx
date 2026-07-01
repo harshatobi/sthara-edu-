@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-
 import { auth, db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
@@ -109,56 +108,33 @@ export default function LoginPage() {
       setIsSigningIn(false);
       setError('Login is taking longer than expected. Please try again later.');
     }, 15000);
+
     try {
+      // 1. Sign in with Firebase Auth
       const credential = await signInWithEmailAndPassword(auth, email, password);
       clearTimeout(timeoutId);
-      console.log('Firebase signIn success', credential);
-      const uid = credential.user.uid;
+      console.log('Firebase signIn success', credential.user.uid);
 
-      // ── Directly fetch role from Firestore and redirect immediately ──
-      // Don't rely on useEffect + AuthContext chain — it has timing issues
-      let userRole: string | null = null;
-      console.log('Fetching user role for uid', uid);
+      // 2. Get the ID token and ask the server for the role (Admin SDK bypasses security rules)
+      const idToken = await credential.user.getIdToken();
+      const res = await fetch('/api/auth/get-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await res.json();
+      console.log('get-role response', res.status, data);
 
-      // 1. Check superadmins collection first
-      try {
-        const saSnap = await getDoc(doc(db, 'superadmins', uid));
-        if (saSnap.exists()) {
-          userRole = 'superadmin';
-          console.log('User found in superadmins collection');
-        }
-      } catch (e) { console.error('Error checking superadmins', e); }
-
-      // 2. Check global_users
-      if (!userRole) {
-        try {
-          const guSnap = await getDoc(doc(db, 'global_users', uid));
-          if (guSnap.exists()) {
-            userRole = guSnap.data().role;
-            console.log('User found in global_users collection with role', userRole);
-          }
-        } catch (e) { console.error('Error checking global_users', e); }
-      }
-
-      // 3. Check users (legacy)
-      if (!userRole) {
-        try {
-          const uSnap = await getDoc(doc(db, 'users', uid));
-          if (uSnap.exists()) {
-            userRole = uSnap.data().role;
-            console.log('User found in users collection with role', userRole);
-          }
-        } catch (e) { console.error('Error checking users', e); }
-      }
-
-      if (!userRole) {
+      if (!res.ok || !data.role) {
         setError('Account profile not found. Please contact your school administrator.');
+        await signOut(auth);
         setIsSigningIn(false);
-        console.warn('No role found for uid');
         return;
       }
 
-      // Role mismatch check (allow superadmin to use 'admin' or 'superadmin' selector)
+      const userRole: string = data.role;
+
+      // 3. Role mismatch check (allow superadmin to use 'admin' or 'superadmin' selector)
       const isSuperadmin = userRole === 'superadmin';
       const selectedSuperadmin = role === 'superadmin' || role === 'admin';
       if (role && userRole !== role && !(isSuperadmin && selectedSuperadmin)) {
@@ -169,7 +145,7 @@ export default function LoginPage() {
         return;
       }
 
-      // ── Redirect based on role ──
+      // 4. Redirect
       const destinations: Record<string, string> = {
         superadmin: '/superadmin',
         teacher:    '/teacher',
@@ -177,10 +153,11 @@ export default function LoginPage() {
         admin:      '/admin',
         parent:     '/parent',
       };
-      console.log('Redirecting to role dashboard', userRole);
+      console.log('Redirecting to', userRole, '->', destinations[userRole]);
       window.location.href = destinations[userRole] || '/';
 
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error('Login error', err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('Incorrect email or password. Please try again.');

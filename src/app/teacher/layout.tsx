@@ -10,6 +10,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const navigation = [
     { name: 'Dashboard', href: '/teacher', icon: LayoutDashboard, current: pathname === '/teacher' },
     { name: 'Syllabus & Homework', href: '/teacher/syllabus', icon: Activity, current: pathname === '/teacher/syllabus' },
+    { name: 'Assignment Manager', href: '/teacher/assignments', icon: CheckSquare, current: pathname === '/teacher/assignments' },
     { name: 'Quiz Creator', href: '/teacher/quiz', icon: ClipboardList, current: pathname.startsWith('/teacher/quiz') },
     { name: 'AI Assistant', href: '/teacher/ai-assistant', icon: Users, current: pathname === '/teacher/ai-assistant' },
     { name: 'Class Heat Map', href: '/teacher/heatmap', icon: Users, current: pathname === '/teacher/heatmap' },

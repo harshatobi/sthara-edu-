@@ -4,17 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-
 
 type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { profile, loading } = useAuth();
 
   const [step, setStep] = useState<Step>('SCHOOL_CODE');
   const [schoolCode, setSchoolCode] = useState('');
@@ -27,33 +24,24 @@ export default function LoginPage() {
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [loginAttempted, setLoginAttempted] = useState(false);
 
   const handleSchoolCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.toUpperCase();
     const alphanumericOnly = rawValue.replace(/[^A-Z0-9]/g, '');
-    
     if (rawValue !== alphanumericOnly && rawValue.length > 0) {
       setSchoolCodeError('Only letters and numbers are allowed');
     } else {
       setSchoolCodeError('');
     }
-
     setSchoolCode(alphanumericOnly);
   };
 
   const handleSchoolCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolCode.trim()) {
-      setSchoolCodeError('School code cannot be empty');
-      return;
-    }
-    
-    if (schoolCode.length < 3) {
-      setSchoolCodeError('School code is too short');
-      return;
-    }
-    
+    if (!schoolCode.trim()) { setSchoolCodeError('School code cannot be empty'); return; }
+    if (schoolCode.length < 3) { setSchoolCodeError('School code is too short'); return; }
+
+    // Superadmin code — skip school lookup
     if (schoolCode === 'STHARA' || schoolCode === 'ADMIN') {
       setSchoolCodeError('');
       setStep('ROLE_SELECT');
@@ -62,21 +50,12 @@ export default function LoginPage() {
 
     setIsVerifyingCode(true);
     setSchoolCodeError('');
-
     try {
-      // First try direct doc lookup (schoolCode IS the docId — used by superadmin portal)
       const directSnap = await getDoc(doc(db, 'schools', schoolCode));
-      if (directSnap.exists()) {
-        setStep('ROLE_SELECT');
-        return;
-      }
-      // Fallback: query by 'code' field (legacy schools)
+      if (directSnap.exists()) { setStep('ROLE_SELECT'); return; }
       const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
       const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        setStep('ROLE_SELECT');
-        return;
-      }
+      if (!querySnapshot.empty) { setStep('ROLE_SELECT'); return; }
       setSchoolCodeError('School Code Not Found. Please check and try again.');
     } catch (err) {
       console.error(err);
@@ -93,29 +72,21 @@ export default function LoginPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login submit triggered', { email, role });
     setError('');
-    
-    if (!email || !password) {
-      setError('Please enter email and password');
-      return;
-    }
+    if (!email || !password) { setError('Please enter email and password'); return; }
 
     setIsSigningIn(true);
-    // safety timeout to avoid indefinite spinner
     const timeoutId = setTimeout(() => {
-      console.warn('Login timeout reached');
       setIsSigningIn(false);
-      setError('Login is taking longer than expected. Please try again later.');
-    }, 15000);
+      setError('Login timed out. Please try again.');
+    }, 20000);
 
     try {
-      // 1. Sign in with Firebase Auth
+      // Step 1: Firebase Auth sign in
       const credential = await signInWithEmailAndPassword(auth, email, password);
       clearTimeout(timeoutId);
-      console.log('Firebase signIn success', credential.user.uid);
 
-      // 2. Get the ID token and ask the server for the role (Admin SDK bypasses security rules)
+      // Step 2: Get ID token, call server API (Admin SDK — no security rules)
       const idToken = await credential.user.getIdToken();
       const res = await fetch('/api/auth/get-role', {
         method: 'POST',
@@ -123,42 +94,39 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
       const data = await res.json();
-      console.log('get-role response', res.status, data);
 
       if (!res.ok || !data.role) {
-        setError('Account profile not found. Please contact your school administrator.');
         await signOut(auth);
+        setError('Account profile not found. Please contact your school administrator.');
         setIsSigningIn(false);
         return;
       }
 
       const userRole: string = data.role;
 
-      // 3. Role mismatch check (allow superadmin to use 'admin' or 'superadmin' selector)
+      // Step 3: Role mismatch check (superadmin can use either 'admin' or 'superadmin' selector)
       const isSuperadmin = userRole === 'superadmin';
       const selectedSuperadmin = role === 'superadmin' || role === 'admin';
       if (role && userRole !== role && !(isSuperadmin && selectedSuperadmin)) {
         await signOut(auth);
         setError(`This account is not registered as a ${role}. Please go back and select the correct role.`);
         setIsSigningIn(false);
-        console.warn('Role mismatch', { selected: role, actual: userRole });
         return;
       }
 
-      // 4. Redirect
+      // Step 4: Hard redirect to dashboard
       const destinations: Record<string, string> = {
         superadmin: '/superadmin',
-        teacher:    '/teacher',
-        student:    '/student',
-        admin:      '/admin',
-        parent:     '/parent',
+        teacher: '/teacher',
+        student: '/student',
+        admin: '/admin',
+        parent: '/parent',
       };
-      console.log('Redirecting to', userRole, '->', destinations[userRole]);
       window.location.href = destinations[userRole] || '/';
 
     } catch (err: any) {
       clearTimeout(timeoutId);
-      console.error('Login error', err);
+      console.error('Login error:', err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('Incorrect email or password. Please try again.');
       } else if (err.code === 'auth/too-many-requests') {
@@ -173,10 +141,7 @@ export default function LoginPage() {
   const handleForgotPassword = async () => {
     setError('');
     setResetMessage('');
-    if (!email) {
-      setError('Please enter your email first to reset your password.');
-      return;
-    }
+    if (!email) { setError('Please enter your email first to reset your password.'); return; }
     try {
       await sendPasswordResetEmail(auth, email);
       setResetMessage('Password reset email sent! Check your inbox.');
@@ -186,33 +151,10 @@ export default function LoginPage() {
     }
   };
 
-      // Allow superadmin to log in via either 'admin' or 'superadmin' role selection
-      const isRoleMismatch = role && profile.role !== role &&
-        !(profile.role === 'superadmin' && (role === 'admin' || role === 'superadmin'));
-      if (isRoleMismatch) {
-        signOut(auth).then(() => {
-          setError(`This account is not registered as a ${role}. Please go back and select the correct role.`);
-          setIsSigningIn(false);
-          setLoginAttempted(false);
-        }).catch(console.error);
-        return;
-      }
-      // Correct role — redirect to dashboard
-      if (profile.role === 'superadmin') { router.push('/superadmin'); return; }
-      if (profile.role === 'student')    { router.push('/student');    return; }
-      if (profile.role === 'teacher')    { router.push('/teacher');    return; }
-      if (profile.role === 'admin')      { router.push('/admin');      return; }
-      if (profile.role === 'parent')     { router.push('/parent');     return; }
-    }
-    // NOTE: Do NOT auto-signout when already logged in visiting /login.
-    // This caused a race condition where fresh logins got signed out mid-flow.
-  }, [loading, profile, loginAttempted, router, role]);
-
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#001229] to-[#002147] p-6">
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
-        {/* Branding Section */}
+        {/* Branding */}
         <div className="text-white space-y-6">
           <div className="flex items-center space-x-3 mb-8">
             <Shield className="w-12 h-12 text-[#dc143c]" />
@@ -224,14 +166,13 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Dynamic Login Flow */}
+        {/* Login Card */}
         <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-2xl shadow-2xl min-h-[400px] flex flex-col justify-center relative">
-          
+
           {step === 'SCHOOL_CODE' && (
             <div className="animate-in fade-in duration-300">
               <h3 className="text-2xl font-semibold text-white mb-2">Welcome</h3>
               <p className="text-white/60 mb-8">Enter your school code to continue.</p>
-              
               <form onSubmit={handleSchoolCodeSubmit} className="space-y-4">
                 <div>
                   <input
@@ -241,9 +182,7 @@ export default function LoginPage() {
                     placeholder="e.g. DPS101"
                     maxLength={10}
                     className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 uppercase transition-colors ${
-                      schoolCodeError 
-                        ? 'border-[#dc143c] focus:ring-[#dc143c]/50' 
-                        : 'border-white/10 focus:ring-white/20'
+                      schoolCodeError ? 'border-[#dc143c] focus:ring-[#dc143c]/50' : 'border-white/10 focus:ring-white/20'
                     }`}
                   />
                   {schoolCodeError && (
@@ -266,16 +205,14 @@ export default function LoginPage() {
 
           {step === 'ROLE_SELECT' && (
             <div className="animate-in slide-in-from-right-4 duration-300">
-              <button 
+              <button
                 onClick={() => setStep('SCHOOL_CODE')}
                 className="absolute top-6 left-6 text-white/50 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              
               <h3 className="text-2xl font-semibold text-white mb-2 mt-4 text-center">Select your role</h3>
               <p className="text-white/60 mb-8 text-center text-sm">School: {schoolCode.toUpperCase()}</p>
-              
               <div className="grid grid-cols-2 gap-4">
                 <RoleCard onClick={() => handleRoleSelect('student')} icon={BookOpen} title="Student" subtitle="Honest Desk" />
                 <RoleCard onClick={() => handleRoleSelect('teacher')} icon={GraduationCap} title="Teacher" subtitle="Diagnostic Engine" />
@@ -290,28 +227,24 @@ export default function LoginPage() {
 
           {step === 'CREDENTIALS' && (
             <div className="animate-in slide-in-from-right-4 duration-300">
-               <button 
-                onClick={() => role === 'superadmin' ? setStep('SCHOOL_CODE') : setStep('ROLE_SELECT')}
+              <button
+                onClick={() => setStep('ROLE_SELECT')}
                 className="absolute top-6 left-6 text-white/50 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-
               <h3 className="text-2xl font-semibold text-white mb-2 mt-4">Sign In</h3>
               <p className="text-white/60 mb-8 text-sm capitalize">
                 {role} Portal {role !== 'superadmin' && `• ${schoolCode.toUpperCase()}`}
               </p>
-              
               <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Address"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
-                  />
-                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email Address"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -330,17 +263,11 @@ export default function LoginPage() {
                 </div>
                 {error && <p className="text-[#dc143c] text-sm text-center font-medium bg-[#dc143c]/10 p-2 rounded-lg">{error}</p>}
                 {resetMessage && <p className="text-green-400 text-sm text-center font-medium bg-green-400/10 p-2 rounded-lg">{resetMessage}</p>}
-                
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="text-white/60 hover:text-white text-sm transition-colors"
-                  >
+                  <button type="button" onClick={handleForgotPassword} className="text-white/60 hover:text-white text-sm transition-colors">
                     Forgot Password?
                   </button>
                 </div>
-
                 <button
                   type="submit"
                   disabled={isSigningIn || !email || !password}
@@ -358,10 +285,9 @@ export default function LoginPage() {
               </form>
             </div>
           )}
-
         </div>
 
-        {/* Register your school / privacy links */}
+        {/* Footer links */}
         <div className="mt-6 text-center space-y-2">
           <p className="text-white/40 text-sm font-medium">
             New school?{' '}
@@ -380,10 +306,9 @@ export default function LoginPage() {
   );
 }
 
-
 function RoleCard({ onClick, icon: Icon, title, subtitle }: { onClick: () => void; icon: any; title: string; subtitle: string }) {
   return (
-    <button 
+    <button
       onClick={onClick}
       className="group flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/20 hover:border-white/30 transition-all duration-300 w-full text-center"
     >

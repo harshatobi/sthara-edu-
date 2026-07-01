@@ -410,9 +410,9 @@ function GeneratedContentCard({ data, profile, onPublished }: { data: any; profi
 
       {/* Preview */}
       {type === 'quiz' && (
-        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-          {data.questions?.slice(0, 3).map((q: any, i: number) => (
-            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm">
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          {data.questions?.map((q: any, i: number) => (
+            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm border border-purple-100/50">
               <p className="font-bold text-gray-800">Q{i+1}. {q.text}</p>
               <div className="grid grid-cols-2 gap-1 mt-1.5">
                 {q.options?.map((o: any) => (
@@ -423,14 +423,13 @@ function GeneratedContentCard({ data, profile, onPublished }: { data: any; profi
               </div>
             </div>
           ))}
-          {(data.questions?.length || 0) > 3 && <p className="text-xs opacity-60 text-center">+{data.questions.length - 3} more questions</p>}
         </div>
       )}
 
       {type === 'assignment' && (
-        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-          {data.tasks?.slice(0, 3).map((t: any, i: number) => (
-            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm flex gap-3">
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          {data.tasks?.map((t: any, i: number) => (
+            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm flex gap-3 border border-amber-100/50">
               <span className="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-black flex items-center justify-center shrink-0">{t.number}</span>
               <div>
                 <span className="text-xs font-bold opacity-60 uppercase">{t.type} · {t.marks} marks</span>
@@ -438,16 +437,33 @@ function GeneratedContentCard({ data, profile, onPublished }: { data: any; profi
               </div>
             </div>
           ))}
-          {(data.tasks?.length || 0) > 3 && <p className="text-xs opacity-60 text-center">+{data.tasks.length - 3} more tasks</p>}
         </div>
       )}
 
       {type === 'paper' && (
-        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+        <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
           {data.sections?.map((s: any, i: number) => (
-            <div key={i} className="bg-white/80 rounded-xl p-3 text-sm">
-              <p className="font-bold text-gray-800">{s.name}</p>
-              <p className="text-xs opacity-60">{s.questions?.length} questions · {s.marks} marks</p>
+            <div key={i} className="bg-white/80 rounded-xl p-4 text-sm border border-slate-200/50 space-y-3">
+              <div>
+                <p className="font-extrabold text-gray-900 border-b border-gray-100 pb-1.5">{s.name}</p>
+                <p className="text-xs text-gray-500 font-bold mt-0.5">{s.questions?.length || 0} questions · {s.marks} marks</p>
+              </div>
+              <div className="space-y-3 pt-1">
+                {s.questions?.map((q: any, idx: number) => (
+                  <div key={idx} className="pl-3 border-l-2 border-slate-300 space-y-1">
+                    <p className="font-bold text-gray-800 text-xs">Q{q.number}. {q.text} <span className="text-[10px] text-gray-400">({q.marks}M)</span></p>
+                    {q.options && (
+                      <div className="grid grid-cols-2 gap-1 pl-1 mt-1">
+                        {q.options.map((o: any, oIdx: number) => (
+                          <span key={oIdx} className={`text-[10px] px-2 py-0.5 rounded-lg ${o === q.answer ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-200' : 'bg-gray-100/70 text-gray-500'}`}>
+                            {String.fromCharCode(65 + oIdx)}. {o}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>

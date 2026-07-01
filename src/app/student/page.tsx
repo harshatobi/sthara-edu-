@@ -220,7 +220,7 @@ export default function StudentDashboard() {
                 mimeType: compressed.mimeType,
                 assignmentTitle: selectedTask.title,
                 assignmentDescription: selectedTask.description,
-                assignmentQuestions: selectedTask.questions || [],
+                assignmentQuestions: selectedTask.questions || selectedTask.tasks || selectedTask.sections || [],
 
               }),
             });

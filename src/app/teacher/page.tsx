@@ -150,11 +150,20 @@ export default function TeacherDashboard() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    // Note: Since we are not using a server action, this is just a UI update prototype.
-    // In production we would delete all subcollections then the doc.
-    alert("Task has been approved and deleted from the class list!");
-    setClassTasks(prev => prev.filter(t => t.id !== taskId));
-    setSelectedTask(null);
+    if (!profile?.schoolId) return;
+    if (!window.confirm("Are you sure you want to permanently delete this assignment?")) return;
+    
+    try {
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, 'schools', profile.schoolId, 'assignments', taskId));
+      
+      setClassTasks(prev => prev.filter(t => t.id !== taskId));
+      setSelectedTask(null);
+      alert("Assignment has been deleted.");
+    } catch (e) {
+      console.error("Failed to delete assignment:", e);
+      alert("Failed to delete assignment. Please try again.");
+    }
   };
 
   const handleSendReminder = (studentName: string) => {
@@ -457,15 +466,28 @@ export default function TeacherDashboard() {
                           </div>
                           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Students Submitted</div>
                         </div>
-                        {selectedTask.isCompleted && (
+                        <div className="flex gap-2 mt-2">
+                          {selectedTask.isCompleted && (
+                            <button
+                              onClick={() => {
+                                // Archive visually but don't delete
+                                setClassTasks(prev => prev.filter(t => t.id !== selectedTask.id));
+                                setSelectedTask(null);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5"
+                            >
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              <span>Archive</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteTask(selectedTask.id)}
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all flex items-center space-x-1.5"
+                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5"
                           >
-                            <CheckSquare className="w-3.5 h-3.5" />
-                            <span>Archive Task</span>
+                            <X className="w-3.5 h-3.5" />
+                            <span>Delete</span>
                           </button>
-                        )}
+                        </div>
                       </div>
                     </div>
 

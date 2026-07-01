@@ -275,7 +275,7 @@ export default function HomeworkAssignment() {
           assignmentTitle: assignment.topic || assignment.title,
           assignmentSubject: assignment.subject,
           assignmentDescription: assignment.description,
-          assignmentQuestions: assignment.questions,
+          assignmentQuestions: assignment.questions || assignment.tasks || assignment.sections || [],
         })
       });
 
@@ -452,19 +452,78 @@ export default function HomeworkAssignment() {
               </div>
             )}
 
-            {assignment.questions && assignment.questions.length > 0 && (
+            {((assignment.questions && assignment.questions.length > 0) || (assignment.tasks && assignment.tasks.length > 0) || (assignment.sections && assignment.sections.length > 0)) && (
               <div className="space-y-4 relative">
                 <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gray-100" />
-                {assignment.questions.map((q: string, idx: number) => (
-                  <div key={idx} className="relative flex space-x-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100/50">
-                    <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#002147] text-white font-black flex items-center justify-center shadow-md">{idx + 1}</div>
-                    <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed">{cleanMath(q)}</div>
-                  </div>
+                
+                {/* Render Legacy Questions or AI Quiz Questions */}
+                {assignment.questions && assignment.questions.map((q: any, idx: number) => {
+                  const qText = typeof q === 'string' ? q : q.text || q.question;
+                  return (
+                    <div key={`q-${idx}`} className="relative flex space-x-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100/50">
+                      <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#002147] text-white font-black flex items-center justify-center shadow-md">{idx + 1}</div>
+                      <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed">
+                        <div className="mb-2">{cleanMath(qText)}</div>
+                        {q.options && (
+                          <div className="space-y-2 mt-4 ml-2">
+                            {q.options.map((opt: string, oIdx: number) => (
+                              <div key={oIdx} className="flex items-center space-x-3 text-sm text-gray-700 bg-white p-3 rounded-xl border border-gray-100">
+                                <span className="font-bold text-gray-400">{String.fromCharCode(65 + oIdx)}.</span>
+                                <span>{cleanMath(opt)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Render AI Assignment Tasks */}
+                {assignment.tasks && assignment.tasks.map((task: any, idx: number) => (
+                    <div key={`t-${idx}`} className="relative flex space-x-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100/50">
+                      <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#002147] text-white font-black flex items-center justify-center shadow-md">{idx + 1}</div>
+                      <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed w-full">
+                        <div className="flex justify-between items-start w-full gap-4 mb-2">
+                           <div>{cleanMath(task.question || task.text)}</div>
+                           <div className="shrink-0 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">[{task.marks} Marks]</div>
+                        </div>
+                      </div>
+                    </div>
                 ))}
+
+                {/* Render AI Exam Paper Sections */}
+                {assignment.sections && assignment.sections.map((section: any, sIdx: number) => (
+                    <div key={`s-${sIdx}`} className="mt-8 mb-4">
+                       <h3 className="font-bold text-[#002147] text-xl mb-4 bg-gray-100 inline-block px-4 py-1 rounded-full">{section.title}</h3>
+                       {section.questions.map((q: any, qIdx: number) => (
+                         <div key={`sq-${qIdx}`} className="relative flex space-x-6 bg-white p-6 rounded-3xl border border-gray-200 mb-4 shadow-sm">
+                           <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full border-2 border-[#002147] text-[#002147] font-black flex items-center justify-center shadow-sm">Q{qIdx + 1}</div>
+                           <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed w-full">
+                              <div className="flex justify-between items-start gap-4 mb-2">
+                                <div>{cleanMath(q.text || q.question)}</div>
+                                <div className="shrink-0 bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded">[{q.marks} Marks]</div>
+                              </div>
+                              {q.options && (
+                                <div className="space-y-2 mt-4 ml-2">
+                                  {q.options.map((opt: string, oIdx: number) => (
+                                    <div key={oIdx} className="flex items-center space-x-3 text-sm text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                      <span className="font-bold text-gray-400">{String.fromCharCode(65 + oIdx)}.</span>
+                                      <span>{cleanMath(opt)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                           </div>
+                         </div>
+                       ))}
+                    </div>
+                ))}
+
               </div>
             )}
 
-            {(!assignment.questions || assignment.questions.length === 0) && !assignment.description && (
+            {(!assignment.questions || assignment.questions.length === 0) && (!assignment.tasks || assignment.tasks.length === 0) && (!assignment.sections || assignment.sections.length === 0) && !assignment.description && (
               <p className="text-[#002147]/50 font-medium italic text-center py-4">No specific questions — submit your handwritten work below.</p>
             )}
           </div>

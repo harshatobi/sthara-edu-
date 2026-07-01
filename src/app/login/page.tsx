@@ -136,8 +136,7 @@ export default function LoginPage() {
     }
   };
 
-  // If the user just logged in successfully, redirect them to their dashboard.
-  // If they visited /login while already logged in (different session), sign them out first.
+  // Redirect after login — runs whenever profile loads
   useEffect(() => {
     if (loading) return;
     if (!profile) return;
@@ -156,15 +155,14 @@ export default function LoginPage() {
         return;
       }
       // Correct role — redirect to dashboard
-      if (profile.role === 'superadmin') router.push('/superadmin');
-      else if (profile.role === 'student') router.push('/student');
-      else if (profile.role === 'teacher') router.push('/teacher');
-      else if (profile.role === 'admin') router.push('/admin');
-      else if (profile.role === 'parent') router.push('/parent');
-    } else {
-      // User arrived at /login while already logged in — sign them out
-      signOut(auth).catch((err: unknown) => console.error('Sign out error:', err));
+      if (profile.role === 'superadmin') { router.push('/superadmin'); return; }
+      if (profile.role === 'student')    { router.push('/student');    return; }
+      if (profile.role === 'teacher')    { router.push('/teacher');    return; }
+      if (profile.role === 'admin')      { router.push('/admin');      return; }
+      if (profile.role === 'parent')     { router.push('/parent');     return; }
     }
+    // NOTE: Do NOT auto-signout when already logged in visiting /login.
+    // This caused a race condition where fresh logins got signed out mid-flow.
   }, [loading, profile, loginAttempted, router, role]);
 
 

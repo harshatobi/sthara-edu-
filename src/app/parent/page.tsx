@@ -78,99 +78,28 @@ export default function ParentDashboard() {
   // ── Load children data ────────────────────────────────────────────────────
   useEffect(() => {
     const schoolId = profile?.schoolId;
-    let linked: string[] = profile?.linkedStudents || [];
-    const localLinked = typeof window !== 'undefined' ? localStorage.getItem('demo_linked_student') : null;
-    if (linked.length === 0 && localLinked) linked = [localLinked];
-    if (!linked.length || !schoolId) { setLoadingData(false); return; }
+    if (!schoolId) { setLoadingData(false); return; }
 
     const fetchChildren = async () => {
       try {
-        const [usersSnap, globalSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('schoolId', '==', schoolId), where('customStudentId', 'in', linked))),
-          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', schoolId), where('customStudentId', 'in', linked))),
-        ]);
+        const { getAuth } = await import('firebase/auth');
+        const token = await getAuth().currentUser?.getIdToken();
+        if (!token) { setLoadingData(false); return; }
 
-        const seen = new Set<string>();
-        const studentDocs: any[] = [];
-        [...usersSnap.docs, ...globalSnap.docs].forEach(d => {
-          if (!seen.has(d.id)) { seen.add(d.id); studentDocs.push({ id: d.id, ...d.data() }); }
+        const res = await fetch('/api/parent/get-children', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: token })
         });
 
-        const children: Child[] = await Promise.all(studentDocs.map(async (student) => {
-          // Assignments
-          const assignSnap = await getDocs(query(
-            collection(db, 'schools', schoolId, 'assignments'),
-            where('class', '==', student.studentClass)
-          ));
-
-          const assignments: any[] = [];
-          const subjectScoreMap: Record<string, { sum: number; count: number }> = {};
-          const recentScores: { date: string; score: number }[] = [];
-          let totalScore = 0, totalMax = 0, submittedCount = 0;
-
-          await Promise.all(assignSnap.docs.map(async (aDoc) => {
-            const aData = aDoc.data();
-            const task: any = { id: aDoc.id, ...aData, submitted: false };
-            try {
-              const subDoc = await getDoc(doc(db, 'schools', schoolId, 'assignments', aDoc.id, 'submissions', student.id));
-              if (subDoc.exists()) {
-                const sub = subDoc.data();
-                task.submitted = true;
-                task.score = sub.score ?? sub.aiScore;
-                task.maxScore = sub.maxScore || sub.total || 10;
-                task.teacherNote = sub.teacherNote || sub.personalNote;
-                task.aiGraded = sub.aiGraded;
-                task.submittedAt = sub.submittedAt || sub.gradedAt;
-                submittedCount++;
-                if (task.score !== undefined && task.maxScore) {
-                  const subj = aData.subject || 'General';
-                  if (!subjectScoreMap[subj]) subjectScoreMap[subj] = { sum: 0, count: 0 };
-                  subjectScoreMap[subj].sum += (task.score / task.maxScore) * 100;
-                  subjectScoreMap[subj].count++;
-                  totalScore += task.score;
-                  totalMax += task.maxScore;
-                  const dateStr = aData.dueDate || new Date().toISOString().split('T')[0];
-                  recentScores.push({ date: dateStr, score: Math.round((task.score / task.maxScore) * 100) });
-                }
-              }
-            } catch { /* ignore */ }
-            assignments.push(task);
-          }));
-
-          assignments.sort((a, b) => new Date(b.dueDate || 0).getTime() - new Date(a.dueDate || 0).getTime());
-          recentScores.sort((a, b) => a.date.localeCompare(b.date));
-
-          const subjectScores = Object.entries(subjectScoreMap).map(([subject, val]) => ({
-            subject, A: Math.round(val.sum / val.count), fullMark: 100,
-          }));
-
-          // Notifications for this student
-          let notifications: any[] = [];
-          try {
-            const notifSnap = await getDocs(query(
-              collection(db, 'schools', schoolId, 'notifications'),
-              where('studentId', '==', student.id)
-            ));
-            notifSnap.forEach(d => notifications.push({ id: d.id, ...d.data() }));
-            notifications.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-          } catch { /* ignore */ }
-
-          return {
-            id: student.id,
-            name: student.name || 'Student',
-            studentClass: student.studentClass || '',
-            customStudentId: student.customStudentId || student.id.slice(0, 6).toUpperCase(),
-            assignments,
-            subjectScores,
-            submittedCount,
-            totalCount: assignSnap.size,
-            avgPercent: totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : null,
-            notifications,
-            recentScores: recentScores.slice(-7),
-          };
-        }));
-
-        setChildrenData(children);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.children) {
+            setChildrenData(data.children);
+          }
+        } else {
+          console.error('Failed to load children data');
+        }
       } catch (err) {
         console.error('Parent dashboard error:', err);
       } finally {
@@ -178,7 +107,7 @@ export default function ParentDashboard() {
       }
     };
     fetchChildren();
-  }, [profile?.schoolId, profile?.linkedStudents, profile?.email]);
+  }, [profile?.schoolId, profile?.linkedStudents]);
 
   // ── Load available students for link modal ────────────────────────────────
   useEffect(() => {

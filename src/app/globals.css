@@ -16,12 +16,8 @@
   --foreground: #002147;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #001229; /* Darker blue for dark mode background */
-    --foreground: #ffffff;
-  }
-}
+
+
 
 body {
   background: var(--background);

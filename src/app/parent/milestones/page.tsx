@@ -3,13 +3,14 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Target, Award, BookOpen, Star, ArrowUpRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { Target, Award, BookOpen, Star, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 
 export default function MilestoneTimeline() {
   const { profile, loading } = useAuth();
   const router = useRouter();
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(4);
+  const [children, setChildren] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [selectedIdx, setSelectedIdx] = useState(0);
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'parent')) {
@@ -17,158 +18,123 @@ export default function MilestoneTimeline() {
     }
   }, [profile, loading, router]);
 
-  if (loading || !profile) return null;
+  useEffect(() => {
+    if (!profile?.schoolId) return;
 
-  const allMilestones = [
-    {
-      id: 1,
-      date: 'Today, 10:30 AM',
-      title: 'Mastered Linear Equations',
-      description: 'Successfully completed the advanced module on linear equations with a 95% accuracy rate.',
-      type: 'achievement',
-      icon: Star,
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-100',
-      borderColor: 'border-amber-200'
-    },
-    {
-      id: 2,
-      date: 'Yesterday, 2:15 PM',
-      title: 'Submitted Science Project',
-      description: '"Ecosystems & Sustainability" project submitted 2 days early.',
-      type: 'task',
-      icon: CheckCircle2,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-100',
-      borderColor: 'border-emerald-200'
-    },
-    {
-      id: 3,
-      date: 'Oct 15, 2023',
-      title: 'Reading Comprehension Level Up',
-      description: 'Advanced from Level B2 to Level C1 in English Reading.',
-      type: 'progression',
-      icon: ArrowUpRight,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-100',
-      borderColor: 'border-blue-200'
-    },
-    {
-      id: 4,
-      date: 'AI Prediction',
-      title: 'Ready for Advanced Coding',
-      description: 'Based on current trajectory in logical reasoning tasks, ready to begin Python Basics next week.',
-      type: 'prediction',
-      icon: Target,
-      color: 'text-indigo-500',
-      bgColor: 'bg-indigo-100',
-      borderColor: 'border-indigo-200'
-    },
-    {
-      id: 5,
-      date: 'Sep 28, 2023',
-      title: 'Perfect Attendance',
-      description: 'Achieved 100% attendance for the month of September.',
-      type: 'achievement',
-      icon: Award,
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-100',
-      borderColor: 'border-purple-200'
-    },
-    {
-      id: 6,
-      date: 'Sep 15, 2023',
-      title: 'Completed Foundational Coding',
-      description: 'Finished the HTML/CSS module and deployed first personal webpage.',
-      type: 'achievement',
-      icon: BookOpen,
-      color: 'text-teal-500',
-      bgColor: 'bg-teal-100',
-      borderColor: 'border-teal-200'
-    }
-  ];
+    const fetchChildren = async () => {
+      try {
+        const { getAuth } = await import('firebase/auth');
+        const token = await getAuth().currentUser?.getIdToken();
+        if (!token) { setLoadingData(false); return; }
 
-  const handleLoadMore = () => {
-    setLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount(prev => Math.min(prev + 2, allMilestones.length));
-      setLoadingMore(false);
-    }, 800);
+        const res = await fetch('/api/parent/get-children', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: token })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.children) setChildren(data.children);
+        }
+      } catch (err) {
+        console.error('Error fetching children milestones:', err);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    fetchChildren();
+  }, [profile?.schoolId]);
+
+  if (loading || loadingData || !profile) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#002147]" />
+      </div>
+    );
+  }
+
+  if (children.length === 0) {
+    return (
+      <div className="bg-white border border-gray-100 p-12 rounded-3xl text-center max-w-xl mx-auto my-10">
+        <Target className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-[#002147] mb-2">No Students Linked Yet</h3>
+        <p className="text-gray-500 text-sm">Please link your child's student account on the main dashboard to view milestones.</p>
+      </div>
+    );
+  }
+
+  const child = children[selectedIdx];
+  const milestones = child.milestones || [];
+
+  // Map icon strings to Lucide components
+  const iconMap: Record<string, any> = {
+    'Star': Star,
+    'CheckCircle2': CheckCircle2,
+    'Award': Award,
+    'BookOpen': BookOpen,
   };
 
-  const visibleMilestones = allMilestones.slice(0, visibleCount);
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-16 max-w-4xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-16">
       
+      {/* Child Selector */}
+      {children.length > 1 && (
+        <div className="flex items-center space-x-3 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm max-w-sm">
+          <label className="text-xs font-bold text-gray-400 uppercase ml-2">Child:</label>
+          <select
+            value={selectedIdx}
+            onChange={e => setSelectedIdx(Number(e.target.value))}
+            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-[#002147] outline-none cursor-pointer"
+          >
+            {children.map((c, i) => (
+              <option key={c.id} value={i}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-gradient-to-br from-indigo-100 to-blue-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center space-x-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-              <Award className="w-4 h-4" />
-              <span>Timeline</span>
-            </div>
-            <h2 className="text-3xl font-black tracking-tight text-[#002147]">Milestones & Achievements</h2>
-            <p className="text-gray-500 font-medium mt-1 text-lg">A chronological view of academic and holistic growth.</p>
+        <div className="absolute right-0 top-0 w-64 h-64 bg-gradient-to-br from-indigo-100 to-purple-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60"></div>
+        <div className="relative z-10">
+          <div className="inline-flex items-center space-x-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+            <Target className="w-4 h-4" />
+            <span>Milestone Timeline</span>
           </div>
-          <div className="bg-white border-2 border-indigo-50 px-6 py-4 rounded-2xl text-center shadow-sm">
-            <div className="text-3xl font-black text-indigo-600">{allMilestones.length}</div>
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Milestones This Term</div>
-          </div>
+          <h2 className="text-3xl font-black tracking-tight text-[#002147]">Academic & Holistic Growth Timeline ({child.name})</h2>
+          <p className="text-gray-500 font-medium mt-1 text-lg">A chronological view of accomplishments and task submissions.</p>
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="bg-white border border-gray-100 p-8 md:p-12 rounded-3xl shadow-sm">
-        <div className="relative border-l-2 border-gray-100 ml-4 md:ml-8 space-y-12">
-          
-          {visibleMilestones.map((milestone, index) => (
-            <div key={milestone.id} className="relative pl-8 md:pl-12 animate-in slide-in-from-top-4 fade-in duration-500 fill-mode-both" style={{ animationDelay: `${index * 100}ms` }}>
-              
-              {/* Timeline Dot/Icon */}
-              <div className={`absolute -left-[21px] top-1 w-10 h-10 rounded-full border-4 border-white flex items-center justify-center ${milestone.bgColor} shadow-sm z-10`}>
-                <milestone.icon className={`w-4 h-4 ${milestone.color}`} />
-              </div>
-              
-              {/* Content Card */}
-              <div className={`bg-white border ${milestone.borderColor} p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group`}>
-                
-                {/* Subtle background glow on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:opacity-50 transition-opacity ${milestone.bgColor}`}></div>
-                
-                <div className="relative z-10">
-                  <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider mb-3 ${milestone.bgColor} ${milestone.color}`}>
-                    {milestone.date}
-                  </span>
+      <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm max-w-3xl mx-auto">
+        {milestones.length === 0 ? (
+          <div className="py-16 text-center text-gray-400">
+            <Target className="w-12 h-12 mx-auto mb-4 opacity-30" />
+            <p className="font-semibold text-sm">No academic milestones recorded yet</p>
+            <p className="text-xs mt-1 text-gray-400">Milestones will compile automatically as they complete assignments and master quizzes.</p>
+          </div>
+        ) : (
+          <div className="relative border-l border-gray-200 ml-4 md:ml-6 space-y-8 py-2">
+            {milestones.map((m: any, i: number) => {
+              const IconComp = iconMap[m.icon] || Award;
+              return (
+                <div key={i} className="relative pl-8 md:pl-10 group">
                   
-                  <h3 className="text-xl font-bold text-[#002147] mb-2">{milestone.title}</h3>
-                  <p className="text-gray-500">{milestone.description}</p>
-                </div>
-              </div>
-              
-            </div>
-          ))}
+                  {/* Indicator bullet */}
+                  <span className={`absolute left-0 top-1.5 -translate-x-1/2 w-8 h-8 rounded-xl flex items-center justify-center border shadow-sm transition-all duration-300 group-hover:scale-110 ${m.bgColor || 'bg-gray-100'} ${m.borderColor || 'border-gray-200'}`}>
+                    <IconComp className={`w-4 h-4 ${m.color || 'text-gray-600'}`} />
+                  </span>
 
-        </div>
-        
-        {visibleCount < allMilestones.length && (
-          <div className="mt-12 text-center">
-            <button 
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="bg-gray-50 text-gray-500 border border-gray-200 px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center justify-center mx-auto space-x-2 disabled:opacity-70"
-            >
-              {loadingMore ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <span>Load Older Milestones</span>
-              )}
-            </button>
+                  {/* Body card */}
+                  <div className="bg-gray-50/50 hover:bg-gray-50 border border-gray-100 rounded-2xl p-5 transition-all duration-200 hover:shadow-sm">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">{m.date}</span>
+                    <h4 className="font-bold text-base text-[#002147] mb-1">{m.title}</h4>
+                    <p className="text-gray-600 text-sm font-medium leading-relaxed">{m.description}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

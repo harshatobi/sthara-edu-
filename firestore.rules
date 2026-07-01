@@ -65,6 +65,30 @@ service cloud.firestore {
       );
     }
 
+    // ── /student_chats ──────────────────────────────────────────────────────────
+    match /student_chats/{studentId} {
+      allow read, write: if isAuthenticated() && (
+        request.auth.uid == studentId ||
+        isSuperAdmin()
+      );
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && (
+          request.auth.uid == studentId ||
+          isSuperAdmin()
+        );
+      }
+    }
+
+    // ── /wellness_logs ──────────────────────────────────────────────────────────
+    match /wellness_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (
+        getRole() in ['admin', 'teacher'] ||
+        isSuperAdmin()
+      );
+      allow delete: if isSuperAdmin();
+    }
+
     // ── /superadmins ───────────────────────────────────────────────────────────
     match /superadmins/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;

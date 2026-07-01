@@ -103,9 +103,61 @@ export default function LoginPage() {
 
     setIsSigningIn(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Signal that we just completed a login — useEffect will redirect
-      setLoginAttempted(true);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = credential.user.uid;
+
+      // ── Directly fetch role from Firestore and redirect immediately ──
+      // Don't rely on useEffect + AuthContext chain — it has timing issues
+      let userRole: string | null = null;
+
+      // 1. Check superadmins collection first
+      try {
+        const saSnap = await getDoc(doc(db, 'superadmins', uid));
+        if (saSnap.exists()) userRole = 'superadmin';
+      } catch { /* ignore */ }
+
+      // 2. Check global_users
+      if (!userRole) {
+        try {
+          const guSnap = await getDoc(doc(db, 'global_users', uid));
+          if (guSnap.exists()) userRole = guSnap.data().role;
+        } catch { /* ignore */ }
+      }
+
+      // 3. Check users (legacy)
+      if (!userRole) {
+        try {
+          const uSnap = await getDoc(doc(db, 'users', uid));
+          if (uSnap.exists()) userRole = uSnap.data().role;
+        } catch { /* ignore */ }
+      }
+
+      if (!userRole) {
+        setError('Account profile not found. Please contact your school administrator.');
+        setIsSigningIn(false);
+        return;
+      }
+
+      // Role mismatch check (allow superadmin to use 'admin' or 'superadmin' selector)
+      const isSuperadmin = userRole === 'superadmin';
+      const selectedSuperadmin = role === 'superadmin' || role === 'admin';
+      if (role && userRole !== role && !(isSuperadmin && selectedSuperadmin)) {
+        await signOut(auth);
+        setError(`This account is not registered as a ${role}. Please go back and select the correct role.`);
+        setIsSigningIn(false);
+        return;
+      }
+
+      // ── Redirect based on role ──
+      const destinations: Record<string, string> = {
+        superadmin: '/superadmin',
+        teacher:    '/teacher',
+        student:    '/student',
+        admin:      '/admin',
+        parent:     '/parent',
+      };
+      window.location.href = destinations[userRole] || '/';
+
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -116,7 +168,6 @@ export default function LoginPage() {
         setError('Sign in failed. Please check your connection and try again.');
       }
       setIsSigningIn(false);
-      return;
     }
   };
 

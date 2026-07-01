@@ -94,6 +94,7 @@ export default function LoginPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login submit triggered', { email, role });
     setError('');
     
     if (!email || !password) {
@@ -102,39 +103,58 @@ export default function LoginPage() {
     }
 
     setIsSigningIn(true);
+    // safety timeout to avoid indefinite spinner
+    const timeoutId = setTimeout(() => {
+      console.warn('Login timeout reached');
+      setIsSigningIn(false);
+      setError('Login is taking longer than expected. Please try again later.');
+    }, 15000);
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
+      clearTimeout(timeoutId);
+      console.log('Firebase signIn success', credential);
       const uid = credential.user.uid;
 
       // ── Directly fetch role from Firestore and redirect immediately ──
       // Don't rely on useEffect + AuthContext chain — it has timing issues
       let userRole: string | null = null;
+      console.log('Fetching user role for uid', uid);
 
       // 1. Check superadmins collection first
       try {
         const saSnap = await getDoc(doc(db, 'superadmins', uid));
-        if (saSnap.exists()) userRole = 'superadmin';
-      } catch { /* ignore */ }
+        if (saSnap.exists()) {
+          userRole = 'superadmin';
+          console.log('User found in superadmins collection');
+        }
+      } catch (e) { console.error('Error checking superadmins', e); }
 
       // 2. Check global_users
       if (!userRole) {
         try {
           const guSnap = await getDoc(doc(db, 'global_users', uid));
-          if (guSnap.exists()) userRole = guSnap.data().role;
-        } catch { /* ignore */ }
+          if (guSnap.exists()) {
+            userRole = guSnap.data().role;
+            console.log('User found in global_users collection with role', userRole);
+          }
+        } catch (e) { console.error('Error checking global_users', e); }
       }
 
       // 3. Check users (legacy)
       if (!userRole) {
         try {
           const uSnap = await getDoc(doc(db, 'users', uid));
-          if (uSnap.exists()) userRole = uSnap.data().role;
-        } catch { /* ignore */ }
+          if (uSnap.exists()) {
+            userRole = uSnap.data().role;
+            console.log('User found in users collection with role', userRole);
+          }
+        } catch (e) { console.error('Error checking users', e); }
       }
 
       if (!userRole) {
         setError('Account profile not found. Please contact your school administrator.');
         setIsSigningIn(false);
+        console.warn('No role found for uid');
         return;
       }
 
@@ -145,6 +165,7 @@ export default function LoginPage() {
         await signOut(auth);
         setError(`This account is not registered as a ${role}. Please go back and select the correct role.`);
         setIsSigningIn(false);
+        console.warn('Role mismatch', { selected: role, actual: userRole });
         return;
       }
 
@@ -156,10 +177,11 @@ export default function LoginPage() {
         admin:      '/admin',
         parent:     '/parent',
       };
+      console.log('Redirecting to role dashboard', userRole);
       window.location.href = destinations[userRole] || '/';
 
     } catch (err: any) {
-      console.error(err);
+      console.error('Login error', err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('Incorrect email or password. Please try again.');
       } else if (err.code === 'auth/too-many-requests') {
@@ -187,13 +209,6 @@ export default function LoginPage() {
     }
   };
 
-  // Redirect after login — runs whenever profile loads
-  useEffect(() => {
-    if (loading) return;
-    if (!profile) return;
-
-    if (loginAttempted) {
-      // Verify selected role matches actual role in Firestore
       // Allow superadmin to log in via either 'admin' or 'superadmin' role selection
       const isRoleMismatch = role && profile.role !== role &&
         !(profile.role === 'superadmin' && (role === 'admin' || role === 'superadmin'));

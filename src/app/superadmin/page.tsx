@@ -272,7 +272,7 @@ export default function SuperAdminDashboard() {
       {/* Modern Glassmorphic Onboarding Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-[#001229]/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-indigo-100 rounded-xl">
@@ -285,7 +285,7 @@ export default function SuperAdminDashboard() {
               </button>
             </div>
             
-            <div className="p-8">
+            <div className="p-8 overflow-y-auto flex-1">
               <form onSubmit={handleOnboardSchool} className="space-y-5">
 
                 {/* Institution Type Selector */}
@@ -336,7 +336,7 @@ export default function SuperAdminDashboard() {
                   <input
                     type="text"
                     value={schoolCode}
-                    onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
+                    onChange={(e) => setSchoolCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                     placeholder="e.g. SIT-001"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm uppercase tracking-wider"
                   />

@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+
+export const dynamic = 'force-dynamic';
 
 /* ── Foul language word list (common profanity) ── */
 const FOUL_WORDS = [
@@ -22,10 +22,23 @@ function containsFoulLanguage(text: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const rl = checkRateLimit(`tutor:${getClientIp(request)}`, 30, 60_000);
-  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Slow down.' }, { status: 429 });
+  // ── Lightweight origin check (same approach as teacher AI) ──────────────
+  const origin = request.headers.get('origin') || '';
+  const referer = request.headers.get('referer') || '';
+  const authHeader = request.headers.get('authorization') || '';
+  const appOrigins = [
+    process.env.NEXT_PUBLIC_APP_URL || '',
+    'http://localhost:3000',
+    'https://stharaschoolos.vercel.app',
+    'https://sthara.in',
+    'https://www.sthara.in',
+  ].filter(Boolean);
+  const isInternalOrigin = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
+  const hasBearerToken = authHeader.startsWith('Bearer ') && authHeader.length > 20;
+  const noOrigin = !origin;
+  if (!isInternalOrigin && !hasBearerToken && !noOrigin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { messages, studentId, studentName, studentClass, schoolId, violationCount = 0 } = await request.json();
 
@@ -120,7 +133,7 @@ CORE RULES:
     }
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.5-flash',
     });
 
     // Primary Call: Answer Student

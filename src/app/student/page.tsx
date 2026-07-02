@@ -139,7 +139,10 @@ export default function StudentDashboard() {
       let submissionData: any = {
         studentId: profile.uid,
         studentName: profile.name,
-        studentClass: profile.studentClass,
+        studentClass: profile.studentClass || null,
+        branch: profile.branch || null,
+        year: profile.year || null,
+        semester: profile.semester || null,
         customStudentId: profile.customStudentId || null,
         submittedAt: serverTimestamp(),
       };

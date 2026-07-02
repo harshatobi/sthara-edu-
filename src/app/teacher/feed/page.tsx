@@ -140,13 +140,20 @@ export default function SituationalFeedPage() {
       const assignments = assignmentsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
 
       // 3. Get existing unacknowledged alert IDs to avoid duplicates
-        collection(db, 'schools', schoolId, 'situations'),
-        where('acknowledged', '==', false)
-      ));
-      const existingKeys = new Set(existingSnap.docs.map(d => {
-        const data = d.data();
-        return `${data.studentId}_${data.alertKey || data.title}`;
-      }));
+      let existingKeys = new Set<string>();
+      try {
+        const existingSnap = await getDocs(query(
+          collection(db, 'schools', schoolId, 'situations'),
+          where('acknowledged', '==', false)
+        ));
+        existingKeys = new Set(existingSnap.docs.map((d: any) => {
+          const data = d.data();
+          return `${data.studentId}_${data.alertKey || data.title}`;
+        }));
+      } catch (e: any) {
+        console.warn('[Step 3 - situations read]', e.code || e.message);
+        // Non-fatal, continue without dedup
+      }
 
       const newAlerts: any[] = [];
 

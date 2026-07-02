@@ -279,25 +279,27 @@ export default function SituationalFeedPage() {
         }
       }
 
-      // ── Write all new alerts to Firestore ──
-      if (newAlerts.length === 0) {
-        // If no real issues found, still write a positive summary
-        await addDoc(collection(db, 'schools', schoolId, 'situations'), {
-          studentId: 'class',
-          studentName: 'Your Class',
-          class: teacherClass,
-          category: 'academic',
-          priority: 'low',
-          title: 'Scan Complete — All Good!',
-          detail: `Scanned ${students.length} student${students.length > 1 ? 's' : ''} and ${assignments.length} assignment${assignments.length > 1 ? 's' : ''}. No critical issues detected at this time.`,
-          alertKey: `scan_${Date.now()}`,
-          acknowledged: false,
-          createdAt: serverTimestamp(),
-        });
-      } else {
-        await Promise.all(newAlerts.map(alert =>
-          addDoc(collection(db, 'schools', schoolId, 'situations'), alert)
-        ));
+      // ── Write all new alerts via server API (bypasses client Firestore rules) ──
+      const alertsToWrite = newAlerts.length === 0 ? [{
+        studentId: 'class',
+        studentName: 'Your Class',
+        class: teacherClass,
+        category: 'academic',
+        priority: 'low',
+        title: 'Scan Complete — All Good!',
+        detail: `Scanned ${students.length} student${students.length > 1 ? 's' : ''} and ${assignments.length} assignment${assignments.length > 1 ? 's' : ''}. No critical issues detected at this time.`,
+        alertKey: `scan_${Date.now()}`,
+        acknowledged: false,
+      }] : newAlerts.map(a => ({ ...a, createdAt: undefined })); // strip serverTimestamp — API adds it
+
+      const res = await fetch('/api/teacher/situations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId, alerts: alertsToWrite }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server error ${res.status}`);
       }
 
       setLastScanned(new Date());

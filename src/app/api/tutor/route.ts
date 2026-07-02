@@ -132,7 +132,7 @@ CORE RULES:
 
 
     let contents = messages.map((msg: any) => ({
-      role: msg.sender === 'ai' ? 'model' : 'user',
+      role: (msg.sender === 'model' || msg.sender === 'ai') ? 'model' : 'user',
       parts: [{ text: msg.text }]
     }));
 

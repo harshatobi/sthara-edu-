@@ -35,43 +35,44 @@ export default function StudentHomework() {
 
   useEffect(() => {
     const fetchHomework = async () => {
-      if (!profile?.schoolId || !profile?.studentClass || !profile?.uid) return;
+      if (!profile?.schoolId || !profile?.uid) { setLoading(false); return; }
       const schoolId = profile.schoolId;
       const uid = profile.uid;
+      const isCollege = profile.institutionType === 'college';
+      const classKey = isCollege ? profile.branch : profile.studentClass;
+
       try {
-        const classQuery = query(
-          collection(db, 'schools', schoolId, 'assignments'),
-          where('class', '==', profile.studentClass)
-        );
         const targetedQuery = query(
           collection(db, 'schools', schoolId, 'assignments'),
           where('targetStudentId', '==', uid)
         );
-        
-        const targetClassQuery = query(
-          collection(db, 'schools', schoolId, 'assignments'),
-          where('targetClass', '==', profile.studentClass)
-        );
 
-        const [classSnap, targetedSnap, targetClassSnap] = await Promise.all([
-          getDocs(classQuery),
-          getDocs(targetedQuery),
-          getDocs(targetClassQuery),
-        ]);
+        const queryPromises = [getDocs(targetedQuery)];
 
+        if (classKey) {
+          queryPromises.push(getDocs(query(
+            collection(db, 'schools', schoolId, 'assignments'),
+            where('class', '==', classKey)
+          )));
+          queryPromises.push(getDocs(query(
+            collection(db, 'schools', schoolId, 'assignments'),
+            where('targetClass', '==', classKey)
+          )));
+        }
+
+        const snaps = await Promise.all(queryPromises);
 
         // Collect all unique docs first, then process — avoids race-condition dedup
         const seen = new Set<string>();
-        const allDocs: typeof classSnap.docs = [];
-        [...classSnap.docs, ...targetedSnap.docs, ...targetClassSnap.docs].forEach(docSnap => {
+        const allDocs: any[] = [];
+        snaps.forEach(snap => snap.docs.forEach(docSnap => {
           if (!seen.has(docSnap.id)) {
             seen.add(docSnap.id);
             allDocs.push(docSnap);
           }
-        });
+        }));
 
-
-        const processDoc = async (docSnap: (typeof allDocs)[0]): Promise<Assignment> => {
+        const processDoc = async (docSnap: any): Promise<Assignment> => {
           const data = docSnap.data();
           const taskData: Assignment = {
             id: docSnap.id,
@@ -86,7 +87,6 @@ export default function StudentHomework() {
           if (subDoc.exists()) {
             const subData = subDoc.data();
             taskData.status = 'completed';
-            // grade is stored as a string like '8/10'
             taskData.grade = subData.grade || (subData.totalScore !== undefined ? `${subData.totalScore}/${subData.maxTotalScore}` : subData.score || 'Graded');
             taskData.teacherApproved = subData.teacherApproved || false;
           }

@@ -200,10 +200,11 @@ function SchoolManagementContent() {
           userData.branch = studentBranch;
           userData.year = studentYear;
           userData.semester = studentSemester;
-          // Generate ID based on branch
+          // Generate clean ID: strip spaces from branch → abbreviation
+          const branchAbbr = studentBranch.replace(/\s+/g, '').slice(0, 4).toUpperCase();
           const existingInBranch = users.filter(u => u.role === 'student' && (u as any).branch === studentBranch);
           const sequenceNumber = existingInBranch.length + 1;
-          const sequentialId = `${decodedSchoolId}-${studentBranch.slice(0,3).toUpperCase()}-${String(sequenceNumber).padStart(3, '0')}`;
+          const sequentialId = `${decodedSchoolId}-${branchAbbr}-${String(sequenceNumber).padStart(3, '0')}`;
           userData.customStudentId = sequentialId.toUpperCase();
         } else {
           const parsedClass = studentClass.trim();
@@ -418,23 +419,34 @@ function SchoolManagementContent() {
             {role === 'teacher' && (
               <div className="animate-in fade-in duration-300 space-y-3">
                 <label className="block text-sm font-medium text-[#002147]/70">
-                  Subject & Class Assignments
+                  {institutionType === 'college' ? 'Branch & Subject Assignments' : 'Subject & Class Assignments'}
                 </label>
                 {teacherAssignments.map((assignment, idx) => (
                   <div key={idx} className="flex space-x-2 items-center bg-[#f8fafc] p-2 rounded-xl border border-[#002147]/10">
-                    <input
-                      type="text"
-                      value={assignment.class}
-                      onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
-                      placeholder="Class (10A)"
-                      className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
-                    />
+                    {institutionType === 'college' ? (
+                      <select
+                        value={assignment.class}
+                        onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
+                        className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
+                      >
+                        <option value="">Select Branch</option>
+                        {schoolBranches.map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={assignment.class}
+                        onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
+                        placeholder="Class (10A)"
+                        className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
+                      />
+                    )}
                     <div className="w-[1px] h-6 bg-[#002147]/10"></div>
                     <input
                       type="text"
                       value={assignment.subject}
                       onChange={(e) => handleAssignmentChange(idx, 'subject', e.target.value)}
-                      placeholder="Subject (Math)"
+                      placeholder={institutionType === 'college' ? 'Subject (e.g. Accountancy)' : 'Subject (Math)'}
                       className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
                     />
                     {teacherAssignments.length > 1 && (

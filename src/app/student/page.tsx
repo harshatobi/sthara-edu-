@@ -357,87 +357,86 @@ export default function StudentDashboard() {
   }, [profile, loading, router]);
 
   useEffect(() => {
-    if (!profile?.schoolId || !profile?.studentClass) return;
+    if (!profile?.schoolId || !profile?.uid) return;
+    // College students have branch, school students have studentClass
+    const isCollege = profile.institutionType === 'college';
+    if (!isCollege && !profile.studentClass) return; // school student with no class
+
     const schoolId = profile.schoolId;
     const uid = profile.uid;
 
     const fetchAssignments = async () => {
       try {
-        const classQuery = query(
-          collection(db, 'schools', schoolId, 'assignments'),
-          where('class', '==', profile.studentClass)
-        );
-        
+        let classSnap: any;
+        if (isCollege) {
+          // College: query by branch
+          const branchQuery = profile.branch
+            ? query(collection(db, 'schools', schoolId, 'assignments'), where('class', '==', profile.branch))
+            : query(collection(db, 'schools', schoolId, 'assignments'));
+          classSnap = await getDocs(branchQuery);
+        } else {
+          classSnap = await getDocs(query(
+            collection(db, 'schools', schoolId, 'assignments'),
+            where('class', '==', profile.studentClass)
+          ));
+        }
+
         const targetedQuery = query(
           collection(db, 'schools', schoolId, 'assignments'),
           where('targetStudentId', '==', uid)
         );
-        
-        const [classSnap, targetedSnap] = await Promise.all([
-          getDocs(classQuery),
-          getDocs(targetedQuery)
-        ]);
+        const targetedSnap = await getDocs(targetedQuery);
 
         const tasks: Assignment[] = [];
         const processDoc = async (docSnap: any) => {
           const taskData = { id: docSnap.id, ...docSnap.data() } as Assignment;
-          // Check if the student has already submitted this task
           const subDocRef = doc(db, 'schools', schoolId, 'assignments', docSnap.id, 'submissions', uid);
           const subDoc = await getDoc(subDocRef);
-          if (subDoc.exists()) {
-            taskData.submission = subDoc.data();
-          }
-          // Avoid duplicates if any overlapping somehow
-          if (!tasks.some(t => t.id === taskData.id)) {
-            tasks.push(taskData);
-          }
+          if (subDoc.exists()) taskData.submission = subDoc.data();
+          if (!tasks.some(t => t.id === taskData.id)) tasks.push(taskData);
         };
 
         await Promise.all([
           ...classSnap.docs.map(processDoc),
           ...targetedSnap.docs.map(processDoc)
         ]);
-        
-        // Client-side sort by dueDate closest first
+
         tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
         setAssignments(tasks);
       } catch (error) {
-        console.error("Error fetching assignments:", error);
+        console.error('Error fetching assignments:', error);
       } finally {
         setLoadingTasks(false);
       }
     };
 
     fetchAssignments();
-  }, [profile?.schoolId, profile?.studentClass]);
+  }, [profile?.schoolId, profile?.studentClass, profile?.branch, profile?.uid, profile?.institutionType]);
 
-  // Fetch teacher resources for student's class
+  // Fetch teacher resources for student's class / branch
   useEffect(() => {
-    if (!profile?.schoolId || !profile?.studentClass || !profile?.uid) return;
+    if (!profile?.schoolId || !profile?.uid) return;
+    const isCollege = profile.institutionType === 'college';
+    const classKey = isCollege ? profile.branch : profile.studentClass;
+    if (!classKey) return;
     const fetchResources = async () => {
       try {
         const snap = await getDocs(query(
-          collection(db, 'schools', profile.schoolId, 'teacherResources'),
-          where('targetClass', '==', profile.studentClass)
+          collection(db, 'schools', profile.schoolId!, 'teacherResources'),
+          where('targetClass', '==', classKey)
         ));
-        // For each resource, check if the student has already read it
         const res = await Promise.all(snap.docs.map(async (d) => {
-          const readDoc = await getDoc(doc(db, 'schools', profile.schoolId, 'teacherResources', d.id, 'reads', profile.uid));
+          const readDoc = await getDoc(doc(db, 'schools', profile.schoolId!, 'teacherResources', d.id, 'reads', profile.uid!));
           return { id: d.id, ...d.data(), isRead: readDoc.exists() };
         }));
-        // Sort newest first
-        res.sort((a: any, b: any) => {
-          const aT = a.createdAt?.seconds ?? 0;
-          const bT = b.createdAt?.seconds ?? 0;
-          return bT - aT;
-        });
+        res.sort((a: any, b: any) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
         setResources(res);
       } catch (e) {
         console.error('Failed to fetch teacher resources:', e);
       }
     };
     fetchResources();
-  }, [profile?.schoolId, profile?.studentClass]);
+  }, [profile?.schoolId, profile?.studentClass, profile?.branch, profile?.uid]);
 
   const handleOpenResource = async (resource: any) => {
     setSelectedResource(resource);
@@ -543,14 +542,19 @@ export default function StudentDashboard() {
                 {profile.customStudentId || 'ID Pending'}
               </span>
               <span className="text-blue-200 font-medium text-sm bg-[#001a33]/50 px-3 py-1 rounded-full border border-white/5">
-                Class: {profile.studentClass || 'Unassigned'}
+                {profile.institutionType === 'college'
+                  ? `${profile.branch || 'Branch N/A'} · ${profile.year || ''} · ${profile.semester || ''}`
+                  : `Class: ${profile.studentClass || 'Unassigned'}`
+                }
               </span>
             </div>
             <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2">
               Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 to-orange-500">{(profile.name || 'Student').split(' ')[0]}</span>!
             </h2>
             <p className="text-blue-100 text-lg max-w-xl font-medium opacity-90">
-              Ready to crush today's goals? Your personalized learning path awaits.
+              {profile.institutionType === 'college'
+                ? 'Your academic dashboard. Stay on top of your coursework and assignments.'
+                : 'Ready to crush today\'s goals? Your personalized learning path awaits.'}
             </p>
           </div>
           

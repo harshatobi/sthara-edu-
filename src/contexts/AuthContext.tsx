@@ -12,12 +12,18 @@ export interface UserProfile {
   role: 'student' | 'teacher' | 'admin' | 'parent' | 'superadmin';
   schoolId?: string;
   name?: string;
+  // School-specific
   studentClass?: string;
   teacherClass?: string;
   subjectsTaught?: string[];
   customStudentId?: string;
   assignments?: { class: string; subject: string }[];
   linkedStudents?: string[];
+  // College-specific
+  institutionType?: 'school' | 'college';
+  branch?: string;
+  year?: string;
+  semester?: string;
   // Trial/plan info (populated from school doc)
   trialExpired?: boolean;
   daysLeftInTrial?: number;
@@ -140,6 +146,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             daysLeftInTrial = trialStatus.daysLeft;
           }
 
+          // 3b. Fetch institution type from school doc
+          let institutionType: 'school' | 'college' = 'school';
+          if (userData.schoolId) {
+            try {
+              const schoolSnap = await getDoc(doc(db, 'schools', userData.schoolId));
+              if (schoolSnap.exists()) {
+                institutionType = schoolSnap.data()?.type === 'college' ? 'college' : 'school';
+              }
+            } catch (e) {
+              // Non-fatal — default to school
+            }
+          }
+
           // 4. Set trial cookie for proxy middleware
           setCookie('__trial_ok', trialExpired ? 'expired' : 'ok', 3600);
 
@@ -155,6 +174,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             customStudentId: userData.customStudentId,
             assignments: userData.assignments,
             linkedStudents: userData.linkedStudents,
+            institutionType,
+            branch: userData.branch,
+            year: userData.year,
+            semester: userData.semester,
             trialExpired,
             daysLeftInTrial,
           });

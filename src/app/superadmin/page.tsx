@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Users, FileVideo, PlusCircle, X, Globe, Sparkles, Activity, Search, ShieldCheck } from 'lucide-react';
+import { Building2, Users, FileVideo, PlusCircle, X, Globe, Sparkles, Activity, Search, ShieldCheck, GraduationCap, School, Plus, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ interface School {
   studentsCount: number;
   status: string;
   licenseTier: string;
+  type?: 'school' | 'college';
 }
 
 export default function SuperAdminDashboard() {
@@ -29,6 +30,9 @@ export default function SuperAdminDashboard() {
   const [schoolCode, setSchoolCode] = useState('');
   const [institutionName, setInstitutionName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
+  const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
+  const [branches, setBranches] = useState<string[]>(['Computer Science', 'Mechanical Engineering']);
+  const [newBranch, setNewBranch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -67,30 +71,37 @@ export default function SuperAdminDashboard() {
     setError('');
 
     if (!schoolCode || !institutionName || !adminEmail) {
-      setError("Please fill all fields");
+      setError('Please fill all fields');
+      setIsSubmitting(false);
+      return;
+    }
+    if (institutionType === 'college' && branches.length === 0) {
+      setError('Please add at least one branch for the college');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      // Write to Firestore
       await setDoc(doc(db, 'schools', schoolCode.toUpperCase()), {
         name: institutionName,
         adminEmail,
+        type: institutionType,
+        ...(institutionType === 'college' ? { branches } : {}),
         studentsCount: 0,
         status: 'Active',
-        licenseTier: 'Pro', // Defaulting to Pro for dummy billing
-        createdAt: serverTimestamp()
+        licenseTier: 'Pro',
+        createdAt: serverTimestamp(),
       });
 
-      // Refresh list and close modal
       await fetchSchools();
       setIsModalOpen(false);
       setSchoolCode('');
       setInstitutionName('');
       setAdminEmail('');
+      setInstitutionType('school');
+      setBranches(['Computer Science', 'Mechanical Engineering']);
     } catch (err: any) {
-      setError(err.message || "Failed to onboard school");
+      setError(err.message || 'Failed to onboard institution');
     } finally {
       setIsSubmitting(false);
     }
@@ -174,7 +185,7 @@ export default function SuperAdminDashboard() {
           
           <div className="p-6 border-b border-gray-100 flex justify-between items-center relative z-10 bg-white/50 backdrop-blur-sm">
             <div>
-              <h2 className="text-xl font-bold text-[#002147]">Recent School Onboardings</h2>
+              <h2 className="text-xl font-bold text-[#002147]">Recent Onboardings</h2>
               <p className="text-sm text-gray-500 font-medium">Manage and monitor all institutions in your network.</p>
             </div>
             <div className="bg-gray-100 p-2 rounded-xl flex items-center space-x-2">
@@ -187,8 +198,9 @@ export default function SuperAdminDashboard() {
             <table className="w-full text-left text-sm text-gray-600">
               <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4">School Code</th>
+                  <th className="px-6 py-4">Code</th>
                   <th className="px-6 py-4">Institution Name</th>
+                  <th className="px-6 py-4">Type</th>
                   <th className="px-6 py-4">Admin Email</th>
                   <th className="px-6 py-4">Students</th>
                   <th className="px-6 py-4">Status</th>
@@ -223,6 +235,17 @@ export default function SuperAdminDashboard() {
                     >
                       <td className="px-6 py-5 font-black text-[#002147] tracking-wider">{school.id}</td>
                       <td className="px-6 py-5 font-bold text-gray-700">{school.name}</td>
+                      <td className="px-6 py-5">
+                        {school.type === 'college' ? (
+                          <span className="inline-flex items-center space-x-1 bg-violet-50 text-violet-700 text-xs font-bold px-2.5 py-1 rounded-full border border-violet-200">
+                            <GraduationCap className="w-3 h-3" /><span>College</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center space-x-1 bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-200">
+                            <School className="w-3 h-3" /><span>School</span>
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-5 text-gray-500">{school.adminEmail}</td>
                       <td className="px-6 py-5 font-semibold text-gray-700">{school.studentsCount || 0}</td>
                       <td className="px-6 py-5">
@@ -264,26 +287,60 @@ export default function SuperAdminDashboard() {
             
             <div className="p-8">
               <form onSubmit={handleOnboardSchool} className="space-y-5">
+
+                {/* Institution Type Selector */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-[#002147]">Institution Type</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setInstitutionType('school')}
+                      className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all font-bold text-sm ${
+                        institutionType === 'school'
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 bg-white text-gray-500 hover:border-indigo-200'
+                      }`}
+                    >
+                      <School className="w-6 h-6" />
+                      <span>School</span>
+                      <span className="text-xs font-normal opacity-70">Classes & Sections</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInstitutionType('college')}
+                      className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all font-bold text-sm ${
+                        institutionType === 'college'
+                          ? 'border-violet-500 bg-violet-50 text-violet-700'
+                          : 'border-gray-200 bg-white text-gray-500 hover:border-violet-200'
+                      }`}
+                    >
+                      <GraduationCap className="w-6 h-6" />
+                      <span>College</span>
+                      <span className="text-xs font-normal opacity-70">Branches & Semesters</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="block text-sm font-bold text-[#002147]">Institution Name</label>
                   <input
                     type="text"
                     value={institutionName}
                     onChange={(e) => setInstitutionName(e.target.value)}
-                    placeholder="e.g. Sthara Demo Academy"
+                    placeholder={institutionType === 'college' ? 'e.g. Sthara Institute of Technology' : 'e.g. Sthara Demo Academy'}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-bold text-[#002147]">School Code (Unique ID)</label>
+                  <label className="block text-sm font-bold text-[#002147]">{institutionType === 'college' ? 'College' : 'School'} Code (Unique ID)</label>
                   <input
                     type="text"
                     value={schoolCode}
                     onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. STHARA-001"
+                    placeholder="e.g. SIT-001"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm uppercase tracking-wider"
                   />
-                  <p className="text-xs text-gray-500 font-medium">This code will be used by students and teachers to log in.</p>
+                  <p className="text-xs text-gray-500 font-medium">This code will be used by students and professors to log in.</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-sm font-bold text-[#002147]">Primary Admin Email</label>
@@ -291,11 +348,54 @@ export default function SuperAdminDashboard() {
                     type="email"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="principal@stharademo.edu"
+                    placeholder="admin@institution.edu"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                   />
                 </div>
-                
+
+                {/* College-only: Branches */}
+                {institutionType === 'college' && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-[#002147]">Branches / Departments</label>
+                    <div className="space-y-2">
+                      {branches.map((branch, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="flex-1 bg-violet-50 border border-violet-200 text-violet-800 text-sm font-semibold px-3 py-2 rounded-lg">{branch}</span>
+                          <button
+                            type="button"
+                            onClick={() => setBranches(branches.filter((_, idx) => idx !== i))}
+                            className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newBranch}
+                          onChange={(e) => setNewBranch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (newBranch.trim()) { setBranches([...branches, newBranch.trim()]); setNewBranch(''); }
+                            }
+                          }}
+                          placeholder="Add a branch (e.g. Civil Engineering)"
+                          className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { if (newBranch.trim()) { setBranches([...branches, newBranch.trim()]); setNewBranch(''); } }}
+                          className="p-2.5 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {error && (
                   <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 font-bold text-sm flex items-center space-x-2 animate-in fade-in">
                     <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
@@ -306,15 +406,19 @@ export default function SuperAdminDashboard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-[#002147] to-indigo-900 text-white py-4 rounded-xl font-black hover:shadow-lg hover:shadow-indigo-900/20 transition-all mt-6 disabled:opacity-70 flex justify-center items-center space-x-2"
+                  className={`w-full text-white py-4 rounded-xl font-black hover:shadow-lg transition-all mt-6 disabled:opacity-70 flex justify-center items-center space-x-2 ${
+                    institutionType === 'college'
+                      ? 'bg-gradient-to-r from-violet-600 to-purple-700 hover:shadow-violet-500/20'
+                      : 'bg-gradient-to-r from-[#002147] to-indigo-900 hover:shadow-indigo-900/20'
+                  }`}
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-indigo-200 border-t-white rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                       <span>Creating Institution...</span>
                     </>
                   ) : (
-                    <span>Onboard Institution</span>
+                    <span>Onboard {institutionType === 'college' ? '🎓 College' : '🏫 School'}</span>
                   )}
                 </button>
               </form>

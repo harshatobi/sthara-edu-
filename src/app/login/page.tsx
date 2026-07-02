@@ -15,6 +15,7 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<Step>('SCHOOL_CODE');
   const [schoolCode, setSchoolCode] = useState('');
+  const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
   const [role, setRole] = useState<'student' | 'teacher' | 'admin' | 'parent' | 'superadmin' | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,11 +53,20 @@ export default function LoginPage() {
     setSchoolCodeError('');
     try {
       const directSnap = await getDoc(doc(db, 'schools', schoolCode));
-      if (directSnap.exists()) { setStep('ROLE_SELECT'); return; }
+      if (directSnap.exists()) {
+        setInstitutionType(directSnap.data()?.type === 'college' ? 'college' : 'school');
+        setStep('ROLE_SELECT');
+        return;
+      }
       const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
       const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) { setStep('ROLE_SELECT'); return; }
-      setSchoolCodeError('School Code Not Found. Please check and try again.');
+      if (!querySnapshot.empty) {
+        const schoolData = querySnapshot.docs[0].data();
+        setInstitutionType(schoolData?.type === 'college' ? 'college' : 'school');
+        setStep('ROLE_SELECT');
+        return;
+      }
+      setSchoolCodeError('Institution code not found. Please check and try again.');
     } catch (err) {
       console.error(err);
       setSchoolCodeError('Network error. Please try again.');
@@ -212,12 +222,14 @@ export default function LoginPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <h3 className="text-2xl font-semibold text-white mb-2 mt-4 text-center">Select your role</h3>
-              <p className="text-white/60 mb-8 text-center text-sm">School: {schoolCode.toUpperCase()}</p>
+              <p className="text-white/60 mb-8 text-center text-sm">{institutionType === 'college' ? 'College' : 'School'}: {schoolCode.toUpperCase()}</p>
               <div className="grid grid-cols-2 gap-4">
-                <RoleCard onClick={() => handleRoleSelect('student')} icon={BookOpen} title="Student" subtitle="Honest Desk" />
-                <RoleCard onClick={() => handleRoleSelect('teacher')} icon={GraduationCap} title="Teacher" subtitle="Diagnostic Engine" />
+                <RoleCard onClick={() => handleRoleSelect('student')} icon={BookOpen} title={institutionType === 'college' ? 'Student' : 'Student'} subtitle={institutionType === 'college' ? 'Academic Portal' : 'Honest Desk'} />
+                <RoleCard onClick={() => handleRoleSelect('teacher')} icon={GraduationCap} title={institutionType === 'college' ? 'Professor' : 'Teacher'} subtitle={institutionType === 'college' ? 'Faculty Portal' : 'Diagnostic Engine'} />
                 <RoleCard onClick={() => handleRoleSelect('admin')} icon={Shield} title="Admin" subtitle="Command Center" />
-                <RoleCard onClick={() => handleRoleSelect('parent')} icon={Users} title="Parent" subtitle="Growth Feed" />
+                {institutionType === 'school' && (
+                  <RoleCard onClick={() => handleRoleSelect('parent')} icon={Users} title="Parent" subtitle="Growth Feed" />
+                )}
                 {(schoolCode === 'STHARA' || schoolCode === 'ADMIN') && (
                   <RoleCard onClick={() => handleRoleSelect('superadmin')} icon={Shield} title="Super Admin" subtitle="Platform Control" />
                 )}

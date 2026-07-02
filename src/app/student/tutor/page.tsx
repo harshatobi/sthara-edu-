@@ -245,7 +245,9 @@ export default function StudentAITutor() {
       setMessages([{
         id: 'welcome',
         role: 'model',
-        text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today?",
+        text: profile?.institutionType === 'college'
+          ? `Hello! I'm your AI Academic Assistant. What topic or concept would you like to work through today?`
+          : "Hi there! I'm your Sthara AI Tutor. What subject are we studying today?",
       }]);
       setIsDBReady(true);
     });
@@ -299,6 +301,10 @@ export default function StudentAITutor() {
           studentClass: profile.studentClass || 'General',
           schoolId: profile.schoolId,
           violationCount,
+          institutionType: profile.institutionType || 'school',
+          branch: profile.branch,
+          year: profile.year,
+          semester: profile.semester,
         })
       });
       

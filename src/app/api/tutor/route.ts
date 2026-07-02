@@ -40,25 +40,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const { messages, studentId, studentName, studentClass, schoolId, violationCount = 0 } = await request.json();
+    const { messages, studentId, studentName, studentClass, schoolId, violationCount = 0, institutionType = 'school', branch, year, semester } = await request.json();
 
     // ── FOUL LANGUAGE CHECK ──
     const lastUserMessage = [...messages].reverse().find((m: any) => m.sender === 'user');
     if (lastUserMessage && containsFoulLanguage(lastUserMessage.text)) {
       const newViolationCount = violationCount + 1;
       
-      // First warning
       if (newViolationCount === 1) {
         return NextResponse.json({
-          text: `⚠️ **Please watch your language.**\n\nThis is a school learning environment and I'm here to help you study. Using inappropriate or offensive language is not acceptable here.\n\n**This is your first warning.** Please keep our conversation respectful so I can help you learn better! 📚`,
+          text: institutionType === 'college'
+            ? `⚠️ **Inappropriate language detected.**\n\nThis platform maintains professional academic standards. Please keep the conversation respectful and focused on your academic work.\n\n**Consider this a formal warning.**`
+            : `⚠️ **Please watch your language.**\n\nThis is a school learning environment and I'm here to help you study. Using inappropriate or offensive language is not acceptable here.\n\n**This is your first warning.** Please keep our conversation respectful so I can help you learn better! 📚`,
           isFoulWarning: true,
           newViolationCount,
         });
       }
 
-      // Second offense — notify teacher via Firestore notification (done on client), still warn
       return NextResponse.json({
-        text: `⛔ **This is your second warning for inappropriate language.**\n\nYour teacher has been notified of this behavior. Please remember that respectful communication is important in every learning space.\n\nIf you'd like to continue learning, please ask your academic question politely.`,
+        text: institutionType === 'college'
+          ? `⛔ **Second violation — inappropriate language.**\n\nYour professor has been notified. Continued misuse will result in restricted access. Please maintain professional conduct.`
+          : `⛔ **This is your second warning for inappropriate language.**\n\nYour teacher has been notified of this behavior. Please remember that respectful communication is important in every learning space.\n\nIf you'd like to continue learning, please ask your academic question politely.`,
         isFoulWarning: true,
         notifyTeacher: true,
         newViolationCount,
@@ -70,20 +72,42 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Skip memory fetch if Firebase Admin not properly configured - don't let it crash the request
     let memoryData = { known: [] as string[], struggling: [] as string[] };
-    // We skip adminDb/memory fetch entirely since Firebase Admin credentials may not be set on Vercel
-    // The AI still works perfectly without memory - it just won't be personalized
 
-    // STRICT System Instruction
-    const systemInstruction = `You are a warm, adaptive AI Tutor for Sthara School OS.
+    // ── System instruction — switches between school (child) and college (adult) mode ──
+    const isCollege = institutionType === 'college';
+
+    const collegeSystemInstruction = `You are an advanced AI Academic Assistant for ${studentName || 'a student'} — ${branch || 'a student'}, ${year || ''} ${semester || ''} at their institution.
+
+CORE BEHAVIOUR:
+1. STRICTLY ACADEMIC: Decline all non-academic requests professionally. Say: "I'm your academic assistant. I'm here to support your coursework and studies."
+
+2. TONE & STYLE — CRITICAL:
+   - Treat this person as an intelligent adult and a peer in learning.
+   - Use technical, precise academic language appropriate for undergraduate/postgraduate level.
+   - Do NOT use child-friendly phrases like "Great job!", "Amazing!", "You're doing great!", "Buddy", "Let's explore together!" etc.
+   - Be direct, concise, and intellectually rigorous.
+   - Reference academic concepts, textbooks, research papers, and real-world applications where relevant.
+
+3. PEDAGOGICAL APPROACH:
+   - Use the Socratic method to guide reasoning for conceptual questions.
+   - If the student says "I don't know", "explain", "just tell me", or similar — switch immediately to a clear, structured explanation with technical depth.
+   - For engineering/science: derive formulas, explain assumptions, cite relevant theorems.
+   - For commerce/humanities: discuss frameworks, cite relevant authors/theories, analyze critically.
+
+4. VIDEO RECOMMENDATIONS: If videos are requested, output EXACTLY: \`[YOUTUBE_SEARCH: <specific_topic>]\`
+
+5. FORMATTING:
+   - Use clean markdown with headers, numbered steps, and bullet points.
+   - For math: use readable notation — × ÷ √ ² ³ — not LaTeX.
+   - Keep explanations concise but technically complete.`;
+
+    const schoolSystemInstruction = `You are a warm, adaptive AI Tutor for Sthara School OS.
 The student is ${studentName || 'a student'} in ${studentClass || 'a class'}.
 
 CORE RULES:
@@ -103,6 +127,8 @@ CORE RULES:
    Keep responses concise, encouraging, and at their level.
 
 5. FORMATTING: Use clear markdown. For math, write equations in plain readable text using × ÷ ² ³ √ symbols — do NOT use LaTeX notation like \\( \\) or x^2. Write x² not x^2, write √x not \\sqrt{x}.`;
+
+    const systemInstruction = isCollege ? collegeSystemInstruction : schoolSystemInstruction;
 
 
     let contents = messages.map((msg: any) => ({

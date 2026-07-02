@@ -50,6 +50,12 @@ function SchoolManagementContent() {
   const [studentClass, setStudentClass] = useState('');
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '' }]);
   const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
+  // College-specific
+  const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
+  const [schoolBranches, setSchoolBranches] = useState<string[]>([]);
+  const [studentBranch, setStudentBranch] = useState('');
+  const [studentYear, setStudentYear] = useState('');
+  const [studentSemester, setStudentSemester] = useState('');
 
   useEffect(() => {
     if (!decodedSchoolId) return;
@@ -58,7 +64,10 @@ function SchoolManagementContent() {
       try {
         const schoolDoc = await getDoc(doc(db, 'schools', decodedSchoolId));
         if (schoolDoc.exists()) {
-          setSchoolName(schoolDoc.data().name);
+          const schoolData = schoolDoc.data();
+          setSchoolName(schoolData.name);
+          setInstitutionType(schoolData.type === 'college' ? 'college' : 'school');
+          setSchoolBranches(schoolData.branches || []);
         } else {
           setSchoolName('School Not Found');
         }
@@ -187,15 +196,23 @@ function SchoolManagementContent() {
       };
 
       if (role === 'student') {
-        const parsedClass = studentClass.trim();
-        userData.studentClass = parsedClass;
-        
-        // Generate Sequential ID based on current users in this class
-        const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
-        const sequenceNumber = existingStudentsInClass.length + 1;
-        const sequentialId = `${decodedSchoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`;
-        
-        userData.customStudentId = sequentialId.toUpperCase();
+        if (institutionType === 'college') {
+          userData.branch = studentBranch;
+          userData.year = studentYear;
+          userData.semester = studentSemester;
+          // Generate ID based on branch
+          const existingInBranch = users.filter(u => u.role === 'student' && (u as any).branch === studentBranch);
+          const sequenceNumber = existingInBranch.length + 1;
+          const sequentialId = `${decodedSchoolId}-${studentBranch.slice(0,3).toUpperCase()}-${String(sequenceNumber).padStart(3, '0')}`;
+          userData.customStudentId = sequentialId.toUpperCase();
+        } else {
+          const parsedClass = studentClass.trim();
+          userData.studentClass = parsedClass;
+          const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
+          const sequenceNumber = existingStudentsInClass.length + 1;
+          const sequentialId = `${decodedSchoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`;
+          userData.customStudentId = sequentialId.toUpperCase();
+        }
       } else if (role === 'teacher') {
         userData.assignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
       } else if (role === 'parent') {
@@ -217,6 +234,9 @@ function SchoolManagementContent() {
       setPassword('');
       setName('');
       setStudentClass('');
+      setStudentBranch('');
+      setStudentYear('');
+      setStudentSemester('');
       setTeacherAssignments([{ class: '', subject: '' }]);
       setSelectedStudentsForParent([]);
       
@@ -305,8 +325,8 @@ function SchoolManagementContent() {
                 className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
               >
                 <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-                <option value="parent">Parent</option>
+                <option value="teacher">{institutionType === 'college' ? 'Professor' : 'Teacher'}</option>
+                {institutionType === 'school' && <option value="parent">Parent</option>}
                 <option value="admin">Administrator</option>
               </select>
             </div>
@@ -335,19 +355,63 @@ function SchoolManagementContent() {
 
             {/* Dynamic Fields based on Role */}
             {role === 'student' && (
-              <div className="animate-in fade-in duration-300">
-                <label className="block text-sm font-medium text-[#002147]/70 mb-1">
-                  Class / Grade
-                </label>
-                <input
-                  type="text"
-                  required={role === 'student'}
-                  value={studentClass}
-                  onChange={(e) => setStudentClass(e.target.value)}
-                  placeholder="e.g. 10A"
-                  className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-                />
-                <p className="text-xs text-[#002147]/50 mt-2">A unique, sequential ID (e.g. SDS-10A-001) will be generated automatically.</p>
+              <div className="animate-in fade-in duration-300 space-y-3">
+                {institutionType === 'college' ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-[#002147]/70 mb-1">Branch / Department</label>
+                      <select
+                        required
+                        value={studentBranch}
+                        onChange={(e) => setStudentBranch(e.target.value)}
+                        className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                      >
+                        <option value="">Select Branch</option>
+                        {schoolBranches.map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-[#002147]/70 mb-1">Year</label>
+                        <select
+                          required
+                          value={studentYear}
+                          onChange={(e) => setStudentYear(e.target.value)}
+                          className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-2.5 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                        >
+                          <option value="">Year</option>
+                          {['1st Year','2nd Year','3rd Year','4th Year'].map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#002147]/70 mb-1">Semester</label>
+                        <select
+                          required
+                          value={studentSemester}
+                          onChange={(e) => setStudentSemester(e.target.value)}
+                          className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-2.5 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                        >
+                          <option value="">Sem</option>
+                          {['1st','2nd','3rd','4th','5th','6th','7th','8th'].map(s => <option key={s} value={s}>{s} Sem</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <p className="text-xs text-[#002147]/50">A unique enrollment ID will be auto-generated from the branch code.</p>
+                  </>
+                ) : (
+                  <>
+                    <label className="block text-sm font-medium text-[#002147]/70 mb-1">Class / Grade</label>
+                    <input
+                      type="text"
+                      required
+                      value={studentClass}
+                      onChange={(e) => setStudentClass(e.target.value)}
+                      placeholder="e.g. 10A"
+                      className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                    />
+                    <p className="text-xs text-[#002147]/50 mt-1">A unique ID (e.g. SDS-10A-001) will be generated automatically.</p>
+                  </>
+                )}
               </div>
             )}
 

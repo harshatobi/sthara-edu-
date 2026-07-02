@@ -178,6 +178,20 @@ service cloud.firestore {
           isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
         );
       }
+
+      // ── /schools/{id}/situations (Situational Feed alerts) ───────────────────
+      match /situations/{situationId} {
+        allow read: if isAuthenticated() && (
+          isInSchool(schoolId) || isSuperAdmin()
+        );
+        allow create: if isAuthenticated() && (
+          isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
+        );
+        allow update: if isAuthenticated() && (
+          isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
+        );
+        allow delete: if isAdminOrTeacherInSchool(schoolId) || isSuperAdmin();
+      }
     }
   }
 }

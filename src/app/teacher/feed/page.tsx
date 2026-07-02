@@ -98,29 +98,37 @@ export default function SituationalFeedPage() {
 
     try {
       const schoolId = profile.schoolId;
+      // teacherClass may be empty for teachers assigned to multiple classes
       const teacherClass = profile.teacherClass || profile.studentClass || '';
+      
+      // Get classes this teacher is responsible for
+      const teacherAssignments: string[] = profile.assignments?.map((a: any) => a.class).filter(Boolean) || [];
+      const classesToScan = teacherClass ? [teacherClass] : teacherAssignments;
 
-      // 1. Get all students (both collections)
+      // 1. Get all students (both collections) — no class filter if teacher has no assigned class
       const [usersSnap, globalSnap] = await Promise.all([
         getDocs(query(collection(db, 'users'),
           where('schoolId', '==', schoolId),
-          where('role', '==', 'student'),
-          ...(teacherClass ? [where('studentClass', '==', teacherClass)] : [])
+          where('role', '==', 'student')
         )),
         getDocs(query(collection(db, 'global_users'),
           where('schoolId', '==', schoolId),
-          where('role', '==', 'student'),
-          ...(teacherClass ? [where('studentClass', '==', teacherClass)] : [])
+          where('role', '==', 'student')
         )),
       ]);
       const seen = new Set<string>();
-      const students: any[] = [];
+      const allStudents: any[] = [];
       [...usersSnap.docs, ...globalSnap.docs].forEach(d => {
-        if (!seen.has(d.id)) { seen.add(d.id); students.push({ id: d.id, ...d.data() }); }
+        if (!seen.has(d.id)) { seen.add(d.id); allStudents.push({ id: d.id, ...d.data() }); }
       });
+      
+      // Filter to teacher's classes if known, otherwise use all
+      const students = classesToScan.length > 0
+        ? allStudents.filter(s => classesToScan.includes(s.studentClass))
+        : allStudents;
 
       if (students.length === 0) {
-        alert('No students found for your class. Please make sure students are enrolled.');
+        alert(`No students found${classesToScan.length > 0 ? ` for class(es): ${classesToScan.join(', ')}` : ' in this school'}. Please make sure students are enrolled.`);
         setScanning(false);
         return;
       }
@@ -293,9 +301,12 @@ export default function SituationalFeedPage() {
       }
 
       setLastScanned(new Date());
-    } catch (err) {
+    } catch (err: any) {
       console.error('Diagnostic scan failed:', err);
-      alert('Scan failed. Please check console for details.');
+      const msg = err?.code === 'permission-denied'
+        ? 'Permission denied. Please ensure Firestore rules allow teachers to write to the situations collection.'
+        : (err?.message || 'Unknown error');
+      alert(`Scan failed: ${msg}`);
     } finally {
       setScanning(false);
     }

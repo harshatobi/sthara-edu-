@@ -55,7 +55,8 @@ export default function AssignmentManagerPage() {
         if (!seen.has(d.id)) {
           seen.add(d.id);
           const s = { id: d.id, ...d.data() };
-          const cls = s.studentClass || 'Unassigned';
+          // College students use branch, school students use studentClass
+          const cls = s.studentClass || s.branch || 'Unassigned';
           if (!studentsMap[cls]) studentsMap[cls] = [];
           studentsMap[cls].push(s);
         }
@@ -74,13 +75,20 @@ export default function AssignmentManagerPage() {
       const tasksWithStats = await Promise.all(tasks.map(async (task) => {
          const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', task.id, 'submissions'));
          const submittedStudentIds = new Set<string>();
-         subsSnap.forEach(s => submittedStudentIds.add(s.id));
+         const submittedData: Record<string, any> = {};
+         subsSnap.forEach(s => {
+           submittedStudentIds.add(s.id);
+           submittedData[s.id] = s.data();
+         });
          
-         const classStds = studentsMap[task.class] || [];
+         // Use branch as class key for college assignments
+         const classKey = task.class || '';
+         const classStds = studentsMap[classKey] || [];
          
          return {
            ...task,
            submittedStudentIds,
+           submittedData,
            totalStudents: classStds.length
          };
       }));
@@ -165,8 +173,19 @@ export default function AssignmentManagerPage() {
               const totalCount = assignment.totalStudents;
               const isExpanded = expandedId === assignment.id;
               
-              const submittedStudents = classStds.filter(s => assignment.submittedStudentIds.has(s.id));
-              const missingStudents = classStds.filter(s => !assignment.submittedStudentIds.has(s.id));
+              // Students from roster who submitted
+              const submittedStudents = classStds.filter((s: any) => assignment.submittedStudentIds.has(s.id));
+              const missingStudents = classStds.filter((s: any) => !assignment.submittedStudentIds.has(s.id));
+
+              // Submitters not found in local roster (college or late-added students)
+              const rosterIds = new Set(classStds.map((s: any) => s.id));
+              const extraSubmitters = [...assignment.submittedStudentIds].filter((id: string) => !rosterIds.has(id)).map((id: string) => ({
+                id,
+                name: assignment.submittedData?.[id]?.studentName || 'Student',
+                branch: assignment.submittedData?.[id]?.branch || '',
+                year: assignment.submittedData?.[id]?.year || '',
+              }));
+              const allSubmitters = [...submittedStudents, ...extraSubmitters];
 
               return (
                 <div key={assignment.id} className={`bg-white border rounded-2xl overflow-hidden transition-all duration-300 ${isExpanded ? 'border-[#002147]/30 shadow-md ring-1 ring-[#002147]/10' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}>
@@ -223,16 +242,19 @@ export default function AssignmentManagerPage() {
                         <div>
                           <h4 className="font-bold text-emerald-700 flex items-center mb-4 text-sm uppercase tracking-wider border-b border-emerald-100 pb-2">
                             <CheckCircle className="w-4 h-4 mr-2" /> 
-                            Completed ({submittedStudents.length})
+                            Completed ({allSubmitters.length})
                           </h4>
                           <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                            {submittedStudents.length === 0 ? (
+                            {allSubmitters.length === 0 ? (
                               <p className="text-sm text-gray-400 italic">No students have completed this yet.</p>
                             ) : (
-                              submittedStudents.map(s => (
+                              allSubmitters.map((s: any) => (
                                 <div key={s.id} className="bg-white border border-emerald-100 p-3 rounded-xl shadow-sm flex items-center space-x-3">
-                                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center text-xs shrink-0">{s.name.charAt(0)}</div>
-                                  <span className="font-semibold text-gray-800 text-sm truncate">{s.name}</span>
+                                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center text-xs shrink-0">{(s.name || 'S').charAt(0)}</div>
+                                  <div className="flex-1 min-w-0">
+                                    <span className="font-semibold text-gray-800 text-sm truncate block">{s.name}</span>
+                                    {(s.branch || s.year) && <span className="text-xs text-gray-400">{s.branch} {s.year}</span>}
+                                  </div>
                                 </div>
                               ))
                             )}

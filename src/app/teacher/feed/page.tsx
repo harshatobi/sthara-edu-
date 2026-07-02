@@ -98,33 +98,27 @@ export default function SituationalFeedPage() {
 
     try {
       const schoolId = profile.schoolId;
-      // teacherClass may be empty for teachers assigned to multiple classes
       const teacherClass = profile.teacherClass || profile.studentClass || '';
-      
-      // Get classes this teacher is responsible for
       const teacherAssignments: string[] = profile.assignments?.map((a: any) => a.class).filter(Boolean) || [];
       const classesToScan = teacherClass ? [teacherClass] : teacherAssignments;
 
-      // 1. Get all students (both collections) — no class filter if teacher has no assigned class
-      const [usersSnap, globalSnap] = await Promise.all([
-        getDocs(query(collection(db, 'users'),
-          where('schoolId', '==', schoolId),
-          where('role', '==', 'student')
-        )),
-        getDocs(query(collection(db, 'global_users'),
-          where('schoolId', '==', schoolId),
-          where('role', '==', 'student')
-        )),
-      ]);
+      // 1. Get all students (both collections)
+      let usersSnap: any, globalSnap: any;
+      try {
+        [usersSnap, globalSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
+          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
+        ]);
+      } catch (e: any) {
+        throw new Error(`[Step 1 - students query] ${e.code || e.message}`);
+      }
       const seen = new Set<string>();
       const allStudents: any[] = [];
-      [...usersSnap.docs, ...globalSnap.docs].forEach(d => {
+      [...usersSnap.docs, ...globalSnap.docs].forEach((d: any) => {
         if (!seen.has(d.id)) { seen.add(d.id); allStudents.push({ id: d.id, ...d.data() }); }
       });
-      
-      // Filter to teacher's classes if known, otherwise use all
       const students = classesToScan.length > 0
-        ? allStudents.filter(s => classesToScan.includes(s.studentClass))
+        ? allStudents.filter((s: any) => classesToScan.includes(s.studentClass))
         : allStudents;
 
       if (students.length === 0) {
@@ -134,14 +128,18 @@ export default function SituationalFeedPage() {
       }
 
       // 2. Get all assignments
-      const assignmentsQ = teacherClass
-        ? query(collection(db, 'schools', schoolId, 'assignments'), where('class', '==', teacherClass))
-        : query(collection(db, 'schools', schoolId, 'assignments'));
-      const assignmentsSnap = await getDocs(assignmentsQ);
-      const assignments = assignmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      let assignmentsSnap: any;
+      try {
+        const assignmentsQ = teacherClass
+          ? query(collection(db, 'schools', schoolId, 'assignments'), where('class', '==', teacherClass))
+          : query(collection(db, 'schools', schoolId, 'assignments'));
+        assignmentsSnap = await getDocs(assignmentsQ);
+      } catch (e: any) {
+        throw new Error(`[Step 2 - assignments query] ${e.code || e.message}`);
+      }
+      const assignments = assignmentsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
 
       // 3. Get existing unacknowledged alert IDs to avoid duplicates
-      const existingSnap = await getDocs(query(
         collection(db, 'schools', schoolId, 'situations'),
         where('acknowledged', '==', false)
       ));
@@ -302,9 +300,8 @@ export default function SituationalFeedPage() {
       setLastScanned(new Date());
     } catch (err: any) {
       console.error('Diagnostic scan failed:', err);
-      const msg = err?.code === 'permission-denied'
-        ? 'Permission denied. Please ensure Firestore rules allow teachers to write to the situations collection.'
-        : (err?.message || 'Unknown error');
+      // Always show the exact error so we know exactly which step failed
+      const msg = err?.message || err?.code || JSON.stringify(err) || 'Unknown error';
       alert(`Scan failed: ${msg}`);
     } finally {
       setScanning(false);

@@ -33,41 +33,46 @@ export async function POST(request: NextRequest) {
       imageBase64,
       mimeType: directMime,
       imageUrl,
+      submissionText,      // NEW: text-only submission
       assignmentTitle,
       assignmentDescription,
       assignmentSubject,
       assignmentQuestions,
+      assignmentTasks,     // NEW: structured task list from assignment
+      totalMarks,          // NEW: actual marks this paper is worth
     } = body;
+
+    const isTextOnly = !imageBase64 && !imageUrl && submissionText;
 
     let base64Image = '';
     let mimeType = 'image/jpeg';
 
-    if (imageBase64) {
-      base64Image = imageBase64;
-      mimeType = directMime || 'image/jpeg';
-    } else if (imageUrl) {
-      // Validate imageUrl is from Firebase Storage to prevent SSRF
-      const ALLOWED_HOSTS = [
-        'firebasestorage.googleapis.com',
-        'storage.googleapis.com',
-      ];
-      try {
-        const parsed = new URL(imageUrl);
-        if (!ALLOWED_HOSTS.some(h => parsed.hostname.endsWith(h))) {
+    if (!isTextOnly) {
+      if (imageBase64) {
+        base64Image = imageBase64;
+        mimeType = directMime || 'image/jpeg';
+      } else if (imageUrl) {
+        // Validate imageUrl is from Firebase Storage to prevent SSRF
+        const ALLOWED_HOSTS = [
+          'firebasestorage.googleapis.com',
+          'storage.googleapis.com',
+        ];
+        try {
+          const parsed = new URL(imageUrl);
+          if (!ALLOWED_HOSTS.some(h => parsed.hostname.endsWith(h))) {
+            return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
+          }
+        } catch {
           return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
         }
-      } catch {
-        return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        base64Image = Buffer.from(arrayBuffer).toString('base64');
+        mimeType = (imageResponse.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+      } else {
+        return NextResponse.json({ error: 'Missing imageBase64, imageUrl, or submissionText' }, { status: 400 });
       }
-      const imageResponse = await fetch(imageUrl);
-      if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
-      const arrayBuffer = await imageResponse.arrayBuffer();
-      base64Image = Buffer.from(arrayBuffer).toString('base64');
-      // Strip charset/boundary from content-type (e.g., 'image/jpeg; charset=utf-8' → 'image/jpeg')
-      mimeType = (imageResponse.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
-
-    } else {
-      return NextResponse.json({ error: 'Missing imageBase64 or imageUrl' }, { status: 400 });
     }
 
     // Build context string from assignment metadata
@@ -76,53 +81,70 @@ export async function POST(request: NextRequest) {
     if (assignmentTitle) contextStr += `Assignment Title: ${assignmentTitle}\n`;
     if (assignmentSubject) contextStr += `Subject: ${assignmentSubject}\n`;
     if (assignmentDescription) contextStr += `Instructions: ${assignmentDescription}\n`;
-    if (assignmentQuestions && assignmentQuestions.length > 0) {
-      contextStr += `Questions:\n`;
+
+    // Build questions/tasks string
+    let questionsStr = '';
+    if (assignmentTasks && assignmentTasks.length > 0) {
+      questionsStr += `Tasks/Questions (${assignmentTasks.length} total):\n`;
+      assignmentTasks.forEach((t: any, idx: number) => {
+        const q = typeof t === 'string' ? t : (t.question || t.text || t.title || JSON.stringify(t));
+        const marks = t.marks ? ` [${t.marks} marks]` : '';
+        questionsStr += `Q${idx + 1}${marks}: ${q}\n`;
+      });
+    } else if (assignmentQuestions && assignmentQuestions.length > 0) {
+      questionsStr += `Questions:\n`;
       assignmentQuestions.forEach((q: string, idx: number) => {
-        contextStr += `Q${idx + 1}: ${q}\n`;
+        questionsStr += `Q${idx + 1}: ${q}\n`;
       });
     }
 
-    const systemPrompt = `You are an elite AI academic evaluator and diagnostic engine. A student has submitted a photo of their handwritten work.
+    // Determine total marks for grading scale
+    const paperTotal = totalMarks || 10;
+    // Per-question max — distribute evenly if not specified per task
+    const numQuestions = (assignmentTasks || assignmentQuestions || []).length || 1;
+    const marksPerQuestion = assignmentTasks?.length > 0 && assignmentTasks[0]?.marks
+      ? null  // use individual task marks
+      : Math.round(paperTotal / numQuestions);
+
+    const gradingRubric = marksPerQuestion
+      ? `MARKING SCHEME: This paper is worth ${paperTotal} marks total, with ${numQuestions} question(s) worth approximately ${marksPerQuestion} marks each.`
+      : `MARKING SCHEME: This paper is worth ${paperTotal} marks total. Each task has its own mark allocation as specified above.`;
+
+    const systemPrompt = `You are a strict but fair AI academic examiner. ${isTextOnly ? 'A student has submitted a written text answer.' : 'A student has submitted a photo of their handwritten work.'}
 
 ASSIGNMENT CONTEXT:
-${contextStr || 'No specific context provided — extract questions directly from the image.'}
+${contextStr || 'No specific context provided.'}
+${questionsStr}
+
+${gradingRubric}
 
 YOUR TASK:
-1. Carefully read and transcribe every piece of work in the image
-2. For each question or task found, analyze the student's approach step by step
-3. Classify each step as: "correct", "logic_error" (wrong formula/concept), or "procedural_error" (right concept but execution mistake)
-4. Award marks using this rubric:
-   - Full marks (5): Correct answer with correct procedure
-   - Partial marks (1-4): Right procedure, wrong answer OR right answer, wrong procedure
-   - Zero (0): Wrong answer AND wrong procedure
-   - Max per question: 5 marks
+1. ${isTextOnly ? 'Read and analyze the student\'s typed answer carefully.' : 'Carefully read and transcribe every piece of work in the image.'}
+2. For each question or task, analyze the student's answer step by step.
+3. Classify each part as: "correct", "logic_error" (wrong formula/concept/argument), or "procedural_error" (right concept, wrong execution).
+4. Be STRICT: partial credit only when the student demonstrates genuine partial understanding.
+5. Award marks out of the specified allocation per question — do NOT exceed it.
+6. For each mark deducted, give a specific reason explaining EXACTLY what was wrong and what the correct approach is.
 
-IMPORTANT: Be subject-agnostic. This could be Math, Science, English essays, History, etc. Adapt your analysis accordingly.
-For essay/written answers: analyze argument quality, evidence, structure, and accuracy.
-For math/science: analyze computation steps, formulas, and logical derivations.
+SUBJECT-SPECIFIC RULES:
+- Math/Science: Check every step, formula, and numeric result. Deduct for wrong formula even if computation is correct.
+- Commerce/Accounting: Check journal entries, T-accounts, balancing, and period correctness.
+- Essays/Humanities: Evaluate argument quality, evidence used, structure, and factual accuracy.
+- MCQ-style: Binary — full marks or zero.
 
-MATH FORMATTING (critical): Write ALL mathematical expressions in plain readable text using Unicode symbols.
-- Use x² not x^2 or x^{2}
-- Use √(x) not sqrt(x) or \sqrt{x}
-- Use × not * or \times
-- Use ÷ not / (when meaning division in steps)
-- Use ± not +/-
-- Use π not pi or \pi
-- Use ≥ ≤ ≠ ≈ not >= <= != ~=
-- Do NOT use LaTeX notation like \( \) \[ \] \frac{}{} at all
-- Write fractions as (numerator)/(denominator) e.g. (−2 ± √8) / 2
+MATH FORMATTING: Write ALL math in plain Unicode: x², √(x), ×, ÷, ±, π, ≥, ≤, ≠, ≈. NO LaTeX.
 
-OUTPUT: Return ONLY valid JSON in this exact structure, no markdown wrappers:
+OUTPUT: Return ONLY valid JSON — no markdown, no preamble:
 {
   "questions": [
     {
-      "questionText": "Transcribed question text",
+      "questionText": "The question being answered",
+      "studentAnswer": "What the student wrote/showed for this question",
       "steps": [
         {
-          "text": "Exact step/sentence/working the student wrote",
+          "text": "The specific step/sentence the student wrote",
           "type": "correct" | "logic_error" | "procedural_error",
-          "explanation": "If error: why it's wrong and what should be done. If correct: null",
+          "explanation": "If error: exactly what is wrong and what should have been written. If correct: null",
           "penalty": 0
         }
       ],
@@ -130,35 +152,58 @@ OUTPUT: Return ONLY valid JSON in this exact structure, no markdown wrappers:
       "isFinalAnswerCorrect": true,
       "awardedScore": 4,
       "maxScore": 5,
+      "lostMarksReason": "Specific reason for each mark deducted, or null if full marks",
       "aiCorrectedSolution": ["Correct step 1", "Correct step 2", "Correct final answer"]
     }
   ],
-  "totalScore": 12,
-  "maxTotalScore": 15,
-  "summary": "One sentence overall performance summary, encouraging but honest",
-  "weaknessTags": ["concept_or_skill_they_struggle_with", "another_weakness"],
+  "totalScore": 7,
+  "maxTotalScore": ${paperTotal},
+  "percentageScore": 70,
+  "grade": "${paperTotal <= 10 ? '7' : '70'}/${paperTotal}",
+  "summary": "Two-sentence honest performance summary — what they understood and where they lost marks.",
+  "weaknessTags": ["specific_concept_or_skill_student_struggles_with"],
   "recommendedVideos": [
-    { "title": "Specific tutorial topic to help with their weakness", "duration": "~8 min" },
-    { "title": "Another targeted video topic", "duration": "~12 min" }
+    { "title": "Specific tutorial topic targeting their weakness", "duration": "~8 min" }
   ]
 }`;
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+    let geminiUrl: string;
+    let geminiPayload: any;
 
-    const geminiPayload = {
-      contents: [
-        {
-          parts: [
-            { text: systemPrompt },
-            { inlineData: { mimeType, data: base64Image } }
-          ]
+    if (isTextOnly) {
+      // Text-only: use gemini-2.5-flash (no vision needed, faster)
+      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      geminiPayload = {
+        contents: [
+          {
+            parts: [
+              { text: systemPrompt + '\n\nSTUDENT\'S ANSWER:\n' + submissionText }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json'
         }
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        responseMimeType: 'application/json'
-      }
-    };
+      };
+    } else {
+      // Image: use gemini-2.5-pro vision
+      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+      geminiPayload = {
+        contents: [
+          {
+            parts: [
+              { text: systemPrompt },
+              { inlineData: { mimeType, data: base64Image } }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json'
+        }
+      };
+    }
 
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
@@ -175,20 +220,22 @@ OUTPUT: Return ONLY valid JSON in this exact structure, no markdown wrappers:
     const geminiData = await geminiResponse.json();
     let textOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    if (!textOutput) throw new Error('No output returned from Gemini Vision API.');
+    if (!textOutput) throw new Error('No output returned from Gemini API.');
 
     // Strip markdown wrappers if present despite responseMimeType setting
     textOutput = textOutput.replace(/^```json\s*/g, '').replace(/\s*```$/g, '').trim();
 
     const result = JSON.parse(textOutput);
 
-    // Ensure grade string is computed
-    result.grade = `${result.totalScore}/${result.maxTotalScore}`;
+    // Ensure maxTotalScore is always the actual paper total
+    result.maxTotalScore = paperTotal;
+    result.grade = `${result.totalScore}/${paperTotal}`;
+    result.percentageScore = Math.round((result.totalScore / paperTotal) * 100);
 
     return NextResponse.json({ success: true, ...result });
 
   } catch (error: any) {
-    console.error('Grade Image Error:', error);
+    console.error('Grade Error:', error);
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

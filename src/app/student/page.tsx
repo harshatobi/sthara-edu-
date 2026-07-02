@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, BrainCircuit, Target, PlayCircle, Award, ChevronRight, X } from 'lucide-react';
 
@@ -147,16 +148,19 @@ export default function StudentDashboard() {
         submittedAt: serverTimestamp(),
       };
 
+      // Determine actual total marks for this assignment
+      const assignmentTotalMarks = selectedTask.totalMarks
+        || (selectedTask.tasks?.reduce((sum: number, t: any) => sum + (t.marks || 0), 0))
+        || (selectedTask.questions?.length ? selectedTask.questions.length : 10);
+
       if (selectedTask.questions && selectedTask.questions.length > 0) {
-        // Detect format: new format uses correctAnswerIndex, old uses correctOptionId
+        // MCQ quiz — score immediately
         let score = 0;
         selectedTask.questions.forEach((q: any, qIdx: number) => {
           const selectedVal = selectedAnswers[q.id || String(qIdx)];
           if (q.correctAnswerIndex !== undefined) {
-            // New format: correctAnswerIndex (integer)
             if (Number(selectedVal) === q.correctAnswerIndex) score++;
           } else {
-            // Old format: correctOptionId (string)
             if (selectedVal === q.correctOptionId) score++;
           }
         });
@@ -176,10 +180,9 @@ export default function StudentDashboard() {
         };
       }
 
-      // ── Step 1: Upload all attachment pages to Firebase Storage ──
+      // ── Step 1: Upload attachment pages if provided ──
       if (attachmentFiles.length > 0) {
         setSubmitStatus(`Uploading ${attachmentFiles.length} page(s) to secure storage...`);
-        
         try {
           const uploadResults = await Promise.all(
             attachmentFiles.map(async (file, idx) => {
@@ -191,88 +194,81 @@ export default function StudentDashboard() {
               return getDownloadURL(storageRef);
             })
           );
-          
-          submissionData.imageUrls = uploadResults;        // all pages
-          submissionData.imageUrl = uploadResults[0];      // backwards-compat primary
+          submissionData.imageUrls = uploadResults;
+          submissionData.imageUrl = uploadResults[0];
         } catch (storageErr: any) {
           console.error('Storage upload failed:', storageErr);
-          // Don't block submission — save without images, alert teacher
-          alert(
-            'Warning: Could not upload images (' + (storageErr?.message || 'storage error') + '). ' +
-            'Your text submission will still be saved. Please check Firebase Storage rules.'
-          );
+          alert('Warning: Could not upload images (' + (storageErr?.message || 'storage error') + '). Your text submission will still be saved.');
         }
+      }
 
-        // ── Step 2: Compress page 1 & send to Gemini for AI grading ──
-        if (submissionData.imageUrl) {
-          setSubmitStatus('Compressing & scanning your work...');
-          try {
-
-            // Compress to ~800KB before sending — avoids "file too large" API error
-            const compressed = await compressImageForApi(attachmentFiles[0]);
-
-            const authToken = await getAuthToken();
-            const response = await fetch('/api/grade-image', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authToken}`,
-              },
-              body: JSON.stringify({
-                imageBase64: compressed.base64,
-                mimeType: compressed.mimeType,
-                assignmentTitle: selectedTask.title,
-                assignmentDescription: selectedTask.description,
-                assignmentQuestions: selectedTask.questions || selectedTask.tasks || selectedTask.sections || [],
-
-              }),
-            });
-
-            if (response.ok) {
-              const aiData = await response.json();
-              submissionData.aiGraded = true;
-              submissionData.aiResult = aiData;
-
-              let calcTotalScore = 0;
-              if (aiData.questions && Array.isArray(aiData.questions)) {
-                aiData.questions.forEach((q: any) => { calcTotalScore += q.awardedScore || 0; });
-              } else {
-                calcTotalScore = aiData.totalScore || 0;
-              }
-              const calcMaxScore = selectedTask.questions?.length
-                ? selectedTask.questions.length * 5
-                : 15;
-
-              submissionData.score = calcTotalScore;
-              submissionData.maxScore = calcMaxScore;
-              submissionData.total = calcMaxScore;
-
-              if (aiData.weaknessTags?.length > 0) {
-                updateDoc(doc(db, 'users', profile.uid), {
-                  historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
-                }).catch(console.warn);
-              }
-            } else {
-              submissionData.aiGraded = false;
-              console.warn('AI grading returned non-OK:', response.status);
-            }
-          } catch (apiErr) {
-            console.error('Auto-grade failed:', apiErr);
-            submissionData.aiGraded = false;
-          }
-        }
-
-      } else if (selectedTask.questions && selectedTask.questions.length > 0) {
-        // MCQ with no attachment — AI quiz evaluation
-        setSubmitStatus('Diagnostic Engine is analyzing your answers...');
+      // ── Step 2: AI Grade — ALWAYS run for homework (text or image) ──
+      const isHomework = !(selectedTask.questions && selectedTask.questions.length > 0);
+      if (isHomework && (submissionData.imageUrl || submissionText.trim())) {
+        setSubmitStatus('🤖 AI Examiner is grading your work...');
         try {
           const authToken = await getAuthToken();
-          const response = await fetch('/api/quiz/grade', {
+
+          // Build payload — image takes priority, then text
+          const gradePayload: any = {
+            assignmentTitle: selectedTask.title,
+            assignmentDescription: selectedTask.description,
+            assignmentSubject: selectedTask.subject,
+            assignmentTasks: selectedTask.tasks || [],
+            assignmentQuestions: selectedTask.questions || [],
+            totalMarks: assignmentTotalMarks,
+          };
+
+          if (submissionData.imageUrl) {
+            // Compress page 1 for vision grading
+            setSubmitStatus('🤖 Compressing & scanning your handwritten work...');
+            const compressed = await compressImageForApi(attachmentFiles[0]);
+            gradePayload.imageBase64 = compressed.base64;
+            gradePayload.mimeType = compressed.mimeType;
+          } else {
+            // Text-only grading
+            gradePayload.submissionText = submissionText.trim();
+          }
+
+          const response = await fetch('/api/grade-image', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${authToken}`,
             },
+            body: JSON.stringify(gradePayload),
+          });
+
+          if (response.ok) {
+            const aiData = await response.json();
+            submissionData.aiGraded = true;
+            submissionData.aiResult = aiData;
+            submissionData.score = aiData.totalScore ?? 0;
+            submissionData.maxScore = aiData.maxTotalScore ?? assignmentTotalMarks;
+            submissionData.total = aiData.maxTotalScore ?? assignmentTotalMarks;
+            submissionData.grade = aiData.grade || `${aiData.totalScore}/${aiData.maxTotalScore}`;
+
+            if (aiData.weaknessTags?.length > 0) {
+              updateDoc(doc(db, 'users', profile.uid), {
+                historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
+              }).catch(console.warn);
+            }
+          } else {
+            submissionData.aiGraded = false;
+            console.warn('AI grading returned non-OK:', response.status);
+          }
+        } catch (apiErr) {
+          console.error('Auto-grade failed:', apiErr);
+          submissionData.aiGraded = false;
+        }
+      } else if (selectedTask.questions && selectedTask.questions.length > 0 && !attachmentFiles.length) {
+        // MCQ AI evaluation
+        setSubmitStatus('Diagnostic Engine is analyzing your answers...');
+        try {
+          const authToken = await getAuthToken();
+          const response = await fetch('/api/quiz/grade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
             body: JSON.stringify({
               title: selectedTask.title,
               description: selectedTask.description,
@@ -280,12 +276,10 @@ export default function StudentDashboard() {
               studentAnswers: selectedAnswers,
             }),
           });
-
           if (response.ok) {
             const aiData = await response.json();
             submissionData.aiGraded = true;
             submissionData.aiResult = aiData;
-
             if (aiData.weaknessTags?.length > 0) {
               updateDoc(doc(db, 'users', profile.uid), {
                 historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
@@ -297,14 +291,14 @@ export default function StudentDashboard() {
         }
       }
 
-      // ── Step 3: Always save to Firestore ──
+      // ── Step 3: Save to Firestore ──
       setSubmitStatus('Saving submission...');
       await setDoc(
         doc(db, 'schools', profile.schoolId, 'assignments', selectedTask.id, 'submissions', profile.uid),
         submissionData
       );
 
-      // ── Step 4: Update local assignments state so UI reflects submission immediately ──
+      // ── Step 4: Update local state ──
       setAssignments(prev => prev.map(a =>
         a.id === selectedTask.id
           ? { ...a, submission: { ...submissionData, submittedAt: new Date() } }
@@ -315,11 +309,10 @@ export default function StudentDashboard() {
       setSubmissionText('');
       setSubmitStatus('');
 
-      // Show result
+      // Show result screen
       if (selectedTask.questions && selectedTask.questions.length > 0) {
         const qs = selectedTask.questions;
         const isNewFormat = qs[0]?.correctAnswerIndex !== undefined;
-        // Quiz → show score screen
         setQuizResult({
           score: submissionData.score ?? 0,
           total: submissionData.maxScore || submissionData.total || qs.length,
@@ -331,15 +324,15 @@ export default function StudentDashboard() {
           isNewFormat,
         });
       } else {
-        // Homework → show success screen (score given by teacher later)
         setQuizResult({
-          score: null,
-          total: null,
+          score: submissionData.score ?? null,
+          total: submissionData.maxScore ?? null,
           aiResult: submissionData.aiResult,
           attachmentUrl: submissionData.imageUrl || null,
           isHomework: true,
           aiGraded: !!submissionData.aiGraded,
           imageUrls: submissionData.imageUrls || [],
+          grade: submissionData.grade || null,
         });
       }
 
@@ -350,6 +343,8 @@ export default function StudentDashboard() {
       setIsSubmitting(false);
     }
   };
+
+
 
 
 
@@ -848,32 +843,34 @@ export default function StudentDashboard() {
                 </div>
               )}
 
-              {/* Submitted tasks */}
+              {/* Submitted tasks — click redirects to Homework tab */}
               {submittedTasks.length > 0 && (
                 <div className="space-y-3 mt-4">
                   <p className="text-xs font-black text-emerald-600 uppercase tracking-widest px-1">✅ Submitted</p>
-                  {submittedTasks.map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      title={`${task.subject || 'Assignment'}: ${task.title}`}
-                      time={`Submitted • Posted by ${task.teacherName || 'Teacher'}`}
-                      type={task.type as 'homework' | 'video' | 'announcement'}
-                      status="completed"
-                      onClick={() => {
-                        setSelectedTask(task);
-                        const sub = task.submission;
-                        setQuizResult({
-                          score: sub?.score ?? null,
-                          total: sub?.maxScore || sub?.total || null,
-                          aiResult: sub?.aiResult,
-                          attachmentUrl: sub?.imageUrl || null,
-                          imageUrls: sub?.imageUrls || [],
-                          isHomework: !task.questions?.length,
-                          aiGraded: !!sub?.aiGraded,
-                        });
-                      }}
-                    />
-                  ))}
+                  {submittedTasks.map((task) => {
+                    const sub = task.submission;
+                    const aiGrade = sub?.grade || (sub?.score != null && sub?.maxScore ? `${sub.score}/${sub.maxScore}` : null);
+                    return (
+                      <Link key={task.id} href="/student/homework" className="block">
+                        <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-2xl hover:border-emerald-300 hover:shadow-sm transition-all group cursor-pointer">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-[#002147] text-sm truncate">{task.subject || 'Assignment'}: {task.title}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">Submitted • Posted by {task.teacherName || 'Teacher'}</p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            {aiGrade && (
+                              <span className="text-xs font-black text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+                                🤖 {aiGrade}
+                              </span>
+                            )}
+                            <span className="text-xs font-bold text-emerald-700 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                              View →
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -899,14 +896,30 @@ export default function StudentDashboard() {
               {quizResult ? (
                 <div className="text-center py-8 flex flex-col items-center">
                   {quizResult.isHomework ? (
-                    /* ── Homework success screen ── */
+                    /* ── Homework success screen with AI grade ── */
                     <>
                       <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
                         <CheckCircle2 className="w-12 h-12 text-emerald-500" />
                       </div>
-                      <h3 className="text-2xl font-bold text-[#002147] mb-2">Homework Submitted!</h3>
-                      <p className="text-[#002147]/60 mb-2">Your work has been sent to your teacher for review.</p>
-                      {quizResult.aiGraded && (
+                      <h3 className="text-2xl font-bold text-[#002147] mb-2">Submitted Successfully!</h3>
+                      <p className="text-[#002147]/60 mb-4">Your work has been sent to your teacher for review.</p>
+                      {quizResult.aiGraded && quizResult.score != null && (
+                        <div className="w-full max-w-sm mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+                          <p className="text-xs font-black text-blue-500 uppercase tracking-wider mb-2">🤖 AI Examiner Grade</p>
+                          <div className="flex items-end gap-2 mb-1">
+                            <span className="text-5xl font-black text-[#002147]">{quizResult.score}</span>
+                            <span className="text-2xl font-bold text-gray-400 mb-1">/ {quizResult.total}</span>
+                          </div>
+                          <p className="text-sm text-blue-700 font-medium">
+                            {Math.round((quizResult.score / quizResult.total) * 100)}% • {quizResult.total > 0 && quizResult.score / quizResult.total >= 0.9 ? '🏆 Excellent' : quizResult.score / quizResult.total >= 0.7 ? '✅ Good' : quizResult.score / quizResult.total >= 0.5 ? '📘 Average' : '⚠️ Needs Improvement'}
+                          </p>
+                          {quizResult.aiResult?.summary && (
+                            <p className="text-xs text-gray-600 mt-2 text-left">{quizResult.aiResult.summary}</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-3 italic">Pending teacher approval</p>
+                        </div>
+                      )}
+                      {quizResult.aiGraded && quizResult.score == null && (
                         <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full mb-6">
                           🤖 AI Pre-scan complete — teacher will review and confirm your grade
                         </span>

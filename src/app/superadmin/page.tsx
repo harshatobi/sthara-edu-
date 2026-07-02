@@ -57,6 +57,16 @@ export default function SuperAdminDashboard() {
     }
   }, [profile, authLoading, router]);
 
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isModalOpen]);
+
 
   useEffect(() => {
     if (profile?.role === 'superadmin') {
@@ -285,7 +295,7 @@ export default function SuperAdminDashboard() {
               </button>
             </div>
             
-            <div className="p-8 overflow-y-auto flex-1">
+            <div className="p-8 overflow-y-auto flex-1 overscroll-contain">
               <form onSubmit={handleOnboardSchool} className="space-y-5">
 
                 {/* Institution Type Selector */}

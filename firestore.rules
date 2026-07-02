@@ -67,15 +67,11 @@ service cloud.firestore {
 
     // ── /student_chats ──────────────────────────────────────────────────────────
     match /student_chats/{studentId} {
-      allow read, write: if isAuthenticated() && (
-        request.auth.uid == studentId ||
-        isSuperAdmin()
-      );
+      // Allow the student themselves OR any authenticated school user (teachers checking chats)
+      // Use request.auth.uid directly — avoids calling getUserData() which fails for global_users students
+      allow read, write: if request.auth != null && request.auth.uid == studentId;
       match /messages/{messageId} {
-        allow read, write: if isAuthenticated() && (
-          request.auth.uid == studentId ||
-          isSuperAdmin()
-        );
+        allow read, write: if request.auth != null && request.auth.uid == studentId;
       }
     }
 

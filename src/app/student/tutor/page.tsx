@@ -267,15 +267,19 @@ export default function StudentAITutor() {
     setErrorMsg('');
     setIsTyping(true);
 
+    // Immediately show user message locally (don't wait for Firestore)
+    const tempUserMsg: ChatMessage = { id: `local-${Date.now()}`, role: 'user', text: userMsg };
+    setMessages(prev => [...prev, tempUserMsg]);
+
     try {
       const messagesRef = collection(db, 'student_chats', profile.uid, 'messages');
       
-      // 1. Immediately save user message to Firestore
-      await addDoc(messagesRef, {
+      // 1. Save user message to Firestore (non-blocking — don't await)
+      addDoc(messagesRef, {
         role: 'user',
         text: userMsg,
         createdAt: serverTimestamp()
-      });
+      }).catch(e => console.warn('Could not save user message to Firestore:', e));
 
       // 2. Build context payload (cap to last 30 messages to save API limits)
       const contextMessages = [...messages.slice(-30), { role: 'user', text: userMsg }];
@@ -312,12 +316,11 @@ export default function StudentAITutor() {
             return; // Don't save warning to chat, just show the modal
           }
 
-          // Real students: Save the polite warning as an AI message
-          await addDoc(messagesRef, {
-            role: 'model',
-            text: data.text,
-            createdAt: serverTimestamp()
-          });
+          // Real students: Show the polite warning locally + try to save
+          const warnMsg: ChatMessage = { id: `warn-${Date.now()}`, role: 'model', text: data.text };
+          setMessages(prev => [...prev, warnMsg]);
+          addDoc(messagesRef, { role: 'model', text: data.text, createdAt: serverTimestamp() })
+            .catch(e => console.warn('Could not save warning to Firestore:', e));
 
           // If teacher needs to be notified (2nd offense)
           if (data.notifyTeacher && profile.schoolId) {
@@ -340,21 +343,20 @@ export default function StudentAITutor() {
             }
           }
         } else {
-          // 4. Save AI Response to Firestore normally
-          await addDoc(messagesRef, {
-            role: 'model',
-            text: data.text,
-            createdAt: serverTimestamp()
-          });
+          // 4. Show AI Response locally + try to save to Firestore
+          const aiMsg: ChatMessage = { id: `ai-${Date.now()}`, role: 'model', text: data.text };
+          setMessages(prev => [...prev, aiMsg]);
+          addDoc(messagesRef, { role: 'model', text: data.text, createdAt: serverTimestamp() })
+            .catch(e => console.warn('Could not save AI response to Firestore:', e));
         }
 
       } else {
         console.error('AI Error:', data.error);
-        setErrorMsg(data.error || 'Failed to connect to AI. Please check your API key.');
+        setErrorMsg(data.error || 'Failed to connect to AI. Please try again.');
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg('Network error occurred. Please try again.');
+      setErrorMsg('Could not reach the AI server. Please check your connection and try again.');
     } finally {
       setIsTyping(false);
     }

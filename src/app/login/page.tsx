@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { auth } from '@/lib/firebase/config';
 
 type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
 
@@ -52,38 +51,25 @@ export default function LoginPage() {
     setIsVerifyingCode(true);
     setSchoolCodeError('');
 
-    // 8-second timeout to prevent infinite hang if Firestore is unreachable
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), 8000)
-    );
-
     try {
-      const verify = async () => {
-        const directSnap = await getDoc(doc(db, 'schools', schoolCode));
-        if (directSnap.exists()) {
-          setInstitutionType(directSnap.data()?.type === 'college' ? 'college' : 'school');
-          setStep('ROLE_SELECT');
-          return;
-        }
-        const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          const schoolData = querySnapshot.docs[0].data();
-          setInstitutionType(schoolData?.type === 'college' ? 'college' : 'school');
-          setStep('ROLE_SELECT');
-          return;
-        }
-        setSchoolCodeError('Institution code not found. Please check and try again.');
-      };
+      // Use server-side Admin SDK API — bypasses Firestore security rules entirely
+      const res = await fetch('/api/auth/verify-school', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolCode: schoolCode.trim() }),
+      });
 
-      await Promise.race([verify(), timeout]);
+      const data = await res.json();
+
+      if (data.valid) {
+        setInstitutionType(data.type === 'college' ? 'college' : 'school');
+        setStep('ROLE_SELECT');
+      } else {
+        setSchoolCodeError(data.error || 'Institution code not found. Please check and try again.');
+      }
     } catch (err: any) {
       console.error(err);
-      if (err?.message === 'timeout') {
-        setSchoolCodeError('Request timed out. Check your connection and try again.');
-      } else {
-        setSchoolCodeError('Network error. Please try again.');
-      }
+      setSchoolCodeError('Network error. Please check your connection and try again.');
     } finally {
       setIsVerifyingCode(false);
     }

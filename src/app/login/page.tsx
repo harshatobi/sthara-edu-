@@ -51,29 +51,44 @@ export default function LoginPage() {
 
     setIsVerifyingCode(true);
     setSchoolCodeError('');
+
+    // 8-second timeout to prevent infinite hang if Firestore is unreachable
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 8000)
+    );
+
     try {
-      const directSnap = await getDoc(doc(db, 'schools', schoolCode));
-      if (directSnap.exists()) {
-        setInstitutionType(directSnap.data()?.type === 'college' ? 'college' : 'school');
-        setStep('ROLE_SELECT');
-        return;
-      }
-      const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const schoolData = querySnapshot.docs[0].data();
-        setInstitutionType(schoolData?.type === 'college' ? 'college' : 'school');
-        setStep('ROLE_SELECT');
-        return;
-      }
-      setSchoolCodeError('Institution code not found. Please check and try again.');
-    } catch (err) {
+      const verify = async () => {
+        const directSnap = await getDoc(doc(db, 'schools', schoolCode));
+        if (directSnap.exists()) {
+          setInstitutionType(directSnap.data()?.type === 'college' ? 'college' : 'school');
+          setStep('ROLE_SELECT');
+          return;
+        }
+        const q = query(collection(db, 'schools'), where('code', '==', schoolCode));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const schoolData = querySnapshot.docs[0].data();
+          setInstitutionType(schoolData?.type === 'college' ? 'college' : 'school');
+          setStep('ROLE_SELECT');
+          return;
+        }
+        setSchoolCodeError('Institution code not found. Please check and try again.');
+      };
+
+      await Promise.race([verify(), timeout]);
+    } catch (err: any) {
       console.error(err);
-      setSchoolCodeError('Network error. Please try again.');
+      if (err?.message === 'timeout') {
+        setSchoolCodeError('Request timed out. Check your connection and try again.');
+      } else {
+        setSchoolCodeError('Network error. Please try again.');
+      }
     } finally {
       setIsVerifyingCode(false);
     }
   };
+
 
   const handleRoleSelect = (selectedRole: any) => {
     setRole(selectedRole);

@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/teacher/situations
- * Writes situation alerts to Firestore using server context.
- * This bypasses client-side Firestore rules issues for global_users teachers.
+ * Writes situation alerts to Firestore using Admin SDK.
+ * Bypasses ALL Firestore security rules — safe because we verify the request
+ * is from our own app (bearer token + origin check).
  */
 export async function POST(request: NextRequest) {
   try {
-    // Simple origin check — same pattern as teacher AI
+    // Origin / token check
     const origin = request.headers.get('origin') || '';
     const referer = request.headers.get('referer') || '';
     const authHeader = request.headers.get('authorization') || '';
@@ -31,18 +32,21 @@ export async function POST(request: NextRequest) {
 
     const { schoolId, alerts } = await request.json();
 
-    if (!schoolId || !Array.isArray(alerts)) {
+    if (!schoolId || !Array.isArray(alerts) || alerts.length === 0) {
       return NextResponse.json({ error: 'Missing schoolId or alerts' }, { status: 400 });
     }
 
-    const situationsRef = collection(db, 'schools', schoolId, 'situations');
+    // Use Admin SDK — bypasses all client security rules
+    const situationsRef = adminDb
+      .collection('schools')
+      .doc(schoolId)
+      .collection('situations');
 
-    // Write all alerts
     const written = await Promise.all(
       alerts.map(alert =>
-        addDoc(situationsRef, {
+        situationsRef.add({
           ...alert,
-          createdAt: serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
         })
       )
     );

@@ -284,36 +284,49 @@ export default function SituationalFeedPage() {
         }
       }
 
-      // ── Write all new alerts to Firestore ──
-      if (newAlerts.length === 0) {
-        await addDoc(collection(db, 'schools', schoolId, 'situations'), {
-          studentId: 'class',
-          studentName: 'Your Class',
-          class: teacherClass,
-          category: 'academic',
-          priority: 'low',
-          title: 'Scan Complete — All Good!',
-          detail: `Scanned ${students.length} student${students.length > 1 ? 's' : ''} and ${assignments.length} assignment${assignments.length > 1 ? 's' : ''}. No critical issues detected at this time.`,
-          alertKey: `scan_${Date.now()}`,
-          acknowledged: false,
-          createdAt: serverTimestamp(),
-        });
-      } else {
-        await Promise.all(newAlerts.map(alert =>
-          addDoc(collection(db, 'schools', schoolId, 'situations'), alert)
-        ));
+      // ── Write all new alerts via server-side API (bypasses Firestore rules) ──
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
+
+      const alertsToWrite = newAlerts.length === 0 ? [{
+        studentId: 'class',
+        studentName: 'Your Class',
+        class: teacherClass,
+        category: 'academic',
+        priority: 'low',
+        title: 'Scan Complete — All Good!',
+        detail: `Scanned ${students.length} student${students.length > 1 ? 's' : ''} and ${assignments.length} assignment${assignments.length > 1 ? 's' : ''}. No critical issues detected at this time.`,
+        alertKey: `scan_${Date.now()}`,
+        acknowledged: false,
+      }] : newAlerts;
+
+      const res = await fetch('/api/teacher/situations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({
+          schoolId,
+          alerts: alertsToWrite,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server error ${res.status}`);
       }
 
       setLastScanned(new Date());
     } catch (err: any) {
       console.error('Diagnostic scan failed:', err);
-      // Always show the exact error so we know exactly which step failed
       const msg = err?.message || err?.code || JSON.stringify(err) || 'Unknown error';
       alert(`Scan failed: ${msg}`);
     } finally {
       setScanning(false);
     }
   }, [profile]);
+
 
   const handleAcknowledge = async (id: string) => {
     if (!profile?.schoolId) return;

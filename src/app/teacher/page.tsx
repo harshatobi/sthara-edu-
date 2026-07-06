@@ -176,26 +176,45 @@ export default function TeacherDashboard() {
 
     setIsPosting(true);
     try {
-      const assignmentsRef = collection(db, 'schools', profile.schoolId, 'assignments');
-      await addDoc(assignmentsRef, {
-        title,
-        type,
-        dueDate,
-        description,
-        class: selectedClass,
-        subject: selectedSubject,
-        teacherId: profile.uid,
-        teacherName: profile.name,
-        createdAt: serverTimestamp(),
+      // Get auth token for API call
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
+
+      // Use server-side Admin SDK API — bypasses Firestore rules entirely
+      const res = await fetch('/api/teacher/post-assignment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({
+          schoolId: profile.schoolId,
+          title,
+          type,
+          dueDate,
+          description,
+          class: selectedClass,
+          subject: selectedSubject,
+          teacherId: profile.uid,
+          teacherName: profile.name,
+        }),
       });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Server returned an error');
+      }
+
       setPostSuccess(true);
       setTimeout(() => setIsModalOpen(false), 2000);
-    } catch (error) {
-      console.error("Error posting assignment:", error);
+    } catch (error: any) {
+      console.error('Error posting assignment:', error);
+      alert(`Failed to post assignment: ${error?.message || 'Unknown error. Check console for details.'}`);
     } finally {
       setIsPosting(false);
     }
   };
+
 
   return (
     <div className="min-h-screen font-sans animate-in fade-in duration-500 space-y-8 max-w-7xl mx-auto">

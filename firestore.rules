@@ -12,8 +12,13 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/superadmins/$(request.auth.uid));
     }
 
+    // Checks /users first, then /global_users as fallback.
+    // This is critical — teachers may be stored in either collection.
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let uid = request.auth.uid;
+      return exists(/databases/$(database)/documents/users/$(uid))
+        ? get(/databases/$(database)/documents/users/$(uid)).data
+        : get(/databases/$(database)/documents/global_users/$(uid)).data;
     }
 
     function getRole() {
@@ -27,6 +32,7 @@ service cloud.firestore {
     function isInSchool(schoolId) {
       return isAuthenticated() && getUserSchoolId() == schoolId;
     }
+
 
     function isAdminOrTeacherInSchool(schoolId) {
       return isInSchool(schoolId) && getRole() in ['admin', 'teacher'];

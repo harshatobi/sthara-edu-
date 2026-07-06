@@ -1,5 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { adminDb } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +24,7 @@ function containsFoulLanguage(text: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  // ── Lightweight origin check (same approach as teacher AI) ──────────────
+  // ── Lightweight origin check ──────────────────────────────────────────────
   const origin = request.headers.get('origin') || '';
   const referer = request.headers.get('referer') || '';
   const authHeader = request.headers.get('authorization') || '';
@@ -39,8 +41,20 @@ export async function POST(request: NextRequest) {
   if (!isInternalOrigin && !hasBearerToken && !noOrigin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
   try {
-    const { messages, studentId, studentName, studentClass, schoolId, violationCount = 0, institutionType = 'school', branch, year, semester } = await request.json();
+    const {
+      messages,
+      studentId,
+      studentName,
+      studentClass,
+      schoolId,
+      violationCount = 0,
+      institutionType = 'school',
+      branch,
+      year,
+      semester,
+    } = await request.json();
 
     // ── FOUL LANGUAGE CHECK ──
     const lastUserMessage = [...messages].reverse().find((m: any) => m.sender === 'user');
@@ -76,13 +90,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
     }
 
+    // ── FETCH STUDENT MEMORY FROM FIRESTORE ──────────────────────────────────
+    // Memory is stored in student_memory/{studentId} in Firestore
+    let memoryData = { known: [] as string[], struggling: [] as string[], weaknesses: [] as string[] };
+    if (studentId) {
+      try {
+        const memDoc = await adminDb.collection('student_memory').doc(studentId).get();
+        if (memDoc.exists) {
+          const d = memDoc.data()!;
+          memoryData = {
+            known: d.known || [],
+            struggling: d.struggling || [],
+            weaknesses: d.weaknesses || [],
+          };
+        }
+        // Also pull historicalWeaknesses from user profile if memory doc doesn't exist
+        if (memoryData.weaknesses.length === 0) {
+          // Try global_users first, then users
+          const guDoc = await adminDb.collection('global_users').doc(studentId).get();
+          const weaknesses = guDoc.exists
+            ? (guDoc.data()?.historicalWeaknesses || [])
+            : ((await adminDb.collection('users').doc(studentId).get()).data()?.historicalWeaknesses || []);
+          if (weaknesses.length > 0) memoryData.weaknesses = weaknesses;
+        }
+      } catch (memErr) {
+        console.warn('[tutor] Failed to fetch memory:', memErr);
+      }
+    }
+
     const genAI = new GoogleGenerativeAI(apiKey);
-    let memoryData = { known: [] as string[], struggling: [] as string[] };
 
     // ── System instruction — switches between school (child) and college (adult) mode ──
     const isCollege = institutionType === 'college';
 
+    const knownStr = memoryData.known.length > 0
+      ? memoryData.known.slice(-10).join(', ')
+      : 'Not yet assessed';
+    const strugglingStr = [...memoryData.struggling, ...memoryData.weaknesses]
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .slice(-10)
+      .join(', ') || 'Not yet assessed';
+
     const collegeSystemInstruction = `You are an advanced AI Academic Assistant for ${studentName || 'a student'} — ${branch || 'a student'}, ${year || ''} ${semester || ''} at their institution.
+
+STUDENT PROFILE:
+  Topics they are strong in: ${knownStr}
+  Topics they struggle with: ${strugglingStr}
 
 CORE BEHAVIOUR:
 1. STRICTLY ACADEMIC: Decline all non-academic requests professionally. Say: "I'm your academic assistant. I'm here to support your coursework and studies."
@@ -110,6 +163,10 @@ CORE BEHAVIOUR:
     const schoolSystemInstruction = `You are a warm, adaptive AI Tutor for Sthara School OS.
 The student is ${studentName || 'a student'} in ${studentClass || 'a class'}.
 
+STUDENT PROFILE:
+  Topics they understand well: ${knownStr}
+  Topics they struggle with: ${strugglingStr}
+
 CORE RULES:
 1. STRICTLY ACADEMIC: Refuse any non-academic question. Say: "I am your AI Tutor. I can only assist with your academic subjects."
 
@@ -122,27 +179,24 @@ CORE RULES:
 3. VIDEO RECOMMENDATIONS: If the student asks for video lectures, output EXACTLY: \`[YOUTUBE_SEARCH: <specific_topic>]\`. The system will render live videos automatically. No other links.
 
 4. ADAPTIVE PERSONALIZATION:
-   What they know: ${memoryData.known?.join(', ') || 'Not yet assessed'}
-   What they struggle with: ${memoryData.struggling?.join(', ') || 'Not yet assessed'}
+   Use the student profile above to tailor your explanations. If they struggle with a topic, give extra depth.
    Keep responses concise, encouraging, and at their level.
 
 5. FORMATTING: Use clear markdown. For math, write equations in plain readable text using × ÷ ² ³ √ symbols — do NOT use LaTeX notation like \\( \\) or x^2. Write x² not x^2, write √x not \\sqrt{x}.`;
 
     const systemInstruction = isCollege ? collegeSystemInstruction : schoolSystemInstruction;
 
-
     let contents = messages.map((msg: any) => ({
       role: (msg.sender === 'model' || msg.sender === 'ai') ? 'model' : 'user',
       parts: [{ text: msg.text }]
     }));
 
-    // Gemini API requires the conversation history to strictly start with a 'user' role
-    // and alternate. We will remove leading 'model' messages.
+    // Gemini API requires conversation history to start with 'user' role
     while (contents.length > 0 && contents[0].role === 'model') {
       contents.shift();
     }
     
-    // Also merge consecutive messages from the same role to prevent "400 alternating roles" errors
+    // Merge consecutive messages from same role to prevent "400 alternating roles" errors
     const mergedContents: any[] = [];
     for (const msg of contents) {
       if (mergedContents.length > 0 && mergedContents[mergedContents.length - 1].role === msg.role) {
@@ -152,29 +206,28 @@ CORE RULES:
       }
     }
 
-    // Prepend the system instruction to the very first user message 
+    // Prepend system instruction to the first user message
     const firstUserMsgIndex = mergedContents.findIndex(c => c.role === 'user');
     if (firstUserMsgIndex !== -1) {
       mergedContents[firstUserMsgIndex].parts[0].text = systemInstruction + '\n\n' + mergedContents[firstUserMsgIndex].parts[0].text;
     }
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    // Primary Call: Answer Student
     const response = await model.generateContent({
       contents: mergedContents,
-      generationConfig: {
-        temperature: 0.7,
-      }
+      generationConfig: { temperature: 0.7 }
     });
 
     const aiText = response.response.text();
 
-    return NextResponse.json({
-      text: aiText
-    });
+    // ── UPDATE STUDENT MEMORY ASYNCHRONOUSLY ─────────────────────────────────
+    // Extract topics from this session and save them (fire-and-forget, don't block response)
+    if (studentId && aiText) {
+      updateStudentMemory(studentId, messages, aiText).catch(console.warn);
+    }
+
+    return NextResponse.json({ text: aiText });
 
   } catch (error: any) {
     console.error('Tutor API Error:', error?.message || error);
@@ -182,5 +235,54 @@ CORE RULES:
       { error: 'Failed to generate response: ' + (error?.message || 'Unknown error') },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Asynchronously extracts topics from the conversation and updates the
+ * student's memory document in Firestore. Fire-and-forget — doesn't block response.
+ */
+async function updateStudentMemory(studentId: string, messages: any[], aiResponse: string) {
+  try {
+    // Extract the student's last few messages to identify topics
+    const recentStudentMsgs = messages
+      .filter((m: any) => m.sender === 'user')
+      .slice(-5)
+      .map((m: any) => m.text)
+      .join(' ');
+
+    if (!recentStudentMsgs.trim()) return;
+
+    // Simple keyword extraction — look for subject/topic mentions
+    // A full NLP approach could be done here; for now, we extract the general topic
+    const topicMatch = aiResponse.match(/\*\*(.*?)\*\*/g);
+    const topics = topicMatch
+      ? topicMatch.map(t => t.replace(/\*\*/g, '').trim()).filter(t => t.length > 2 && t.length < 60).slice(0, 3)
+      : [];
+
+    if (topics.length === 0) return;
+
+    const memRef = adminDb.collection('student_memory').doc(studentId);
+    const memDoc = await memRef.get();
+
+    if (!memDoc.exists) {
+      await memRef.set({
+        studentId,
+        known: [],
+        struggling: [],
+        recentTopics: topics,
+        lastUpdated: FieldValue.serverTimestamp(),
+      });
+    } else {
+      const existing = memDoc.data()!;
+      const updatedRecent = [...new Set([...topics, ...(existing.recentTopics || [])])].slice(0, 20);
+      await memRef.update({
+        recentTopics: updatedRecent,
+        lastUpdated: FieldValue.serverTimestamp(),
+      });
+    }
+  } catch (e) {
+    // Silently ignore — memory update failure should never break the chat
+    console.warn('[tutor] Memory update failed:', e);
   }
 }

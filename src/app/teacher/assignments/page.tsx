@@ -75,28 +75,17 @@ export default function AssignmentManagerPage() {
     if (!profile?.schoolId) return;
     setFetching(true);
     try {
-      // 1. Fetch all students in the school to know class totals and names
+      // 1. Fetch all students (for class totals)
       const [usersSnap, globalSnap] = await Promise.all([
-        getDocs(query(
-          collection(db, 'users'),
-          where('schoolId', '==', profile.schoolId),
-          where('role', '==', 'student')
-        )),
-        getDocs(query(
-          collection(db, 'global_users'),
-          where('schoolId', '==', profile.schoolId),
-          where('role', '==', 'student')
-        )),
+        getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
+        getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
       ]);
-
       const seen = new Set<string>();
       const studentsMap: Record<string, any[]> = {};
-      
       [...usersSnap.docs, ...globalSnap.docs].forEach(d => {
         if (!seen.has(d.id)) {
           seen.add(d.id);
           const s = { id: d.id, ...d.data() };
-          // College students use branch, school students use studentClass
           const cls = s.studentClass || s.branch || 'Unassigned';
           if (!studentsMap[cls]) studentsMap[cls] = [];
           studentsMap[cls].push(s);
@@ -104,50 +93,40 @@ export default function AssignmentManagerPage() {
       });
       setStudentsByClass(studentsMap);
 
-      // 2. Fetch all assignments
-      const assignmentsSnap = await getDocs(
-        collection(db, 'schools', profile.schoolId, 'assignments')
-      );
-      
-      const tasks: any[] = [];
-      assignmentsSnap.forEach(d => tasks.push({ id: d.id, ...d.data() }));
+      // 2. Fetch assignments via Admin SDK API (bypasses Firestore rules)
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
+      const res = await fetch('/api/teacher/get-assignments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({ schoolId: profile.schoolId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load assignments');
 
-      // 3. Fetch submissions for each assignment
-      const tasksWithStats = await Promise.all(tasks.map(async (task) => {
-         const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', task.id, 'submissions'));
-         const submittedStudentIds = new Set<string>();
-         const submittedData: Record<string, any> = {};
-         subsSnap.forEach(s => {
-           submittedStudentIds.add(s.id);
-           submittedData[s.id] = s.data();
-         });
-         
-         // Use branch as class key for college assignments
-         const classKey = task.class || '';
-         const classStds = studentsMap[classKey] || [];
-         
-         return {
-           ...task,
-           submittedStudentIds,
-           submittedData,
-           totalStudents: classStds.length
-         };
-      }));
-
-      // Sort by creation date (newest first)
-      tasksWithStats.sort((a, b) => {
-        const da = a.createdAt?.toMillis ? a.createdAt.toMillis() : Date.now();
-        const dbT = b.createdAt?.toMillis ? b.createdAt.toMillis() : Date.now();
-        return dbT - da;
+      // 3. Attach class student counts
+      const tasksWithStats = (data.assignments || []).map((task: any) => {
+        const classKey = task.class || task.branch || '';
+        const classStds = studentsMap[classKey] || [];
+        return {
+          ...task,
+          submittedStudentIds: new Set(Object.keys(task.submittedData || {})),
+          totalStudents: classStds.length,
+        };
       });
 
       setAssignments(tasksWithStats);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Assignment fetch error:', err);
+      alert(`Failed to load assignments: ${err.message}`);
     } finally {
       setFetching(false);
     }
   };
+
 
   const handleDelete = async (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();

@@ -25,6 +25,7 @@ export default function SuperAdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deletingSchoolId, setDeletingSchoolId] = useState<string | null>(null);
 
   // Form State
   const [schoolCode, setSchoolCode] = useState('');
@@ -74,6 +75,45 @@ export default function SuperAdminDashboard() {
     }
   }, [profile?.role]);
 
+
+  const handleDeleteSchool = async (schoolId: string, schoolName: string) => {
+    const confirmMsg = `⚠️ PERMANENTLY DELETE "${schoolName}" (${schoolId})?
+
+This will delete:
+• All assignments and student submissions
+• All users, teachers, and admins
+• All notifications, materials, and situations
+• All AI chat history for every student
+• The school/college itself
+
+This CANNOT be undone. Type the school code to confirm:`;
+    const typed = window.prompt(confirmMsg);
+    if (typed !== schoolId) {
+      if (typed !== null) alert('School code did not match. Deletion cancelled.');
+      return;
+    }
+    setDeletingSchoolId(schoolId);
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
+      const res = await fetch('/api/admin/delete-school', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({ schoolId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Deletion failed');
+      alert(`✅ ${data.message}`);
+      setSchools(prev => prev.filter(s => s.id !== schoolId));
+    } catch (err: any) {
+      alert(`❌ Failed to delete: ${err.message}`);
+    } finally {
+      setDeletingSchoolId(null);
+    }
+  };
 
   const handleOnboardSchool = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,6 +255,7 @@ export default function SuperAdminDashboard() {
                   <th className="px-6 py-4">Students</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">License</th>
+                  <th className="px-6 py-4">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -269,6 +310,21 @@ export default function SuperAdminDashboard() {
                           <Sparkles className="w-3 h-3 text-purple-500" />
                           <span>{school.licenseTier || 'Pro'}</span>
                         </span>
+                      </td>
+                      <td className="px-6 py-5" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleDeleteSchool(school.id, school.name)}
+                          disabled={deletingSchoolId === school.id}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                          title="Delete school and all data"
+                        >
+                          {deletingSchoolId === school.id ? (
+                            <div className="w-3 h-3 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                          <span>{deletingSchoolId === school.id ? 'Deleting...' : 'Delete'}</span>
+                        </button>
                       </td>
                     </tr>
                   ))

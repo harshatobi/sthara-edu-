@@ -83,23 +83,25 @@ export default function TeacherSyllabus() {
     if (profile?.schoolId && profile?.uid) {
       (async () => {
         try {
-          const q = query(
-            collection(db, 'schools', profile.schoolId!, 'syllabus'),
-            where('teacherId', '==', profile.uid)
+          const { getAuth } = await import('firebase/auth');
+          const idToken = await getAuth().currentUser?.getIdToken();
+          const res = await fetch(
+            `/api/teacher/syllabus?schoolId=${profile.schoolId}&teacherId=${profile.uid}`,
+            { headers: idToken ? { Authorization: `Bearer ${idToken}` } : {} }
           );
-          const snap = await getDocs(q);
+          const data = await res.json();
           const loaded: { [key: string]: any[] } = Object.fromEntries(MONTHS.map(m => [m, []]));
-          snap.forEach(d => {
-            const data = d.data();
-            if (loaded[data.month] !== undefined) {
-              loaded[data.month].push({ id: d.id, ...data });
+          (data.modules || []).forEach((mod: any) => {
+            if (loaded[mod.month] !== undefined) {
+              loaded[mod.month].push(mod);
             }
           });
           setSyllabus(loaded);
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error('[syllabus load]', err); }
       })();
     }
   }, [profile, loading, router]);
+
 
   const simulateAI = async (cb: () => Promise<void>) => {
     setIsAIGenerating(true);
@@ -136,17 +138,26 @@ export default function TeacherSyllabus() {
     e.preventDefault();
     if (!form.topic || !form.month || !profile?.schoolId) return;
 
+    const { getAuth } = await import('firebase/auth');
+    const idToken = await getAuth().currentUser?.getIdToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+    };
+
     if (editingModule) {
       // ── EDIT ──
       const updated = { ...editingModule, ...form };
-      await updateDoc(doc(db, 'schools', profile.schoolId, 'syllabus', editingModule.id), form);
+      await fetch('/api/teacher/syllabus', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ schoolId: profile.schoolId, id: editingModule.id, ...form }),
+      });
       setSyllabus(prev => {
         const next = { ...prev };
-        // Remove from old month
         Object.keys(next).forEach(m => {
           next[m] = next[m].filter((x: any) => x.id !== editingModule.id);
         });
-        // Add to new month
         next[form.month] = [...(next[form.month] || []), updated];
         return next;
       });
@@ -163,7 +174,13 @@ export default function TeacherSyllabus() {
           createdAt: new Date().toISOString(),
           ...form,
         };
-        await setDoc(doc(db, 'schools', profile.schoolId!, 'syllabus', newId), newMod);
+        const res = await fetch('/api/teacher/syllabus', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ schoolId: profile.schoolId, id: newId, ...newMod }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create module');
         setSyllabus(prev => ({
           ...prev,
           [form.month]: [...(prev[form.month] || []), { id: newId, ...newMod }],
@@ -175,10 +192,13 @@ export default function TeacherSyllabus() {
     }
   };
 
+
   const handleQuickAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickAddPrompt || !profile?.schoolId) return;
     await simulateAI(async () => {
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
       const topic = quickAddPrompt.length > 40 ? quickAddPrompt.slice(0, 40) + '…' : quickAddPrompt;
       const newId = `syl_${Date.now()}`;
       const newMod = {
@@ -188,7 +208,15 @@ export default function TeacherSyllabus() {
         status: 'planned', aiPath: generateAIPath(quickAddPrompt),
         createdAt: new Date().toISOString(),
       };
-      await setDoc(doc(db, 'schools', profile.schoolId!, 'syllabus', newId), newMod);
+      const res = await fetch('/api/teacher/syllabus', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({ schoolId: profile.schoolId, id: newId, ...newMod }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
       setSyllabus(prev => ({
         ...prev,
         [quickAddMonth]: [...(prev[quickAddMonth] || []), { id: newId, ...newMod }],
@@ -198,9 +226,19 @@ export default function TeacherSyllabus() {
     });
   };
 
+
   const markCompleted = async (mod: any) => {
     if (!profile?.schoolId) return;
-    await updateDoc(doc(db, 'schools', profile.schoolId, 'syllabus', mod.id), { status: 'completed' });
+    const { getAuth } = await import('firebase/auth');
+    const idToken = await getAuth().currentUser?.getIdToken();
+    await fetch('/api/teacher/syllabus', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      },
+      body: JSON.stringify({ schoolId: profile.schoolId, id: mod.id, status: 'completed' }),
+    });
     setSyllabus(prev => {
       const next = { ...prev };
       const idx = next[mod.month].findIndex((m: any) => m.id === mod.id);
@@ -210,14 +248,25 @@ export default function TeacherSyllabus() {
     setSelectedModule({ ...mod, status: 'completed' });
   };
 
+
   const confirmDelete = async () => {
     if (!deletingModule || !profile?.schoolId) return;
-    await deleteDoc(doc(db, 'schools', profile.schoolId, 'syllabus', deletingModule.id));
+    const { getAuth } = await import('firebase/auth');
+    const idToken = await getAuth().currentUser?.getIdToken();
+    await fetch('/api/teacher/syllabus', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      },
+      body: JSON.stringify({ schoolId: profile.schoolId, id: deletingModule.id }),
+    });
     setSyllabus(prev => {
       const next = { ...prev };
       next[deletingModule.month] = next[deletingModule.month].filter((m: any) => m.id !== deletingModule.id);
       return next;
     });
+
     if (selectedModule?.id === deletingModule.id) setSelectedModule(null);
     setDeletingModule(null);
   };

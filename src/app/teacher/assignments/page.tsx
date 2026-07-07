@@ -75,40 +75,42 @@ export default function AssignmentManagerPage() {
     if (!profile?.schoolId) return;
     setFetching(true);
     try {
-      // 1. Fetch all students (for class totals)
-      const [usersSnap, globalSnap] = await Promise.all([
-        getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-        getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-      ]);
-      const seen = new Set<string>();
+      // Get auth token for both API calls
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      };
+
+      // 1. Fetch all students via Admin SDK API (client rules block cross-user reads)
+      const studRes = await fetch('/api/teacher/get-students', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ schoolId: profile.schoolId }),
+      });
+      const studData = await studRes.json();
+      if (!studRes.ok) throw new Error(studData.error || 'Failed to load students');
+
       const studentsMap: Record<string, any[]> = {};
-      [...usersSnap.docs, ...globalSnap.docs].forEach(d => {
-        if (!seen.has(d.id)) {
-          seen.add(d.id);
-          const s = { id: d.id, ...d.data() };
-          const cls = s.studentClass || s.branch || 'Unassigned';
-          if (!studentsMap[cls]) studentsMap[cls] = [];
-          studentsMap[cls].push(s);
-        }
+      (studData.students || []).forEach((s: any) => {
+        const cls = s.studentClass || s.branch || 'Unassigned';
+        if (!studentsMap[cls]) studentsMap[cls] = [];
+        studentsMap[cls].push(s);
       });
       setStudentsByClass(studentsMap);
 
-      // 2. Fetch assignments via Admin SDK API (bypasses Firestore rules)
-      const { getAuth } = await import('firebase/auth');
-      const idToken = await getAuth().currentUser?.getIdToken();
-      const res = await fetch('/api/teacher/get-assignments', {
+      // 2. Fetch assignments via Admin SDK API
+      const assignRes = await fetch('/api/teacher/get-assignments', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-        },
+        headers,
         body: JSON.stringify({ schoolId: profile.schoolId }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load assignments');
+      const assignData = await assignRes.json();
+      if (!assignRes.ok) throw new Error(assignData.error || 'Failed to load assignments');
 
       // 3. Attach class student counts
-      const tasksWithStats = (data.assignments || []).map((task: any) => {
+      const tasksWithStats = (assignData.assignments || []).map((task: any) => {
         const classKey = task.class || task.branch || '';
         const classStds = studentsMap[classKey] || [];
         return {
@@ -126,6 +128,7 @@ export default function AssignmentManagerPage() {
       setFetching(false);
     }
   };
+
 
 
   const handleDelete = async (taskId: string, e: React.MouseEvent) => {

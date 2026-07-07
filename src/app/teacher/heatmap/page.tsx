@@ -36,18 +36,33 @@ export default function TeacherHeatmap() {
       setIsLoadingData(true);
 
       try {
-        // ── 1. Fetch students from both collections ──────────────────────────
-        const [usersSnap, globalUsersSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
-          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
-        ]);
-        const seenIds = new Set<string>();
-        const allStudents: any[] = [];
-        [...usersSnap.docs, ...globalUsersSnap.docs].forEach(s => {
-          if (!seenIds.has(s.id)) { seenIds.add(s.id); allStudents.push({ id: s.id, ...s.data() }); }
-        });
+        // Get auth token
+        const { getAuth } = await import('firebase/auth');
+        const idToken = await getAuth().currentUser?.getIdToken();
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        };
 
-        // ── 2. Discover classes from student data ──────────────────────────
+        // ── 1. Fetch students via Admin SDK API ──────────────────────────────
+        const studRes = await fetch('/api/teacher/get-students', {
+          method: 'POST', headers,
+          body: JSON.stringify({ schoolId }),
+        });
+        const studData = await studRes.json();
+        if (!studRes.ok) throw new Error(studData.error || 'Failed to fetch students');
+        const allStudents: any[] = studData.students || [];
+
+        // ── 2. Fetch assignments via Admin SDK API ───────────────────────────
+        const assignRes = await fetch('/api/teacher/get-assignments', {
+          method: 'POST', headers,
+          body: JSON.stringify({ schoolId }),
+        });
+        const assignData = await assignRes.json();
+        if (!assignRes.ok) throw new Error(assignData.error || 'Failed to fetch assignments');
+        const allAssignments: any[] = assignData.assignments || [];
+
+        // ── 3. Discover classes from student data ──────────────────────────
         const classSet = new Set<string>();
         allStudents.forEach(s => { if (s.studentClass) classSet.add(s.studentClass); });
         const discoveredClasses = Array.from(classSet).sort();
@@ -67,7 +82,7 @@ export default function TeacherHeatmap() {
           return;
         }
 
-        // ── 3. Filter students to active class & teacher's assignment ──────
+        // ── 4. Filter students to active class & teacher's assignment ──────
         const uniqueClasses = uniqueTeacherClasses.map(c => c.toLowerCase());
         let classStudents = activeClass
           ? allStudents.filter(s => s.studentClass && s.studentClass.toLowerCase() === activeClass.toLowerCase())
@@ -77,7 +92,7 @@ export default function TeacherHeatmap() {
         }
         setStudents(classStudents);
 
-        // ── 4. Determine teacher's subjects for this class ────────────────
+        // ── 5. Determine teacher's subjects for this class ────────────────
         const teacherSubjects: string[] = [...new Set(
           (profile.assignments ?? [])
             .filter((a: any) => !activeClass || a.class?.toLowerCase() === activeClass.toLowerCase())
@@ -85,51 +100,41 @@ export default function TeacherHeatmap() {
             .filter(Boolean)
         )] as string[];
 
-        // ── 5. Fetch all assignments for school, filter by class + subject ─
-        const allAssignSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments'));
-        const allAssignments: any[] = allAssignSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const relevant = allAssignments.filter(a =>
+        // ── 6. Filter assignments by class + subject ─────────────────────
+        const relevant = allAssignments.filter((a: any) =>
           (!activeClass || a.class?.toLowerCase() === activeClass.toLowerCase()) &&
           (teacherSubjects.length === 0 || teacherSubjects.includes(a.subject))
         );
 
         // Group assignments by subject
         const bySubject: Record<string, any[]> = {};
-        relevant.forEach(a => {
+        relevant.forEach((a: any) => {
           const subj = a.subject || 'General';
           if (!bySubject[subj]) bySubject[subj] = [];
           bySubject[subj].push(a);
         });
 
-        // Use teacherSubjects order, or discovered subjects
         const subjectOrder = teacherSubjects.length > 0 ? teacherSubjects : Object.keys(bySubject);
-        // Always include teacher subjects even if no assignments yet
         subjectOrder.forEach(s => { if (!bySubject[s]) bySubject[s] = []; });
 
-        // ── 6. Fetch submissions and compute per-student averages ──────────
+        // ── 7. Compute per-student averages from submission data already in assignment ─
         const subjectCols: { subject: string; scores: Record<string, number | null> }[] = [];
 
         for (const subject of subjectOrder) {
           const subjectAssignments = bySubject[subject] || [];
-          // studentId -> [scores]
           const studentTotals: Record<string, { sum: number; count: number }> = {};
           classStudents.forEach(s => { studentTotals[s.id] = { sum: 0, count: 0 }; });
 
           for (const assign of subjectAssignments) {
-            const subsSnap = await getDocs(collection(db, 'schools', schoolId, 'assignments', assign.id, 'submissions'));
-            subsSnap.forEach(sub => {
-              const sid = sub.id;
-              if (!studentTotals[sid]) return;
-              const data = sub.data();
-              let score: number | null = null;
-              if (data.score !== undefined && data.maxScore > 0) {
-                score = Math.round((data.score / data.maxScore) * 100);
-              } else if (typeof data.grade === 'number') {
-                score = data.grade;
-              }
-              if (score !== null) {
-                studentTotals[sid].sum += score;
-                studentTotals[sid].count += 1;
+            // Use submittedData already included in the assignment from get-assignments API
+            const submittedData = assign.submittedData || {};
+            Object.entries(submittedData).forEach(([studentId, sub]: [string, any]) => {
+              if (!studentTotals[studentId]) studentTotals[studentId] = { sum: 0, count: 0 };
+              const score = sub?.score ?? sub?.aiResult?.totalScore;
+              const max = sub?.maxScore ?? sub?.aiResult?.maxTotalScore ?? 10;
+              if (score != null) {
+                studentTotals[studentId].sum += (score / max) * 100;
+                studentTotals[studentId].count += 1;
               }
             });
           }
@@ -137,20 +142,23 @@ export default function TeacherHeatmap() {
           const scores: Record<string, number | null> = {};
           classStudents.forEach(s => {
             const t = studentTotals[s.id];
-            scores[s.id] = t.count > 0 ? Math.round(t.sum / t.count) : null;
+            scores[s.id] = t && t.count > 0 ? Math.round(t.sum / t.count) : null;
           });
           subjectCols.push({ subject, scores });
         }
 
         setSubjectColumns(subjectCols);
-      } catch (err) {
-        console.error('Error fetching heatmap data', err);
+      } catch (err: any) {
+        console.error('[heatmap] Error:', err);
+        alert(`Heatmap load failed: ${err.message}`);
       } finally {
         setIsLoadingData(false);
       }
     };
+
     fetchHeatmapData();
   }, [profile?.schoolId, selectedClass]);
+
 
 
 

@@ -98,56 +98,52 @@ export default function TeacherDashboard() {
     if (!profile?.schoolId) return;
     
     try {
-      // 1. Fetch Students from BOTH collections (users + global_users)
-      const [usersSnap, globalSnap] = await Promise.all([
-        getDocs(query(
-          collection(db, 'users'),
-          where('schoolId', '==', profile.schoolId),
-          where('role', '==', 'student'),
-          where('studentClass', '==', className)
-        )),
-        getDocs(query(
-          collection(db, 'global_users'),
-          where('schoolId', '==', profile.schoolId),
-          where('role', '==', 'student'),
-          where('studentClass', '==', className)
-        )),
-      ]);
-      const seen = new Set<string>();
-      const students: any[] = [];
-      [...usersSnap.docs, ...globalSnap.docs].forEach(d => {
-        if (!seen.has(d.id)) { seen.add(d.id); students.push({ id: d.id, ...d.data() }); }
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      };
+
+      // 1. Fetch students filtered by class via Admin SDK API
+      const studRes = await fetch('/api/teacher/get-students', {
+        method: 'POST', headers,
+        body: JSON.stringify({ schoolId: profile.schoolId, classFilter: className }),
       });
+      const studData = await studRes.json();
+      const students: any[] = studData.students || [];
       setClassStudents(students);
 
-      // 2. Fetch Assignments for this class + subject
-      const snap = await getDocs(query(
-        collection(db, 'schools', profile.schoolId, 'assignments'),
-        where('class', '==', className),
-        where('subject', '==', subjectName)
-      ));
-      const tasks: any[] = [];
-      snap.forEach(d => tasks.push({ id: d.id, ...d.data() }));
-      
-      // 3. Fetch submissions for each task with full submission data
-      const tasksWithStats = await Promise.all(tasks.map(async (task) => {
-         const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', task.id, 'submissions'));
-         const submittedStudentIds = new Set<string>();
-         const submissionsMap: Record<string, any> = {};
-         subsSnap.forEach(s => {
-            submittedStudentIds.add(s.id);
-            submissionsMap[s.id] = { id: s.id, ...s.data() };
-         });
-         
-         const isCompleted = students.length > 0 && submittedStudentIds.size >= students.length;
-         return { ...task, submittedStudentIds, submissionsMap, isCompleted };
-      }));
+      // 2. Fetch all assignments and filter client-side
+      const assignRes = await fetch('/api/teacher/get-assignments', {
+        method: 'POST', headers,
+        body: JSON.stringify({ schoolId: profile.schoolId }),
+      });
+      const assignData = await assignRes.json();
+      const allAssignments: any[] = assignData.assignments || [];
+
+      // Filter by class and subject
+      const filtered = allAssignments.filter(a =>
+        a.class === className && a.subject === subjectName
+      );
+
+      // submittedData is already included from the get-assignments API
+      const tasksWithStats = filtered.map(task => {
+        const submittedStudentIds = new Set(Object.keys(task.submittedData || {}));
+        const submissionsMap: Record<string, any> = {};
+        Object.entries(task.submittedData || {}).forEach(([sid, sub]: [string, any]) => {
+          submissionsMap[sid] = { id: sid, ...sub };
+        });
+        const isCompleted = students.length > 0 && submittedStudentIds.size >= students.length;
+        return { ...task, submittedStudentIds, submissionsMap, isCompleted };
+      });
 
       setClassTasks(tasksWithStats);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('[openTaskModal]', err);
     }
   };
+
 
   const handleDeleteTask = async (taskId: string) => {
     if (!profile?.schoolId) return;

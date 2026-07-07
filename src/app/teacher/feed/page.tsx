@@ -102,21 +102,25 @@ export default function SituationalFeedPage() {
       const teacherAssignments: string[] = profile.assignments?.map((a: any) => a.class).filter(Boolean) || [];
       const classesToScan = teacherClass ? [teacherClass] : teacherAssignments;
 
-      // 1. Get all students (both collections)
-      let usersSnap: any, globalSnap: any;
-      try {
-        [usersSnap, globalSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
-          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', schoolId), where('role', '==', 'student'))),
-        ]);
-      } catch (e: any) {
-        throw new Error(`[Step 1 - students query] ${e.code || e.message}`);
-      }
-      const seen = new Set<string>();
-      const allStudents: any[] = [];
-      [...usersSnap.docs, ...globalSnap.docs].forEach((d: any) => {
-        if (!seen.has(d.id)) { seen.add(d.id); allStudents.push({ id: d.id, ...d.data() }); }
+      // Get auth token for API calls
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      };
+
+      // 1. Get all students via Admin SDK API (client rules block cross-user reads)
+      const studRes = await fetch('/api/teacher/get-students', {
+        method: 'POST', headers,
+        body: JSON.stringify({ schoolId }),
       });
+      if (!studRes.ok) {
+        const d = await studRes.json();
+        throw new Error(`[Step 1 - students] ${d.error || studRes.status}`);
+      }
+      const studData = await studRes.json();
+      const allStudents: any[] = studData.students || [];
       const students = classesToScan.length > 0
         ? allStudents.filter((s: any) => classesToScan.includes(s.studentClass))
         : allStudents;
@@ -127,17 +131,20 @@ export default function SituationalFeedPage() {
         return;
       }
 
-      // 2. Get all assignments
-      let assignmentsSnap: any;
-      try {
-        const assignmentsQ = teacherClass
-          ? query(collection(db, 'schools', schoolId, 'assignments'), where('class', '==', teacherClass))
-          : query(collection(db, 'schools', schoolId, 'assignments'));
-        assignmentsSnap = await getDocs(assignmentsQ);
-      } catch (e: any) {
-        throw new Error(`[Step 2 - assignments query] ${e.code || e.message}`);
+      // 2. Get all assignments via Admin SDK API
+      const assignRes = await fetch('/api/teacher/get-assignments', {
+        method: 'POST', headers,
+        body: JSON.stringify({ schoolId }),
+      });
+      if (!assignRes.ok) {
+        const d = await assignRes.json();
+        throw new Error(`[Step 2 - assignments] ${d.error || assignRes.status}`);
       }
-      const assignments = assignmentsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+      const assignData = await assignRes.json();
+      const allAssignments: any[] = assignData.assignments || [];
+      const assignments = teacherClass
+        ? allAssignments.filter(a => a.class === teacherClass)
+        : allAssignments;
 
       // 3. Get existing unacknowledged alert IDs to avoid duplicates
       let existingKeys = new Set<string>();
@@ -157,17 +164,15 @@ export default function SituationalFeedPage() {
 
       const newAlerts: any[] = [];
 
+
       // ── ALERT TYPE 1: Overdue submissions (assignment past due, no submission) ──
       const today = new Date();
       for (const assignment of assignments) {
         const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
         if (!dueDate || dueDate > today) continue; // not yet overdue
 
-        // Get who submitted
-        const subsSnap = await getDocs(
-          collection(db, 'schools', schoolId, 'assignments', assignment.id, 'submissions')
-        );
-        const submittedIds = new Set(subsSnap.docs.map(d => d.id));
+        // Use submittedData already fetched from get-assignments API (no extra Firestore read)
+        const submittedIds = new Set(Object.keys(assignment.submittedData || {}));
 
         for (const student of students) {
           if (submittedIds.has(student.id)) continue;
@@ -187,28 +192,24 @@ export default function SituationalFeedPage() {
             actionLink: `/teacher/grading`,
             actionLabel: 'Go to Grading',
             acknowledged: false,
-            createdAt: serverTimestamp(),
           });
         }
       }
 
       // ── ALERT TYPE 2: Low quiz score (scored below 50%) ──
       for (const assignment of assignments) {
-        const subsSnap = await getDocs(
-          collection(db, 'schools', schoolId, 'assignments', assignment.id, 'submissions')
-        );
-        subsSnap.forEach(subDoc => {
-          const sub = subDoc.data();
-          const score = sub.score ?? null;
-          const maxScore = sub.maxScore || sub.total || null;
+        const submittedData = assignment.submittedData || {};
+        Object.entries(submittedData).forEach(([studentId, sub]: [string, any]) => {
+          const score = sub.score ?? sub.aiResult?.totalScore ?? null;
+          const maxScore = sub.maxScore ?? sub.aiResult?.maxTotalScore ?? sub.total ?? null;
           if (score === null || !maxScore) return;
           const pct = (score / maxScore) * 100;
           if (pct >= 50) return; // not low
 
-          const key = `${subDoc.id}_lowscore_${assignment.id}`;
+          const key = `${studentId}_lowscore_${assignment.id}`;
           if (existingKeys.has(key)) return;
 
-          const student = students.find(s => s.id === subDoc.id);
+          const student = students.find(s => s.id === studentId);
           if (!student) return;
 
           newAlerts.push({
@@ -223,10 +224,10 @@ export default function SituationalFeedPage() {
             actionLink: `/teacher/mastery?studentId=${student.id}`,
             actionLabel: 'View Mastery',
             acknowledged: false,
-            createdAt: serverTimestamp(),
           });
         });
       }
+
 
       // ── ALERT TYPE 3: Student with no submissions at all ──
       for (const student of students) {

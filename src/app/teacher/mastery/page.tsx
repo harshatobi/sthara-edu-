@@ -165,38 +165,42 @@ function MasteryTrackerContent() {
     if (!profile?.schoolId) return;
     const fetchStudents = async () => {
       try {
-        // Query BOTH collections — some users are in 'users', newer ones in 'global_users'
-        const [usersSnap, globalUsersSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-        ]);
-        const seen = new Set<string>();
-        let students: any[] = [];
-        [...usersSnap.docs, ...globalUsersSnap.docs].forEach(s => {
-          if (!seen.has(s.id)) { seen.add(s.id); students.push({ id: s.id, ...s.data() }); }
-        });
+        const { getAuth } = await import('firebase/auth');
+        const idToken = await getAuth().currentUser?.getIdToken();
 
-        // Filter by teacher's assigned classes (from superadmin portal assignments)
+        // Use Admin SDK API — client-side rules block reading all users
+        const res = await fetch('/api/teacher/get-students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+          },
+          body: JSON.stringify({ schoolId: profile.schoolId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch students');
+        let students: any[] = data.students || [];
+
+        // Filter by teacher's assigned classes
         const teacherClasses = [
           ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
           ...(profile.teacherClass ? [profile.teacherClass] : []),
         ];
         const uniqueClasses = [...new Set(teacherClasses)].map(c => c.toLowerCase());
-
         if (uniqueClasses.length > 0) {
           students = students.filter(s =>
             s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase())
           );
         }
-        // If no assignments configured, show all students in school (fallback)
 
         setStudentsList(students);
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        console.error('[mastery] fetch students:', err);
       }
     };
     fetchStudents();
   }, [profile]);
+
 
 
   const handleGeneratePractice = async () => {

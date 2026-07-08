@@ -12,7 +12,9 @@ import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth'
 interface TeacherAssignment {
   class: string;
   subject: string;
+  assignedStudents?: string[]; // customStudentIds assigned to THIS subject
 }
+
 
 interface UserData {
   id: string;
@@ -48,7 +50,7 @@ function SchoolManagementContent() {
 
   // Extended Data Fields
   const [studentClass, setStudentClass] = useState('');
-  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '' }]);
+  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '', assignedStudents: [] }]);
   const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
   // College-specific
   const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
@@ -56,8 +58,7 @@ function SchoolManagementContent() {
   const [studentBranch, setStudentBranch] = useState('');
   const [studentYear, setStudentYear] = useState('');
   const [studentSemester, setStudentSemester] = useState('');
-  // For assigning students to a teacher/professor in colleges
-  const [selectedStudentsForTeacher, setSelectedStudentsForTeacher] = useState<string[]>([]);
+
 
 
   useEffect(() => {
@@ -144,8 +145,9 @@ function SchoolManagementContent() {
 
 
   const handleAddAssignmentRow = () => {
-    setTeacherAssignments([...teacherAssignments, { class: '', subject: '' }]);
+    setTeacherAssignments([...teacherAssignments, { class: '', subject: '', assignedStudents: [] }]);
   };
+
 
 
   const handleRemoveAssignmentRow = (index: number) => {
@@ -168,13 +170,32 @@ function SchoolManagementContent() {
     }
   };
 
-  const toggleTeacherStudentSelection = (customStudentId: string) => {
-    if (selectedStudentsForTeacher.includes(customStudentId)) {
-      setSelectedStudentsForTeacher(selectedStudentsForTeacher.filter(id => id !== customStudentId));
-    } else {
-      setSelectedStudentsForTeacher([...selectedStudentsForTeacher, customStudentId]);
-    }
+  // Toggle a student inside a specific subject assignment row
+  const handleAssignmentStudentToggle = (rowIdx: number, sid: string) => {
+    setTeacherAssignments(prev => prev.map((a, i) => {
+      if (i !== rowIdx) return a;
+      const current = a.assignedStudents || [];
+      return {
+        ...a,
+        assignedStudents: current.includes(sid)
+          ? current.filter(s => s !== sid)
+          : [...current, sid],
+      };
+    }));
   };
+
+  // Select / clear all students for a row
+  const handleAssignmentSelectAll = (rowIdx: number, allIds: string[]) => {
+    setTeacherAssignments(prev => prev.map((a, i) =>
+      i === rowIdx ? { ...a, assignedStudents: allIds } : a
+    ));
+  };
+  const handleAssignmentClearAll = (rowIdx: number) => {
+    setTeacherAssignments(prev => prev.map((a, i) =>
+      i === rowIdx ? { ...a, assignedStudents: [] } : a
+    ));
+  };
+
 
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -227,11 +248,9 @@ function SchoolManagementContent() {
           userData.customStudentId = sequentialId.toUpperCase();
         }
       } else if (role === 'teacher') {
+        // For college: each assignment row already contains its own assignedStudents[]
+        // For school: standard class+subject assignments
         userData.assignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
-        // Save assigned students for college professors
-        if (institutionType === 'college' && selectedStudentsForTeacher.length > 0) {
-          userData.assignedStudents = selectedStudentsForTeacher;
-        }
 
       } else if (role === 'parent') {
         userData.linkedStudents = selectedStudentsForParent;
@@ -255,9 +274,9 @@ function SchoolManagementContent() {
       setStudentBranch('');
       setStudentYear('');
       setStudentSemester('');
-      setTeacherAssignments([{ class: '', subject: '' }]);
+      setTeacherAssignments([{ class: '', subject: '', assignedStudents: [] }]);
       setSelectedStudentsForParent([]);
-      setSelectedStudentsForTeacher([]);
+
 
       
     } catch (err: any) {
@@ -310,18 +329,12 @@ function SchoolManagementContent() {
     return users.filter(u => u.role === 'student' && u.customStudentId);
   }, [users]);
 
-  // For college teacher: get students from the branches the teacher is being assigned to
-  const studentsForTeacherBranches = useMemo(() => {
-    if (institutionType !== 'college') return [];
-    const selectedBranches = new Set(
-      teacherAssignments.map(a => a.class.trim()).filter(Boolean)
-    );
-    if (selectedBranches.size === 0) {
-      // If no branch selected yet, show ALL college students
-      return users.filter(u => u.role === 'student' && (u as any).branch);
-    }
-    return users.filter(u => u.role === 'student' && selectedBranches.has((u as any).branch || ''));
-  }, [users, teacherAssignments, institutionType]);
+  // Helper: get students from a specific branch (for per-row college picker)
+  const getStudentsByBranch = (branch: string) => {
+    if (!branch) return users.filter(u => u.role === 'student' && (u as any).branch);
+    return users.filter(u => u.role === 'student' && (u as any).branch === branch);
+  };
+
 
 
   if (!decodedSchoolId) {
@@ -460,124 +473,141 @@ function SchoolManagementContent() {
                 <label className="block text-sm font-medium text-[#002147]/70">
                   {institutionType === 'college' ? 'Branch & Subject Assignments' : 'Subject & Class Assignments'}
                 </label>
-                {teacherAssignments.map((assignment, idx) => (
-                  <div key={idx} className="flex space-x-2 items-center bg-[#f8fafc] p-2 rounded-xl border border-[#002147]/10">
-                    {institutionType === 'college' ? (
-                      <select
-                        value={assignment.class}
-                        onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
-                        className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
-                      >
-                        <option value="">Select Branch</option>
-                        {schoolBranches.map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={assignment.class}
-                        onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
-                        placeholder="Class (10A)"
-                        className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
-                      />
-                    )}
-                    <div className="w-[1px] h-6 bg-[#002147]/10"></div>
-                    <input
-                      type="text"
-                      value={assignment.subject}
-                      onChange={(e) => handleAssignmentChange(idx, 'subject', e.target.value)}
-                      placeholder={institutionType === 'college' ? 'Subject (e.g. Accountancy)' : 'Subject (Math)'}
-                      className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
-                    />
-                    {teacherAssignments.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAssignmentRow(idx)}
-                        className="p-1 text-[#dc143c]/60 hover:text-[#dc143c]"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+
+                {/* Each assignment row is a self-contained card */}
+                {teacherAssignments.map((assignment, idx) => {
+                  const branchStudents = institutionType === 'college' ? getStudentsByBranch(assignment.class) : [];
+                  const assigned = assignment.assignedStudents || [];
+                  return (
+                    <div key={idx} className="rounded-2xl border border-[#002147]/15 overflow-hidden shadow-sm">
+
+                      {/* Row header: Branch + Subject + Remove */}
+                      <div className="flex items-center gap-2 bg-[#f8fafc] px-3 py-2.5 border-b border-[#002147]/10">
+                        <div className="flex-1 flex items-center gap-2">
+                          {institutionType === 'college' ? (
+                            <select
+                              value={assignment.class}
+                              onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
+                              className="flex-1 bg-white border border-[#002147]/15 rounded-lg px-2 py-1.5 text-sm text-[#002147] focus:outline-none focus:ring-1 focus:ring-[#002147]/30"
+                            >
+                              <option value="">Select Branch</option>
+                              {schoolBranches.map(b => <option key={b} value={b}>{b}</option>)}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              value={assignment.class}
+                              onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
+                              placeholder="Class (10A)"
+                              className="flex-1 bg-white border border-[#002147]/15 rounded-lg px-2 py-1.5 text-sm text-[#002147] focus:outline-none focus:ring-1 focus:ring-[#002147]/30"
+                            />
+                          )}
+                          <input
+                            type="text"
+                            value={assignment.subject}
+                            onChange={(e) => handleAssignmentChange(idx, 'subject', e.target.value)}
+                            placeholder={institutionType === 'college' ? 'Subject' : 'Subject (Math)'}
+                            className="flex-1 bg-white border border-[#002147]/15 rounded-lg px-2 py-1.5 text-sm text-[#002147] focus:outline-none focus:ring-1 focus:ring-[#002147]/30"
+                          />
+                        </div>
+                        {teacherAssignments.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAssignmentRow(idx)}
+                            className="p-1.5 text-[#dc143c]/50 hover:text-[#dc143c] hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Per-subject student picker — colleges only */}
+                      {institutionType === 'college' && (
+                        <div className="bg-white">
+                          {/* Subheader */}
+                          <div className="flex items-center justify-between px-3 py-2 bg-indigo-50 border-b border-indigo-100">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              Students for {assignment.subject || 'this subject'}
+                              {assigned.length > 0 && (
+                                <span className="ml-1 bg-indigo-600 text-white px-1.5 py-0.5 rounded-full">{assigned.length}</span>
+                              )}
+                            </span>
+                            {branchStudents.length > 0 && (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAssignmentSelectAll(idx, branchStudents.map(s => s.customStudentId!).filter(Boolean))}
+                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                >All</button>
+                                <span className="text-indigo-200">|</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAssignmentClearAll(idx)}
+                                  className="text-[10px] font-bold text-indigo-400 hover:text-indigo-600 transition-colors"
+                                >None</button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Student list */}
+                          {!assignment.class ? (
+                            <p className="text-xs text-gray-400 italic px-3 py-2.5">← Select a branch to see students</p>
+                          ) : branchStudents.length === 0 ? (
+                            <p className="text-xs text-amber-600 font-medium px-3 py-2.5">No students registered in this branch yet.</p>
+                          ) : (
+                            <div className="max-h-44 overflow-y-auto divide-y divide-gray-50">
+                              {branchStudents.map(student => {
+                                const sid = student.customStudentId!;
+                                const isSelected = assigned.includes(sid);
+                                return (
+                                  <div
+                                    key={student.id}
+                                    onClick={() => handleAssignmentStudentToggle(idx, sid)}
+                                    className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                                      isSelected ? 'bg-emerald-50' : 'hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                                      isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
+                                    }`}>
+                                      {isSelected && (
+                                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                                          <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-sm font-semibold truncate ${ isSelected ? 'text-emerald-800' : 'text-[#002147]' }`}>
+                                        {student.name}
+                                      </p>
+                                      <p className="text-[10px] text-gray-400">
+                                        {sid} · {(student as any).year || ''}
+                                      </p>
+                                    </div>
+                                    {isSelected && <span className="text-[10px] font-black text-emerald-600">✓</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
                 <button
                   type="button"
                   onClick={handleAddAssignmentRow}
                   className="flex items-center space-x-1 text-sm font-medium text-[#002147]/60 hover:text-[#002147] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add Another Assignment</span>
+                  <span>+ Add Another Subject</span>
                 </button>
-
-                {/* ── College: assign students to this professor ── */}
-                {institutionType === 'college' && (
-                  <div className="mt-3 pt-3 border-t border-[#002147]/10">
-                    <label className="block text-sm font-medium text-[#002147]/70 mb-2 flex items-center gap-1.5">
-                      <Users className="w-4 h-4" />
-                      Assign Students to this Professor
-                      {selectedStudentsForTeacher.length > 0 && (
-                        <span className="ml-auto text-xs font-bold bg-[#002147] text-white px-2 py-0.5 rounded-full">
-                          {selectedStudentsForTeacher.length} selected
-                        </span>
-                      )}
-                    </label>
-                    {studentsForTeacherBranches.length === 0 ? (
-                      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
-                        <p className="text-xs text-amber-700 font-medium">
-                          {teacherAssignments.some(a => a.class.trim())
-                            ? 'No students found in the selected branch(es).'
-                            : 'Select a branch above to see students, or all students will be shown.'}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="bg-[#f8fafc] border border-[#002147]/10 rounded-xl max-h-52 overflow-y-auto divide-y divide-[#002147]/5">
-                        {/* Select All / Clear */}
-                        <div className="flex items-center justify-between px-3 py-2 bg-[#002147]/5 sticky top-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#002147]/50">
-                            {studentsForTeacherBranches.length} students
-                          </span>
-                          <div className="flex gap-2">
-                            <button type="button" onClick={() => setSelectedStudentsForTeacher(studentsForTeacherBranches.map(s => s.customStudentId!).filter(Boolean))}
-                              className="text-[10px] font-bold text-[#002147] hover:text-[#dc143c] transition-colors">Select All</button>
-                            <span className="text-[#002147]/20">|</span>
-                            <button type="button" onClick={() => setSelectedStudentsForTeacher([])}
-                              className="text-[10px] font-bold text-[#002147]/50 hover:text-[#dc143c] transition-colors">Clear</button>
-                          </div>
-                        </div>
-                        {studentsForTeacherBranches.map(student => {
-                          const sid = student.customStudentId!;
-                          const isSelected = selectedStudentsForTeacher.includes(sid);
-                          return (
-                            <div
-                              key={student.id}
-                              onClick={() => toggleTeacherStudentSelection(sid)}
-                              className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
-                                isSelected ? 'bg-emerald-50' : 'hover:bg-white'
-                              }`}
-                            >
-                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-[#002147]/30'
-                              }`}>
-                                {isSelected && (
-                                  <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
-                                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-[#002147] truncate">{student.name}</p>
-                                <p className="text-[10px] text-[#002147]/50">
-                                  {sid} · {(student as any).branch || ''} {(student as any).year ? '· ' + (student as any).year : ''}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
+
 
 
             {role === 'parent' && (

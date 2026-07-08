@@ -120,6 +120,14 @@ function PublishModal({
     if (!cls) { alert('Please select or enter a target class.'); return; }
     setPublishing(true);
     try {
+      // Collect all unique student IDs this professor has assigned for the target class
+      // (unions across all subjects for that class so AI-created content scopes correctly)
+      const assignedStudentIds: string[] = Array.from(new Set(
+        (profile.assignments || [])
+          .filter((a: any) => (a.class || '').trim().toLowerCase() === cls.trim().toLowerCase())
+          .flatMap((a: any) => a.assignedStudents || [])
+      ));
+
       let docData: any = {};
       if (type === 'quiz') {
         docData = {
@@ -135,9 +143,11 @@ function PublishModal({
           createdBy: profile.uid,
           teacherId: profile.uid,
           teacherName: profile.name || 'Teacher',
+          assignedStudentIds,
           createdAt: serverTimestamp(),
           status: 'published',
         };
+
 
       } else if (type === 'assignment') {
         docData = {
@@ -156,9 +166,11 @@ function PublishModal({
           createdBy: profile.uid,
           teacherId: profile.uid,
           teacherName: profile.name || 'Teacher',
+          assignedStudentIds,
           createdAt: serverTimestamp(),
           status: 'published',
         };
+
 
       } else {
         // question paper
@@ -176,9 +188,11 @@ function PublishModal({
           createdBy: profile.uid,
           teacherId: profile.uid,
           teacherName: profile.name || 'Teacher',
+          assignedStudentIds,
           createdAt: serverTimestamp(),
           status: 'published',
         };
+
 
       }
       const ref = await addDoc(collection(db, 'schools', profile.schoolId, 'assignments'), docData);

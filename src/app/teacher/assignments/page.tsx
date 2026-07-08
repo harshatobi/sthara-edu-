@@ -248,13 +248,13 @@ export default function AssignmentManagerPage() {
                     onClick={() => setExpandedId(isExpanded ? null : assignment.id)}
                     className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">{assignment.class}</span>
-                        <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">{assignment.subject}</span>
-                        {assignment.type && <span className="bg-purple-50 text-purple-700 text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">{assignment.type}</span>}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider shrink-0">{assignment.class}</span>
+                        <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider max-w-[220px] truncate" title={assignment.subject}>{assignment.subject}</span>
+                        {assignment.type && <span className="bg-purple-50 text-purple-700 text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider shrink-0">{assignment.type}</span>}
                       </div>
-                      <h3 className="text-xl font-bold text-[#002147] truncate pr-4">{assignment.title || 'Untitled Assignment'}</h3>
+                      <h3 className="text-xl font-bold text-[#002147] truncate">{assignment.title || 'Untitled Assignment'}</h3>
                       <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 font-medium">
                         <span className="flex items-center space-x-1.5"><Clock className="w-4 h-4"/> <span>Due: {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'N/A'}</span></span>
                       </div>

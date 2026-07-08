@@ -7,7 +7,9 @@ import { Activity, AlertTriangle, Users, BookOpen, LogOut, Plus, X, Send, CheckS
   ChevronLeft, MessageSquare, Star, Image as ImageIcon, FileText, CheckCircle, ArrowRight } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import Link from 'next/link';
+
 
 export default function TeacherDashboard() {
   const { profile, loading, signOut } = useAuth();
@@ -98,8 +100,8 @@ export default function TeacherDashboard() {
     if (!profile?.schoolId) return;
     
     try {
-      const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken();
+
       const headers = {
         'Content-Type': 'application/json',
         ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
@@ -173,8 +175,8 @@ export default function TeacherDashboard() {
     setIsPosting(true);
     try {
       // Get auth token for API call
-      const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken();
+
 
       // Use server-side Admin SDK API — bypasses Firestore rules entirely
       const res = await fetch('/api/teacher/post-assignment', {

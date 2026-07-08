@@ -180,8 +180,17 @@ export default function HomeworkAssignment() {
         const d = await getDoc(doc(db, 'schools', schoolId, 'assignments', id));
         if (d.exists()) {
           const data = d.data();
+          // Access control: if assignment has assignedStudentIds, only enrolled students can see it
+          if (data.assignedStudentIds && data.assignedStudentIds.length > 0) {
+            const customId = profile.customStudentId || '';
+            if (!customId || !data.assignedStudentIds.includes(customId)) {
+              router.replace('/student/homework');
+              return;
+            }
+          }
           setAssignment({ id: d.id, topic: data.title || data.topic, ...data });
         }
+
       } catch (err) {
         console.error(err);
       } finally {
@@ -456,28 +465,60 @@ export default function HomeworkAssignment() {
               <div className="space-y-4 relative">
                 <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gray-100" />
                 
-                {/* Render Legacy Questions or AI Quiz Questions */}
-                {assignment.questions && assignment.questions.map((q: any, idx: number) => {
-                  const qText = typeof q === 'string' ? q : q.text || q.question;
-                  return (
-                    <div key={`q-${idx}`} className="relative flex space-x-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100/50">
-                      <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#002147] text-white font-black flex items-center justify-center shadow-md">{idx + 1}</div>
-                      <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed">
-                        <div className="mb-2">{cleanMath(qText)}</div>
-                        {q.options && (
-                          <div className="space-y-2 mt-4 ml-2">
-                            {q.options.map((opt: string, oIdx: number) => (
-                              <div key={oIdx} className="flex items-center space-x-3 text-sm text-gray-700 bg-white p-3 rounded-xl border border-gray-100">
-                                <span className="font-bold text-gray-400">{String.fromCharCode(65 + oIdx)}.</span>
-                                <span>{cleanMath(opt)}</span>
-                              </div>
-                            ))}
+                {/* Render Questions (homework/assignment type with question paper) */}
+                {assignment.questions && (() => {
+                  const isHomeworkQP = assignment.questions.some((q: any) => q.text && !q.options);
+                  if (isHomeworkQP) {
+                    const totalMarks = assignment.questions.reduce((s: number, q: any) => s + (Number(q.marks) || 0), 0);
+                    return (
+                      <>
+                        {/* Question paper header */}
+                        {totalMarks > 0 && (
+                          <div className="flex items-center justify-between bg-[#002147] text-white px-5 py-3 rounded-2xl mb-2">
+                            <span className="text-xs font-black uppercase tracking-widest text-blue-200">Question Paper</span>
+                            <span className="font-black text-lg">{totalMarks} Marks Total</span>
                           </div>
                         )}
+                        {assignment.questions.map((q: any, idx: number) => (
+                          <div key={`q-${idx}`} className="relative flex space-x-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100/50">
+                            <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#002147] text-white font-black flex items-center justify-center shadow-md">{idx + 1}</div>
+                            <div className="flex-1 pt-2">
+                              <p className="text-[#002147]/80 text-lg font-medium leading-relaxed">{cleanMath(q.text)}</p>
+                            </div>
+                            {q.marks && (
+                              <div className="shrink-0 self-start pt-2">
+                                <span className="bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-1 rounded-lg">[{q.marks} {Number(q.marks) === 1 ? 'mark' : 'marks'}]</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    );
+                  }
+                  // Render legacy Quiz Questions (with options)
+                  return assignment.questions.map((q: any, idx: number) => {
+                    const qText = typeof q === 'string' ? q : q.text || q.question;
+                    return (
+                      <div key={`q-${idx}`} className="relative flex space-x-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100/50">
+                        <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-[#002147] text-white font-black flex items-center justify-center shadow-md">{idx + 1}</div>
+                        <div className="pt-2 text-[#002147]/80 text-lg font-medium leading-relaxed">
+                          <div className="mb-2">{cleanMath(qText)}</div>
+                          {q.options && (
+                            <div className="space-y-2 mt-4 ml-2">
+                              {q.options.map((opt: string, oIdx: number) => (
+                                <div key={oIdx} className="flex items-center space-x-3 text-sm text-gray-700 bg-white p-3 rounded-xl border border-gray-100">
+                                  <span className="font-bold text-gray-400">{String.fromCharCode(65 + oIdx)}.</span>
+                                  <span>{cleanMath(opt)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
+
 
                 {/* Render AI Assignment Tasks */}
                 {assignment.tasks && assignment.tasks.map((task: any, idx: number) => (

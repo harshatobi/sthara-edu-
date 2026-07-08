@@ -95,7 +95,13 @@ export default function StudentHomework() {
 
         const allTasks = await Promise.all(allDocs.map(processDoc));
         allTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-        setAssignments(allTasks);
+        // Subject-scoping: only show assignments the student is enrolled for
+        const studentCustomId = profile.customStudentId || '';
+        const visibleTasks = allTasks.filter((t: any) => {
+          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true;
+          return studentCustomId && t.assignedStudentIds.includes(studentCustomId);
+        });
+        setAssignments(visibleTasks);
       } catch (err) {
         console.error(err);
       } finally {

@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
       tasks,
       totalMarks,
       questions,
+      assignedStudentIds, // customStudentIds of students allowed to see this assignment
     } = body;
+
 
     if (!schoolId || !title || !teacherId) {
       return NextResponse.json({ error: 'Missing required fields: schoolId, title, teacherId' }, { status: 400 });
@@ -50,6 +52,11 @@ export async function POST(req: NextRequest) {
     if (tasks && Array.isArray(tasks)) assignmentData.tasks = tasks;
     if (totalMarks) assignmentData.totalMarks = totalMarks;
     if (questions && Array.isArray(questions)) assignmentData.questions = questions;
+    // Scope visibility: if provided, only students whose customStudentId is in this list can see it
+    if (assignedStudentIds && Array.isArray(assignedStudentIds) && assignedStudentIds.length > 0) {
+      assignmentData.assignedStudentIds = assignedStudentIds;
+    }
+
 
     const ref = await adminDb
       .collection('schools')

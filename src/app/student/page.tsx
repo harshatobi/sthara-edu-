@@ -400,7 +400,13 @@ export default function StudentDashboard() {
         ]);
 
         tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-        setAssignments(tasks);
+        // Subject-scoping: if an assignment has assignedStudentIds, only show it to those students
+        const studentCustomId = profile.customStudentId || '';
+        const visibleTasks = tasks.filter((t: any) => {
+          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true; // no restriction
+          return studentCustomId && t.assignedStudentIds.includes(studentCustomId);
+        });
+        setAssignments(visibleTasks);
       } catch (error) {
         console.error('Error fetching assignments:', error);
       } finally {

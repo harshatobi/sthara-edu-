@@ -226,6 +226,13 @@ export default function TeacherDashboard() {
           subject: selectedSubject,
           teacherId: profile.uid,
           teacherName: profile.name,
+          // Restrict visibility: only students assigned to this professor's subject can see this
+          assignedStudentIds: (() => {
+            const subjectAssign = (profile.assignments || []).find(
+              (a: any) => a.class === selectedClass && a.subject === selectedSubject
+            );
+            return subjectAssign?.assignedStudents || [];
+          })(),
         }),
       });
 

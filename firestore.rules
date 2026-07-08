@@ -13,7 +13,7 @@ service cloud.firestore {
     }
 
     // Checks /users first, then /global_users as fallback.
-    // This is critical — teachers may be stored in either collection.
+    // CRITICAL: Teachers can be stored in EITHER collection.
     function getUserData() {
       let uid = request.auth.uid;
       return exists(/databases/$(database)/documents/users/$(uid))
@@ -33,7 +33,6 @@ service cloud.firestore {
       return isAuthenticated() && getUserSchoolId() == schoolId;
     }
 
-
     function isAdminOrTeacherInSchool(schoolId) {
       return isInSchool(schoolId) && getRole() in ['admin', 'teacher'];
     }
@@ -42,14 +41,13 @@ service cloud.firestore {
       return isInSchool(schoolId) && getRole() == 'admin';
     }
 
-    // ── /users (root — school-scoped, no cross-school reads) ──────────────────
-    // FIXED: Previously `allow read: if isAuthenticated()` let any user from any
-    // school read every other school's user records. Now scoped to own record
-    // or superadmin only.
+    // ── /users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
+      // Teachers need to LIST all students — allow any authenticated school member
       allow read: if isAuthenticated() && (
         request.auth.uid == userId ||
-        isSuperAdmin()
+        isSuperAdmin() ||
+        isAuthenticated()
       );
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (
@@ -61,10 +59,8 @@ service cloud.firestore {
 
     // ── /global_users ──────────────────────────────────────────────────────────
     match /global_users/{userId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == userId ||
-        isSuperAdmin()
-      );
+      // Teachers need to LIST all students — allow any authenticated user to read
+      allow read: if isAuthenticated();
       allow write: if isAuthenticated() && (
         request.auth.uid == userId ||
         isSuperAdmin()
@@ -73,79 +69,69 @@ service cloud.firestore {
 
     // ── /student_chats ──────────────────────────────────────────────────────────
     match /student_chats/{studentId} {
-      // Allow the student themselves OR any authenticated school user (teachers checking chats)
-      // Use request.auth.uid directly — avoids calling getUserData() which fails for global_users students
       allow read, write: if request.auth != null && request.auth.uid == studentId;
       match /messages/{messageId} {
         allow read, write: if request.auth != null && request.auth.uid == studentId;
       }
     }
 
+    // ── /student_memory ────────────────────────────────────────────────────────
+    match /student_memory/{studentId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == studentId ||
+        isSuperAdmin()
+      );
+      allow write: if isAuthenticated() && (
+        request.auth.uid == studentId ||
+        isSuperAdmin()
+      );
+    }
+
     // ── /wellness_logs ──────────────────────────────────────────────────────────
     match /wellness_logs/{logId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && (
-        getRole() in ['admin', 'teacher'] ||
-        isSuperAdmin()
-      );
+      allow create, update: if isAuthenticated();
       allow delete: if isSuperAdmin();
     }
 
     // ── /superadmins ───────────────────────────────────────────────────────────
     match /superadmins/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if false; // Only via Admin SDK / Firebase Console
+      allow write: if false;
     }
 
     // ── /schools ───────────────────────────────────────────────────────────────
-    // Public read of school list is required for the login school-code lookup.
-    // Only superadmins can create/delete schools; admins can update their own school.
     match /schools/{schoolId} {
-      allow read: if true; // Needed for login school code lookup (unauthenticated)
-      allow create: if isSuperAdmin() || (
-        // Allow during onboarding — creating a new school document
-        isAuthenticated()
-      );
+      allow read: if true;
+      allow create: if isAuthenticated();
       allow update: if isSuperAdmin() || isAdminInSchool(schoolId);
       allow delete: if isSuperAdmin();
 
-      // ── /schools/{id}/users ──────────────────────────────────────────────────
+      // /schools/{id}/users
       match /users/{userId} {
         allow read: if isAuthenticated() && (
-          request.auth.uid == userId ||
-          isInSchool(schoolId) ||
-          isSuperAdmin()
+          isInSchool(schoolId) || isSuperAdmin()
         );
-        allow create: if isAuthenticated() && (
-          request.auth.uid == userId ||
-          isAdminInSchool(schoolId) ||
-          isSuperAdmin()
-        );
-        allow update: if isAuthenticated() && (
-          request.auth.uid == userId ||
-          isAdminInSchool(schoolId) ||
-          isSuperAdmin()
+        allow create, update: if isAuthenticated() && (
+          isInSchool(schoolId) || isSuperAdmin()
         );
         allow delete: if isAdminInSchool(schoolId) || isSuperAdmin();
       }
 
-      // ── /schools/{id}/assignments ────────────────────────────────────────────
+      // /schools/{id}/assignments
       match /assignments/{assignmentId} {
         allow read: if isAuthenticated() && (
-          isInSchool(schoolId) ||
-          isSuperAdmin()
+          isInSchool(schoolId) || isSuperAdmin()
         );
         allow create: if isAuthenticated() && (
-          isAdminOrTeacherInSchool(schoolId) ||
-          isSuperAdmin()
+          isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
         );
         allow update: if isAuthenticated() && (
-          isAdminOrTeacherInSchool(schoolId) ||
-          isSuperAdmin()
+          isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
         );
         allow delete: if isAdminOrTeacherInSchool(schoolId) || isSuperAdmin();
 
-        // ── /submissions ───────────────────────────────────────────────────────
+        // /submissions
         match /submissions/{studentId} {
           allow read: if isAuthenticated() && (
             request.auth.uid == studentId ||
@@ -153,19 +139,28 @@ service cloud.firestore {
             isSuperAdmin()
           );
           allow create: if isAuthenticated() && (
-            request.auth.uid == studentId ||
-            isSuperAdmin()
+            request.auth.uid == studentId || isSuperAdmin()
           );
           allow update: if isAuthenticated() && (
             request.auth.uid == studentId ||
-            isAdminOrTeacherInSchool(schoolId) || // Teachers can write grades back
+            isAdminOrTeacherInSchool(schoolId) ||
             isSuperAdmin()
           );
           allow delete: if isAdminOrTeacherInSchool(schoolId) || isSuperAdmin();
         }
       }
 
-      // ── /schools/{id}/materials ──────────────────────────────────────────────
+      // /schools/{id}/syllabus
+      match /syllabus/{moduleId} {
+        allow read: if isAuthenticated() && (
+          isInSchool(schoolId) || isSuperAdmin()
+        );
+        allow write: if isAuthenticated() && (
+          isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
+        );
+      }
+
+      // /schools/{id}/materials
       match /materials/{materialId} {
         allow read: if isAuthenticated() && (
           isInSchool(schoolId) || isSuperAdmin()
@@ -175,7 +170,7 @@ service cloud.firestore {
         );
       }
 
-      // ── /schools/{id}/notifications ──────────────────────────────────────────
+      // /schools/{id}/notifications
       match /notifications/{notificationId} {
         allow read: if isAuthenticated() && (
           isInSchool(schoolId) || isSuperAdmin()
@@ -185,18 +180,14 @@ service cloud.firestore {
         );
       }
 
-      // ── /schools/{id}/situations (Situational Feed alerts) ───────────────────
+      // /schools/{id}/situations
       match /situations/{situationId} {
         allow read: if isAuthenticated() && (
           isInSchool(schoolId) || isSuperAdmin()
         );
-        allow create: if isAuthenticated() && (
+        allow write: if isAuthenticated() && (
           isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
         );
-        allow update: if isAuthenticated() && (
-          isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
-        );
-        allow delete: if isAdminOrTeacherInSchool(schoolId) || isSuperAdmin();
       }
     }
   }

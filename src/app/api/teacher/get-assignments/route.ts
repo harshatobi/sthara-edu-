@@ -30,16 +30,57 @@ export async function POST(req: NextRequest) {
     const { schoolId, teacherId } = await req.json();
     if (!schoolId) return NextResponse.json({ error: 'Missing schoolId' }, { status: 400 });
 
-    // 1. Fetch ONLY this teacher's assignments (filter by teacherId)
-    let query: FirebaseFirestore.Query = adminDb
+    const assignCol = adminDb
       .collection('schools').doc(schoolId)
       .collection('assignments');
 
+    let assignSnap: FirebaseFirestore.QuerySnapshot;
+
     if (teacherId) {
-      query = query.where('teacherId', '==', teacherId);
+      // Run two parallel queries: teacherId (post modal) + createdBy (AI assistant legacy)
+      // Then merge and deduplicate by document ID
+      const [byTeacherId, byCreatedBy] = await Promise.all([
+        assignCol.where('teacherId', '==', teacherId).get(),
+        assignCol.where('createdBy', '==', teacherId).get(),
+      ]);
+
+      // Merge — use a Map to deduplicate by doc ID
+      const merged = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+      byTeacherId.docs.forEach(d => merged.set(d.id, d));
+      byCreatedBy.docs.forEach(d => merged.set(d.id, d));
+
+      // Build a fake QuerySnapshot-like iterable from merged docs
+      const mergedDocs = Array.from(merged.values());
+
+      // 2. For each assignment, get submissions in parallel
+      const assignments = await Promise.all(
+        mergedDocs.map(async (aDoc) => {
+          const subsSnap = await adminDb
+            .collection('schools').doc(schoolId)
+            .collection('assignments').doc(aDoc.id)
+            .collection('submissions')
+            .get();
+
+          const submittedData: Record<string, any> = {};
+          subsSnap.docs.forEach(s => { submittedData[s.id] = s.data(); });
+
+          const data = aDoc.data();
+          return {
+            id: aDoc.id,
+            ...data,
+            createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : null,
+            submittedData,
+            submittedCount: subsSnap.size,
+          };
+        })
+      );
+
+      assignments.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      return NextResponse.json({ assignments });
     }
 
-    const assignSnap = await query.get();
+    // Fallback: no teacherId — return all (should not happen in normal flow)
+    assignSnap = await assignCol.get();
 
     // 2. For each assignment, get submissions in parallel
     const assignments = await Promise.all(

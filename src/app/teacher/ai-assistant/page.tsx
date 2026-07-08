@@ -133,10 +133,12 @@ function PublishModal({
           directions: data.directions || 'Attempt all questions.',
           difficulty: data.difficulty || 'Medium',
           createdBy: profile.uid,
+          teacherId: profile.uid,
           teacherName: profile.name || 'Teacher',
           createdAt: serverTimestamp(),
           status: 'published',
         };
+
       } else if (type === 'assignment') {
         docData = {
           title: data.title,
@@ -152,10 +154,12 @@ function PublishModal({
           rubric: data.rubric || '',
           difficulty: data.difficulty || 'Medium',
           createdBy: profile.uid,
+          teacherId: profile.uid,
           teacherName: profile.name || 'Teacher',
           createdAt: serverTimestamp(),
           status: 'published',
         };
+
       } else {
         // question paper
         docData = {
@@ -170,10 +174,12 @@ function PublishModal({
           duration: data.duration || '',
           difficulty: data.difficulty || 'Medium',
           createdBy: profile.uid,
+          teacherId: profile.uid,
           teacherName: profile.name || 'Teacher',
           createdAt: serverTimestamp(),
           status: 'published',
         };
+
       }
       const ref = await addDoc(collection(db, 'schools', profile.schoolId, 'assignments'), docData);
       onPublished(ref.id);

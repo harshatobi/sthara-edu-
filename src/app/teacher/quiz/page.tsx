@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Sparkles, BrainCircuit, PenTool, ChevronRight,
   ChevronLeft, Loader2, Plus, Trash2, CheckCircle2, Send,
   BookOpen, Zap, Target, BarChart2, RefreshCw, Eye, Edit3,
-  ClipboardList, X, Check
+  ClipboardList, X, Check, KeyRound, FileKey2, GraduationCap,
+  Layers, CheckSquare, Square, Printer, Calendar, Tag
 } from 'lucide-react';
 import Link from 'next/link';
 import { db } from '@/lib/firebase/config';
@@ -19,6 +20,7 @@ import { getAuth } from 'firebase/auth';
 type Mode = null | 'full_ai' | 'semi_ai' | 'manual';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 type Step = 'mode' | 'config' | 'preview' | 'post';
+type TabView = 'create' | 'keys';
 
 interface Question {
   question: string;
@@ -26,6 +28,14 @@ interface Question {
   correctAnswerIndex: number;
   explanation?: string;
   difficulty?: string;
+}
+
+interface SyllabusModule {
+  id: string;
+  topic: string;
+  subject?: string;
+  month?: string;
+  grade?: string;
 }
 
 const DIFFICULTIES: { value: Difficulty; label: string; desc: string; color: string }[] = [
@@ -42,6 +52,10 @@ export default function TeacherQuizPage() {
   const router = useRouter();
   const auth = getAuth();
 
+  // ── UI Tabs ──────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<TabView>('create');
+
+  // ── Quiz Creator state ────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>('mode');
   const [mode, setMode] = useState<Mode>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('mixed');
@@ -63,27 +77,42 @@ export default function TeacherQuizPage() {
   const [syllabusData, setSyllabusData] = useState<string>('');
   const [syllabusLoading, setSyllabusLoading] = useState(false);
   const [editingQ, setEditingQ] = useState<number | null>(null);
+  const [currentQuiz, setCurrentQuiz] = useState<any>(null); // just-posted quiz for answer key
 
-  // Manual mode state
+  // ── Module Picker ─────────────────────────────────────────────────────────
+  const [syllabusModules, setSyllabusModules] = useState<SyllabusModule[]>([]);
+  const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(false);
+
+  // ── My Quiz Keys tab ──────────────────────────────────────────────────────
+  const [myQuizzes, setMyQuizzes] = useState<any[]>([]);
+  const [quizzesLoading, setQuizzesLoading] = useState(false);
+  const [keyQuiz, setKeyQuiz] = useState<any>(null); // shown in answer key modal
+
+  // ── Manual mode state ─────────────────────────────────────────────────────
   const [manualQ, setManualQ] = useState<Question[]>([
     { question: '', options: ['', '', '', ''], correctAnswerIndex: 0, explanation: '' }
   ]);
 
+  // ── Auth guard ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'teacher')) router.push('/login');
   }, [profile, loading, router]);
 
-  // Load available classes and subject
+  // ── Load available classes ────────────────────────────────────────────────
   useEffect(() => {
     if (!profile?.schoolId) return;
-    const loadClasses = async () => {
+    (async () => {
       try {
-        const [usSnap, guSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-        ]);
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/teacher/get-students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ schoolId: profile.schoolId }),
+        });
+        const data = await res.json();
         const classSet = new Set<string>();
-        [...usSnap.docs, ...guSnap.docs].forEach(d => { const c = d.data().studentClass; if (c) classSet.add(c); });
+        (data.students || []).forEach((s: any) => { if (s.studentClass) classSet.add(s.studentClass); });
         const teacherClasses = [
           ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
           ...(profile.teacherClass ? [profile.teacherClass] : []),
@@ -92,27 +121,64 @@ export default function TeacherQuizPage() {
         const classes = unique.length > 0 ? unique : Array.from(classSet).sort();
         setAvailableClasses(classes);
         if (classes.length > 0) setSelectedClasses([classes[0]]);
-        // Infer subject from teacher assignments
         if (profile.assignments?.[0]?.subject) setSubject(profile.assignments[0].subject);
         else if (profile.teacherSubject) setSubject(profile.teacherSubject);
       } catch (e) { console.error(e); }
-    };
-    loadClasses();
+    })();
   }, [profile]);
 
-  // Load syllabus for full AI mode
+  // ── Load syllabus modules for module picker ───────────────────────────────
+  const loadSyllabusModules = useCallback(async () => {
+    if (!profile?.schoolId || !profile?.uid) return;
+    setModulesLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(
+        `/api/teacher/syllabus?schoolId=${profile.schoolId}&teacherId=${profile.uid}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      setSyllabusModules(data.modules || []);
+    } catch (e) { console.error(e); } finally { setModulesLoading(false); }
+  }, [profile]);
+
+  // ── Load all teacher's quizzes for key viewer ─────────────────────────────
+  const loadMyQuizzes = useCallback(async () => {
+    if (!profile?.schoolId) return;
+    setQuizzesLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/teacher/get-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ schoolId: profile.schoolId }),
+      });
+      const data = await res.json();
+      const quizzes = (data.assignments || []).filter(
+        (a: any) => a.type === 'quiz' && a.teacherId === profile.uid && Array.isArray(a.questions) && a.questions.length > 0
+      );
+      setMyQuizzes(quizzes);
+    } catch (e) { console.error(e); } finally { setQuizzesLoading(false); }
+  }, [profile]);
+
+  useEffect(() => {
+    if (activeTab === 'keys') loadMyQuizzes();
+  }, [activeTab, loadMyQuizzes]);
+
+  // ── Load syllabus data string for full_ai mode ────────────────────────────
   const loadSyllabus = async () => {
     if (!profile?.schoolId) return;
     setSyllabusLoading(true);
     try {
-      const snap = await getDocs(query(
-        collection(db, 'schools', profile.schoolId, 'syllabus'),
-        where('teacherId', '==', profile.uid)
-      ));
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(
+        `/api/teacher/syllabus?schoolId=${profile.schoolId}&teacherId=${profile.uid}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
       const items: string[] = [];
-      snap.forEach(d => {
-        const data = d.data();
-        if (data.topic) items.push(`${data.topic} (${data.subject || ''}, ${data.month || ''})`);
+      (data.modules || []).forEach((d: any) => {
+        if (d.topic) items.push(`${d.topic} (${d.subject || ''}, ${d.month || ''})`);
       });
       setSyllabusData(items.join('; ') || 'No syllabus entries found. Topics will be auto-selected based on grade level.');
     } catch (e) {
@@ -126,19 +192,35 @@ export default function TeacherQuizPage() {
     const t = topicsInput.trim();
     if (t && !topics.includes(t)) { setTopics([...topics, t]); setTopicsInput(''); }
   };
-
   const handleRemoveTopic = (t: string) => setTopics(topics.filter(x => x !== t));
 
+  const toggleModule = (id: string) => {
+    setSelectedModuleIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllModules = () => setSelectedModuleIds(syllabusModules.map(m => m.id));
+  const deselectAllModules = () => setSelectedModuleIds([]);
+
+  // ── Generate quiz ─────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     setGenerating(true);
     try {
       const token = await auth.currentUser?.getIdToken();
+
+      // Combine selected module topics + manually typed topics
+      const moduleTopic = syllabusModules
+        .filter(m => selectedModuleIds.includes(m.id))
+        .map(m => m.topic);
+      const allTopics = [...new Set([...moduleTopic, ...topics])];
+
       const res = await fetch('/api/teacher/quiz-gen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           mode,
-          topics: mode === 'full_ai' ? [] : topics,
+          topics: mode === 'full_ai' ? allTopics : allTopics,
           syllabusData: mode === 'full_ai' ? syllabusData : '',
           numQuestions: numQ,
           difficulty,
@@ -162,12 +244,12 @@ export default function TeacherQuizPage() {
     }
   };
 
+  // ── Post quiz ─────────────────────────────────────────────────────────────
   const handlePostQuiz = async () => {
     if (!profile?.schoolId) return;
     if (!dueDate) { alert('Please set a due date first.'); return; }
     if (!quizTitle.trim()) { alert('Please set a quiz title.'); return; }
 
-    // Auto-select first class if teacher hasn't checked any
     const classesToPost = selectedClasses.length > 0 ? selectedClasses : availableClasses.slice(0, 1);
     if (classesToPost.length === 0) { alert('No classes found. Please ensure students are enrolled in your school.'); return; }
     if (selectedClasses.length === 0) setSelectedClasses(classesToPost);
@@ -194,6 +276,12 @@ export default function TeacherQuizPage() {
           status: 'published',
         })
       ));
+      // Save for answer key view
+      setCurrentQuiz({
+        title: quizTitle, subject, difficulty, dueDate,
+        classes: classesToPost,
+        questions: mode === 'manual' ? manualQ.filter(q => q.question.trim()) : questions,
+      });
       setPosted(true);
       setStep('post');
     } catch (e) {
@@ -207,7 +295,6 @@ export default function TeacherQuizPage() {
   const updateManualQ = (idx: number, field: string, val: any) => {
     setManualQ(prev => prev.map((q, i) => i === idx ? { ...q, [field]: val } : q));
   };
-
   const updateManualOption = (qIdx: number, optIdx: number, val: string) => {
     setManualQ(prev => prev.map((q, i) => {
       if (i !== qIdx) return q;
@@ -216,7 +303,7 @@ export default function TeacherQuizPage() {
     }));
   };
 
-  const diffColor = (d: Difficulty) => {
+  const diffColor = (d: Difficulty | string) => {
     switch (d) {
       case 'easy':   return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'medium': return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -228,6 +315,129 @@ export default function TeacherQuizPage() {
   if (loading || !profile) return (
     <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center">
       <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+    </div>
+  );
+
+  // ── Answer Key Modal ───────────────────────────────────────────────────────
+  const answerKeyModal = keyQuiz && (
+    <div className="fixed inset-0 z-[400] flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-y-auto p-4">
+      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl my-6 overflow-hidden">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-[#002147] to-[#0a3a7a] px-8 py-6 flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-blue-300 text-xs font-black uppercase tracking-wider mb-2">
+              <KeyRound className="w-4 h-4" />
+              <span>Answer Key</span>
+            </div>
+            <h2 className="text-white font-black text-2xl leading-tight">{keyQuiz.title || 'Untitled Quiz'}</h2>
+            <div className="flex flex-wrap gap-3 mt-3">
+              {keyQuiz.subject && <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">{keyQuiz.subject}</span>}
+              {(keyQuiz.class || keyQuiz.classes) && (
+                <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  {Array.isArray(keyQuiz.classes) ? keyQuiz.classes.join(', ') : keyQuiz.class}
+                </span>
+              )}
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ${diffColor(keyQuiz.difficulty || 'mixed')}`}>
+                {keyQuiz.difficulty || 'mixed'}
+              </span>
+              <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
+                {keyQuiz.questions?.length || 0} Questions · {keyQuiz.questions?.length || 0} Marks
+              </span>
+              {keyQuiz.dueDate && (
+                <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  Due: {new Date(keyQuiz.dueDate).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-4">
+            <button
+              onClick={() => window.print()}
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors"
+              title="Print answer key"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+            <button onClick={() => setKeyQuiz(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Questions */}
+        <div className="p-8 space-y-6">
+          {(keyQuiz.questions || []).map((q: Question, idx: number) => (
+            <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden">
+              {/* Question header */}
+              <div className="bg-gray-50 px-5 py-4 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{idx + 1}</span>
+                  <p className="font-bold text-[#002147] text-base leading-relaxed">{q.question}</p>
+                </div>
+                {q.difficulty && (
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 ${diffColor(q.difficulty)}`}>
+                    {q.difficulty}
+                  </span>
+                )}
+              </div>
+              {/* Options */}
+              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {q.options.map((opt, optIdx) => (
+                  <div
+                    key={optIdx}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium ${
+                      optIdx === q.correctAnswerIndex
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-900 ring-2 ring-emerald-300'
+                        : 'bg-gray-50 border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black shrink-0 ${
+                      optIdx === q.correctAnswerIndex
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : 'border-gray-300 text-gray-400'
+                    }`}>
+                      {optIdx === q.correctAnswerIndex ? <Check className="w-3.5 h-3.5" /> : String.fromCharCode(65 + optIdx)}
+                    </span>
+                    <span>{opt}</span>
+                    {optIdx === q.correctAnswerIndex && (
+                      <span className="ml-auto text-emerald-600 font-black text-xs">CORRECT</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {/* Correct answer summary + explanation */}
+              <div className="px-5 pb-5 space-y-2">
+                <div className="flex items-center gap-2 bg-emerald-100 border border-emerald-200 rounded-xl px-4 py-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-sm font-bold text-emerald-800">
+                    ✓ Answer: {String.fromCharCode(65 + q.correctAnswerIndex)}. {q.options[q.correctAnswerIndex]}
+                  </span>
+                </div>
+                {q.explanation && (
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5">
+                    <Zap className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800 font-medium">{q.explanation}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer summary */}
+        <div className="bg-gray-50 border-t border-gray-200 px-8 py-5 flex items-center justify-between">
+          <div className="text-sm text-gray-500">
+            <span className="font-bold text-[#002147]">{keyQuiz.questions?.length || 0}</span> questions ·{' '}
+            <span className="font-bold text-emerald-600">{keyQuiz.questions?.length || 0}</span> marks total
+          </div>
+          <button
+            onClick={() => setKeyQuiz(null)}
+            className="px-5 py-2 bg-[#002147] text-white font-bold rounded-xl text-sm hover:bg-[#003366] transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -250,24 +460,163 @@ export default function TeacherQuizPage() {
             </div>
           </div>
 
-          {/* Breadcrumb Steps */}
-          <div className="hidden sm:flex items-center gap-2 text-xs font-bold">
-            {(['mode', 'config', 'preview', 'post'] as Step[]).map((s, i) => (
-              <div key={s} className="flex items-center gap-2">
-                <div className={`px-3 py-1.5 rounded-full transition-all ${step === s ? 'bg-[#002147] text-white' : i < ['mode','config','preview','post'].indexOf(step) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
-                  {i < ['mode','config','preview','post'].indexOf(step) ? <Check className="w-3 h-3" /> : s === 'mode' ? 'Mode' : s === 'config' ? 'Setup' : s === 'preview' ? 'Preview' : 'Done'}
-                </div>
-                {i < 3 && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
+          <div className="flex items-center gap-3">
+            {/* Tab switcher */}
+            <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setActiveTab('create')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                  activeTab === 'create'
+                    ? 'bg-white text-[#002147] shadow-sm'
+                    : 'text-gray-500 hover:text-[#002147]'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                Create Quiz
+              </button>
+              <button
+                onClick={() => setActiveTab('keys')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                  activeTab === 'keys'
+                    ? 'bg-white text-[#002147] shadow-sm'
+                    : 'text-gray-500 hover:text-[#002147]'
+                }`}
+              >
+                <KeyRound className="w-4 h-4" />
+                My Quiz Keys
+              </button>
+            </div>
+
+            {/* Breadcrumb (create tab only) */}
+            {activeTab === 'create' && (
+              <div className="hidden sm:flex items-center gap-2 text-xs font-bold">
+                {(['mode', 'config', 'preview', 'post'] as Step[]).map((s, i) => (
+                  <div key={s} className="flex items-center gap-2">
+                    <div className={`px-3 py-1.5 rounded-full transition-all ${step === s ? 'bg-[#002147] text-white' : i < ['mode','config','preview','post'].indexOf(step) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                      {i < ['mode','config','preview','post'].indexOf(step) ? <Check className="w-3 h-3" /> : s === 'mode' ? 'Mode' : s === 'config' ? 'Setup' : s === 'preview' ? 'Preview' : 'Done'}
+                    </div>
+                    {i < 3 && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
 
-        {/* ═══ STEP 1: MODE SELECTION ═══════════════════════════════════════════ */}
-        {step === 'mode' && (
+        {/* ════════════════════════════════════════════════════════════════════
+            MY QUIZ KEYS TAB
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'keys' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-[#002147]">My Quiz Answer Keys</h2>
+                <p className="text-gray-500 text-sm mt-1">View the complete question paper and answer key for every quiz you've created</p>
+              </div>
+              <button
+                onClick={loadMyQuizzes}
+                disabled={quizzesLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${quizzesLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+
+            {quizzesLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
+                <p className="text-gray-400 font-medium">Loading your quizzes…</p>
+              </div>
+            ) : myQuizzes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mb-4">
+                  <FileKey2 className="w-10 h-10 text-indigo-300" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-600 mb-2">No quizzes yet</h3>
+                <p className="text-gray-400 max-w-sm">Quizzes you create will appear here with their full answer keys</p>
+                <button
+                  onClick={() => setActiveTab('create')}
+                  className="mt-6 flex items-center gap-2 px-6 py-3 bg-[#002147] text-white rounded-xl font-bold text-sm hover:bg-[#003366] transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Create Your First Quiz
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {myQuizzes.map((quiz: any) => (
+                  <div key={quiz.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    {/* Quiz card header */}
+                    <div className="bg-gradient-to-r from-[#002147] to-[#0a3a7a] px-5 py-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-white font-black text-base leading-tight truncate">{quiz.title || 'Untitled Quiz'}</h3>
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full shrink-0 border ${diffColor(quiz.difficulty || 'mixed')}`}>
+                          {quiz.difficulty || 'mixed'}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {quiz.subject && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{quiz.subject}</span>}
+                        {quiz.class && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">Class {quiz.class}</span>}
+                      </div>
+                    </div>
+                    {/* Quiz card body */}
+                    <div className="p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Target className="w-4 h-4" />
+                            <strong className="text-[#002147]">{quiz.questions?.length || 0}</strong> Questions
+                          </span>
+                          {quiz.dueDate && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(quiz.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-gray-400 uppercase">
+                          {quiz.generatedBy === 'ai' ? '✦ AI Generated' : '✏ Manual'}
+                        </span>
+                      </div>
+
+                      {/* Quick answer summary */}
+                      <div className="bg-gray-50 rounded-xl p-3 mb-4 max-h-24 overflow-hidden">
+                        {(quiz.questions || []).slice(0, 3).map((q: Question, i: number) => (
+                          <div key={i} className="flex items-start gap-2 text-xs text-gray-600 mb-1">
+                            <span className="font-black text-[#002147] shrink-0">Q{i + 1}.</span>
+                            <span className="truncate">{q.question}</span>
+                            <span className="shrink-0 font-black text-emerald-600 ml-auto">
+                              {String.fromCharCode(65 + q.correctAnswerIndex)}
+                            </span>
+                          </div>
+                        ))}
+                        {(quiz.questions || []).length > 3 && (
+                          <p className="text-xs text-gray-400 mt-1">+ {quiz.questions.length - 3} more questions…</p>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => setKeyQuiz(quiz)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#002147] hover:bg-[#003366] text-white rounded-xl font-bold text-sm transition-all"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                        View Full Answer Key
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════
+            CREATE QUIZ TAB — STEP 1: MODE SELECTION
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'create' && step === 'mode' && (
           <div className="space-y-8">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-black text-[#002147] mb-2">How do you want to create this quiz?</h2>
@@ -277,19 +626,19 @@ export default function TeacherQuizPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Option 1: Full AI */}
               <button
-                onClick={() => { setMode('full_ai'); setStep('config'); loadSyllabus(); }}
+                onClick={() => { setMode('full_ai'); setStep('config'); loadSyllabus(); loadSyllabusModules(); }}
                 className="group relative bg-white rounded-3xl border-2 border-transparent hover:border-indigo-300 p-8 text-left shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-violet-50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative z-10">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                    <BrainCircuit className="w-8 h-8 text-white" />
                   </div>
                   <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-black rounded-full uppercase tracking-wider mb-3">Option 1</div>
                   <h3 className="text-2xl font-black text-[#002147] mb-3">Complete AI</h3>
-                  <p className="text-gray-500 leading-relaxed">AI analyses your completed syllabus topics and submitted homework to auto-generate a perfectly relevant quiz — zero effort needed.</p>
+                  <p className="text-gray-500 leading-relaxed">AI reads your syllabus and auto-generates the perfect quiz. Select specific modules to test.</p>
                   <div className="mt-6 flex flex-wrap gap-2">
-                    {['Reads Syllabus', 'Analyses Homework', 'Auto Topics', 'Instant'].map(tag => (
+                    {['Auto Topics', 'Syllabus-Aware', 'Instant', 'Module Picker'].map(tag => (
                       <span key={tag} className="text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-1 rounded-full">{tag}</span>
                     ))}
                   </div>
@@ -302,19 +651,19 @@ export default function TeacherQuizPage() {
 
               {/* Option 2: Semi AI */}
               <button
-                onClick={() => { setMode('semi_ai'); setStep('config'); }}
+                onClick={() => { setMode('semi_ai'); setStep('config'); loadSyllabusModules(); }}
                 className="group relative bg-white rounded-3xl border-2 border-transparent hover:border-blue-300 p-8 text-left shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative z-10">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
-                    <BrainCircuit className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-8 h-8 text-white" />
                   </div>
                   <div className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-black rounded-full uppercase tracking-wider mb-3">Option 2</div>
                   <h3 className="text-2xl font-black text-[#002147] mb-3">Semi AI</h3>
-                  <p className="text-gray-500 leading-relaxed">You provide the topics, the AI handles the rest — question writing, options, correct answers, and explanations all generated instantly.</p>
+                  <p className="text-gray-500 leading-relaxed">You choose the modules and topics, AI generates the questions. Best of both worlds.</p>
                   <div className="mt-6 flex flex-wrap gap-2">
-                    {['You Pick Topics', 'AI Writes Questions', 'Fast', 'Customizable'].map(tag => (
+                    {['You Choose Topics', 'AI Questions', 'Module Picker', 'Flexible'].map(tag => (
                       <span key={tag} className="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-full">{tag}</span>
                     ))}
                   </div>
@@ -353,8 +702,10 @@ export default function TeacherQuizPage() {
           </div>
         )}
 
-        {/* ═══ STEP 2: CONFIG ══════════════════════════════════════════════════ */}
-        {step === 'config' && (
+        {/* ════════════════════════════════════════════════════════════════════
+            CREATE QUIZ TAB — STEP 2: CONFIG
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'create' && step === 'config' && (
           <div className="space-y-6">
             {/* Back + Mode badge */}
             <div className="flex items-center gap-3">
@@ -386,17 +737,91 @@ export default function TeacherQuizPage() {
                   />
                 </div>
 
-                {/* Topics — Semi AI only */}
-                {mode === 'semi_ai' && (
+                {/* ── MODULE PICKER (AI modes) ── */}
+                {mode !== 'manual' && (
                   <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
-                    <label className="block text-sm font-bold text-[#002147] mb-2">Topics <span className="text-rose-500">*</span></label>
-                    <p className="text-xs text-gray-400 mb-3">Add the topics you want the quiz to cover. Press Enter or click Add.</p>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-indigo-500" />
+                        <label className="text-sm font-bold text-[#002147]">Select Modules to Test</label>
+                      </div>
+                      {syllabusModules.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <button onClick={selectAllModules} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+                            Select All
+                          </button>
+                          <span className="text-gray-300">|</span>
+                          <button onClick={deselectAllModules} className="text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors">
+                            Clear
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {modulesLoading ? (
+                      <div className="flex items-center gap-2 py-4 text-gray-400 text-sm">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Loading your syllabus modules…
+                      </div>
+                    ) : syllabusModules.length === 0 ? (
+                      <div className="text-center py-6 bg-gray-50 rounded-xl">
+                        <GraduationCap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400 font-medium">No modules found in your syllabus</p>
+                        <p className="text-xs text-gray-400 mt-1">Add modules in the Curriculum Planner, or type topics below</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {syllabusModules.map(m => {
+                          const isSelected = selectedModuleIds.includes(m.id);
+                          return (
+                            <button
+                              key={m.id}
+                              onClick={() => toggleModule(m.id)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-bold transition-all ${
+                                isSelected
+                                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100'
+                                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                              }`}
+                            >
+                              {isSelected
+                                ? <CheckSquare className="w-3.5 h-3.5" />
+                                : <Square className="w-3.5 h-3.5" />
+                              }
+                              {m.topic}
+                              {m.month && (
+                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                  {m.month}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {selectedModuleIds.length > 0 && (
+                      <p className="text-xs text-indigo-600 font-bold mt-3">
+                        ✦ {selectedModuleIds.length} module{selectedModuleIds.length > 1 ? 's' : ''} selected — AI will focus questions on these topics
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* ── CUSTOM TOPICS INPUT (all AI modes + manual for custom topics) ── */}
+                {mode !== 'manual' && (
+                  <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+                    <label className="block text-sm font-bold text-[#002147] mb-1">
+                      {mode === 'semi_ai' ? 'Topics to Cover' : 'Additional Topics'}
+                      {mode === 'semi_ai' && <span className="text-rose-500 ml-1">*</span>}
+                    </label>
+                    <p className="text-xs text-gray-400 mb-3">
+                      Type any specific topics you want covered. Press Enter or click Add. These combine with selected modules above.
+                    </p>
                     <div className="flex gap-2 mb-3">
                       <input
                         value={topicsInput}
                         onChange={e => setTopicsInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleAddTopic()}
-                        placeholder="e.g. Quadratic Equations, Linear Algebra..."
+                        placeholder="e.g. Quadratic Equations, Newton's Laws, Photosynthesis…"
                         className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       />
                       <button
@@ -448,49 +873,44 @@ export default function TeacherQuizPage() {
 
                 {/* Manual Mode: Question Editor */}
                 {mode === 'manual' && (
-                  <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6 space-y-5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-[#002147]">Questions</h3>
-                      <button
-                        onClick={() => setManualQ([...manualQ, { question: '', options: ['', '', '', ''], correctAnswerIndex: 0, explanation: '' }])}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-bold hover:bg-emerald-100 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" /> Add Question
-                      </button>
-                    </div>
-
+                  <div className="space-y-4">
                     {manualQ.map((q, qIdx) => (
-                      <div key={qIdx} className="border border-gray-200 rounded-2xl p-5 space-y-4 relative">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-black text-gray-400 uppercase tracking-wider">Question {qIdx + 1}</span>
+                      <div key={qIdx} className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm">{qIdx + 1}</span>
                           {manualQ.length > 1 && (
-                            <button onClick={() => setManualQ(manualQ.filter((_, i) => i !== qIdx))} className="text-rose-400 hover:text-rose-600 transition-colors">
+                            <button
+                              onClick={() => setManualQ(prev => prev.filter((_, i) => i !== qIdx))}
+                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
-                        <textarea
+                        <input
                           value={q.question}
                           onChange={e => updateManualQ(qIdx, 'question', e.target.value)}
-                          placeholder="Type your question here..."
-                          rows={2}
-                          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none transition-all"
+                          placeholder="Enter your question here…"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mb-4 transition-all"
                         />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                           {q.options.map((opt, optIdx) => (
-                            <div key={optIdx} className={`flex items-center gap-2 border rounded-xl px-3 py-2 transition-colors ${q.correctAnswerIndex === optIdx ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-white'}`}>
+                            <div key={optIdx} className={`flex items-center gap-2 rounded-xl border p-1.5 transition-all ${optIdx === q.correctAnswerIndex ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'}`}>
                               <button
                                 onClick={() => updateManualQ(qIdx, 'correctAnswerIndex', optIdx)}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${q.correctAnswerIndex === optIdx ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'}`}
+                                className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center font-black text-xs shrink-0 transition-all ${
+                                  optIdx === q.correctAnswerIndex
+                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                    : 'border-gray-300 text-gray-400 hover:border-emerald-400'
+                                }`}
                               >
-                                {q.correctAnswerIndex === optIdx && <Check className="w-3 h-3 text-white" />}
+                                {optIdx === q.correctAnswerIndex ? <Check className="w-3.5 h-3.5" /> : String.fromCharCode(65 + optIdx)}
                               </button>
-                              <span className="text-xs font-black text-gray-400 shrink-0">{String.fromCharCode(65 + optIdx)}</span>
                               <input
                                 value={opt}
                                 onChange={e => updateManualOption(qIdx, optIdx, e.target.value)}
                                 placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
-                                className="flex-1 text-sm text-[#002147] font-medium bg-transparent outline-none"
+                                className="flex-1 bg-transparent border-0 outline-none text-sm font-medium text-[#002147] placeholder-gray-300"
                               />
                             </div>
                           ))}
@@ -498,17 +918,24 @@ export default function TeacherQuizPage() {
                         <input
                           value={q.explanation || ''}
                           onChange={e => updateManualQ(qIdx, 'explanation', e.target.value)}
-                          placeholder="Explanation (optional) — shown to students after submission"
-                          className="w-full border border-gray-100 rounded-xl px-4 py-2.5 text-xs text-gray-500 bg-gray-50 focus:outline-none focus:border-gray-300 transition-all"
+                          placeholder="Explanation (optional) — shown in answer key"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 transition-all"
                         />
                       </div>
                     ))}
+                    <button
+                      onClick={() => setManualQ(prev => [...prev, { question: '', options: ['', '', '', ''], correctAnswerIndex: 0, explanation: '' }])}
+                      className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 font-bold transition-all"
+                    >
+                      <Plus className="w-4 h-4" /> Add Question
+                    </button>
                   </div>
                 )}
               </div>
 
               {/* Right: Settings Panel */}
               <div className="space-y-5">
+
                 {/* Subject */}
                 <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
                   <label className="block text-sm font-bold text-[#002147] mb-2">Subject</label>
@@ -520,16 +947,77 @@ export default function TeacherQuizPage() {
                   />
                 </div>
 
+                {/* Due Date */}
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
+                  <label className="block text-sm font-bold text-[#002147] mb-2">Due Date <span className="text-rose-500">*</span></label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={e => setDueDate(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+
+                {/* Classes */}
+                {availableClasses.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
+                    <label className="block text-sm font-bold text-[#002147] mb-3">Assign to Classes</label>
+                    <div className="space-y-2">
+                      {availableClasses.map(cls => (
+                        <label key={cls} className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={selectedClasses.includes(cls)}
+                            onChange={() => setSelectedClasses(prev => prev.includes(cls) ? prev.filter(c => c !== cls) : [...prev, cls])}
+                            className="w-4 h-4 accent-indigo-600"
+                          />
+                          <span className="text-sm font-medium text-gray-700 group-hover:text-[#002147] transition-colors">{cls}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Difficulty (AI modes only) */}
+                {mode !== 'manual' && (
+                  <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
+                    <label className="block text-sm font-bold text-[#002147] mb-3">Difficulty</label>
+                    <div className="space-y-2">
+                      {DIFFICULTIES.map(d => (
+                        <button
+                          key={d.value}
+                          onClick={() => setDifficulty(d.value)}
+                          className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                            difficulty === d.value
+                              ? 'border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="shrink-0 mt-0.5">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${difficulty === d.value ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'}`}>
+                              {difficulty === d.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-[#002147]">{d.label}</p>
+                            <p className="text-xs text-gray-400">{d.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Number of Questions (AI modes only) */}
                 {mode !== 'manual' && (
                   <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
                     <label className="block text-sm font-bold text-[#002147] mb-3">Number of Questions</label>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {Q_COUNTS.map(n => (
                         <button
                           key={n}
                           onClick={() => setNumQ(n)}
-                          className={`py-2 rounded-xl text-sm font-black transition-all border ${numQ === n ? 'bg-[#002147] text-white border-[#002147] shadow-md' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                          className={`w-12 h-12 rounded-xl font-black text-sm transition-all ${numQ === n ? 'bg-[#002147] text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                         >
                           {n}
                         </button>
@@ -538,84 +1026,27 @@ export default function TeacherQuizPage() {
                   </div>
                 )}
 
-                {/* Difficulty */}
-                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
-                  <label className="block text-sm font-bold text-[#002147] mb-3">Difficulty Level</label>
-                  <div className="space-y-2">
-                    {DIFFICULTIES.map(d => (
-                      <button
-                        key={d.value}
-                        onClick={() => setDifficulty(d.value)}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all ${difficulty === d.value ? `border-${d.color}-300 bg-${d.color}-50` : 'border-gray-200 bg-white hover:border-gray-300'}`}
-                      >
-                        <div>
-                          <p className={`font-bold text-sm ${difficulty === d.value ? `text-${d.color}-700` : 'text-[#002147]'}`}>{d.label}</p>
-                          <p className="text-xs text-gray-400">{d.desc}</p>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${difficulty === d.value ? `border-${d.color}-500 bg-${d.color}-500` : 'border-gray-300'}`}>
-                          {difficulty === d.value && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Target Classes */}
-                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
-                  <label className="block text-sm font-bold text-[#002147] mb-3">Post to Class</label>
-                  <div className="space-y-2">
-                    {availableClasses.map(cls => (
-                      <button
-                        key={cls}
-                        onClick={() => setSelectedClasses(prev =>
-                          prev.includes(cls) ? prev.filter(c => c !== cls) : [...prev, cls]
-                        )}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-bold transition-all ${selectedClasses.includes(cls) ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-[#002147] hover:border-gray-300'}`}
-                      >
-                        <span>{cls}</span>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedClasses.includes(cls) ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}`}>
-                          {selectedClasses.includes(cls) && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                      </button>
-                    ))}
-                    {availableClasses.length === 0 && (
-                      <p className="text-sm text-gray-400 italic">No classes found. Make sure students are enrolled.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Due Date */}
-                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
-                  <label className="block text-sm font-bold text-[#002147] mb-2">Due Date</label>
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={e => setDueDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  />
-                </div>
-
-                {/* Action Button */}
-                {mode === 'manual' ? (
-                  <button
-                    onClick={() => { setStep('preview'); }}
-                    disabled={manualQ.filter(q => q.question.trim()).length === 0}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    <Eye className="w-5 h-5" /> Preview Quiz
-                  </button>
-                ) : (
+                {/* Generate button */}
+                {mode !== 'manual' && (
                   <button
                     onClick={handleGenerate}
-                    disabled={generating || (mode === 'semi_ai' && topics.length === 0)}
-                    className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl font-black text-lg shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    disabled={generating || (mode === 'semi_ai' && topics.length === 0 && selectedModuleIds.length === 0)}
+                    className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-black text-base shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-violet-700 transition-all disabled:opacity-50"
                   >
                     {generating ? (
-                      <><Loader2 className="w-5 h-5 animate-spin" /> Generating Quiz…</>
+                      <><Loader2 className="w-5 h-5 animate-spin" /> Generating with AI…</>
                     ) : (
-                      <><Sparkles className="w-5 h-5" /> Generate Quiz</>
+                      <><BrainCircuit className="w-5 h-5" /> Generate Quiz</>
                     )}
+                  </button>
+                )}
+                {mode === 'manual' && (
+                  <button
+                    onClick={() => setStep('preview')}
+                    disabled={manualQ.filter(q => q.question.trim()).length === 0}
+                    className="w-full flex items-center justify-center gap-2 py-4 bg-[#002147] text-white rounded-2xl font-black text-base shadow-lg hover:bg-[#003366] transition-all disabled:opacity-50"
+                  >
+                    Preview Quiz <ChevronRight className="w-5 h-5" />
                   </button>
                 )}
               </div>
@@ -623,14 +1054,32 @@ export default function TeacherQuizPage() {
           </div>
         )}
 
-        {/* ═══ STEP 3: PREVIEW ════════════════════════════════════════════════ */}
-        {step === 'preview' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        {/* ════════════════════════════════════════════════════════════════════
+            CREATE QUIZ TAB — STEP 3: PREVIEW
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'create' && step === 'preview' && (
+          <div className="space-y-5">
+            {/* Nav */}
+            <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-200/60 shadow-sm px-5 py-4">
               <button onClick={() => setStep('config')} className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-[#002147] transition-colors">
                 <ChevronLeft className="w-4 h-4" /> Back to Setup
               </button>
               <div className="flex items-center gap-3">
+                {/* View Answer Key while previewing */}
+                <button
+                  onClick={() => setKeyQuiz({
+                    title: quizTitle || 'Untitled Quiz',
+                    subject,
+                    difficulty,
+                    dueDate,
+                    classes: selectedClasses,
+                    questions: mode === 'manual' ? manualQ.filter(q => q.question.trim()) : questions,
+                  })}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl font-bold text-sm hover:bg-amber-100 transition-colors"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  View Answer Key
+                </button>
                 {mode !== 'manual' && (
                   <button
                     onClick={handleGenerate}
@@ -724,9 +1173,11 @@ export default function TeacherQuizPage() {
           </div>
         )}
 
-        {/* ═══ STEP 4: SUCCESS ════════════════════════════════════════════════ */}
-        {step === 'post' && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
+        {/* ════════════════════════════════════════════════════════════════════
+            CREATE QUIZ TAB — STEP 4: SUCCESS
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'create' && step === 'post' && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-28 h-28 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-emerald-200 animate-in zoom-in duration-500">
               <CheckCircle2 className="w-14 h-14 text-white" />
             </div>
@@ -742,14 +1193,22 @@ export default function TeacherQuizPage() {
             <p className="text-gray-400 mb-10">
               {(mode === 'manual' ? manualQ.filter(q => q.question.trim()) : questions).length} questions · {difficulty} · Due {dueDate}
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {/* View Answer Key of just-posted quiz */}
               <button
-                onClick={() => { setStep('mode'); setMode(null); setQuestions([]); setManualQ([{ question: '', options: ['', '', '', ''], correctAnswerIndex: 0, explanation: '' }]); setPosted(false); setTopics([]); setQuizTitle(''); setDueDate(''); }}
-                className="px-8 py-4 bg-[#002147] text-white font-black rounded-2xl hover:bg-[#003366] transition-colors shadow-lg"
+                onClick={() => setKeyQuiz(currentQuiz)}
+                className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-2xl shadow-lg transition-colors"
+              >
+                <KeyRound className="w-5 h-5" />
+                View Answer Key
+              </button>
+              <button
+                onClick={() => { setStep('mode'); setMode(null); setQuestions([]); setManualQ([{ question: '', options: ['', '', '', ''], correctAnswerIndex: 0, explanation: '' }]); setPosted(false); setTopics([]); setQuizTitle(''); setDueDate(''); setSelectedModuleIds([]); }}
+                className="px-8 py-3 bg-[#002147] text-white font-black rounded-2xl hover:bg-[#003366] transition-colors shadow-lg"
               >
                 Create Another Quiz
               </button>
-              <Link href="/teacher" className="px-8 py-4 bg-white border border-gray-200 text-[#002147] font-black rounded-2xl hover:bg-gray-50 transition-colors">
+              <Link href="/teacher" className="px-8 py-3 bg-white border border-gray-200 text-[#002147] font-black rounded-2xl hover:bg-gray-50 transition-colors">
                 Back to Dashboard
               </Link>
             </div>
@@ -757,6 +1216,9 @@ export default function TeacherQuizPage() {
         )}
 
       </div>
+
+      {/* Answer Key Modal (global, shows for both tabs) */}
+      {answerKeyModal}
     </div>
   );
 }

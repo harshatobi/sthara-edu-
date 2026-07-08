@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, deleteDoc, doc, orderBy, updateDoc } from 'firebase/firestore';
-import { Trash2, Users, FileText, CheckCircle, Clock, CheckSquare, Search, ChevronDown, ChevronUp, Loader2, Eye, X, Check, Edit3, AlertTriangle } from 'lucide-react';
+import { Trash2, Users, FileText, CheckCircle, Clock, CheckSquare, Search, ChevronDown, ChevronUp, Loader2, Eye, X, Check, Edit3, AlertTriangle, KeyRound, ChevronRight, Zap } from 'lucide-react';
+
 import Link from 'next/link';
 
 export default function AssignmentManagerPage() {
@@ -23,6 +24,10 @@ export default function AssignmentManagerPage() {
   const [editGrade, setEditGrade] = useState<string>('');
   const [isEditingGrade, setIsEditingGrade] = useState(false);
   const [gradingSaving, setGradingSaving] = useState(false);
+
+  // Question Paper state (quiz answer key viewer)
+  const [questionPaperAssignment, setQuestionPaperAssignment] = useState<any>(null);
+
 
   const openGradingGallery = async (assignmentId: string, studentId: string, submissionData: any, assignmentTitle: string) => {
     // Fetch full submission if not already loaded
@@ -242,6 +247,16 @@ export default function AssignmentManagerPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-3">
+                        {/* Question Paper button — only for quiz type */}
+                        {assignment.type === 'quiz' && Array.isArray(assignment.questions) && assignment.questions.length > 0 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setQuestionPaperAssignment(assignment); }}
+                            className="flex items-center gap-1.5 px-3 py-2 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl text-xs font-bold transition-colors"
+                            title="View Question Paper & Answer Key"
+                          >
+                            <KeyRound className="w-3.5 h-3.5" /> Answer Key
+                          </button>
+                        )}
                         <button
                           onClick={(e) => handleDelete(assignment.id, e)}
                           className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
@@ -253,6 +268,7 @@ export default function AssignmentManagerPage() {
                           {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                         </div>
                       </div>
+
                     </div>
                   </div>
 
@@ -496,10 +512,116 @@ export default function AssignmentManagerPage() {
     </div>
   );
 
+  // Question Paper Panel (for quiz assignments)
+  const questionPaperPanel = questionPaperAssignment && (
+    <div className="fixed inset-0 z-[300] flex">
+      <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={() => setQuestionPaperAssignment(null)} />
+      <div className="w-full max-w-2xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#002147] to-[#0a3a7a] px-6 py-5 flex items-start justify-between shrink-0">
+          <div>
+            <div className="flex items-center gap-2 text-blue-300 text-xs font-black uppercase tracking-wider mb-1">
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Question Paper & Answer Key</span>
+            </div>
+            <h2 className="text-white font-bold text-lg leading-tight">{questionPaperAssignment.title || 'Quiz'}</h2>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {questionPaperAssignment.subject && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{questionPaperAssignment.subject}</span>}
+              {questionPaperAssignment.class && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">Class {questionPaperAssignment.class}</span>}
+              {questionPaperAssignment.difficulty && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{questionPaperAssignment.difficulty}</span>}
+              <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{questionPaperAssignment.questions?.length || 0} Questions</span>
+            </div>
+          </div>
+          <button onClick={() => setQuestionPaperAssignment(null)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 ml-4 shrink-0">
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* Questions with answer key */}
+        <div className="flex-1 p-6 space-y-5">
+          {(questionPaperAssignment.questions || []).map((q: any, idx: number) => (
+            <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden">
+              {/* Question */}
+              <div className="bg-gray-50 px-5 py-4 flex items-start gap-3">
+                <span className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{idx + 1}</span>
+                <div className="flex-1">
+                  <p className="font-bold text-[#002147] text-sm leading-relaxed">{q.question}</p>
+                  {q.difficulty && (
+                    <span className={`inline-block mt-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                      q.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
+                      q.difficulty === 'hard' ? 'bg-rose-100 text-rose-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>{q.difficulty}</span>
+                  )}
+                </div>
+              </div>
+              {/* Options */}
+              <div className="p-4 grid grid-cols-1 gap-2">
+                {(q.options || []).map((opt: string, optIdx: number) => (
+                  <div
+                    key={optIdx}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium ${
+                      optIdx === q.correctAnswerIndex
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-900 ring-1 ring-emerald-300'
+                        : 'bg-gray-50 border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black shrink-0 ${
+                      optIdx === q.correctAnswerIndex ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 text-gray-400'
+                    }`}>
+                      {optIdx === q.correctAnswerIndex ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + optIdx)}
+                    </span>
+                    <span className="flex-1">{opt}</span>
+                    {optIdx === q.correctAnswerIndex && (
+                      <span className="text-emerald-600 font-black text-xs">✓ CORRECT</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {/* Explanation */}
+              {q.explanation && (
+                <div className="px-4 pb-4">
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5">
+                    <Zap className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800 font-medium">{q.explanation}</p>
+                  </div>
+                </div>
+              )}
+              {/* Answer summary */}
+              <div className="px-4 pb-4">
+                <div className="bg-emerald-100 border border-emerald-200 rounded-xl px-4 py-2 flex items-center gap-2">
+                  <ChevronRight className="w-4 h-4 text-emerald-600" />
+                  <span className="text-sm font-bold text-emerald-800">
+                    Answer: {String.fromCharCode(65 + q.correctAnswerIndex)}. {q.options?.[q.correctAnswerIndex]}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 bg-gray-50 px-6 py-4 flex items-center justify-between shrink-0">
+          <p className="text-sm text-gray-500 font-medium">
+            <span className="font-black text-[#002147]">{questionPaperAssignment.questions?.length || 0}</span> questions ·{' '}
+            <span className="font-black text-emerald-600">{questionPaperAssignment.questions?.length || 0}</span> marks
+          </p>
+          <button
+            onClick={() => setQuestionPaperAssignment(null)}
+            className="px-5 py-2 bg-[#002147] text-white font-bold rounded-xl text-sm hover:bg-[#003366] transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {mainContent}
       {gradingPanel}
+      {questionPaperPanel}
     </>
   );
 }

@@ -18,21 +18,9 @@ const SUBJECTS = ['Mathematics','Science','Physics','Chemistry','Biology','Engli
 const TEACHING_METHODS = ['Lecture + Discussion','Inquiry-Based Learning','Project-Based Learning','Flipped Classroom','Socratic Method','Collaborative Learning','Direct Instruction','Problem-Based Learning'];
 const ASSESSMENT_TYPES = ['Written Test','Practical/Lab','Project Submission','Presentation','Quiz','Group Activity','Portfolio','Observation'];
 
-const generateAIPath = (topic: string) => ({
-  overview: `A comprehensive curriculum path for "${topic}" — blending foundational theory with real-world application for maximum retention.`,
-  milestones: [
-    { title: 'Phase 1: Conceptual Hook', description: `Open with a relatable question about how ${topic} connects to students' daily lives. Avoid jargon in the first session.` },
-    { title: 'Phase 2: Core Foundations', description: `Introduce formal definitions and principles of ${topic}. Peer-explain activity to reinforce understanding.` },
-    { title: 'Phase 3: Guided Practice', description: `Walk through 3 practical examples on the board. Gradually release responsibility to students.` },
-    { title: 'Phase 4: Independent Mastery', description: `Case study or application task where students solve a real-world problem using ${topic}.` },
-  ],
-  resources: [
-    { id: 'res_1', title: `Concept Map: ${topic}`, type: 'interactive' },
-    { id: 'res_2', title: `Real-World Case Study: ${topic}`, type: 'document' },
-    { id: 'res_3', title: `Animated Explainer Video`, type: 'video' },
-  ],
-  teacherNotes: `Common Pitfall: Students often confuse terminology when first encountering ${topic}. Analogy: Think of it like a library — the index is theory, checking out books is application. Check understanding every 15 minutes.`,
-});
+// generateAIPath is now replaced by the /api/teacher/curriculum-gen endpoint
+// which returns topic-specific content via Gemini AI
+
 
 const emptyForm = () => ({
   month: '',
@@ -103,13 +91,41 @@ export default function TeacherSyllabus() {
   }, [profile, loading, router]);
 
 
-  const simulateAI = async (cb: () => Promise<void>) => {
+  const simulateAI = async (cb: (aiPath: any) => Promise<void>) => {
     setIsAIGenerating(true);
-    const steps = ['Analysing curriculum requirements…', 'Structuring milestones & objectives…', 'Generating teaching resources…', 'Finalising AI path…'];
-    for (const s of steps) { setLoadingText(s); await new Promise(r => setTimeout(r, 700)); }
+    const steps = [
+      'Analysing curriculum requirements…',
+      'Building topic-specific milestones…',
+      'Generating targeted resources…',
+      'Finalising AI curriculum path…',
+    ];
+    let aiPath: any = null;
+    // Run steps concurrently with the actual API call
+    const stepsPromise = (async () => {
+      for (const s of steps) {
+        setLoadingText(s);
+        await new Promise(r => setTimeout(r, 600));
+      }
+    })();
+    // Fetch AI curriculum from Gemini
+    const apiPromise = fetch('/api/teacher/curriculum-gen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: form.topic,
+        subject: form.subject,
+        grade: form.grade,
+        objectives: form.objectives,
+        teachingMethod: form.teachingMethod,
+        assessmentType: form.assessmentType,
+        month: form.month,
+      }),
+    }).then(r => r.json()).catch(() => null);
+    await Promise.all([stepsPromise, apiPromise.then(d => { aiPath = d; })]);
     setIsAIGenerating(false);
-    await cb();
+    await cb(aiPath);
   };
+
 
   const openAddModal = (defaultMonth = '') => {
     setEditingModule(null);
@@ -165,15 +181,31 @@ export default function TeacherSyllabus() {
       setSelectedModule(updated);
     } else {
       // ── ADD ──
-      await simulateAI(async () => {
+      await simulateAI(async (aiPath: any) => {
         const newId = `syl_${Date.now()}`;
+        const fallbackAiPath = {
+          overview: `A curriculum path for "${form.topic}" — blending foundational theory with real-world application.`,
+          milestones: [
+            { title: 'Phase 1: Introduction', description: `Introduce key concepts of ${form.topic}.` },
+            { title: 'Phase 2: Core Practice', description: `Work through examples of ${form.topic}.` },
+            { title: 'Phase 3: Application', description: `Apply ${form.topic} to real-world problems.` },
+            { title: 'Phase 4: Assessment', description: `Assess understanding of ${form.topic}.` },
+          ],
+          resources: [
+            { id: 'res_1', title: `Concept Map: ${form.topic}`, type: 'interactive' },
+            { id: 'res_2', title: `${form.topic} Study Guide`, type: 'document' },
+            { id: 'res_3', title: `${form.topic} Video Lesson`, type: 'video' },
+          ],
+          teacherNotes: `Focus on common misconceptions students have with ${form.topic}. Use visual aids and worked examples.`,
+        };
         const newMod = {
           teacherId: profile.uid,
           status: 'planned',
-          aiPath: generateAIPath(form.topic),
+          aiPath: aiPath && aiPath.overview ? aiPath : fallbackAiPath,
           createdAt: new Date().toISOString(),
           ...form,
         };
+
         const res = await fetch('/api/teacher/syllabus', {
           method: 'POST',
           headers,
@@ -196,16 +228,31 @@ export default function TeacherSyllabus() {
   const handleQuickAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickAddPrompt || !profile?.schoolId) return;
-    await simulateAI(async () => {
+    await simulateAI(async (aiPath: any) => {
       const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken();
       const topic = quickAddPrompt.length > 40 ? quickAddPrompt.slice(0, 40) + '…' : quickAddPrompt;
       const newId = `syl_${Date.now()}`;
+      const fallbackAiPath = {
+        overview: `A curriculum path for "${topic}" — structured for maximum understanding.`,
+        milestones: [
+          { title: 'Phase 1: Introduction', description: `Introduce key concepts of ${topic}.` },
+          { title: 'Phase 2: Practice', description: `Guided practice on ${topic}.` },
+          { title: 'Phase 3: Application', description: `Apply ${topic} to problems.` },
+          { title: 'Phase 4: Assessment', description: `Assess understanding of ${topic}.` },
+        ],
+        resources: [
+          { id: 'res_1', title: `${topic} Concept Map`, type: 'interactive' },
+          { id: 'res_2', title: `${topic} Study Guide`, type: 'document' },
+          { id: 'res_3', title: `${topic} Video`, type: 'video' },
+        ],
+        teacherNotes: `Watch for misconceptions in ${topic}. Use real examples to build intuition.`,
+      };
       const newMod = {
         teacherId: profile.uid, month: quickAddMonth,
         topic, subject: '', grade: '', weeks: 'TBD',
         objectives: quickAddPrompt, teachingMethod: '', assessmentType: '', notes: '',
-        status: 'planned', aiPath: generateAIPath(quickAddPrompt),
+        status: 'planned', aiPath: aiPath?.overview ? aiPath : fallbackAiPath,
         createdAt: new Date().toISOString(),
       };
       const res = await fetch('/api/teacher/syllabus', {
@@ -225,6 +272,8 @@ export default function TeacherSyllabus() {
       setSelectedModule({ id: newId, ...newMod });
     });
   };
+
+
 
 
   const markCompleted = async (mod: any) => {

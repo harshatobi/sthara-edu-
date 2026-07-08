@@ -19,8 +19,10 @@ export default function TeacherHeatmap() {
   const [students, setStudents] = useState<any[]>([]);
   const [subjectColumns, setSubjectColumns] = useState<{ subject: string; scores: Record<string, number | null> }[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>(''); // '' = all subjects
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+
 
 
   useEffect(() => {
@@ -92,15 +94,32 @@ export default function TeacherHeatmap() {
         if (uniqueClasses.length > 0) {
           classStudents = classStudents.filter(s => s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase()));
         }
+
+        // If a specific subject is selected, further filter to only students assigned to that subject
+        if (selectedSubject) {
+          const subjectAssign = (profile.assignments || []).find(
+            (a: any) => a.class?.toLowerCase() === activeClass.toLowerCase() && a.subject === selectedSubject
+          );
+          if (subjectAssign?.assignedStudents?.length > 0) {
+            const assignedSet = new Set(subjectAssign.assignedStudents as string[]);
+            classStudents = classStudents.filter(s => s.customStudentId && assignedSet.has(s.customStudentId));
+          }
+        }
+
         setStudents(classStudents);
 
         // ── 5. Determine teacher's subjects for this class ────────────────
-        const teacherSubjects: string[] = [...new Set(
+        const allTeacherSubjects: string[] = [...new Set(
           (profile.assignments ?? [])
             .filter((a: any) => !activeClass || a.class?.toLowerCase() === activeClass.toLowerCase())
             .map((a: any) => a.subject)
             .filter(Boolean)
         )] as string[];
+
+        // If a subject is selected, only show that column; otherwise show all
+        const teacherSubjects = selectedSubject
+          ? [selectedSubject]
+          : allTeacherSubjects;
 
         // ── 6. Filter assignments by class + subject ─────────────────────
         const relevant = allAssignments.filter((a: any) =>
@@ -159,7 +178,8 @@ export default function TeacherHeatmap() {
     };
 
     fetchHeatmapData();
-  }, [profile?.schoolId, selectedClass]);
+  }, [profile?.schoolId, selectedClass, selectedSubject]);
+
 
 
 
@@ -209,19 +229,39 @@ export default function TeacherHeatmap() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Legend */}
             <div className="hidden md:flex items-center gap-3 text-xs font-semibold px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl">
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"/> Excellent</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400"/> Average</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"/> At Risk</span>
             </div>
+            {/* Subject selector */}
+            {(() => {
+              const subjectsForClass = [...new Set(
+                (profile?.assignments || []).filter((a: any) => !selectedClass || a.class === selectedClass).map((a: any) => a.subject).filter(Boolean)
+              )] as string[];
+              if (subjectsForClass.length < 2) return null;
+              return (
+                <div className="relative">
+                  <select
+                    value={selectedSubject}
+                    onChange={e => setSelectedSubject(e.target.value)}
+                    className="appearance-none bg-indigo-50 border border-indigo-200 hover:border-indigo-300 rounded-xl pl-4 pr-9 py-2.5 text-indigo-800 font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/20 cursor-pointer"
+                  >
+                    <option value="">All Subjects</option>
+                    {subjectsForClass.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none" />
+                </div>
+              );
+            })()}
             {/* Class selector */}
             {availableClasses.length > 0 && (
               <div className="relative">
                 <select
                   value={selectedClass}
-                  onChange={e => setSelectedClass(e.target.value)}
+                  onChange={e => { setSelectedClass(e.target.value); setSelectedSubject(''); }}
                   className="appearance-none bg-white border border-gray-200 hover:border-gray-300 rounded-xl pl-4 pr-9 py-2.5 text-[#002147] font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                 >
                   {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
@@ -230,6 +270,7 @@ export default function TeacherHeatmap() {
               </div>
             )}
           </div>
+
         </div>
       </div>
 

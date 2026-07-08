@@ -108,16 +108,25 @@ export default function TeacherDashboard() {
         ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
       };
 
-      // 1. Fetch students filtered by class via Admin SDK API
+      // 1. Fetch students filtered by class/branch via Admin SDK API
       const studRes = await fetch('/api/teacher/get-students', {
         method: 'POST', headers,
         body: JSON.stringify({ schoolId: profile.schoolId, classFilter: className }),
       });
       const studData = await studRes.json();
-      const students: any[] = studData.students || [];
+      let students: any[] = studData.students || [];
+
+      // For college professors: further filter to only students assigned to THIS subject
+      const subjectAssignment = (profile.assignments || []).find(
+        (a: any) => a.class === className && a.subject === subjectName
+      );
+      if (subjectAssignment?.assignedStudents?.length > 0) {
+        const assignedIds = new Set(subjectAssignment.assignedStudents as string[]);
+        students = students.filter(s => s.customStudentId && assignedIds.has(s.customStudentId));
+      }
       setClassStudents(students);
 
-      // 2. Fetch all assignments and filter client-side
+      // 2. Fetch all assignments — filter by class (loose match, no strict subject)
       const assignRes = await fetch('/api/teacher/get-assignments', {
         method: 'POST', headers,
         body: JSON.stringify({ schoolId: profile.schoolId }),
@@ -125,10 +134,21 @@ export default function TeacherDashboard() {
       const assignData = await assignRes.json();
       const allAssignments: any[] = assignData.assignments || [];
 
-      // Filter by class and subject
-      const filtered = allAssignments.filter(a =>
-        a.class === className && a.subject === subjectName
-      );
+      // For college: match by class + teacher, show all subjects (teacher posted for this class)
+      // For school: strict class + subject match
+      const isCollegeClass = !!(subjectAssignment?.assignedStudents !== undefined ||
+        (profile.assignments || []).some((a: any) => a.class === className && a.assignedStudents));
+
+      const filtered = allAssignments.filter(a => {
+        const classMatch = a.class === className;
+        const teacherMatch = a.teacherId === profile.uid;
+        if (isCollegeClass) {
+          // College: show all assignments by this teacher for this class
+          return classMatch && teacherMatch;
+        }
+        // School: strict class + subject match
+        return classMatch && a.subject === subjectName;
+      });
 
       // submittedData is already included from the get-assignments API
       const tasksWithStats = filtered.map(task => {

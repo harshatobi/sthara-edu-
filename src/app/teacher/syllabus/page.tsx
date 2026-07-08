@@ -563,7 +563,14 @@ export default function TeacherSyllabus() {
                       <label className="block text-sm font-bold text-[#002147] mb-1.5">Subject</label>
                       <select value={form.subject} onChange={e => setForm(f => ({...f, subject: e.target.value}))} className="w-full bg-[#f8fafc] border border-[#002147]/15 rounded-xl px-3 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20 font-medium text-sm">
                         <option value="">— Select —</option>
-                        {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                        {/* Use teacher's actual assigned subjects, fallback to generic list */}
+                        {(() => {
+                          const teacherSubjects = [...new Set(
+                            (profile?.assignments || []).map((a: any) => a.subject).filter(Boolean)
+                          )] as string[];
+                          const subjectList = teacherSubjects.length > 0 ? teacherSubjects : SUBJECTS;
+                          return subjectList.map(s => <option key={s} value={s}>{s}</option>);
+                        })()}
                       </select>
                     </div>
                     <div>

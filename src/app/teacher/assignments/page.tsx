@@ -198,9 +198,18 @@ export default function AssignmentManagerPage() {
             </div>
           ) : (
             filteredAssignments.map((assignment) => {
-              const classStds = studentsByClass[assignment.class] || [];
+              let classStds = studentsByClass[assignment.class] || [];
+              // For college professors: filter to only students assigned to THIS subject
+              const subjectAssign = (profile.assignments || []).find(
+                (a: any) => a.class === assignment.class && a.subject === assignment.subject
+              );
+              if (subjectAssign?.assignedStudents?.length > 0) {
+                const assignedIds = new Set(subjectAssign.assignedStudents as string[]);
+                classStds = classStds.filter((s: any) => s.customStudentId && assignedIds.has(s.customStudentId));
+              }
+
               const submittedCount = assignment.submittedStudentIds.size;
-              const totalCount = assignment.totalStudents;
+              const totalCount = classStds.length || assignment.totalStudents;
               const isExpanded = expandedId === assignment.id;
               
               // Students from roster who submitted

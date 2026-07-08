@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
           branch: data.branch || '',
           year: data.year || '',
           semester: data.semester || '',
+          customStudentId: data.customStudentId || '',  // needed for per-subject filtering
           schoolId: data.schoolId || schoolId,
           role: data.role || 'student',
           // Performance fields

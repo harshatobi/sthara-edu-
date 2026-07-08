@@ -6,16 +6,15 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Sparkles, BrainCircuit, PenTool, ChevronRight,
   ChevronLeft, Loader2, Plus, Trash2, CheckCircle2, Send,
-  BookOpen, Zap, Target, BarChart2, RefreshCw, Eye, Edit3,
+  BookOpen, Zap, Target, RefreshCw,
   ClipboardList, X, Check, KeyRound, FileKey2, GraduationCap,
-  Layers, CheckSquare, Square, Printer, Calendar, Tag
+  Layers, CheckSquare, Square, Printer, Calendar
 } from 'lucide-react';
 import Link from 'next/link';
 import { db } from '@/lib/firebase/config';
-import {
-  collection, query, where, getDocs, addDoc, serverTimestamp
-} from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+
 
 type Mode = null | 'full_ai' | 'semi_ai' | 'manual';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';

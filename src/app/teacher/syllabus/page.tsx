@@ -12,6 +12,8 @@ import {
 import Link from 'next/link';
 import { db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc, addDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+
 
 const MONTHS = ['June','July','August','September','October','November','December','January','February','March','April','May'];
 const SUBJECTS = ['Mathematics','Science','Physics','Chemistry','Biology','English','Hindi','Social Studies','History','Geography','Computer Science','Art','Physical Education','Other'];
@@ -71,8 +73,8 @@ export default function TeacherSyllabus() {
     if (profile?.schoolId && profile?.uid) {
       (async () => {
         try {
-          const { getAuth } = await import('firebase/auth');
           const idToken = await getAuth().currentUser?.getIdToken();
+
           const res = await fetch(
             `/api/teacher/syllabus?schoolId=${profile.schoolId}&teacherId=${profile.uid}`,
             { headers: idToken ? { Authorization: `Bearer ${idToken}` } : {} }

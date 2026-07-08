@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, deleteDoc, doc, orderBy, updateDoc } from 'firebase/firestore';
-import { Trash2, Users, FileText, CheckCircle, Clock, CheckSquare, Search, ChevronDown, ChevronUp, Loader2, Eye, X, Check, Edit3, AlertTriangle, KeyRound, ChevronRight, Zap } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
+import { Trash2, Users, FileText, CheckCircle, Clock, CheckSquare, Search, ChevronDown, ChevronUp, Loader2, Eye, X, Check, Edit3, AlertTriangle, KeyRound, ChevronRight, Zap, BookOpen, ClipboardList } from 'lucide-react';
+
 
 import Link from 'next/link';
 
@@ -81,8 +83,8 @@ export default function AssignmentManagerPage() {
     setFetching(true);
     try {
       // Get auth token for both API calls
-      const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken();
+
       const headers = {
         'Content-Type': 'application/json',
         ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
@@ -247,16 +249,27 @@ export default function AssignmentManagerPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-3">
-                        {/* Question Paper button — only for quiz type */}
-                        {assignment.type === 'quiz' && Array.isArray(assignment.questions) && assignment.questions.length > 0 && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setQuestionPaperAssignment(assignment); }}
-                            className="flex items-center gap-1.5 px-3 py-2 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl text-xs font-bold transition-colors"
-                            title="View Question Paper & Answer Key"
-                          >
-                            <KeyRound className="w-3.5 h-3.5" /> Answer Key
-                          </button>
-                        )}
+                        {/* View button — shown for ALL assignment types */}
+                        {(() => {
+                          const isQuiz = assignment.type === 'quiz' && Array.isArray(assignment.questions) && assignment.questions.length > 0;
+                          // Always show View for non-quiz; show Answer Key for quizzes with questions
+                          if (!isQuiz && !assignment.type) return null; // skip if no type info at all
+                          return (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setQuestionPaperAssignment(assignment); }}
+                              className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl text-xs font-bold transition-colors ${
+                                isQuiz
+                                  ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200'
+                                  : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200'
+                              }`}
+                              title={isQuiz ? 'View Question Paper & Answer Key' : 'View Assignment Content'}
+                            >
+                              {isQuiz ? <KeyRound className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              {isQuiz ? 'Answer Key' : 'View'}
+                            </button>
+                          );
+                        })()}
+
                         <button
                           onClick={(e) => handleDelete(assignment.id, e)}
                           className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
@@ -512,24 +525,34 @@ export default function AssignmentManagerPage() {
     </div>
   );
 
-  // Question Paper Panel (for quiz assignments)
+  // Question Paper / Assignment Details Panel
   const questionPaperPanel = questionPaperAssignment && (
     <div className="fixed inset-0 z-[300] flex">
       <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={() => setQuestionPaperAssignment(null)} />
       <div className="w-full max-w-2xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#002147] to-[#0a3a7a] px-6 py-5 flex items-start justify-between shrink-0">
+        <div className={`px-6 py-5 flex items-start justify-between shrink-0 ${
+          questionPaperAssignment.type === 'quiz'
+            ? 'bg-gradient-to-r from-[#002147] to-[#0a3a7a]'
+            : questionPaperAssignment.type === 'homework'
+              ? 'bg-gradient-to-r from-violet-700 to-purple-700'
+              : 'bg-gradient-to-r from-indigo-700 to-blue-700'
+        }`}>
           <div>
             <div className="flex items-center gap-2 text-blue-300 text-xs font-black uppercase tracking-wider mb-1">
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>Question Paper & Answer Key</span>
+              {questionPaperAssignment.type === 'quiz'
+                ? <><KeyRound className="w-3.5 h-3.5" /><span>Question Paper &amp; Answer Key</span></>
+                : questionPaperAssignment.type === 'homework'
+                  ? <><BookOpen className="w-3.5 h-3.5" /><span>Homework Details</span></>
+                  : <><ClipboardList className="w-3.5 h-3.5" /><span>Assignment Details</span></>}
             </div>
-            <h2 className="text-white font-bold text-lg leading-tight">{questionPaperAssignment.title || 'Quiz'}</h2>
+            <h2 className="text-white font-bold text-lg leading-tight">{questionPaperAssignment.title || 'Assignment'}</h2>
             <div className="flex flex-wrap gap-2 mt-2">
               {questionPaperAssignment.subject && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{questionPaperAssignment.subject}</span>}
               {questionPaperAssignment.class && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">Class {questionPaperAssignment.class}</span>}
-              {questionPaperAssignment.difficulty && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{questionPaperAssignment.difficulty}</span>}
-              <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{questionPaperAssignment.questions?.length || 0} Questions</span>
+              {questionPaperAssignment.type && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full capitalize">{questionPaperAssignment.type}</span>}
+              {questionPaperAssignment.dueDate && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">Due: {new Date(questionPaperAssignment.dueDate).toLocaleDateString()}</span>}
+              {questionPaperAssignment.type === 'quiz' && <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{questionPaperAssignment.questions?.length || 0} Questions</span>}
             </div>
           </div>
           <button onClick={() => setQuestionPaperAssignment(null)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 ml-4 shrink-0">
@@ -537,74 +560,152 @@ export default function AssignmentManagerPage() {
           </button>
         </div>
 
-        {/* Questions with answer key */}
+        {/* Body */}
         <div className="flex-1 p-6 space-y-5">
-          {(questionPaperAssignment.questions || []).map((q: any, idx: number) => (
-            <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden">
-              {/* Question */}
-              <div className="bg-gray-50 px-5 py-4 flex items-start gap-3">
-                <span className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{idx + 1}</span>
-                <div className="flex-1">
-                  <p className="font-bold text-[#002147] text-sm leading-relaxed">{q.question}</p>
-                  {q.difficulty && (
-                    <span className={`inline-block mt-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                      q.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
-                      q.difficulty === 'hard' ? 'bg-rose-100 text-rose-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>{q.difficulty}</span>
-                  )}
-                </div>
-              </div>
-              {/* Options */}
-              <div className="p-4 grid grid-cols-1 gap-2">
-                {(q.options || []).map((opt: string, optIdx: number) => (
-                  <div
-                    key={optIdx}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium ${
-                      optIdx === q.correctAnswerIndex
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-900 ring-1 ring-emerald-300'
-                        : 'bg-gray-50 border-gray-200 text-gray-600'
-                    }`}
-                  >
-                    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black shrink-0 ${
-                      optIdx === q.correctAnswerIndex ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 text-gray-400'
-                    }`}>
-                      {optIdx === q.correctAnswerIndex ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + optIdx)}
-                    </span>
-                    <span className="flex-1">{opt}</span>
-                    {optIdx === q.correctAnswerIndex && (
-                      <span className="text-emerald-600 font-black text-xs">✓ CORRECT</span>
+
+          {/* ── QUIZ: Questions with Answer Key ── */}
+          {questionPaperAssignment.type === 'quiz' && Array.isArray(questionPaperAssignment.questions) && (
+            (questionPaperAssignment.questions || []).map((q: any, idx: number) => (
+              <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="bg-gray-50 px-5 py-4 flex items-start gap-3">
+                  <span className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{idx + 1}</span>
+                  <div className="flex-1">
+                    <p className="font-bold text-[#002147] text-sm leading-relaxed">{q.question}</p>
+                    {q.difficulty && (
+                      <span className={`inline-block mt-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                        q.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
+                        q.difficulty === 'hard' ? 'bg-rose-100 text-rose-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>{q.difficulty}</span>
                     )}
                   </div>
-                ))}
-              </div>
-              {/* Explanation */}
-              {q.explanation && (
+                </div>
+                <div className="p-4 grid grid-cols-1 gap-2">
+                  {(q.options || []).map((opt: string, optIdx: number) => (
+                    <div
+                      key={optIdx}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium ${
+                        optIdx === q.correctAnswerIndex
+                          ? 'bg-emerald-50 border-emerald-400 text-emerald-900 ring-1 ring-emerald-300'
+                          : 'bg-gray-50 border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black shrink-0 ${
+                        optIdx === q.correctAnswerIndex ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 text-gray-400'
+                      }`}>
+                        {optIdx === q.correctAnswerIndex ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + optIdx)}
+                      </span>
+                      <span className="flex-1">{opt}</span>
+                      {optIdx === q.correctAnswerIndex && (
+                        <span className="text-emerald-600 font-black text-xs">✓ CORRECT</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {q.explanation && (
+                  <div className="px-4 pb-4">
+                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5">
+                      <Zap className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-800 font-medium">{q.explanation}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="px-4 pb-4">
-                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5">
-                    <Zap className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-800 font-medium">{q.explanation}</p>
+                  <div className="bg-emerald-100 border border-emerald-200 rounded-xl px-4 py-2 flex items-center gap-2">
+                    <ChevronRight className="w-4 h-4 text-emerald-600" />
+                    <span className="text-sm font-bold text-emerald-800">
+                      Answer: {String.fromCharCode(65 + q.correctAnswerIndex)}. {q.options?.[q.correctAnswerIndex]}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+
+          {/* ── HOMEWORK / ASSIGNMENT: Description & Details ── */}
+          {questionPaperAssignment.type !== 'quiz' && (
+            <div className="space-y-4">
+              {/* Description / Instructions */}
+              {(questionPaperAssignment.description || questionPaperAssignment.instructions) && (
+                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">
+                  <h3 className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" /> Instructions / Description
+                  </h3>
+                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {questionPaperAssignment.description || questionPaperAssignment.instructions}
+                  </p>
+                </div>
+              )}
+
+              {/* Topics */}
+              {(questionPaperAssignment.topic || questionPaperAssignment.topics) && (
+                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-5">
+                  <h3 className="text-xs font-black text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4" /> Topics Covered
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Array.isArray(questionPaperAssignment.topics)
+                      ? questionPaperAssignment.topics.map((t: string, i: number) => (
+                          <span key={i} className="bg-white border border-purple-200 text-purple-800 text-sm font-semibold px-3 py-1.5 rounded-xl">{t}</span>
+                        ))
+                      : <span className="bg-white border border-purple-200 text-purple-800 text-sm font-semibold px-3 py-1.5 rounded-xl">
+                          {questionPaperAssignment.topic || questionPaperAssignment.topics}
+                        </span>
+                    }
                   </div>
                 </div>
               )}
-              {/* Answer summary */}
-              <div className="px-4 pb-4">
-                <div className="bg-emerald-100 border border-emerald-200 rounded-xl px-4 py-2 flex items-center gap-2">
-                  <ChevronRight className="w-4 h-4 text-emerald-600" />
-                  <span className="text-sm font-bold text-emerald-800">
-                    Answer: {String.fromCharCode(65 + q.correctAnswerIndex)}. {q.options?.[q.correctAnswerIndex]}
-                  </span>
+
+              {/* Metadata */}
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Assignment Info</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {questionPaperAssignment.class && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Class</p>
+                      <p className="font-bold text-[#002147]">{questionPaperAssignment.class}</p>
+                    </div>
+                  )}
+                  {questionPaperAssignment.subject && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Subject</p>
+                      <p className="font-bold text-[#002147]">{questionPaperAssignment.subject}</p>
+                    </div>
+                  )}
+                  {questionPaperAssignment.dueDate && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Due Date</p>
+                      <p className="font-bold text-[#002147]">{new Date(questionPaperAssignment.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                  )}
+                  {questionPaperAssignment.maxMarks && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Max Marks</p>
+                      <p className="font-bold text-[#002147]">{questionPaperAssignment.maxMarks}</p>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* No content fallback */}
+              {!questionPaperAssignment.description && !questionPaperAssignment.instructions && !questionPaperAssignment.topic && !questionPaperAssignment.topics && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
+                  <FileText className="w-10 h-10 text-amber-300 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-amber-700">No additional details stored</p>
+                  <p className="text-xs text-amber-600 mt-1">This assignment was created without a description or instructions.</p>
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
 
         {/* Footer */}
         <div className="border-t border-gray-100 bg-gray-50 px-6 py-4 flex items-center justify-between shrink-0">
           <p className="text-sm text-gray-500 font-medium">
-            <span className="font-black text-[#002147]">{questionPaperAssignment.questions?.length || 0}</span> questions ·{' '}
-            <span className="font-black text-emerald-600">{questionPaperAssignment.questions?.length || 0}</span> marks
+            {questionPaperAssignment.type === 'quiz'
+              ? <><span className="font-black text-[#002147]">{questionPaperAssignment.questions?.length || 0}</span> questions · <span className="font-black text-emerald-600">{questionPaperAssignment.questions?.length || 0}</span> marks</>
+              : <span className="capitalize font-semibold text-gray-600">{questionPaperAssignment.type || 'Assignment'}</span>
+            }
           </p>
           <button
             onClick={() => setQuestionPaperAssignment(null)}

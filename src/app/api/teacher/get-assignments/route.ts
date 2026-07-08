@@ -5,8 +5,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/teacher/get-assignments
- * Body: { schoolId }
- * Returns all assignments + submission counts for that school.
+ * Body: { schoolId, teacherId }
+ * Returns ONLY this teacher's assignments + submission counts.
  * Uses Admin SDK — bypasses Firestore security rules.
  */
 export async function POST(req: NextRequest) {
@@ -27,14 +27,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { schoolId } = await req.json();
+    const { schoolId, teacherId } = await req.json();
     if (!schoolId) return NextResponse.json({ error: 'Missing schoolId' }, { status: 400 });
 
-    // 1. All assignments
-    const assignSnap = await adminDb
+    // 1. Fetch ONLY this teacher's assignments (filter by teacherId)
+    let query: FirebaseFirestore.Query = adminDb
       .collection('schools').doc(schoolId)
-      .collection('assignments')
-      .get();
+      .collection('assignments');
+
+    if (teacherId) {
+      query = query.where('teacherId', '==', teacherId);
+    }
+
+    const assignSnap = await query.get();
 
     // 2. For each assignment, get submissions in parallel
     const assignments = await Promise.all(

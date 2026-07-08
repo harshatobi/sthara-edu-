@@ -107,12 +107,13 @@ export default function AssignmentManagerPage() {
       });
       setStudentsByClass(studentsMap);
 
-      // 2. Fetch assignments via Admin SDK API
+      // 2. Fetch ONLY this teacher's assignments via Admin SDK API
       const assignRes = await fetch('/api/teacher/get-assignments', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ schoolId: profile.schoolId }),
+        body: JSON.stringify({ schoolId: profile.schoolId, teacherId: profile.uid }),
       });
+
       const assignData = await assignRes.json();
       if (!assignRes.ok) throw new Error(assignData.error || 'Failed to load assignments');
 
@@ -199,18 +200,26 @@ export default function AssignmentManagerPage() {
           ) : (
             filteredAssignments.map((assignment) => {
               let classStds = studentsByClass[assignment.class] || [];
-              // PRIORITY 1: Use assignedStudentIds stored on the assignment itself
+
+              // Helper: check if a student is in an ID set (handles both Firestore doc ID and customStudentId)
+              const studentInSet = (s: any, idSet: Set<string>) =>
+                (s.id && idSet.has(s.id)) || (s.customStudentId && idSet.has(s.customStudentId));
+
+              // PRIORITY 1: Use assignedStudentIds stored directly on the assignment
               if (Array.isArray((assignment as any).assignedStudentIds) && (assignment as any).assignedStudentIds.length > 0) {
                 const assignedIds = new Set((assignment as any).assignedStudentIds as string[]);
-                classStds = classStds.filter((s: any) => s.customStudentId && assignedIds.has(s.customStudentId));
+                classStds = classStds.filter((s: any) => studentInSet(s, assignedIds));
               } else {
-                // PRIORITY 2: Fall back to professor's profile per-subject assignedStudents
+                // PRIORITY 2: Fall back to professor profile's per-subject assignedStudents
+                // Use case-insensitive comparison to avoid mismatch
                 const subjectAssign = (profile.assignments || []).find(
-                  (a: any) => a.class === assignment.class && a.subject === assignment.subject
+                  (a: any) =>
+                    (a.class || '').trim().toLowerCase() === (assignment.class || '').trim().toLowerCase() &&
+                    (a.subject || '').trim().toLowerCase() === (assignment.subject || '').trim().toLowerCase()
                 );
                 if (subjectAssign?.assignedStudents?.length > 0) {
                   const assignedIds = new Set(subjectAssign.assignedStudents as string[]);
-                  classStds = classStds.filter((s: any) => s.customStudentId && assignedIds.has(s.customStudentId));
+                  classStds = classStds.filter((s: any) => studentInSet(s, assignedIds));
                 }
               }
 

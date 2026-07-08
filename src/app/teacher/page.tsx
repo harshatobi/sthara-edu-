@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Activity, AlertTriangle, Users, BookOpen, LogOut, Plus, X, Send, CheckSquare,
-  ChevronLeft, MessageSquare, Star, Image as ImageIcon, FileText, CheckCircle, ArrowRight } from 'lucide-react';
+  ChevronLeft, MessageSquare, Star, Image as ImageIcon, FileText, CheckCircle, ArrowRight, Trash2 } from 'lucide-react';
+
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 
@@ -26,8 +27,10 @@ export default function TeacherDashboard() {
   const [type, setType] = useState('homework');
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
+  const [homeworkQuestions, setHomeworkQuestions] = useState<{text: string; marks: string}[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [postSuccess, setPostSuccess] = useState(false);
+
 
   // Task Modal State
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -87,8 +90,10 @@ export default function TeacherDashboard() {
     setPostSuccess(false);
     setTitle('');
     setDescription('');
+    setHomeworkQuestions([]);
     setIsModalOpen(true);
   };
+
 
   const openTaskModal = async (className: string, subjectName: string) => {
     setTaskModalClass(className);
@@ -212,6 +217,11 @@ export default function TeacherDashboard() {
           type,
           dueDate,
           description,
+          // Save question paper questions (for homework/assignment types)
+          questions: homeworkQuestions.filter(q => q.text.trim()).map(q => ({
+            text: q.text.trim(),
+            marks: q.marks ? Number(q.marks) : null,
+          })),
           class: selectedClass,
           subject: selectedSubject,
           teacherId: profile.uid,
@@ -417,15 +427,80 @@ export default function TeacherDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#002147]/70 mb-1">Description / Instructions</label>
+                    <label className="block text-sm font-medium text-[#002147]/70 mb-1">Instructions <span className="text-[#002147]/40 font-normal">(optional)</span></label>
                     <textarea 
-                      required 
                       value={description}
                       onChange={e => setDescription(e.target.value)}
-                      rows={3} 
-                      placeholder="Complete exercises 1 through 10 on page 42." 
+                      rows={2} 
+                      placeholder="e.g. Answer all questions. Show your working." 
                       className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
                     ></textarea>
+                  </div>
+
+                  {/* ── Question Paper Builder ── */}
+                  <div className="border border-[#002147]/10 rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between bg-[#002147]/5 px-4 py-3">
+                      <h4 className="text-sm font-black text-[#002147] flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Question Paper
+                        {homeworkQuestions.filter(q=>q.text.trim()).length > 0 && (
+                          <span className="bg-[#002147] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                            {homeworkQuestions.filter(q=>q.text.trim()).length} Q
+                          </span>
+                        )}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setHomeworkQuestions(prev => [...prev, {text:'', marks:''}])}
+                        className="flex items-center gap-1 text-xs font-bold text-[#002147] bg-white border border-[#002147]/20 hover:bg-[#002147] hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Plus className="w-3 h-3" /> Add Question
+                      </button>
+                    </div>
+
+                    {homeworkQuestions.length === 0 ? (
+                      <div className="px-4 py-5 text-center">
+                        <p className="text-xs text-gray-400 italic">Click "Add Question" to build a question paper. Students will see these questions when they open the assignment.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[#002147]/5 max-h-64 overflow-y-auto">
+                        {homeworkQuestions.map((q, i) => (
+                          <div key={i} className="flex items-start gap-2 p-3">
+                            <span className="w-6 h-6 bg-[#002147] text-white rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 mt-1.5">{i+1}</span>
+                            <textarea
+                              value={q.text}
+                              onChange={e => setHomeworkQuestions(prev => prev.map((x,j) => j===i ? {...x, text:e.target.value} : x))}
+                              placeholder={`Question ${i+1}...`}
+                              rows={2}
+                              className="flex-1 bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-3 py-2 text-sm text-[#002147] focus:outline-none focus:ring-1 focus:ring-[#002147]/20 resize-none"
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              value={q.marks}
+                              onChange={e => setHomeworkQuestions(prev => prev.map((x,j) => j===i ? {...x, marks:e.target.value} : x))}
+                              placeholder="Mks"
+                              className="w-14 bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-2 py-2 text-sm text-[#002147] focus:outline-none focus:ring-1 focus:ring-[#002147]/20 text-center shrink-0 mt-1.5"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setHomeworkQuestions(prev => prev.filter((_,j) => j!==i))}
+                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-1"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        {/* Total marks */}
+                        {homeworkQuestions.some(q => q.marks) && (
+                          <div className="px-4 py-2 bg-emerald-50 flex justify-end">
+                            <span className="text-xs font-black text-emerald-700">
+                              Total: {homeworkQuestions.reduce((s,q)=>s+(Number(q.marks)||0),0)} marks
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <button 
@@ -435,6 +510,7 @@ export default function TeacherDashboard() {
                   >
                     {isPosting ? <span>Posting...</span> : <><Send className="w-5 h-5"/> <span>Post to {selectedClass}</span></>}
                   </button>
+
                 </form>
               )}
             </div>

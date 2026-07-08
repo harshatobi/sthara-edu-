@@ -631,14 +631,15 @@ export default function AssignmentManagerPage() {
             ))
           )}
 
-          {/* ── HOMEWORK / ASSIGNMENT: Description & Details ── */}
+          {/* ── HOMEWORK / ASSIGNMENT: Question Paper + Details ── */}
           {questionPaperAssignment.type !== 'quiz' && (
             <div className="space-y-4">
-              {/* Description / Instructions */}
+
+              {/* Instructions section */}
               {(questionPaperAssignment.description || questionPaperAssignment.instructions) && (
                 <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">
                   <h3 className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <FileText className="w-4 h-4" /> Instructions / Description
+                    <FileText className="w-4 h-4" /> Instructions
                   </h3>
                   <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
                     {questionPaperAssignment.description || questionPaperAssignment.instructions}
@@ -646,23 +647,69 @@ export default function AssignmentManagerPage() {
                 </div>
               )}
 
-              {/* Topics */}
-              {(questionPaperAssignment.topic || questionPaperAssignment.topics) && (
-                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-5">
-                  <h3 className="text-xs font-black text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4" /> Topics Covered
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {Array.isArray(questionPaperAssignment.topics)
-                      ? questionPaperAssignment.topics.map((t: string, i: number) => (
-                          <span key={i} className="bg-white border border-purple-200 text-purple-800 text-sm font-semibold px-3 py-1.5 rounded-xl">{t}</span>
-                        ))
-                      : <span className="bg-white border border-purple-200 text-purple-800 text-sm font-semibold px-3 py-1.5 rounded-xl">
-                          {questionPaperAssignment.topic || questionPaperAssignment.topics}
-                        </span>
-                    }
+              {/* ── Question Paper ── */}
+              {Array.isArray(questionPaperAssignment.questions) && questionPaperAssignment.questions.length > 0 ? (
+                <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                  {/* Paper header */}
+                  <div className="bg-gradient-to-r from-[#002147] to-[#003580] px-5 py-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-0.5">Question Paper</p>
+                      <p className="text-white font-black text-sm">{questionPaperAssignment.title}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-blue-200 text-[10px] font-bold uppercase">Total Marks</p>
+                      <p className="text-white font-black text-xl">
+                        {questionPaperAssignment.questions.reduce((s: number, q: any) => s + (Number(q.marks) || 0), 0) || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Divider rule */}
+                  <div className="bg-gray-50 px-5 py-2 border-b border-gray-200">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      {questionPaperAssignment.questions.length} Question{questionPaperAssignment.questions.length !== 1 ? 's' : ''} · Answer All
+                    </p>
+                  </div>
+
+                  {/* Questions */}
+                  <div className="divide-y divide-gray-100">
+                    {questionPaperAssignment.questions.map((q: any, idx: number) => (
+                      <div key={idx} className="px-5 py-4 flex gap-4">
+                        <div className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0 mt-0.5">
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-[#002147] font-semibold leading-relaxed">
+                            {q.text || q.question || 'No question text'}
+                          </p>
+                        </div>
+                        {(q.marks || q.marks === 0) && (
+                          <div className="shrink-0 text-right">
+                            <span className="inline-block bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-1 rounded-lg">
+                              [{q.marks} {Number(q.marks) === 1 ? 'mark' : 'marks'}]
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer total */}
+                  <div className="bg-gray-50 border-t border-gray-200 px-5 py-3 flex justify-end">
+                    <span className="text-sm font-black text-[#002147]">
+                      Total: {questionPaperAssignment.questions.reduce((s: number, q: any) => s + (Number(q.marks) || 0), 0)} marks
+                    </span>
                   </div>
                 </div>
+              ) : (
+                /* No structured questions — show description or empty state */
+                !questionPaperAssignment.description && !questionPaperAssignment.instructions && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
+                    <FileText className="w-10 h-10 text-amber-300 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-amber-700">No question paper added</p>
+                    <p className="text-xs text-amber-600 mt-1">Edit this assignment to add individual questions.</p>
+                  </div>
+                )
               )}
 
               {/* Metadata */}
@@ -696,14 +743,6 @@ export default function AssignmentManagerPage() {
                 </div>
               </div>
 
-              {/* No content fallback */}
-              {!questionPaperAssignment.description && !questionPaperAssignment.instructions && !questionPaperAssignment.topic && !questionPaperAssignment.topics && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
-                  <FileText className="w-10 h-10 text-amber-300 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-amber-700">No additional details stored</p>
-                  <p className="text-xs text-amber-600 mt-1">This assignment was created without a description or instructions.</p>
-                </div>
-              )}
             </div>
           )}
         </div>

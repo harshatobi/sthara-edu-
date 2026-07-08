@@ -452,7 +452,9 @@ export default function TeacherDashboard() {
                         className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20" 
                       />
                     </div>
-                                    {/* ══ UPLOAD QUESTION PAPER (Primary) ══ */}
+                  </div>
+
+                  {/* ══ UPLOAD QUESTION PAPER (Primary) ══ */}
                   <div className="border-2 border-dashed border-[#002147]/20 rounded-2xl overflow-hidden bg-[#f8fafc]">
                     <div className="px-4 py-3 bg-[#002147] flex items-center gap-2">
                       <ImageIcon className="w-4 h-4 text-blue-200" />

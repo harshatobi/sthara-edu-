@@ -56,6 +56,9 @@ function SchoolManagementContent() {
   const [studentBranch, setStudentBranch] = useState('');
   const [studentYear, setStudentYear] = useState('');
   const [studentSemester, setStudentSemester] = useState('');
+  // For assigning students to a teacher/professor in colleges
+  const [selectedStudentsForTeacher, setSelectedStudentsForTeacher] = useState<string[]>([]);
+
 
   useEffect(() => {
     if (!decodedSchoolId) return;
@@ -165,6 +168,15 @@ function SchoolManagementContent() {
     }
   };
 
+  const toggleTeacherStudentSelection = (customStudentId: string) => {
+    if (selectedStudentsForTeacher.includes(customStudentId)) {
+      setSelectedStudentsForTeacher(selectedStudentsForTeacher.filter(id => id !== customStudentId));
+    } else {
+      setSelectedStudentsForTeacher([...selectedStudentsForTeacher, customStudentId]);
+    }
+  };
+
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!decodedSchoolId) return;
@@ -216,6 +228,11 @@ function SchoolManagementContent() {
         }
       } else if (role === 'teacher') {
         userData.assignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
+        // Save assigned students for college professors
+        if (institutionType === 'college' && selectedStudentsForTeacher.length > 0) {
+          userData.assignedStudents = selectedStudentsForTeacher;
+        }
+
       } else if (role === 'parent') {
         userData.linkedStudents = selectedStudentsForParent;
       }
@@ -240,6 +257,8 @@ function SchoolManagementContent() {
       setStudentSemester('');
       setTeacherAssignments([{ class: '', subject: '' }]);
       setSelectedStudentsForParent([]);
+      setSelectedStudentsForTeacher([]);
+
       
     } catch (err: any) {
       setError(err.message);
@@ -290,6 +309,20 @@ function SchoolManagementContent() {
   const allStudents = useMemo(() => {
     return users.filter(u => u.role === 'student' && u.customStudentId);
   }, [users]);
+
+  // For college teacher: get students from the branches the teacher is being assigned to
+  const studentsForTeacherBranches = useMemo(() => {
+    if (institutionType !== 'college') return [];
+    const selectedBranches = new Set(
+      teacherAssignments.map(a => a.class.trim()).filter(Boolean)
+    );
+    if (selectedBranches.size === 0) {
+      // If no branch selected yet, show ALL college students
+      return users.filter(u => u.role === 'student' && (u as any).branch);
+    }
+    return users.filter(u => u.role === 'student' && selectedBranches.has((u as any).branch || ''));
+  }, [users, teacherAssignments, institutionType]);
+
 
   if (!decodedSchoolId) {
     return <div className="p-10 text-center">No School Selected</div>;
@@ -456,8 +489,8 @@ function SchoolManagementContent() {
                       className="w-1/2 bg-transparent px-2 py-1 text-sm text-[#002147] focus:outline-none"
                     />
                     {teacherAssignments.length > 1 && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => handleRemoveAssignmentRow(idx)}
                         className="p-1 text-[#dc143c]/60 hover:text-[#dc143c]"
                       >
@@ -474,8 +507,78 @@ function SchoolManagementContent() {
                   <Plus className="w-4 h-4" />
                   <span>Add Another Assignment</span>
                 </button>
+
+                {/* ── College: assign students to this professor ── */}
+                {institutionType === 'college' && (
+                  <div className="mt-3 pt-3 border-t border-[#002147]/10">
+                    <label className="block text-sm font-medium text-[#002147]/70 mb-2 flex items-center gap-1.5">
+                      <Users className="w-4 h-4" />
+                      Assign Students to this Professor
+                      {selectedStudentsForTeacher.length > 0 && (
+                        <span className="ml-auto text-xs font-bold bg-[#002147] text-white px-2 py-0.5 rounded-full">
+                          {selectedStudentsForTeacher.length} selected
+                        </span>
+                      )}
+                    </label>
+                    {studentsForTeacherBranches.length === 0 ? (
+                      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                        <p className="text-xs text-amber-700 font-medium">
+                          {teacherAssignments.some(a => a.class.trim())
+                            ? 'No students found in the selected branch(es).'
+                            : 'Select a branch above to see students, or all students will be shown.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-[#f8fafc] border border-[#002147]/10 rounded-xl max-h-52 overflow-y-auto divide-y divide-[#002147]/5">
+                        {/* Select All / Clear */}
+                        <div className="flex items-center justify-between px-3 py-2 bg-[#002147]/5 sticky top-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#002147]/50">
+                            {studentsForTeacherBranches.length} students
+                          </span>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setSelectedStudentsForTeacher(studentsForTeacherBranches.map(s => s.customStudentId!).filter(Boolean))}
+                              className="text-[10px] font-bold text-[#002147] hover:text-[#dc143c] transition-colors">Select All</button>
+                            <span className="text-[#002147]/20">|</span>
+                            <button type="button" onClick={() => setSelectedStudentsForTeacher([])}
+                              className="text-[10px] font-bold text-[#002147]/50 hover:text-[#dc143c] transition-colors">Clear</button>
+                          </div>
+                        </div>
+                        {studentsForTeacherBranches.map(student => {
+                          const sid = student.customStudentId!;
+                          const isSelected = selectedStudentsForTeacher.includes(sid);
+                          return (
+                            <div
+                              key={student.id}
+                              onClick={() => toggleTeacherStudentSelection(sid)}
+                              className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
+                                isSelected ? 'bg-emerald-50' : 'hover:bg-white'
+                              }`}
+                            >
+                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-[#002147]/30'
+                              }`}>
+                                {isSelected && (
+                                  <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-[#002147] truncate">{student.name}</p>
+                                <p className="text-[10px] text-[#002147]/50">
+                                  {sid} · {(student as any).branch || ''} {(student as any).year ? '· ' + (student as any).year : ''}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
+
 
             {role === 'parent' && (
               <div className="animate-in fade-in duration-300">

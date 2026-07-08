@@ -396,7 +396,8 @@ export default function TeacherDashboard() {
       {/* Post Assignment Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-[#002147]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+
             <div className="flex justify-between items-center p-6 border-b border-[#002147]/10 bg-[#f8fafc]">
               <div>
                 <h3 className="text-xl font-bold text-[#002147]">Post New Task</h3>
@@ -407,7 +408,8 @@ export default function TeacherDashboard() {
               </button>
             </div>
             
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto flex-1">
+
               {postSuccess ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -113,18 +113,31 @@ function PublishModal({
   const [timeLimit, setTimeLimit] = useState(data.timeLimit || 20);
   const [publishing, setPublishing] = useState(false);
 
+  // Subjects for the selected class
+  const subjectsForSelectedClass: string[] = Array.from(new Set(
+    (profile.assignments || [])
+      .filter((a: any) => a.class === (targetClass || teacherClasses[0] || ''))
+      .map((a: any) => a.subject)
+      .filter(Boolean)
+  ));
+  const [targetSubject, setTargetSubject] = useState(() => subjectsForSelectedClass[0] || '');
+
   const effectiveClass = teacherClasses.length > 0 ? targetClass : customClass;
+
 
   const handlePublish = async () => {
     const cls = effectiveClass.trim();
     if (!cls) { alert('Please select or enter a target class.'); return; }
+    if (!targetSubject) { alert('Please select the subject you are publishing for.'); return; }
     setPublishing(true);
     try {
-      // Collect all unique student IDs this professor has assigned for the target class
-      // (unions across all subjects for that class so AI-created content scopes correctly)
+      // Scope to students assigned to the specific selected subject only
       const assignedStudentIds: string[] = Array.from(new Set(
         (profile.assignments || [])
-          .filter((a: any) => (a.class || '').trim().toLowerCase() === cls.trim().toLowerCase())
+          .filter((a: any) =>
+            (a.class || '').trim().toLowerCase() === cls.trim().toLowerCase() &&
+            (a.subject || '').trim().toLowerCase() === targetSubject.trim().toLowerCase()
+          )
           .flatMap((a: any) => a.assignedStudents || [])
       ));
 
@@ -226,7 +239,7 @@ function PublishModal({
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Target Class</label>
             {teacherClasses.length > 0 ? (
-              <select value={targetClass} onChange={e => setTargetClass(e.target.value)}
+              <select value={targetClass} onChange={e => { setTargetClass(e.target.value); setTargetSubject(''); }}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
                 {teacherClasses.map(c => <option key={c}>{c}</option>)}
               </select>
@@ -236,6 +249,29 @@ function PublishModal({
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500" />
             )}
           </div>
+
+          {/* Subject selector — always show, required */}
+          {(() => {
+            const subjects: string[] = Array.from(new Set(
+              (profile.assignments || [])
+                .filter((a: any) => a.class === effectiveClass)
+                .map((a: any) => a.subject)
+                .filter(Boolean)
+            ));
+            if (subjects.length === 0) return null;
+            return (
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Subject <span className="text-rose-500">*</span></label>
+                <select value={targetSubject} onChange={e => setTargetSubject(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  {!targetSubject && <option value="">— Select subject —</option>}
+                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Only students enrolled in this subject will receive the {type}.</p>
+              </div>
+            );
+          })()}
+
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2"><Calendar className="w-4 h-4" /> Due Date</label>
@@ -254,6 +290,7 @@ function PublishModal({
           <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 border border-gray-100">
             <p className="font-bold text-gray-700 mb-1">Summary</p>
             <p>📖 {data.title}</p>
+            {targetSubject && <p>📚 Subject: {targetSubject}</p>}
             {type === 'quiz' && <p>❓ {data.questions?.length} questions · {timeLimit} min</p>}
             {type === 'assignment' && <p>✏️ {data.tasks?.length} tasks · {data.totalMarks} marks</p>}
             {type === 'paper' && <p>📋 {data.sections?.length} sections · {data.totalMarks} marks · {data.duration}</p>}

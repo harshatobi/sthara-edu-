@@ -19,10 +19,16 @@ export default function TeacherHeatmap() {
   const [students, setStudents] = useState<any[]>([]);
   const [subjectColumns, setSubjectColumns] = useState<{ subject: string; scores: Record<string, number | null> }[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>(''); // '' = all subjects
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
+  // Auto-select the first subject this teacher teaches when profile loads
+  useEffect(() => {
+    if (!profile?.assignments || selectedSubject) return;
+    const first = (profile.assignments as any[]).find(a => a.subject)?.subject;
+    if (first) setSelectedSubject(first);
+  }, [profile?.assignments]);
 
 
   useEffect(() => {
@@ -57,11 +63,12 @@ export default function TeacherHeatmap() {
         if (!studRes.ok) throw new Error(studData.error || 'Failed to fetch students');
         const allStudents: any[] = studData.students || [];
 
-        // ── 2. Fetch assignments via Admin SDK API ───────────────────────────
+        // ── 2. Fetch ONLY this teacher's assignments ──────────────────────────
         const assignRes = await fetch('/api/teacher/get-assignments', {
           method: 'POST', headers,
-          body: JSON.stringify({ schoolId }),
+          body: JSON.stringify({ schoolId, teacherId: profile.uid }),
         });
+
         const assignData = await assignRes.json();
         if (!assignRes.ok) throw new Error(assignData.error || 'Failed to fetch assignments');
         const allAssignments: any[] = assignData.assignments || [];
@@ -98,11 +105,16 @@ export default function TeacherHeatmap() {
         // If a specific subject is selected, further filter to only students assigned to that subject
         if (selectedSubject) {
           const subjectAssign = (profile.assignments || []).find(
-            (a: any) => a.class?.toLowerCase() === activeClass.toLowerCase() && a.subject === selectedSubject
+            (a: any) => a.class?.toLowerCase() === activeClass.toLowerCase() &&
+                        a.subject?.toLowerCase() === selectedSubject.toLowerCase()
           );
           if (subjectAssign?.assignedStudents?.length > 0) {
             const assignedSet = new Set(subjectAssign.assignedStudents as string[]);
-            classStudents = classStudents.filter(s => s.customStudentId && assignedSet.has(s.customStudentId));
+            // Match against BOTH Firestore doc ID and customStudentId
+            classStudents = classStudents.filter(s =>
+              (s.id && assignedSet.has(s.id)) ||
+              (s.customStudentId && assignedSet.has(s.customStudentId))
+            );
           }
         }
 
@@ -236,12 +248,12 @@ export default function TeacherHeatmap() {
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400"/> Average</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"/> At Risk</span>
             </div>
-            {/* Subject selector */}
+            {/* Subject selector — always visible, no 'All Subjects' option */}
             {(() => {
               const subjectsForClass = [...new Set(
                 (profile?.assignments || []).filter((a: any) => !selectedClass || a.class === selectedClass).map((a: any) => a.subject).filter(Boolean)
               )] as string[];
-              if (subjectsForClass.length < 2) return null;
+              if (subjectsForClass.length === 0) return null;
               return (
                 <div className="relative">
                   <select
@@ -249,26 +261,13 @@ export default function TeacherHeatmap() {
                     onChange={e => setSelectedSubject(e.target.value)}
                     className="appearance-none bg-indigo-50 border border-indigo-200 hover:border-indigo-300 rounded-xl pl-4 pr-9 py-2.5 text-indigo-800 font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/20 cursor-pointer"
                   >
-                    <option value="">All Subjects</option>
                     {subjectsForClass.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none" />
                 </div>
               );
             })()}
-            {/* Class selector */}
-            {availableClasses.length > 0 && (
-              <div className="relative">
-                <select
-                  value={selectedClass}
-                  onChange={e => { setSelectedClass(e.target.value); setSelectedSubject(''); }}
-                  className="appearance-none bg-white border border-gray-200 hover:border-gray-300 rounded-xl pl-4 pr-9 py-2.5 text-[#002147] font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                >
-                  {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
-            )}
+            {/* Class selector — hidden, auto-selected in background */}
           </div>
 
         </div>

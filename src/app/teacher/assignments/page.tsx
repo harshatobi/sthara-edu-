@@ -199,13 +199,19 @@ export default function AssignmentManagerPage() {
           ) : (
             filteredAssignments.map((assignment) => {
               let classStds = studentsByClass[assignment.class] || [];
-              // For college professors: filter to only students assigned to THIS subject
-              const subjectAssign = (profile.assignments || []).find(
-                (a: any) => a.class === assignment.class && a.subject === assignment.subject
-              );
-              if (subjectAssign?.assignedStudents?.length > 0) {
-                const assignedIds = new Set(subjectAssign.assignedStudents as string[]);
+              // PRIORITY 1: Use assignedStudentIds stored on the assignment itself
+              if (Array.isArray((assignment as any).assignedStudentIds) && (assignment as any).assignedStudentIds.length > 0) {
+                const assignedIds = new Set((assignment as any).assignedStudentIds as string[]);
                 classStds = classStds.filter((s: any) => s.customStudentId && assignedIds.has(s.customStudentId));
+              } else {
+                // PRIORITY 2: Fall back to professor's profile per-subject assignedStudents
+                const subjectAssign = (profile.assignments || []).find(
+                  (a: any) => a.class === assignment.class && a.subject === assignment.subject
+                );
+                if (subjectAssign?.assignedStudents?.length > 0) {
+                  const assignedIds = new Set(subjectAssign.assignedStudents as string[]);
+                  classStds = classStds.filter((s: any) => s.customStudentId && assignedIds.has(s.customStudentId));
+                }
               }
 
               const submittedCount = assignment.submittedStudentIds.size;
@@ -631,120 +637,169 @@ export default function AssignmentManagerPage() {
             ))
           )}
 
-          {/* ── HOMEWORK / ASSIGNMENT: Question Paper + Details ── */}
-          {questionPaperAssignment.type !== 'quiz' && (
-            <div className="space-y-4">
+          {/* ── HOMEWORK / ASSIGNMENT: Question Paper ── */}
+          {questionPaperAssignment.type !== 'quiz' && (() => {
+            const hasStructuredQs = Array.isArray(questionPaperAssignment.questions) && questionPaperAssignment.questions.length > 0;
+            const rawText = questionPaperAssignment.description || questionPaperAssignment.instructions || '';
 
-              {/* Instructions section */}
-              {(questionPaperAssignment.description || questionPaperAssignment.instructions) && (
-                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">
-                  <h3 className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <FileText className="w-4 h-4" /> Instructions
-                  </h3>
-                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                    {questionPaperAssignment.description || questionPaperAssignment.instructions}
-                  </p>
+            // Parse description into numbered questions if it looks like a question list
+            const parsedLines = rawText
+              .split('\n')
+              .map((l: string) => l.trim())
+              .filter((l: string) => l.length > 0);
+            // Detect numbered question format: starts with 1. / 1) / Q1. / Q1) or just number
+            const isNumbered = parsedLines.length > 0 &&
+              /^(Q?\d+[\.\)\:]|\d+\.|Q\d)/i.test(parsedLines[0]);
+
+            if (hasStructuredQs) {
+              // Show the structured question paper (built with question builder)
+              return (
+                <div className="space-y-4">
+                  <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#002147] to-[#003580] px-5 py-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-0.5">Question Paper</p>
+                        <p className="text-white font-black text-sm">{questionPaperAssignment.title}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-blue-200 text-[10px] font-bold uppercase">Total Marks</p>
+                        <p className="text-white font-black text-xl">
+                          {questionPaperAssignment.questions.reduce((s: number, q: any) => s + (Number(q.marks) || 0), 0) || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 px-5 py-2 border-b border-gray-200">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        {questionPaperAssignment.questions.length} Question{questionPaperAssignment.questions.length !== 1 ? 's' : ''} · Answer All
+                      </p>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {questionPaperAssignment.questions.map((q: any, idx: number) => (
+                        <div key={idx} className="px-5 py-4 flex gap-4">
+                          <div className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0 mt-0.5">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-[#002147] font-semibold leading-relaxed">
+                              {q.text || q.question || 'No question text'}
+                            </p>
+                          </div>
+                          {(q.marks || q.marks === 0) && (
+                            <div className="shrink-0 text-right">
+                              <span className="inline-block bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-1 rounded-lg">
+                                [{q.marks} {Number(q.marks) === 1 ? 'mark' : 'marks'}]
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-gray-50 border-t border-gray-200 px-5 py-3 flex justify-end">
+                      <span className="text-sm font-black text-[#002147]">
+                        Total: {questionPaperAssignment.questions.reduce((s: number, q: any) => s + (Number(q.marks) || 0), 0)} marks
+                      </span>
+                    </div>
+                  </div>
+                  {/* Show instructions if also provided */}
+                  {rawText && (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                      <p className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-2">Instructions</p>
+                      <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{rawText}</p>
+                    </div>
+                  )}
                 </div>
-              )}
+              );
+            }
 
-              {/* ── Question Paper ── */}
-              {Array.isArray(questionPaperAssignment.questions) && questionPaperAssignment.questions.length > 0 ? (
-                <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                  {/* Paper header */}
-                  <div className="bg-gradient-to-r from-[#002147] to-[#003580] px-5 py-4 flex items-center justify-between">
-                    <div>
+            if (rawText) {
+              // No question builder used — show description as the question paper
+              if (isNumbered) {
+                // Auto-parse numbered questions from description text
+                return (
+                  <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#002147] to-[#003580] px-5 py-4">
                       <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-0.5">Question Paper</p>
                       <p className="text-white font-black text-sm">{questionPaperAssignment.title}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-blue-200 text-[10px] font-bold uppercase">Total Marks</p>
-                      <p className="text-white font-black text-xl">
-                        {questionPaperAssignment.questions.reduce((s: number, q: any) => s + (Number(q.marks) || 0), 0) || 'N/A'}
+                    <div className="bg-gray-50 px-5 py-2 border-b border-gray-200">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        {parsedLines.length} Question{parsedLines.length !== 1 ? 's' : ''} · Answer All
                       </p>
                     </div>
-                  </div>
-
-                  {/* Divider rule */}
-                  <div className="bg-gray-50 px-5 py-2 border-b border-gray-200">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                      {questionPaperAssignment.questions.length} Question{questionPaperAssignment.questions.length !== 1 ? 's' : ''} · Answer All
-                    </p>
-                  </div>
-
-                  {/* Questions */}
-                  <div className="divide-y divide-gray-100">
-                    {questionPaperAssignment.questions.map((q: any, idx: number) => (
-                      <div key={idx} className="px-5 py-4 flex gap-4">
-                        <div className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0 mt-0.5">
-                          {idx + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm text-[#002147] font-semibold leading-relaxed">
-                            {q.text || q.question || 'No question text'}
+                    <div className="divide-y divide-gray-100">
+                      {parsedLines.map((line: string, idx: number) => (
+                        <div key={idx} className="px-5 py-4 flex gap-4 items-start">
+                          <div className="w-8 h-8 bg-[#002147] text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">
+                            {idx + 1}
+                          </div>
+                          <p className="text-sm text-[#002147] font-semibold leading-relaxed pt-1.5">
+                            {/* Strip leading number prefix */}
+                            {line.replace(/^(Q?\d+[\.\)\:]\s*)/i, '')}
                           </p>
                         </div>
-                        {(q.marks || q.marks === 0) && (
-                          <div className="shrink-0 text-right">
-                            <span className="inline-block bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-1 rounded-lg">
-                              [{q.marks} {Number(q.marks) === 1 ? 'mark' : 'marks'}]
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                );
+              } else {
+                // Plain text — display as question paper body
+                return (
+                  <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#002147] to-[#003580] px-5 py-4">
+                      <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-0.5">Question Paper</p>
+                      <p className="text-white font-black text-sm">{questionPaperAssignment.title}</p>
+                    </div>
+                    <div className="px-5 py-5">
+                      <p className="text-sm text-[#002147] font-medium leading-relaxed whitespace-pre-wrap">{rawText}</p>
+                    </div>
+                  </div>
+                );
+              }
+            }
 
-                  {/* Footer total */}
-                  <div className="bg-gray-50 border-t border-gray-200 px-5 py-3 flex justify-end">
-                    <span className="text-sm font-black text-[#002147]">
-                      Total: {questionPaperAssignment.questions.reduce((s: number, q: any) => s + (Number(q.marks) || 0), 0)} marks
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                /* No structured questions — show description or empty state */
-                !questionPaperAssignment.description && !questionPaperAssignment.instructions && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
-                    <FileText className="w-10 h-10 text-amber-300 mx-auto mb-2" />
-                    <p className="text-sm font-bold text-amber-700">No question paper added</p>
-                    <p className="text-xs text-amber-600 mt-1">Edit this assignment to add individual questions.</p>
-                  </div>
-                )
-              )}
-
-              {/* Metadata */}
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
-                <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Assignment Info</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {questionPaperAssignment.class && (
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">Class</p>
-                      <p className="font-bold text-[#002147]">{questionPaperAssignment.class}</p>
-                    </div>
-                  )}
-                  {questionPaperAssignment.subject && (
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">Subject</p>
-                      <p className="font-bold text-[#002147]">{questionPaperAssignment.subject}</p>
-                    </div>
-                  )}
-                  {questionPaperAssignment.dueDate && (
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">Due Date</p>
-                      <p className="font-bold text-[#002147]">{new Date(questionPaperAssignment.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                    </div>
-                  )}
-                  {questionPaperAssignment.maxMarks && (
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">Max Marks</p>
-                      <p className="font-bold text-[#002147]">{questionPaperAssignment.maxMarks}</p>
-                    </div>
-                  )}
-                </div>
+            // Nothing at all
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
+                <FileText className="w-10 h-10 text-amber-300 mx-auto mb-2" />
+                <p className="text-sm font-bold text-amber-700">No content added</p>
+                <p className="text-xs text-amber-600 mt-1">This assignment has no description or questions.</p>
               </div>
+            );
+          })()}
 
+          {/* Metadata */}
+          {questionPaperAssignment.type !== 'quiz' && (
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+              <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">Assignment Info</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {questionPaperAssignment.class && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Class</p>
+                    <p className="font-bold text-[#002147]">{questionPaperAssignment.class}</p>
+                  </div>
+                )}
+                {questionPaperAssignment.subject && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Subject</p>
+                    <p className="font-bold text-[#002147]">{questionPaperAssignment.subject}</p>
+                  </div>
+                )}
+                {questionPaperAssignment.dueDate && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Due Date</p>
+                    <p className="font-bold text-[#002147]">{new Date(questionPaperAssignment.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  </div>
+                )}
+                {questionPaperAssignment.maxMarks && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Max Marks</p>
+                    <p className="font-bold text-[#002147]">{questionPaperAssignment.maxMarks}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
+
         </div>
 
         {/* Footer */}

@@ -105,12 +105,12 @@ export default function SituationalFeedPage() {
       const classesToScan = teacherClass ? [teacherClass] : teacherAssignments;
 
       // Get auth token for API calls
-      const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken();
       const headers = {
         'Content-Type': 'application/json',
         ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
       };
+
 
       // 1. Get all students via Admin SDK API (client rules block cross-user reads)
       const studRes = await fetch('/api/teacher/get-students', {
@@ -288,7 +288,7 @@ export default function SituationalFeedPage() {
       }
 
       // ── Write all new alerts via server-side API (bypasses Firestore rules) ──
-      const idToken = await getAuth().currentUser?.getIdToken();
+      // (idToken already obtained above)
 
 
       const alertsToWrite = newAlerts.length === 0 ? [{

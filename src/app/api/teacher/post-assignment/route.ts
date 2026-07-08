@@ -29,8 +29,11 @@ export async function POST(req: NextRequest) {
       tasks,
       totalMarks,
       questions,
-      assignedStudentIds, // customStudentIds of students allowed to see this assignment
+      assignedStudentIds,
+      questionPaperUrl,
+      questionPaperType,
     } = body;
+
 
 
     if (!schoolId || !title || !teacherId) {
@@ -52,10 +55,12 @@ export async function POST(req: NextRequest) {
     if (tasks && Array.isArray(tasks)) assignmentData.tasks = tasks;
     if (totalMarks) assignmentData.totalMarks = totalMarks;
     if (questions && Array.isArray(questions)) assignmentData.questions = questions;
-    // Scope visibility: if provided, only students whose customStudentId is in this list can see it
+    if (questionPaperUrl) assignmentData.questionPaperUrl = questionPaperUrl;
+    if (questionPaperType) assignmentData.questionPaperType = questionPaperType;
     if (assignedStudentIds && Array.isArray(assignedStudentIds) && assignedStudentIds.length > 0) {
       assignmentData.assignedStudentIds = assignedStudentIds;
     }
+
 
 
     const ref = await adminDb

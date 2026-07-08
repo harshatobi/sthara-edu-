@@ -639,6 +639,8 @@ export default function AssignmentManagerPage() {
 
           {/* ── HOMEWORK / ASSIGNMENT: Question Paper ── */}
           {questionPaperAssignment.type !== 'quiz' && (() => {
+            const qpUrl: string | null = questionPaperAssignment.questionPaperUrl || null;
+            const qpType: string = questionPaperAssignment.questionPaperType || 'image';
             const hasStructuredQs = Array.isArray(questionPaperAssignment.questions) && questionPaperAssignment.questions.length > 0;
             const rawText = questionPaperAssignment.description || questionPaperAssignment.instructions || '';
 
@@ -650,6 +652,52 @@ export default function AssignmentManagerPage() {
             // Detect numbered question format: starts with 1. / 1) / Q1. / Q1) or just number
             const isNumbered = parsedLines.length > 0 &&
               /^(Q?\d+[\.\)\:]|\d+\.|Q\d)/i.test(parsedLines[0]);
+
+            // PRIORITY 0: Uploaded question paper file — display directly, no typing needed
+            if (qpUrl) {
+              return (
+                <div className="space-y-4">
+                  <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-[#002147] to-[#003580] px-5 py-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-0.5">Question Paper</p>
+                        <p className="text-white font-black text-sm">{questionPaperAssignment.title}</p>
+                      </div>
+                      <a
+                        href={qpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Open Full Screen ↗
+                      </a>
+                    </div>
+                    {qpType === 'image' ? (
+                      <div className="bg-gray-50 p-4">
+                        <img
+                          src={qpUrl}
+                          alt="Question Paper"
+                          className="w-full rounded-xl border border-gray-200 object-contain max-h-[70vh]"
+                        />
+                      </div>
+                    ) : (
+                      <iframe
+                        src={qpUrl}
+                        className="w-full h-[70vh] border-0"
+                        title="Question Paper PDF"
+                      />
+                    )}
+                  </div>
+                  {/* Show instructions below if any */}
+                  {rawText && (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                      <p className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-2">Instructions</p>
+                      <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{rawText}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            }
 
             if (hasStructuredQs) {
               // Show the structured question paper (built with question builder)

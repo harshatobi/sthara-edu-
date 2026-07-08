@@ -461,6 +461,41 @@ export default function HomeworkAssignment() {
               </div>
             )}
 
+            {/* ── Uploaded Question Paper ── show if teacher uploaded an image/PDF */}
+            {assignment.questionPaperUrl && (
+              <div className="border border-gray-200 rounded-2xl overflow-hidden mb-6 shadow-sm">
+                <div className="bg-gradient-to-r from-[#002147] to-[#003580] px-5 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-0.5">Question Paper</p>
+                    <p className="text-white font-bold text-sm">{assignment.topic}</p>
+                  </div>
+                  <a
+                    href={assignment.questionPaperUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    Open Full Screen ↗
+                  </a>
+                </div>
+                {(assignment.questionPaperType === 'image' || !assignment.questionPaperType) ? (
+                  <div className="bg-gray-50 p-4">
+                    <img
+                      src={assignment.questionPaperUrl}
+                      alt="Question Paper"
+                      className="w-full rounded-xl border border-gray-200 object-contain max-h-[80vh]"
+                    />
+                  </div>
+                ) : (
+                  <iframe
+                    src={assignment.questionPaperUrl}
+                    className="w-full h-[80vh] border-0"
+                    title="Question Paper PDF"
+                  />
+                )}
+              </div>
+            )}
+
             {((assignment.questions && assignment.questions.length > 0) || (assignment.tasks && assignment.tasks.length > 0) || (assignment.sections && assignment.sections.length > 0)) && (
               <div className="space-y-4 relative">
                 <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gray-100" />

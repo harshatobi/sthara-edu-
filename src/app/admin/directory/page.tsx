@@ -50,8 +50,14 @@ export default function AdminDirectory() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [studentClass, setStudentClass] = useState('');
+  // College-specific student fields
+  const [branch, setBranch] = useState('');
+  const [semester, setSemester] = useState('');
+  const [year, setYear] = useState('');
+  const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '' }]);
   const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
+
 
   useEffect(() => {
     if (!authLoading && (!profile || profile.role !== 'admin')) router.push('/login');
@@ -61,7 +67,13 @@ export default function AdminDirectory() {
     if (!profile?.schoolId) return;
     setLoadingUsers(true);
     try {
+      // Also fetch institution type from school doc
+      const schoolDoc = await getDoc(doc(db, 'schools', profile.schoolId));
+      if (schoolDoc.exists()) {
+        setInstitutionType(schoolDoc.data().type === 'college' ? 'college' : 'school');
+      }
       const [usersSnap, globalSnap] = await Promise.all([
+
         getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId))),
         getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId))),
       ]);
@@ -122,10 +134,18 @@ export default function AdminDirectory() {
         createdAt: serverTimestamp(),
       };
       if (role === 'student') {
-        const customId = `STU-${Date.now()}`;
-        userData.studentClass = studentClass;
-        userData.customStudentId = customId;
+        if (institutionType === 'college') {
+          userData.branch = branch.trim();
+          userData.semester = semester.trim();
+          userData.year = year.trim();
+          const branchKey = branch.trim().replace(/\s+/g, '').slice(0, 6).toUpperCase();
+          userData.customStudentId = `${profile!.schoolId}-${branchKey}-${Date.now()}`;
+        } else {
+          userData.studentClass = studentClass;
+          userData.customStudentId = `STU-${Date.now()}`;
+        }
       } else if (role === 'teacher') {
+
         userData.assignments = teacherAssignments.filter(a => a.class && a.subject);
         userData.subjectsTaught = [...new Set(teacherAssignments.map(a => a.subject).filter(Boolean))];
       } else if (role === 'parent') {
@@ -137,7 +157,9 @@ export default function AdminDirectory() {
 
       setSuccessMsg(`✓ Account created for ${name}`);
       setEmail(''); setPassword(''); setName(''); setStudentClass('');
+      setBranch(''); setSemester(''); setYear('');
       setTeacherAssignments([{ class: '', subject: '' }]);
+
       setSelectedStudentsForParent([]);
       setRole('student');
       fetchUsers();
@@ -337,7 +359,7 @@ export default function AdminDirectory() {
             </div>
 
             <div className="pt-4 border-t border-gray-100">
-              {role === 'student' && (
+              {role === 'student' && institutionType === 'school' && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-1.5 max-w-sm">
                   <label className="text-sm font-bold text-emerald-700 flex items-center gap-1.5">
                     <GraduationCap className="w-4 h-4" /><span>Class / Grade</span>
@@ -346,6 +368,23 @@ export default function AdminDirectory() {
                     className="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3.5 text-[#002147] font-bold placeholder-emerald-700/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
                 </div>
               )}
+
+              {role === 'student' && institutionType === 'college' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3 max-w-lg p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <label className="text-sm font-bold text-emerald-700 flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4" /><span>College Placement</span>
+                  </label>
+                  <input type="text" required value={branch} onChange={e => setBranch(e.target.value)} placeholder="Branch (e.g. Computer Science)"
+                    className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" required value={year} onChange={e => setYear(e.target.value)} placeholder="Year (e.g. 1st Year)"
+                      className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
+                    <input type="text" required value={semester} onChange={e => setSemester(e.target.value)} placeholder="Semester (e.g. Sem 1)"
+                      className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
+                  </div>
+                </div>
+              )}
+
 
               {role === 'teacher' && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3 p-5 bg-blue-50/50 rounded-2xl border border-blue-100">

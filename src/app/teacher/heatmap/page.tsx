@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, TrendingUp, AlertTriangle, ChevronDown, BookOpen, BarChart2 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import Link from 'next/link';
+
 
 export default function TeacherHeatmap() {
   const { profile, loading } = useAuth();
@@ -37,8 +39,8 @@ export default function TeacherHeatmap() {
 
       try {
         // Get auth token
-        const { getAuth } = await import('firebase/auth');
         const idToken = await getAuth().currentUser?.getIdToken();
+
         const headers = {
           'Content-Type': 'application/json',
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),

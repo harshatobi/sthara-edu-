@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Building2, Users, FileVideo, PlusCircle, X, Globe, Sparkles, Activity, Search, ShieldCheck, GraduationCap, School, Plus, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -94,8 +96,8 @@ This CANNOT be undone. Type the school code to confirm:`;
     }
     setDeletingSchoolId(schoolId);
     try {
-      const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken();
+
       const res = await fetch('/api/admin/delete-school', {
         method: 'DELETE',
         headers: {

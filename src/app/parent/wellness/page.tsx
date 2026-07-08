@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { HeartHandshake, BatteryMedium, Brain, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getAuth } from 'firebase/auth';
+
 
 export default function WellnessMonitor() {
   const { profile, loading } = useAuth();
@@ -24,8 +26,8 @@ export default function WellnessMonitor() {
 
     const fetchChildren = async () => {
       try {
-        const { getAuth } = await import('firebase/auth');
         const token = await getAuth().currentUser?.getIdToken();
+
         if (!token) { setLoadingData(false); return; }
 
         const res = await fetch('/api/parent/get-children', {

@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Target, Award, BookOpen, Star, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
+
 
 export default function MilestoneTimeline() {
   const { profile, loading } = useAuth();
@@ -23,8 +25,8 @@ export default function MilestoneTimeline() {
 
     const fetchChildren = async () => {
       try {
-        const { getAuth } = await import('firebase/auth');
         const token = await getAuth().currentUser?.getIdToken();
+
         if (!token) { setLoadingData(false); return; }
 
         const res = await fetch('/api/parent/get-children', {

@@ -50,8 +50,14 @@ export default function AdminDashboard() {
 
   // Extended Data Fields
   const [studentClass, setStudentClass] = useState('');
+  // College-specific student fields
+  const [branch, setBranch] = useState('');
+  const [semester, setSemester] = useState('');
+  const [year, setYear] = useState('');
+  const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '' }]);
   const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
+
 
   useEffect(() => {
     if (!authLoading && (!profile || profile.role !== 'admin')) {
@@ -68,9 +74,11 @@ export default function AdminDashboard() {
         const schoolDoc = await getDoc(doc(db, 'schools', profile.schoolId));
         if (schoolDoc.exists()) {
           setSchoolName(schoolDoc.data().name);
+          setInstitutionType(schoolDoc.data().type === 'college' ? 'college' : 'school');
         } else {
           setSchoolName('School Not Found');
         }
+
 
         // Query BOTH collections — users are written to both in some flows
         const [usersSnap, globalSnap] = await Promise.all([
@@ -168,15 +176,26 @@ export default function AdminDashboard() {
       };
 
       if (role === 'student') {
-        const parsedClass = studentClass.trim();
-        userData.studentClass = parsedClass;
-        
-        const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
-        const sequenceNumber = existingStudentsInClass.length + 1;
-        const sequentialId = `${profile.schoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`;
-        
-        userData.customStudentId = sequentialId.toUpperCase();
+        if (institutionType === 'college') {
+          // College student: save branch, semester, year
+          userData.branch = branch.trim();
+          userData.semester = semester.trim();
+          userData.year = year.trim();
+          const branchKey = branch.trim().replace(/\s+/g, '').slice(0, 6).toUpperCase();
+          const existingInBranch = users.filter(u => u.role === 'student' && (u as any).branch === branch.trim());
+          const seq = existingInBranch.length + 1;
+          userData.customStudentId = `${profile.schoolId}-${branchKey}-${String(seq).padStart(3, '0')}`;
+        } else {
+          // School student: save studentClass
+          const parsedClass = studentClass.trim();
+          userData.studentClass = parsedClass;
+          const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
+          const sequenceNumber = existingStudentsInClass.length + 1;
+          const sequentialId = `${profile.schoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`;
+          userData.customStudentId = sequentialId.toUpperCase();
+        }
       } else if (role === 'teacher') {
+
         userData.assignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
       } else if (role === 'parent') {
         userData.linkedStudents = selectedStudentsForParent;
@@ -194,8 +213,12 @@ export default function AdminDashboard() {
       setPassword('');
       setName('');
       setStudentClass('');
+      setBranch('');
+      setSemester('');
+      setYear('');
       setTeacherAssignments([{ class: '', subject: '' }]);
       setSelectedStudentsForParent([]);
+
       
     } catch (err: any) {
       setError(err.message);
@@ -489,11 +512,11 @@ export default function AdminDashboard() {
             {/* Dynamic Role Sections */}
             <div className="pt-4 border-t border-gray-100">
               
-              {role === 'student' && (
+              {role === 'student' && institutionType === 'school' && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-1.5 max-w-sm">
                   <label className="text-sm font-bold text-emerald-700 flex items-center space-x-1.5">
                     <GraduationCap className="w-4 h-4" />
-                    <span>Student specific: Class / Grade</span>
+                    <span>Class / Grade</span>
                   </label>
                   <input
                     type="text"
@@ -505,6 +528,42 @@ export default function AdminDashboard() {
                   />
                 </div>
               )}
+
+              {role === 'student' && institutionType === 'college' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3 max-w-lg p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <label className="text-sm font-bold text-emerald-700 flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4" />
+                    <span>College Placement</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={branch}
+                    onChange={(e) => setBranch(e.target.value)}
+                    placeholder="Branch (e.g. Computer Science)"
+                    className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      required
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      placeholder="Year (e.g. 1st Year)"
+                      className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={semester}
+                      onChange={(e) => setSemester(e.target.value)}
+                      placeholder="Semester (e.g. Sem 1)"
+                      className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    />
+                  </div>
+                </div>
+              )}
+
 
               {role === 'teacher' && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3 p-5 bg-blue-50/50 rounded-2xl border border-blue-100">

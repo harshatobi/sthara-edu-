@@ -14,7 +14,9 @@ import {
   collection, query, where, getDocs, doc, getDoc, updateDoc,
   arrayUnion, addDoc, serverTimestamp, onSnapshot, orderBy, limit
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer as RC2 } from 'recharts';
+
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Child {
@@ -82,8 +84,8 @@ export default function ParentDashboard() {
 
     const fetchChildren = async () => {
       try {
-        const { getAuth } = await import('firebase/auth');
         const token = await getAuth().currentUser?.getIdToken();
+
         if (!token) { setLoadingData(false); return; }
 
         const res = await fetch('/api/parent/get-children', {

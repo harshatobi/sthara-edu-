@@ -262,14 +262,20 @@ function SchoolManagementContent() {
       else if (u.role === 'teacher') groups['Teachers'].push(u);
       else if (u.role === 'parent') groups['Parents'].push(u);
       else if (u.role === 'student') {
-        if (u.studentClass) {
-          const className = `Class: ${u.studentClass}`;
-          if (!groups[className]) groups[className] = [];
-          groups[className].push(u);
+        // College students group by branch; school students group by class
+        const groupKey = (u as any).branch
+          ? `Branch: ${(u as any).branch}${(u as any).year ? ' · ' + (u as any).year : ''}`
+          : u.studentClass
+            ? `Class: ${u.studentClass}`
+            : null;
+        if (groupKey) {
+          if (!groups[groupKey]) groups[groupKey] = [];
+          groups[groupKey].push(u);
         } else {
           groups['Unassigned Students'].push(u);
         }
       }
+
     });
 
     // Clean up empty groups

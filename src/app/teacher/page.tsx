@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Activity, AlertTriangle, Users, BookOpen, LogOut, Plus, X, Send, CheckSquare,
   ChevronLeft, MessageSquare, Star, Image as ImageIcon, FileText, CheckCircle, ArrowRight } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+
 import { getAuth } from 'firebase/auth';
 import Link from 'next/link';
 
@@ -152,8 +153,8 @@ export default function TeacherDashboard() {
     if (!window.confirm("Are you sure you want to permanently delete this assignment?")) return;
     
     try {
-      const { deleteDoc, doc } = await import('firebase/firestore');
       await deleteDoc(doc(db, 'schools', profile.schoolId, 'assignments', taskId));
+
       
       setClassTasks(prev => prev.filter(t => t.id !== taskId));
       setSelectedTask(null);

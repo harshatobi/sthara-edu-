@@ -16,7 +16,9 @@ import {
   doc, addDoc, serverTimestamp, onSnapshot,
   orderBy, updateDoc, Timestamp
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import Link from 'next/link';
+
 
 type SituationCategory = 'all' | 'security' | 'academic' | 'wellness' | 'submission';
 
@@ -286,8 +288,8 @@ export default function SituationalFeedPage() {
       }
 
       // ── Write all new alerts via server-side API (bypasses Firestore rules) ──
-      const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken();
+
 
       const alertsToWrite = newAlerts.length === 0 ? [{
         studentId: 'class',

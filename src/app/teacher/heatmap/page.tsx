@@ -159,31 +159,16 @@ export default function TeacherHeatmap() {
           : allTeacherSubjects;
 
         // ── 6. Filter assignments by class + subject ─────────────────────────────────────────────
-        // Uses fuzzy class match + includes no-subject legacy assignments
+        // Uses fuzzy class match + substring subject match (e.g. "ACCOUNTING" matches "Corporate Accounting")
         const relevant = allAssignments.filter((a: any) => {
           const classOk = !activeClass || classMatches(a.class, activeClass);
-          const subjectOk = !a.subject || teacherSubjects.length === 0 || teacherSubjects.some(ts =>
-            ts.toLowerCase() === (a.subject || '').toLowerCase()
-          );
+          const aSubLower = (a.subject || '').toLowerCase();
+          const subjectOk = !a.subject || teacherSubjects.length === 0 || teacherSubjects.some(ts => {
+            const tsLower = ts.toLowerCase();
+            // Accept: exact match, or either string contains the other as a substring
+            return tsLower === aSubLower || tsLower.includes(aSubLower) || aSubLower.includes(tsLower);
+          });
           return classOk && subjectOk;
-        });
-
-        // DEBUG — remove after fix confirmed
-        console.log('[HEATMAP DEBUG]', {
-          totalAssignments: allAssignments.length,
-          relevantAssignments: relevant.length,
-          activeClass,
-          teacherSubjects,
-          classStudentIds: classStudents.map(s => ({ id: s.id, name: s.name, class: s.studentClass || s.branch })),
-          assignmentSummary: relevant.map(a => ({
-            id: a.id, title: a.title, class: a.class, subject: a.subject,
-            submittedKeys: Object.keys(a.submittedData || {}),
-            submittedScores: Object.fromEntries(
-              Object.entries(a.submittedData || {}).map(([k, v]: [string, any]) =>
-                [k, { score: v?.score, aiScore: v?.aiResult?.totalScore, maxScore: v?.maxScore }]
-              )
-            ),
-          })),
         });
 
         // Fallback subject for no-subject assignments: selected subject or first teacher subject
@@ -213,8 +198,8 @@ export default function TeacherHeatmap() {
 
         for (const subject of subjectOrder) {
           const subjectAssignments = bySubject[subject] || [];
-          const studentTotals: Record<string, { sum: number; count: number }> = {};
-          classStudents.forEach(s => { studentTotals[s.id] = { sum: 0, count: 0 }; });
+          const studentTotals: Record<string, { sum: number; count: number; hasSubmission: boolean }> = {};
+          classStudents.forEach(s => { studentTotals[s.id] = { sum: 0, count: 0, hasSubmission: false }; });
 
           for (const assign of subjectAssignments) {
             const submittedData = assign.submittedData || {};
@@ -237,19 +222,26 @@ export default function TeacherHeatmap() {
                           (s.customStudentId ? subByCustomId[s.customStudentId] : null) ||
                           subByStudentId[s.id] || null;
               if (!sub) return;
+              // Submission found — mark as submitted regardless of score
+              studentTotals[s.id].hasSubmission = true;
               const score = sub?.score ?? sub?.aiResult?.totalScore;
               const max = sub?.maxScore ?? sub?.aiResult?.maxTotalScore ?? 10;
               if (score != null) {
                 studentTotals[s.id].sum += (score / max) * 100;
                 studentTotals[s.id].count += 1;
               }
+              // If score is null (AI grading failed), hasSubmission is true but count stays 0
+              // → final score resolves to 0% (At Risk) so teacher knows they submitted
             });
           }
 
           const scores: Record<string, number | null> = {};
           classStudents.forEach(s => {
             const t = studentTotals[s.id];
-            scores[s.id] = t && t.count > 0 ? Math.round(t.sum / t.count) : null;
+            if (!t) { scores[s.id] = null; return; }
+            if (t.count > 0) scores[s.id] = Math.round(t.sum / t.count);  // real score
+            else if (t.hasSubmission) scores[s.id] = 0;                     // submitted but ungraded → 0%
+            else scores[s.id] = null;                                        // never submitted → No Data
           });
           subjectCols.push({ subject, scores });
         }

@@ -1,452 +1,510 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, AlertTriangle, ChevronDown, BookOpen, BarChart2 } from 'lucide-react';
-import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { ArrowLeft, BookOpen, ChevronDown, RefreshCw, Info } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import Link from 'next/link';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OU B.Com General Syllabus — Topic definitions with keyword matching
+// ─────────────────────────────────────────────────────────────────────────────
+interface OUTopic {
+  id: string;
+  unit: string;
+  label: string;
+  short: string;
+  keywords: string[];
+}
 
+const OU_SYLLABUS: Record<string, OUTopic[]> = {
+  'corporate accounting': [
+    { id: 'depreciation',    unit: 'Unit I',   label: 'Depreciation & Provisions',     short: 'Depreciation',    keywords: ['depreciation','slm','wdv','straight line','written down','provision','doubtful debt'] },
+    { id: 'single-entry',    unit: 'Unit II',  label: 'Single Entry / Incomplete Rec.', short: 'Single Entry',    keywords: ['single entry','incomplete record','statement of affairs','conversion method'] },
+    { id: 'share-capital',   unit: 'Unit III', label: 'Share Capital & Debentures',     short: 'Share Capital',   keywords: ['issue of share','allotment','forfeiture','reissue','debenture','redemption of pref','preference share','equity share','share capital','calls in arrear'] },
+    { id: 'goodwill-shares', unit: 'Unit IV',  label: 'Goodwill & Share Valuation',     short: 'Valuation',       keywords: ['goodwill','share valuation','valuation of share','intrinsic value','yield value','super profit','fair value'] },
+    { id: 'final-accounts',  unit: 'Unit V',   label: 'Company Final Accounts',         short: 'Final Accounts',  keywords: ['final account','profit and loss','balance sheet','appropriation','dividend','reserve','trading account','company account','annual report'] },
+    { id: 'amalgamation',    unit: 'Unit VI',  label: 'Amalgamation & Reconstruction',  short: 'Amalgamation',    keywords: ['amalgamation','absorption','reconstruction','holding company','subsidiary','merger','liquidation'] },
+    { id: 'accounting-fund', unit: 'General',  label: 'Accounting Fundamentals',        short: 'Fundamentals',    keywords: ['fundamental','basic','accounting concept','principle','convention','journal','ledger','trial balance','accrual','going concern'] },
+  ],
+  'business mathematics and statistics 1': [
+    { id: 'matrices',        unit: 'Unit I',   label: 'Matrices & Determinants',        short: 'Matrices',        keywords: ['matrix','matrices','determinant','cramer','adjoint','inverse matrix','singular'] },
+    { id: 'sets',            unit: 'Unit II',  label: 'Sets, Relations & Functions',    short: 'Sets',            keywords: ['set','relation','subset','union','intersection','complement','venn diagram','function','domain','range'] },
+    { id: 'differentiation', unit: 'Unit III', label: 'Differentiation & Applications', short: 'Differentiation', keywords: ['differentiation','derivative','calculus','rate of change','marginal cost','maxima','minima','chain rule','product rule'] },
+    { id: 'integration',     unit: 'Unit IV',  label: 'Integration',                    short: 'Integration',     keywords: ['integration','integral','antiderivative','definite integral','indefinite integral','area under curve'] },
+    { id: 'central-tendency',unit: 'Unit V',   label: 'Measures of Central Tendency',   short: 'Central Tend.',   keywords: ['mean','median','mode','average','central tendency','arithmetic mean','geometric mean','harmonic mean','weighted mean'] },
+    { id: 'dispersion',      unit: 'Unit VI',  label: 'Measures of Dispersion',          short: 'Dispersion',      keywords: ['dispersion','range','quartile deviation','mean deviation','standard deviation','variance','coefficient of variation'] },
+    { id: 'correlation',     unit: 'Unit VII', label: 'Correlation & Regression',        short: 'Correlation',     keywords: ['correlation','regression','karl pearson','rank correlation','spearman','scatter diagram','regression line','regression equation'] },
+    { id: 'index-numbers',   unit: 'Unit VIII',label: 'Index Numbers & Time Series',     short: 'Index Numbers',   keywords: ['index number','laspeyres','paasche','fisher','price index','quantity index','time series','trend','seasonal','cyclical'] },
+  ],
+  'business economics': [
+    { id: 'demand-supply',   unit: 'Unit I',   label: 'Demand & Supply Analysis',       short: 'Demand/Supply',   keywords: ['demand','supply','law of demand','law of supply','equilibrium','elasticity','price elasticity','income elasticity'] },
+    { id: 'production',      unit: 'Unit II',  label: 'Theory of Production & Cost',    short: 'Production',      keywords: ['production','cost','total cost','marginal cost','average cost','returns to scale','isoquant','factor of production','variable cost','fixed cost'] },
+    { id: 'market',          unit: 'Unit III', label: 'Market Structures',               short: 'Markets',         keywords: ['market structure','perfect competition','monopoly','oligopoly','monopolistic','price discrimination','kinked demand'] },
+    { id: 'national-income', unit: 'Unit IV',  label: 'National Income & Money',         short: 'Macro Economics', keywords: ['national income','gdp','gnp','money','banking','inflation','deflation','monetary policy','fiscal policy','multiplier','balance of payment'] },
+  ],
+  'financial accounting': [
+    { id: 'basic-accounting',unit: 'Unit I',   label: 'Basic Accounting Concepts',      short: 'Basic Accounting',keywords: ['journal','ledger','trial balance','double entry','accounting equation','debit','credit','basic','fundamental'] },
+    { id: 'final-accounts-fa',unit:'Unit II',  label: 'Final Accounts (Sole Trader)',   short: 'Final Accounts',  keywords: ['trading account','profit loss','balance sheet','sole trader','proprietor','final account','capital account','drawings'] },
+    { id: 'depreciation-fa', unit: 'Unit III', label: 'Depreciation Methods',           short: 'Depreciation',    keywords: ['depreciation','straight line','written down','slm','wdv','provision','depletion'] },
+    { id: 'bills',           unit: 'Unit IV',  label: 'Bills of Exchange & Promissory', short: 'Bills',           keywords: ['bill of exchange','promissory note','accommodation bill','dishonour','endorsement','drawer','drawee','payee','acceptor'] },
+    { id: 'partnership',     unit: 'Unit V',   label: 'Partnership Accounts',           short: 'Partnership',     keywords: ['partnership','partner','profit sharing','admission','retirement','death','dissolution','garner','goodwill','revaluation'] },
+  ],
+};
+
+// Fallback syllabus for any unrecognised subject
+function getTopicsForSubject(subject: string): OUTopic[] {
+  const key = subject.toLowerCase();
+  // Exact match
+  if (OU_SYLLABUS[key]) return OU_SYLLABUS[key];
+  // Substring match
+  for (const [k, v] of Object.entries(OU_SYLLABUS)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  // Default fallback — generic topics
+  return [
+    { id: 'unit1', unit: 'Unit I',   label: 'Unit I',   short: 'Unit I',   keywords: [] },
+    { id: 'unit2', unit: 'Unit II',  label: 'Unit II',  short: 'Unit II',  keywords: [] },
+    { id: 'unit3', unit: 'Unit III', label: 'Unit III', short: 'Unit III', keywords: [] },
+    { id: 'unit4', unit: 'Unit IV',  label: 'Unit IV',  short: 'Unit IV',  keywords: [] },
+    { id: 'unit5', unit: 'Unit V',   label: 'Unit V',   short: 'Unit V',   keywords: [] },
+  ];
+}
+
+// Map an assignment to the best-matching OU topic
+function mapAssignmentToTopic(assign: any, topics: OUTopic[]): string {
+  const text = [
+    assign.title || '',
+    (assign.tasks || []).map((t: any) => [t.question, t.description, t.title, t.topic].filter(Boolean).join(' ')).join(' '),
+    assign.instructions || '',
+    (assign.objectives || []).join(' '),
+    assign.subject || '',
+    assign.topic || '',
+  ].join(' ').toLowerCase();
+
+  let bestTopic = topics[topics.length - 1]?.id || 'general'; // default = last (usually "General")
+  let bestScore = 0;
+
+  for (const topic of topics) {
+    if (!topic.keywords.length) continue;
+    const hits = topic.keywords.filter(kw => text.includes(kw)).length;
+    if (hits > bestScore) { bestScore = hits; bestTopic = topic.id; }
+  }
+  return bestTopic;
+}
+
+// Fuzzy class name normalizer
+function normCls(s: string | undefined): string {
+  return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+function classMatches(a: string | undefined, b: string | undefined): boolean {
+  const na = normCls(a); const nb = normCls(b);
+  if (!na || !nb) return true;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+// Fuzzy subject match
+function subjectMatches(assignSub: string | undefined, teacherSub: string): boolean {
+  if (!assignSub) return true; // no subject → include always
+  const a = assignSub.toLowerCase(); const b = teacherSub.toLowerCase();
+  return a === b || b.includes(a) || a.includes(b);
+}
+
+// Score → label + CSS classes
+function scoreLevel(score: number | null): { label: string; bg: string; text: string; bar: string } {
+  if (score === null)  return { label: '—',        bg: 'bg-gray-100',            text: 'text-gray-400',   bar: 'bg-gray-200' };
+  if (score >= 75)     return { label: `${score}%`, bg: 'bg-emerald-50',          text: 'text-emerald-700',bar: 'bg-emerald-500' };
+  if (score >= 50)     return { label: `${score}%`, bg: 'bg-amber-50',            text: 'text-amber-700',  bar: 'bg-amber-400' };
+  return               { label: `${score}%`, bg: 'bg-red-50',              text: 'text-red-700',    bar: 'bg-red-500' };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────────────────────
 export default function TeacherHeatmap() {
   const { profile, loading } = useAuth();
   const router = useRouter();
 
-  // subjectColumns: one entry per subject the teacher teaches
-  // each entry has the subject name + per-student average scores
-  const [students, setStudents] = useState<any[]>([]);
-  const [subjectColumns, setSubjectColumns] = useState<{ subject: string; scores: Record<string, number | null> }[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [selectedClass,    setSelectedClass]    = useState<string>('');
+  const [selectedSubject,  setSelectedSubject]  = useState<string>('');
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [teacherSubjects,  setTeacherSubjects]  = useState<string[]>([]);
+  const [students,         setStudents]         = useState<any[]>([]);
+  const [topicCols,        setTopicCols]        = useState<OUTopic[]>([]);
+  // topicScores[studentId][topicId] = score | null
+  const [topicScores,      setTopicScores]      = useState<Record<string, Record<string, number | null>>>({});
+  const [overallScores,    setOverallScores]    = useState<Record<string, number | null>>({});
+  const [isLoading,        setIsLoading]        = useState(false);
+  const [showTooltip,      setShowTooltip]      = useState<string | null>(null);
 
-  // Auto-select the first subject this teacher teaches when profile loads
+  // ── Guard ──
   useEffect(() => {
-    if (!profile?.assignments || selectedSubject) return;
-    const first = (profile.assignments as any[]).find(a => a.subject)?.subject;
-    if (first) setSelectedSubject(first);
-  }, [profile?.assignments]);
-
-
-  useEffect(() => {
-    if (!loading && (!profile || profile.role !== 'teacher')) {
-      router.push('/login');
-    }
+    if (!loading && (!profile || profile.role !== 'teacher')) router.push('/login');
   }, [profile, loading, router]);
 
-  // Class list is populated dynamically after fetching students — no hardcoded defaults
-
+  // ── Derive teacher subjects + classes from profile ──
   useEffect(() => {
-    const fetchHeatmapData = async () => {
-      if (!profile?.schoolId) return;
-      const schoolId = profile.schoolId;
-      setIsLoadingData(true);
+    if (!profile?.assignments) return;
+    const subs: string[] = [...new Set((profile.assignments as any[]).map((a: any) => a.subject).filter(Boolean))];
+    const clss: string[] = [...new Set((profile.assignments as any[]).map((a: any) => a.class).filter(Boolean))];
+    setTeacherSubjects(subs);
+    if (!selectedSubject && subs.length > 0) setSelectedSubject(subs[0]);
+    if (!selectedClass   && clss.length > 0) setSelectedClass(clss[0]);
+  }, [profile?.assignments]);
 
+  // ── Fetch data whenever class or subject changes ──
+  useEffect(() => {
+    if (!profile?.schoolId || !selectedSubject) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        // Get auth token
         const idToken = await getAuth().currentUser?.getIdToken();
-
         const headers = {
           'Content-Type': 'application/json',
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         };
+        const schoolId = profile.schoolId;
 
-        // ── 1. Fetch students via Admin SDK API ──────────────────────────────
+        // 1. Fetch all students
         const studRes = await fetch('/api/teacher/get-students', {
           method: 'POST', headers,
           body: JSON.stringify({ schoolId }),
         });
-        const studData = await studRes.json();
-        if (!studRes.ok) throw new Error(studData.error || 'Failed to fetch students');
-        const allStudents: any[] = studData.students || [];
+        const studJson = await studRes.json();
+        const allStudents: any[] = studJson.students || [];
 
-        // ── 2. Fetch ALL school assignments (no teacherId filter) ───────────────────────
-        // We intentionally omit teacherId here because some assignments are created
-        // without a matching teacherId/createdBy field (e.g. via AI Assistant or admin tools).
-        // Security: results are filtered below by the teacher's own class + subject,
-        // so only their relevant students' data is displayed.
-        const assignRes = await fetch('/api/teacher/get-assignments', {
-          method: 'POST', headers,
-          body: JSON.stringify({ schoolId }),  // no teacherId → returns all school assignments
-        });
-
-        const assignData = await assignRes.json();
-        if (!assignRes.ok) throw new Error(assignData.error || 'Failed to fetch assignments');
-        const allAssignments: any[] = assignData.assignments || [];
-
-        // ── 3. Discover classes from student data ──────────────────────────
-        const classSet = new Set<string>();
-        allStudents.forEach(s => { 
-          if (s.studentClass) classSet.add(s.studentClass);
-          if (s.branch) classSet.add(s.branch);  // college students use branch
-        });
-        const discoveredClasses = Array.from(classSet).sort();
-        const teacherAssignedClasses = [
-          ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
-          ...(profile.teacherClass ? [profile.teacherClass] : []),
-        ];
-        const uniqueTeacherClasses = [...new Set(teacherAssignedClasses)];
-        const classesToShow = uniqueTeacherClasses.length > 0 ? uniqueTeacherClasses : discoveredClasses;
-        setAvailableClasses(classesToShow);
-
-        const activeClass = selectedClass && classesToShow.some(c => c.toLowerCase() === selectedClass.toLowerCase())
-          ? selectedClass : (classesToShow[0] || '');
-        if (activeClass !== selectedClass) {
-          setSelectedClass(activeClass);
-          setIsLoadingData(false);
-          return;
-        }
-
-        // ── Class-name normaliser (handles B.Com vs B.Commerce vs B.commerce) ──
-        const normCls = (c: string) => (c || '').toLowerCase().replace(/[\s.\-_]/g, '');
-        const classMatches = (a: string, b: string) => {
-          const na = normCls(a); const nb = normCls(b);
-          if (!na || !nb) return true; // either side blank → no filter
-          if (na === nb) return true;
-          const short = na.length < nb.length ? na : nb;
-          const long  = na.length < nb.length ? nb : na;
-          return long.startsWith(short.substring(0, 4)); // 'bcom' ⊆ 'bcommerce'
-        };
-
-        // ── 4. Filter students to active class & teacher's assignment ──────
-        const uniqueClasses = uniqueTeacherClasses;
-        let classStudents = activeClass
-          ? allStudents.filter(s =>
-              classMatches(s.studentClass, activeClass) ||
-              classMatches(s.branch, activeClass)
-            )
+        // 2. Filter to selected class
+        const classStudents = selectedClass
+          ? allStudents.filter(s => classMatches(s.studentClass || s.branch || s.class, selectedClass))
           : allStudents;
-        if (uniqueClasses.length > 0) {
-          classStudents = classStudents.filter(s =>
-            uniqueClasses.some(uc =>
-              classMatches(s.studentClass, uc) || classMatches(s.branch, uc)
-            )
-          );
-        }
-
-        // If a specific subject is selected, further filter to only students assigned to that subject
-        if (selectedSubject) {
-          const subjectAssign = (profile.assignments || []).find(
-            (a: any) => a.class?.toLowerCase() === activeClass.toLowerCase() &&
-                        a.subject?.toLowerCase() === selectedSubject.toLowerCase()
-          );
-          if (subjectAssign?.assignedStudents?.length > 0) {
-            const assignedSet = new Set(subjectAssign.assignedStudents as string[]);
-            // Match against BOTH Firestore doc ID and customStudentId
-            classStudents = classStudents.filter(s =>
-              (s.id && assignedSet.has(s.id)) ||
-              (s.customStudentId && assignedSet.has(s.customStudentId))
-            );
-          }
-        }
-
         setStudents(classStudents);
 
-        // ── 5. Determine teacher's subjects for this class ────────────────
-        const allTeacherSubjects: string[] = [...new Set(
-          (profile.assignments ?? [])
-            .filter((a: any) => !activeClass || a.class?.toLowerCase() === activeClass.toLowerCase())
-            .map((a: any) => a.subject)
-            .filter(Boolean)
-        )] as string[];
+        if (classStudents.length === 0) { setTopicCols([]); setTopicScores({}); setOverallScores({}); return; }
 
-        // If a subject is selected, only show that column; otherwise show all
-        const teacherSubjects = selectedSubject
-          ? [selectedSubject]
-          : allTeacherSubjects;
+        // Update available classes
+        const clsSet = [...new Set(allStudents.map(s => s.studentClass || s.branch || s.class).filter(Boolean))] as string[];
+        setAvailableClasses(clsSet);
 
-        // ── 6. Filter assignments by class + subject ─────────────────────────────────────────────
-        // Uses fuzzy class match + substring subject match (e.g. "ACCOUNTING" matches "Corporate Accounting")
-        const relevant = allAssignments.filter((a: any) => {
-          const classOk = !activeClass || classMatches(a.class, activeClass);
-          const aSubLower = (a.subject || '').toLowerCase();
-          const subjectOk = !a.subject || teacherSubjects.length === 0 || teacherSubjects.some(ts => {
-            const tsLower = ts.toLowerCase();
-            // Accept: exact match, or either string contains the other as a substring
-            return tsLower === aSubLower || tsLower.includes(aSubLower) || aSubLower.includes(tsLower);
-          });
-          return classOk && subjectOk;
+        // 3. Fetch all school assignments (no teacherId filter — catches all variants)
+        const assignRes = await fetch('/api/teacher/get-assignments', {
+          method: 'POST', headers,
+          body: JSON.stringify({ schoolId }),
+        });
+        const assignJson = await assignRes.json();
+        const allAssignments: any[] = assignJson.assignments || [];
+
+        // 4. Filter to selected subject + class
+        const relevant = allAssignments.filter(a =>
+          classMatches(a.class || a.targetClass, selectedClass) &&
+          subjectMatches(a.subject, selectedSubject)
+        );
+
+        // 5. Get OU topics for the selected subject
+        const topics = getTopicsForSubject(selectedSubject);
+        setTopicCols(topics);
+
+        // 6. Build: topicId → assignments
+        const byTopic: Record<string, any[]> = {};
+        topics.forEach(t => { byTopic[t.id] = []; });
+        relevant.forEach(a => {
+          const tid = mapAssignmentToTopic(a, topics);
+          if (!byTopic[tid]) byTopic[tid] = [];
+          byTopic[tid].push(a);
         });
 
-        // Fallback subject for no-subject assignments: selected subject or first teacher subject
-        const fallbackSubject = selectedSubject || teacherSubjects[0] || 'General';
+        // 7. Compute per-student, per-topic scores (most recent submission)
+        const newTopicScores: Record<string, Record<string, number | null>> = {};
+        const newOverall: Record<string, number | null> = {};
 
-        // Group assignments by subject (normalise case + bucket no-subject into active column)
-        const bySubject: Record<string, any[]> = {};
-        relevant.forEach((a: any) => {
-          let subj: string;
-          if (!a.subject) {
-            // Legacy assignment with no subject → bucket under the active subject column
-            subj = fallbackSubject;
-          } else {
-            // Normalise to canonical subject name using substring match
-            // e.g. assignment.subject="Accounting" → buckets into "Corporate Accounting"
-            const aSubLower = a.subject.toLowerCase();
-            const matched = teacherSubjects.find(ts => {
-              const tsLower = ts.toLowerCase();
-              return tsLower === aSubLower || tsLower.includes(aSubLower) || aSubLower.includes(tsLower);
-            });
-            subj = matched || a.subject;
-          }
-          if (!bySubject[subj]) bySubject[subj] = [];
-          bySubject[subj].push(a);
+        classStudents.forEach(s => {
+          newTopicScores[s.id] = {};
+          topics.forEach(t => { newTopicScores[s.id][t.id] = null; });
         });
 
-        const subjectOrder = teacherSubjects.length > 0 ? teacherSubjects : Object.keys(bySubject);
-        subjectOrder.forEach(s => { if (!bySubject[s]) bySubject[s] = []; });
+        for (const topic of topics) {
+          const assigns = byTopic[topic.id] || [];
 
-        // ── 7. Compute per-student averages from submission data already in assignment ─
-        const subjectCols: { subject: string; scores: Record<string, number | null> }[] = [];
+          // Track most-recent submission per student for this topic
+          const latestDate:  Record<string, number>         = {};
+          const latestScore: Record<string, number | null>  = {};
+          classStudents.forEach(s => { latestDate[s.id] = 0; latestScore[s.id] = null; });
 
-        for (const subject of subjectOrder) {
-          const subjectAssignments = bySubject[subject] || [];
-          const studentTotals: Record<string, { sum: number; count: number; hasSubmission: boolean }> = {};
-          classStudents.forEach(s => { studentTotals[s.id] = { sum: 0, count: 0, hasSubmission: false }; });
+          for (const assign of assigns) {
+            const subData = assign.submittedData || {};
 
-          for (const assign of subjectAssignments) {
-            const submittedData = assign.submittedData || {};
-
-            // Build fast lookup maps to handle Firestore doc ID ≠ Auth UID edge cases
-            // The submission doc key = student's Auth UID (from profile.uid at submission time)
-            // The student's s.id in get-students = their Firestore doc ID (may differ from Auth UID)
-            const subByDocKey: Record<string, any> = {};    // keyed by the submission doc ID
-            const subByCustomId: Record<string, any> = {};   // keyed by sub.customStudentId field
-            const subByStudentId: Record<string, any> = {};  // keyed by sub.studentId field
-            Object.entries(submittedData).forEach(([key, sub]: [string, any]) => {
-              subByDocKey[key] = sub;
-              if (sub?.customStudentId) subByCustomId[sub.customStudentId] = sub;
-              if (sub?.studentId && sub.studentId !== key) subByStudentId[sub.studentId] = sub;
+            // Build 3-way lookup (doc-key, customStudentId, studentId field)
+            const byKey:      Record<string, any> = {};
+            const byCustomId: Record<string, any> = {};
+            const byStdId:    Record<string, any> = {};
+            Object.entries(subData).forEach(([key, sub]: [string, any]) => {
+              byKey[key] = sub;
+              if (sub?.customStudentId) byCustomId[sub.customStudentId] = sub;
+              if (sub?.studentId && sub.studentId !== key) byStdId[sub.studentId] = sub;
             });
 
             classStudents.forEach(s => {
-              // Try every possible ID that could key this student's submission
-              const sub = subByDocKey[s.id] ||
-                          (s.customStudentId ? subByCustomId[s.customStudentId] : null) ||
-                          subByStudentId[s.id] || null;
+              const sub = byKey[s.id] ||
+                          (s.customStudentId ? byCustomId[s.customStudentId] : null) ||
+                          byStdId[s.id] || null;
               if (!sub) return;
-              // Submission found — mark as submitted regardless of score
-              studentTotals[s.id].hasSubmission = true;
-              const score = sub?.score ?? sub?.aiResult?.totalScore;
-              const max = sub?.maxScore ?? sub?.aiResult?.maxTotalScore ?? 10;
-              if (score != null) {
-                studentTotals[s.id].sum += (score / max) * 100;
-                studentTotals[s.id].count += 1;
+
+              // Resolve timestamp
+              const ts =
+                sub.submittedAt?.seconds ? sub.submittedAt.seconds * 1000
+                : sub.submittedAt?.toDate ? sub.submittedAt.toDate().getTime()
+                : assign.createdAt ? (typeof assign.createdAt === 'number' ? assign.createdAt : assign.createdAt?.seconds * 1000 || 0)
+                : 0;
+
+              if (ts >= latestDate[s.id]) {
+                latestDate[s.id] = ts;
+                const rawScore = sub.score ?? sub.aiResult?.totalScore;
+                const maxScore = sub.maxScore ?? sub.aiResult?.maxTotalScore ?? 10;
+                latestScore[s.id] = rawScore != null ? Math.round((rawScore / maxScore) * 100) : 0;
               }
-              // If score is null (AI grading failed), hasSubmission is true but count stays 0
-              // → final score resolves to 0% (At Risk) so teacher knows they submitted
             });
           }
 
-          const scores: Record<string, number | null> = {};
           classStudents.forEach(s => {
-            const t = studentTotals[s.id];
-            if (!t) { scores[s.id] = null; return; }
-            if (t.count > 0) scores[s.id] = Math.round(t.sum / t.count);  // real score
-            else if (t.hasSubmission) scores[s.id] = 0;                     // submitted but ungraded → 0%
-            else scores[s.id] = null;                                        // never submitted → No Data
+            newTopicScores[s.id][topic.id] = latestScore[s.id];
           });
-          subjectCols.push({ subject, scores });
         }
 
-        setSubjectColumns(subjectCols);
+        // 8. Compute overall per student = average of all topics that have data
+        classStudents.forEach(s => {
+          const vals = topics.map(t => newTopicScores[s.id][t.id]).filter(v => v !== null) as number[];
+          newOverall[s.id] = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+        });
+
+        setTopicScores(newTopicScores);
+        setOverallScores(newOverall);
       } catch (err: any) {
-        console.error('[heatmap] Error:', err);
-        alert(`Heatmap load failed: ${err.message}`);
+        console.error('[heatmap]', err);
       } finally {
-        setIsLoadingData(false);
+        setIsLoading(false);
       }
     };
 
-    fetchHeatmapData();
+    fetchData();
   }, [profile?.schoolId, selectedClass, selectedSubject]);
 
-
-
-
-
-  const getScoreColor = (score: number | null) => {
-    if (score === null) return { bg: 'bg-gray-50', text: 'text-gray-400', bar: 'bg-gray-200', border: 'border-gray-100', label: 'No Data' };
-    if (score >= 85) return { bg: 'bg-emerald-50', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-200', label: 'Excellent' };
-    if (score >= 70) return { bg: 'bg-teal-50', text: 'text-teal-700', bar: 'bg-teal-400', border: 'border-teal-200', label: 'Good' };
-    if (score >= 55) return { bg: 'bg-amber-50', text: 'text-amber-700', bar: 'bg-amber-400', border: 'border-amber-200', label: 'Average' };
-    return { bg: 'bg-rose-50', text: 'text-rose-700', bar: 'bg-rose-500', border: 'border-rose-200', label: 'At Risk' };
-  };
-
-  const getOverallAvg = (studentId: string) => {
-    const vals = subjectColumns.map(c => c.scores[studentId]).filter(v => v !== null) as number[];
-    return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-  };
-
-
-
-
-
   if (loading || !profile) return (
-    <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="w-10 h-10 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
-        <p className="text-[#002147] font-semibold tracking-wide">Loading Diagnostics...</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
+  const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const avatarBg = (name: string) => {
+    const colors = ['bg-indigo-500','bg-violet-500','bg-sky-500','bg-emerald-500','bg-rose-500','bg-amber-500','bg-teal-500','bg-pink-500'];
+    return colors[name.charCodeAt(0) % colors.length];
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-16 font-sans">
-
-      {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-40 backdrop-blur-xl bg-white/80">
-        <div className="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/teacher" className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200/60">
-              <ArrowLeft className="w-5 h-5 text-gray-500" />
-            </Link>
+    <div className="min-h-screen bg-gray-50">
+      {/* ── Header ── */}
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
+        <div className="max-w-full px-4 py-3 flex items-center gap-3">
+          <Link href="/teacher" className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
             <div>
-              <div className="flex items-center space-x-2 text-blue-600 text-xs font-bold uppercase tracking-wider mb-0.5">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>Diagnostic Engine</span>
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#002147]">Class Heatmap</h1>
+              <h1 className="font-bold text-gray-900 text-base leading-tight">Class Heatmap</h1>
+              <p className="text-xs text-gray-500">OU B.Com Topic-wise Mastery</p>
             </div>
           </div>
+          {isLoading && <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin" />}
+        </div>
 
-          <div className="flex items-center gap-3">
-            {/* Legend */}
-            <div className="hidden md:flex items-center gap-3 text-xs font-semibold px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"/> Excellent</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400"/> Average</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"/> At Risk</span>
-            </div>
-            {/* Subject selector — always visible, no 'All Subjects' option */}
-            {(() => {
-              const subjectsForClass = [...new Set(
-                (profile?.assignments || []).filter((a: any) => !selectedClass || a.class === selectedClass).map((a: any) => a.subject).filter(Boolean)
-              )] as string[];
-              if (subjectsForClass.length === 0) return null;
-              return (
-                <div className="relative">
-                  <select
-                    value={selectedSubject}
-                    onChange={e => setSelectedSubject(e.target.value)}
-                    className="appearance-none bg-indigo-50 border border-indigo-200 hover:border-indigo-300 rounded-xl pl-4 pr-9 py-2.5 text-indigo-800 font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/20 cursor-pointer"
-                  >
-                    {subjectsForClass.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none" />
-                </div>
-              );
-            })()}
-            {/* Class selector — hidden, auto-selected in background */}
+        {/* Filters */}
+        <div className="px-4 pb-3 flex gap-2 flex-wrap">
+          {/* Subject */}
+          <div className="relative">
+            <select
+              value={selectedSubject}
+              onChange={e => setSelectedSubject(e.target.value)}
+              className="appearance-none bg-indigo-600 text-white text-sm font-semibold pl-3 pr-8 py-2 rounded-xl cursor-pointer"
+            >
+              {teacherSubjects.length === 0 && <option value="">No subjects</option>}
+              {teacherSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 text-white pointer-events-none" />
           </div>
 
+          {/* Class */}
+          <div className="relative">
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm font-medium pl-3 pr-8 py-2 rounded-xl cursor-pointer"
+            >
+              <option value="">All Classes</option>
+              {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-3 ml-auto text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />≥75% Excellent</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-400 inline-block" />50–74% Average</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" />&lt;50% At Risk</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-200 inline-block" />No Data</span>
+          </div>
         </div>
       </div>
 
-      {/* ── Body ────────────────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
+      {/* ── Subject + Unit label ── */}
+      {selectedSubject && (
+        <div className="px-4 pt-4 pb-1">
+          <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+            {selectedSubject} — Osmania University B.Com Syllabus
+          </p>
+        </div>
+      )}
 
-        {isLoadingData ? (
-          <div className="space-y-4">
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 animate-pulse flex items-center gap-6">
-                <div className="w-36 h-4 bg-gray-100 rounded-full" />
-                <div className="flex gap-4 flex-1">
-                  <div className="flex-1 h-16 bg-gray-50 rounded-xl" />
-                  <div className="flex-1 h-16 bg-gray-50 rounded-xl" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : students.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 py-28 flex flex-col items-center text-center shadow-sm">
-            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-5">
-              <AlertTriangle className="w-9 h-9 text-blue-400" />
-            </div>
-            <h3 className="text-xl font-bold text-[#002147] mb-2">No Students Found</h3>
-            <p className="text-gray-400 max-w-sm text-sm">
-              No students are assigned to {selectedClass || 'this class'} yet.
-              Make sure students are registered and assigned in the admin portal.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* ── Column headers (desktop only) ─────────────────────────── */}
-            <div className="hidden md:flex items-center gap-4 px-5 pb-1">
-              <div className="w-48 shrink-0" />
-              {subjectColumns.map(col => (
-                <div key={col.subject} className="flex-1 text-center">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5" />{col.subject}
-                  </span>
-                </div>
-              ))}
-              <div className="w-28 shrink-0 text-center">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
-                  <BarChart2 className="w-3.5 h-3.5" />Overall
-                </span>
-              </div>
-            </div>
+      {/* ── Loading State ── */}
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Loading topic-wise mastery…</p>
+        </div>
+      )}
 
-            {/* ── Student rows ───────────────────────────────────────── */}
-            {students.map((student) => {
-              const overall = getOverallAvg(student.id);
-              const overallColor = getScoreColor(overall);
-              const isAtRisk = overall !== null && overall < 55;
+      {/* ── Empty State ── */}
+      {!isLoading && students.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
+          <BookOpen className="w-12 h-12 opacity-30" />
+          <p className="text-base font-medium">No students found for this class</p>
+        </div>
+      )}
 
-              return (
-                <div
-                  key={student.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-200 p-4 sm:p-5"
-                >
-                  {/* Top row: avatar + name + overall badge */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 border border-blue-300 flex items-center justify-center text-blue-700 font-bold text-sm shadow-inner shrink-0">
-                      {student.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[#002147] truncate text-sm">{student.name}</p>
-                      {isAtRisk && (
-                        <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wide flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse inline-block" />
-                          At Risk
-                        </span>
+      {/* ── Main Grid ── */}
+      {!isLoading && students.length > 0 && topicCols.length > 0 && (
+        <div className="px-2 pb-8 pt-2 overflow-x-auto">
+          <table className="w-full border-collapse" style={{ minWidth: `${Math.max(700, topicCols.length * 110 + 220)}px` }}>
+            <thead>
+              <tr>
+                {/* Student header */}
+                <th className="sticky left-0 z-20 bg-white border-b-2 border-gray-200 text-left px-4 py-3 w-44">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Student</span>
+                </th>
+                {/* Topic headers */}
+                {topicCols.map(topic => (
+                  <th
+                    key={topic.id}
+                    className="border-b-2 border-gray-200 px-2 py-3 text-center min-w-[100px] max-w-[130px] cursor-help"
+                    onMouseEnter={() => setShowTooltip(topic.id)}
+                    onMouseLeave={() => setShowTooltip(null)}
+                  >
+                    <div className="relative">
+                      <p className="text-xs font-bold text-gray-700 leading-tight">{topic.short}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{topic.unit}</p>
+                      {showTooltip === topic.id && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-50 shadow-xl">
+                          {topic.label}
+                        </div>
                       )}
                     </div>
-                    {/* Overall score — always visible */}
-                    <Link href={`/teacher/mastery?studentId=${student.id}`}>
-                      <div className={`rounded-xl border ${overallColor.bg} ${overallColor.border} px-3 py-2 text-center min-w-[60px] hover:shadow-md transition-all`}>
-                        <div className={`text-base font-black ${overallColor.text}`}>
-                          {overall !== null ? `${overall}%` : '—'}
+                  </th>
+                ))}
+                {/* Overall header */}
+                <th className="border-b-2 border-gray-200 px-3 py-3 text-center min-w-[90px] bg-indigo-50">
+                  <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Overall</p>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((student, idx) => {
+                const overall = overallScores[student.id];
+                const ovLevel = scoreLevel(overall);
+                return (
+                  <tr key={student.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}>
+                    {/* Student cell */}
+                    <td className="sticky left-0 z-10 px-4 py-3 border-b border-gray-100"
+                        style={{ background: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${avatarBg(student.name || 'S')}`}>
+                          {initials(student.name || 'S')}
                         </div>
-                        <div className={`text-[9px] font-bold uppercase tracking-wide ${overallColor.text} opacity-70`}>Overall</div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{student.name}</p>
+                          <p className="text-xs text-gray-400 truncate">{student.studentClass || student.branch || student.class || '—'}</p>
+                        </div>
                       </div>
-                    </Link>
-                  </div>
+                    </td>
 
-                  {/* Subject chips row */}
-                  {subjectColumns.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {subjectColumns.map(col => {
-                        const score = col.scores[student.id];
-                        const c = getScoreColor(score);
-                        return (
-                          <div key={col.subject} className={`flex items-center gap-1.5 rounded-xl border ${c.bg} ${c.border} px-3 py-1.5`}>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">{col.subject}:</span>
-                            <span className={`text-sm font-black ${c.text}`}>{score !== null ? `${score}%` : '—'}</span>
-                            <span className={`text-[9px] font-bold ${c.text} opacity-60`}>{c.label}</span>
+                    {/* Topic cells */}
+                    {topicCols.map(topic => {
+                      const score = topicScores[student.id]?.[topic.id] ?? null;
+                      const lv = scoreLevel(score);
+                      return (
+                        <td key={topic.id} className={`px-2 py-3 text-center border-b border-gray-100 ${lv.bg}`}>
+                          <div className="flex flex-col items-center gap-1">
+                            <span className={`text-sm font-bold ${lv.text}`}>{lv.label}</span>
+                            {score !== null && (
+                              <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${lv.bar} transition-all duration-500`}
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        </td>
+                      );
+                    })}
+
+                    {/* Overall cell */}
+                    <td className={`px-3 py-3 text-center border-b border-gray-100 bg-indigo-50/60`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className={`text-base font-bold ${ovLevel.text}`}>{ovLevel.label}</span>
+                        {overall !== null && (
+                          <div className="w-14 h-1.5 bg-indigo-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${ovLevel.bar} transition-all duration-500`}
+                              style={{ width: `${overall}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* ── Topic Legend Cards ── */}
+          <div className="mt-6 px-2">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+              OU {selectedSubject} — Unit breakdown
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {topicCols.map(topic => (
+                <div key={topic.id} className="bg-white border border-gray-100 rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm">
+                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{topic.unit}</span>
+                  <span className="text-xs text-gray-700 font-medium">{topic.label}</span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* ── Submission count info ── */}
+          <div className="mt-4 px-2 flex items-start gap-2 text-xs text-gray-400">
+            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <p>
+              Each cell shows the score from the student&apos;s most recent submission for that OU topic.
+              Topics are automatically matched from assignment titles and tasks.
+              Scores &lt;50% = At Risk, 50–74% = Average, ≥75% = Excellent.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

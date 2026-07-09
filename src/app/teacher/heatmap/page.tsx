@@ -174,20 +174,43 @@ export default function TeacherHeatmap() {
         const studJson = await studRes.json();
         const allStudents: any[] = studJson.students || [];
 
-        // 2. Filter to ONLY students assigned to this teacher for the selected subject
-        // profile.assignments entries have: { class, subject, assignedStudents: [studentId, ...] }
-        const assignedIds = new Set<string>(
-          ((profile as any).assignments || [])
-            .filter((a: any) => subjectMatches(a.subject, selectedSubject))
-            .flatMap((a: any) => a.assignedStudents || [])
+        // 2. Determine which students to show
+        // Stage A: If the admin has explicitly assigned students to this teacher via the Edit button,
+        //          use ONLY those students for the selected subject.
+        // Stage B: If no assignments have been configured yet, fall back to class-based filter
+        //          (same behaviour as before — shows all students in the teacher's class).
+        const teacherHasAssignedStudents = ((profile as any).assignments || []).some(
+          (a: any) => Array.isArray(a.assignedStudents) && a.assignedStudents.length > 0
         );
 
-        // If class filter is also active, further narrow
-        const classStudents = allStudents.filter((s: any) => {
-          const inAssigned = assignedIds.size > 0 ? assignedIds.has(s.id) : true;
-          const inClass = !selectedClass || classMatches(s.studentClass || s.branch || s.class, selectedClass);
-          return inAssigned && inClass;
-        });
+        let classStudents: any[];
+        if (teacherHasAssignedStudents) {
+          // Strict filter: only students explicitly assigned for the selected subject
+          const assignedIds = new Set<string>(
+            ((profile as any).assignments || [])
+              .filter((a: any) => subjectMatches(a.subject, selectedSubject))
+              .flatMap((a: any) => a.assignedStudents || [])
+          );
+          classStudents = allStudents.filter((s: any) => assignedIds.has(s.id));
+        } else {
+          // Fallback: show students that match the teacher's class/branch
+          // Check studentClass (school) and branch (college) fields
+          const normS = (v: any) => (v || '').toLowerCase().replace(/[\s.]/g, '');
+          const teacherClasses = new Set<string>(
+            ((profile as any).assignments || []).map((a: any) => normS(a.class)).filter(Boolean)
+          );
+          classStudents = allStudents.filter((s: any) => {
+            if (selectedClass) {
+              return classMatches(s.studentClass || s.branch || s.class, selectedClass);
+            }
+            if (teacherClasses.size > 0) {
+              const sClass = normS(s.studentClass || s.branch || s.class || '');
+              return !sClass || teacherClasses.has(sClass) ||
+                [...teacherClasses].some(c => c.includes(sClass) || sClass.includes(c));
+            }
+            return true; // no class info → show all
+          });
+        }
 
         setStudents(classStudents);
 

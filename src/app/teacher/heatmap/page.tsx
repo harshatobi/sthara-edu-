@@ -174,10 +174,21 @@ export default function TeacherHeatmap() {
         const studJson = await studRes.json();
         const allStudents: any[] = studJson.students || [];
 
-        // 2. Filter to selected class
-        const classStudents = selectedClass
-          ? allStudents.filter(s => classMatches(s.studentClass || s.branch || s.class, selectedClass))
-          : allStudents;
+        // 2. Filter to ONLY students assigned to this teacher for the selected subject
+        // profile.assignments entries have: { class, subject, assignedStudents: [studentId, ...] }
+        const assignedIds = new Set<string>(
+          ((profile as any).assignments || [])
+            .filter((a: any) => subjectMatches(a.subject, selectedSubject))
+            .flatMap((a: any) => a.assignedStudents || [])
+        );
+
+        // If class filter is also active, further narrow
+        const classStudents = allStudents.filter((s: any) => {
+          const inAssigned = assignedIds.size > 0 ? assignedIds.has(s.id) : true;
+          const inClass = !selectedClass || classMatches(s.studentClass || s.branch || s.class, selectedClass);
+          return inAssigned && inClass;
+        });
+
         setStudents(classStudents);
 
         if (classStudents.length === 0) { setTopicCols([]); setTopicScores({}); setOverallScores({}); return; }

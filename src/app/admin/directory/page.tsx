@@ -6,21 +6,151 @@ import {
   Users, UserPlus, Trash2, Plus, Link as LinkIcon,
   CheckSquare, Square, GraduationCap, ShieldAlert,
   Sparkles, ChevronRight, Loader2, BookOpen, Search,
-  Filter, ArrowLeft
+  Filter, ArrowLeft, Pencil, X
 } from 'lucide-react';
+
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
+
 import { initializeApp, getApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 
-interface TeacherAssignment { class: string; subject: string; }
+interface TeacherAssignment { class: string; subject: string; assignedStudents?: string[]; }
 interface UserData {
   id: string; name: string; email: string; role: string;
-  studentClass?: string; customStudentId?: string;
+  studentClass?: string; branch?: string; customStudentId?: string;
   assignments?: TeacherAssignment[]; linkedStudents?: string[];
 }
+
+// ── Edit Teacher Modal ───────────────────────────────────────────────────────
+function EditTeacherModal({
+  teacher, allStudents, onClose, onSave,
+}: {
+  teacher: UserData;
+  allStudents: UserData[];
+  onClose: () => void;
+  onSave: (uid: string, assignments: TeacherAssignment[]) => Promise<void>;
+}) {
+  const [assignments, setAssignments] = useState<TeacherAssignment[]>(
+    (teacher.assignments || []).map(a => ({ ...a, assignedStudents: (a as any).assignedStudents || [] }))
+  );
+  const [saving, setSaving] = useState(false);
+
+  const studentsForClass = (cls: string) => {
+    const clsN = cls.toLowerCase().replace(/\s+/g, '');
+    return allStudents.filter(s => {
+      const sClass = ((s.studentClass || s.branch || '') as string).toLowerCase().replace(/\s+/g, '');
+      return sClass && (sClass === clsN || sClass.includes(clsN) || clsN.includes(sClass));
+    });
+  };
+
+  const toggle = (idx: number, studentId: string) =>
+    setAssignments(prev => prev.map((a, i) => {
+      if (i !== idx) return a;
+      const cur = a.assignedStudents || [];
+      return { ...a, assignedStudents: cur.includes(studentId) ? cur.filter(x => x !== studentId) : [...cur, studentId] };
+    }));
+
+  const selectAll = (idx: number) => {
+    const cls = assignments[idx].class;
+    const ids = studentsForClass(cls).map(s => s.id);
+    setAssignments(prev => prev.map((a, i) => i === idx ? { ...a, assignedStudents: ids } : a));
+  };
+
+  const clearAll = (idx: number) =>
+    setAssignments(prev => prev.map((a, i) => i === idx ? { ...a, assignedStudents: [] } : a));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try { await onSave(teacher.id, assignments); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h2 className="text-xl font-bold text-[#002147]">Edit Teacher — Assign Students</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{teacher.name} · {teacher.email}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100"><X className="w-5 h-5 text-gray-500" /></button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {assignments.length === 0 && (
+            <p className="text-gray-400 text-center py-8">No class-subject assignments found for this teacher.</p>
+          )}
+          {assignments.map((assign, idx) => {
+            const classStudents = studentsForClass(assign.class);
+            const selected = assign.assignedStudents || [];
+            return (
+              <div key={idx} className="border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-bold">{assign.subject || '—'}</p>
+                    <p className="text-white/70 text-xs mt-0.5">{assign.class || '—'}</p>
+                  </div>
+                  <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    {selected.length} / {classStudents.length} assigned
+                  </span>
+                </div>
+                <div className="p-4">
+                  <div className="flex gap-2 mb-4">
+                    <button onClick={() => selectAll(idx)} className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">Select All</button>
+                    <button onClick={() => clearAll(idx)} className="text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors">Clear All</button>
+                  </div>
+                  {classStudents.length === 0 ? (
+                    <p className="text-gray-400 text-sm text-center py-4">No students in class "{assign.class}"</p>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {classStudents.map(student => {
+                        const checked = selected.includes(student.id);
+                        return (
+                          <label key={student.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${
+                            checked ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-transparent hover:border-gray-200'
+                          }`}>
+                            <input type="checkbox" checked={checked} onChange={() => toggle(idx, student.id)} className="w-4 h-4 rounded accent-indigo-600" />
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-blue-200 flex items-center justify-center text-indigo-700 font-black text-xs flex-shrink-0">
+                              {(student.name || '?').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{student.name}</p>
+                              <p className="text-xs text-gray-400 truncate">{student.customStudentId || student.email}</p>
+                            </div>
+                            {checked && <CheckSquare className="w-4 h-4 text-indigo-600 flex-shrink-0" />}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-gray-100 flex gap-3 flex-shrink-0">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-colors">Cancel</button>
+          <button
+            onClick={handleSave} disabled={saving}
+            className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 function getRoleBadgeStyle(role: string) {
   switch (role) {
@@ -57,6 +187,8 @@ export default function AdminDirectory() {
   const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '' }]);
   const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
+  const [editingTeacher, setEditingTeacher] = useState<UserData | null>(null);
+
 
 
   useEffect(() => {
@@ -112,6 +244,18 @@ export default function AdminDirectory() {
       setUsers(prev => prev.filter(u => u.id !== uid));
     } catch (e: any) { alert('Delete failed: ' + e.message); }
   };
+
+  const handleSaveTeacher = async (uid: string, assignments: TeacherAssignment[]) => {
+    const subjectsTaught = [...new Set(assignments.map(a => a.subject).filter(Boolean))];
+    const updates = { assignments, subjectsTaught };
+    await Promise.allSettled([
+      updateDoc(doc(db, 'users', uid), updates),
+      updateDoc(doc(db, 'global_users', uid), updates),
+    ]);
+    setUsers(prev => prev.map(u => u.id === uid ? { ...u, ...updates } : u));
+    setEditingTeacher(null);
+  };
+
 
   const handleAssignmentChange = (idx: number, field: 'class' | 'subject', value: string) => {
     setTeacherAssignments(prev => prev.map((a, i) => i === idx ? { ...a, [field]: value } : a));
@@ -282,14 +426,26 @@ export default function AdminDirectory() {
                         )}
                       </td>
                       <td className="p-4 text-right">
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors"
-                          title="Remove User"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          {u.role === 'teacher' && (
+                            <button
+                              onClick={() => setEditingTeacher(u)}
+                              className="p-2 text-gray-400 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                              title="Edit teacher assignments"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors"
+                            title="Remove User"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
+
                     </tr>
                   ))}
                   {filtered.length === 0 && (
@@ -464,6 +620,16 @@ export default function AdminDirectory() {
           </form>
         </div>
       </div>
+
+      {/* Edit Teacher Modal */}
+      {editingTeacher && (
+        <EditTeacherModal
+          teacher={editingTeacher}
+          allStudents={allStudents}
+          onClose={() => setEditingTeacher(null)}
+          onSave={handleSaveTeacher}
+        />
+      )}
     </div>
   );
 }

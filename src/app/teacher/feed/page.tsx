@@ -133,25 +133,37 @@ export default function SituationalFeedPage() {
 
       let students: any[];
       if (teacherEnrolledIds.size > 0) {
-        // Filter to only enrolled students (match by customStudentId OR Firestore doc id)
+        // Filter to only enrolled students (match by Firestore doc ID OR customStudentId)
         students = allStudents.filter((s: any) =>
-          (s.customStudentId && teacherEnrolledIds.has(s.customStudentId)) ||
-          (s.id && teacherEnrolledIds.has(s.id))
+          (s.id && teacherEnrolledIds.has(s.id)) ||
+          (s.customStudentId && teacherEnrolledIds.has(s.customStudentId))
         );
       } else {
-        // Fallback: filter by class if no assignedStudents data
+        // Fallback: filter by class — check BOTH studentClass (school) and branch (college)
+        const normCls = (v: string | undefined) => (v || '').toLowerCase().replace(/\s+/g, '');
+        const clsSet = new Set(classesToScan.map(normCls).filter(Boolean));
+
         students = classesToScan.length > 0
-          ? allStudents.filter((s: any) => classesToScan.includes(s.studentClass))
-          : allStudents;
+          ? allStudents.filter((s: any) => {
+              const sClass = normCls(s.studentClass || s.branch || s.class || '');
+              return sClass && (clsSet.has(sClass) || [...clsSet].some(c => c.includes(sClass) || sClass.includes(c)));
+            })
+          : allStudents; // no class configured → scan all
+      }
+
+      // If still empty, fall back to ALL students in the school (avoids silent no-op)
+      if (students.length === 0 && allStudents.length > 0) {
+        console.warn('[feed] No class match, falling back to all students');
+        students = allStudents;
       }
 
       if (students.length === 0) {
-        alert(`No students found${classesToScan.length > 0 ? ` for class(es): ${classesToScan.join(', ')}` : ' in this school'}. Please make sure students are enrolled.`);
+        alert('No students found in this school. Please ensure students are enrolled.');
         setScanning(false);
         return;
       }
 
-      // 2. Get ONLY this teacher's assignments
+      // 2. Get ONLY this teacher's assignments (via teacherId field)
       const assignRes = await fetch('/api/teacher/get-assignments', {
         method: 'POST', headers,
         body: JSON.stringify({ schoolId, teacherId: profile.uid }),
@@ -162,10 +174,15 @@ export default function SituationalFeedPage() {
       }
       const assignData = await assignRes.json();
       const allAssignments: any[] = assignData.assignments || [];
-      // Filter assignments to only those relevant to scanned students
-      const assignments = allAssignments.filter((a: any) =>
-        classesToScan.length === 0 || classesToScan.includes(a.class)
-      );
+      // Fuzzy class filter — also handle college branch names
+      const normCls2 = (v: string | undefined) => (v || '').toLowerCase().replace(/\s+/g, '');
+      const clsSet2 = new Set(classesToScan.map(normCls2).filter(Boolean));
+      const assignments = allAssignments.filter((a: any) => {
+        if (classesToScan.length === 0) return true;
+        const ac = normCls2(a.class || a.targetClass || '');
+        return clsSet2.has(ac) || [...clsSet2].some(c => c.includes(ac) || ac.includes(c));
+      });
+
 
       // 3. Get existing unacknowledged alert IDs to avoid duplicates
       let existingKeys = new Set<string>();

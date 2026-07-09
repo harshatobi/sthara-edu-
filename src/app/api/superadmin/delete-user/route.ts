@@ -143,6 +143,13 @@ export async function POST(request: NextRequest) {
           log.assignments = `${n} deleted`;
         } catch (e: any) { log.assignments = e.message; }
 
+          // Also delete legacy AI-assistant assignments stored with createdBy field
+          try {
+            const n2 = await deleteBatch(db,
+              schoolRef.collection('assignments').where('createdBy', '==', uid));
+            log.assignments_createdby = `${n2} deleted`;
+          } catch (e: any) { log.assignments_createdby = e.message; }
+
         // Syllabus entries by this teacher
         try {
           const n = await deleteBatch(db,

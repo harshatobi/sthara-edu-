@@ -253,6 +253,13 @@ export default function TeacherQuizPage() {
     if (classesToPost.length === 0) { alert('No classes found. Please ensure students are enrolled in your school.'); return; }
     if (selectedClasses.length === 0) setSelectedClasses(classesToPost);
 
+    // Compute students assigned to this teacher for the selected class+subject
+    const assignedStudentIds: string[] = Array.from(new Set(
+      (profile.assignments || [])
+        .filter((a: any) => classesToPost.includes(a.class) && (!subject || a.subject === subject))
+        .flatMap((a: any) => a.assignedStudents || [])
+    ));
+
     setPosting(true);
     try {
       const qs = mode === 'manual' ? manualQ.filter(q => q.question.trim()) : questions;
@@ -273,6 +280,7 @@ export default function TeacherQuizPage() {
           generatedBy: mode === 'manual' ? 'teacher' : 'ai',
           createdAt: serverTimestamp(),
           status: 'published',
+          assignedStudentIds,
         })
       ));
       // Save for answer key view
@@ -936,15 +944,36 @@ export default function TeacherQuizPage() {
               <div className="space-y-5">
 
                 {/* Subject */}
-                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
-                  <label className="block text-sm font-bold text-[#002147] mb-2">Subject</label>
-                  <input
-                    value={subject}
-                    onChange={e => setSubject(e.target.value)}
-                    placeholder="e.g. Mathematics"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  />
-                </div>
+                {(() => {
+                  const selectedClass0 = selectedClasses[0] || '';
+                  const teacherSubjects = [...new Set(
+                    (profile.assignments || [])
+                      .filter((a: any) => !selectedClass0 || a.class === selectedClass0)
+                      .map((a: any) => a.subject)
+                      .filter(Boolean)
+                  )] as string[];
+                  return (
+                    <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">
+                      <label className="block text-sm font-bold text-[#002147] mb-2">Subject</label>
+                      {teacherSubjects.length > 0 ? (
+                        <select
+                          value={subject}
+                          onChange={e => setSubject(e.target.value)}
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                        >
+                          {teacherSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          value={subject}
+                          onChange={e => setSubject(e.target.value)}
+                          placeholder="e.g. Mathematics"
+                          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Due Date */}
                 <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5">

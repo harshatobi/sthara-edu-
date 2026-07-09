@@ -402,9 +402,13 @@ export default function StudentDashboard() {
         tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
         // Subject-scoping: if an assignment has assignedStudentIds, only show it to those students
         const studentCustomId = profile.customStudentId || '';
+        const studentUid = profile.uid || '';
         const visibleTasks = tasks.filter((t: any) => {
-          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true; // no restriction
-          return studentCustomId && t.assignedStudentIds.includes(studentCustomId);
+          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true; // no restriction — legacy doc
+          return (
+            (studentCustomId && t.assignedStudentIds.includes(studentCustomId)) ||
+            (studentUid && t.assignedStudentIds.includes(studentUid))
+          );
         });
         setAssignments(visibleTasks);
       } catch (error) {

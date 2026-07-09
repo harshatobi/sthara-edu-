@@ -80,8 +80,10 @@ export default function SituationalFeedPage() {
     );
     const unsub = onSnapshot(q, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setSituations(data);
-      const unack = data.filter((s: any) => !s.acknowledged);
+      // Only show situations this teacher created (or ones without a teacherId for backward compat)
+      const myData = data.filter((s: any) => !s.teacherId || s.teacherId === profile?.uid);
+      setSituations(myData);
+      const unack = myData.filter((s: any) => !s.acknowledged);
       const uniqueStudents = new Set(unack.map((s: any) => s.studentId)).size;
       setStats({
         total: unack.length,
@@ -123,9 +125,25 @@ export default function SituationalFeedPage() {
       }
       const studData = await studRes.json();
       const allStudents: any[] = studData.students || [];
-      const students = classesToScan.length > 0
-        ? allStudents.filter((s: any) => classesToScan.includes(s.studentClass))
-        : allStudents;
+
+      // Only scan students this teacher is specifically assigned to teach
+      const teacherEnrolledIds = new Set<string>(
+        (profile.assignments || []).flatMap((a: any) => a.assignedStudents || [])
+      );
+
+      let students: any[];
+      if (teacherEnrolledIds.size > 0) {
+        // Filter to only enrolled students (match by customStudentId OR Firestore doc id)
+        students = allStudents.filter((s: any) =>
+          (s.customStudentId && teacherEnrolledIds.has(s.customStudentId)) ||
+          (s.id && teacherEnrolledIds.has(s.id))
+        );
+      } else {
+        // Fallback: filter by class if no assignedStudents data
+        students = classesToScan.length > 0
+          ? allStudents.filter((s: any) => classesToScan.includes(s.studentClass))
+          : allStudents;
+      }
 
       if (students.length === 0) {
         alert(`No students found${classesToScan.length > 0 ? ` for class(es): ${classesToScan.join(', ')}` : ' in this school'}. Please make sure students are enrolled.`);
@@ -133,10 +151,10 @@ export default function SituationalFeedPage() {
         return;
       }
 
-      // 2. Get all assignments via Admin SDK API
+      // 2. Get ONLY this teacher's assignments
       const assignRes = await fetch('/api/teacher/get-assignments', {
         method: 'POST', headers,
-        body: JSON.stringify({ schoolId }),
+        body: JSON.stringify({ schoolId, teacherId: profile.uid }),
       });
       if (!assignRes.ok) {
         const d = await assignRes.json();
@@ -144,9 +162,10 @@ export default function SituationalFeedPage() {
       }
       const assignData = await assignRes.json();
       const allAssignments: any[] = assignData.assignments || [];
-      const assignments = teacherClass
-        ? allAssignments.filter(a => a.class === teacherClass)
-        : allAssignments;
+      // Filter assignments to only those relevant to scanned students
+      const assignments = allAssignments.filter((a: any) =>
+        classesToScan.length === 0 || classesToScan.includes(a.class)
+      );
 
       // 3. Get existing unacknowledged alert IDs to avoid duplicates
       let existingKeys = new Set<string>();
@@ -194,6 +213,7 @@ export default function SituationalFeedPage() {
             actionLink: `/teacher/grading`,
             actionLabel: 'Go to Grading',
             acknowledged: false,
+            teacherId: profile.uid,
           });
         }
       }
@@ -226,6 +246,7 @@ export default function SituationalFeedPage() {
             actionLink: `/teacher/mastery?studentId=${student.id}`,
             actionLabel: 'View Mastery',
             acknowledged: false,
+            teacherId: profile.uid,
           });
         });
       }
@@ -256,6 +277,7 @@ export default function SituationalFeedPage() {
               actionLink: `/teacher/mastery?studentId=${student.id}`,
               actionLabel: 'View Profile',
               acknowledged: false,
+              teacherId: profile.uid,
               createdAt: serverTimestamp(),
             });
           }
@@ -281,6 +303,7 @@ export default function SituationalFeedPage() {
               actionLink: `/teacher/wellness`,
               actionLabel: 'View Wellness',
               acknowledged: false,
+              teacherId: profile.uid,
               createdAt: serverTimestamp(),
             });
           }

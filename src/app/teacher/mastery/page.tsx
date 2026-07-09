@@ -9,8 +9,83 @@ import { collection, query, where, getDocs, doc, getDoc, addDoc, serverTimestamp
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- Syllabus Definitions per Subject ---
+// --- Syllabus Definitions per Subject (Osmania University B.Com General + standard) ---
 const SYLLABI: Record<string, { id: string; name: string; color: string; topics: string[] }[]> = {
+  // ── Osmania University B.Com General ─────────────────────────────────────
+  'Business Economics': [
+    { id: 'c1', name: 'Demand & Supply', color: '#3b82f6', topics: ['Law of Demand', 'Elasticity of Demand', 'Law of Supply', 'Market Equilibrium'] },
+    { id: 'c2', name: 'Production Theory', color: '#8b5cf6', topics: ['Factors of Production', 'Laws of Returns', 'Economies of Scale', 'Cost Concepts'] },
+    { id: 'c3', name: 'Market Structures', color: '#f59e0b', topics: ['Perfect Competition', 'Monopoly', 'Monopolistic Competition', 'Oligopoly'] },
+    { id: 'c4', name: 'Macro Economics', color: '#10b981', topics: ['National Income', 'Inflation & Deflation', 'Money & Banking', 'Fiscal Policy'] },
+  ],
+  'Business Mathematics & Statistics': [
+    { id: 'c1', name: 'Mathematics', color: '#3b82f6', topics: ['Matrices & Determinants', 'Differentiation', 'Integration', 'Linear Programming'] },
+    { id: 'c2', name: 'Statistics', color: '#8b5cf6', topics: ['Measures of Central Tendency', 'Measures of Dispersion', 'Correlation', 'Regression Analysis'] },
+    { id: 'c3', name: 'Probability', color: '#f59e0b', topics: ['Basic Probability', 'Conditional Probability', 'Binomial Distribution', 'Normal Distribution'] },
+  ],
+  'Business Mathematics and Statistics': [
+    { id: 'c1', name: 'Mathematics', color: '#3b82f6', topics: ['Matrices & Determinants', 'Differentiation', 'Integration', 'Linear Programming'] },
+    { id: 'c2', name: 'Statistics', color: '#8b5cf6', topics: ['Measures of Central Tendency', 'Measures of Dispersion', 'Correlation', 'Regression Analysis'] },
+    { id: 'c3', name: 'Probability', color: '#f59e0b', topics: ['Basic Probability', 'Conditional Probability', 'Binomial Distribution', 'Normal Distribution'] },
+  ],
+  'Financial Accounting': [
+    { id: 'c1', name: 'Accounting Basics', color: '#3b82f6', topics: ['Journal Entries', 'Ledger Accounts', 'Trial Balance', 'Accounting Concepts & Conventions'] },
+    { id: 'c2', name: 'Final Accounts', color: '#8b5cf6', topics: ['Trading Account', 'Profit & Loss Account', 'Balance Sheet', 'Adjustments'] },
+    { id: 'c3', name: 'Special Accounts', color: '#f59e0b', topics: ['Depreciation Methods', 'Consignment Accounts', 'Branch Accounts', 'Hire Purchase'] },
+    { id: 'c4', name: 'Partnership Accounts', color: '#10b981', topics: ['Admission of Partner', 'Retirement of Partner', 'Dissolution', 'Amalgamation of Firms'] },
+  ],
+  'Corporate Accounting': [
+    { id: 'c1', name: 'Share Capital', color: '#3b82f6', topics: ['Issue of Shares', 'Forfeiture & Reissue', 'Rights Issue', 'Buy-back of Shares'] },
+    { id: 'c2', name: 'Debentures', color: '#8b5cf6', topics: ['Issue of Debentures', 'Redemption of Debentures', 'Conversion', 'Interest on Debentures'] },
+    { id: 'c3', name: 'Valuation', color: '#f59e0b', topics: ['Valuation of Shares', 'Goodwill Valuation', 'Amalgamation', 'Internal Reconstruction'] },
+    { id: 'c4', name: 'Financial Statements', color: '#10b981', topics: ['Company P&L Account', 'Balance Sheet', 'Cash Flow Statement', 'Ratio Analysis'] },
+  ],
+  'Cost Accounting': [
+    { id: 'c1', name: 'Cost Concepts', color: '#3b82f6', topics: ['Elements of Cost', 'Cost Sheet', 'Material Control', 'EOQ & Reorder Level'] },
+    { id: 'c2', name: 'Labour & Overheads', color: '#8b5cf6', topics: ['Labour Cost Control', 'Time & Piece Rate', 'Factory Overheads', 'Machine Hour Rate'] },
+    { id: 'c3', name: 'Costing Methods', color: '#f59e0b', topics: ['Job Costing', 'Process Costing', 'Standard Costing', 'Marginal Costing'] },
+  ],
+  'Income Tax': [
+    { id: 'c1', name: 'Basic Concepts', color: '#3b82f6', topics: ['Residential Status', 'Heads of Income', 'Agricultural Income', 'Exemptions'] },
+    { id: 'c2', name: 'Salary & House Property', color: '#8b5cf6', topics: ['Computation of Salary Income', 'Allowances & Perquisites', 'House Property Income', 'Municipal Value vs Fair Rent'] },
+    { id: 'c3', name: 'Business & Capital Gains', color: '#f59e0b', topics: ['Profits from Business', 'Deductions u/s 80C', 'Short-term Capital Gains', 'Long-term Capital Gains'] },
+  ],
+  'Company Law': [
+    { id: 'c1', name: 'Company Formation', color: '#3b82f6', topics: ['Types of Companies', 'Memorandum of Association', 'Articles of Association', 'Prospectus'] },
+    { id: 'c2', name: 'Management', color: '#8b5cf6', topics: ['Board of Directors', "Shareholders' Rights", 'Company Meetings', 'Dividends'] },
+    { id: 'c3', name: 'Winding Up', color: '#f59e0b', topics: ['Voluntary Winding Up', 'Compulsory Winding Up', 'Liquidator Powers', 'Reconstruction & Amalgamation'] },
+  ],
+  'Business Statistics': [
+    { id: 'c1', name: 'Data Analysis', color: '#3b82f6', topics: ['Data Collection', 'Classification & Tabulation', 'Frequency Distribution', 'Diagrammatic Representation'] },
+    { id: 'c2', name: 'Central Tendency & Dispersion', color: '#8b5cf6', topics: ['Mean, Median, Mode', 'Range & Quartile Deviation', 'Standard Deviation', 'Coefficient of Variation'] },
+    { id: 'c3', name: 'Index Numbers & Correlation', color: '#f59e0b', topics: ['Laspeyres & Paasche Index', "Karl Pearson's Correlation", "Spearman's Rank Correlation", 'Regression Lines'] },
+  ],
+  'Business Organisation': [
+    { id: 'c1', name: 'Business Basics', color: '#3b82f6', topics: ['Sole Proprietorship', 'Partnership Firm', 'Joint Stock Company', 'Co-operatives'] },
+    { id: 'c2', name: 'Management', color: '#8b5cf6', topics: ['Functions of Management', 'Planning & Organising', 'Directing & Controlling', 'Leadership Styles'] },
+    { id: 'c3', name: 'Business Environment', color: '#f59e0b', topics: ['Economic Environment', 'Political & Legal Environment', 'Technological Environment', 'Globalisation'] },
+  ],
+  'Management Accounting': [
+    { id: 'c1', name: 'Financial Analysis', color: '#3b82f6', topics: ['Ratio Analysis', 'Funds Flow Statement', 'Cash Flow Statement', 'Comparative Statements'] },
+    { id: 'c2', name: 'Budgeting', color: '#8b5cf6', topics: ['Types of Budgets', 'Flexible Budget', 'Zero Base Budgeting', 'Budgetary Control'] },
+    { id: 'c3', name: 'Decision Making', color: '#f59e0b', topics: ['Marginal Costing', 'Break Even Analysis', 'Make or Buy Decision', 'Capital Budgeting'] },
+  ],
+  'Financial Management': [
+    { id: 'c1', name: 'Capital Structure', color: '#3b82f6', topics: ['Sources of Finance', 'Debt vs Equity', 'Capital Gearing', 'WACC'] },
+    { id: 'c2', name: 'Working Capital', color: '#8b5cf6', topics: ['Working Capital Management', 'Receivables Management', 'Inventory Management', 'Cash Management'] },
+    { id: 'c3', name: 'Capital Budgeting', color: '#f59e0b', topics: ['NPV Method', 'IRR Method', 'Payback Period', 'Profitability Index'] },
+  ],
+  'Auditing': [
+    { id: 'c1', name: 'Basics of Auditing', color: '#3b82f6', topics: ['Meaning & Objectives', 'Types of Audit', 'Auditor Qualifications', 'Audit Planning'] },
+    { id: 'c2', name: 'Audit Process', color: '#8b5cf6', topics: ['Internal Control', 'Vouching & Verification', 'Audit Evidence', 'Audit Report'] },
+    { id: 'c3', name: 'Special Audits', color: '#f59e0b', topics: ['Company Audit', 'Tax Audit', 'Government Audit', 'Cost Audit'] },
+  ],
+  'Business Communication': [
+    { id: 'c1', name: 'Communication Basics', color: '#3b82f6', topics: ['Communication Process', 'Types of Communication', 'Barriers to Communication', 'Non-verbal Communication'] },
+    { id: 'c2', name: 'Business Writing', color: '#8b5cf6', topics: ['Business Letters', 'Memos & Reports', 'Email Etiquette', 'Resume Writing'] },
+    { id: 'c3', name: 'Presentation Skills', color: '#f59e0b', topics: ['Group Discussion', 'Interview Skills', 'Negotiation', 'Public Speaking'] },
+  ],
+  // ── School subjects (kept for backward compatibility) ─────────────────────
   'Mathematics': [
     { id: 'c1', name: 'Algebra', color: '#3b82f6', topics: ['Linear Equations', 'Quadratic Equations', 'Polynomials', 'Factoring'] },
     { id: 'c2', name: 'Geometry', color: '#8b5cf6', topics: ['Coordinate Geometry', 'Triangles', 'Circles', 'Trigonometry'] },
@@ -31,8 +106,29 @@ const SYLLABI: Record<string, { id: string; name: string; color: string; topics:
     { id: 'c1', name: 'Grammar', color: '#3b82f6', topics: ['Parts of Speech', 'Tenses', 'Sentence Structure', 'Punctuation'] },
     { id: 'c2', name: 'Literature', color: '#8b5cf6', topics: ['Poetry', 'Prose', 'Drama', 'Short Stories'] },
     { id: 'c3', name: 'Writing', color: '#f59e0b', topics: ['Essay Writing', 'Creative Writing', 'Letter Writing', 'Comprehension'] }
-  ]
+  ],
 };
+
+// Fuzzy subject lookup — handles typos, abbreviations and partial names
+function findSyllabus(subject: string) {
+  if (!subject) return SYLLABI['Mathematics'];
+  // Direct match
+  if (SYLLABI[subject]) return SYLLABI[subject];
+  // Case-insensitive + normalize whitespace
+  const norm = subject.toLowerCase().replace(/\s+/g, ' ').trim();
+  const directEntry = Object.entries(SYLLABI).find(([k]) => k.toLowerCase() === norm);
+  if (directEntry) return directEntry[1];
+  // Partial match — subject contains key or key contains subject
+  const partialEntry = Object.entries(SYLLABI).find(([k]) => {
+    const kn = k.toLowerCase();
+    return norm.includes(kn) || kn.includes(norm) ||
+      // Also match if first 6+ chars match
+      (norm.length >= 6 && kn.startsWith(norm.substring(0, 6)));
+  });
+  if (partialEntry) return partialEntry[1];
+  // Fallback
+  return SYLLABI['Mathematics'];
+}
 
 // Default fallback syllabus
 const DEFAULT_SYLLABUS = SYLLABI['Mathematics'];
@@ -340,14 +436,8 @@ function MasteryTrackerContent() {
           profile.assignments?.[0]?.subjectName ||
           'Mathematics';
 
-        // Find matching syllabus — case-insensitive partial match
-        const syllabusKey = Object.keys(SYLLABI).find(key =>
-          key.toLowerCase() === teacherSubject.toLowerCase() ||
-          teacherSubject.toLowerCase().includes(key.toLowerCase()) ||
-          key.toLowerCase().includes(teacherSubject.toLowerCase())
-        ) || 'Mathematics';
-
-        const subjectSyllabus = SYLLABI[syllabusKey] || DEFAULT_SYLLABUS;
+        // Find matching syllabus using fuzzy lookup
+        const subjectSyllabus = findSyllabus(teacherSubject);
 
         // Build Chapter Data
         const chaptersData = subjectSyllabus.map(chapter => {

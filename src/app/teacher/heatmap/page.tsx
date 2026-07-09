@@ -63,10 +63,14 @@ export default function TeacherHeatmap() {
         if (!studRes.ok) throw new Error(studData.error || 'Failed to fetch students');
         const allStudents: any[] = studData.students || [];
 
-        // ── 2. Fetch ONLY this teacher's assignments ──────────────────────────
+        // ── 2. Fetch ALL school assignments (no teacherId filter) ───────────────────────
+        // We intentionally omit teacherId here because some assignments are created
+        // without a matching teacherId/createdBy field (e.g. via AI Assistant or admin tools).
+        // Security: results are filtered below by the teacher's own class + subject,
+        // so only their relevant students' data is displayed.
         const assignRes = await fetch('/api/teacher/get-assignments', {
           method: 'POST', headers,
-          body: JSON.stringify({ schoolId, teacherId: profile.uid }),
+          body: JSON.stringify({ schoolId }),  // no teacherId → returns all school assignments
         });
 
         const assignData = await assignRes.json();
@@ -162,6 +166,24 @@ export default function TeacherHeatmap() {
             ts.toLowerCase() === (a.subject || '').toLowerCase()
           );
           return classOk && subjectOk;
+        });
+
+        // DEBUG — remove after fix confirmed
+        console.log('[HEATMAP DEBUG]', {
+          totalAssignments: allAssignments.length,
+          relevantAssignments: relevant.length,
+          activeClass,
+          teacherSubjects,
+          classStudentIds: classStudents.map(s => ({ id: s.id, name: s.name, class: s.studentClass || s.branch })),
+          assignmentSummary: relevant.map(a => ({
+            id: a.id, title: a.title, class: a.class, subject: a.subject,
+            submittedKeys: Object.keys(a.submittedData || {}),
+            submittedScores: Object.fromEntries(
+              Object.entries(a.submittedData || {}).map(([k, v]: [string, any]) =>
+                [k, { score: v?.score, aiScore: v?.aiResult?.totalScore, maxScore: v?.maxScore }]
+              )
+            ),
+          })),
         });
 
         // Fallback subject for no-subject assignments: selected subject or first teacher subject

@@ -250,11 +250,25 @@ function MasteryTrackerContent() {
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [activeChapter, setActiveChapter] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
+
+  // Derive teacher's subjects from their assignment profile
+  const teacherSubjects = [...new Set(
+    ((profile?.assignments || []) as any[]).map((a: any) => a.subject).filter(Boolean)
+  )] as string[];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
+
+  // Auto-select first subject from teacher's profile
+  useEffect(() => {
+    if (!selectedSubject && profile?.assignments) {
+      const first = (profile.assignments as any[]).find((a: any) => a.subject)?.subject;
+      if (first) setSelectedSubject(first);
+    }
+  }, [profile?.assignments]);
 
   // Fetch students assigned to this teacher
   useEffect(() => {
@@ -277,7 +291,7 @@ function MasteryTrackerContent() {
         if (!res.ok) throw new Error(data.error || 'Failed to fetch students');
         let students: any[] = data.students || [];
 
-        // Filter by teacher's assigned classes
+        // Filter by teacher's assigned classes (support both studentClass and branch for college)
         const teacherClasses = [
           ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
           ...(profile.teacherClass ? [profile.teacherClass] : []),
@@ -285,7 +299,8 @@ function MasteryTrackerContent() {
         const uniqueClasses = [...new Set(teacherClasses)].map(c => c.toLowerCase());
         if (uniqueClasses.length > 0) {
           students = students.filter(s =>
-            s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase())
+            (s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase())) ||
+            (s.branch && uniqueClasses.includes(s.branch.toLowerCase()))
           );
         }
 
@@ -399,22 +414,48 @@ function MasteryTrackerContent() {
         
         const studentData = { id: docSnap.id, ...docSnap.data() };
 
-        // 1. Fetch assignments to get submissions
+        // 1. Fetch assignments to get submissions — filtered by the selected subject
         const assignmentsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments'));
+
+        // Active subject: use selectedSubject state (teacher chose) or first profile subject
+        const activeSubject = selectedSubject ||
+          (profile.assignments as any[])?.[0]?.subject ||
+          profile.subject ||
+          profile.teacherSubject ||
+          'Mathematics';
+
+        // Normalize helper for fuzzy subject matching
+        const normSubj = (s: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+        const activeNorm = normSubj(activeSubject);
+
+        // Only evaluate assignments that match the selected subject
+        const subjectDocs = assignmentsSnap.docs.filter(d => {
+          const aSubj = normSubj(d.data().subject);
+          if (!aSubj) return false; // skip assignments with no subject
+          if (!activeNorm) return true;
+          // Exact or partial match (first 8 chars)
+          return aSubj === activeNorm ||
+            (aSubj.length >= 6 && activeNorm.includes(aSubj.substring(0, 6))) ||
+            (activeNorm.length >= 6 && aSubj.includes(activeNorm.substring(0, 6)));
+        });
+
         let totalScore = 0;
         let totalMaxScore = 0;
         let weaknesses = new Set<string>();
         let evaluatedCount = 0;
 
-        const promises = assignmentsSnap.docs.map(async (taskDoc) => {
+        const promises = subjectDocs.map(async (taskDoc) => {
           const subRef = doc(db, 'schools', profile.schoolId, 'assignments', taskDoc.id, 'submissions', uid);
           const subSnap = await getDoc(subRef);
-          if (subSnap.exists() && subSnap.data().teacherApproved) {
-            evaluatedCount++;
+          if (subSnap.exists()) {
             const data = subSnap.data();
-            if (data.score !== undefined && data.maxScore > 0) {
-              totalScore += Number(data.score);
-              totalMaxScore += Number(data.maxScore);
+            // Count all AI-graded submissions (not just teacher-approved ones)
+            const score = data.score ?? data.aiResult?.totalScore;
+            const maxScore = data.maxScore ?? data.aiResult?.maxTotalScore ?? data.total;
+            if (score != null && maxScore > 0) {
+              evaluatedCount++;
+              totalScore += Number(score);
+              totalMaxScore += Number(maxScore);
             }
             if (data.aiResult?.weaknessTags) {
               data.aiResult.weaknessTags.forEach((tag: string) => weaknesses.add(tag));
@@ -427,16 +468,8 @@ function MasteryTrackerContent() {
         // Calculate actual overall percentage
         const realPercentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) : 0;
 
-        // Pick the correct syllabus based on the teacher's subject
-        // Try multiple fields where subject could be stored
-        const teacherSubject =
-          profile.assignments?.[0]?.subject ||
-          profile.subject ||
-          profile.teacherSubject ||
-          profile.assignments?.[0]?.subjectName ||
-          'Mathematics';
-
-        // Find matching syllabus using fuzzy lookup
+        // Find matching syllabus chapters using fuzzy lookup on the active subject
+        const teacherSubject = activeSubject;
         const subjectSyllabus = findSyllabus(teacherSubject);
 
         // Build Chapter Data
@@ -487,7 +520,7 @@ function MasteryTrackerContent() {
       setIsLoading(false);
     }
 
-  }, [profile, studentIdParam, studentsList]);
+  }, [profile, studentIdParam, studentsList, selectedSubject]);
 
 
   if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Mastery Engine...</div>;
@@ -508,23 +541,42 @@ function MasteryTrackerContent() {
           </div>
         </div>
 
-        {/* Student Selector */}
-        <div className="bg-white border border-[#002147]/10 p-2 rounded-xl shadow-sm flex items-center space-x-3 px-4">
-          <label className="text-xs font-bold text-[#002147] uppercase tracking-wider">Viewing:</label>
-          {studentsList.length === 0 ? (
-            <span className="text-sm text-[#002147]/40 font-medium italic">No students yet</span>
-          ) : (
-            <select 
-              value={studentIdParam || selectedStudent?.id || ''}
-              onChange={(e) => router.push(`/teacher/mastery?studentId=${e.target.value}`)}
-              className="bg-transparent border-none text-[#002147] font-bold focus:ring-0 cursor-pointer outline-none"
-            >
-              <option value="">— Select Student —</option>
-              {studentsList.map(s => (
-                <option key={s.id} value={s.id}>{s.name}{s.studentClass ? ` (${s.studentClass})` : ''}</option>
-              ))}
-            </select>
+        {/* Selectors: Subject + Student */}
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          {/* Subject Selector */}
+          {teacherSubjects.length > 0 && (
+            <div className="bg-white border border-[#002147]/10 p-2 rounded-xl shadow-sm flex items-center space-x-3 px-4">
+              <label className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Subject:</label>
+              <select
+                value={selectedSubject}
+                onChange={e => setSelectedSubject(e.target.value)}
+                className="bg-transparent border-none text-[#002147] font-bold focus:ring-0 cursor-pointer outline-none max-w-[180px]"
+              >
+                {teacherSubjects.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
           )}
+
+          {/* Student Selector */}
+          <div className="bg-white border border-[#002147]/10 p-2 rounded-xl shadow-sm flex items-center space-x-3 px-4">
+            <label className="text-xs font-bold text-[#002147] uppercase tracking-wider">Viewing:</label>
+            {studentsList.length === 0 ? (
+              <span className="text-sm text-[#002147]/40 font-medium italic">No students yet</span>
+            ) : (
+              <select
+                value={studentIdParam || selectedStudent?.id || ''}
+                onChange={(e) => router.push(`/teacher/mastery?studentId=${e.target.value}`)}
+                className="bg-transparent border-none text-[#002147] font-bold focus:ring-0 cursor-pointer outline-none"
+              >
+                <option value="">— Select Student —</option>
+                {studentsList.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}{(s.studentClass || s.branch) ? ` (${s.studentClass || s.branch})` : ''}</option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
       </div>
 
@@ -565,7 +617,7 @@ function MasteryTrackerContent() {
                   {selectedStudent.name.charAt(0)}
                 </div>
                 <h2 className="text-2xl font-bold mb-1">{selectedStudent.name}</h2>
-                <p className="text-blue-200 font-medium mb-2">{selectedStudent.studentClass} • {profile.assignments?.[0]?.subject || 'Mathematics'}</p>
+                <p className="text-blue-200 font-medium mb-2">{selectedStudent.studentClass || selectedStudent.branch} • {selectedSubject || (profile.assignments as any[])?.[0]?.subject || 'General'}</p>
                 <div className="inline-block bg-white/10 px-3 py-1 rounded-full text-xs font-bold text-white mb-8 border border-white/20">
                   {selectedStudent.totalEvaluated} Assignments Evaluated
                 </div>

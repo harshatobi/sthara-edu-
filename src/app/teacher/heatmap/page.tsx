@@ -75,7 +75,10 @@ export default function TeacherHeatmap() {
 
         // ── 3. Discover classes from student data ──────────────────────────
         const classSet = new Set<string>();
-        allStudents.forEach(s => { if (s.studentClass) classSet.add(s.studentClass); });
+        allStudents.forEach(s => { 
+          if (s.studentClass) classSet.add(s.studentClass);
+          if (s.branch) classSet.add(s.branch);  // college students use branch
+        });
         const discoveredClasses = Array.from(classSet).sort();
         const teacherAssignedClasses = [
           ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
@@ -96,10 +99,16 @@ export default function TeacherHeatmap() {
         // ── 4. Filter students to active class & teacher's assignment ──────
         const uniqueClasses = uniqueTeacherClasses.map(c => c.toLowerCase());
         let classStudents = activeClass
-          ? allStudents.filter(s => s.studentClass && s.studentClass.toLowerCase() === activeClass.toLowerCase())
+          ? allStudents.filter(s =>
+              (s.studentClass && s.studentClass.toLowerCase() === activeClass.toLowerCase()) ||
+              (s.branch && s.branch.toLowerCase() === activeClass.toLowerCase())
+            )
           : allStudents;
         if (uniqueClasses.length > 0) {
-          classStudents = classStudents.filter(s => s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase()));
+          classStudents = classStudents.filter(s =>
+            (s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase())) ||
+            (s.branch && uniqueClasses.includes(s.branch.toLowerCase()))
+          );
         }
 
         // If a specific subject is selected, further filter to only students assigned to that subject
@@ -133,10 +142,12 @@ export default function TeacherHeatmap() {
           ? [selectedSubject]
           : allTeacherSubjects;
 
-        // ── 6. Filter assignments by class + subject ─────────────────────
+        // ── 6. Filter assignments by class + subject (case-insensitive) ─────────────────────
         const relevant = allAssignments.filter((a: any) =>
-          (!activeClass || a.class?.toLowerCase() === activeClass.toLowerCase()) &&
-          (teacherSubjects.length === 0 || teacherSubjects.includes(a.subject))
+          (!activeClass || (a.class || '').toLowerCase() === activeClass.toLowerCase()) &&
+          (teacherSubjects.length === 0 || teacherSubjects.some(ts =>
+            ts.toLowerCase() === (a.subject || '').toLowerCase()
+          ))
         );
 
         // Group assignments by subject

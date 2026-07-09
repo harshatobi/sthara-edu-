@@ -80,8 +80,8 @@ export default function SituationalFeedPage() {
     );
     const unsub = onSnapshot(q, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Only show situations this teacher created (or ones without a teacherId for backward compat)
-      const myData = data.filter((s: any) => !s.teacherId || s.teacherId === profile?.uid);
+      // Strict filter: only show alerts that belong to this teacher
+      const myData = data.filter((s: any) => s.teacherId === profile?.uid);
       setSituations(myData);
       const unack = myData.filter((s: any) => !s.acknowledged);
       const uniqueStudents = new Set(unack.map((s: any) => s.studentId)).size;

@@ -46,18 +46,24 @@ export default function TeacherWellnessDashboard() {
     }
   }, [profile, authLoading, router]);
 
-  // Classes discovered dynamically from student data (same pattern as heatmap)
+  // Classes discovered dynamically from student data via Admin SDK (handles both studentClass and branch)
   useEffect(() => {
     if (!profile?.schoolId) return;
     const discoverClasses = async () => {
       try {
-        const [usSnap, guSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId), where('role', '==', 'student'))),
-        ]);
+        const { getAuth } = await import('firebase/auth');
+        const token = await getAuth().currentUser?.getIdToken();
+        const res = await fetch('/api/teacher/get-students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ schoolId: profile.schoolId }),
+        });
+        const data = await res.json();
+        const allStudents: any[] = data.students || [];
         const classSet = new Set<string>();
-        [...usSnap.docs, ...guSnap.docs].forEach(d => {
-          const c = d.data().studentClass;
+        allStudents.forEach(s => {
+          // College students use 'branch'; school students use 'studentClass'
+          const c = s.studentClass || s.branch;
           if (c) classSet.add(c);
         });
         const teacherClasses = [
@@ -68,7 +74,7 @@ export default function TeacherWellnessDashboard() {
         const classes = unique.length > 0 ? unique : Array.from(classSet).sort();
         setAvailableClasses(classes);
         if (classes.length > 0 && !selectedClass) setSelectedClass(classes[0]);
-      } catch {}
+      } catch (e) { console.error('[wellness] class discovery:', e); }
     };
     discoverClasses();
   }, [profile]);
@@ -80,28 +86,25 @@ export default function TeacherWellnessDashboard() {
       setLoading(true);
 
       try {
-        // 1. Fetch Students from BOTH collections (same as heatmap)
-        const [usSnap, guSnap] = await Promise.all([
-          getDocs(query(
-            collection(db, 'users'),
-            where('schoolId', '==', profile.schoolId),
-            where('role', '==', 'student'),
-            where('studentClass', '==', selectedClass)
-          )),
-          getDocs(query(
-            collection(db, 'global_users'),
-            where('schoolId', '==', profile.schoolId),
-            where('role', '==', 'student'),
-            where('studentClass', '==', selectedClass)
-          )),
-        ]);
-        
+        // Use Admin SDK API to fetch students (bypasses Firestore rules + handles both studentClass and branch)
+        const { getAuth } = await import('firebase/auth');
+        const token = await getAuth().currentUser?.getIdToken();
+        const studRes = await fetch('/api/teacher/get-students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ schoolId: profile.schoolId }),
+        });
+        const studData = await studRes.json();
+        const allStudents: any[] = studData.students || [];
+
+        // Filter by selectedClass using both studentClass and branch fields
+        const classStudents = allStudents.filter(s =>
+          s.studentClass === selectedClass || s.branch === selectedClass
+        );
+
         const studentMap: Record<string, StudentData> = {};
-        [...usSnap.docs, ...guSnap.docs].forEach(docSnap => {
-          if (!studentMap[docSnap.id]) {
-            const data = docSnap.data();
-            studentMap[docSnap.id] = { id: docSnap.id, name: data.name, email: data.email };
-          }
+        classStudents.forEach(s => {
+          studentMap[s.id] = { id: s.id, name: s.name, email: s.email };
         });
         setStudents(studentMap);
 

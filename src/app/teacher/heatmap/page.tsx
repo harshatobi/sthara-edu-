@@ -182,15 +182,31 @@ export default function TeacherHeatmap() {
           classStudents.forEach(s => { studentTotals[s.id] = { sum: 0, count: 0 }; });
 
           for (const assign of subjectAssignments) {
-            // Use submittedData already included in the assignment from get-assignments API
             const submittedData = assign.submittedData || {};
-            Object.entries(submittedData).forEach(([studentId, sub]: [string, any]) => {
-              if (!studentTotals[studentId]) studentTotals[studentId] = { sum: 0, count: 0 };
+
+            // Build fast lookup maps to handle Firestore doc ID ≠ Auth UID edge cases
+            // The submission doc key = student's Auth UID (from profile.uid at submission time)
+            // The student's s.id in get-students = their Firestore doc ID (may differ from Auth UID)
+            const subByDocKey: Record<string, any> = {};    // keyed by the submission doc ID
+            const subByCustomId: Record<string, any> = {};   // keyed by sub.customStudentId field
+            const subByStudentId: Record<string, any> = {};  // keyed by sub.studentId field
+            Object.entries(submittedData).forEach(([key, sub]: [string, any]) => {
+              subByDocKey[key] = sub;
+              if (sub?.customStudentId) subByCustomId[sub.customStudentId] = sub;
+              if (sub?.studentId && sub.studentId !== key) subByStudentId[sub.studentId] = sub;
+            });
+
+            classStudents.forEach(s => {
+              // Try every possible ID that could key this student's submission
+              const sub = subByDocKey[s.id] ||
+                          (s.customStudentId ? subByCustomId[s.customStudentId] : null) ||
+                          subByStudentId[s.id] || null;
+              if (!sub) return;
               const score = sub?.score ?? sub?.aiResult?.totalScore;
               const max = sub?.maxScore ?? sub?.aiResult?.maxTotalScore ?? 10;
               if (score != null) {
-                studentTotals[studentId].sum += (score / max) * 100;
-                studentTotals[studentId].count += 1;
+                studentTotals[s.id].sum += (score / max) * 100;
+                studentTotals[s.id].count += 1;
               }
             });
           }

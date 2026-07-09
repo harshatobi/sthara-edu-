@@ -96,18 +96,30 @@ export default function TeacherHeatmap() {
           return;
         }
 
+        // ── Class-name normaliser (handles B.Com vs B.Commerce vs B.commerce) ──
+        const normCls = (c: string) => (c || '').toLowerCase().replace(/[\s.\-_]/g, '');
+        const classMatches = (a: string, b: string) => {
+          const na = normCls(a); const nb = normCls(b);
+          if (!na || !nb) return true; // either side blank → no filter
+          if (na === nb) return true;
+          const short = na.length < nb.length ? na : nb;
+          const long  = na.length < nb.length ? nb : na;
+          return long.startsWith(short.substring(0, 4)); // 'bcom' ⊆ 'bcommerce'
+        };
+
         // ── 4. Filter students to active class & teacher's assignment ──────
-        const uniqueClasses = uniqueTeacherClasses.map(c => c.toLowerCase());
+        const uniqueClasses = uniqueTeacherClasses;
         let classStudents = activeClass
           ? allStudents.filter(s =>
-              (s.studentClass && s.studentClass.toLowerCase() === activeClass.toLowerCase()) ||
-              (s.branch && s.branch.toLowerCase() === activeClass.toLowerCase())
+              classMatches(s.studentClass, activeClass) ||
+              classMatches(s.branch, activeClass)
             )
           : allStudents;
         if (uniqueClasses.length > 0) {
           classStudents = classStudents.filter(s =>
-            (s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase())) ||
-            (s.branch && uniqueClasses.includes(s.branch.toLowerCase()))
+            uniqueClasses.some(uc =>
+              classMatches(s.studentClass, uc) || classMatches(s.branch, uc)
+            )
           );
         }
 
@@ -142,14 +154,15 @@ export default function TeacherHeatmap() {
           ? [selectedSubject]
           : allTeacherSubjects;
 
-        // ── 6. Filter assignments by class + subject (case-insensitive) ─────────────────────
-        // Include assignments with no subject (legacy, created before subject field was added)
-        const relevant = allAssignments.filter((a: any) =>
-          (!activeClass || (a.class || '').toLowerCase() === activeClass.toLowerCase()) &&
-          (!a.subject || teacherSubjects.length === 0 || teacherSubjects.some(ts =>
+        // ── 6. Filter assignments by class + subject ─────────────────────────────────────────────
+        // Uses fuzzy class match + includes no-subject legacy assignments
+        const relevant = allAssignments.filter((a: any) => {
+          const classOk = !activeClass || classMatches(a.class, activeClass);
+          const subjectOk = !a.subject || teacherSubjects.length === 0 || teacherSubjects.some(ts =>
             ts.toLowerCase() === (a.subject || '').toLowerCase()
-          ))
-        );
+          );
+          return classOk && subjectOk;
+        });
 
         // Fallback subject for no-subject assignments: selected subject or first teacher subject
         const fallbackSubject = selectedSubject || teacherSubjects[0] || 'General';

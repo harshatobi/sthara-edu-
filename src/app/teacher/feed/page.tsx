@@ -190,21 +190,32 @@ export default function SituationalFeedPage() {
       const today = new Date();
       for (const assignment of assignments) {
         const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
-        if (!dueDate || dueDate > today) continue; // not yet overdue
+        if (!dueDate || dueDate > today) continue;
 
-        // Use submittedData already fetched from get-assignments API (no extra Firestore read)
-        const submittedIds = new Set(Object.keys(assignment.submittedData || {}));
+        // Build multi-ID submission sets to handle Auth UID ≠ Firestore doc ID edge case
+        const subData = assignment.submittedData || {};
+        const submittedByDocKey  = new Set(Object.keys(subData));
+        const submittedByCustomId = new Set(
+          Object.values(subData).map((s: any) => s?.customStudentId).filter(Boolean)
+        );
+        const submittedByStudentId = new Set(
+          Object.values(subData).map((s: any) => s?.studentId).filter(Boolean)
+        );
 
         for (const student of students) {
-          if (submittedIds.has(student.id)) continue;
+          const hasSubmitted =
+            submittedByDocKey.has(student.id) ||
+            (student.customStudentId && submittedByCustomId.has(student.customStudentId)) ||
+            submittedByStudentId.has(student.id);
+          if (hasSubmitted) continue;
+
           const key = `${student.id}_overdue_${assignment.id}`;
           if (existingKeys.has(key)) continue;
-
           const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           newAlerts.push({
             studentId: student.id,
             studentName: student.name || 'Student',
-            class: student.studentClass || teacherClass,
+            class: student.studentClass || student.branch || teacherClass,
             category: 'submission',
             priority: daysOverdue >= 2 ? 'high' : 'medium',
             title: 'Overdue Submission',
@@ -252,14 +263,56 @@ export default function SituationalFeedPage() {
       }
 
 
-      // ── ALERT TYPE 3: Student with no submissions at all ──
+      // ── ALERT TYPE 2.5: New submission received (within last 48 h) ────────────────
+      const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      for (const assignment of assignments) {
+        const subData = assignment.submittedData || {};
+        Object.entries(subData).forEach(([subKey, sub]: [string, any]) => {
+          // Resolve which enrolled student this belongs to (multi-ID)
+          const student = students.find(s =>
+            s.id === subKey ||
+            (s.customStudentId && s.customStudentId === sub?.customStudentId) ||
+            s.id === sub?.studentId
+          );
+          if (!student) return;
+
+          // Only alert for submissions in the last 48 hours
+          const submittedAt = sub?.submittedAt?.toDate?.() ||
+            (sub?.submittedAt?.seconds ? new Date(sub.submittedAt.seconds * 1000) : null);
+          if (!submittedAt || submittedAt < cutoff48h) return;
+
+          const key = `${student.id}_newsubmit_${assignment.id}`;
+          if (existingKeys.has(key)) return;
+
+          newAlerts.push({
+            studentId: student.id,
+            studentName: student.name || sub?.studentName || 'Student',
+            class: student.studentClass || student.branch || teacherClass,
+            category: 'submission',
+            priority: 'low',
+            title: '📩 New Submission Received',
+            detail: `${student.name || 'A student'} submitted “${assignment.title || assignment.topic || 'an assignment'}”${sub?.score != null ? ` — AI Score: ${sub.score}/${sub.maxScore || 10}` : ''}. Ready for your review.`,
+            alertKey: `newsubmit_${assignment.id}`,
+            actionLink: `/teacher/grading`,
+            actionLabel: 'Review & Grade',
+            acknowledged: false,
+            teacherId: profile.uid,
+          });
+        });
+      }
+
+      // ── ALERT TYPE 3: Student with zero submissions (uses submittedData — no extra Firestore reads) ──
       for (const student of students) {
         let totalSubmissions = 0;
         for (const assignment of assignments) {
-          const subDoc = await getDocs(
-            collection(db, 'schools', schoolId, 'assignments', assignment.id, 'submissions')
-          );
-          if (subDoc.docs.some(d => d.id === student.id)) totalSubmissions++;
+          const subData = assignment.submittedData || {};
+          const hasSubmitted =
+            Object.keys(subData).includes(student.id) ||
+            Object.values(subData).some((s: any) =>
+              s?.studentId === student.id ||
+              (student.customStudentId && s?.customStudentId === student.customStudentId)
+            );
+          if (hasSubmitted) totalSubmissions++;
         }
 
         if (assignments.length > 0 && totalSubmissions === 0) {
@@ -268,7 +321,7 @@ export default function SituationalFeedPage() {
             newAlerts.push({
               studentId: student.id,
               studentName: student.name || 'Student',
-              class: student.studentClass || teacherClass,
+              class: student.studentClass || student.branch || teacherClass,
               category: 'academic',
               priority: 'high',
               title: 'No Activity Detected',

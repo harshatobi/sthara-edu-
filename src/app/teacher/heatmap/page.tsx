@@ -143,17 +143,29 @@ export default function TeacherHeatmap() {
           : allTeacherSubjects;
 
         // ── 6. Filter assignments by class + subject (case-insensitive) ─────────────────────
+        // Include assignments with no subject (legacy, created before subject field was added)
         const relevant = allAssignments.filter((a: any) =>
           (!activeClass || (a.class || '').toLowerCase() === activeClass.toLowerCase()) &&
-          (teacherSubjects.length === 0 || teacherSubjects.some(ts =>
+          (!a.subject || teacherSubjects.length === 0 || teacherSubjects.some(ts =>
             ts.toLowerCase() === (a.subject || '').toLowerCase()
           ))
         );
 
-        // Group assignments by subject
+        // Fallback subject for no-subject assignments: selected subject or first teacher subject
+        const fallbackSubject = selectedSubject || teacherSubjects[0] || 'General';
+
+        // Group assignments by subject (normalise case + bucket no-subject into active column)
         const bySubject: Record<string, any[]> = {};
         relevant.forEach((a: any) => {
-          const subj = a.subject || 'General';
+          let subj: string;
+          if (!a.subject) {
+            // Legacy assignment with no subject → bucket under the active subject column
+            subj = fallbackSubject;
+          } else {
+            // Normalise to the canonical subject name (handle case differences)
+            const matched = teacherSubjects.find(ts => ts.toLowerCase() === a.subject.toLowerCase());
+            subj = matched || a.subject;
+          }
           if (!bySubject[subj]) bySubject[subj] = [];
           bySubject[subj].push(a);
         });

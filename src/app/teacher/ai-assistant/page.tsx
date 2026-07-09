@@ -145,7 +145,7 @@ function PublishModal({
       if (type === 'quiz') {
         docData = {
           title: data.title,
-          subject: data.subject || 'General',
+          subject: targetSubject || data.subject || 'General',
           targetClass: cls, class: cls,
           type: 'quiz',
           dueDate,
@@ -165,7 +165,7 @@ function PublishModal({
       } else if (type === 'assignment') {
         docData = {
           title: data.title,
-          subject: data.subject || 'General',
+          subject: targetSubject || data.subject || 'General',
           targetClass: cls, class: cls,
           type: 'homework',
           dueDate,
@@ -189,7 +189,7 @@ function PublishModal({
         // question paper
         docData = {
           title: data.title,
-          subject: data.subject || 'General',
+          subject: targetSubject || data.subject || 'General',
           targetClass: cls, class: cls,
           type: 'paper',
           dueDate,

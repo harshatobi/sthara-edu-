@@ -182,8 +182,13 @@ export default function TeacherHeatmap() {
             // Legacy assignment with no subject → bucket under the active subject column
             subj = fallbackSubject;
           } else {
-            // Normalise to the canonical subject name (handle case differences)
-            const matched = teacherSubjects.find(ts => ts.toLowerCase() === a.subject.toLowerCase());
+            // Normalise to canonical subject name using substring match
+            // e.g. assignment.subject="Accounting" → buckets into "Corporate Accounting"
+            const aSubLower = a.subject.toLowerCase();
+            const matched = teacherSubjects.find(ts => {
+              const tsLower = ts.toLowerCase();
+              return tsLower === aSubLower || tsLower.includes(aSubLower) || aSubLower.includes(tsLower);
+            });
             subj = matched || a.subject;
           }
           if (!bySubject[subj]) bySubject[subj] = [];

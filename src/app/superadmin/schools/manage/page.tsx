@@ -218,7 +218,7 @@ function SchoolManagementContent() {
       }
     };
     fetchSchoolData();
-  }, [decodedSchoolId]);
+  }, [decodedSchoolId, activeTab]);
 
   const handleDeleteUser = async (userId: string, userRole?: string) => {
     if (!decodedSchoolId) return;

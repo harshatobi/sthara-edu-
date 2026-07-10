@@ -104,7 +104,22 @@ export default function TeacherSyllabus() {
                     teachingMethod: 'Lecture + Discussion',
                     assessmentType: 'Written Test',
                     notes: 'Auto-populated from curriculum',
-                    status: 'planned'
+                    status: 'planned',
+                    aiPath: {
+                      overview: `A comprehensive curriculum path for "${u.name || `Unit ${u.unitNo || i + 1}`}" covering key topics and foundational principles.`,
+                      milestones: [
+                        { title: 'Phase 1: Introduction & Theory', description: `Introduce core concepts and definitions of ${u.name || `Unit ${u.unitNo || i + 1}`}.` },
+                        { title: 'Phase 2: Practical Application', description: `Demonstrate how to apply these concepts through examples and exercises.` },
+                        { title: 'Phase 3: Deep Dive', description: `Explore advanced topics and edge cases discussed in the curriculum.` },
+                        { title: 'Phase 4: Review & Assessment', description: `Evaluate student understanding through tests and interactive Q&A.` }
+                      ],
+                      resources: [
+                        { id: `res_${Date.now()}_1`, title: `${u.name || `Unit ${u.unitNo || i + 1}`} Concept Map`, type: 'interactive' },
+                        { id: `res_${Date.now()}_2`, title: `Study Guide & Notes`, type: 'document' },
+                        { id: `res_${Date.now()}_3`, title: `Curated Video Lecture`, type: 'video' }
+                      ],
+                      teacherNotes: `This unit is auto-generated from the central curriculum. Ensure to adapt the pace based on classroom feedback and utilize the provided resources to enhance engagement.`
+                    }
                   };
                   loaded[MONTHS[monthIdx]].push(mod);
                   
@@ -735,17 +750,38 @@ export default function TeacherSyllabus() {
                 </div>
               )}
 
-              {/* AI Overview */}
-              <section>
-                <h3 className="text-lg font-bold text-[#002147] flex items-center border-b border-[#002147]/10 pb-2 mb-4"><FileText className="w-5 h-5 mr-2 text-blue-600" />AI Executive Overview</h3>
-                <p className="text-[#002147]/70 leading-relaxed font-medium bg-white p-5 rounded-2xl shadow-sm border border-[#002147]/5">{selectedModule.aiPath?.overview}</p>
-              </section>
+              )}
+
+              {/* Safe AI Path Fallback */}
+              {(() => {
+                const displayAiPath = selectedModule.aiPath || {
+                  overview: `A comprehensive curriculum path for "${selectedModule.topic || 'this module'}" covering key topics and foundational principles.`,
+                  milestones: [
+                    { title: 'Phase 1: Introduction & Theory', description: `Introduce core concepts and definitions of ${selectedModule.topic || 'this module'}.` },
+                    { title: 'Phase 2: Practical Application', description: `Demonstrate how to apply these concepts through examples and exercises.` },
+                    { title: 'Phase 3: Deep Dive', description: `Explore advanced topics and edge cases discussed in the curriculum.` },
+                    { title: 'Phase 4: Review & Assessment', description: `Evaluate student understanding through tests and interactive Q&A.` }
+                  ],
+                  resources: [
+                    { id: `res_fallback_1`, title: `${selectedModule.topic || 'Module'} Concept Map`, type: 'interactive' },
+                    { id: `res_fallback_2`, title: `Study Guide & Notes`, type: 'document' },
+                    { id: `res_fallback_3`, title: `Curated Video Lecture`, type: 'video' }
+                  ],
+                  teacherNotes: `This unit was imported from the central curriculum. Ensure to adapt the pace based on classroom feedback and utilize the provided resources to enhance engagement.`
+                };
+                return (
+                  <>
+                    {/* AI Overview */}
+                    <section>
+                      <h3 className="text-lg font-bold text-[#002147] flex items-center border-b border-[#002147]/10 pb-2 mb-4"><FileText className="w-5 h-5 mr-2 text-blue-600" />AI Executive Overview</h3>
+                      <p className="text-[#002147]/70 leading-relaxed font-medium bg-white p-5 rounded-2xl shadow-sm border border-[#002147]/5">{displayAiPath.overview}</p>
+                    </section>
 
               {/* Milestones */}
               <section>
                 <h3 className="text-lg font-bold text-[#002147] flex items-center border-b border-[#002147]/10 pb-2 mb-5"><Target className="w-5 h-5 mr-2 text-orange-500" />Step-by-Step Milestones</h3>
                 <div className="space-y-4">
-                  {selectedModule.aiPath?.milestones?.map((m: any, i: number) => (
+                  {displayAiPath.milestones?.map((m: any, i: number) => (
                     <div key={i} className="flex space-x-4">
                       <div className="shrink-0 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow">{i+1}</div>
                       <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#002147]/8 flex-1 hover:shadow-md transition-shadow">
@@ -761,7 +797,7 @@ export default function TeacherSyllabus() {
               <section>
                 <h3 className="text-lg font-bold text-[#002147] flex items-center border-b border-[#002147]/10 pb-2 mb-4"><Lightbulb className="w-5 h-5 mr-2 text-yellow-500" />AI Teaching Strategy</h3>
                 <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-2xl border border-yellow-200 shadow-sm">
-                  <p className="text-yellow-900 font-medium leading-relaxed">{selectedModule.aiPath?.teacherNotes}</p>
+                  <p className="text-yellow-900 font-medium leading-relaxed">{displayAiPath.teacherNotes}</p>
                 </div>
               </section>
 
@@ -769,7 +805,7 @@ export default function TeacherSyllabus() {
               <section>
                 <h3 className="text-lg font-bold text-[#002147] flex items-center border-b border-[#002147]/10 pb-2 mb-4"><BookOpen className="w-5 h-5 mr-2 text-indigo-500" />Generated Resources</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {selectedModule.aiPath?.resources?.map((res: any, i: number) => (
+                  {displayAiPath.resources?.map((res: any, i: number) => (
                     <div key={i} onClick={() => handleResourceClick(res, selectedModule.topic)} className="bg-white p-4 rounded-xl border border-[#002147]/8 flex items-start space-x-3 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group">
                       <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
                         {res.type === 'video' ? <PlayCircle className="w-5 h-5" /> : <FileCheck className="w-5 h-5" />}
@@ -782,6 +818,9 @@ export default function TeacherSyllabus() {
                   ))}
                 </div>
               </section>
+              </>
+              );
+            })()}
             </div>
 
             {/* Footer */}

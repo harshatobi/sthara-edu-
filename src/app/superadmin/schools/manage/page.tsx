@@ -6,7 +6,7 @@ import { ArrowLeft, UserPlus, GraduationCap, Users, BookOpen, Plus, Trash2, Link
 import ClassesTab from './ClassesTab';
 
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
@@ -175,7 +175,8 @@ function SchoolManagementContent() {
 
 
   // Extended Data Fields
-  const [studentClass, setStudentClass] = useState('');
+  const [studentClass, setStudentClass] = useState(''); // Stores the selected class ID
+  const [availableClasses, setAvailableClasses] = useState<any[]>([]);
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '', assignedStudents: [] }]);
   const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
   const [editingTeacher, setEditingTeacher] = useState<UserData | null>(null);
@@ -183,9 +184,6 @@ function SchoolManagementContent() {
   // College-specific
   const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
   const [schoolBranches, setSchoolBranches] = useState<string[]>([]);
-  const [studentBranch, setStudentBranch] = useState('');
-  const [studentYear, setStudentYear] = useState('');
-  const [studentSemester, setStudentSemester] = useState('');
 
 
 
@@ -210,6 +208,11 @@ function SchoolManagementContent() {
           usersList.push({ id: doc.id, ...doc.data() } as UserData);
         });
         setUsers(usersList);
+
+        const classesSnap = await getDocs(collection(db, 'schools', decodedSchoolId, 'classes'));
+        const classesList: any[] = [];
+        classesSnap.forEach(doc => classesList.push({ id: doc.id, ...doc.data() }));
+        setAvailableClasses(classesList);
       } catch (err) {
         console.error(err);
       }
@@ -370,24 +373,26 @@ function SchoolManagementContent() {
       };
 
       if (role === 'student') {
-        if (institutionType === 'college') {
-          userData.branch = studentBranch;
-          userData.year = studentYear;
-          userData.semester = studentSemester;
-          // Generate clean ID: strip spaces from branch → abbreviation
-          const branchAbbr = studentBranch.replace(/\s+/g, '').slice(0, 4).toUpperCase();
-          const existingInBranch = users.filter(u => u.role === 'student' && (u as any).branch === studentBranch);
-          const sequenceNumber = existingInBranch.length + 1;
-          const sequentialId = `${decodedSchoolId}-${branchAbbr}-${String(sequenceNumber).padStart(3, '0')}`;
-          userData.customStudentId = sequentialId.toUpperCase();
-        } else {
-          const parsedClass = studentClass.trim();
-          userData.studentClass = parsedClass;
-          const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
-          const sequenceNumber = existingStudentsInClass.length + 1;
-          const sequentialId = `${decodedSchoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`;
-          userData.customStudentId = sequentialId.toUpperCase();
-        }
+        const selectedClass = availableClasses.find(c => c.id === studentClass);
+        if (!selectedClass) throw new Error("Please select a class");
+
+        userData.classId = selectedClass.id;
+        userData.className = selectedClass.name;
+        userData.studentClass = selectedClass.name; // Keep for legacy display compatibility
+        userData.curriculum = selectedClass.curriculum || '';
+        userData.enrolledSubjects = selectedClass.subjects || [];
+
+        const existingStudentsInClass = users.filter(u => u.role === 'student' && (u as any).classId === selectedClass.id);
+        const sequenceNumber = existingStudentsInClass.length + 1;
+        const classAbbr = selectedClass.name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5).toUpperCase();
+        const sequentialId = `${decodedSchoolId}-${classAbbr}-${String(sequenceNumber).padStart(3, '0')}`;
+        userData.customStudentId = sequentialId.toUpperCase();
+
+        // Add student to the class's enrolledStudentIds
+        await updateDoc(doc(db, 'schools', decodedSchoolId, 'classes', selectedClass.id), {
+          enrolledStudentIds: arrayUnion(newUid)
+        });
+
       } else if (role === 'teacher') {
         // For college: each assignment row already contains its own assignedStudents[]
         // For school: standard class+subject assignments
@@ -412,9 +417,6 @@ function SchoolManagementContent() {
       setPassword('');
       setName('');
       setStudentClass('');
-      setStudentBranch('');
-      setStudentYear('');
-      setStudentSemester('');
       setTeacherAssignments([{ class: '', subject: '', assignedStudents: [] }]);
       setSelectedStudentsForParent([]);
 
@@ -572,62 +574,19 @@ function SchoolManagementContent() {
             {/* Dynamic Fields based on Role */}
             {role === 'student' && (
               <div className="animate-in fade-in duration-300 space-y-3">
-                {institutionType === 'college' ? (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-[#002147]/70 mb-1">Branch / Department</label>
-                      <select
-                        required
-                        value={studentBranch}
-                        onChange={(e) => setStudentBranch(e.target.value)}
-                        className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-                      >
-                        <option value="">Select Branch</option>
-                        {schoolBranches.map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-[#002147]/70 mb-1">Year</label>
-                        <select
-                          required
-                          value={studentYear}
-                          onChange={(e) => setStudentYear(e.target.value)}
-                          className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-2.5 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-                        >
-                          <option value="">Year</option>
-                          {['1st Year','2nd Year','3rd Year','4th Year'].map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#002147]/70 mb-1">Semester</label>
-                        <select
-                          required
-                          value={studentSemester}
-                          onChange={(e) => setStudentSemester(e.target.value)}
-                          className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-2.5 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-                        >
-                          <option value="">Sem</option>
-                          {['1st','2nd','3rd','4th','5th','6th','7th','8th'].map(s => <option key={s} value={s}>{s} Sem</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <p className="text-xs text-[#002147]/50">A unique enrollment ID will be auto-generated from the branch code.</p>
-                  </>
-                ) : (
-                  <>
-                    <label className="block text-sm font-medium text-[#002147]/70 mb-1">Class / Grade</label>
-                    <input
-                      type="text"
-                      required
-                      value={studentClass}
-                      onChange={(e) => setStudentClass(e.target.value)}
-                      placeholder="e.g. 10A"
-                      className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-                    />
-                    <p className="text-xs text-[#002147]/50 mt-1">A unique ID (e.g. SDS-10A-001) will be generated automatically.</p>
-                  </>
-                )}
+                <label className="block text-sm font-medium text-[#002147]/70 mb-1">Select Class / Curriculum</label>
+                <select
+                  required
+                  value={studentClass}
+                  onChange={(e) => setStudentClass(e.target.value)}
+                  className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                >
+                  <option value="">-- Select Class --</option>
+                  {availableClasses.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-[#002147]/50 mt-1">Student will automatically be enrolled in all subjects for this class's curriculum.</p>
               </div>
             )}
 

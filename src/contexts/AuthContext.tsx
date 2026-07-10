@@ -17,8 +17,16 @@ export interface UserProfile {
   teacherClass?: string;
   subjectsTaught?: string[];
   customStudentId?: string;
-  assignments?: { class: string; subject: string }[];
+  assignments?: { class: string; subject: string; assignedStudents?: string[] }[];
   linkedStudents?: string[];
+  teachingSubjects?: {
+    classId: string;
+    className: string;
+    subjectId: string;
+    subjectName: string;
+    curriculum?: string;
+    units?: { unitNo: number; name: string; topics?: string[] }[];
+  }[];
   // College-specific
   institutionType?: 'school' | 'college';
   branch?: string;
@@ -174,6 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             customStudentId: userData.customStudentId,
             assignments: userData.assignments,
             linkedStudents: userData.linkedStudents,
+            teachingSubjects: userData.teachingSubjects,
             institutionType,
             branch: userData.branch,
             year: userData.year,

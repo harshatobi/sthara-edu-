@@ -81,11 +81,45 @@ export default function TeacherSyllabus() {
           );
           const data = await res.json();
           const loaded: { [key: string]: any[] } = Object.fromEntries(MONTHS.map(m => [m, []]));
-          (data.modules || []).forEach((mod: any) => {
-            if (loaded[mod.month] !== undefined) {
-              loaded[mod.month].push(mod);
+          
+          if ((!data.modules || data.modules.length === 0) && profile.teachingSubjects?.length > 0) {
+            // Auto-populate from teaching subjects
+            let hasAutoPopulated = false;
+            for (const ts of profile.teachingSubjects) {
+              if (ts.units && ts.units.length > 0) {
+                for (let i = 0; i < ts.units.length; i++) {
+                  const u = ts.units[i];
+                  // Distribute units across months roughly starting from July
+                  const monthIdx = (1 + i) % MONTHS.length; // July onwards
+                  const mod = {
+                    id: `auto_${ts.subjectId}_${u.unitNo}_${Date.now()}`,
+                    teacherId: profile.uid,
+                    schoolId: profile.schoolId,
+                    month: MONTHS[monthIdx],
+                    topic: u.name,
+                    subject: ts.subjectName,
+                    grade: ts.className,
+                    weeks: '2',
+                    objectives: u.topics ? 'Covering: ' + u.topics.join(', ') : '',
+                    teachingMethod: 'Lecture + Discussion',
+                    assessmentType: 'Written Test',
+                    notes: 'Auto-populated from curriculum'
+                  };
+                  loaded[MONTHS[monthIdx]].push(mod);
+                  
+                  // Save to DB so it persists
+                  await addDoc(collection(db, 'schools', profile.schoolId, 'syllabus'), mod);
+                  hasAutoPopulated = true;
+                }
+              }
             }
-          });
+          } else {
+            (data.modules || []).forEach((mod: any) => {
+              if (loaded[mod.month] !== undefined) {
+                loaded[mod.month].push(mod);
+              }
+            });
+          }
           setSyllabus(loaded);
         } catch (err) { console.error('[syllabus load]', err); }
       })();

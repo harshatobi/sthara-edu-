@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, UserPlus, GraduationCap, Users, BookOpen, Plus, Trash2, Link as LinkIcon, CheckSquare, Square, Pencil, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, GraduationCap, Users, BookOpen, Plus, Trash2, Link as LinkIcon, CheckSquare, Square, Pencil, X, Loader2, LayoutGrid } from 'lucide-react';
+import ClassesTab from './ClassesTab';
 
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -159,6 +160,7 @@ function SchoolManagementContent() {
 
   const [schoolName, setSchoolName] = useState('Loading...');
   const [users, setUsers] = useState<UserData[]>([]);
+  const [activeTab, setActiveTab] = useState<'users' | 'classes'>('users');
   
   // New User Form State
   const [email, setEmail] = useState('');
@@ -497,6 +499,28 @@ function SchoolManagementContent() {
         </div>
       </div>
 
+      <div className="flex space-x-2 border-b border-gray-200 mb-6">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === 'users' ? 'border-[#002147] text-[#002147]' : 'border-transparent text-gray-500 hover:text-[#002147]'
+          }`}
+        >
+          <Users className="w-4 h-4 inline-block mr-2" /> Users Directory
+        </button>
+        <button
+          onClick={() => setActiveTab('classes')}
+          className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === 'classes' ? 'border-[#002147] text-[#002147]' : 'border-transparent text-gray-500 hover:text-[#002147]'
+          }`}
+        >
+          <LayoutGrid className="w-4 h-4 inline-block mr-2" /> Classes & Curriculum
+        </button>
+      </div>
+
+      {activeTab === 'classes' ? (
+        <ClassesTab schoolId={decodedSchoolId} institutionType={institutionType} allUsers={users} />
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* User Creation Portal */}
@@ -928,6 +952,7 @@ function SchoolManagementContent() {
         </div>
 
       </div>
+      )}
 
       {/* Edit Teacher Modal */}
       {editingTeacher && (

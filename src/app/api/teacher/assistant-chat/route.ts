@@ -141,16 +141,28 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { messages } = await req.json() as { messages: { role: 'user' | 'model'; parts: string }[] };
+    const { messages, teachingSubjects } = await req.json() as { messages: { role: 'user' | 'model'; parts: string }[], teachingSubjects?: any[] };
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'Messages required' }, { status: 400 });
     }
 
+    let dynamicSystemPrompt = SYSTEM_PROMPT;
+    if (teachingSubjects && teachingSubjects.length > 0) {
+      const curriculumInfo = teachingSubjects.map(ts => {
+        let str = `- Subject: ${ts.subjectName} (Class: ${ts.className})`;
+        if (ts.units && ts.units.length > 0) {
+          str += '\n  Units: ' + ts.units.map((u: any) => u.name).join(', ');
+        }
+        return str;
+      }).join('\n');
+      dynamicSystemPrompt += `\n\n## CURRICULUM CONTEXT\nThe teacher teaches the following subjects/classes. Base your recommendations on this curriculum:\n${curriculumInfo}`;
+    }
+
     const ai = new GoogleGenerativeAI(apiKey);
     const model = ai.getGenerativeModel({
       model: 'gemini-2.5-flash',
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: dynamicSystemPrompt,
       generationConfig: {
         temperature: 0.7,
       },

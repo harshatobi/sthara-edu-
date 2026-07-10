@@ -720,7 +720,10 @@ export default function TeacherAIAssistantChat() {
           'Content-Type': 'application/json',
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ 
+          messages: history,
+          teachingSubjects: profile.teachingSubjects || []
+        }),
       });
 
       if (!response.ok || !response.body) {

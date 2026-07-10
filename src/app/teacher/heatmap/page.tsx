@@ -144,13 +144,21 @@ export default function TeacherHeatmap() {
 
   // ── Derive teacher subjects + classes from profile ──
   useEffect(() => {
-    if (!profile?.assignments) return;
-    const subs: string[] = [...new Set((profile.assignments as any[]).map((a: any) => a.subject).filter(Boolean))];
-    const clss: string[] = [...new Set((profile.assignments as any[]).map((a: any) => a.class).filter(Boolean))];
+    let subs: string[] = [];
+    let clss: string[] = [];
+    
+    if (profile?.teachingSubjects?.length > 0) {
+      subs = [...new Set(profile.teachingSubjects.map((ts: any) => ts.subjectName).filter(Boolean))] as string[];
+      clss = [...new Set(profile.teachingSubjects.map((ts: any) => ts.className).filter(Boolean))] as string[];
+    } else if (profile?.assignments) {
+      subs = [...new Set((profile.assignments as any[]).map((a: any) => a.subject).filter(Boolean))];
+      clss = [...new Set((profile.assignments as any[]).map((a: any) => a.class).filter(Boolean))];
+    }
+    
     setTeacherSubjects(subs);
     if (!selectedSubject && subs.length > 0) setSelectedSubject(subs[0]);
     if (!selectedClass   && clss.length > 0) setSelectedClass(clss[0]);
-  }, [profile?.assignments]);
+  }, [profile?.assignments, profile?.teachingSubjects]);
 
   // ── Fetch data whenever class or subject changes ──
   useEffect(() => {
@@ -234,8 +242,24 @@ export default function TeacherHeatmap() {
           subjectMatches(a.subject, selectedSubject)
         );
 
-        // 5. Get OU topics for the selected subject
-        const topics = getTopicsForSubject(selectedSubject);
+        // 5. Get OU topics for the selected subject (or exact units from teachingSubjects)
+        let topics: OUTopic[] = [];
+        const matchingTeachingSubject = profile?.teachingSubjects?.find((ts: any) => 
+          subjectMatches(ts.subjectName, selectedSubject) && classMatches(ts.className, selectedClass)
+        );
+
+        if (matchingTeachingSubject && matchingTeachingSubject.units) {
+          topics = matchingTeachingSubject.units.map((u: any) => ({
+            id: `unit_${u.unitNo}`,
+            unit: `Unit ${u.unitNo}`,
+            label: u.name,
+            short: u.name.length > 15 ? u.name.substring(0, 15) + '...' : u.name,
+            keywords: u.topics?.map((t: string) => t.toLowerCase()) || []
+          }));
+        } else {
+          topics = getTopicsForSubject(selectedSubject);
+        }
+        
         setTopicCols(topics);
 
         // 6. Build: topicId → assignments

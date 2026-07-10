@@ -103,7 +103,8 @@ export default function TeacherSyllabus() {
                     objectives: Array.isArray(u.topics) ? 'Covering: ' + u.topics.join(', ') : (typeof u.topics === 'string' ? u.topics : ''),
                     teachingMethod: 'Lecture + Discussion',
                     assessmentType: 'Written Test',
-                    notes: 'Auto-populated from curriculum'
+                    notes: 'Auto-populated from curriculum',
+                    status: 'planned'
                   };
                   loaded[MONTHS[monthIdx]].push(mod);
                   
@@ -507,13 +508,13 @@ export default function TeacherSyllabus() {
                   syllabus[month]?.map((item: any) => (
                     <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group relative overflow-hidden" onClick={() => setSelectedModule(item)}>
                       {/* Status bar */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusBar(item.status)}`} />
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusBar(item.status || 'planned')}`} />
 
                       <div className="p-4 ml-2">
                         {/* Top row */}
                         <div className="flex justify-between items-start mb-2">
-                          <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full border ${statusColor(item.status)}`}>
-                            {item.status.replace('-',' ')}
+                          <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full border ${statusColor(item.status || 'planned')}`}>
+                            {(item.status || 'planned').replace('-',' ')}
                           </span>
                           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity no-print" onClick={e => e.stopPropagation()}>
                             <button onClick={() => openEditModal(item)} className="p-1 rounded hover:bg-blue-50 text-[#002147]/40 hover:text-blue-600 transition-colors" title="Edit">

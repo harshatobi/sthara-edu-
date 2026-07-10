@@ -750,8 +750,6 @@ export default function TeacherSyllabus() {
                 </div>
               )}
 
-              )}
-
               {/* Safe AI Path Fallback */}
               {(() => {
                 const displayAiPath = selectedModule.aiPath || {

@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Upload, X, Loader2, BookOpen, Users, User, ArrowLeft, ChevronRight, Save } from 'lucide-react';
-import { db, storage } from '@/lib/firebase/config';
-import { doc, getDoc, collection, getDocs, setDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { db } from '@/lib/firebase/config';
+import { doc, collection, getDocs, updateDoc } from 'firebase/firestore';
 
 export default function ClassesTab({ schoolId, institutionType, allUsers }: { schoolId: string, institutionType: 'school' | 'college', allUsers: any[] }) {
   const [classes, setClasses] = useState<any[]>([]);

@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { db } from '@/lib/firebase/admin';
+import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: NextRequest) {
   const token = await verifyApiToken(request);
@@ -14,7 +14,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const newClassDoc = db.collection('schools').doc(schoolId).collection('classes').doc();
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
+
+    const newClassDoc = adminDb.collection('schools').doc(schoolId).collection('classes').doc();
     const classId = newClassDoc.id;
 
     const dataToSave = {

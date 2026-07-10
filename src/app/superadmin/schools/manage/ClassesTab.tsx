@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Upload, X, Loader2, BookOpen, Users, User, ArrowLeft, ChevronRight, Save } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
 import { doc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 export default function ClassesTab({ schoolId, institutionType, allUsers }: { schoolId: string, institutionType: 'school' | 'college', allUsers: any[] }) {
   const [classes, setClasses] = useState<any[]>([]);
@@ -40,50 +41,88 @@ export default function ClassesTab({ schoolId, institutionType, allUsers }: { sc
     if (!file) return;
 
     setUploadingImage(true);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const base64 = ev.target?.result as string;
-      // Extract just the b64 data part
-      const b64Data = base64.split(',')[1];
-      
+
+    try {
+      // ── Step 1: Compress image using canvas (max 1024px, JPEG 0.75) ──
+      const compressedBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX = 1024;
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+              if (w > h) { h = Math.round((h / w) * MAX); w = MAX; }
+              else { w = Math.round((w / h) * MAX); h = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(img, 0, 0, w, h);
+            // Always output as JPEG for consistent smaller size
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+            resolve(dataUrl.split(',')[1]);
+          };
+          img.onerror = reject;
+          img.src = ev.target?.result as string;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
       setUploadingImage(false);
       setAnalyzing(true);
-      
-      try {
-        const res = await fetch('/api/superadmin/analyze-course', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: b64Data, mimeType: file.type })
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-          setWizardData(data.data);
-          setWizardStep(2);
-        } else {
-          alert('Failed to analyze: ' + data.error);
-        }
-      } catch (err: any) {
-        alert('Error: ' + err.message);
+
+      // ── Step 2: Get Firebase auth token ──
+      const idToken = await getAuth().currentUser?.getIdToken();
+      if (!idToken) {
+        alert('Authentication error: Please sign in again.');
+        setAnalyzing(false);
+        return;
       }
-      setAnalyzing(false);
-    };
-    reader.readAsDataURL(file);
+
+      // ── Step 3: Call the API ──
+      const res = await fetch('/api/superadmin/analyze-course', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ imageBase64: compressedBase64, mimeType: 'image/jpeg' })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server error (${res.status}): ${text.substring(0, 200)}`);
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setWizardData(data.data);
+        setWizardStep(2);
+      } else {
+        alert('Failed to analyze: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
+    setAnalyzing(false);
   };
 
-  const saveClass = async () => {
-    setUploadingImage(true); // Re-using state for saving
-    try {
-      // Create a nice display name
-      const className = wizardData.branch ? `${wizardData.branch} ${wizardData.year || ''} ${wizardData.semester || ''}`.trim() : 'New Class';
-      const dataToSave = {
-        ...wizardData,
-        name: className,
-      };
 
+  const saveClass = async () => {
+    setUploadingImage(true);
+    try {
+      const className = wizardData.branch ? `${wizardData.branch} ${wizardData.year || ''} ${wizardData.semester || ''}`.trim() : 'New Class';
+      const dataToSave = { ...wizardData, name: className };
+
+      const idToken = await getAuth().currentUser?.getIdToken();
       const res = await fetch('/api/superadmin/create-class', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+        },
         body: JSON.stringify({ schoolId, classData: dataToSave })
       });
       const data = await res.json();
@@ -101,6 +140,7 @@ export default function ClassesTab({ schoolId, institutionType, allUsers }: { sc
     }
     setUploadingImage(false);
   };
+
 
   // Assign Teacher logic
   const [assigningSubject, setAssigningSubject] = useState<string | null>(null);

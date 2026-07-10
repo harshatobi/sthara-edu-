@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Upload, X, Loader2, BookOpen, Users, User, ArrowLeft, ChevronRight, Save } from 'lucide-react';
 import { db } from '@/lib/firebase/config';
-import { doc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, collection, getDocs, updateDoc, setDoc, addDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 export default function ClassesTab({ schoolId, institutionType, allUsers }: { schoolId: string, institutionType: 'school' | 'college', allUsers: any[] }) {
@@ -113,33 +113,73 @@ export default function ClassesTab({ schoolId, institutionType, allUsers }: { sc
   const saveClass = async () => {
     setUploadingImage(true);
     try {
-      const className = wizardData.branch ? `${wizardData.branch} ${wizardData.year || ''} ${wizardData.semester || ''}`.trim() : 'New Class';
-      const dataToSave = { ...wizardData, name: className };
+      const className = wizardData.branch
+        ? `${wizardData.branch} ${wizardData.year || ''} ${wizardData.semester || ''}`.trim()
+        : wizardData.course || 'New Class';
 
-      const idToken = await getAuth().currentUser?.getIdToken();
-      const res = await fetch('/api/superadmin/create-class', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
-        },
-        body: JSON.stringify({ schoolId, classData: dataToSave })
-      });
-      const data = await res.json();
+      // ── 1. Save class doc to Firestore directly (no Admin SDK needed) ──
+      const classRef = doc(collection(db, 'schools', schoolId, 'classes'));
+      const classId = classRef.id;
+      const dataToSave = {
+        ...wizardData,
+        id: classId,
+        name: className,
+        createdAt: new Date().toISOString(),
+        enrolledStudentIds: [],
+      };
+      await setDoc(classRef, dataToSave);
 
-      if (data.success) {
-        await fetchClasses();
-        setView('list');
-        setWizardStep(1);
-        setWizardData(null);
-      } else {
-        alert(data.error);
+      // ── 2. Sync teachingSubjects into teacher profiles ──
+      //    For each subject in the saved class, find assigned teachers and update their teachingSubjects[]
+      const subjects: any[] = wizardData.subjects || [];
+      if (subjects.length > 0) {
+        const usersSnap = await getDocs(collection(db, 'schools', schoolId, 'users'));
+        const teachers = usersSnap.docs
+          .map(d => ({ id: d.id, ...d.data() } as any))
+          .filter(u => u.role === 'teacher');
+
+        for (const subject of subjects) {
+          const assignedTeacherId: string | null = subject.assignedTeacherId || subject.teacherId || null;
+          if (!assignedTeacherId) continue;
+
+          const teacher = teachers.find(t => t.id === assignedTeacherId);
+          if (!teacher) continue;
+
+          const existing: any[] = teacher.teachingSubjects || [];
+          const alreadyHas = existing.some(
+            ts => ts.subjectId === subject.id && ts.classId === classId
+          );
+          if (alreadyHas) continue;
+
+          const newEntry = {
+            classId,
+            className,
+            subjectId: subject.id || subject.name?.toLowerCase().replace(/\s+/g, '_'),
+            subjectName: subject.name,
+            curriculum: wizardData.university || wizardData.board || '',
+            units: subject.units || [],
+          };
+          const updatedSubjects = [...existing, newEntry];
+
+          await Promise.allSettled([
+            updateDoc(doc(db, 'schools', schoolId, 'users', assignedTeacherId), { teachingSubjects: updatedSubjects }),
+            updateDoc(doc(db, 'global_users', assignedTeacherId), { teachingSubjects: updatedSubjects }),
+          ]);
+        }
       }
+
+      await fetchClasses();
+      setView('list');
+      setWizardStep(1);
+      setWizardData(null);
+      alert(`✅ Class "${className}" saved successfully with ${subjects.length} subject(s)!`);
     } catch (e: any) {
-      alert(e.message);
+      console.error('[saveClass]', e);
+      alert('Error saving class: ' + e.message);
     }
     setUploadingImage(false);
   };
+
 
 
   // Assign Teacher logic

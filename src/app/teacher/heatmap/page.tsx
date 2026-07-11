@@ -316,9 +316,19 @@ export default function TeacherHeatmap() {
 
               if (ts >= latestDate[s.id]) {
                 latestDate[s.id] = ts;
-                const rawScore = sub.score ?? sub.aiResult?.totalScore;
-                const maxScore = sub.maxScore ?? sub.aiResult?.maxTotalScore ?? 10;
-                latestScore[s.id] = rawScore != null ? Math.round((rawScore / maxScore) * 100) : 0;
+                let rawScore = sub.score ?? sub.aiResult?.totalScore;
+                let maxScore = sub.maxScore ?? sub.aiResult?.maxTotalScore ?? 10;
+                
+                // Prioritize teacher's manual grade override if present
+                if (sub.finalGrade && typeof sub.finalGrade === 'string' && sub.finalGrade.includes('/')) {
+                  const [fs, fm] = sub.finalGrade.split('/');
+                  rawScore = parseFloat(fs);
+                  maxScore = parseFloat(fm);
+                } else if (sub.finalGrade != null && !isNaN(Number(sub.finalGrade))) {
+                  rawScore = Number(sub.finalGrade);
+                }
+
+                latestScore[s.id] = rawScore != null && maxScore > 0 ? Math.round((rawScore / maxScore) * 100) : 0;
               }
             });
           }

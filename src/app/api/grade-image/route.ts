@@ -171,8 +171,8 @@ OUTPUT: Return ONLY valid JSON — no markdown, no preamble:
     let geminiPayload: any;
 
     if (isTextOnly) {
-      // Text-only: use gemini-2.5-flash (no vision needed, faster)
-      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      // Text-only: use gemini-2.5-pro to ensure consistency and avoid model access errors
+      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
       geminiPayload = {
         contents: [
           {

@@ -102,7 +102,8 @@ export default function StudentHomework() {
         const studentCustomId = profile.customStudentId || '';
         const studentUid = profile.uid || '';
         const visibleTasks = allTasks.filter((t: any) => {
-          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true; // no restriction
+          // STRICT SUBJECT ENFORCEMENT: Only show to students explicitly mapped to the subject
+          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return false;
           return (
             (studentCustomId && t.assignedStudentIds.includes(studentCustomId)) ||
             (studentUid && t.assignedStudentIds.includes(studentUid))

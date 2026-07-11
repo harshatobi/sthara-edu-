@@ -404,7 +404,8 @@ export default function StudentDashboard() {
         const studentCustomId = profile.customStudentId || '';
         const studentUid = profile.uid || '';
         const visibleTasks = tasks.filter((t: any) => {
-          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true; // no restriction — legacy doc
+          // STRICT SUBJECT ENFORCEMENT: Only show to students explicitly mapped to the subject
+          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return false;
           return (
             (studentCustomId && t.assignedStudentIds.includes(studentCustomId)) ||
             (studentUid && t.assignedStudentIds.includes(studentUid))

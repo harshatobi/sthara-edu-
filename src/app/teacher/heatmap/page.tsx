@@ -200,12 +200,23 @@ export default function TeacherHeatmap() {
         let classStudents: any[];
         if (teacherHasAssignedStudents) {
           // Strict filter: only students explicitly assigned for the selected subject
-          const assignedIds = new Set<string>(
-            ((profile as any).assignments || [])
-              .filter((a: any) => subjectMatches(a.subject, selectedSubject))
-              .flatMap((a: any) => a.assignedStudents || [])
-          );
-          classStudents = allStudents.filter((s: any) => assignedIds.has(s.id));
+          // assignedStudents may contain Firebase UIDs OR customStudentIds — handle both
+          const rawAssignedIds = ((profile as any).assignments || [])
+            .filter((a: any) => subjectMatches(a.subject, selectedSubject))
+            .flatMap((a: any) => a.assignedStudents || []);
+          const assignedIdSet = new Set<string>(rawAssignedIds);
+
+          if (assignedIdSet.size > 0) {
+            classStudents = allStudents.filter((s: any) =>
+              assignedIdSet.has(s.id) ||
+              (s.customStudentId && assignedIdSet.has(s.customStudentId))
+            );
+          } else {
+            // No students assigned for this subject → fall back to class filter
+            classStudents = allStudents.filter((s: any) =>
+              classMatches(s.studentClass || s.branch || s.class, selectedClass || ((profile as any).assignments?.[0]?.class))
+            );
+          }
         } else {
           // Fallback: show students that match the teacher's class/branch
           // Check studentClass (school) and branch (college) fields
@@ -234,18 +245,29 @@ export default function TeacherHeatmap() {
         const clsSet = [...new Set(allStudents.map(s => s.studentClass || s.branch || s.class).filter(Boolean))] as string[];
         setAvailableClasses(clsSet);
 
-        // 3. Fetch all school assignments (no teacherId filter — catches all variants)
+        // 3. Fetch all school assignments for this teacher
         const assignRes = await fetch('/api/teacher/get-assignments', {
           method: 'POST', headers,
-          body: JSON.stringify({ schoolId }),
+          body: JSON.stringify({ schoolId, teacherId: profile.uid }),
         });
         const assignJson = await assignRes.json();
         const allAssignments: any[] = assignJson.assignments || [];
 
+        // Also fetch ALL assignments (in case some were created via other paths)
+        const allAssignRes = await fetch('/api/teacher/get-assignments', {
+          method: 'POST', headers,
+          body: JSON.stringify({ schoolId }),
+        });
+        const allAssignJson = await allAssignRes.json();
+        const extraAssignments: any[] = (allAssignJson.assignments || []).filter(
+          (a: any) => !allAssignments.some((b: any) => b.id === a.id)
+        );
+        const mergedAssignments = [...allAssignments, ...extraAssignments];
+
         // 4. Filter to selected subject + class
-        const relevant = allAssignments.filter(a =>
-          classMatches(a.class || a.targetClass, selectedClass) &&
-          subjectMatches(a.subject, selectedSubject)
+        const relevant = mergedAssignments.filter(a =>
+          subjectMatches(a.subject, selectedSubject) &&
+          (classMatches(a.class || a.targetClass, selectedClass) || !a.class)
         );
 
         // 5. Get OU topics for the selected subject (or exact units from teachingSubjects)

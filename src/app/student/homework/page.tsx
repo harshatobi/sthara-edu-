@@ -47,32 +47,23 @@ export default function StudentHomework() {
           where('targetStudentId', '==', uid)
         );
 
-        const queryPromises = [getDocs(targetedQuery)];
-
-        if (classKey) {
-          queryPromises.push(getDocs(query(
+        let classSnap: any;
+        if (isCollege) {
+          const branchQuery = profile.branch
+            ? query(collection(db, 'schools', schoolId, 'assignments'), where('class', '==', profile.branch))
+            : query(collection(db, 'schools', schoolId, 'assignments'));
+          classSnap = await getDocs(branchQuery);
+        } else {
+          classSnap = await getDocs(query(
             collection(db, 'schools', schoolId, 'assignments'),
-            where('class', '==', classKey)
-          )));
-          queryPromises.push(getDocs(query(
-            collection(db, 'schools', schoolId, 'assignments'),
-            where('targetClass', '==', classKey)
-          )));
+            where('class', '==', profile.studentClass)
+          ));
         }
 
-        const snaps = await Promise.all(queryPromises);
+        const targetedSnap = await getDocs(targetedQuery);
 
-        // Collect all unique docs first, then process — avoids race-condition dedup
-        const seen = new Set<string>();
-        const allDocs: any[] = [];
-        snaps.forEach(snap => snap.docs.forEach(docSnap => {
-          if (!seen.has(docSnap.id)) {
-            seen.add(docSnap.id);
-            allDocs.push(docSnap);
-          }
-        }));
-
-        const processDoc = async (docSnap: any): Promise<Assignment> => {
+        const tasksMap = new Map<string, Assignment>();
+        const processDoc = async (docSnap: any) => {
           const data = docSnap.data();
           const taskData: Assignment = {
             id: docSnap.id,
@@ -86,21 +77,38 @@ export default function StudentHomework() {
           const subDoc = await getDoc(subDocRef);
           if (subDoc.exists()) {
             const subData = subDoc.data();
-            taskData.status = 'completed';
-            taskData.grade = subData.grade || (subData.totalScore !== undefined ? `${subData.totalScore}/${subData.maxTotalScore}` : subData.score || 'Graded');
+            if (subData.teacherApproved === false) {
+              // If teacher rejected it, it remains pending
+              taskData.status = 'pending';
+              taskData.topic = `[Rejected - Resubmit] ${taskData.topic}`;
+            } else {
+              taskData.status = 'completed';
+              taskData.grade = subData.finalGrade || subData.grade || (subData.totalScore !== undefined ? `${subData.totalScore}/${subData.maxTotalScore}` : subData.score || 'Graded');
+            }
             taskData.teacherApproved = subData.teacherApproved || false;
           }
-          return taskData;
+          if (!tasksMap.has(taskData.id)) tasksMap.set(taskData.id, taskData);
         };
 
-        const allTasks = await Promise.all(allDocs.map(processDoc));
+        await Promise.all([
+          ...classSnap.docs.map(processDoc),
+          ...targetedSnap.docs.map(processDoc)
+        ]);
+
+        const allTasks = Array.from(tasksMap.values());
         allTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-        // Subject-scoping: only show assignments the student is enrolled for
+
+        // Subject-scoping: if an assignment has assignedStudentIds, only show it to those students
         const studentCustomId = profile.customStudentId || '';
+        const studentUid = profile.uid || '';
         const visibleTasks = allTasks.filter((t: any) => {
-          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true;
-          return studentCustomId && t.assignedStudentIds.includes(studentCustomId);
+          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return true; // no restriction
+          return (
+            (studentCustomId && t.assignedStudentIds.includes(studentCustomId)) ||
+            (studentUid && t.assignedStudentIds.includes(studentUid))
+          );
         });
+        
         setAssignments(visibleTasks);
       } catch (err) {
         console.error(err);

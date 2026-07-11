@@ -132,10 +132,10 @@ export default function AssignmentManagerPage() {
           const sClass = (s.studentClass || '').toLowerCase().trim();
           const sBranch = (s.branch || '').toLowerCase().trim();
           
-          const matchClass = classKey && (sClass === classKey || sClass.includes(classKey) || classKey.includes(sClass));
-          const matchBranch = classKey && (sBranch === classKey || sBranch.includes(classKey) || classKey.includes(sBranch));
+          const matchClass = classKey && sClass && (sClass === classKey || sClass.includes(classKey) || classKey.includes(sClass));
+          const matchBranch = classKey && sBranch && (sBranch === classKey || sBranch.includes(classKey) || classKey.includes(sBranch));
           
-          return matchClass || matchBranch || (s.enrolledSubjects || []).some((sub: any) => sub.toLowerCase().includes(classKey));
+          return matchClass || matchBranch || (s.enrolledSubjects || []).some((sub: any) => sub && classKey && sub.toLowerCase().includes(classKey));
         });
 
         if (classStds.length === 0) {

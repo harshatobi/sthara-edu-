@@ -495,6 +495,27 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
 
+                  {/* Explicit Unit Selection Checkboxes */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#002147]/70 mb-2">Units / Topics Covered (Required for Heatmap mapping)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableUnits.map(unit => (
+                        <label key={unit.id} className="flex items-center space-x-2 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-[#002147] focus:ring-[#002147] w-4 h-4"
+                            checked={selectedUnits.includes(unit.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedUnits(prev => [...prev, unit.id]);
+                              else setSelectedUnits(prev => prev.filter(id => id !== unit.id));
+                            }}
+                          />
+                          <span className="text-sm font-medium text-[#002147] truncate" title={unit.label}>{unit.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* ══ UPLOAD QUESTION PAPER (Primary) ══ */}
                   <div className="border-2 border-dashed border-[#002147]/20 rounded-2xl overflow-hidden bg-[#f8fafc]">
                     <div className="px-4 py-3 bg-[#002147] flex items-center gap-2">

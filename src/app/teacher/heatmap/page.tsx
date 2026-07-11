@@ -76,7 +76,19 @@ function getTopicsForSubject(subject: string): OUTopic[] {
 function mapAssignmentToTopics(assign: any, topics: OUTopic[]): string[] {
   // 1. Strict mapping using explicit teacher-selected units
   if (assign.units && Array.isArray(assign.units) && assign.units.length > 0) {
-    return assign.units;
+    // Check if the assigned units exist in the topics list
+    const validTids = assign.units.map((u: string) => {
+      if (topics.some(t => t.id === u)) return u;
+      // Fallback: if u is 'unit_1', map to topics[0].id
+      const match = u.match(/^unit_(\d+)$/);
+      if (match) {
+        const idx = parseInt(match[1]) - 1;
+        if (topics[idx]) return topics[idx].id;
+      }
+      return null;
+    }).filter(Boolean);
+
+    if (validTids.length > 0) return validTids;
   }
 
   // 2. Fallback to keyword guessing for older assignments

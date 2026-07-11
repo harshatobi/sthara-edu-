@@ -227,6 +227,24 @@ OUTPUT: Return ONLY valid JSON — no markdown, no preamble:
 
     const result = JSON.parse(textOutput);
 
+    // AI sometimes fails to include totalScore or formats it as a string
+    let computedTotal = 0;
+    if (result.questions && Array.isArray(result.questions)) {
+      computedTotal = result.questions.reduce((sum: number, q: any) => {
+        let val = q.awardedScore;
+        if (typeof val === 'string' && val.includes('/')) val = val.split('/')[0];
+        return sum + (parseFloat(val) || 0);
+      }, 0);
+    }
+    
+    let aiTotal = typeof result.totalScore === 'string' && result.totalScore.includes('/') 
+      ? parseFloat(result.totalScore.split('/')[0]) 
+      : Number(result.totalScore);
+    if (isNaN(aiTotal)) aiTotal = computedTotal;
+
+    // Ensure score is valid and capped at max
+    result.totalScore = Math.max(0, Math.min(aiTotal || computedTotal, paperTotal));
+    
     // Ensure maxTotalScore is always the actual paper total
     result.maxTotalScore = paperTotal;
     result.grade = `${result.totalScore}/${paperTotal}`;

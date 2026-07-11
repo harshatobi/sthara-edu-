@@ -56,7 +56,13 @@ export default function AssignmentManagerPage() {
       setAssignments(prev => prev.map(a => {
         if (a.id !== gradingEntry.assignmentId) return a;
         const newSubmittedData = { ...a.submittedData, [gradingEntry.studentId]: { ...a.submittedData?.[gradingEntry.studentId], teacherApproved: approved, finalGrade } };
-        return { ...a, submittedData: newSubmittedData };
+        
+        // Update submittedStudentIds dynamically (remove if rejected)
+        const validSubmitters = Object.entries(newSubmittedData)
+          .filter(([_, sub]: any) => sub.teacherApproved !== false)
+          .map(([sid]) => sid);
+
+        return { ...a, submittedData: newSubmittedData, submittedStudentIds: new Set(validSubmitters) };
       }));
       setGradingEntry(null);
     } catch (e) {
@@ -120,11 +126,41 @@ export default function AssignmentManagerPage() {
       // 3. Attach class student counts
       const tasksWithStats = (assignData.assignments || []).map((task: any) => {
         const classKey = (task.class || task.branch || '').toLowerCase().trim();
-        const classStds = studentsMap[classKey] || [];
+        
+        // Find all students whose class/branch contains the task's class/branch, or vice versa
+        let classStds = (studData.students || []).filter((s: any) => {
+          const sClass = (s.studentClass || '').toLowerCase().trim();
+          const sBranch = (s.branch || '').toLowerCase().trim();
+          
+          const matchClass = classKey && (sClass === classKey || sClass.includes(classKey) || classKey.includes(sClass));
+          const matchBranch = classKey && (sBranch === classKey || sBranch.includes(classKey) || classKey.includes(sBranch));
+          
+          return matchClass || matchBranch || (s.enrolledSubjects || []).some((sub: any) => sub.toLowerCase().includes(classKey));
+        });
+
+        if (classStds.length === 0) {
+            classStds = studentsMap[classKey] || [];
+        }
+
+        const validSubmitters = Object.entries(task.submittedData || {})
+          .filter(([_, sub]: any) => sub.teacherApproved !== false)
+          .map(([sid]) => sid);
+
+        // If someone submitted, they must be part of the class roster implicitly
+        const submitterSet = new Set(validSubmitters);
+        const rosterSet = new Set(classStds.map((s: any) => s.id));
+        validSubmitters.forEach(sid => {
+            if (!rosterSet.has(sid)) {
+                const globalStudent = (studData.students || []).find((s: any) => s.id === sid);
+                if (globalStudent) classStds.push(globalStudent);
+            }
+        });
+
         return {
           ...task,
-          submittedStudentIds: new Set(Object.keys(task.submittedData || {})),
+          submittedStudentIds: submitterSet,
           totalStudents: classStds.length,
+          _resolvedClassStds: classStds // cache for render
         };
       });
 
@@ -199,7 +235,7 @@ export default function AssignmentManagerPage() {
             </div>
           ) : (
             filteredAssignments.map((assignment) => {
-              let classStds = studentsByClass[assignment.class] || [];
+              let classStds = assignment._resolvedClassStds || studentsByClass[assignment.class] || [];
 
               // Helper: check if a student is in an ID set (handles both Firestore doc ID and customStudentId)
               const studentInSet = (s: any, idSet: Set<string>) =>
@@ -393,7 +429,7 @@ export default function AssignmentManagerPage() {
       {/* Backdrop */}
       <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={() => setGradingEntry(null)} />
       {/* Panel */}
-      <div className="w-full max-w-2xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
+      <div className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col z-10">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#002147] to-[#003366] px-6 py-5 flex items-start justify-between shrink-0">
           <div>
@@ -553,7 +589,7 @@ export default function AssignmentManagerPage() {
   const questionPaperPanel = questionPaperAssignment && (
     <div className="fixed inset-0 z-[300] flex">
       <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={() => setQuestionPaperAssignment(null)} />
-      <div className="w-full max-w-2xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
+      <div className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col z-10">
         {/* Header */}
         <div className={`px-6 py-5 flex items-start justify-between shrink-0 ${
           questionPaperAssignment.type === 'quiz'
@@ -585,7 +621,7 @@ export default function AssignmentManagerPage() {
         </div>
 
         {/* Body */}
-        <div className="flex-1 p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
           {/* ── QUIZ: Questions with Answer Key ── */}
           {questionPaperAssignment.type === 'quiz' && Array.isArray(questionPaperAssignment.questions) && (

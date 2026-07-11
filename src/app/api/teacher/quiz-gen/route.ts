@@ -69,7 +69,10 @@ Return a JSON object in this exact format:
 Output ONLY valid JSON, no markdown or extra text.`;
 
     const response = await model.generateContent(prompt);
-    const raw = response.response.text() || '{}';
+    let raw = response.response.text() || '{}';
+    
+    // Strip markdown wrappers if present despite responseMimeType setting
+    raw = raw.replace(/^```(json)?\s*/gi, '').replace(/\s*```$/g, '').trim();
 
     let parsed: any;
     try {

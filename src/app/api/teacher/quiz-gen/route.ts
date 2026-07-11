@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
     }
 
     const topicList = (topics || []).join(', ');
+    // Truncate syllabusData to avoid overly long prompts
     const syllabusContext = syllabusData
-      ? `The teacher has completed the following topics in their syllabus: ${syllabusData}`
+      ? `Teacher's completed syllabus topics: ${syllabusData.substring(0, 800)}`
       : '';
 
     const difficultyGuide: Record<string, string> = {
@@ -70,9 +71,8 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
     const geminiBody = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.6,
+        temperature: 0.5,
         maxOutputTokens: 8192,
-        responseMimeType: 'application/json',
       },
     };
 
@@ -93,6 +93,9 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
 
     const geminiData = await geminiRes.json();
     let raw: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log('[quiz-gen] Raw AI output (first 500 chars):', raw.substring(0, 500));
+    console.log('[quiz-gen] Finish reason:', geminiData?.candidates?.[0]?.finishReason);
 
     if (!raw) {
       const finishReason = geminiData?.candidates?.[0]?.finishReason || 'unknown';

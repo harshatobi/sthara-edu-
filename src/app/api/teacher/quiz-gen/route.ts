@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const {
@@ -14,12 +16,17 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
+    }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.5 },
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.6,
+      },
     });
 
     const topicList = (topics || []).join(', ');
@@ -28,10 +35,10 @@ export async function POST(request: NextRequest) {
       : '';
 
     const difficultyGuide: Record<string, string> = {
-      easy: 'straightforward recall and basic understanding questions',
+      easy:   'straightforward recall and basic understanding questions',
       medium: 'application and analytical questions requiring reasoning',
-      hard: 'evaluative and synthesis questions requiring deep understanding',
-      mixed: 'a mix of easy (30%), medium (50%), and hard (20%) questions',
+      hard:   'evaluative and synthesis questions requiring deep understanding',
+      mixed:  'a mix of easy (30%), medium (50%), and hard (20%) questions',
     };
 
     const prompt = `You are an expert ${subject || 'school'} teacher creating a class quiz for ${className || 'students'}.
@@ -63,11 +70,26 @@ Output ONLY valid JSON, no markdown or extra text.`;
 
     const response = await model.generateContent(prompt);
     const raw = response.response.text() || '{}';
-    const parsed = JSON.parse(raw);
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error('[quiz-gen] JSON parse error. Raw:', raw.substring(0, 300));
+      return NextResponse.json({ error: 'AI returned invalid JSON. Please try again.' }, { status: 500 });
+    }
+
+    if (!parsed.questions || !Array.isArray(parsed.questions)) {
+      return NextResponse.json({ error: 'AI did not return valid questions.' }, { status: 500 });
+    }
+
     return NextResponse.json(parsed);
 
-  } catch (error) {
-    console.error('Teacher Quiz Gen Error:', error);
-    return NextResponse.json({ error: 'Failed to generate quiz' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[quiz-gen] Error:', error?.message || error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to generate quiz. Please try again.' },
+      { status: 500 }
+    );
   }
 }

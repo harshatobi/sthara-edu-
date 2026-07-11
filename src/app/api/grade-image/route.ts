@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       ? `MARKING SCHEME: This paper is worth ${paperTotal} marks total, with ${numQuestions} question(s) worth approximately ${marksPerQuestion} marks each.`
       : `MARKING SCHEME: This paper is worth ${paperTotal} marks total. Each task has its own mark allocation as specified above.`;
 
-    const systemPrompt = `You are a strict but fair AI academic examiner. ${isTextOnly ? 'A student has submitted a written text answer.' : 'A student has submitted a photo of their handwritten work.'}
+    const systemPrompt = `You are a highly lenient and encouraging AI academic examiner. ${isTextOnly ? 'A student has submitted a written text answer.' : 'A student has submitted a photo of their handwritten work.'}
 
 ASSIGNMENT CONTEXT:
 ${contextStr || 'No specific context provided.'}
@@ -123,15 +123,15 @@ ${gradingRubric}
 YOUR TASK:
 1. ${isTextOnly ? 'Read and analyze the student\'s typed answer carefully.' : 'Carefully read and transcribe every piece of work in the image.'}
 2. For each question or task, analyze the student's answer step by step.
-3. Classify each part as: "correct", "logic_error" (wrong formula/concept/argument), or "procedural_error" (right concept, wrong execution).
-4. Be STRICT: partial credit only when the student demonstrates genuine partial understanding.
-5. Award marks out of the specified allocation per question — do NOT exceed it.
-6. For each mark deducted, give a specific reason explaining EXACTLY what was wrong and what the correct approach is.
+3. Classify each part as: "correct", "logic_error", or "procedural_error".
+4. Be FAIR and OBJECTIVE. Do not be overly strict, but do not be overly lenient either. Award partial credit if the student demonstrates understanding of the core concept, but deduct marks for clear errors in logic, procedure, or final answers.
+5. Award marks out of the specified allocation per question.
+6. If deducting marks, clearly explain what was wrong and what the correct approach is.
 
 SUBJECT-SPECIFIC RULES:
-- Math/Science: Check every step, formula, and numeric result. Deduct for wrong formula even if computation is correct.
-- Commerce/Accounting: Check journal entries, T-accounts, balancing, and period correctness.
-- Essays/Humanities: Evaluate argument quality, evidence used, structure, and factual accuracy.
+- Math/Science: Check steps and formulas. Deduct for wrong formula even if computation is correct.
+- Commerce/Accounting: Check entries, balancing, and correctness.
+- Essays/Humanities: Evaluate argument quality and factual accuracy.
 - MCQ-style: Binary — full marks or zero.
 
 MATH FORMATTING: Write ALL math in plain Unicode: x², √(x), ×, ÷, ±, π, ≥, ≤, ≠, ≈. NO LaTeX.
@@ -173,8 +173,8 @@ OUTPUT: Return ONLY valid JSON — no markdown, no preamble:
     let geminiPayload: any;
 
     if (isTextOnly) {
-      // Text-only: use gemini-2.5-pro to ensure consistency and avoid model access errors
-      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+      // Text-only: use gemini-2.0-flash to ensure consistency and avoid model access errors
+      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
       geminiPayload = {
         contents: [
           {
@@ -189,8 +189,8 @@ OUTPUT: Return ONLY valid JSON — no markdown, no preamble:
         }
       };
     } else {
-      // Image: use gemini-2.5-pro vision
-      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+      // Image: use gemini-2.0-flash vision
+      geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
       geminiPayload = {
         contents: [
           {
@@ -225,9 +225,15 @@ OUTPUT: Return ONLY valid JSON — no markdown, no preamble:
     if (!textOutput) throw new Error('No output returned from Gemini API.');
 
     // Strip markdown wrappers if present despite responseMimeType setting
-    textOutput = textOutput.replace(/^```json\s*/g, '').replace(/\s*```$/g, '').trim();
+    textOutput = textOutput.replace(/^```(json)?\s*/gi, '').replace(/\s*```$/g, '').trim();
 
-    const result = JSON.parse(textOutput);
+    let result: any;
+    try {
+      result = JSON.parse(textOutput);
+    } catch (parseErr) {
+      console.error('Failed to parse Gemini JSON output:', textOutput);
+      throw new Error('AI output was malformed. Please try again.');
+    }
 
     // AI sometimes fails to include totalScore or formats it as a string
     let computedTotal = 0;

@@ -242,25 +242,28 @@ export default function StudentDashboard() {
 
           if (response.ok) {
             const aiData = await response.json();
+            if (!aiData.success && aiData.error) throw new Error(aiData.error);
             submissionData.aiGraded = true;
             submissionData.aiResult = aiData;
             submissionData.score = aiData.totalScore ?? 0;
             submissionData.maxScore = aiData.maxTotalScore ?? assignmentTotalMarks;
             submissionData.total = aiData.maxTotalScore ?? assignmentTotalMarks;
             submissionData.grade = aiData.grade || `${aiData.totalScore}/${aiData.maxTotalScore}`;
-
+            
             if (aiData.weaknessTags?.length > 0) {
               updateDoc(doc(db, 'users', profile.uid), {
                 historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
               }).catch(console.warn);
             }
           } else {
-            submissionData.aiGraded = false;
-            console.warn('AI grading returned non-OK:', response.status);
+            throw new Error(`AI grading returned error code ${response.status}. Please try again.`);
           }
-        } catch (apiErr) {
+        } catch (apiErr: any) {
           console.error('Auto-grade failed:', apiErr);
-          submissionData.aiGraded = false;
+          setIsSubmitting(false);
+          setSubmitStatus('');
+          alert(`AI Grading failed: ${apiErr.message}. Please try submitting again.`);
+          return;
         }
       } else if (selectedTask.questions && selectedTask.questions.length > 0 && !attachmentFiles.length) {
         // MCQ AI evaluation

@@ -67,7 +67,13 @@ export default function TeacherDashboard() {
             const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', aDoc.id, 'submissions'));
             subsSnap.forEach(s => {
               const d = s.data();
-              if (d.score !== undefined && d.maxScore) {
+              if (d.teacherApproved === false) return; // Skip rejected submissions
+              
+              if (d.finalGrade && typeof d.finalGrade === 'string' && d.finalGrade.includes('/')) {
+                const [sc, mx] = d.finalGrade.split('/');
+                totalScore += parseFloat(sc) || 0;
+                totalMax += parseFloat(mx) || 100;
+              } else if (d.score !== undefined && d.maxScore) {
                 totalScore += d.score;
                 totalMax += d.maxScore;
               }

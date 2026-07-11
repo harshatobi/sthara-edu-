@@ -291,17 +291,30 @@ function MasteryTrackerContent() {
         if (!res.ok) throw new Error(data.error || 'Failed to fetch students');
         let students: any[] = data.students || [];
 
-        // Filter by teacher's assigned classes (support both studentClass and branch for college)
-        const teacherClasses = [
-          ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
-          ...(profile.teacherClass ? [profile.teacherClass] : []),
-        ];
-        const uniqueClasses = [...new Set(teacherClasses)].map(c => c.toLowerCase());
-        if (uniqueClasses.length > 0) {
-          students = students.filter(s =>
-            (s.studentClass && uniqueClasses.includes(s.studentClass.toLowerCase())) ||
-            (s.branch && uniqueClasses.includes(s.branch.toLowerCase()))
+        // Use assignedStudents if available, else fallback to loose class matching
+        const hasAssignedStudents = ((profile.assignments || []) as any[]).some(
+          a => Array.isArray(a.assignedStudents) && a.assignedStudents.length > 0
+        );
+        
+        if (hasAssignedStudents) {
+          const assignedIds = new Set(
+            (profile.assignments || []).flatMap((a: any) => a.assignedStudents || [])
           );
+          students = students.filter(s => assignedIds.has(s.id));
+        } else {
+          const normS = (v: any) => (v || '').toLowerCase().replace(/[\s.]/g, '');
+          const teacherClasses = new Set<string>([
+            ...(profile.assignments?.map((a: any) => normS(a.class)).filter(Boolean) ?? []),
+            ...(profile.teacherClass ? [normS(profile.teacherClass)] : []),
+          ]);
+          
+          if (teacherClasses.size > 0) {
+            students = students.filter(s => {
+              const sClass = normS(s.studentClass || s.branch || s.class || '');
+              return !sClass || teacherClasses.has(sClass) ||
+                [...teacherClasses].some(c => c.includes(sClass) || sClass.includes(c));
+            });
+          }
         }
 
         setStudentsList(students);

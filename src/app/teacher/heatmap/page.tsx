@@ -147,12 +147,12 @@ export default function TeacherHeatmap() {
     let subs: string[] = [];
     let clss: string[] = [];
     
-    if (profile?.teachingSubjects?.length > 0) {
-      subs = [...new Set(profile.teachingSubjects.map((ts: any) => ts.subjectName).filter(Boolean))] as string[];
-      clss = [...new Set(profile.teachingSubjects.map((ts: any) => ts.className).filter(Boolean))] as string[];
-    } else if (profile?.assignments) {
+    if (profile?.assignments) {
       subs = [...new Set((profile.assignments as any[]).map((a: any) => a.subject).filter(Boolean))];
       clss = [...new Set((profile.assignments as any[]).map((a: any) => a.class).filter(Boolean))];
+    } else if (profile?.teachingSubjects?.length > 0) {
+      subs = [...new Set(profile.teachingSubjects.map((ts: any) => ts.subjectName).filter(Boolean))] as string[];
+      clss = [...new Set(profile.teachingSubjects.map((ts: any) => ts.className).filter(Boolean))] as string[];
     }
     
     setTeacherSubjects(subs);

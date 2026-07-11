@@ -56,31 +56,36 @@ export default function TeacherDashboard() {
     if (!profile?.schoolId || !profile?.assignments?.length) { setPlatformLoading(false); return; }
     const compute = async () => {
       try {
-        const classes = [...new Set(profile.assignments.map((a: any) => a.class).filter(Boolean))];
+        const classes = [...new Set(profile.assignments.map((a: any) => (a.class || '').toLowerCase().trim()).filter(Boolean))];
         let totalScore = 0, totalMax = 0;
-        await Promise.all(classes.map(async (cls: string) => {
-          const assignSnap = await getDocs(query(
-            collection(db, 'schools', profile.schoolId, 'assignments'),
-            where('class', '==', cls)
-          ));
-          await Promise.all(assignSnap.docs.map(async (aDoc) => {
-            const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', aDoc.id, 'submissions'));
-            subsSnap.forEach(s => {
-              const d = s.data();
-              if (d.teacherApproved === false) return; // Skip rejected submissions
-              
-              if (d.finalGrade && typeof d.finalGrade === 'string' && d.finalGrade.includes('/')) {
-                const [sc, mx] = d.finalGrade.split('/');
-                totalScore += parseFloat(sc) || 0;
-                totalMax += parseFloat(mx) || 100;
-              } else if (d.score !== undefined && d.maxScore) {
-                totalScore += d.score;
-                totalMax += d.maxScore;
-              }
-            });
-          }));
+        
+        // Fetch all assignments for the school and filter locally to avoid case-sensitivity issues
+        const assignSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments'));
+        
+        await Promise.all(assignSnap.docs.map(async (aDoc) => {
+          const aData = aDoc.data();
+          const aClass = (aData.class || aData.branch || '').toLowerCase().trim();
+          
+          // Only process assignments that belong to the teacher's classes
+          if (!classes.some(c => c === aClass || c.includes(aClass) || aClass.includes(c))) return;
+          
+          const subsSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments', aDoc.id, 'submissions'));
+          subsSnap.forEach(s => {
+            const d = s.data();
+            if (d.teacherApproved === false) return; // Skip rejected submissions
+            
+            if (d.finalGrade && typeof d.finalGrade === 'string' && d.finalGrade.includes('/')) {
+              const [sc, mx] = d.finalGrade.split('/');
+              totalScore += parseFloat(sc) || 0;
+              totalMax += parseFloat(mx) || 100;
+            } else if (d.score !== undefined && d.maxScore) {
+              totalScore += d.score;
+              totalMax += d.maxScore;
+            }
+          });
         }));
-        setPlatformAvg(totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : null);
+        
+        setPlatformAvg(totalMax > 0 ? Math.round((totalScore / Math.max(totalMax, 1)) * 100) : null);
       } catch (e) { console.warn('Platform avg error:', e); }
       finally { setPlatformLoading(false); }
     };

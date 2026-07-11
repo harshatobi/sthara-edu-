@@ -503,7 +503,8 @@ export default function StudentDashboard() {
   const pendingTasks = assignments.filter((a: any) => !a.submission || a.submission.teacherApproved === false);
   const submittedTasks = assignments.filter((a: any) => !!a.submission && a.submission.teacherApproved !== false);
   const pendingTasksCount = pendingTasks.length;
-  const gradedSubmissions = assignments.filter((a: any) => a.submission && a.submission.score !== undefined);
+  // ONLY count towards mastery if the teacher explicitly approved it!
+  const gradedSubmissions = assignments.filter((a: any) => a.submission && a.submission.score !== undefined && a.submission.teacherApproved === true);
   
   let masteryText = 'N/A';
   let recentScoreText = '-';
@@ -513,10 +514,17 @@ export default function StudentDashboard() {
     let totalScore = 0;
     let totalMax = 0;
     gradedSubmissions.forEach(a => {
-      totalScore += a.submission.score;
-      totalMax += a.submission.maxScore || a.submission.total || 100;
+      // If the teacher modified the grade (e.g. "8/10"), parse it. Otherwise fallback to raw score.
+      if (a.submission.finalGrade && typeof a.submission.finalGrade === 'string' && a.submission.finalGrade.includes('/')) {
+        const [s, m] = a.submission.finalGrade.split('/');
+        totalScore += parseFloat(s) || 0;
+        totalMax += parseFloat(m) || 100;
+      } else {
+        totalScore += a.submission.score || 0;
+        totalMax += a.submission.maxScore || a.submission.total || 100;
+      }
     });
-    masteryText = Math.round((totalScore / totalMax) * 100) + '%';
+    masteryText = Math.round((totalScore / Math.max(totalMax, 1)) * 100) + '%';
     
     const recent = [...gradedSubmissions].sort((a, b) => {
       const timeA = a.submission.submittedAt?.seconds || 0;
@@ -524,7 +532,15 @@ export default function StudentDashboard() {
       return timeB - timeA;
     })[0];
     
-    const percent = Math.round((recent.submission.score / (recent.submission.maxScore || recent.submission.total || 100)) * 100);
+    let recentScoreNum = recent.submission.score || 0;
+    let recentMaxNum = recent.submission.maxScore || recent.submission.total || 100;
+    if (recent.submission.finalGrade && typeof recent.submission.finalGrade === 'string' && recent.submission.finalGrade.includes('/')) {
+        const [s, m] = recent.submission.finalGrade.split('/');
+        recentScoreNum = parseFloat(s) || recentScoreNum;
+        recentMaxNum = parseFloat(m) || recentMaxNum;
+    }
+
+    const percent = Math.round((recentScoreNum / Math.max(recentMaxNum, 1)) * 100);
     let grade = 'F';
     if (percent >= 90) grade = 'A';
     else if (percent >= 80) grade = 'B';

@@ -216,6 +216,7 @@ export default function StudentDashboard() {
             assignmentSubject: selectedTask.subject,
             assignmentTasks: selectedTask.tasks || [],
             assignmentQuestions: selectedTask.questions || [],
+            assignmentUnits: selectedTask.units || [],
             totalMarks: assignmentTotalMarks,
           };
 

@@ -34,6 +34,8 @@ export default function TeacherDashboard() {
   const [uploadingQP, setUploadingQP] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [postSuccess, setPostSuccess] = useState(false);
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+  const [availableUnits, setAvailableUnits] = useState<{id: string, label: string}[]>([]);
 
 
 
@@ -109,6 +111,31 @@ export default function TeacherDashboard() {
     setHomeworkQuestions([]);
     setQuestionPaperFile(null);
     setQuestionPaperPreview(null);
+    setSelectedUnits([]);
+
+    // Populate available units
+    let units: {id: string, label: string}[] = [];
+    const matchingSubject = profile?.teachingSubjects?.find((ts: any) => 
+      (ts.subjectName?.toLowerCase() === subjectName.toLowerCase() || subjectName.toLowerCase().includes(ts.subjectName?.toLowerCase())) && 
+      (!ts.className || !className || ts.className?.toLowerCase() === className.toLowerCase() || className.toLowerCase().includes(ts.className?.toLowerCase()))
+    );
+
+    if (matchingSubject && matchingSubject.units) {
+      units = matchingSubject.units.map((u: any) => ({
+        id: `unit_${u.unitNo}`,
+        label: `Unit ${u.unitNo}: ${u.name}`
+      }));
+    } else {
+      units = [
+        { id: 'unit_1', label: 'Unit I' },
+        { id: 'unit_2', label: 'Unit II' },
+        { id: 'unit_3', label: 'Unit III' },
+        { id: 'unit_4', label: 'Unit IV' },
+        { id: 'unit_5', label: 'Unit V' },
+      ];
+    }
+    setAvailableUnits(units);
+
     setIsModalOpen(true);
   };
 
@@ -259,6 +286,7 @@ export default function TeacherDashboard() {
           subject: selectedSubject,
           teacherId: profile.uid,
           teacherName: profile.name,
+          units: selectedUnits,
           assignedStudentIds: (() => {
             const subjectAssign = (profile.assignments || []).find(
               (a: any) => a.class === selectedClass && a.subject === selectedSubject

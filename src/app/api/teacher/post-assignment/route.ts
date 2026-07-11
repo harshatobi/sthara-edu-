@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       assignedStudentIds,
       questionPaperUrl,
       questionPaperType,
+      units,
     } = body;
 
 
@@ -59,6 +60,9 @@ export async function POST(req: NextRequest) {
     if (questionPaperType) assignmentData.questionPaperType = questionPaperType;
     if (assignedStudentIds && Array.isArray(assignedStudentIds) && assignedStudentIds.length > 0) {
       assignmentData.assignedStudentIds = assignedStudentIds;
+    }
+    if (units && Array.isArray(units) && units.length > 0) {
+      assignmentData.units = units;
     }
 
 

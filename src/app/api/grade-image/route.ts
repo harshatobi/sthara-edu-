@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       assignmentSubject,
       assignmentQuestions,
       assignmentTasks,     // NEW: structured task list from assignment
+      assignmentUnits,     // NEW: explicitly selected units
       totalMarks,          // NEW: actual marks this paper is worth
     } = body;
 
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
     let contextStr = '';
     if (assignmentTitle) contextStr += `Assignment Title: ${assignmentTitle}\n`;
     if (assignmentSubject) contextStr += `Subject: ${assignmentSubject}\n`;
+    if (assignmentUnits && assignmentUnits.length > 0) contextStr += `Strictly relates to Topics/Units: ${assignmentUnits.join(', ')}\n`;
     if (assignmentDescription) contextStr += `Instructions: ${assignmentDescription}\n`;
 
     // Build questions/tasks string

@@ -72,8 +72,14 @@ function getTopicsForSubject(subject: string): OUTopic[] {
   ];
 }
 
-// Map an assignment to the best-matching OU topic
-function mapAssignmentToTopic(assign: any, topics: OUTopic[]): string {
+// Map an assignment to the relevant topics
+function mapAssignmentToTopics(assign: any, topics: OUTopic[]): string[] {
+  // 1. Strict mapping using explicit teacher-selected units
+  if (assign.units && Array.isArray(assign.units) && assign.units.length > 0) {
+    return assign.units;
+  }
+
+  // 2. Fallback to keyword guessing for older assignments
   const text = [
     assign.title || '',
     (assign.tasks || []).map((t: any) => [t.question, t.description, t.title, t.topic].filter(Boolean).join(' ')).join(' '),
@@ -91,7 +97,7 @@ function mapAssignmentToTopic(assign: any, topics: OUTopic[]): string {
     const hits = topic.keywords.filter(kw => text.includes(kw)).length;
     if (hits > bestScore) { bestScore = hits; bestTopic = topic.id; }
   }
-  return bestTopic;
+  return [bestTopic];
 }
 
 // Fuzzy class name normalizer
@@ -266,9 +272,11 @@ export default function TeacherHeatmap() {
         const byTopic: Record<string, any[]> = {};
         topics.forEach(t => { byTopic[t.id] = []; });
         relevant.forEach(a => {
-          const tid = mapAssignmentToTopic(a, topics);
-          if (!byTopic[tid]) byTopic[tid] = [];
-          byTopic[tid].push(a);
+          const tids = mapAssignmentToTopics(a, topics);
+          tids.forEach(tid => {
+            if (!byTopic[tid]) byTopic[tid] = [];
+            byTopic[tid].push(a);
+          });
         });
 
         // 7. Compute per-student, per-topic scores (most recent submission)

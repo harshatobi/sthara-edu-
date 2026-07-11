@@ -500,8 +500,8 @@ export default function StudentDashboard() {
 
   if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Student Portal...</div>;
 
-  const pendingTasks = assignments.filter((a: any) => !a.submission);
-  const submittedTasks = assignments.filter((a: any) => !!a.submission);
+  const pendingTasks = assignments.filter((a: any) => !a.submission || a.submission.teacherApproved === false);
+  const submittedTasks = assignments.filter((a: any) => !!a.submission && a.submission.teacherApproved !== false);
   const pendingTasksCount = pendingTasks.length;
   const gradedSubmissions = assignments.filter((a: any) => a.submission && a.submission.score !== undefined);
   
@@ -843,7 +843,7 @@ export default function StudentDashboard() {
                   {pendingTasks.map((task) => (
                     <TaskItem
                       key={task.id}
-                      title={`${task.subject || 'Assignment'}: ${task.title}`}
+                      title={`${task.subject || 'Assignment'}: ${task.title} ${task.submission?.teacherApproved === false ? '(Rejected - Please Resubmit)' : ''}`}
                       time={`Due: ${task.dueDate || 'No Set Date'} • Posted by ${task.teacherName || 'Teacher'}`}
                       type={task.type as 'homework' | 'video' | 'announcement'}
                       status="pending"

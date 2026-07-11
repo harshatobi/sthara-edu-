@@ -101,7 +101,7 @@ export default function AssignmentManagerPage() {
 
       const studentsMap: Record<string, any[]> = {};
       (studData.students || []).forEach((s: any) => {
-        const cls = s.studentClass || s.branch || 'Unassigned';
+        const cls = (s.studentClass || s.branch || 'Unassigned').toLowerCase().trim();
         if (!studentsMap[cls]) studentsMap[cls] = [];
         studentsMap[cls].push(s);
       });
@@ -119,7 +119,7 @@ export default function AssignmentManagerPage() {
 
       // 3. Attach class student counts
       const tasksWithStats = (assignData.assignments || []).map((task: any) => {
-        const classKey = task.class || task.branch || '';
+        const classKey = (task.class || task.branch || '').toLowerCase().trim();
         const classStds = studentsMap[classKey] || [];
         return {
           ...task,

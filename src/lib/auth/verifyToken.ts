@@ -1,35 +1,34 @@
-import { admin } from '@/lib/firebase/admin';
-import { NextRequest } from 'next/server';
+// Supabase token verification — replaces Firebase Admin verifyIdToken
+// Used by all API routes to authenticate requests
+import { createAdminClient } from '@/lib/supabase/server';
 
-/**
- * Verifies the Firebase ID token from the Authorization header.
- * Returns the decoded token if valid, or null if invalid/missing.
- *
- * SECURITY: This NEVER silently bypasses verification in production.
- * If the Admin SDK is not initialized, the request is rejected (401).
- *
- * Usage in API routes:
- *   const token = await verifyApiToken(request);
- *   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
- */
-export async function verifyApiToken(request: NextRequest | Request) {
+export interface VerifiedUser {
+  uid: string;
+  email: string;
+}
+
+export async function verifyApiToken(
+  authHeader: string | null | undefined
+): Promise<{ user: VerifiedUser | null; error: string | null }> {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { user: null, error: 'Missing or invalid Authorization header' };
+  }
+
+  const token = authHeader.replace('Bearer ', '').trim();
+
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) return null;
+    const supabase = createAdminClient();
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    const idToken = authHeader.split('Bearer ')[1];
-    if (!idToken) return null;
-
-    // Hard fail if Admin SDK is not initialized — NEVER silently bypass
-    if (!admin.apps.length) {
-      console.error('[verifyApiToken] Firebase Admin SDK is not initialized. Check FIREBASE_ADMIN_CLIENT_EMAIL and FIREBASE_ADMIN_PRIVATE_KEY environment variables.');
-      return null; // Reject — do not allow through
+    if (error || !user) {
+      return { user: null, error: error?.message || 'Invalid or expired token' };
     }
 
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    return decoded;
-  } catch (err) {
-    console.error('[verifyApiToken] Token verification failed:', err);
-    return null;
+    return {
+      user: { uid: user.id, email: user.email || '' },
+      error: null,
+    };
+  } catch (err: any) {
+    return { user: null, error: err?.message || 'Token verification failed' };
   }
 }

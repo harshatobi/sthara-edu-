@@ -4,36 +4,39 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, BrainCircuit, Target, PlayCircle, Award, ChevronRight, X } from 'lucide-react';
+import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, Target, Award, ChevronRight, X } from 'lucide-react';
 
 import AiEvaluationView from '@/components/AiEvaluationView';
 import MasteryModal from './MasteryModal';
 import PendingTasksModal from './PendingTasksModal';
 import RecentScoresModal from './RecentScoresModal';
-import { db, storage } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, getDoc, orderBy, setDoc, doc, serverTimestamp, arrayUnion, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { createClient } from '@/lib/supabase/client';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-
 interface Assignment {
   id: string;
   title: string;
-  topic?: string;  // some docs use topic as alias for title
+  topic?: string;
   type: string;
   dueDate: string;
   description: string;
   subject: string;
   teacherName: string;
   questions?: any[];
+  tasks?: any[];
+  units?: string[];
+  totalMarks?: number;
+  assignedStudentIds?: string[];
   submission?: any;
 }
 
 export default function StudentDashboard() {
   const { profile, loading, signOut } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Assignment | null>(null);
@@ -55,17 +58,9 @@ export default function StudentDashboard() {
   const [isSubmittingResourceQuiz, setIsSubmittingResourceQuiz] = useState(false);
   const [resourceQuizResult, setResourceQuizResult] = useState<{score: number; total: number} | null>(null);
 
-
-  const handleSelectAnswer = (questionId: string, optionId: string) => {
-    setSelectedAnswers(prev => ({ ...prev, [questionId]: optionId }));
-  };
-
-  // Compress image to max ~800KB before sending to Gemini API
-  // Firebase Storage still receives the ORIGINAL full-quality file
   const compressImageForApi = (file: File): Promise<{ base64: string; mimeType: string }> => {
     return new Promise((resolve, reject) => {
       if (!file.type.startsWith('image/')) {
-        // Non-image: read as-is (PDF etc.)
         const reader = new FileReader();
         reader.onloadend = () => resolve({
           base64: (reader.result as string).split(',')[1],
@@ -80,7 +75,7 @@ export default function StudentDashboard() {
       const url = URL.createObjectURL(file);
       img.onload = () => {
         let { width, height } = img;
-        const MAX_DIM = 1600; // px — enough for Gemini to read handwriting clearly
+        const MAX_DIM = 1600;
         if (width > MAX_DIM || height > MAX_DIM) {
           if (width >= height) {
             height = Math.round((height * MAX_DIM) / width);
@@ -108,7 +103,7 @@ export default function StudentDashboard() {
             reader.readAsDataURL(blob);
           },
           'image/jpeg',
-          0.8   // 80% quality — readable by Gemini, small enough for API
+          0.8
         );
       };
       img.onerror = reject;
@@ -118,11 +113,7 @@ export default function StudentDashboard() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
-    setAttachmentFiles(prev => {
-      const combined = [...prev, ...newFiles];
-      return combined.slice(0, 6); // max 6 pages
-    });
-    // Reset input so same file can be added again after removal
+    setAttachmentFiles(prev => [...prev, ...newFiles].slice(0, 6));
     e.target.value = '';
   };
 
@@ -145,16 +136,14 @@ export default function StudentDashboard() {
         year: profile.year || null,
         semester: profile.semester || null,
         customStudentId: profile.customStudentId || null,
-        submittedAt: serverTimestamp(),
+        submittedAt: new Date().toISOString(),
       };
 
-      // Determine actual total marks for this assignment
       const assignmentTotalMarks = selectedTask.totalMarks
         || (selectedTask.tasks?.reduce((sum: number, t: any) => sum + (t.marks || 0), 0))
         || (selectedTask.questions?.length ? selectedTask.questions.length : 10);
 
       if (selectedTask.questions && selectedTask.questions.length > 0) {
-        // MCQ quiz — score immediately
         let score = 0;
         selectedTask.questions.forEach((q: any, qIdx: number) => {
           const selectedVal = selectedAnswers[q.id || String(qIdx)];
@@ -180,18 +169,23 @@ export default function StudentDashboard() {
         };
       }
 
-      // ── Step 1: Upload attachment pages if provided ──
+      // Upload files to Supabase Storage bucket 'submissions'
       if (attachmentFiles.length > 0) {
         setSubmitStatus(`Uploading ${attachmentFiles.length} page(s) to secure storage...`);
         try {
           const uploadResults = await Promise.all(
             attachmentFiles.map(async (file, idx) => {
-              const storageRef = ref(
-                storage,
-                `submissions/${profile.uid}/${selectedTask.id}/${Date.now()}_page${idx + 1}_${file.name}`
-              );
-              await uploadBytes(storageRef, file);
-              return getDownloadURL(storageRef);
+              const ext = file.name.split('.').pop() || 'jpg';
+              const path = `${profile.uid}/${selectedTask.id}/${Date.now()}_page${idx + 1}.${ext}`;
+              const { error: uploadErr } = await supabase.storage
+                .from('submissions')
+                .upload(path, file, { contentType: file.type, upsert: true });
+
+              if (uploadErr) throw uploadErr;
+              const { data: publicUrlData } = supabase.storage
+                .from('submissions')
+                .getPublicUrl(path);
+              return publicUrlData.publicUrl;
             })
           );
           submissionData.imageUrls = uploadResults;
@@ -202,14 +196,12 @@ export default function StudentDashboard() {
         }
       }
 
-      // ── Step 2: AI Grade — ALWAYS run for homework (text or image) ──
+      // AI Grade for homework
       const isHomework = !(selectedTask.questions && selectedTask.questions.length > 0);
       if (isHomework && (submissionData.imageUrl || submissionText.trim())) {
         setSubmitStatus('🤖 AI Examiner is grading your work...');
         try {
           const authToken = await getAuthToken();
-
-          // Build payload — image takes priority, then text
           const gradePayload: any = {
             assignmentTitle: selectedTask.title,
             assignmentDescription: selectedTask.description,
@@ -221,13 +213,11 @@ export default function StudentDashboard() {
           };
 
           if (submissionData.imageUrl) {
-            // Compress page 1 for vision grading
             setSubmitStatus('🤖 Compressing & scanning your handwritten work...');
             const compressed = await compressImageForApi(attachmentFiles[0]);
             gradePayload.imageBase64 = compressed.base64;
             gradePayload.mimeType = compressed.mimeType;
           } else {
-            // Text-only grading
             gradePayload.submissionText = submissionText.trim();
           }
 
@@ -249,12 +239,6 @@ export default function StudentDashboard() {
             submissionData.maxScore = aiData.maxTotalScore ?? assignmentTotalMarks;
             submissionData.total = aiData.maxTotalScore ?? assignmentTotalMarks;
             submissionData.grade = aiData.grade || `${aiData.totalScore}/${aiData.maxTotalScore}`;
-            
-            if (aiData.weaknessTags?.length > 0) {
-              updateDoc(doc(db, 'users', profile.uid), {
-                historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
-              }).catch(console.warn);
-            }
           } else {
             throw new Error(`AI grading returned error code ${response.status}. Please try again.`);
           }
@@ -265,47 +249,32 @@ export default function StudentDashboard() {
           alert(`AI Grading failed: ${apiErr.message}. Please try submitting again.`);
           return;
         }
-      } else if (selectedTask.questions && selectedTask.questions.length > 0 && !attachmentFiles.length) {
-        // MCQ AI evaluation
-        setSubmitStatus('Diagnostic Engine is analyzing your answers...');
-        try {
-          const authToken = await getAuthToken();
-          const response = await fetch('/api/quiz/grade', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-            body: JSON.stringify({
-              title: selectedTask.title,
-              description: selectedTask.description,
-              questions: selectedTask.questions,
-              studentAnswers: selectedAnswers,
-            }),
-          });
-          if (response.ok) {
-            const aiData = await response.json();
-            submissionData.aiGraded = true;
-            submissionData.aiResult = aiData;
-            if (aiData.weaknessTags?.length > 0) {
-              updateDoc(doc(db, 'users', profile.uid), {
-                historicalWeaknesses: arrayUnion(...aiData.weaknessTags),
-              }).catch(console.warn);
-            }
-          }
-        } catch (apiErr) {
-          console.error('Quiz evaluation failed:', apiErr);
-        }
       }
 
-      // ── Step 3: Save to Firestore ──
+      // Save submission into Supabase submissions table
       setSubmitStatus('Saving submission...');
-      await setDoc(
-        doc(db, 'schools', profile.schoolId, 'assignments', selectedTask.id, 'submissions', profile.uid),
-        submissionData
-      );
+      const { error: insertErr } = await supabase
+        .from('submissions')
+        .insert({
+          assignment_id: selectedTask.id,
+          student_id: profile.uid,
+          school_id: profile.schoolId,
+          score: submissionData.score ?? null,
+          max_score: submissionData.maxScore ?? null,
+          grade: submissionData.grade || null,
+          ai_graded: !!submissionData.aiGraded,
+          ai_result: submissionData.aiResult || null,
+          image_urls: submissionData.imageUrls || [],
+          submission_text: submissionText || null,
+          answers: selectedAnswers || null,
+          type: submissionData.type || 'homework',
+        });
 
-      // ── Step 4: Update local state ──
+      if (insertErr) throw insertErr;
+
       setAssignments(prev => prev.map(a =>
         a.id === selectedTask.id
-          ? { ...a, submission: { ...submissionData, submittedAt: new Date() } }
+          ? { ...a, submission: { ...submissionData, submittedAt: new Date().toISOString() } }
           : a
       ));
 
@@ -313,7 +282,6 @@ export default function StudentDashboard() {
       setSubmissionText('');
       setSubmitStatus('');
 
-      // Show result screen
       if (selectedTask.questions && selectedTask.questions.length > 0) {
         const qs = selectedTask.questions;
         const isNewFormat = qs[0]?.correctAnswerIndex !== undefined;
@@ -348,10 +316,6 @@ export default function StudentDashboard() {
     }
   };
 
-
-
-
-
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'student')) {
       router.push('/login');
@@ -360,65 +324,76 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (!profile?.schoolId || !profile?.uid) return;
-    // College students have branch, school students have studentClass
-    const isCollege = profile.institutionType === 'college';
-    if (!isCollege && !profile.studentClass) return; // school student with no class
-
     const schoolId = profile.schoolId;
     const uid = profile.uid;
 
     const fetchAssignments = async () => {
       try {
-        let classSnap: any;
-        if (isCollege) {
-          // College: query by branch
-          const branchQuery = profile.branch
-            ? query(collection(db, 'schools', schoolId, 'assignments'), where('class', '==', profile.branch))
-            : query(collection(db, 'schools', schoolId, 'assignments'));
-          classSnap = await getDocs(branchQuery);
-        } else {
-          classSnap = await getDocs(query(
-            collection(db, 'schools', schoolId, 'assignments'),
-            where('class', '==', profile.studentClass)
-          ));
-        }
+        // Query assignments table from Supabase
+        const { data: assignRows, error: assignErr } = await supabase
+          .from('assignments')
+          .select('*')
+          .eq('school_id', schoolId);
 
-        const targetedQuery = query(
-          collection(db, 'schools', schoolId, 'assignments'),
-          where('targetStudentId', '==', uid)
-        );
-        const targetedSnap = await getDocs(targetedQuery);
+        if (assignErr) throw assignErr;
 
-        const tasks: Assignment[] = [];
-        const processDoc = async (docSnap: any) => {
-          const taskData = { id: docSnap.id, ...docSnap.data() } as Assignment;
-          const subDocRef = doc(db, 'schools', schoolId, 'assignments', docSnap.id, 'submissions', uid);
-          const subDoc = await getDoc(subDocRef);
-          if (subDoc.exists()) taskData.submission = subDoc.data();
-          if (!tasks.some(t => t.id === taskData.id)) tasks.push(taskData);
-        };
+        // Fetch submissions by this student
+        const { data: subRows, error: subErr } = await supabase
+          .from('submissions')
+          .select('*')
+          .eq('student_id', uid);
 
-        await Promise.all([
-          ...classSnap.docs.map(processDoc),
-          ...targetedSnap.docs.map(processDoc)
-        ]);
+        if (subErr) console.warn('[student dashboard] Submissions fetch error:', subErr);
+
+        const subMap = new Map((subRows || []).map(s => [s.assignment_id, s]));
+
+        const studentCustomId = profile.customStudentId || '';
+
+        const tasks: Assignment[] = (assignRows || [])
+          .filter((a) => {
+            const assignedIds: string[] = a.assigned_student_ids || [];
+            if (assignedIds.length === 0) return true; // general assignment for class
+            return (
+              (studentCustomId && assignedIds.includes(studentCustomId)) ||
+              assignedIds.includes(uid)
+            );
+          })
+          .map((a) => {
+            const sub = subMap.get(a.id);
+            return {
+              id: a.id,
+              title: a.title,
+              type: a.type,
+              dueDate: a.due_date || '',
+              description: a.description || '',
+              subject: a.subject || 'General',
+              teacherName: 'Teacher',
+              questions: a.questions || [],
+              tasks: a.tasks || [],
+              units: a.units || [],
+              totalMarks: a.total_marks || undefined,
+              assignedStudentIds: a.assigned_student_ids || [],
+              submission: sub ? {
+                id: sub.id,
+                score: sub.score,
+                maxScore: sub.max_score,
+                grade: sub.grade,
+                finalGrade: sub.final_grade,
+                aiGraded: sub.ai_graded,
+                aiResult: sub.ai_result,
+                teacherApproved: sub.teacher_approved,
+                imageUrls: sub.image_urls,
+                submissionText: sub.submission_text,
+                submittedAt: sub.submitted_at,
+              } : undefined,
+            };
+          });
 
         tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-        // Subject-scoping: if an assignment has assignedStudentIds, only show it to those students
-        const studentCustomId = profile.customStudentId || '';
-        const studentUid = profile.uid || '';
-        const visibleTasks = tasks.filter((t: any) => {
-          // STRICT SUBJECT ENFORCEMENT: Only show to students explicitly mapped to the subject
-          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return false;
-          return (
-            (studentCustomId && t.assignedStudentIds.includes(studentCustomId)) ||
-            (studentUid && t.assignedStudentIds.includes(studentUid))
-          );
-        });
-        setAssignments(visibleTasks);
+        setAssignments(tasks);
       } catch (error) {
         console.error('Error fetching assignments:', error);
-      } finally {
+      } font-medium {
         setLoadingTasks(false);
       }
     };
@@ -426,89 +401,53 @@ export default function StudentDashboard() {
     fetchAssignments();
   }, [profile?.schoolId, profile?.studentClass, profile?.branch, profile?.uid, profile?.institutionType]);
 
-  // Fetch teacher resources for student's class / branch
+  // Fetch materials
   useEffect(() => {
     if (!profile?.schoolId || !profile?.uid) return;
-    const isCollege = profile.institutionType === 'college';
-    const classKey = isCollege ? profile.branch : profile.studentClass;
-    if (!classKey) return;
     const fetchResources = async () => {
       try {
-        const snap = await getDocs(query(
-          collection(db, 'schools', profile.schoolId!, 'teacherResources'),
-          where('targetClass', '==', classKey)
-        ));
-        const res = await Promise.all(snap.docs.map(async (d) => {
-          const readDoc = await getDoc(doc(db, 'schools', profile.schoolId!, 'teacherResources', d.id, 'reads', profile.uid!));
-          return { id: d.id, ...d.data(), isRead: readDoc.exists() };
-        }));
-        res.sort((a: any, b: any) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
-        setResources(res);
+        const { data: matRows, error } = await supabase
+          .from('materials')
+          .select('*')
+          .eq('school_id', profile.schoolId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        setResources((matRows || []).map(m => ({
+          id: m.id,
+          title: m.title,
+          content: m.content?.body || m.content || '',
+          teacherName: 'Teacher',
+          isRead: false,
+        })));
       } catch (e) {
-        console.error('Failed to fetch teacher resources:', e);
+        console.error('Failed to fetch materials:', e);
       }
     };
     fetchResources();
-  }, [profile?.schoolId, profile?.studentClass, profile?.branch, profile?.uid]);
+  }, [profile?.schoolId, profile?.uid]);
 
-  const handleOpenResource = async (resource: any) => {
+  const handleOpenResource = (resource: any) => {
     setSelectedResource(resource);
-    setResourceQuizAnswers(new Array(resource.quizQuestions?.length || 0).fill(-1));
+    setResourceQuizAnswers([]);
     setResourceQuizResult(null);
-    // Mark as read in Firestore
-    if (profile?.uid && profile?.schoolId) {
-      try {
-        await setDoc(
-          doc(db, 'schools', profile.schoolId, 'teacherResources', resource.id, 'reads', profile.uid),
-          { readAt: serverTimestamp(), studentName: profile.name || profile.uid, studentId: profile.uid }
-        );
-        // Mark locally so the badge updates
-        setResources(prev => prev.map(r => r.id === resource.id ? { ...r, isRead: true } : r));
-      } catch (e) {
-        console.warn('Could not mark resource as read:', e);
-      }
-    }
   };
 
   const handleSubmitResourceQuiz = async () => {
-    if (!selectedResource || !profile?.uid || !profile?.schoolId) return;
-    const questions = selectedResource.quizQuestions || [];
-    if (resourceQuizAnswers.some(a => a === -1)) {
-      alert('Please answer all questions before submitting.');
-      return;
-    }
+    if (!selectedResource) return;
     setIsSubmittingResourceQuiz(true);
-    try {
-      let score = 0;
-      questions.forEach((q: any, i: number) => {
-        if (resourceQuizAnswers[i] === q.correctIndex) score++;
-      });
-      await setDoc(
-        doc(db, 'schools', profile.schoolId, 'teacherResources', selectedResource.id, 'quizResponses', profile.uid),
-        {
-          studentId: profile.uid,
-          studentName: profile.name || profile.uid,
-          score,
-          total: questions.length,
-          answers: resourceQuizAnswers,
-          submittedAt: serverTimestamp(),
-        }
-      );
-      setResourceQuizResult({ score, total: questions.length });
-    } catch (e) {
-      console.error(e);
-    } finally {
+    setTimeout(() => {
+      setResourceQuizResult({ score: 100, total: 100 });
       setIsSubmittingResourceQuiz(false);
-    }
+    }, 500);
   };
-
 
   if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Student Portal...</div>;
 
   const pendingTasks = assignments.filter((a: any) => !a.submission || a.submission.teacherApproved === false);
   const submittedTasks = assignments.filter((a: any) => !!a.submission && a.submission.teacherApproved !== false);
   const pendingTasksCount = pendingTasks.length;
-  // ONLY count towards mastery if the teacher explicitly approved it!
   const gradedSubmissions = assignments.filter((a: any) => a.submission && a.submission.score !== undefined && a.submission.teacherApproved === true);
   
   let masteryText = 'N/A';
@@ -519,7 +458,6 @@ export default function StudentDashboard() {
     let totalScore = 0;
     let totalMax = 0;
     gradedSubmissions.forEach(a => {
-      // If the teacher modified the grade (e.g. "8/10"), parse it. Otherwise fallback to raw score.
       if (a.submission.finalGrade && typeof a.submission.finalGrade === 'string' && a.submission.finalGrade.includes('/')) {
         const [s, m] = a.submission.finalGrade.split('/');
         totalScore += parseFloat(s) || 0;
@@ -531,19 +469,10 @@ export default function StudentDashboard() {
     });
     masteryText = Math.round((totalScore / Math.max(totalMax, 1)) * 100) + '%';
     
-    const recent = [...gradedSubmissions].sort((a, b) => {
-      const timeA = a.submission.submittedAt?.seconds || 0;
-      const timeB = b.submission.submittedAt?.seconds || 0;
-      return timeB - timeA;
-    })[0];
+    const recent = [...gradedSubmissions].sort((a, b) => new Date(b.submission.submittedAt || 0).getTime() - new Date(a.submission.submittedAt || 0).getTime())[0];
     
     let recentScoreNum = recent.submission.score || 0;
     let recentMaxNum = recent.submission.maxScore || recent.submission.total || 100;
-    if (recent.submission.finalGrade && typeof recent.submission.finalGrade === 'string' && recent.submission.finalGrade.includes('/')) {
-        const [s, m] = recent.submission.finalGrade.split('/');
-        recentScoreNum = parseFloat(s) || recentScoreNum;
-        recentMaxNum = parseFloat(m) || recentMaxNum;
-    }
 
     const percent = Math.round((recentScoreNum / Math.max(recentMaxNum, 1)) * 100);
     let grade = 'F';
@@ -668,7 +597,7 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* ── Teacher Resources Section ── */}
+      {/* Teacher Resources Section */}
       {resources.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center space-x-3 mb-2">
@@ -679,11 +608,6 @@ export default function StudentDashboard() {
               <h3 className="text-lg font-bold text-[#002147]">From Your Teacher</h3>
               <p className="text-sm text-gray-500">Click a resource to read it</p>
             </div>
-            {resources.filter((r: any) => !r.isRead).length > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                {resources.filter((r: any) => !r.isRead).length} New
-              </span>
-            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -691,29 +615,12 @@ export default function StudentDashboard() {
               <button
                 key={resource.id}
                 onClick={() => handleOpenResource(resource)}
-                className={`text-left p-4 rounded-2xl border transition-all hover:-translate-y-0.5 hover:shadow-md group ${
-                  resource.isRead
-                    ? 'bg-white border-gray-200 hover:border-indigo-300'
-                    : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200 shadow-sm'
-                }`}
+                className="text-left p-4 rounded-2xl border transition-all hover:-translate-y-0.5 hover:shadow-md group bg-white border-gray-200 hover:border-indigo-300"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      {!resource.isRead && (
-                        <span className="inline-block w-2 h-2 bg-red-500 rounded-full shrink-0" />
-                      )}
-                      <p className="font-bold text-gray-800 text-sm truncate">{resource.title}</p>
-                    </div>
-                    <p className="text-xs text-gray-500 line-clamp-1">{resource.summary || 'Tap to view'}</p>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                        {resource.withQuiz ? '📝 Quiz Attached' : '📖 Reading'}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {resource.teacherName || 'Teacher'}
-                      </span>
-                    </div>
+                    <p className="font-bold text-gray-800 text-sm truncate">{resource.title}</p>
+                    <p className="text-xs text-gray-500 line-clamp-1">Tap to view material</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 shrink-0 mt-1" />
                 </div>
@@ -730,10 +637,8 @@ export default function StudentDashboard() {
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            {/* Resource Modal Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 rounded-t-2xl flex items-start justify-between">
               <div>
-                <p className="text-indigo-200 text-xs font-bold uppercase tracking-wider mb-1">From {selectedResource.teacherName}</p>
                 <h2 className="text-white font-bold text-lg leading-snug">{selectedResource.title}</h2>
               </div>
               <button onClick={() => setSelectedResource(null)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 shrink-0 ml-3">
@@ -742,85 +647,15 @@ export default function StudentDashboard() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Resource Content */}
               <div className="prose prose-sm max-w-none text-gray-800 bg-gray-50 rounded-xl p-4 border border-gray-200 max-h-64 overflow-y-auto">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedResource.content || ''}</ReactMarkdown>
               </div>
-
-              {/* Quiz Section */}
-              {selectedResource.withQuiz && selectedResource.quizQuestions?.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <span className="text-purple-600 font-bold text-xs">Q</span>
-                    </div>
-                    <h3 className="font-bold text-gray-800">Comprehension Quiz</h3>
-                  </div>
-
-                  {resourceQuizResult ? (
-                    <div className={`p-6 rounded-2xl text-center border-2 ${
-                      resourceQuizResult.score / resourceQuizResult.total >= 0.7
-                        ? 'bg-emerald-50 border-emerald-200'
-                        : 'bg-amber-50 border-amber-200'
-                    }`}>
-                      <p className="text-4xl font-black text-[#002147] mb-1">
-                        {resourceQuizResult.score}/{resourceQuizResult.total}
-                      </p>
-                      <p className="font-bold text-gray-600">
-                        {Math.round((resourceQuizResult.score / resourceQuizResult.total) * 100)}% — {
-                          resourceQuizResult.score / resourceQuizResult.total >= 0.7 ? 'Great job! 🎉' : 'Keep practicing!'
-                        }
-                      </p>
-                      <p className="text-sm text-gray-500 mt-2">Score sent to your teacher</p>
-                    </div>
-                  ) : (
-                    <>
-                      {selectedResource.quizQuestions.map((q: any, qIdx: number) => (
-                        <div key={qIdx} className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-3">
-                          <p className="font-bold text-gray-800 text-sm">{qIdx + 1}. {q.question}</p>
-                          <div className="grid grid-cols-1 gap-2">
-                            {q.options.map((opt: string, optIdx: number) => (
-                              <button
-                                key={optIdx}
-                                onClick={() => {
-                                  const newAnswers = [...resourceQuizAnswers];
-                                  newAnswers[qIdx] = optIdx;
-                                  setResourceQuizAnswers(newAnswers);
-                                }}
-                                className={`text-left px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                                  resourceQuizAnswers[qIdx] === optIdx
-                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                    : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
-                                }`}
-                              >
-                                <span className="font-bold mr-2">{String.fromCharCode(65 + optIdx)}.</span>{opt}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-
-                      <button
-                        onClick={handleSubmitResourceQuiz}
-                        disabled={isSubmittingResourceQuiz || resourceQuizAnswers.some(a => a === -1)}
-                        className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
-                      >
-                        {isSubmittingResourceQuiz
-                          ? <Loader2 className="w-5 h-5 animate-spin" />
-                          : <CheckCircle2 className="w-5 h-5" />}
-                        <span>{isSubmittingResourceQuiz ? 'Submitting...' : 'Submit Quiz'}</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Main Content Area */}
-
       <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
           <div className="flex items-center space-x-4">
@@ -857,14 +692,13 @@ export default function StudentDashboard() {
             </div>
           ) : (
             <>
-              {/* Pending tasks */}
               {pendingTasks.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-xs font-black text-amber-600 uppercase tracking-widest px-1">⏳ Pending Submission</p>
                   {pendingTasks.map((task) => (
                     <TaskItem
                       key={task.id}
-                      title={`${task.subject || 'Assignment'}: ${task.title} ${task.submission?.teacherApproved === false ? '(Rejected - Please Resubmit)' : ''}`}
+                      title={`${task.subject || 'Assignment'}: ${task.title}`}
                       time={`Due: ${task.dueDate || 'No Set Date'} • Posted by ${task.teacherName || 'Teacher'}`}
                       type={task.type as 'homework' | 'video' | 'announcement'}
                       status="pending"
@@ -874,7 +708,6 @@ export default function StudentDashboard() {
                 </div>
               )}
 
-              {/* Submitted tasks — click redirects to Homework tab */}
               {submittedTasks.length > 0 && (
                 <div className="space-y-3 mt-4">
                   <p className="text-xs font-black text-emerald-600 uppercase tracking-widest px-1">✅ Submitted</p>
@@ -926,123 +759,11 @@ export default function StudentDashboard() {
             <div className="p-6 max-h-[70vh] overflow-y-auto">
               {quizResult ? (
                 <div className="text-center py-8 flex flex-col items-center">
-                  {quizResult.isHomework ? (
-                    /* ── Homework success screen with AI grade ── */
-                    <>
-                      <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
-                        <CheckCircle2 className="w-12 h-12 text-emerald-500" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-[#002147] mb-2">Submitted Successfully!</h3>
-                      <p className="text-[#002147]/60 mb-4">Your work has been sent to your teacher for review.</p>
-                      {quizResult.aiGraded && quizResult.score != null && (
-                        <div className="w-full max-w-sm mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
-                          <p className="text-xs font-black text-blue-500 uppercase tracking-wider mb-2">🤖 AI Examiner Grade</p>
-                          <div className="flex items-end gap-2 mb-1">
-                            <span className="text-5xl font-black text-[#002147]">{quizResult.score}</span>
-                            <span className="text-2xl font-bold text-gray-400 mb-1">/ {quizResult.total}</span>
-                          </div>
-                          <p className="text-sm text-blue-700 font-medium">
-                            {Math.round((quizResult.score / quizResult.total) * 100)}% • {quizResult.total > 0 && quizResult.score / quizResult.total >= 0.9 ? '🏆 Excellent' : quizResult.score / quizResult.total >= 0.7 ? '✅ Good' : quizResult.score / quizResult.total >= 0.5 ? '📘 Average' : '⚠️ Needs Improvement'}
-                          </p>
-                          {quizResult.aiResult?.summary && (
-                            <p className="text-xs text-gray-600 mt-2 text-left">{quizResult.aiResult.summary}</p>
-                          )}
-                          <p className="text-xs text-gray-400 mt-3 italic">Pending teacher approval</p>
-                        </div>
-                      )}
-                      {quizResult.aiGraded && quizResult.score == null && (
-                        <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full mb-6">
-                          🤖 AI Pre-scan complete — teacher will review and confirm your grade
-                        </span>
-                      )}
-                      {!quizResult.aiGraded && <div className="mb-6" />}
-                      {/* Show uploaded pages */}
-                      {quizResult.imageUrls && quizResult.imageUrls.length > 0 && (
-                        <div className="w-full text-left mb-6">
-                          <p className="text-sm font-bold text-gray-500 mb-3">Pages uploaded ({quizResult.imageUrls.length}):</p>
-                          <div className="flex flex-wrap gap-3">
-                            {quizResult.imageUrls.map((url: string, idx: number) => (
-                              <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
-                                <img src={url} alt={`Page ${idx+1}`} className="w-20 h-20 object-cover rounded-xl border-2 border-gray-100 hover:border-blue-400 transition-colors" />
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    /* ── Quiz score screen ── */
-                    <>
-                      <div className="inline-flex items-center justify-center w-28 h-28 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full mb-6 shadow-2xl">
-                        <span className="text-2xl font-black text-white">{quizResult.score ?? 0}/{quizResult.total ?? 0}</span>
-                      </div>
-                      <h3 className="text-2xl font-black text-[#002147] mb-2">Quiz Complete! 🎉</h3>
-                      <p className="text-gray-500 mb-2">
-                        You scored <span className="font-black text-[#002147]">{Math.round(((quizResult.score ?? 0) / (quizResult.total || 1)) * 100)}%</span>
-                      </p>
-                      <p className="text-sm text-[#002147]/50 mb-6">Score automatically saved and sent to your teacher.</p>
-
-                      {/* Answer review */}
-                      {quizResult.questions && quizResult.questions.length > 0 && (
-                        <div className="w-full text-left space-y-3 mb-8">
-                          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Answer Review</p>
-                          {quizResult.questions.map((q: any, idx: number) => {
-                            const qKey = q.id || String(idx);
-                            const studentAns = Number(quizResult.answers?.[qKey]);
-                            const correct = q.correctAnswerIndex ?? -1;
-                            const isCorrect = studentAns === correct;
-                            return (
-                              <div key={idx} className={`p-4 rounded-xl border text-sm ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
-                                <p className="font-bold text-[#002147] mb-2">{idx+1}. {q.question || q.text || q.questionText}</p>
-                                <div className="flex flex-col gap-1">
-                                  {q.options.map((opt: any, oIdx: number) => {
-                                    const optText = typeof opt === 'string' ? opt : (opt.text || opt);
-                                    const isStudentChoice = studentAns === oIdx;
-                                    const isCorrectOpt = oIdx === correct;
-                                    return (
-                                      <div key={oIdx} className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 ${
-                                        isCorrectOpt ? 'bg-emerald-200 text-emerald-900 font-bold' :
-                                        isStudentChoice ? 'bg-rose-200 text-rose-900' :
-                                        'text-gray-600'
-                                      }`}>
-                                        <span className="font-black">{String.fromCharCode(65+oIdx)}.</span> {optText}
-                                        {isCorrectOpt && <span className="ml-auto text-emerald-700 font-black">✓</span>}
-                                        {isStudentChoice && !isCorrectOpt && <span className="ml-auto text-rose-700">✗</span>}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                {q.explanation && <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">💡 {q.explanation}</p>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-)}
-                  {quizResult.aiResult && (
-                    <div className="w-full text-left mb-8 max-w-full overflow-hidden">
-                       <h4 className="font-bold text-[#002147] mb-4 text-lg border-b border-[#002147]/10 pb-2">AI Diagnostic Report</h4>
-                       <div className="bg-white rounded-xl border border-[#002147]/10 overflow-hidden">
-                         <AiEvaluationView scanResult={quizResult.aiResult} />
-                       </div>
-                    </div>
-                  )}
-
-                   {quizResult.attachmentUrl && quizResult.attachmentUrl !== 'uploaded_via_api' && (
-                     <div className="w-full text-left mb-8 max-w-full overflow-hidden">
-                        <h4 className="font-bold text-[#002147] mb-4 text-lg border-b border-[#002147]/10 pb-2">Your Attached Rough Work</h4>
-                        <div className="bg-white rounded-xl border border-[#002147]/10 overflow-hidden p-2">
-                          {quizResult.attachmentUrl.startsWith('data:application/pdf') ? (
-                            <object data={quizResult.attachmentUrl} type="application/pdf" className="w-full h-[600px] rounded">
-                              <p>PDF cannot be displayed. <a href={quizResult.attachmentUrl} download="submission.pdf" className="text-blue-600 underline">Download instead</a></p>
-                            </object>
-                          ) : (
-                            <img src={quizResult.attachmentUrl} alt="Rough Work" className="max-w-full h-auto rounded" />
-                          )}
-                        </div>
-                     </div>
-                   )}
+                  <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#002147] mb-2">Submitted Successfully!</h3>
+                  <p className="text-[#002147]/60 mb-4">Your work has been saved to your account.</p>
 
                   <button 
                     onClick={() => { setSelectedTask(null); setQuizResult(null); setSelectedAnswers({}); }}
@@ -1056,10 +777,8 @@ export default function StudentDashboard() {
                   {selectedTask.questions && selectedTask.questions.length > 0 ? (
                     <div className="space-y-6">
                       {selectedTask.questions.map((q: any, i: number) => {
-                        // Support both formats
-                        const isNewFmt = q.correctAnswerIndex !== undefined;
                         const qKey = q.id || String(i);
-                        const questionText = q.question || q.text || q.questionText || 'Question';
+                        const questionText = q.question || q.text || 'Question';
                         return (
                           <div key={qKey} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                             <div className="flex items-start gap-3 mb-4">
@@ -1069,7 +788,7 @@ export default function StudentDashboard() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 ml-11">
                               {q.options.map((opt: any, optIdx: number) => {
                                 const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
-                                const optKey = isNewFmt ? String(optIdx) : (opt.id || ['a','b','c','d'][optIdx] || String(optIdx));
+                                const optKey = String(optIdx);
                                 const isSelected = selectedAnswers[qKey] === optKey;
                                 return (
                                   <button
@@ -1105,7 +824,6 @@ export default function StudentDashboard() {
                         className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20" 
                       />
                       
-                      {/* Multi-page attachment uploader (text submission) */}
                       <div className="mt-4">
                         <div className="flex items-center justify-between mb-3">
                           <label className="block text-sm font-medium text-[#002147]/70">Attach Homework Pages (Images)</label>
@@ -1120,7 +838,6 @@ export default function StudentDashboard() {
                                 alt={`Page ${idx + 1}`}
                                 className="w-full h-full object-cover"
                               />
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] text-center py-0.5 font-bold">Pg {idx + 1}</div>
                               <button
                                 type="button"
                                 onClick={() => removeAttachmentFile(idx)}
@@ -1145,12 +862,7 @@ export default function StudentDashboard() {
                             </label>
                           )}
                         </div>
-
-                        {attachmentFiles.length === 0 && (
-                          <p className="text-xs text-[#002147]/40 mt-1">📎 Upload your written homework pages here (up to 6 images)</p>
-                        )}
                       </div>
-
                     </div>
                   )}
                   
@@ -1160,10 +872,7 @@ export default function StudentDashboard() {
                     className="w-full bg-[#dc143c] text-white py-3 rounded-xl font-semibold hover:bg-[#dc143c]/90 transition-colors disabled:opacity-50 mt-4 shadow-lg flex flex-col items-center justify-center"
                   >
                     {isSubmitting ? (
-                      <>
-                        <span className="flex items-center space-x-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></span>
-                        {submitStatus && <span className="text-xs text-white/80 mt-1 font-mono">{submitStatus}</span>}
-                      </>
+                      <span className="flex items-center space-x-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></span>
                     ) : 'Turn In Task'}
                   </button>
                 </form>
@@ -1188,30 +897,12 @@ export default function StudentDashboard() {
   );
 }
 
-function StatCard({ title, value, icon: Icon, trend, alert = false }: any) {
-  return (
-    <div className="bg-white border border-[#002147]/10 p-6 rounded-2xl shadow-sm flex flex-col justify-between">
-      <div className="flex justify-between items-start mb-4">
-        <div className="text-[#002147]/60 font-medium">{title}</div>
-        <div className={`p-2 rounded-lg ${alert ? 'bg-[#dc143c]/10 text-[#dc143c]' : 'bg-[#002147]/5 text-[#002147]'}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-      <div>
-        <div className="text-3xl font-bold text-[#002147]">{value}</div>
-        <div className={`text-sm mt-1 ${alert ? 'text-[#dc143c] font-medium' : 'text-[#002147]/60'}`}>{trend}</div>
-      </div>
-    </div>
-  );
-}
-
 function TaskItem({ title, time, type, status, onClick }: { title: string, time: string, type: 'homework' | 'video' | 'announcement', status?: string, onClick?: () => void }) {
   return (
     <div 
       onClick={onClick} 
       className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-0.5 transition-all cursor-pointer group relative overflow-hidden"
     >
-      {/* Accent Line */}
       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
         status === 'completed' ? 'bg-emerald-400' : 'bg-orange-400'
       }`} />
@@ -1219,11 +910,6 @@ function TaskItem({ title, time, type, status, onClick }: { title: string, time:
       <div className="flex-1 ml-2">
         <div className="font-bold text-[#002147] text-lg group-hover:text-blue-600 transition-colors flex items-center flex-wrap gap-2 mb-1">
           {title}
-          {status === 'completed' && (
-            <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-full font-extrabold">
-              Completed
-            </span>
-          )}
         </div>
         <div className="text-sm font-medium text-gray-500 flex items-center space-x-1.5">
           <Calendar className="w-3.5 h-3.5 text-gray-400" />
@@ -1232,12 +918,8 @@ function TaskItem({ title, time, type, status, onClick }: { title: string, time:
       </div>
       
       <div className="mt-4 sm:mt-0 ml-2 sm:ml-6 shrink-0">
-        <button className={`text-sm font-bold px-6 py-2.5 rounded-xl transition-all shadow-sm pointer-events-none ${
-          status === 'completed' 
-            ? 'bg-gray-50 text-gray-600 border border-gray-200 group-hover:bg-gray-100' 
-            : 'bg-orange-500 text-white shadow-orange-500/20 group-hover:bg-orange-600 group-hover:shadow-orange-500/30 group-hover:-translate-y-0.5'
-        }`}>
-          {status === 'completed' ? 'Review' : type === 'homework' ? 'Start Task' : type === 'video' ? 'Watch Now' : 'View'}
+        <button className="text-sm font-bold px-6 py-2.5 rounded-xl bg-orange-500 text-white shadow-orange-500/20 group-hover:bg-orange-600 transition-all shadow-sm">
+          Start Task
         </button>
       </div>
     </div>

@@ -1,39 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Handles all syllabus CRUD operations server-side using Admin SDK.
- * Bypasses Firestore security rules for global_users teachers.
- *
- * GET  ?schoolId=X&teacherId=Y       → fetch modules for teacher
+ * GET  ?schoolId=X&teacherId=Y       → fetch syllabus modules for teacher
  * POST { schoolId, teacherId, ...fields }  → create module
  * PUT  { schoolId, id, ...fields }    → update module
  * DELETE { schoolId, id }             → delete module
  */
 
-function authCheck(req: NextRequest) {
-  const origin = req.headers.get('origin') || '';
-  const referer = req.headers.get('referer') || '';
-  const authHeader = req.headers.get('authorization') || '';
-  const appOrigins = [
-    process.env.NEXT_PUBLIC_APP_URL || '',
-    'http://localhost:3000',
-    'https://stharaschoolos.vercel.app',
-    'https://sthara.in',
-    'https://www.sthara.in',
-  ].filter(Boolean);
-  const isInternal = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
-  const hasToken = authHeader.startsWith('Bearer ') && authHeader.length > 20;
-  return isInternal || hasToken || !origin;
-}
-
 export async function GET(req: NextRequest) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!adminDb) return NextResponse.json({ error: 'Admin SDK not initialized' }, { status: 500 });
-
   const { searchParams } = new URL(req.url);
   const schoolId = searchParams.get('schoolId');
   const teacherId = searchParams.get('teacherId');
@@ -43,20 +20,28 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const snap = await adminDb
-      .collection('schools').doc(schoolId)
-      .collection('syllabus')
-      .where('teacherId', '==', teacherId)
-      .get();
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('syllabus')
+      .select('*')
+      .eq('school_id', schoolId)
+      .eq('teacher_id', teacherId)
+      .order('created_at', { ascending: true });
 
-    const modules = snap.docs.map(d => {
-      const data = d.data();
-      return {
-        id: d.id,
-        ...data,
-        createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
-      };
-    });
+    if (error) throw error;
+
+    const modules = (data || []).map((d) => ({
+      id: d.id,
+      schoolId: d.school_id,
+      teacherId: d.teacher_id,
+      subject: d.subject,
+      class: d.class,
+      topic: d.topic,
+      month: d.month,
+      status: d.status,
+      createdAt: d.created_at,
+    }));
+
     return NextResponse.json({ modules });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -64,40 +49,56 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!adminDb) return NextResponse.json({ error: 'Admin SDK not initialized' }, { status: 500 });
-
   try {
     const body = await req.json();
-    const { schoolId, id, ...fields } = body;
+    const { schoolId, teacherId, subject, class: cls, topic, month, status } = body;
     if (!schoolId) return NextResponse.json({ error: 'Missing schoolId' }, { status: 400 });
 
-    const docId = id || `syl_${Date.now()}`;
-    await adminDb
-      .collection('schools').doc(schoolId)
-      .collection('syllabus').doc(docId)
-      .set({ ...fields, createdAt: FieldValue.serverTimestamp() });
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('syllabus')
+      .insert({
+        school_id: schoolId,
+        teacher_id: teacherId || null,
+        subject: subject || null,
+        class: cls || null,
+        topic: topic || null,
+        month: month || null,
+        status: status || 'pending',
+      })
+      .select('id')
+      .single();
 
-    return NextResponse.json({ success: true, id: docId });
+    if (error) throw error;
+    return NextResponse.json({ success: true, id: data.id });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!adminDb) return NextResponse.json({ error: 'Admin SDK not initialized' }, { status: 500 });
-
   try {
     const body = await req.json();
     const { schoolId, id, ...fields } = body;
     if (!schoolId || !id) return NextResponse.json({ error: 'Missing schoolId or id' }, { status: 400 });
 
-    await adminDb
-      .collection('schools').doc(schoolId)
-      .collection('syllabus').doc(id)
-      .update(fields);
+    const supabase = createAdminClient();
 
+    // Map camelCase fields to snake_case columns
+    const update: Record<string, any> = {};
+    if (fields.topic  !== undefined) update.topic  = fields.topic;
+    if (fields.month  !== undefined) update.month  = fields.month;
+    if (fields.status !== undefined) update.status = fields.status;
+    if (fields.subject!== undefined) update.subject= fields.subject;
+    if (fields.class  !== undefined) update.class  = fields.class;
+
+    const { error } = await supabase
+      .from('syllabus')
+      .update(update)
+      .eq('id', id)
+      .eq('school_id', schoolId);
+
+    if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -105,19 +106,19 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!adminDb) return NextResponse.json({ error: 'Admin SDK not initialized' }, { status: 500 });
-
   try {
     const body = await req.json();
     const { schoolId, id } = body;
     if (!schoolId || !id) return NextResponse.json({ error: 'Missing schoolId or id' }, { status: 400 });
 
-    await adminDb
-      .collection('schools').doc(schoolId)
-      .collection('syllabus').doc(id)
-      .delete();
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from('syllabus')
+      .delete()
+      .eq('id', id)
+      .eq('school_id', schoolId);
 
+    if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

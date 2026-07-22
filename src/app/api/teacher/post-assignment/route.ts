@@ -1,18 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { FieldValue } from 'firebase-admin/firestore';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/teacher/post-assignment
  * Body: { schoolId, title, type, dueDate, description, class, subject, teacherId, teacherName, tasks?, totalMarks?, questions? }
- *
- * Uses Admin SDK — bypasses Firestore security rules.
- * Safe: requires a valid Firebase ID token in Authorization header.
+ * Inserts a new assignment row into the assignments table.
  */
 export async function POST(req: NextRequest) {
-  const token = await verifyApiToken(req);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authError } = await verifyApiToken(req.headers.get('authorization'));
+  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const body = await req.json();
@@ -25,55 +24,45 @@ export async function POST(req: NextRequest) {
       class: assignmentClass,
       subject,
       teacherId,
-      teacherName,
       tasks,
       totalMarks,
       questions,
       assignedStudentIds,
       questionPaperUrl,
-      questionPaperType,
       units,
     } = body;
-
-
 
     if (!schoolId || !title || !teacherId) {
       return NextResponse.json({ error: 'Missing required fields: schoolId, title, teacherId' }, { status: 400 });
     }
 
-    const assignmentData: Record<string, any> = {
-      title,
-      type: type || 'homework',
-      dueDate: dueDate || null,
-      description: description || '',
-      class: assignmentClass || null,
-      subject: subject || null,
-      teacherId,
-      teacherName: teacherName || '',
-      createdAt: FieldValue.serverTimestamp(),
-    };
+    const supabase = createAdminClient();
 
-    if (tasks && Array.isArray(tasks)) assignmentData.tasks = tasks;
-    if (totalMarks) assignmentData.totalMarks = totalMarks;
-    if (questions && Array.isArray(questions)) assignmentData.questions = questions;
-    if (questionPaperUrl) assignmentData.questionPaperUrl = questionPaperUrl;
-    if (questionPaperType) assignmentData.questionPaperType = questionPaperType;
-    if (assignedStudentIds && Array.isArray(assignedStudentIds) && assignedStudentIds.length > 0) {
-      assignmentData.assignedStudentIds = assignedStudentIds;
-    }
-    if (units && Array.isArray(units) && units.length > 0) {
-      assignmentData.units = units;
-    }
+    const { data, error } = await supabase
+      .from('assignments')
+      .insert({
+        school_id: schoolId,
+        teacher_id: teacherId,
+        title,
+        type: type || 'homework',
+        due_date: dueDate || null,
+        description: description || '',
+        class: assignmentClass || null,
+        subject: subject || null,
+        tasks: tasks || [],
+        total_marks: totalMarks || null,
+        questions: questions || [],
+        question_paper_url: questionPaperUrl || null,
+        assigned_student_ids: assignedStudentIds || [],
+        units: units || [],
+        status: 'published',
+      })
+      .select('id')
+      .single();
 
+    if (error) throw error;
 
-
-    const ref = await adminDb
-      .collection('schools')
-      .doc(schoolId)
-      .collection('assignments')
-      .add(assignmentData);
-
-    return NextResponse.json({ success: true, id: ref.id });
+    return NextResponse.json({ success: true, id: data.id });
   } catch (err: any) {
     console.error('[post-assignment]', err);
     return NextResponse.json({ error: err.message || 'Failed to post assignment' }, { status: 500 });

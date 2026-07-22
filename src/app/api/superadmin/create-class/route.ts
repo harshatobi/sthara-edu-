@@ -1,10 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authError } = await verifyApiToken(request.headers.get('authorization'));
+  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const body = await request.json();
@@ -14,23 +14,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
-    }
+    const supabase = createAdminClient();
 
-    const newClassDoc = adminDb.collection('schools').doc(schoolId).collection('classes').doc();
-    const classId = newClassDoc.id;
+    const { data, error } = await supabase
+      .from('classes')
+      .insert({
+        school_id: schoolId,
+        name: classData.name,
+        metadata: {
+          ...classData,
+          enrolledStudentIds: [],
+        },
+      })
+      .select('id')
+      .single();
 
-    const dataToSave = {
-      ...classData,
-      id: classId,
-      createdAt: new Date().toISOString(),
-      enrolledStudentIds: [],
-    };
+    if (error) throw error;
 
-    await newClassDoc.set(dataToSave);
-
-    return NextResponse.json({ success: true, classId });
+    return NextResponse.json({ success: true, classId: data.id });
   } catch (error: any) {
     console.error('Create Class Error:', error);
     return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });

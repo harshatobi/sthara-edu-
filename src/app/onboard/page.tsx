@@ -2,30 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, setDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 import {
   School, CheckCircle, ArrowRight, ArrowLeft, Loader2,
   BookOpen, Users, Shield, Sparkles, Building2, Mail,
   Phone, Globe, Lock, Eye, EyeOff, Zap
 } from 'lucide-react';
 import Link from 'next/link';
-
-// ─── Firebase secondary app (so we don't sign out the current admin) ───────────
-function getSecondaryAuth() {
-  const config = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  };
-  const secondaryApp = getApps().find(a => a.name === 'secondary') || initializeApp(config, 'secondary');
-  return getAuth(secondaryApp);
-}
 
 // ─── Generate a unique 6-character school code ──────────────────────────────
 function generateSchoolCode(name: string): string {
@@ -48,6 +31,7 @@ const BOARD_OPTIONS = [
 
 export default function OnboardPage() {
   const router = useRouter();
+  const supabase = createClient();
 
   // Step tracking
   const [step, setStep] = useState<Step>('SCHOOL_INFO');
@@ -99,80 +83,105 @@ export default function OnboardPage() {
 
     try {
       // 1. Check if email is already registered
-      const emailCheck = query(collection(db, 'users'), where('email', '==', adminEmail.toLowerCase()));
-      const emailSnap = await getDocs(emailCheck);
-      if (!emailSnap.empty) {
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', adminEmail.toLowerCase().trim())
+        .maybeSingle();
+
+      if (existingUser) {
         setError('This email is already registered. Please use a different email.');
         setIsSubmitting(false);
         return;
       }
 
-      // 2. Generate unique school code (ensure uniqueness)
+      // 2. Generate unique school code
       let code = generateSchoolCode(schoolName);
       let codeExists = true;
       let attempts = 0;
+
       while (codeExists && attempts < 10) {
-        const codeCheck = query(collection(db, 'schools'), where('code', '==', code));
-        const codeSnap = await getDocs(codeCheck);
-        if (codeSnap.empty) { codeExists = false; }
-        else { code = generateSchoolCode(schoolName); attempts++; }
+        const { data: codeCheck } = await supabase
+          .from('schools')
+          .select('id')
+          .eq('settings->>code', code)
+          .maybeSingle();
+
+        if (!codeCheck) {
+          codeExists = false;
+        } else {
+          code = generateSchoolCode(schoolName);
+          attempts++;
+        }
       }
 
-      const schoolId = `sch-${code.toLowerCase()}`;
-
-      // 3. Create admin Firebase Auth account (via secondary app)
-      const secondaryAuth = getSecondaryAuth();
-      const userCred = await createUserWithEmailAndPassword(secondaryAuth, adminEmail.toLowerCase(), adminPassword);
-      const adminUid = userCred.user.uid;
-      await signOut(secondaryAuth);
-
-      // 4. Create school document
-      await setDoc(doc(db, 'schools', schoolId), {
-        name: schoolName.trim(),
-        code,
-        curriculum,
-        board: board || null,
-        city: city.trim(),
-        phone: phone.trim() || null,
-        website: website.trim() || null,
-        createdAt: serverTimestamp(),
-        adminUid,
-        adminEmail: adminEmail.toLowerCase(),
-        plan: 'trial',   // All new schools start on trial
-        trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30-day trial
-        active: true,
+      // 3. Create admin Supabase Auth account
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: adminEmail.toLowerCase().trim(),
+        password: adminPassword,
+        options: {
+          data: {
+            name: adminName.trim(),
+            role: 'admin',
+          },
+        },
       });
 
-      // 5. Create admin user in global users collection
-      await setDoc(doc(db, 'users', adminUid), {
-        uid: adminUid,
-        email: adminEmail.toLowerCase(),
+      if (authErr || !authData.user) {
+        throw new Error(authErr?.message || 'Failed to create admin user account');
+      }
+
+      const adminUid = authData.user.id;
+      const trialExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      // 4. Create school record in SQL DB
+      const { data: schoolRow, error: schoolErr } = await supabase
+        .from('schools')
+        .insert({
+          name: schoolName.trim(),
+          institution_type: 'school',
+          trial_expires_at: trialExpiresAt,
+          settings: {
+            code,
+            curriculum,
+            board: board || null,
+            city: city.trim(),
+            phone: phone.trim() || null,
+            website: website.trim() || null,
+            adminEmail: adminEmail.toLowerCase().trim(),
+            adminUid,
+            plan: 'trial',
+            active: true,
+          },
+        })
+        .select('id')
+        .single();
+
+      if (schoolErr || !schoolRow) {
+        throw new Error(schoolErr?.message || 'Failed to create school record');
+      }
+
+      // 5. Create user profile doc in SQL DB
+      const { error: userErr } = await supabase.from('users').insert({
+        id: adminUid,
+        school_id: schoolRow.id,
         name: adminName.trim(),
+        email: adminEmail.toLowerCase().trim(),
         role: 'admin',
-        schoolId,
-        createdAt: serverTimestamp(),
       });
 
-      // 6. Also add to school's users subcollection
-      await setDoc(doc(db, 'schools', schoolId, 'users', adminUid), {
-        uid: adminUid,
-        email: adminEmail.toLowerCase(),
-        name: adminName.trim(),
-        role: 'admin',
-        schoolId,
-        createdAt: serverTimestamp(),
-      });
+      if (userErr) {
+        throw new Error(userErr.message || 'Failed to create admin profile record');
+      }
 
       setSchoolCode(code);
       setStep('DONE');
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/email-already-in-use') {
+      if (err.message?.includes('already in use') || err.message?.includes('already registered')) {
         setError('This email is already registered with another account.');
-      } else if (err.code === 'auth/weak-password') {
-        setError('Password is too weak. Please choose a stronger password.');
       } else {
-        setError('Registration failed. Please check your connection and try again.');
+        setError(err.message || 'Registration failed. Please check your connection and try again.');
       }
     } finally {
       setIsSubmitting(false);

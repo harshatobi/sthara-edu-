@@ -189,6 +189,14 @@ service cloud.firestore {
           isAdminOrTeacherInSchool(schoolId) || isSuperAdmin()
         );
       }
+
+      // /schools/{id}/classes  ← curriculum class environments
+      match /classes/{classId} {
+        allow read: if isAuthenticated() && (
+          isInSchool(schoolId) || isSuperAdmin()
+        );
+        allow create, update, delete: if isSuperAdmin() || isAdminInSchool(schoolId);
+      }
     }
   }
 }

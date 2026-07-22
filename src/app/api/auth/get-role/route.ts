@@ -1,54 +1,41 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { admin, adminDb } from '@/lib/firebase/admin';
+import { createAdminClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/auth/get-role
- * Body: { idToken: string }
+ * Body: { accessToken: string }
  * Returns: { role: string } or { error: string }
- *
- * Uses the Admin SDK so Firestore security rules are bypassed.
- * This is safe because we verify the Firebase ID token first.
+ * Verifies Supabase JWT and looks up role from users table.
  */
 export async function POST(req: NextRequest) {
   try {
-    const { idToken } = await req.json();
-    if (!idToken) {
+    const { accessToken } = await req.json();
+    if (!accessToken) {
       return NextResponse.json({ error: 'No token provided' }, { status: 400 });
     }
 
-    // Verify the token — this proves the user is who they say they are
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    const uid = decoded.uid;
+    const supabase = createAdminClient();
 
-    let role: string | null = null;
-
-    // 1. Check superadmins collection
-    const saDoc = await adminDb.collection('superadmins').doc(uid).get();
-    if (saDoc.exists) {
-      role = 'superadmin';
+    // Verify the Supabase JWT
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // 2. Check global_users
-    if (!role) {
-      const guDoc = await adminDb.collection('global_users').doc(uid).get();
-      if (guDoc.exists) {
-        role = guDoc.data()?.role ?? null;
-      }
-    }
+    const uid = user.id;
 
-    // 3. Check users (legacy / fallback)
-    if (!role) {
-      const uDoc = await adminDb.collection('users').doc(uid).get();
-      if (uDoc.exists) {
-        role = uDoc.data()?.role ?? null;
-      }
-    }
+    // Look up role from users table
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', uid)
+      .single();
 
-    if (!role) {
+    if (error || !userData?.role) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ role });
+    return NextResponse.json({ role: userData.role });
   } catch (err: any) {
     console.error('[get-role] Error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });

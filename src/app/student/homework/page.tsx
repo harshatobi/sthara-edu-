@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, CheckCircle, Clock, ChevronRight, FileText, Activity } from 'lucide-react';
 import Link from 'next/link';
@@ -19,7 +18,6 @@ interface Assignment {
   [key: string]: unknown;
 }
 
-// Helper: is a due date in the past?
 const isOverdue = (dateStr: string) => {
   const due = new Date(dateStr);
   const today = new Date();
@@ -28,223 +26,139 @@ const isOverdue = (dateStr: string) => {
 };
 
 export default function StudentHomework() {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
+  const supabase = createClient();
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [fetching, setFetching] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   useEffect(() => {
-    const fetchHomework = async () => {
-      if (!profile?.schoolId || !profile?.uid) { setLoading(false); return; }
-      const schoolId = profile.schoolId;
-      const uid = profile.uid;
-      const isCollege = profile.institutionType === 'college';
-      const classKey = isCollege ? profile.branch : profile.studentClass;
+    if (!profile?.schoolId || !profile?.uid) {
+      setFetching(false);
+      return;
+    }
 
+    const fetchAssignments = async () => {
       try {
-        const targetedQuery = query(
-          collection(db, 'schools', schoolId, 'assignments'),
-          where('targetStudentId', '==', uid)
-        );
+        const { data: assignRows, error } = await supabase
+          .from('assignments')
+          .select('*')
+          .eq('school_id', profile.schoolId);
 
-        let classSnap: any;
-        if (isCollege) {
-          const branchQuery = profile.branch
-            ? query(collection(db, 'schools', schoolId, 'assignments'), where('class', '==', profile.branch))
-            : query(collection(db, 'schools', schoolId, 'assignments'));
-          classSnap = await getDocs(branchQuery);
-        } else {
-          classSnap = await getDocs(query(
-            collection(db, 'schools', schoolId, 'assignments'),
-            where('class', '==', profile.studentClass)
-          ));
-        }
+        if (error) throw error;
 
-        const targetedSnap = await getDocs(targetedQuery);
+        const { data: subRows } = await supabase
+          .from('submissions')
+          .select('*')
+          .eq('student_id', profile.uid);
 
-        const tasksMap = new Map<string, Assignment>();
-        const processDoc = async (docSnap: any) => {
-          const data = docSnap.data();
-          const taskData: Assignment = {
-            id: docSnap.id,
-            topic: data.title || data.topic,
-            subject: data.subject,
-            dueDate: data.dueDate,
-            status: 'pending',
-            ...data,
-          };
-          const subDocRef = doc(db, 'schools', schoolId, 'assignments', docSnap.id, 'submissions', uid);
-          const subDoc = await getDoc(subDocRef);
-          if (subDoc.exists()) {
-            const subData = subDoc.data();
-            if (subData.teacherApproved === false) {
-              // If teacher rejected it, it remains pending
-              taskData.status = 'pending';
-              taskData.topic = `[Rejected - Resubmit] ${taskData.topic}`;
-            } else {
-              taskData.status = 'completed';
-              taskData.grade = subData.finalGrade || subData.grade || (subData.totalScore !== undefined ? `${subData.totalScore}/${subData.maxTotalScore}` : subData.score || 'Graded');
-            }
-            taskData.teacherApproved = subData.teacherApproved || false;
-          }
-          if (!tasksMap.has(taskData.id)) tasksMap.set(taskData.id, taskData);
-        };
+        const subMap = new Map((subRows || []).map(s => [s.assignment_id, s]));
 
-        await Promise.all([
-          ...classSnap.docs.map(processDoc),
-          ...targetedSnap.docs.map(processDoc)
-        ]);
-
-        const allTasks = Array.from(tasksMap.values());
-        allTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-
-        // Subject-scoping: if an assignment has assignedStudentIds, only show it to those students
         const studentCustomId = profile.customStudentId || '';
-        const studentUid = profile.uid || '';
-        const visibleTasks = allTasks.filter((t: any) => {
-          // STRICT SUBJECT ENFORCEMENT: Only show to students explicitly mapped to the subject
-          if (!t.assignedStudentIds || t.assignedStudentIds.length === 0) return false;
-          return (
-            (studentCustomId && t.assignedStudentIds.includes(studentCustomId)) ||
-            (studentUid && t.assignedStudentIds.includes(studentUid))
-          );
-        });
-        
-        setAssignments(visibleTasks);
-      } catch (err) {
-        console.error(err);
+
+        const list: Assignment[] = (assignRows || [])
+          .filter(a => {
+            const assignedIds: string[] = a.assigned_student_ids || [];
+            if (assignedIds.length === 0) return true;
+            return (
+              (studentCustomId && assignedIds.includes(studentCustomId)) ||
+              assignedIds.includes(profile.uid)
+            );
+          })
+          .map(a => {
+            const sub = subMap.get(a.id);
+            const isSubmitted = !!sub;
+            return {
+              id: a.id,
+              topic: a.title || 'Assignment',
+              subject: a.subject || 'General',
+              dueDate: a.due_date || 'No Date',
+              status: isSubmitted ? 'completed' : 'pending',
+              grade: sub?.grade || (sub?.score != null && sub?.max_score ? `${sub.score}/${sub.max_score}` : undefined),
+              teacherApproved: sub?.teacher_approved ?? true,
+              questions: a.questions || [],
+            };
+          });
+
+        setAssignments(list);
+      } catch (e) {
+        console.error('Error loading homework:', e);
       } finally {
-        setLoading(false);
+        setFetching(false);
       }
     };
-    fetchHomework();
-  }, [profile]);
 
-  if (loading || !profile) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-      <div className="w-12 h-12 border-4 border-[#002147]/20 border-t-[#002147] rounded-full animate-spin"></div>
-      <p className="text-[#002147]/60 font-bold tracking-widest uppercase text-sm">Syncing Assignments...</p>
-    </div>
-  );
+    fetchAssignments();
+  }, [profile?.schoolId, profile?.uid]);
 
-  const pendingAssignments = assignments.filter(a => a.status !== 'completed');
-  const completedAssignments = assignments.filter(a => a.status === 'completed');
-  const currentList = activeTab === 'pending' ? pendingAssignments : completedAssignments;
+  if (loading || fetching) {
+    return <div className="p-10 text-[#002147] text-center font-medium">Loading Homework Portal...</div>;
+  }
+
+  const filtered = assignments.filter(a => {
+    if (filter === 'pending') return a.status === 'pending';
+    if (filter === 'completed') return a.status === 'completed';
+    return true;
+  });
 
   return (
-    <div className="max-w-6xl mx-auto animate-in fade-in duration-500 pb-12">
-      {/* Header */}
-      <div className="bg-[#002147] text-white p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden mb-8">
-        <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-          <BookOpen className="w-64 h-64" />
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#002147]">Your Assignments</h1>
+          <p className="text-gray-500 text-sm mt-1">View homework, quizzes, and submission statuses</p>
         </div>
-        <div className="relative z-10">
-          <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-sm font-bold mb-6">
-            <Activity className="w-4 h-4 text-orange-400" />
-            <span className="text-orange-50">{pendingAssignments.length} Active Tasks</span>
-          </div>
-          <h1 className="text-5xl font-black tracking-tight mb-4">My Assignments</h1>
-          <p className="text-blue-100/80 font-medium text-lg max-w-2xl">
-            Tackle your personalized homework, upload your solutions, and receive instant AI-powered grading and feedback.
-          </p>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex space-x-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 max-w-fit">
-        <button 
-          onClick={() => setActiveTab('pending')}
-          className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center space-x-2 ${activeTab === 'pending' ? 'bg-[#002147] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
-        >
-          <Clock className="w-4 h-4" />
-          <span>To-Do ({pendingAssignments.length})</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('completed')}
-          className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center space-x-2 ${activeTab === 'completed' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
-        >
-          <CheckCircle className="w-4 h-4" />
-          <span>Completed ({completedAssignments.length})</span>
-        </button>
-      </div>
-
-      {/* Grid */}
-      {currentList.length === 0 ? (
-        <div className="bg-white py-20 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center">
-          <div className="bg-gray-50 p-6 rounded-full mb-6">
-            <CheckCircle className="w-16 h-16 text-gray-300" />
-          </div>
-          <h2 className="text-2xl font-bold text-[#002147] mb-2">You're all caught up!</h2>
-          <p className="text-gray-500 font-medium max-w-md">
-            {activeTab === 'pending' 
-              ? "Awesome job! You have no pending assignments at the moment. Take a break or explore the video library." 
-              : "You haven't completed any assignments yet. Head over to the To-Do tab to get started!"}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {currentList.map(a => (
-            <Link key={a.id} href={`/student/homework/${a.id}`} className="block group">
-              <div className="bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 transition-all hover:-translate-y-1 relative h-full flex flex-col">
-                
-                {/* Status Indicator Bar */}
-                <div className={`absolute top-0 left-0 w-full h-1.5 rounded-t-[2rem] ${a.status === 'completed' ? 'bg-emerald-400' : 'bg-orange-400'}`}></div>
-                
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`p-3 rounded-2xl ${a.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  {a.status === 'completed' ? (
-                    <span className="flex items-center space-x-1.5 text-emerald-700 bg-emerald-100/50 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-200">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>Graded</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center space-x-1.5 text-orange-700 bg-orange-100/50 px-3 py-1.5 rounded-full text-xs font-bold border border-orange-200">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Pending</span>
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <div className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold uppercase tracking-wider mb-3">
-                    {a.subject}
-                  </div>
-                  <h3 className="font-black text-[#002147] text-2xl mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">{a.topic}</h3>
-                  <p className="text-gray-500 font-medium text-sm line-clamp-2">
-                    {a.questions && a.questions.length > 0 ? `${a.questions.length} questions to complete.` : 'Review the attached prompt.'}
-                  </p>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
-                  {a.status === 'completed' && a.grade ? (
-                    <div>
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Final Score</span>
-                      <span className="text-2xl font-black text-emerald-600">{a.grade}</span>
-                    </div>
-                  ) : (
-                    <div>
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Due Date</span>
-                      <span className={`text-sm font-medium ${a.dueDate && isOverdue(a.dueDate) ? 'text-red-500' : 'text-emerald-600'}`}>
-                        {a.dueDate ? new Date(a.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No Due Date'}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors ${
-                    a.status === 'completed' 
-                      ? 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white' 
-                      : 'bg-[#002147]/5 text-[#002147] group-hover:bg-[#002147] group-hover:text-white'
-                  }`}>
-                    <ChevronRight className="w-5 h-5 ml-0.5" />
-                  </div>
-                </div>
-              </div>
-            </Link>
+        <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-start sm:self-auto">
+          {(['all', 'pending', 'completed'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 text-xs font-bold capitalize rounded-xl transition-all ${
+                filter === f ? 'bg-[#002147] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {f}
+            </button>
           ))}
         </div>
-      )}
+      </div>
+
+      <div className="space-y-4">
+        {filtered.map(a => (
+          <div key={a.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase tracking-wider">{a.subject}</span>
+              <h3 className="text-lg font-bold text-[#002147] mt-2">{a.topic}</h3>
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> Due: {a.dueDate}
+                {isOverdue(a.dueDate) && a.status === 'pending' && (
+                  <span className="text-red-500 font-bold ml-2">Overdue</span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              {a.status === 'completed' ? (
+                <div className="text-right">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+                    <CheckCircle className="w-3.5 h-3.5" /> Submitted
+                  </span>
+                  {a.grade && <p className="text-xs font-mono font-bold text-gray-700 mt-1">Grade: {a.grade}</p>}
+                </div>
+              ) : (
+                <Link href="/student" className="px-4 py-2 bg-[#002147] text-white text-xs font-bold rounded-xl hover:bg-blue-900 transition-all">
+                  Open Task →
+                </Link>
+              )}
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 text-gray-400">
+            No assignments found for this filter.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

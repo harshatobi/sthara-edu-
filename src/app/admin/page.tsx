@@ -5,14 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   TrendingUp, Users, BookOpen, UserPlus, Trash2, Plus, 
-  Link as LinkIcon, CheckSquare, Square, Building2, 
-  GraduationCap, ShieldAlert, Sparkles, ChevronRight, Loader2
+  Building2, GraduationCap, Sparkles, ChevronRight, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { initializeApp, getApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 
 interface TeacherAssignment {
   class: string;
@@ -33,6 +29,7 @@ interface UserData {
 export default function AdminDashboard() {
   const { profile, loading: authLoading, signOut: handleSignOut } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
   
   const [schoolName, setSchoolName] = useState('Loading...');
   const [users, setUsers] = useState<UserData[]>([]);
@@ -50,14 +47,12 @@ export default function AdminDashboard() {
 
   // Extended Data Fields
   const [studentClass, setStudentClass] = useState('');
-  // College-specific student fields
   const [branch, setBranch] = useState('');
   const [semester, setSemester] = useState('');
   const [year, setYear] = useState('');
   const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '' }]);
   const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
-
 
   useEffect(() => {
     if (!authLoading && (!profile || profile.role !== 'admin')) {
@@ -71,49 +66,50 @@ export default function AdminDashboard() {
     const fetchSchoolData = async () => {
       setStatsLoading(true);
       try {
-        const schoolDoc = await getDoc(doc(db, 'schools', profile.schoolId));
-        if (schoolDoc.exists()) {
-          setSchoolName(schoolDoc.data().name);
-          setInstitutionType(schoolDoc.data().type === 'college' ? 'college' : 'school');
+        // Fetch school details
+        const { data: school, error: schoolErr } = await supabase
+          .from('schools')
+          .select('*')
+          .eq('id', profile.schoolId)
+          .single();
+
+        if (school) {
+          setSchoolName(school.name);
+          setInstitutionType(school.institution_type === 'college' ? 'college' : 'school');
         } else {
           setSchoolName('School Not Found');
         }
 
+        // Fetch users for school
+        const { data: userRows, error: userErr } = await supabase
+          .from('users')
+          .select('*')
+          .eq('school_id', profile.schoolId);
 
-        // Query BOTH collections — users are written to both in some flows
-        const [usersSnap, globalSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('schoolId', '==', profile.schoolId))),
-          getDocs(query(collection(db, 'global_users'), where('schoolId', '==', profile.schoolId))),
-        ]);
+        if (userErr) throw userErr;
 
-        // Merge, deduplicating by UID
-        const seen = new Set<string>();
-        const usersList: UserData[] = [];
-        const addUser = (docId: string, data: any) => {
-          if (!seen.has(docId)) {
-            seen.add(docId);
-            usersList.push({ id: docId, ...data } as UserData);
-          }
-        };
-        usersSnap.forEach(d => addUser(d.id, d.data()));
-        globalSnap.forEach(d => addUser(d.id, d.data()));
+        const usersList: UserData[] = (userRows || []).map((u) => ({
+          id: u.id,
+          name: u.name || 'Unknown',
+          email: u.email || '',
+          role: u.role || 'student',
+          studentClass: u.student_class || u.branch || undefined,
+          customStudentId: u.custom_student_id || undefined,
+          assignments: u.assignments || [],
+          linkedStudents: u.metadata?.linkedStudents || [],
+        }));
 
-        // Fallback: if still 0, scan all users and filter client-side
-        if (usersList.length === 0) {
-          const allUsersSnap = await getDocs(collection(db, 'users'));
-          allUsersSnap.forEach(d => {
-            const data = d.data();
-            if (data.schoolId === profile.schoolId || data.school === profile.schoolId) {
-              addUser(d.id, data);
-            }
-          });
-        }
-
-        console.log('[admin] users found:', usersList.length, usersList.map(u => `${u.name}(${u.role})`));
         setUsers(usersList);
 
-        const assignSnap = await getDocs(collection(db, 'schools', profile.schoolId, 'assignments'));
-        setTotalAssignments(assignSnap.size);
+        // Fetch assignments count
+        const { count, error: assignErr } = await supabase
+          .from('assignments')
+          .select('id', { count: 'exact', head: true })
+          .eq('school_id', profile.schoolId);
+
+        if (assignErr) console.warn('[admin] assignments count error:', assignErr);
+        setTotalAssignments(count ?? 0);
+
       } catch (err) {
         console.error('[admin] fetchSchoolData error:', err);
       } finally {
@@ -154,60 +150,74 @@ export default function AdminDashboard() {
     setSuccessMsg('');
 
     try {
-      const primaryApp = getApp();
-      let secondaryApp;
-      try {
-        secondaryApp = getApp('SecondaryApp');
-      } catch (e) {
-        secondaryApp = initializeApp(primaryApp.options, 'SecondaryApp');
+      // 1. Create auth user with Supabase
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            name: name.trim(),
+            role,
+          },
+        },
+      });
+
+      if (authErr || !authData.user) {
+        throw new Error(authErr?.message || 'Failed to create user account');
       }
-      
-      const secondaryAuth = getAuth(secondaryApp);
-      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-      const newUid = userCredential.user.uid;
 
-      await signOut(secondaryAuth);
+      const newUid = authData.user.id;
 
-      const userData: any = {
-        email,
-        name,
-        role,
-        createdAt: new Date().toISOString()
-      };
+      let customStudentId: string | undefined = undefined;
+      let parsedClass: string | undefined = undefined;
 
       if (role === 'student') {
         if (institutionType === 'college') {
-          // College student: save branch, semester, year
-          userData.branch = branch.trim();
-          userData.semester = semester.trim();
-          userData.year = year.trim();
           const branchKey = branch.trim().replace(/\s+/g, '').slice(0, 6).toUpperCase();
           const existingInBranch = users.filter(u => u.role === 'student' && (u as any).branch === branch.trim());
           const seq = existingInBranch.length + 1;
-          userData.customStudentId = `${profile.schoolId}-${branchKey}-${String(seq).padStart(3, '0')}`;
+          customStudentId = `${profile.schoolId}-${branchKey}-${String(seq).padStart(3, '0')}`;
         } else {
-          // School student: save studentClass
-          const parsedClass = studentClass.trim();
-          userData.studentClass = parsedClass;
+          parsedClass = studentClass.trim();
           const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
           const sequenceNumber = existingStudentsInClass.length + 1;
-          const sequentialId = `${profile.schoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`;
-          userData.customStudentId = sequentialId.toUpperCase();
+          customStudentId = `${profile.schoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`.toUpperCase();
         }
-      } else if (role === 'teacher') {
-
-        userData.assignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
-      } else if (role === 'parent') {
-        userData.linkedStudents = selectedStudentsForParent;
       }
 
-      await setDoc(doc(db, 'users', newUid), {
-        ...userData,
-        schoolId: profile.schoolId
+      const validTeacherAssignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
+
+      // 2. Insert user into users table
+      const { error: dbErr } = await supabase.from('users').insert({
+        id: newUid,
+        school_id: profile.schoolId,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role,
+        student_class: role === 'student' ? (parsedClass || null) : null,
+        branch: role === 'student' ? (branch.trim() || null) : null,
+        semester: role === 'student' ? (semester.trim() || null) : null,
+        year: role === 'student' ? (year.trim() || null) : null,
+        custom_student_id: customStudentId || null,
+        assignments: validTeacherAssignments,
+        metadata: { linkedStudents: selectedStudentsForParent },
       });
 
+      if (dbErr) throw dbErr;
+
+      const newUserObj: UserData = {
+        id: newUid,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role,
+        studentClass: parsedClass || branch.trim() || undefined,
+        customStudentId,
+        assignments: validTeacherAssignments,
+        linkedStudents: selectedStudentsForParent,
+      };
+
       setSuccessMsg(`Successfully created ${role} account for ${name}!`);
-      setUsers([...users, { id: newUid, ...userData }]);
+      setUsers([...users, newUserObj]);
       
       setEmail('');
       setPassword('');
@@ -219,10 +229,9 @@ export default function AdminDashboard() {
       setTeacherAssignments([{ class: '', subject: '' }]);
       setSelectedStudentsForParent([]);
 
-      
     } catch (err: any) {
-      setError(err.message);
-    } finally {
+      setError(err.message || 'Failed to create user account');
+    } font-medium {
       setIsCreating(false);
     }
   };
@@ -230,11 +239,12 @@ export default function AdminDashboard() {
   const handleDeleteUser = async (userId: string) => {
     if (!profile?.schoolId || !confirm('Are you sure you want to delete this user from the school?')) return;
     try {
-      await deleteDoc(doc(db, 'users', userId));
+      const { error } = await supabase.from('users').delete().eq('id', userId);
+      if (error) throw error;
       setUsers(users.filter(u => u.id !== userId));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error deleting user", err);
-      alert('Failed to delete user.');
+      alert('Failed to delete user: ' + err.message);
     }
   };
 
@@ -298,9 +308,6 @@ export default function AdminDashboard() {
           {/* Students */}
           <Link href="/admin/directory" className="block">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-200 transition-all duration-200">
-              <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
-                <Users className="w-40 h-40 text-emerald-500" />
-              </div>
               <div className="relative z-10">
                 <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
                   <Users className="w-6 h-6 text-emerald-600" />
@@ -325,9 +332,6 @@ export default function AdminDashboard() {
           {/* Teachers */}
           <Link href="/admin/directory" className="block">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-blue-200 transition-all duration-200">
-              <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-500">
-                <GraduationCap className="w-40 h-40 text-blue-500" />
-              </div>
               <div className="relative z-10">
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 border border-blue-100">
                   <GraduationCap className="w-6 h-6 text-blue-600" />
@@ -352,9 +356,6 @@ export default function AdminDashboard() {
           {/* Assignments */}
           <Link href="/admin/results" className="block">
             <div className="bg-gradient-to-br from-[#002147] to-indigo-900 rounded-2xl shadow-lg border border-indigo-800 p-6 relative overflow-hidden group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200">
-              <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 group-hover:opacity-20 transition-all duration-500">
-                <BookOpen className="w-40 h-40 text-white" />
-              </div>
               <div className="relative z-10">
                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-4 border border-white/20 backdrop-blur-sm">
                   <BookOpen className="w-6 h-6 text-indigo-200" />
@@ -451,24 +452,24 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {error && <p className="mb-4 text-red-600 text-sm font-semibold bg-red-50 p-3 rounded-xl border border-red-200">{error}</p>}
+          {successMsg && <p className="mb-4 text-emerald-600 text-sm font-semibold bg-emerald-50 p-3 rounded-xl border border-emerald-200">{successMsg}</p>}
+
           <form onSubmit={handleCreateUser} className="space-y-6 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               <div className="space-y-1.5">
                 <label className="text-sm font-bold text-gray-600">Account Type</label>
-                <div className="relative">
-                  <select 
-                    value={role} 
-                    onChange={(e) => setRole(e.target.value as any)}
-                    className="w-full appearance-none bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl pl-4 pr-10 py-3.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
-                  >
-                    <option value="student">Student Account</option>
-                    <option value="teacher">Teacher Account</option>
-                    <option value="parent">Parent Account</option>
-                    <option value="admin">Administrator Account</option>
-                  </select>
-                  <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transform rotate-90" />
-                </div>
+                <select 
+                  value={role} 
+                  onChange={(e) => setRole(e.target.value as any)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                >
+                  <option value="student">Student Account</option>
+                  <option value="teacher">Teacher Account</option>
+                  <option value="parent">Parent Account</option>
+                  <option value="admin">Administrator Account</option>
+                </select>
               </div>
 
               <div className="space-y-1.5">
@@ -479,7 +480,7 @@ export default function AdminDashboard() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., John Doe"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
 
@@ -491,7 +492,7 @@ export default function AdminDashboard() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="john.doe@school.edu"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
 
@@ -500,178 +501,39 @@ export default function AdminDashboard() {
                 <input
                   type="password"
                   required
-                  minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  placeholder="••••••••"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
-            </div>
 
-            {/* Dynamic Role Sections */}
-            <div className="pt-4 border-t border-gray-100">
-              
-              {role === 'student' && institutionType === 'school' && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-1.5 max-w-sm">
-                  <label className="text-sm font-bold text-emerald-700 flex items-center space-x-1.5">
-                    <GraduationCap className="w-4 h-4" />
-                    <span>Class / Grade</span>
-                  </label>
+              {role === 'student' && (
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-sm font-bold text-gray-600">Class / Grade</label>
                   <input
                     type="text"
                     required
                     value={studentClass}
                     onChange={(e) => setStudentClass(e.target.value)}
-                    placeholder="e.g. 10A"
-                    className="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3.5 text-[#002147] font-bold placeholder-emerald-700/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    placeholder="e.g., Class 10-A"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
-                </div>
-              )}
-
-              {role === 'student' && institutionType === 'college' && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3 max-w-lg p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                  <label className="text-sm font-bold text-emerald-700 flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4" />
-                    <span>College Placement</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={branch}
-                    onChange={(e) => setBranch(e.target.value)}
-                    placeholder="Branch (e.g. Computer Science)"
-                    className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      required
-                      value={year}
-                      onChange={(e) => setYear(e.target.value)}
-                      placeholder="Year (e.g. 1st Year)"
-                      className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                    />
-                    <input
-                      type="text"
-                      required
-                      value={semester}
-                      onChange={(e) => setSemester(e.target.value)}
-                      placeholder="Semester (e.g. Sem 1)"
-                      className="w-full bg-white border border-emerald-200 rounded-xl px-4 py-3 text-[#002147] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                    />
-                  </div>
-                </div>
-              )}
-
-
-              {role === 'teacher' && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3 p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
-                  <label className="text-sm font-bold text-blue-800 flex items-center space-x-1.5 mb-1">
-                    <BookOpen className="w-4 h-4" />
-                    <span>Teacher specific: Subject & Class Assignments</span>
-                  </label>
-                  {teacherAssignments.map((assignment, idx) => (
-                    <div key={idx} className="flex space-x-3 items-center bg-white p-2 rounded-xl border border-blue-200 shadow-sm">
-                      <input
-                        type="text"
-                        value={assignment.class}
-                        onChange={(e) => handleAssignmentChange(idx, 'class', e.target.value)}
-                        placeholder="Class (e.g. 10A)"
-                        className="w-1/2 bg-transparent px-3 py-2 text-sm font-bold text-[#002147] placeholder-gray-400 focus:outline-none focus:bg-blue-50 rounded-lg transition-colors"
-                      />
-                      <div className="w-[1px] h-8 bg-blue-100"></div>
-                      <input
-                        type="text"
-                        value={assignment.subject}
-                        onChange={(e) => handleAssignmentChange(idx, 'subject', e.target.value)}
-                        placeholder="Subject (e.g. Math)"
-                        className="w-1/2 bg-transparent px-3 py-2 text-sm font-bold text-[#002147] placeholder-gray-400 focus:outline-none focus:bg-blue-50 rounded-lg transition-colors"
-                      />
-                      {teacherAssignments.length > 1 && (
-                        <button type="button" onClick={() => handleRemoveAssignmentRow(idx)} className="p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button type="button" onClick={handleAddAssignmentRow} className="flex items-center space-x-1.5 text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors pt-1">
-                    <Plus className="w-4 h-4" />
-                    <span>Add Another Subject</span>
-                  </button>
-                </div>
-              )}
-
-              {role === 'parent' && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <label className="text-sm font-bold text-purple-800 flex items-center space-x-1.5 mb-3">
-                    <LinkIcon className="w-4 h-4" />
-                    <span>Parent specific: Link Students</span>
-                  </label>
-                  <div className="bg-white border border-purple-200 shadow-sm rounded-xl max-h-60 overflow-y-auto p-3 space-y-1">
-                    {allStudents.length === 0 ? (
-                      <div className="text-sm text-gray-500 text-center py-6 border border-dashed border-gray-200 rounded-lg bg-gray-50">
-                        No students available. Please provision student accounts first.
-                      </div>
-                    ) : (
-                      allStudents.map(student => (
-                        <div 
-                          key={student.id} 
-                          onClick={() => toggleParentStudentSelection(student.customStudentId!)} 
-                          className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all border ${
-                            selectedStudentsForParent.includes(student.customStudentId!) 
-                              ? 'bg-purple-50 border-purple-200 shadow-sm' 
-                              : 'bg-transparent border-transparent hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className={selectedStudentsForParent.includes(student.customStudentId!) ? "text-purple-600" : "text-gray-300"}>
-                            {selectedStudentsForParent.includes(student.customStudentId!) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-[#002147]">{student.name}</p>
-                            <p className="text-xs font-semibold text-gray-500 tracking-wide mt-0.5">{student.customStudentId} • {student.studentClass}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
                 </div>
               )}
             </div>
 
-            {error && (
-              <div className="flex items-center space-x-2 text-rose-700 text-sm font-bold bg-rose-50 border border-rose-200 p-4 rounded-xl animate-in fade-in">
-                <ShieldAlert className="w-5 h-5" />
-                <span>{error}</span>
-              </div>
-            )}
-            
-            {successMsg && (
-              <div className="flex items-center space-x-2 text-emerald-700 text-sm font-bold bg-emerald-50 border border-emerald-200 p-4 rounded-xl animate-in fade-in">
-                <Sparkles className="w-5 h-5" />
-                <span>{successMsg}</span>
-              </div>
-            )}
-
-            <button 
-              type="submit" 
-              disabled={isCreating} 
-              className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gradient-to-r from-[#002147] to-indigo-900 text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg hover:from-indigo-900 hover:to-[#002147] transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center justify-center space-x-2"
             >
-              {isCreating ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Provisioning Account...</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-5 h-5 text-indigo-300" />
-                  <span>Generate Account</span>
-                </>
-              )}
+              {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+              <span>{isCreating ? 'Creating Account...' : 'Create Account'}</span>
             </button>
           </form>
         </div>
+
       </div>
     </div>
   );

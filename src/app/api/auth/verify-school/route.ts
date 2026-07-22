@@ -1,13 +1,11 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { createAdminClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/auth/verify-school
  * Body: { schoolCode: string }
  * Returns: { valid: true, type: 'school'|'college' } or { valid: false, error: string }
- *
- * Uses Admin SDK → bypasses Firestore security rules entirely.
- * Safe because this is unauthenticated but read-only and non-sensitive.
+ * Looks up school by code field in schools table.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -18,29 +16,27 @@ export async function POST(req: NextRequest) {
     }
 
     const code = schoolCode.trim().toUpperCase();
+    const supabase = createAdminClient();
 
-    // 1. Direct doc lookup (document ID matches the code)
-    const directRef = adminDb.collection('schools').doc(code);
-    const directSnap = await directRef.get();
-    if (directSnap.exists) {
-      const data = directSnap.data();
+    // Query schools table by code stored in settings->>'code' or by name-derived code
+    const { data: school, error } = await supabase
+      .from('schools')
+      .select('id, institution_type, settings')
+      .eq('settings->>code', code)
+      .single();
+
+    if (error || !school) {
       return NextResponse.json({
-        valid: true,
-        type: data?.type === 'college' ? 'college' : 'school',
+        valid: false,
+        error: 'Institution code not found. Please check and try again.',
       });
     }
 
-    // 2. Query by 'code' field (document ID might differ from code)
-    const querySnap = await adminDb.collection('schools').where('code', '==', code).limit(1).get();
-    if (!querySnap.empty) {
-      const data = querySnap.docs[0].data();
-      return NextResponse.json({
-        valid: true,
-        type: data?.type === 'college' ? 'college' : 'school',
-      });
-    }
-
-    return NextResponse.json({ valid: false, error: 'Institution code not found. Please check and try again.' });
+    return NextResponse.json({
+      valid: true,
+      type: school.institution_type === 'college' ? 'college' : 'school',
+      schoolId: school.id,
+    });
   } catch (err: any) {
     console.error('[verify-school] Error:', err.message);
     return NextResponse.json({ valid: false, error: 'Server error. Please try again.' }, { status: 500 });

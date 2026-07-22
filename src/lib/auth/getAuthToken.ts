@@ -1,15 +1,15 @@
-import { auth } from '@/lib/firebase/config';
+import { createClient } from '@/lib/supabase/client';
 
 /**
- * Returns the current user's Firebase ID token for authenticated API calls.
+ * Returns the current user's Supabase JWT access token for authenticated API calls.
  * Usage: const token = await getAuthToken();
  *        fetch('/api/...', { headers: { Authorization: `Bearer ${token}` } })
  */
 export async function getAuthToken(): Promise<string> {
-  const user = auth.currentUser;
-  if (!user) return '';
   try {
-    return await user.getIdToken();
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || '';
   } catch {
     return '';
   }

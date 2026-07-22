@@ -4,26 +4,26 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, BookOpen, GraduationCap, Users, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
+import { createClient } from '@/lib/supabase/client';
 
 type Step = 'SCHOOL_CODE' | 'ROLE_SELECT' | 'CREDENTIALS';
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createClient();
 
-  const [step, setStep] = useState<Step>('SCHOOL_CODE');
-  const [schoolCode, setSchoolCode] = useState('');
+  const [step, setStep]                     = useState<Step>('SCHOOL_CODE');
+  const [schoolCode, setSchoolCode]         = useState('');
   const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
-  const [role, setRole] = useState<'student' | 'teacher' | 'admin' | 'parent' | 'superadmin' | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [role, setRole]                     = useState<'student' | 'teacher' | 'admin' | 'parent' | 'superadmin' | null>(null);
+  const [email, setEmail]                   = useState('');
+  const [password, setPassword]             = useState('');
+  const [showPassword, setShowPassword]     = useState(false);
+  const [error, setError]                   = useState('');
   const [schoolCodeError, setSchoolCodeError] = useState('');
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [resetMessage, setResetMessage] = useState('');
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [resetMessage, setResetMessage]     = useState('');
+  const [isSigningIn, setIsSigningIn]       = useState(false);
 
   const handleSchoolCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.toUpperCase();
@@ -52,7 +52,6 @@ export default function LoginPage() {
     setSchoolCodeError('');
 
     try {
-      // Use server-side Admin SDK API — bypasses Firestore security rules entirely
       const res = await fetch('/api/auth/verify-school', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,7 +59,6 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
-
       if (data.valid) {
         setInstitutionType(data.type === 'college' ? 'college' : 'school');
         setStep('ROLE_SELECT');
@@ -74,7 +72,6 @@ export default function LoginPage() {
       setIsVerifyingCode(false);
     }
   };
-
 
   const handleRoleSelect = (selectedRole: any) => {
     setRole(selectedRole);
@@ -93,58 +90,65 @@ export default function LoginPage() {
     }, 20000);
 
     try {
-      // Step 1: Firebase Auth sign in
-      const credential = await signInWithEmailAndPassword(auth, email, password);
+      // Sign in with Supabase
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
       clearTimeout(timeoutId);
 
-      // Step 2: Get ID token, call server API (Admin SDK — no security rules)
-      const idToken = await credential.user.getIdToken();
+      if (signInError || !data?.session) {
+        if (signInError?.message?.toLowerCase().includes('invalid')) {
+          setError('Incorrect email or password. Please try again.');
+        } else {
+          setError(signInError?.message || 'Sign in failed. Please try again.');
+        }
+        setIsSigningIn(false);
+        return;
+      }
+
+      // Get role from server (validates profile exists)
       const res = await fetch('/api/auth/get-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ accessToken: data.session.access_token }),
       });
-      const data = await res.json();
+      const roleData = await res.json();
 
-      if (!res.ok || !data.role) {
-        await signOut(auth);
+      if (!res.ok || !roleData.role) {
+        await supabase.auth.signOut();
         setError('Account profile not found. Please contact your school administrator.');
         setIsSigningIn(false);
         return;
       }
 
-      const userRole: string = data.role;
+      const userRole: string = roleData.role;
 
-      // Step 3: Role mismatch check (superadmin can use either 'admin' or 'superadmin' selector)
+      // Role mismatch check
       const isSuperadmin = userRole === 'superadmin';
       const selectedSuperadmin = role === 'superadmin' || role === 'admin';
       if (role && userRole !== role && !(isSuperadmin && selectedSuperadmin)) {
-        await signOut(auth);
+        await supabase.auth.signOut();
         setError(`This account is not registered as a ${role}. Please go back and select the correct role.`);
         setIsSigningIn(false);
         return;
       }
 
-      // Step 4: Hard redirect to dashboard
+      // Hard redirect to dashboard
       const destinations: Record<string, string> = {
         superadmin: '/superadmin',
-        teacher: '/teacher',
-        student: '/student',
-        admin: '/admin',
-        parent: '/parent',
+        teacher:    '/teacher',
+        student:    '/student',
+        admin:      '/admin',
+        parent:     '/parent',
       };
       window.location.href = destinations[userRole] || '/';
 
     } catch (err: any) {
       clearTimeout(timeoutId);
       console.error('Login error:', err);
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Incorrect email or password. Please try again.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many failed attempts. Please reset your password or try again later.');
-      } else {
-        setError('Sign in failed. Please check your connection and try again.');
-      }
+      setError('Sign in failed. Please check your connection and try again.');
       setIsSigningIn(false);
     }
   };
@@ -154,7 +158,10 @@ export default function LoginPage() {
     setResetMessage('');
     if (!email) { setError('Please enter your email first to reset your password.'); return; }
     try {
-      await sendPasswordResetEmail(auth, email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
       setResetMessage('Password reset email sent! Check your inbox.');
     } catch (err: any) {
       console.error(err);

@@ -3,10 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { createClient } from '@/lib/supabase/client';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
-import { Sparkles, ArrowLeft, Send, User, AlertTriangle, PlayCircle, Loader2, ShieldAlert } from 'lucide-react';
+import { Sparkles, ArrowLeft, Send, User, AlertTriangle, PlayCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -16,7 +15,6 @@ import 'katex/dist/katex.min.css';
 /* ─────────────────────────────────────────────────────────
    🚨 SBI — Sthara Bureau of Investigation
    EASTER EGG: Only shown to test accounts (uid starts with 'testst')
-   Real students NEVER see this — they get the normal polite warning
 ───────────────────────────────────────────────────────── */
 function SBIArrestModal({ onClose, studentName }: { onClose: () => void; studentName: string }) {
   const caseNo = `SBI-${Date.now().toString().slice(-6)}`;
@@ -30,11 +28,9 @@ function SBIArrestModal({ onClose, studentName }: { onClose: () => void; student
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
       <div className="relative w-full max-w-md animate-bounce-once">
-        {/* Red flashing border */}
         <div className="absolute inset-0 rounded-3xl border-4 border-red-500 animate-pulse" />
 
         <div className="relative bg-[#0a0a0a] rounded-3xl overflow-hidden shadow-2xl shadow-red-900/50">
-          {/* Header */}
           <div className="bg-gradient-to-r from-red-900 via-red-700 to-red-900 px-6 py-4 flex items-center justify-between border-b border-red-500/50">
             <div className="flex items-center gap-3">
               <div className="text-4xl animate-pulse">🚨</div>
@@ -47,7 +43,6 @@ function SBIArrestModal({ onClose, studentName }: { onClose: () => void; student
             <div className="text-5xl">⚖️</div>
           </div>
 
-          {/* Badge */}
           <div className="flex justify-center py-5">
             <div className="relative">
               <div className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-xl shadow-amber-900/50 border-4 border-amber-300 animate-pulse">
@@ -60,7 +55,6 @@ function SBIArrestModal({ onClose, studentName }: { onClose: () => void; student
             </div>
           </div>
 
-          {/* Arrest notice */}
           <div className="px-6 pb-2 space-y-3 text-center">
             <div className="bg-red-950/60 border border-red-700/50 rounded-2xl p-4">
               <p className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">🚨 ARREST WARRANT #{caseNo} 🚨</p>
@@ -95,7 +89,6 @@ function SBIArrestModal({ onClose, studentName }: { onClose: () => void; student
             </div>
           </div>
 
-          {/* Footer */}
           <div className="px-6 pb-6 pt-3 space-y-3">
             <button
               onClick={onClose}
@@ -115,7 +108,6 @@ function SBIArrestModal({ onClose, studentName }: { onClose: () => void; student
   );
 }
 
-
 interface ChatMessage {
   id: string;
   role: 'user' | 'model';
@@ -126,7 +118,6 @@ interface ChatMessage {
 function YouTubeSearchWidget({ query }: { query: string }) {
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -149,7 +140,6 @@ function YouTubeSearchWidget({ query }: { query: string }) {
     });
     return () => { isMounted = false; };
   }, [query]);
-
 
   if (loading) return <div className="flex space-x-2 my-4 items-center text-sm text-[#002147]/60"><Loader2 className="w-4 h-4 animate-spin" /><span>Searching for videos about "{query}"...</span></div>;
   if (error || videos.length === 0) return <div className="flex space-x-2 my-4 items-center text-sm text-red-500"><AlertTriangle className="w-4 h-4" /><span>Could not load videos for "{query}".</span></div>;
@@ -182,6 +172,7 @@ function YouTubeSearchWidget({ query }: { query: string }) {
 export default function StudentAITutor() {
   const { profile, loading } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -192,8 +183,6 @@ export default function StudentAITutor() {
   const [showSBIArrest, setShowSBIArrest] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
-  // Is this a test account? Check EMAIL (not uid — uid is a random Firebase string)
-  // Matches: teststu1@gmail.com, teststu2@gmail.com, tstteach@..., etc.
   const isTestAccount =
     profile?.email?.toLowerCase().startsWith('teststu') ||
     profile?.email?.toLowerCase().startsWith('tstteach') ||
@@ -207,54 +196,99 @@ export default function StudentAITutor() {
     }
   }, [profile, loading, router]);
 
-  // Listen to Firestore for lifetime chat history
+  // Fetch initial messages & listen for realtime updates via Supabase Realtime
   useEffect(() => {
     if (!profile?.uid) return;
 
-    const messagesRef = collection(db, 'student_chats', profile.uid, 'messages');
-    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    let isMounted = true;
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const fetchedMessages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ChatMessage[];
+    // 1. Initial fetch from student_chats table
+    supabase
+      .from('student_chats')
+      .select('*')
+      .eq('student_id', profile.uid)
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (!isMounted) return;
 
-      if (fetchedMessages.length === 0 && !isTyping) {
-        // Show chat immediately, try to seed greeting in background
+        if (error) {
+          console.warn('Supabase chat fetch error:', error);
+        }
+
+        const fetched = (data || []).map(row => ({
+          id: row.id,
+          role: row.role,
+          text: row.content,
+          createdAt: row.created_at,
+        })) as ChatMessage[];
+
+        if (fetched.length === 0) {
+          const defaultGreeting: ChatMessage = {
+            id: 'welcome',
+            role: 'model',
+            text: profile?.institutionType === 'college'
+              ? `Hello! I'm your AI Academic Assistant. What topic or concept would you like to work through today?`
+              : "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
+          };
+          setMessages([defaultGreeting]);
+
+          // Save default greeting
+          supabase
+            .from('student_chats')
+            .insert({
+              student_id: profile.uid,
+              role: 'model',
+              content: defaultGreeting.text,
+            })
+            .then(({ error: insertErr }) => {
+              if (insertErr) console.warn('Could not persist greeting:', insertErr);
+            });
+        } else {
+          setMessages(fetched);
+        }
+
         setIsDBReady(true);
-        setMessages([{
-          id: 'welcome',
-          role: 'model',
-          text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
-        }]);
-        // Try to persist greeting (may fail if Firestore rules restrict it)
-        addDoc(messagesRef, {
-          role: 'model',
-          text: "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
-          createdAt: serverTimestamp()
-        }).catch(e => console.warn("Could not persist greeting:", e));
+      });
 
-      } else {
-        setMessages(fetchedMessages);
-        setIsDBReady(true);
-      }
-    }, (err) => {
-      // If Firestore permission denied, still show the chat with a local welcome
-      console.warn('Firestore chat read error:', err);
-      setMessages([{
-        id: 'welcome',
-        role: 'model',
-        text: profile?.institutionType === 'college'
-          ? `Hello! I'm your AI Academic Assistant. What topic or concept would you like to work through today?`
-          : "Hi there! I'm your Sthara AI Tutor. What subject are we studying today?",
-      }]);
-      setIsDBReady(true);
-    });
+    // 2. Realtime subscription to student_chats table
+    const channel = supabase
+      .channel(`student_chats_${profile.uid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'student_chats',
+          filter: `student_id=eq.${profile.uid}`,
+        },
+        (payload) => {
+          const newRow = payload.new;
+          if (!newRow) return;
 
-    return () => unsubscribe();
+          setMessages((prev) => {
+            // Avoid duplicate if message already exists locally
+            if (prev.some((m) => m.id === newRow.id || (m.text === newRow.content && m.role === newRow.role))) {
+              return prev;
+            }
+            return [
+              ...prev,
+              {
+                id: newRow.id,
+                role: newRow.role,
+                text: newRow.content,
+                createdAt: newRow.created_at,
+              },
+            ];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [profile?.uid]);
-
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -269,24 +303,26 @@ export default function StudentAITutor() {
     setErrorMsg('');
     setIsTyping(true);
 
-    // Immediately show user message locally (don't wait for Firestore)
     const tempUserMsg: ChatMessage = { id: `local-${Date.now()}`, role: 'user', text: userMsg };
     setMessages(prev => [...prev, tempUserMsg]);
 
     try {
-      const messagesRef = collection(db, 'student_chats', profile.uid, 'messages');
-      
-      // 1. Save user message to Firestore (non-blocking — don't await)
-      addDoc(messagesRef, {
-        role: 'user',
-        text: userMsg,
-        createdAt: serverTimestamp()
-      }).catch(e => console.warn('Could not save user message to Firestore:', e));
+      // 1. Save user message to Supabase DB (non-blocking)
+      supabase
+        .from('student_chats')
+        .insert({
+          student_id: profile.uid,
+          role: 'user',
+          content: userMsg,
+        })
+        .then(({ error: saveErr }) => {
+          if (saveErr) console.warn('Could not save user message to Supabase:', saveErr);
+        });
 
-      // 2. Build context payload (cap to last 30 messages to save API limits)
+      // 2. Build context payload (cap to last 30 messages)
       const contextMessages = [...messages.slice(-30), { role: 'user', text: userMsg }];
       
-      // 3. Call AI Backend with auth token
+      // 3. Call AI Backend
       const authToken = await getAuthToken();
       const res = await fetch('/api/tutor', {
         method: 'POST',
@@ -311,51 +347,58 @@ export default function StudentAITutor() {
       const data = await res.json();
       
       if (res.ok && data.text) {
-        // Handle foul language warning
         if (data.isFoulWarning) {
           setViolationCount(data.newViolationCount || violationCount + 1);
 
-          // 🚨 TEST ACCOUNTS: Show the SBI Arrest Modal instead of the normal warning
           if (isTestAccount) {
             setShowSBIArrest(true);
             setIsTyping(false);
-            return; // Don't save warning to chat, just show the modal
+            return;
           }
 
-          // Real students: Show the polite warning locally + try to save
           const warnMsg: ChatMessage = { id: `warn-${Date.now()}`, role: 'model', text: data.text };
           setMessages(prev => [...prev, warnMsg]);
-          addDoc(messagesRef, { role: 'model', text: data.text, createdAt: serverTimestamp() })
-            .catch(e => console.warn('Could not save warning to Firestore:', e));
 
-          // If teacher needs to be notified (2nd offense)
+          supabase
+            .from('student_chats')
+            .insert({
+              student_id: profile.uid,
+              role: 'model',
+              content: data.text,
+            })
+            .then(({ error: warnErr }) => {
+              if (warnErr) console.warn('Could not save warning to Supabase:', warnErr);
+            });
+
           if (data.notifyTeacher && profile.schoolId) {
-            try {
-              await addDoc(
-                collection(db, 'schools', profile.schoolId, 'notifications'),
-                {
-                  type: 'foul_language',
-                  title: '⚠️ Student Misconduct Alert',
-                  message: `${data.studentName || profile.name} (${data.studentClass || profile.studentClass}) used inappropriate language in the AI Tutor — 2nd offense.`,
-                  studentId: profile.uid,
-                  studentName: profile.name,
-                  studentClass: profile.studentClass,
-                  read: false,
-                  createdAt: serverTimestamp(),
-                }
-              );
-            } catch (e) {
-              console.warn('Could not send teacher notification:', e);
-            }
+            supabase
+              .from('notifications')
+              .insert({
+                school_id: profile.schoolId,
+                student_id: null,
+                title: '⚠️ Student Misconduct Alert',
+                body: `${data.studentName || profile.name} (${data.studentClass || profile.studentClass}) used inappropriate language in the AI Tutor — 2nd offense.`,
+                read: false,
+              })
+              .then(({ error: notifErr }) => {
+                if (notifErr) console.warn('Could not send teacher notification:', notifErr);
+              });
           }
         } else {
-          // 4. Show AI Response locally + try to save to Firestore
           const aiMsg: ChatMessage = { id: `ai-${Date.now()}`, role: 'model', text: data.text };
           setMessages(prev => [...prev, aiMsg]);
-          addDoc(messagesRef, { role: 'model', text: data.text, createdAt: serverTimestamp() })
-            .catch(e => console.warn('Could not save AI response to Firestore:', e));
-        }
 
+          supabase
+            .from('student_chats')
+            .insert({
+              student_id: profile.uid,
+              role: 'model',
+              content: data.text,
+            })
+            .then(({ error: aiErr }) => {
+              if (aiErr) console.warn('Could not save AI response to Supabase:', aiErr);
+            });
+        }
       } else {
         console.error('AI Error:', data.error);
         setErrorMsg(data.error || 'Failed to connect to AI. Please try again.');

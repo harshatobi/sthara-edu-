@@ -444,7 +444,7 @@ function MasteryTrackerContent() {
         // Only evaluate assignments that match the selected subject
         const subjectDocs = assignmentsSnap.docs.filter(d => {
           const aSubj = normSubj(d.data().subject);
-          if (!aSubj) return false; // skip assignments with no subject
+          if (!aSubj) return true; // include assignments with no subject (fallback)
           if (!activeNorm) return true;
           // Exact or partial match (first 8 chars)
           return aSubj === activeNorm ||

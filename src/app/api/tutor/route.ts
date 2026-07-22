@@ -1,16 +1,14 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-/* ── Foul language word list (common profanity) ── */
+/* ── Foul language word list ── */
 const FOUL_WORDS = [
   'fuck', 'shit', 'damn', 'bitch', 'ass', 'bastard', 'crap', 'piss',
   'cock', 'dick', 'pussy', 'cunt', 'asshole', 'motherfucker', 'wtf',
   'hell', 'sex', 'nude', 'porn', 'bullshit', 'whore', 'slut',
-  // Telugu / Hinglish common slurs (transliterated)
   'madarchod', 'bsdk', 'bhosdi', 'chutiya', 'randi', 'lund', 'gaand',
   'harami', 'mc', 'bc', 'sala', 'saala', 'maryadaga',
 ];
@@ -24,8 +22,8 @@ function containsFoulLanguage(text: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  // ── Lightweight origin check ──────────────────────────────────────────────
-  const origin = request.headers.get('origin') || '';
+  // Origin check
+  const origin  = request.headers.get('origin')  || '';
   const referer = request.headers.get('referer') || '';
   const authHeader = request.headers.get('authorization') || '';
   const appOrigins = [
@@ -36,8 +34,8 @@ export async function POST(request: NextRequest) {
     'https://www.sthara.in',
   ].filter(Boolean);
   const isInternalOrigin = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
-  const hasBearerToken = authHeader.startsWith('Bearer ') && authHeader.length > 20;
-  const noOrigin = !origin;
+  const hasBearerToken   = authHeader.startsWith('Bearer ') && authHeader.length > 20;
+  const noOrigin         = !origin;
   if (!isInternalOrigin && !hasBearerToken && !noOrigin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -56,11 +54,10 @@ export async function POST(request: NextRequest) {
       semester,
     } = await request.json();
 
-    // ── FOUL LANGUAGE CHECK ──
+    // ── FOUL LANGUAGE CHECK ──────────────────────────────────────────────────
     const lastUserMessage = [...messages].reverse().find((m: any) => m.sender === 'user');
     if (lastUserMessage && containsFoulLanguage(lastUserMessage.text)) {
       const newViolationCount = violationCount + 1;
-      
       if (newViolationCount === 1) {
         return NextResponse.json({
           text: institutionType === 'college'
@@ -70,7 +67,6 @@ export async function POST(request: NextRequest) {
           newViolationCount,
         });
       }
-
       return NextResponse.json({
         text: institutionType === 'college'
           ? `⛔ **Second violation — inappropriate language.**\n\nYour professor has been notified. Continued misuse will result in restricted access. Please maintain professional conduct.`
@@ -90,28 +86,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
     }
 
-    // ── FETCH STUDENT MEMORY FROM FIRESTORE ──────────────────────────────────
-    // Memory is stored in student_memory/{studentId} in Firestore
+    // ── FETCH STUDENT MEMORY FROM SUPABASE ──────────────────────────────────
     let memoryData = { known: [] as string[], struggling: [] as string[], weaknesses: [] as string[] };
     if (studentId) {
       try {
-        const memDoc = await adminDb.collection('student_memory').doc(studentId).get();
-        if (memDoc.exists) {
-          const d = memDoc.data()!;
+        const supabase = createAdminClient();
+
+        // Fetch from student_memory table
+        const { data: memRow } = await supabase
+          .from('student_memory')
+          .select('memory')
+          .eq('student_id', studentId)
+          .single();
+
+        if (memRow?.memory) {
+          const m = memRow.memory;
           memoryData = {
-            known: d.known || [],
-            struggling: d.struggling || [],
-            weaknesses: d.weaknesses || [],
+            known:       m.known       || [],
+            struggling:  m.struggling  || [],
+            weaknesses:  m.weaknesses  || [],
           };
         }
-        // Also pull historicalWeaknesses from user profile if memory doc doesn't exist
+
+        // Fallback: pull historicalWeaknesses from user profile
         if (memoryData.weaknesses.length === 0) {
-          // Try global_users first, then users
-          const guDoc = await adminDb.collection('global_users').doc(studentId).get();
-          const weaknesses = guDoc.exists
-            ? (guDoc.data()?.historicalWeaknesses || [])
-            : ((await adminDb.collection('users').doc(studentId).get()).data()?.historicalWeaknesses || []);
-          if (weaknesses.length > 0) memoryData.weaknesses = weaknesses;
+          const { data: userRow } = await supabase
+            .from('users')
+            .select('historical_weaknesses')
+            .eq('id', studentId)
+            .single();
+          if (userRow?.historical_weaknesses?.length) {
+            memoryData.weaknesses = userRow.historical_weaknesses;
+          }
         }
       } catch (memErr) {
         console.warn('[tutor] Failed to fetch memory:', memErr);
@@ -119,11 +125,9 @@ export async function POST(request: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-
-    // ── System instruction — switches between school (child) and college (adult) mode ──
     const isCollege = institutionType === 'college';
 
-    const knownStr = memoryData.known.length > 0
+    const knownStr      = memoryData.known.length > 0
       ? memoryData.known.slice(-10).join(', ')
       : 'Not yet assessed';
     const strugglingStr = [...memoryData.struggling, ...memoryData.weaknesses]
@@ -191,12 +195,9 @@ CORE RULES:
       parts: [{ text: msg.text }]
     }));
 
-    // Gemini API requires conversation history to start with 'user' role
-    while (contents.length > 0 && contents[0].role === 'model') {
-      contents.shift();
-    }
-    
-    // Merge consecutive messages from same role to prevent "400 alternating roles" errors
+    while (contents.length > 0 && contents[0].role === 'model') contents.shift();
+
+    // Merge consecutive same-role messages
     const mergedContents: any[] = [];
     for (const msg of contents) {
       if (mergedContents.length > 0 && mergedContents[mergedContents.length - 1].role === msg.role) {
@@ -206,14 +207,12 @@ CORE RULES:
       }
     }
 
-    // Prepend system instruction to the first user message
     const firstUserMsgIndex = mergedContents.findIndex(c => c.role === 'user');
     if (firstUserMsgIndex !== -1) {
       mergedContents[firstUserMsgIndex].parts[0].text = systemInstruction + '\n\n' + mergedContents[firstUserMsgIndex].parts[0].text;
     }
 
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
     const response = await model.generateContent({
       contents: mergedContents,
       generationConfig: { temperature: 0.7 }
@@ -222,7 +221,6 @@ CORE RULES:
     const aiText = response.response.text();
 
     // ── UPDATE STUDENT MEMORY ASYNCHRONOUSLY ─────────────────────────────────
-    // Extract topics from this session and save them (fire-and-forget, don't block response)
     if (studentId && aiText) {
       updateStudentMemory(studentId, messages, aiText).catch(console.warn);
     }
@@ -239,12 +237,11 @@ CORE RULES:
 }
 
 /**
- * Asynchronously extracts topics from the conversation and updates the
- * student's memory document in Firestore. Fire-and-forget — doesn't block response.
+ * Extracts topics from the conversation and updates student_memory table.
+ * Fire-and-forget — doesn't block the response.
  */
 async function updateStudentMemory(studentId: string, messages: any[], aiResponse: string) {
   try {
-    // Extract the student's last few messages to identify topics
     const recentStudentMsgs = messages
       .filter((m: any) => m.sender === 'user')
       .slice(-5)
@@ -253,8 +250,6 @@ async function updateStudentMemory(studentId: string, messages: any[], aiRespons
 
     if (!recentStudentMsgs.trim()) return;
 
-    // Simple keyword extraction — look for subject/topic mentions
-    // A full NLP approach could be done here; for now, we extract the general topic
     const topicMatch = aiResponse.match(/\*\*(.*?)\*\*/g);
     const topics = topicMatch
       ? topicMatch.map(t => t.replace(/\*\*/g, '').trim()).filter(t => t.length > 2 && t.length < 60).slice(0, 3)
@@ -262,27 +257,28 @@ async function updateStudentMemory(studentId: string, messages: any[], aiRespons
 
     if (topics.length === 0) return;
 
-    const memRef = adminDb.collection('student_memory').doc(studentId);
-    const memDoc = await memRef.get();
+    const supabase = createAdminClient();
 
-    if (!memDoc.exists) {
-      await memRef.set({
-        studentId,
-        known: [],
-        struggling: [],
-        recentTopics: topics,
-        lastUpdated: FieldValue.serverTimestamp(),
+    const { data: existing } = await supabase
+      .from('student_memory')
+      .select('memory')
+      .eq('student_id', studentId)
+      .single();
+
+    if (!existing) {
+      await supabase.from('student_memory').insert({
+        student_id: studentId,
+        memory: { known: [], struggling: [], recentTopics: topics },
       });
     } else {
-      const existing = memDoc.data()!;
-      const updatedRecent = [...new Set([...topics, ...(existing.recentTopics || [])])].slice(0, 20);
-      await memRef.update({
-        recentTopics: updatedRecent,
-        lastUpdated: FieldValue.serverTimestamp(),
-      });
+      const mem = existing.memory || {};
+      const updatedRecent = [...new Set([...topics, ...(mem.recentTopics || [])])].slice(0, 20);
+      await supabase.from('student_memory').update({
+        memory: { ...mem, recentTopics: updatedRecent },
+        updated_at: new Date().toISOString(),
+      }).eq('student_id', studentId);
     }
   } catch (e) {
-    // Silently ignore — memory update failure should never break the chat
     console.warn('[tutor] Memory update failed:', e);
   }
 }

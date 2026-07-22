@@ -1,78 +1,62 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { admin, adminDb } from '@/lib/firebase/admin';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { idToken } = await req.json();
-    if (!idToken) {
+    const { accessToken } = await req.json();
+    if (!accessToken) {
       return NextResponse.json({ error: 'No token provided' }, { status: 400 });
     }
 
-    // 1. Verify the parent's Firebase ID token
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    const uid = decoded.uid;
+    const supabase = createAdminClient();
 
-    // 2. Fetch the parent's profile to get linkedStudents and schoolId
-    let parentData: any = null;
-    const guDoc = await adminDb.collection('global_users').doc(uid).get();
-    if (guDoc.exists) {
-      parentData = guDoc.data();
-    } else {
-      const uDoc = await adminDb.collection('users').doc(uid).get();
-      if (uDoc.exists) {
-        parentData = uDoc.data();
-      }
+    // 1. Verify parent's JWT
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(accessToken);
+    if (authErr || !user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    if (!parentData) {
+    // 2. Fetch parent profile
+    const { data: parentData, error: parentErr } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (parentErr || !parentData) {
       return NextResponse.json({ error: 'Parent profile not found' }, { status: 404 });
     }
 
-    const schoolId = parentData.schoolId;
-    const linked: string[] = parentData.linkedStudents || [];
+    const schoolId = parentData.school_id;
+    const linked: string[] = parentData.metadata?.linkedStudents || [];
 
     if (linked.length === 0 || !schoolId) {
       return NextResponse.json({ children: [] });
     }
 
-    // 3. Query all student docs in linked array
-    const studentDocs: any[] = [];
-    const seenUids = new Set<string>();
+    // 3. Query linked students by custom_student_id
+    const { data: studentRows, error: studErr } = await supabase
+      .from('users')
+      .select('*')
+      .eq('school_id', schoolId)
+      .in('custom_student_id', linked);
 
-    const usersSnap = await adminDb.collection('users')
-      .where('schoolId', '==', schoolId)
-      .where('customStudentId', 'in', linked)
-      .get();
-    usersSnap.forEach(d => {
-      if (!seenUids.has(d.id)) {
-        seenUids.add(d.id);
-        studentDocs.push({ id: d.id, ...d.data() });
-      }
-    });
+    if (studErr) throw studErr;
 
-    const globalUsersSnap = await adminDb.collection('global_users')
-      .where('schoolId', '==', schoolId)
-      .where('customStudentId', 'in', linked)
-      .get();
-    globalUsersSnap.forEach(d => {
-      if (!seenUids.has(d.id)) {
-        seenUids.add(d.id);
-        studentDocs.push({ id: d.id, ...d.data() });
-      }
-    });
+    const studentDocs = studentRows || [];
 
-    // 4. Fetch assignments, submissions, notifications, wellness logs for each student
+    // 4. For each student, fetch assignments + submissions + notifications + wellness
     const children = await Promise.all(studentDocs.map(async (student) => {
-      const studentClass = student.studentClass || '';
+      const studentClass = student.student_class || '';
 
       // Get all assignments for this student's class
-      const assignSnap = await adminDb.collection('schools')
-        .doc(schoolId)
-        .collection('assignments')
-        .where('class', '==', studentClass)
-        .get();
+      const { data: assignRows } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('class', studentClass);
 
       const assignments: any[] = [];
       const subjectScoreMap: Record<string, { sum: number; count: number }> = {};
@@ -81,58 +65,48 @@ export async function POST(req: NextRequest) {
       let totalMax = 0;
       let submittedCount = 0;
 
-      await Promise.all(assignSnap.docs.map(async (aDoc) => {
-        const aData = aDoc.data();
+      await Promise.all((assignRows || []).map(async (a) => {
         const task: any = {
-          id: aDoc.id,
-          ...aData,
-          createdAt: aData.createdAt?.toDate?.() || aData.createdAt,
-          dueDate: aData.dueDate,
-          submitted: false
+          id: a.id,
+          title: a.title,
+          type: a.type,
+          subject: a.subject,
+          class: a.class,
+          dueDate: a.due_date,
+          createdAt: a.created_at,
+          submitted: false,
         };
 
-        try {
-          const subDoc = await adminDb.collection('schools')
-            .doc(schoolId)
-            .collection('assignments')
-            .doc(aDoc.id)
-            .collection('submissions')
-            .doc(student.id)
-            .get();
+        const { data: sub } = await supabase
+          .from('submissions')
+          .select('*')
+          .eq('assignment_id', a.id)
+          .eq('student_id', student.id)
+          .single();
 
-          if (subDoc.exists) {
-            const sub = subDoc.data()!;
-            task.submitted = true;
-            task.score = sub.score ?? sub.aiScore;
-            task.maxScore = sub.maxScore || sub.total || 10;
-            task.teacherNote = sub.teacherNote || sub.personalNote;
-            task.aiGraded = sub.aiGraded;
-            task.submittedAt = sub.submittedAt?.toDate?.() || sub.submittedAt;
-            submittedCount++;
+        if (sub) {
+          task.submitted = true;
+          task.score = sub.score;
+          task.maxScore = sub.max_score || 10;
+          task.aiGraded = sub.ai_graded;
+          task.submittedAt = sub.submitted_at;
+          submittedCount++;
 
-            if (task.score !== undefined && task.maxScore) {
-              const subj = aData.subject || 'General';
-              if (!subjectScoreMap[subj]) subjectScoreMap[subj] = { sum: 0, count: 0 };
-              subjectScoreMap[subj].sum += (task.score / task.maxScore) * 100;
-              subjectScoreMap[subj].count++;
-
-              totalScore += task.score;
-              totalMax += task.maxScore;
-
-              const dateStr = aData.dueDate || new Date().toISOString().split('T')[0];
-              recentScores.push({ date: dateStr, score: Math.round((task.score / task.maxScore) * 100) });
-            }
+          if (task.score !== null && task.maxScore) {
+            const subj = a.subject || 'General';
+            if (!subjectScoreMap[subj]) subjectScoreMap[subj] = { sum: 0, count: 0 };
+            subjectScoreMap[subj].sum += (task.score / task.maxScore) * 100;
+            subjectScoreMap[subj].count++;
+            totalScore += task.score;
+            totalMax += task.maxScore;
+            const dateStr = a.due_date || new Date().toISOString().split('T')[0];
+            recentScores.push({ date: dateStr, score: Math.round((task.score / task.maxScore) * 100) });
           }
-        } catch (e) {
-          // ignore
         }
         assignments.push(task);
       }));
 
-      // Sort assignments by due date descending
       assignments.sort((a, b) => new Date(b.dueDate || 0).getTime() - new Date(a.dueDate || 0).getTime());
-      
-      // Sort recent scores by date ascending
       recentScores.sort((a, b) => a.date.localeCompare(b.date));
 
       const subjectScores = Object.entries(subjectScoreMap).map(([subject, val]) => ({
@@ -141,91 +115,68 @@ export async function POST(req: NextRequest) {
         fullMark: 100,
       }));
 
-      // Get notifications for this student
-      const notifications: any[] = [];
-      try {
-        const notifSnap = await adminDb.collection('schools')
-          .doc(schoolId)
-          .collection('notifications')
-          .where('studentId', '==', student.id)
-          .get();
+      // Notifications
+      const { data: notifRows } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('student_id', student.id)
+        .order('created_at', { ascending: false });
 
-        notifSnap.forEach(d => {
-          const data = d.data();
-          notifications.push({
-            id: d.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.() || data.createdAt
-          });
-        });
-        notifications.sort((a, b) => {
-          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return bTime - aTime;
-        });
-      } catch (e) {
-        // ignore
-      }
+      const notifications = (notifRows || []).map((n) => ({
+        id: n.id,
+        title: n.title,
+        body: n.body,
+        read: n.read,
+        createdAt: n.created_at,
+      }));
 
-      // Fetch wellness logs for this student
-      const wellnessLogs: any[] = [];
-      try {
-        const logsSnap = await adminDb.collection('wellness_logs')
-          .where('userId', '==', student.id)
-          .get();
+      // Wellness logs
+      const { data: wellRows } = await supabase
+        .from('wellness_logs')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('created_at', { ascending: false });
 
-        logsSnap.forEach(d => {
-          const data = d.data();
-          wellnessLogs.push({
-            id: d.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.() || data.createdAt
-          });
-        });
+      const wellnessLogs = (wellRows || []).map((w) => ({
+        id: w.id,
+        mood: w.mood,
+        energy: w.energy,
+        note: w.note,
+        createdAt: w.created_at,
+      }));
 
-        // Sort by date descending
-        wellnessLogs.sort((a, b) => {
-          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return bTime - aTime;
-        });
-      } catch (e) {
-        // ignore
-      }
+      // Build milestones
+      const milestones: any[] = [
+        {
+          id: 'attendance',
+          date: 'This Term',
+          title: 'Excellent Attendance',
+          description: `${student.name} has maintained a consistent attendance record this term.`,
+          type: 'achievement',
+          icon: 'Award',
+          color: 'text-purple-500',
+          bgColor: 'bg-purple-100',
+          borderColor: 'border-purple-200',
+        },
+      ];
 
-      // Build dynamic milestones
-      const milestones: any[] = [];
-      
-      // Baseline attendance milestone
-      milestones.push({
-        id: 'attendance',
-        date: 'This Term',
-        title: 'Excellent Attendance',
-        description: `${student.name} has maintained a consistent attendance record this term.`,
-        type: 'achievement',
-        icon: 'Award',
-        color: 'text-purple-500',
-        bgColor: 'bg-purple-100',
-        borderColor: 'border-purple-200'
-      });
-
-      // Add submissions as milestones
       assignments.forEach((task) => {
         if (task.submitted) {
-          const submissionDate = task.submittedAt ? new Date(task.submittedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently';
-          
+          const submissionDate = task.submittedAt
+            ? new Date(task.submittedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'Recently';
           milestones.push({
             id: `sub-${task.id}`,
             date: submissionDate,
             title: `Completed ${task.title}`,
-            description: `Successfully submitted the task for ${task.subject}. ${task.teacherNote ? `Feedback: "${task.teacherNote}"` : ''}`,
+            description: `Successfully submitted the task for ${task.subject || 'class'}.`,
             type: 'task',
             icon: 'CheckCircle2',
             color: 'text-emerald-500',
             bgColor: 'bg-emerald-100',
-            borderColor: 'border-emerald-200'
+            borderColor: 'border-emerald-200',
           });
-
           const pct = task.maxScore ? Math.round((task.score / task.maxScore) * 100) : null;
           if (pct !== null && pct >= 80) {
             milestones.push({
@@ -237,7 +188,7 @@ export async function POST(req: NextRequest) {
               icon: 'Star',
               color: 'text-amber-500',
               bgColor: 'bg-amber-100',
-              borderColor: 'border-amber-200'
+              borderColor: 'border-amber-200',
             });
           }
         }
@@ -247,16 +198,16 @@ export async function POST(req: NextRequest) {
         id: student.id,
         name: student.name || 'Student',
         studentClass,
-        customStudentId: student.customStudentId || student.id.slice(0, 6).toUpperCase(),
+        customStudentId: student.custom_student_id || student.id.slice(0, 6).toUpperCase(),
         assignments,
         subjectScores,
         submittedCount,
-        totalCount: assignSnap.size,
+        totalCount: assignRows?.length || 0,
         avgPercent: totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : null,
         notifications,
         recentScores: recentScores.slice(-7),
         wellnessLogs,
-        milestones
+        milestones,
       };
     }));
 

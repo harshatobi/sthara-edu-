@@ -1,211 +1,115 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { admin, adminDb } from '@/lib/firebase/admin';
 
 export const maxDuration = 60;
 
 /**
- * DELETE /api/superadmin/delete-user
- * Full cascade delete of a user from:
- *   Firebase Auth, global_users, schools/.../users,
- *   all their assignments, submissions, quiz data,
- *   chat history, syllabus entries, notifications, etc.
+ * POST /api/superadmin/delete-user
+ * Full cascade delete of a user from Supabase Auth + all related tables.
  */
-
-/** Delete all docs in a Firestore collection/query in batches of 400 */
-async function deleteBatch(
-  db: FirebaseFirestore.Firestore,
-  query: FirebaseFirestore.Query
-): Promise<number> {
-  const snap = await query.limit(400).get();
-  if (snap.empty) return 0;
-
-  const batch = db.batch();
-  snap.docs.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-
-  // Recurse if there might be more
-  if (snap.size === 400) {
-    return snap.size + await deleteBatch(db, query);
-  }
-  return snap.size;
-}
-
-/** Delete a document and ALL its subcollections recursively */
-async function deleteDocWithSubcollections(
-  db: FirebaseFirestore.Firestore,
-  docRef: FirebaseFirestore.DocumentReference
-): Promise<void> {
-  const subcollections = await docRef.listCollections();
-  for (const sub of subcollections) {
-    const subDocs = await sub.get();
-    for (const subDoc of subDocs.docs) {
-      await deleteDocWithSubcollections(db, subDoc.ref);
-    }
-  }
-  await docRef.delete();
-}
-
 export async function POST(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authError } = await verifyApiToken(request.headers.get('authorization'));
+  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const { uid, schoolId, role } = await request.json();
     if (!uid) return NextResponse.json({ error: 'Missing uid' }, { status: 400 });
 
+    const supabase = createAdminClient();
     const log: Record<string, string | number> = {};
 
-    // ── 1. Firebase Authentication ───────────────────────────────────────────
+    // ── 1. Supabase Auth ─────────────────────────────────────────────────────
     try {
-      if (admin.apps.length) {
-        await admin.auth().deleteUser(uid);
-        log.auth = 'deleted ✓';
-      } else {
-        log.auth = 'skipped (admin not init)';
-      }
+      const { error } = await supabase.auth.admin.deleteUser(uid);
+      log.auth = error ? `error: ${error.message}` : 'deleted ✓';
     } catch (e: any) {
-      log.auth = e.code === 'auth/user-not-found' ? 'already gone' : `error: ${e.message}`;
+      log.auth = `error: ${e.message}`;
     }
 
-    if (!adminDb) {
-      return NextResponse.json({
-        success: true, uid, log,
-        warning: 'Firebase Admin DB not available — Auth was deleted but Firestore cleanup skipped.',
-      });
-    }
-
-    const db = adminDb;
-
-    // ── 2. User profile documents ────────────────────────────────────────────
-    try { await db.collection('global_users').doc(uid).delete(); log.global_users = 'deleted ✓'; }
-    catch (e: any) { log.global_users = e.message; }
-
-    try { await db.collection('users').doc(uid).delete(); log.users_legacy = 'deleted ✓'; }
-    catch { log.users_legacy = 'not found (ok)'; }
-
-    if (schoolId) {
-      try {
-        await db.collection('schools').doc(schoolId).collection('users').doc(uid).delete();
-        log.school_users = 'deleted ✓';
-      } catch (e: any) { log.school_users = e.message; }
-    }
-
-    // ── 3. Student Chat History ──────────────────────────────────────────────
+    // ── 2. User profile ──────────────────────────────────────────────────────
     try {
-      const chatRef = db.collection('student_chats').doc(uid);
-      await deleteDocWithSubcollections(db, chatRef);
-      log.student_chats = 'deleted ✓';
-    } catch { log.student_chats = 'not found (ok)'; }
+      await supabase.from('users').delete().eq('id', uid);
+      log.users = 'deleted ✓';
+    } catch (e: any) { log.users = e.message; }
 
-    // ── 4. Student Memory / Known Concepts ───────────────────────────────────
+    // ── 3. Student chat history ──────────────────────────────────────────────
     try {
-      await db.collection('student_memory').doc(uid).delete();
+      const { count } = await supabase
+        .from('student_chats')
+        .delete({ count: 'exact' })
+        .eq('student_id', uid);
+      log.student_chats = `${count || 0} deleted`;
+    } catch { log.student_chats = '0 (not found)'; }
+
+    // ── 4. Student memory ────────────────────────────────────────────────────
+    try {
+      await supabase.from('student_memory').delete().eq('student_id', uid);
       log.student_memory = 'deleted ✓';
     } catch { log.student_memory = 'not found (ok)'; }
 
-    // ── 5. School-scoped data (if schoolId provided) ─────────────────────────
-    if (schoolId) {
-      const schoolRef = db.collection('schools').doc(schoolId);
+    // ── 5. Submissions by this student ───────────────────────────────────────
+    try {
+      const { count } = await supabase
+        .from('submissions')
+        .delete({ count: 'exact' })
+        .eq('student_id', uid);
+      log.submissions = `${count || 0} deleted`;
+    } catch (e: any) { log.submissions = e.message; }
 
-      // Submissions (homework submissions by this student)
+    // ── 6. Wellness logs ─────────────────────────────────────────────────────
+    try {
+      const { count } = await supabase
+        .from('wellness_logs')
+        .delete({ count: 'exact' })
+        .eq('student_id', uid);
+      log.wellness_logs = `${count || 0} deleted`;
+    } catch { log.wellness_logs = '0'; }
+
+    // ── 7. Notifications for this user ───────────────────────────────────────
+    try {
+      const { count } = await supabase
+        .from('notifications')
+        .delete({ count: 'exact' })
+        .eq('student_id', uid);
+      log.notifications = `${count || 0} deleted`;
+    } catch { log.notifications = '0'; }
+
+    // ── 8. Teacher-specific: assignments created by this teacher ────────────
+    if (role === 'teacher') {
       try {
-        const n = await deleteBatch(db,
-          schoolRef.collection('submissions').where('studentId', '==', uid));
-        log.submissions = `${n} deleted`;
-      } catch (e: any) { log.submissions = e.message; }
-
-      // Quiz submissions / attempts
-      try {
-        const n = await deleteBatch(db,
-          schoolRef.collection('quiz_submissions').where('studentId', '==', uid));
-        log.quiz_submissions = `${n} deleted`;
-      } catch (e: any) { log.quiz_submissions = e.message; }
+        const { count } = await supabase
+          .from('assignments')
+          .delete({ count: 'exact' })
+          .eq('teacher_id', uid)
+          .eq('school_id', schoolId);
+        log.assignments = `${count || 0} deleted`;
+      } catch (e: any) { log.assignments = e.message; }
 
       try {
-        const n = await deleteBatch(db,
-          schoolRef.collection('quiz_attempts').where('studentId', '==', uid));
-        log.quiz_attempts = `${n} deleted`;
-      } catch { log.quiz_attempts = '0 (collection may not exist)'; }
-
-      // Notifications about/from this user
-      try {
-        const n = await deleteBatch(db,
-          schoolRef.collection('notifications').where('studentId', '==', uid));
-        log.notifications_student = `${n} deleted`;
-      } catch { log.notifications_student = '0'; }
-
-      // Teacher-specific: assignments created by this teacher
-      if (role === 'teacher') {
-        try {
-          const n = await deleteBatch(db,
-            schoolRef.collection('assignments').where('teacherId', '==', uid));
-          log.assignments = `${n} deleted`;
-        } catch (e: any) { log.assignments = e.message; }
-
-          // Also delete legacy AI-assistant assignments stored with createdBy field
-          try {
-            const n2 = await deleteBatch(db,
-              schoolRef.collection('assignments').where('createdBy', '==', uid));
-            log.assignments_createdby = `${n2} deleted`;
-          } catch (e: any) { log.assignments_createdby = e.message; }
-
-        // Syllabus entries by this teacher
-        try {
-          const n = await deleteBatch(db,
-            schoolRef.collection('syllabus').where('teacherId', '==', uid));
-          log.syllabus = `${n} deleted`;
-        } catch (e: any) { log.syllabus = e.message; }
-
-        // Notifications created by this teacher
-        try {
-          const n = await deleteBatch(db,
-            schoolRef.collection('notifications').where('teacherId', '==', uid));
-          log.notifications_teacher = `${n} deleted`;
-        } catch { log.notifications_teacher = '0'; }
-      }
-
-      // Student-specific: assignments this student has a result doc for
-      if (role === 'student') {
-        // Some implementations store per-student results inside assignment docs
-        // Delete all assignments where the student is the only submitter (i.e. their personal homework copy)
-        try {
-          const n = await deleteBatch(db,
-            schoolRef.collection('assignments').where('studentId', '==', uid));
-          log.student_assignments = `${n} deleted`;
-        } catch { log.student_assignments = '0 (shared assignments not deleted)'; }
-
-        // Wellness check-in data
-        try {
-          const n = await deleteBatch(db,
-            schoolRef.collection('wellness').where('studentId', '==', uid));
-          log.wellness = `${n} deleted`;
-        } catch { log.wellness = '0'; }
-      }
+        const { count } = await supabase
+          .from('syllabus')
+          .delete({ count: 'exact' })
+          .eq('teacher_id', uid);
+        log.syllabus = `${count || 0} deleted`;
+      } catch (e: any) { log.syllabus = e.message; }
     }
 
-    // ── 6. Global collections (not school-scoped) ────────────────────────────
-
-    // Homework assignments stored at root level
+    // ── 9. Situations involving this student ─────────────────────────────────
     try {
-      const n = await deleteBatch(db,
-        db.collection('homework_assignments').where('studentId', '==', uid));
-      log.homework_assignments = `${n} deleted`;
-    } catch { log.homework_assignments = '0'; }
-
-    // Wellness data at root level
-    try {
-      const n = await deleteBatch(db,
-        db.collection('wellness_checkins').where('uid', '==', uid));
-      log.wellness_checkins = `${n} deleted`;
-    } catch { log.wellness_checkins = '0'; }
+      const { count } = await supabase
+        .from('situations')
+        .delete({ count: 'exact' })
+        .eq('student_id', uid);
+      log.situations = `${count || 0} deleted`;
+    } catch { log.situations = '0'; }
 
     return NextResponse.json({
       success: true,
       uid,
       schoolId,
       role,
-      message: `User and all associated data fully deleted. Email can be re-used immediately.`,
+      message: 'User and all associated data fully deleted. Email can be re-used immediately.',
       log,
     });
 

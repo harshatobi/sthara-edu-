@@ -393,7 +393,7 @@ export default function StudentDashboard() {
         setAssignments(tasks);
       } catch (error) {
         console.error('Error fetching assignments:', error);
-      } font-medium {
+      } finally {
         setLoadingTasks(false);
       }
     };

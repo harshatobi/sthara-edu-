@@ -150,24 +150,6 @@ export default function AdminDashboard() {
     setSuccessMsg('');
 
     try {
-      // 1. Create auth user with Supabase
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            name: name.trim(),
-            role,
-          },
-        },
-      });
-
-      if (authErr || !authData.user) {
-        throw new Error(authErr?.message || 'Failed to create user account');
-      }
-
-      const newUid = authData.user.id;
-
       let customStudentId: string | undefined = undefined;
       let parsedClass: string | undefined = undefined;
 
@@ -187,26 +169,31 @@ export default function AdminDashboard() {
 
       const validTeacherAssignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
 
-      // 2. Insert user into users table
-      const { error: dbErr } = await supabase.from('users').insert({
-        id: newUid,
-        school_id: profile.schoolId,
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role,
-        student_class: role === 'student' ? (parsedClass || null) : null,
-        branch: role === 'student' ? (branch.trim() || null) : null,
-        semester: role === 'student' ? (semester.trim() || null) : null,
-        year: role === 'student' ? (year.trim() || null) : null,
-        custom_student_id: customStudentId || null,
-        assignments: validTeacherAssignments,
-        metadata: { linkedStudents: selectedStudentsForParent },
+      // Use server-side API route (service role) to bypass RLS on users table
+      const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          name: name.trim(),
+          role,
+          schoolId: profile.schoolId,
+          studentClass: parsedClass || null,
+          branch: branch.trim() || null,
+          semester: semester.trim() || null,
+          year: year.trim() || null,
+          customStudentId: customStudentId || null,
+          assignments: validTeacherAssignments,
+          linkedStudents: selectedStudentsForParent,
+        }),
       });
 
-      if (dbErr) throw dbErr;
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to create user account');
 
       const newUserObj: UserData = {
-        id: newUid,
+        id: result.userId,
         name: name.trim(),
         email: email.trim().toLowerCase(),
         role,
@@ -216,7 +203,7 @@ export default function AdminDashboard() {
         linkedStudents: selectedStudentsForParent,
       };
 
-      setSuccessMsg(`Successfully created ${role} account for ${name}!`);
+      setSuccessMsg(`✅ Successfully created ${role} account for ${name}!`);
       setUsers([...users, newUserObj]);
       
       setEmail('');

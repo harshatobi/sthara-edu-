@@ -3,20 +3,21 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export async function POST(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authError } = await verifyApiToken(request.headers.get('authorization'));
+  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { weaknesses, subject, studentClass } = await request.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
+      return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    const prompt = `You are an expert tutor. A student in ${studentClass} studying ${subject} has been identified to have weaknesses in the following concepts: ${weaknesses.join(', ')}.
+    const prompt = `You are an expert tutor. A student in ${studentClass || 'their class'} studying ${subject || 'their subject'} has been identified to have weaknesses in the following concepts: ${Array.isArray(weaknesses) ? weaknesses.join(', ') : weaknesses || 'core topics'}.
 Generate a highly targeted 3-question multiple-choice practice module to help them overcome these specific weaknesses.
 Format strictly as a JSON object with a "questions" array.
 Each question should have:
@@ -28,7 +29,7 @@ Each question should have:
 Output ONLY valid JSON, no markdown.`;
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.0-flash',
       generationConfig: { responseMimeType: 'application/json', temperature: 0.4 }
     });
 
@@ -38,8 +39,8 @@ Output ONLY valid JSON, no markdown.`;
     const parsed = JSON.parse(jsonStr);
     return NextResponse.json(parsed);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Practice Module Generation Error:', error);
-    return NextResponse.json({ error: 'Failed to generate practice module' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to generate practice module' }, { status: 500 });
   }
 }

@@ -212,7 +212,7 @@ CORE RULES:
       mergedContents[firstUserMsgIndex].parts[0].text = systemInstruction + '\n\n' + mergedContents[firstUserMsgIndex].parts[0].text;
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const response = await model.generateContent({
       contents: mergedContents,
       generationConfig: { temperature: 0.7 }

@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,11 +8,12 @@ const DEFAULT_PASSWORD = 'Sthara@123';
 
 /**
  * POST /api/superadmin/repair-admin
- * Creates/resets the admin auth account for an existing school's admin email.
- * Used to fix schools that were created without an auth account.
+ * Requires: Valid JWT token in Authorization header
  * Body: { schoolId: string, adminEmail: string }
  */
 export async function POST(request: NextRequest) {
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { schoolId, adminEmail } = await request.json();
 

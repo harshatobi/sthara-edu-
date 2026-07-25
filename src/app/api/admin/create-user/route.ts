@@ -1,14 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/admin/create-user
  * Creates a new user (student/teacher/parent/admin) for a school.
- * Uses service role to bypass RLS on both auth and users table.
+ * Requires: Valid JWT token in Authorization header
  */
 export async function POST(request: NextRequest) {
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const {
       email,

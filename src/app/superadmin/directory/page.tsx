@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Search, Users, ArrowLeft, KeyRound, X, CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 import Link from 'next/link';
 
 interface GlobalUser {
@@ -92,9 +93,13 @@ export default function GlobalDirectoryPage() {
     setChangeSuccess('');
 
     try {
+      const authToken = await getAuthToken();
       const res = await fetch('/api/superadmin/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({ userId: changePwdUser.id, newPassword }),
       });
 

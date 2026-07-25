@@ -131,9 +131,13 @@ This CANNOT be undone. Type the school code to confirm:`;
     setRepairingAdminId(school.id);
     setRepairSuccess('');
     try {
+      const authToken = await getAuthToken();
       const res = await fetch('/api/superadmin/repair-admin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({ schoolId: school.id, adminEmail: school.adminEmail }),
       });
       const result = await res.json();
@@ -168,9 +172,13 @@ This CANNOT be undone. Type the school code to confirm:`;
 
     try {
       // Use server-side API route (service role) to bypass Supabase RLS on schools table
+      const authToken = await getAuthToken();
       const res = await fetch('/api/superadmin/provision-school', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({
           name: institutionName.trim(),
           institutionType,

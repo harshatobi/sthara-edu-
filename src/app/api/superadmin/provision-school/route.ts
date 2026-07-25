@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,11 +8,12 @@ const DEFAULT_PASSWORD = 'Sthara@123';
 
 /**
  * POST /api/superadmin/provision-school
- * 1. Creates the school in the `schools` table (bypasses RLS via service role)
- * 2. Creates the admin user in Supabase Auth with default password
- * 3. Inserts admin user into `users` table linked to this school
+ * Requires: SuperAdmin JWT token in Authorization header
  */
 export async function POST(request: NextRequest) {
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { name, institutionType, code, adminEmail, branches } = await request.json();
 

@@ -1,14 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/superadmin/change-password
- * Changes any user's password using the service role admin client.
- * Body: { userId: string, newPassword: string }
+ * Requires: Valid JWT token in Authorization header
  */
 export async function POST(request: NextRequest) {
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { userId, newPassword } = await request.json();
 

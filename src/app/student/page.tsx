@@ -817,10 +817,10 @@ export default function StudentDashboard() {
                     <div>
                       <label className="block text-sm font-medium text-[#002147]/70 mb-1">Your Submission (Link or Text)</label>
                       <textarea 
-                        required 
                         rows={4}
                         value={submissionText}
                         onChange={e => setSubmissionText(e.target.value)}
+                        placeholder="Type your answer here, or attach images below..."
                         className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20" 
                       />
                       

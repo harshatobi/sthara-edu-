@@ -19,8 +19,8 @@ export default function StudentVideos() {
   const router = useRouter();
   const supabase = createClient();
   
-  const [activeSubject, setActiveSubject] = useState('Mathematics');
-  const [availableSubjects, setAvailableSubjects] = useState<string[]>(['Mathematics', 'Science', 'English', 'Social Studies']);
+  const [activeSubject, setActiveSubject] = useState('All');
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>(['All', 'Mathematics', 'Science', 'English', 'Social Studies']);
   const [videos, setVideos] = useState<VideoFile[]>([]);
   const [fetching, setFetching] = useState(true);
 
@@ -46,9 +46,15 @@ export default function StudentVideos() {
           title: m.title || 'Curriculum Video',
           url: m.url || '',
           filename: m.filename || 'video.mp4',
+          subject: m.subject || m.metadata?.subject || '',
         }));
 
         setVideos(loadedVideos);
+        // Update subject tabs from actual data
+        const subjects = Array.from(new Set(loadedVideos.map(v => (v as any).subject).filter(Boolean))) as string[];
+        if (subjects.length > 0) {
+          setAvailableSubjects(['All', ...subjects]);
+        }
       } catch (err: any) {
         console.error('[student-videos] fetch error:', err);
       } finally {
@@ -94,24 +100,27 @@ export default function StudentVideos() {
 
         {fetching ? (
           <div className="py-12 text-center text-gray-400">Loading videos...</div>
-        ) : videos.length === 0 ? (
-          <div className="py-12 text-center text-gray-400">No video materials uploaded for this subject yet.</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {videos.map(v => (
-              <div key={v.id} className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm space-y-3 p-4">
-                <div className="aspect-video bg-black/10 rounded-xl flex items-center justify-center relative">
-                  {v.url ? (
-                    <video src={v.url} controls className="w-full h-full rounded-xl object-cover" />
-                  ) : (
-                    <PlayCircle className="w-12 h-12 text-indigo-600" />
-                  )}
+        ) : (() => {
+          const filtered = activeSubject === 'All' ? videos : videos.filter(v => (v as any).subject === activeSubject);
+          return filtered.length === 0 ? (
+            <div className="py-12 text-center text-gray-400">No video materials found for <strong>{activeSubject}</strong>.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filtered.map(v => (
+                <div key={v.id} className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm space-y-3 p-4">
+                  <div className="aspect-video bg-black/10 rounded-xl flex items-center justify-center relative">
+                    {v.url ? (
+                      <video src={v.url} controls className="w-full h-full rounded-xl object-cover" />
+                    ) : (
+                      <PlayCircle className="w-12 h-12 text-indigo-600" />
+                    )}
+                  </div>
+                  <h3 className="font-bold text-sm text-[#002147]">{v.title}</h3>
                 </div>
-                <h3 className="font-bold text-sm text-[#002147]">{v.title}</h3>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

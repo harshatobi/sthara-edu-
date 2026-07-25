@@ -50,7 +50,7 @@ export default function PaperGenPage() {
     try {
       const { error: insertErr } = await supabase.from('assignments').insert({
         school_id: profile.schoolId,
-        teacher_id: profile.uid,
+        teacher_id: profile.id,
         title: `${subject} Question Paper — ${sectionClass}`,
         type: 'exam',
         class: sectionClass,

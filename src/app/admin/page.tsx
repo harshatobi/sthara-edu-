@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 interface TeacherAssignment {
   class: string;
@@ -170,9 +171,13 @@ export default function AdminDashboard() {
       const validTeacherAssignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
 
       // Use server-side API route (service role) to bypass RLS on users table
+      const authToken = await getAuthToken();
       const res = await fetch('/api/admin/create-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
           password,

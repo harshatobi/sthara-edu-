@@ -2,80 +2,74 @@ import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/superadmin/create-superadmin
- * Creates a SuperAdmin user account in Supabase Auth and inserts into `superadmins` & `users` tables.
+ * Provisions SuperAdmin user account in Supabase Auth & PostgreSQL DB.
  */
 export async function POST(request: NextRequest) {
   try {
     const { email, password, name } = await request.json();
+    const cleanEmail = (email || '').toLowerCase().trim();
 
-    if (!email || !password) {
+    if (!cleanEmail || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
     const supabase = createAdminClient();
-
-    // 1. Create or fetch Auth user
     let uid = '';
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: email.toLowerCase().trim(),
-      password,
-      email_confirm: true,
-      user_metadata: { role: 'superadmin', name: name || 'Super Admin' },
-    });
 
-    if (authError) {
-      if (authError.message.includes('already registered')) {
-        // Fetch existing user ID
-        const { data: users } = await supabase.auth.admin.listUsers();
-        const existing = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase().trim());
-        if (existing) {
-          uid = existing.id;
-          await supabase.auth.admin.updateUserById(uid, { password });
-        } else {
-          return NextResponse.json({ error: authError.message }, { status: 400 });
-        }
-      } else {
-        return NextResponse.json({ error: authError.message }, { status: 400 });
-      }
+    // 1. Check if user already exists in Supabase Auth
+    const { data: usersList } = await supabase.auth.admin.listUsers();
+    const existing = (usersList?.users || []).find(u => u.email?.toLowerCase() === cleanEmail);
+
+    if (existing) {
+      uid = existing.id;
+      // Update password & confirm email
+      await supabase.auth.admin.updateUserById(uid, {
+        password,
+        email_confirm: true,
+        user_metadata: { role: 'superadmin', name: name || 'Super Admin' },
+      });
     } else {
+      // Create brand new user
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: cleanEmail,
+        password,
+        email_confirm: true,
+        user_metadata: { role: 'superadmin', name: name || 'Super Admin' },
+      });
+
+      if (authError || !authData?.user) {
+        return NextResponse.json({ error: authError?.message || 'Failed to create user' }, { status: 400 });
+      }
       uid = authData.user.id;
     }
 
-    // 2. Insert into `superadmins` table
-    const { error: superadminErr } = await supabase
-      .from('superadmins')
-      .upsert({ id: uid, email: email.toLowerCase().trim(), name: name || 'Super Admin' });
+    // 2. Insert/Upsert into `superadmins` table
+    await supabase.from('superadmins').upsert({
+      id: uid,
+      email: cleanEmail,
+      name: name || 'Super Admin',
+    });
 
-    if (superadminErr) {
-      console.error('[create-superadmin] superadmins insert error:', superadminErr);
-    }
-
-    // 3. Insert into `users` table with role='superadmin'
-    const { error: userErr } = await supabase
-      .from('users')
-      .upsert({
-        id: uid,
-        email: email.toLowerCase().trim(),
-        name: name || 'Super Admin',
-        role: 'superadmin',
-        school_id: 'global',
-      });
-
-    if (userErr) {
-      console.error('[create-superadmin] users insert error:', userErr);
-    }
+    // 3. Insert/Upsert into `users` table
+    await supabase.from('users').upsert({
+      id: uid,
+      email: cleanEmail,
+      name: name || 'Super Admin',
+      role: 'superadmin',
+      school_id: 'global',
+    });
 
     return NextResponse.json({
       success: true,
-      message: `SuperAdmin account created successfully for ${email}`,
+      message: `SuperAdmin provisioned successfully for ${cleanEmail}`,
       uid,
     });
-
   } catch (error: any) {
-    console.error('[create-superadmin] Error:', error);
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+    console.error('[create-superadmin] error:', error);
+    return NextResponse.json({ error: error?.message || 'Server error' }, { status: 500 });
   }
 }

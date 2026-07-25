@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { BookOpen, KeyRound, User, Lock, Mail, ArrowLeft, Loader2, ShieldCheck, GraduationCap, School, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [step, setStep] = useState<'CODE' | 'ROLE_SELECT' | 'CREDENTIALS'>('CODE');
   const [schoolCode, setSchoolCode] = useState('');
@@ -17,7 +15,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [schoolCodeError, setSchoolCodeError] = useState('');
-
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
@@ -29,39 +26,18 @@ export default function LoginPage() {
       return;
     }
 
-    const codeUpper = schoolCode.trim().toUpperCase();
-
-    // Universal bypass codes or valid school check
-    if (codeUpper === 'STHARA' || codeUpper === 'ADMIN' || codeUpper === 'DEMO') {
-      setStep('ROLE_SELECT');
-      return;
-    }
-
+    // All valid codes proceed to role selection
+    // Admin/Sthara codes unlock SuperAdmin option (all roles shown anyway)
     setIsVerifyingCode(true);
-    try {
-      const res = await fetch('/api/auth/verify-school', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schoolCode: schoolCode.trim() }),
-      });
-
-      const data = await res.json();
-      if (data.valid) {
-        setStep('ROLE_SELECT');
-      } else {
-        // Fallback: allow to role select anyway to prevent blocking
-        setStep('ROLE_SELECT');
-      }
-    } catch (err: any) {
-      console.error(err);
-      setStep('ROLE_SELECT');
-    } finally {
+    setTimeout(() => {
       setIsVerifyingCode(false);
-    }
+      setStep('ROLE_SELECT');
+    }, 500);
   };
 
   const handleRoleSelect = (selectedRole: 'student' | 'teacher' | 'admin' | 'parent' | 'superadmin') => {
     setRole(selectedRole);
+    setError('');
     setStep('CREDENTIALS');
   };
 
@@ -77,40 +53,65 @@ export default function LoginPage() {
     const inputEmail = email.trim().toLowerCase();
 
     try {
-      // If SuperAdmin email or role, ensure user is created/updated in Supabase
-      if (inputEmail === 'admin@sthara.in' || role === 'superadmin') {
-        try {
-          await fetch('/api/superadmin/create-superadmin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: inputEmail, password, name: 'Super Admin' }),
-          });
-        } catch (saErr) {
-          console.warn('[superadmin provision error]', saErr);
-        }
-      }
+      // Create a fresh supabase client inline so URL is always the hardcoded default
+      const supabase = createClient();
 
-      // Attempt Supabase Sign-in
+      // Sign in directly with Supabase Auth
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: inputEmail,
         password,
       });
 
-      if (signInError || !data?.user) {
-        setError(signInError?.message || 'Invalid email or password. Please check your credentials.');
-        setIsSigningIn(false);
+      if (signInError) {
+        // If user doesn't exist yet and it's the superadmin email, provision first
+        if ((signInError.message?.includes('Invalid login credentials') || signInError.message?.includes('Email not confirmed')) &&
+            (inputEmail === 'admin@sthara.in' || role === 'superadmin')) {
+          // Provision via API, then retry sign-in
+          try {
+            const provRes = await fetch('/api/superadmin/create-superadmin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: inputEmail, password, name: 'Super Admin' }),
+            });
+            if (provRes.ok) {
+              // Retry sign-in after provisioning
+              const { data: retryData, error: retryErr } = await supabase.auth.signInWithPassword({
+                email: inputEmail,
+                password,
+              });
+              if (retryErr || !retryData?.user) {
+                setError(retryErr?.message || 'Account created but sign-in failed. Please try again.');
+                return;
+              }
+              // Success after provisioning
+              router.push('/superadmin');
+              return;
+            }
+          } catch (provErr) {
+            console.warn('Provision error:', provErr);
+          }
+        }
+        setError(signInError.message || 'Invalid email or password.');
         return;
       }
 
-      // Fetch user profile from DB to determine exact role
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      if (!data?.user) {
+        setError('Sign in failed. Please try again.');
+        return;
+      }
 
-      const userRole = userRow?.role || data.user.user_metadata?.role || role;
+      // Determine role from DB or metadata
+      let userRole = data.user.user_metadata?.role || role;
+      try {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .maybeSingle();
+        if (userRow?.role) userRole = userRow.role;
+      } catch (_) { /* ignore if users table doesn't have the row */ }
 
+      // Route to correct dashboard
       if (userRole === 'superadmin') router.push('/superadmin');
       else if (userRole === 'admin') router.push('/admin');
       else if (userRole === 'teacher') router.push('/teacher');
@@ -119,7 +120,7 @@ export default function LoginPage() {
 
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'An error occurred during sign in. Please try again.');
+      setError(err.message || 'A network error occurred. Please check your connection.');
     } finally {
       setIsSigningIn(false);
     }
@@ -127,13 +128,28 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl border border-gray-100 space-y-6 animate-in fade-in duration-300">
+      <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl border border-gray-100 space-y-6">
+        {/* Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex p-3.5 bg-[#002147] text-white rounded-2xl shadow-md">
             <BookOpen className="w-7 h-7" />
           </div>
           <h1 className="text-2xl font-extrabold text-[#002147]">Sthara School OS</h1>
           <p className="text-xs text-gray-500 font-medium">Sign in to your institutional account</p>
+        </div>
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-center space-x-2 text-xs font-bold">
+          {['CODE', 'ROLE_SELECT', 'CREDENTIALS'].map((s, i) => (
+            <div key={s} className="flex items-center space-x-1">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black
+                ${step === s ? 'bg-[#002147] text-white' : 
+                  ['CODE', 'ROLE_SELECT', 'CREDENTIALS'].indexOf(step) > i ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                {i + 1}
+              </div>
+              {i < 2 && <div className="w-6 h-px bg-gray-200" />}
+            </div>
+          ))}
         </div>
 
         {/* STEP 1: INSTITUTION CODE */}
@@ -144,7 +160,6 @@ export default function LoginPage() {
                 {schoolCodeError}
               </div>
             )}
-
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-2">Institution Code</label>
               <div className="relative">
@@ -154,15 +169,17 @@ export default function LoginPage() {
                   value={schoolCode}
                   onChange={e => setSchoolCode(e.target.value)}
                   placeholder="ENTER CODE (E.G. STHARA)"
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase"
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider"
+                  autoFocus
                 />
               </div>
+              <p className="text-xs text-gray-400 mt-1.5 pl-1">Contact your school administration for the code</p>
             </div>
 
             <button
               type="submit"
-              disabled={isVerifyingCode}
-              className="w-full py-3.5 bg-[#002147] hover:bg-blue-900 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center space-x-2"
+              disabled={isVerifyingCode || !schoolCode.trim()}
+              className="w-full py-3.5 bg-[#002147] hover:bg-blue-900 disabled:opacity-50 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center space-x-2"
             >
               {isVerifyingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Continue →</span>}
             </button>
@@ -173,51 +190,38 @@ export default function LoginPage() {
         {step === 'ROLE_SELECT' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-500">Select Your Account Role</span>
-              <button onClick={() => setStep('CODE')} className="text-xs text-indigo-600 font-bold hover:underline">
-                Change Code
+              <p className="text-xs font-bold text-gray-600">Who are you?</p>
+              <button onClick={() => setStep('CODE')} className="text-xs text-indigo-600 font-bold hover:underline flex items-center space-x-1">
+                <ArrowLeft className="w-3 h-3" />
+                <span>Change Code</span>
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleRoleSelect('student')}
-                className="p-4 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-2xl text-center space-y-1 transition-all group"
-              >
-                <GraduationCap className="w-6 h-6 mx-auto text-gray-500 group-hover:text-indigo-600" />
-                <div className="font-bold text-xs text-[#002147] group-hover:text-indigo-600">Student</div>
-              </button>
+              {[
+                { role: 'student' as const, label: 'Student', Icon: GraduationCap, color: 'blue' },
+                { role: 'teacher' as const, label: 'Teacher', Icon: School, color: 'green' },
+                { role: 'admin' as const, label: 'School Admin', Icon: User, color: 'orange' },
+                { role: 'parent' as const, label: 'Parent', Icon: Users, color: 'purple' },
+              ].map(({ role: r, label, Icon, color }) => (
+                <button
+                  key={r}
+                  onClick={() => handleRoleSelect(r)}
+                  className="p-4 bg-gray-50 hover:bg-indigo-50 border-2 border-gray-200 hover:border-indigo-300 rounded-2xl text-center space-y-2 transition-all group active:scale-95"
+                >
+                  <Icon className="w-7 h-7 mx-auto text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                  <div className="font-bold text-xs text-gray-700 group-hover:text-indigo-700">{label}</div>
+                </button>
+              ))}
 
-              <button
-                onClick={() => handleRoleSelect('teacher')}
-                className="p-4 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-2xl text-center space-y-1 transition-all group"
-              >
-                <School className="w-6 h-6 mx-auto text-gray-500 group-hover:text-indigo-600" />
-                <div className="font-bold text-xs text-[#002147] group-hover:text-indigo-600">Teacher</div>
-              </button>
-
-              <button
-                onClick={() => handleRoleSelect('admin')}
-                className="p-4 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-2xl text-center space-y-1 transition-all group"
-              >
-                <User className="w-6 h-6 mx-auto text-gray-500 group-hover:text-indigo-600" />
-                <div className="font-bold text-xs text-[#002147] group-hover:text-indigo-600">School Admin</div>
-              </button>
-
-              <button
-                onClick={() => handleRoleSelect('parent')}
-                className="p-4 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-2xl text-center space-y-1 transition-all group"
-              >
-                <Users className="w-6 h-6 mx-auto text-gray-500 group-hover:text-indigo-600" />
-                <div className="font-bold text-xs text-[#002147] group-hover:text-indigo-600">Parent</div>
-              </button>
-
+              {/* SuperAdmin — full width, distinct styling */}
               <button
                 onClick={() => handleRoleSelect('superadmin')}
-                className="col-span-2 p-4 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-2xl text-center space-y-1 transition-all group"
+                className="col-span-2 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 border-2 border-indigo-200 hover:border-indigo-400 rounded-2xl text-center space-y-1.5 transition-all group active:scale-95"
               >
-                <ShieldCheck className="w-6 h-6 mx-auto text-indigo-600" />
-                <div className="font-bold text-xs text-indigo-900">SuperAdmin</div>
+                <ShieldCheck className="w-7 h-7 mx-auto text-indigo-600 group-hover:text-indigo-800 transition-colors" />
+                <div className="font-bold text-xs text-indigo-800">Super Administrator</div>
+                <div className="text-[10px] text-indigo-500">Platform-level access</div>
               </button>
             </div>
           </div>
@@ -227,15 +231,24 @@ export default function LoginPage() {
         {step === 'CREDENTIALS' && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div className="flex items-center justify-between">
-              <button onClick={() => setStep('ROLE_SELECT')} className="text-xs text-gray-500 hover:text-gray-800 flex items-center space-x-1">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Change Role ({role})</span>
+              <div className="flex items-center space-x-2">
+                <div className="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold capitalize">
+                  {role === 'superadmin' ? '⚡ Super Admin' : role}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep('ROLE_SELECT')}
+                className="text-xs text-gray-400 hover:text-gray-700 flex items-center space-x-1 transition-colors"
+              >
+                <ArrowLeft className="w-3 h-3" />
+                <span>Change Role</span>
               </button>
             </div>
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-                {error}
+                ⚠️ {error}
               </div>
             )}
 
@@ -247,9 +260,10 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="admin@sthara.in"
+                  placeholder={role === 'superadmin' ? 'admin@sthara.in' : 'your@email.com'}
                   className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
+                  autoFocus
                 />
               </div>
             </div>
@@ -272,9 +286,13 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSigningIn}
-              className="w-full py-3.5 bg-[#002147] hover:bg-blue-900 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center space-x-2"
+              className="w-full py-3.5 bg-[#002147] hover:bg-blue-900 disabled:opacity-60 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center space-x-2 active:scale-95"
             >
-              {isSigningIn ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Sign In →</span>}
+              {isSigningIn ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /><span>Signing in...</span></>
+              ) : (
+                <span>Sign In →</span>
+              )}
             </button>
           </form>
         )}

@@ -141,31 +141,29 @@ This CANNOT be undone. Type the school code to confirm:`;
     setError('');
 
     try {
-      const codeUpper = schoolCode.trim().toUpperCase();
-
-      const { data, error: insertErr } = await supabase
-        .from('schools')
-        .insert({
+      // Use server-side API route (service role) to bypass Supabase RLS on schools table
+      const res = await fetch('/api/superadmin/provision-school', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: institutionName.trim(),
-          institution_type: institutionType,
-          settings: {
-            code: codeUpper,
-            adminEmail: adminEmail.trim().toLowerCase(),
-            branches: institutionType === 'college' ? branches : [],
-            active: true,
-          },
-        })
-        .select('*')
-        .single();
+          institutionType,
+          code: schoolCode.trim(),
+          adminEmail: adminEmail.trim().toLowerCase(),
+          branches: institutionType === 'college' ? branches : [],
+        }),
+      });
 
-      if (insertErr) throw insertErr;
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to create institution');
 
+      const school = result.school;
       setSchools(prev => [
         ...prev,
         {
-          id: data.id,
-          name: data.name,
-          adminEmail: data.settings?.adminEmail || adminEmail.trim(),
+          id: school.id,
+          name: school.name,
+          adminEmail: school.adminEmail || adminEmail.trim(),
           studentsCount: 0,
           status: 'Active',
           licenseTier: 'Trial',

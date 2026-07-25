@@ -231,7 +231,7 @@ export default function AdminDashboard() {
 
     } catch (err: any) {
       setError(err.message || 'Failed to create user account');
-    } font-medium {
+    } finally {
       setIsCreating(false);
     }
   };

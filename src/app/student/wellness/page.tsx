@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs, addDoc, serverTimestamp, where } from 'firebase/firestore';
-
+import { createClient } from '@/lib/supabase/client';
 import { Heart, Wind, Activity, CheckCircle2, ChevronRight } from 'lucide-react';
 
 const MOODS = [
@@ -17,246 +15,190 @@ const MOODS = [
 
 export default function WellnessPage() {
   const { profile } = useAuth();
+  const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [todaysMood, setTodaysMood] = useState<number | null>(null);
-  const [history, setHistory] = useState<{date: string, value: number}[]>([]);
-  
-
+  const [history, setHistory] = useState<{ date: string; value: number }[]>([]);
 
   // Breathing state
   const [isBreathing, setIsBreathing] = useState(false);
   const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale' | 'Hold2' | 'Idle'>('Idle');
 
-  
   // Load initial data
   useEffect(() => {
     if (!profile?.uid) return;
-    
+
     async function loadWellness() {
       try {
-        const logsRef = collection(db, 'wellness_logs');
-        // Use only 'where' to avoid composite index requirement; sort & slice in-memory
-        const q = query(logsRef, where('userId', '==', profile?.uid));
-        const snapshot = await getDocs(q);
-        
-        // Sort by createdAt descending in-memory, take last 7
-        const sortedDocs = snapshot.docs
-          .filter(d => d.data().createdAt)
-          .sort((a, b) => b.data().createdAt.toMillis() - a.data().createdAt.toMillis())
-          .slice(0, 7);
-        
+        const { data, error } = await supabase
+          .from('wellness_logs')
+          .select('*')
+          .eq('student_id', profile.uid)
+          .order('created_at', { ascending: false })
+          .limit(7);
+
+        if (error) throw error;
+
         const todayString = new Date().toDateString();
-        const loadedHistory: {date: string, value: number}[] = [];
+        const loadedHistory: { date: string; value: number }[] = [];
         let foundToday = false;
 
-        sortedDocs.forEach(doc => {
-          const data = doc.data();
-          const dateObj = data.createdAt.toDate();
+        (data || []).forEach(log => {
+          const dateObj = new Date(log.created_at);
           loadedHistory.push({
             date: dateObj.toISOString(),
-            value: data.moodValue
+            value: log.mood_value,
           });
           if (dateObj.toDateString() === todayString && !foundToday) {
             foundToday = true;
-            setTodaysMood(data.moodValue);
+            setTodaysMood(log.mood_value);
           }
         });
-        
-        // sortedDocs is newest-first; reverse for chronological chart display
+
         setHistory(loadedHistory.reverse());
-
-
       } catch (err) {
-        console.error("Failed to load wellness history", err);
+        console.error('[Wellness Load Error]:', err);
       } finally {
         setLoading(false);
       }
     }
+
     loadWellness();
   }, [profile?.uid]);
 
-  const handleMoodSelect = async (value: number) => {
-    if (todaysMood !== null) return; // already logged today
-
+  const logMood = async (value: number) => {
+    if (!profile?.uid) return;
     setTodaysMood(value);
-    
+
     try {
-      await addDoc(collection(db, 'wellness_logs'), {
-        userId: profile?.uid,
-        schoolId: profile?.schoolId,
-        moodValue: value,
-        createdAt: serverTimestamp()
+      const { error } = await supabase.from('wellness_logs').insert({
+        student_id: profile.uid,
+        school_id: profile.schoolId || 'global',
+        mood_value: value,
+        resolved: value >= 60,
       });
 
-      
-      setHistory(prev => [...prev, { date: new Date().toISOString(), value }]);
+      if (error) throw error;
+
+      setHistory(prev => [...prev.slice(-6), { date: new Date().toISOString(), value }]);
     } catch (err) {
-      console.error("Failed to save mood", err);
+      console.error('[Log Mood Error]:', err);
     }
   };
 
+  const startBreathing = () => {
+    if (isBreathing) return;
+    setIsBreathing(true);
+    setBreathPhase('Inhale');
+  };
 
   useEffect(() => {
-    let timeout1: any;
-    let timeout2: any;
-    let timeout3: any;
-    let timeout4: any;
-    let cycleInterval: any;
+    if (!isBreathing) return;
 
-    if (isBreathing) {
-      const cycle = () => {
-        setBreathPhase('Inhale');
-        timeout1 = setTimeout(() => {
-          setBreathPhase('Hold');
-          timeout2 = setTimeout(() => {
-            setBreathPhase('Exhale');
-            timeout3 = setTimeout(() => {
-              setBreathPhase('Hold2');
-            }, 4000);
-          }, 4000);
-        }, 4000);
-      };
+    let timer: NodeJS.Timeout;
 
-      cycle();
-      cycleInterval = setInterval(cycle, 16000); // 4+4+4+4 = 16s
-    } else {
-      setBreathPhase('Idle');
+    if (breathPhase === 'Inhale') {
+      timer = setTimeout(() => setBreathPhase('Hold'), 4000);
+    } else if (breathPhase === 'Hold') {
+      timer = setTimeout(() => setBreathPhase('Exhale'), 4000);
+    } else if (breathPhase === 'Exhale') {
+      timer = setTimeout(() => setBreathPhase('Hold2'), 4000);
+    } else if (breathPhase === 'Hold2') {
+      timer = setTimeout(() => setBreathPhase('Inhale'), 4000);
     }
 
-    return () => {
-      clearInterval(cycleInterval);
-      clearTimeout(timeout1);
-      clearTimeout(timeout2);
-      clearTimeout(timeout3);
-      clearTimeout(timeout4);
-    };
-  }, [isBreathing]);
+    return () => clearTimeout(timer);
+  }, [breathPhase, isBreathing]);
 
-
-  if (loading) {
-    return <div className="p-8 text-center text-[#002147]/60">Loading wellness dashboard...</div>;
-  }
+  const stopBreathing = () => {
+    setIsBreathing(false);
+    setBreathPhase('Idle');
+  };
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-[#002147]/10 animate-in fade-in duration-500 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[#002147]">Wellness Center</h2>
-          <p className="text-[#002147]/60 mt-1">Your mental health and well-being matters. Track your daily energy and access resources here.</p>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
+      <div>
+        <h1 className="text-3xl font-extrabold text-[#002147]">Wellness & Mindset Center</h1>
+        <p className="text-gray-500 text-sm mt-1">Track your daily energy, de-stress, and keep your mind balanced.</p>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        
-        {/* Left Column */}
-        <div className="space-y-8">
-          
-          {/* Daily Check-in */}
-          <div className="bg-[#f8fafc] p-6 rounded-xl border border-[#002147]/5">
-            <h3 className="font-semibold text-[#002147] mb-4 flex items-center space-x-2">
-              <Activity className="w-5 h-5 text-[#dc143c]" />
-              <span>Daily Energy Check-in</span>
-            </h3>
-            {todaysMood ? (
-               <div className="bg-green-50/50 border border-green-100 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-2">
-                 <CheckCircle2 className="w-10 h-10 text-green-500 mb-2" />
-                 <h4 className="font-medium text-green-800">You're checked in for today!</h4>
-                 <p className="text-sm text-green-600">Great job tracking your energy.</p>
-               </div>
-            ) : (
-              <div className="grid grid-cols-5 gap-2 sm:gap-4">
-                {MOODS.map(m => (
-                  <button 
-                    key={m.label}
-                    onClick={() => handleMoodSelect(m.value)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border hover:scale-105 transition-all ${m.color} ${m.hover} bg-white shadow-sm cursor-pointer`}
-                  >
-                    <span className="text-2xl sm:text-3xl mb-1">{m.icon}</span>
-                    <span className="font-medium text-[10px] sm:text-xs">{m.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+      {/* Mood Check-In */}
+      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+            <Heart className="w-6 h-6" />
           </div>
-
-          {/* Energy History Chart */}
-          <div className="bg-[#f8fafc] p-6 rounded-xl border border-[#002147]/5">
-            <h3 className="font-semibold text-[#002147] mb-6 flex items-center space-x-2">
-              <Activity className="w-5 h-5 text-[#002147]/70" />
-              <span>Energy History (Last 7 Logs)</span>
-            </h3>
-            <div className="h-40 flex items-end justify-between space-x-2 relative">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-5">
-                <div className="w-full h-px bg-[#002147]"></div>
-                <div className="w-full h-px bg-[#002147]"></div>
-                <div className="w-full h-px bg-[#002147]"></div>
-              </div>
-
-              {history.length > 0 ? history.map((day, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center group z-10 h-full justify-end">
-                  <div 
-                    className="w-full max-w-[40px] bg-[#002147]/20 rounded-t-sm group-hover:bg-[#dc143c] transition-colors relative" 
-                    style={{ height: `${day.value}%` }}
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#002147] text-white text-[10px] py-1 px-2 rounded whitespace-nowrap">
-                      {day.value}%
-                    </div>
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-medium text-[#002147]/50 mt-3">
-                    {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                  </span>
-                </div>
-              )) : (
-                <div className="absolute inset-0 flex items-center justify-center text-[#002147]/40 text-sm">
-                  No history found. Complete your check-in above!
-                </div>
-              )}
-            </div>
+          <div>
+            <h2 className="text-xl font-bold text-[#002147]">Daily Mood Check-In</h2>
+            <p className="text-xs text-gray-500">How are you feeling about your studies today?</p>
           </div>
-
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-8">
-          
-          {/* Breathing Exercise */}
-          <div className="bg-[#f8fafc] p-6 rounded-xl border border-[#002147]/5 flex flex-col items-center text-center">
-            <h3 className="font-semibold text-[#002147] mb-2 flex items-center space-x-2">
-              <Wind className="w-5 h-5 text-teal-600" />
-              <span>Box Breathing</span>
-            </h3>
-            <p className="text-xs text-[#002147]/60 mb-6">Reduce stress and regain focus</p>
-
-            <div className="relative w-40 h-40 mb-6 flex items-center justify-center">
-              <div className={`absolute inset-0 rounded-full border-2 border-teal-200 transition-all duration-1000 ${isBreathing ? 'opacity-100 scale-110' : 'opacity-0 scale-90'}`}></div>
-              
-              <div 
-                className={`w-24 h-24 rounded-full bg-teal-500 flex items-center justify-center text-white font-semibold text-lg shadow-md transition-all ease-in-out origin-center z-10
-                  ${!isBreathing ? 'scale-100 opacity-90' : ''}
-                  ${breathPhase === 'Inhale' ? 'scale-[1.5]' : ''}
-                  ${breathPhase === 'Hold' ? 'scale-[1.5] opacity-90' : ''}
-                  ${breathPhase === 'Exhale' ? 'scale-100' : ''}
-                  ${breathPhase === 'Hold2' ? 'scale-100 opacity-80' : ''}
-                `}
-                style={{
-                  transitionDuration: (breathPhase === 'Hold' || breathPhase === 'Hold2') ? '4000ms' : (isBreathing ? '4000ms' : '500ms')
-                }}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {MOODS.map(m => {
+            const isSelected = todaysMood === m.value;
+            return (
+              <button
+                key={m.label}
+                onClick={() => logMood(m.value)}
+                className={`p-4 rounded-2xl border text-center transition-all ${m.hover} ${
+                  isSelected ? `${m.color} ring-2 ring-indigo-600 shadow-sm scale-105` : 'border-gray-200 bg-gray-50/50'
+                }`}
               >
-                <span className={`${isBreathing ? 'scale-75 transition-transform' : ''}`}>
-                  {isBreathing ? (breathPhase === 'Hold2' ? 'Hold' : breathPhase) : 'Start'}
-                </span>
-              </div>
-            </div>
+                <div className="text-3xl mb-1">{m.icon}</div>
+                <div className="font-bold text-xs text-gray-700">{m.label}</div>
+              </button>
+            );
+          })}
+        </div>
 
-            <button 
-              onClick={() => setIsBreathing(!isBreathing)}
-              className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all ${isBreathing ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100' : 'bg-[#002147] text-white hover:bg-[#003b80]'}`}
-            >
-              {isBreathing ? 'Stop Exercise' : 'Begin Exercise'}
-            </button>
+        {todaysMood && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center space-x-3 text-emerald-800 text-xs font-semibold">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <span>Check-in recorded for today! Your wellbeing helps personalize your study workload.</span>
+          </div>
+        )}
+      </div>
+
+      {/* 4-7-8 Breathing Exercise */}
+      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-3 bg-sky-50 text-sky-600 rounded-2xl">
+            <Wind className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-[#002147]">Box Breathing Exercise</h2>
+            <p className="text-xs text-gray-500">Take a 2-minute reset to enhance focus and clear mental fatigue.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center py-8 space-y-6">
+          <div
+            className={`w-36 h-36 rounded-full border-4 flex items-center justify-center transition-all duration-1000 ${
+              breathPhase === 'Inhale'
+                ? 'scale-125 border-sky-500 bg-sky-50 shadow-xl'
+                : breathPhase === 'Hold' || breathPhase === 'Hold2'
+                ? 'scale-125 border-amber-500 bg-amber-50 shadow-lg'
+                : breathPhase === 'Exhale'
+                ? 'scale-90 border-emerald-500 bg-emerald-50'
+                : 'border-gray-200 bg-gray-50'
+            }`}
+          >
+            <span className="font-extrabold text-sm text-[#002147] capitalize">
+              {isBreathing ? breathPhase : 'Ready'}
+            </span>
           </div>
 
-
+          <button
+            onClick={isBreathing ? stopBreathing : startBreathing}
+            className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-md ${
+              isBreathing
+                ? 'bg-rose-500 hover:bg-rose-600 text-white'
+                : 'bg-[#002147] hover:bg-blue-900 text-white'
+            }`}
+          >
+            {isBreathing ? 'Stop Exercise' : 'Start 4-4-4 Breathing'}
+          </button>
         </div>
       </div>
     </div>

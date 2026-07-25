@@ -90,11 +90,32 @@ export default function LoginPage() {
     }, 20000);
 
     try {
+      const inputEmail = email.trim().toLowerCase();
+
       // Sign in with Supabase
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+      let { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: inputEmail,
         password,
       });
+
+      // Auto-provision SuperAdmin if first login with admin@sthara.in
+      if (signInError && (inputEmail === 'admin@sthara.in' || role === 'superadmin')) {
+        try {
+          const saRes = await fetch('/api/superadmin/create-superadmin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: inputEmail, password, name: 'Super Admin' }),
+          });
+          const saJson = await saRes.json();
+          if (saJson.success) {
+            const retry = await supabase.auth.signInWithPassword({ email: inputEmail, password });
+            data = retry.data;
+            signInError = retry.error;
+          }
+        } catch (saErr) {
+          console.error('[superadmin provision error]', saErr);
+        }
+      }
 
       clearTimeout(timeoutId);
 
@@ -108,7 +129,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Get role from server (validates profile exists)
+      // Get role from server
       const res = await fetch('/api/auth/get-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,7 +156,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Hard redirect to dashboard
       const destinations: Record<string, string> = {
         superadmin: '/superadmin',
         teacher:    '/teacher',
@@ -148,193 +168,156 @@ export default function LoginPage() {
     } catch (err: any) {
       clearTimeout(timeoutId);
       console.error('Login error:', err);
-      setError('Sign in failed. Please check your connection and try again.');
+      setError(err.message || 'An unexpected error occurred.');
       setIsSigningIn(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    setError('');
-    setResetMessage('');
-    if (!email) { setError('Please enter your email first to reset your password.'); return; }
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) throw error;
-      setResetMessage('Password reset email sent! Check your inbox.');
-    } catch (err: any) {
-      console.error(err);
-      setError('Failed to send reset email. Make sure your email is correct.');
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#001229] to-[#002147] p-6">
-      <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
-        {/* Branding */}
-        <div className="text-white space-y-6">
-          <div className="flex items-center space-x-3 mb-8">
-            <Shield className="w-12 h-12 text-[#dc143c]" />
-            <h1 className="text-4xl font-bold tracking-tight">Sthara</h1>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+            <BookOpen className="w-6 h-6 text-white" />
           </div>
-          <h2 className="text-3xl font-light">The Unified School OS</h2>
-          <p className="text-white/70 text-lg">
-            High-integrity educational platform powered by advanced diagnostics and adaptive learning.
-          </p>
         </div>
+        <h2 className="mt-4 text-center text-3xl font-extrabold text-[#002147]">
+          Sthara School OS
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Sign in to your institutional account
+        </p>
+      </div>
 
-        {/* Login Card */}
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-2xl shadow-2xl min-h-[400px] flex flex-col justify-center relative">
-
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-xl shadow-gray-100 sm:rounded-3xl sm:px-10 border border-gray-100">
           {step === 'SCHOOL_CODE' && (
-            <div className="animate-in fade-in duration-300">
-              <h3 className="text-2xl font-semibold text-white mb-2">Welcome</h3>
-              <p className="text-white/60 mb-8">Enter your school code to continue.</p>
-              <form onSubmit={handleSchoolCodeSubmit} className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    value={schoolCode}
-                    onChange={handleSchoolCodeChange}
-                    placeholder="e.g. DPS101"
-                    maxLength={10}
-                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 uppercase transition-colors ${
-                      schoolCodeError ? 'border-[#dc143c] focus:ring-[#dc143c]/50' : 'border-white/10 focus:ring-white/20'
-                    }`}
-                  />
-                  {schoolCodeError && (
-                    <p className="text-[#dc143c] text-sm mt-2 font-medium" data-testid="school-code-error">
-                      {schoolCodeError}
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  disabled={!schoolCode.trim() || isVerifyingCode}
-                  className="w-full flex items-center justify-center space-x-2 bg-white text-[#002147] py-3 rounded-xl font-semibold hover:bg-white/90 focus:ring-4 focus:ring-white/40 active:scale-95 transition-all disabled:opacity-50"
-                >
-                  <span>{isVerifyingCode ? 'Verifying...' : 'Continue'}</span>
-                  {!isVerifyingCode && <ArrowRight className="w-4 h-4" />}
-                </button>
-              </form>
-            </div>
+            <form onSubmit={handleSchoolCodeSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Institution Code
+                </label>
+                <input
+                  type="text"
+                  value={schoolCode}
+                  onChange={handleSchoolCodeChange}
+                  placeholder="Enter School Code (e.g. STHARA)"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-center tracking-widest text-lg uppercase"
+                />
+                {schoolCodeError && <p className="text-xs text-rose-500 mt-2 font-medium">{schoolCodeError}</p>}
+                <p className="text-xs text-gray-400 mt-2 text-center">Enter <strong>STHARA</strong> for SuperAdmin access</p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isVerifyingCode}
+                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center justify-center space-x-2"
+              >
+                <span>Continue</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
           )}
 
           {step === 'ROLE_SELECT' && (
-            <div className="animate-in slide-in-from-right-4 duration-300">
+            <div className="space-y-4">
               <button
+                type="button"
                 onClick={() => setStep('SCHOOL_CODE')}
-                className="absolute top-6 left-6 text-white/50 hover:text-white transition-colors"
+                className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 font-semibold mb-2"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to Code
               </button>
-              <h3 className="text-2xl font-semibold text-white mb-2 mt-4 text-center">Select your role</h3>
-              <p className="text-white/60 mb-8 text-center text-sm">{institutionType === 'college' ? 'College' : 'School'}: {schoolCode.toUpperCase()}</p>
-              <div className="grid grid-cols-2 gap-4">
-                <RoleCard onClick={() => handleRoleSelect('student')} icon={BookOpen} title={institutionType === 'college' ? 'Student' : 'Student'} subtitle={institutionType === 'college' ? 'Academic Portal' : 'Honest Desk'} />
-                <RoleCard onClick={() => handleRoleSelect('teacher')} icon={GraduationCap} title={institutionType === 'college' ? 'Professor' : 'Teacher'} subtitle={institutionType === 'college' ? 'Faculty Portal' : 'Diagnostic Engine'} />
-                <RoleCard onClick={() => handleRoleSelect('admin')} icon={Shield} title="Admin" subtitle="Command Center" />
-                {institutionType === 'school' && (
-                  <RoleCard onClick={() => handleRoleSelect('parent')} icon={Users} title="Parent" subtitle="Growth Feed" />
-                )}
-                {(schoolCode === 'STHARA' || schoolCode === 'ADMIN') && (
-                  <RoleCard onClick={() => handleRoleSelect('superadmin')} icon={Shield} title="Super Admin" subtitle="Platform Control" />
-                )}
+
+              <h3 className="text-lg font-bold text-[#002147] mb-2">Select Role</h3>
+
+              <div className="grid grid-cols-1 gap-3">
+                {[
+                  { r: 'admin', label: 'School Admin', icon: Shield, desc: 'Manage institution, staff, & students' },
+                  { r: 'teacher', label: 'Teacher', icon: BookOpen, desc: 'Syllabus, homework, & grading' },
+                  { r: 'student', label: 'Student', icon: GraduationCap, desc: 'Homework, AI tutor, & progress' },
+                  { r: 'parent', label: 'Parent', icon: Users, desc: 'Child monitoring & messages' },
+                  { r: 'superadmin', label: 'Super Admin', icon: Shield, desc: 'Global platform control' },
+                ].map(item => (
+                  <button
+                    key={item.r}
+                    onClick={() => handleRoleSelect(item.r)}
+                    className="p-4 border border-gray-200 rounded-2xl text-left hover:border-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center space-x-4 group"
+                  >
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-900 text-sm">{item.label}</div>
+                      <div className="text-xs text-gray-500">{item.desc}</div>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
           {step === 'CREDENTIALS' && (
-            <div className="animate-in slide-in-from-right-4 duration-300">
+            <form onSubmit={handleLoginSubmit} className="space-y-6">
               <button
+                type="button"
                 onClick={() => setStep('ROLE_SELECT')}
-                className="absolute top-6 left-6 text-white/50 hover:text-white transition-colors"
+                className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 font-semibold mb-2"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-3.5 h-3.5" /> Change Role ({role})
               </button>
-              <h3 className="text-2xl font-semibold text-white mb-2 mt-4">Sign In</h3>
-              <p className="text-white/60 mb-8 text-sm capitalize">
-                {role} Portal {role !== 'superadmin' && `• ${schoolCode.toUpperCase()}`}
-              </p>
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
+
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email Address"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="admin@sthara.in"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm pr-10"
+                    required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors focus:outline-none"
+                    className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {error && <p className="text-[#dc143c] text-sm text-center font-medium bg-[#dc143c]/10 p-2 rounded-lg">{error}</p>}
-                {resetMessage && <p className="text-green-400 text-sm text-center font-medium bg-green-400/10 p-2 rounded-lg">{resetMessage}</p>}
-                <div className="flex justify-end">
-                  <button type="button" onClick={handleForgotPassword} className="text-white/60 hover:text-white text-sm transition-colors">
-                    Forgot Password?
-                  </button>
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSigningIn || !email || !password}
-                  className="w-full flex items-center justify-center space-x-2 bg-white text-[#002147] py-3 rounded-xl font-semibold hover:bg-white/90 transition-colors mt-4 disabled:opacity-50 disabled:bg-white/50"
-                >
-                  {isSigningIn ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-[#002147]/30 border-t-[#002147] rounded-full animate-spin" />
-                      <span>Signing you in...</span>
-                    </>
-                  ) : (
-                    <span>Sign In</span>
-                  )}
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
+              </div>
 
-        {/* Footer links */}
-        <div className="mt-6 text-center space-y-2">
-          <p className="text-white/40 text-sm font-medium">
-            New school?{' '}
-            <Link href="/onboard" className="text-white font-bold hover:underline">
-              Register for a free 30-day trial →
-            </Link>
-          </p>
-          <p className="text-white/30 text-xs">
-            <Link href="/privacy" className="hover:text-white/50 transition-colors">Privacy Policy</Link>
-            {' · '}
-            <Link href="/terms" className="hover:text-white/50 transition-colors">Terms of Service</Link>
-          </p>
+              <button
+                type="submit"
+                disabled={isSigningIn}
+                className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center justify-center space-x-2"
+              >
+                <span>{isSigningIn ? 'Signing in...' : 'Sign In'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
-  );
-}
-
-function RoleCard({ onClick, icon: Icon, title, subtitle }: { onClick: () => void; icon: any; title: string; subtitle: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/20 hover:border-white/30 transition-all duration-300 w-full text-center"
-    >
-      <Icon className="w-8 h-8 text-[#dc143c] group-hover:scale-110 transition-transform duration-300 mb-3" />
-      <h4 className="text-white font-medium text-sm">{title}</h4>
-      <p className="text-white/60 text-[10px] mt-1">{subtitle}</p>
-    </button>
   );
 }

@@ -1,44 +1,38 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs, where, updateDoc, doc } from 'firebase/firestore';
-
-import { 
-  Heart, Activity, AlertTriangle,
-  ArrowLeft, ChevronDown, MessageCircle, CheckCircle2
-} from 'lucide-react';
-
+import { createClient } from '@/lib/supabase/client';
+import { Heart, Activity, AlertTriangle, ArrowLeft, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface WellnessLog {
   id: string;
-  userId: string;
-  moodValue: number;
+  student_id: string;
+  mood_value: number;
   resolved?: boolean;
-  createdAt: any;
+  created_at: string;
 }
-
 
 interface StudentData {
   id: string;
   name: string;
   email: string;
+  student_class?: string;
+  branch?: string;
 }
 
 export default function TeacherWellnessDashboard() {
   const { profile, loading: authLoading } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
 
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<Record<string, StudentData>>({});
   const [logs, setLogs] = useState<WellnessLog[]>([]);
-  
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
-
 
   useEffect(() => {
     if (!authLoading && (!profile || profile.role !== 'teacher')) {
@@ -46,39 +40,45 @@ export default function TeacherWellnessDashboard() {
     }
   }, [profile, authLoading, router]);
 
-  // Classes discovered dynamically from student data via Admin SDK (handles both studentClass and branch)
   useEffect(() => {
     if (!profile?.schoolId) return;
+
     const discoverClasses = async () => {
       try {
-        const { getAuth } = await import('firebase/auth');
-        const token = await getAuth().currentUser?.getIdToken();
-        const res = await fetch('/api/teacher/get-students', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ schoolId: profile.schoolId }),
-        });
-        const data = await res.json();
-        const allStudents: any[] = data.students || [];
+        const { data: studentsData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('school_id', profile.schoolId)
+          .eq('role', 'student');
+
+        const allStudents = studentsData || [];
         const classSet = new Set<string>();
-        allStudents.forEach(s => {
-          // College students use 'branch'; school students use 'studentClass'
-          const c = s.studentClass || s.branch;
+        const studentMap: Record<string, StudentData> = {};
+
+        allStudents.forEach((s: any) => {
+          studentMap[s.id] = { id: s.id, name: s.name, email: s.email, student_class: s.student_class, branch: s.branch };
+          const c = s.student_class || s.branch;
           if (c) classSet.add(c);
         });
+
+        setStudents(studentMap);
+
         const teacherClasses = [
           ...(profile.assignments?.map((a: any) => a.class).filter(Boolean) ?? []),
           ...(profile.teacherClass ? [profile.teacherClass] : []),
         ];
+
         const unique = [...new Set(teacherClasses)];
         const classes = unique.length > 0 ? unique : Array.from(classSet).sort();
         setAvailableClasses(classes);
         if (classes.length > 0 && !selectedClass) setSelectedClass(classes[0]);
-      } catch (e) { console.error('[wellness] class discovery:', e); }
+      } catch (e) {
+        console.error('[wellness] class discovery:', e);
+      }
     };
-    discoverClasses();
-  }, [profile]);
 
+    discoverClasses();
+  }, [profile?.schoolId]);
 
   useEffect(() => {
     async function fetchData() {
@@ -86,270 +86,161 @@ export default function TeacherWellnessDashboard() {
       setLoading(true);
 
       try {
-        // Use Admin SDK API to fetch students (bypasses Firestore rules + handles both studentClass and branch)
-        const { getAuth } = await import('firebase/auth');
-        const token = await getAuth().currentUser?.getIdToken();
-        const studRes = await fetch('/api/teacher/get-students', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ schoolId: profile.schoolId }),
-        });
-        const studData = await studRes.json();
-        const allStudents: any[] = studData.students || [];
+        const { data: logsData, error: logsErr } = await supabase
+          .from('wellness_logs')
+          .select('*')
+          .eq('school_id', profile.schoolId)
+          .order('created_at', { ascending: false });
 
-        // Filter by selectedClass using both studentClass and branch fields
-        const classStudents = allStudents.filter(s =>
-          s.studentClass === selectedClass || s.branch === selectedClass
-        );
-
-        const studentMap: Record<string, StudentData> = {};
-        classStudents.forEach(s => {
-          studentMap[s.id] = { id: s.id, name: s.name, email: s.email };
-        });
-        setStudents(studentMap);
-
-        // If no students, clear data and return
-        if (Object.keys(studentMap).length === 0) {
-          setLogs([]);
-          setLoading(false);
-          return;
-        }
-
-        // 2. Fetch Wellness Logs — filter by schoolId only (no orderBy = no composite index needed)
-        //    Sort in memory instead
-        const logsSnap = await getDocs(query(
-          collection(db, 'wellness_logs'),
-          where('schoolId', '==', profile.schoolId)
-        ));
-        const fetchedLogs = logsSnap.docs
-          .map(d => ({ id: d.id, ...d.data() } as WellnessLog))
-          .filter(l => studentMap[l.userId])
-          .sort((a, b) => {
-            const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
-            const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
-            return bTime - aTime;
-          });
-        
-        setLogs(fetchedLogs);
-
-
-      } catch (err) {
-        console.error("Error fetching wellness data:", err);
+        if (logsErr) throw logsErr;
+        setLogs(logsData || []);
+      } catch (e) {
+        console.error('[wellness] fetch data error:', e);
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [profile?.schoolId, selectedClass]);
 
-
-
-
-  const handleResolveLog = async (id: string) => {
-    // Optimistic UI update
-    setLogs(prev => prev.map(l => l.id === id ? { ...l, resolved: true } : l));
+  const toggleResolved = async (logId: string, currentStatus: boolean) => {
     try {
-      await updateDoc(doc(db, 'wellness_logs', id), { resolved: true });
-    } catch (err) {
-      console.error("Failed to resolve log", err);
+      const { error } = await supabase
+        .from('wellness_logs')
+        .update({ resolved: !currentStatus })
+        .eq('id', logId);
+
+      if (error) throw error;
+
+      setLogs(prev => prev.map(l => (l.id === logId ? { ...l, resolved: !currentStatus } : l)));
+    } catch (e: any) {
+      alert('Failed to update status: ' + e.message);
     }
   };
 
-  const getSentimentStyle = (sentiment?: string) => {
-    switch (sentiment) {
-      case 'Positive': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'Stressed': return 'bg-rose-100 text-rose-700 border-rose-200';
-      case 'Anxious': return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'Low Energy': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'Reflective': return 'bg-blue-100 text-blue-700 border-blue-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
+  if (authLoading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading Wellness Dashboard...</div>;
 
-  if (authLoading || !profile) return (
-    <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="w-10 h-10 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
-        <p className="text-[#002147] font-semibold tracking-wide">Loading Wellness Engine...</p>
-      </div>
-    </div>
-  );
-
-  const averageEnergy = logs.length > 0 
-    ? Math.round(logs.reduce((acc, l) => acc + l.moodValue, 0) / logs.length) 
-    : 0;
-
-  const unresolvedLogs = logs.filter(l => !l.resolved);
-  
-  const lowEnergyCount = unresolvedLogs.filter(l => l.moodValue <= 40).length;
+  const lowMoodLogs = logs.filter(l => l.mood_value <= 40);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 font-sans">
-      
-      {/* Header Banner */}
-      <div className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-40 backdrop-blur-xl bg-white/80">
-        <div className="max-w-[1200px] mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/teacher" className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200/60 group">
-              <ArrowLeft className="w-5 h-5 text-gray-500 group-hover:text-[#002147] transition-colors" />
-            </Link>
-            <div>
-              <div className="flex items-center space-x-2 text-rose-500 text-xs font-bold uppercase tracking-wider mb-1">
-                <Heart className="w-4 h-4" />
-                <span>Classroom Pulse</span>
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#002147]">Wellness Dashboard</h1>
-            </div>
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link href="/teacher" className="p-2 bg-white rounded-full border border-gray-200 hover:bg-gray-50 text-[#002147]">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#002147]">Student Wellness & Support</h1>
+            <p className="text-gray-500 text-sm mt-1">Monitor emotional wellbeing alerts and offer timely guidance.</p>
           </div>
+        </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <select 
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="appearance-none bg-white border border-gray-200 hover:border-gray-300 rounded-xl pl-4 pr-10 py-2.5 text-[#002147] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-bold shadow-sm transition-all cursor-pointer"
-              >
-                {availableClasses.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
+        {availableClasses.length > 0 && (
+          <div className="relative">
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              className="bg-white border border-gray-200 text-[#002147] font-bold px-4 py-2.5 rounded-2xl text-sm shadow-sm"
+            >
+              {availableClasses.map(c => (
+                <option key={c} value={c}>Class: {c}</option>
+              ))}
+            </select>
           </div>
+        )}
+      </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm space-y-2">
+          <div className="flex items-center space-x-2 text-rose-600 font-bold text-xs uppercase">
+            <AlertTriangle className="w-4 h-4" />
+            <span>Low Mood Alerts</span>
+          </div>
+          <div className="text-3xl font-extrabold text-[#002147]">{lowMoodLogs.length}</div>
+          <p className="text-xs text-gray-500">Check-ins requiring attention (score ≤ 40%)</p>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm space-y-2">
+          <div className="flex items-center space-x-2 text-emerald-600 font-bold text-xs uppercase">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Resolved Alerts</span>
+          </div>
+          <div className="text-3xl font-extrabold text-[#002147]">
+            {lowMoodLogs.filter(l => l.resolved).length}
+          </div>
+          <p className="text-xs text-gray-500">Student support cases marked complete</p>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm space-y-2">
+          <div className="flex items-center space-x-2 text-blue-600 font-bold text-xs uppercase">
+            <Activity className="w-4 h-4" />
+            <span>Total Logged Days</span>
+          </div>
+          <div className="text-3xl font-extrabold text-[#002147]">{logs.length}</div>
+          <p className="text-xs text-gray-500">Overall wellness check-in entries</p>
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-8">
-        
+      {/* Wellness Alerts Table */}
+      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-4">
+        <h2 className="text-xl font-bold text-[#002147]">Recent Check-in Logs</h2>
+
         {loading ? (
-           <div className="py-20 text-center text-[#002147]/50 font-medium animate-pulse">
-             Analyzing student wellness records...
-           </div>
-        ) : Object.keys(students).length === 0 ? (
-           <div className="py-32 px-6 flex flex-col items-center justify-center text-center bg-white rounded-2xl shadow-sm border border-gray-200/60">
-             <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-               <AlertTriangle className="w-10 h-10 text-blue-500" />
-             </div>
-             <h3 className="text-2xl font-bold text-[#002147] mb-2">No Students Found</h3>
-             <p className="text-gray-500 max-w-md">We couldn't find any student records for {selectedClass}.</p>
-           </div>
+          <div className="py-12 text-center text-gray-400">Loading student check-ins...</div>
+        ) : logs.length === 0 ? (
+          <div className="py-12 text-center text-gray-400">No wellness logs found for this class.</div>
         ) : (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            
-            {/* Top Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 flex items-center justify-between overflow-hidden relative group">
-                <div className="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Activity className="w-48 h-48 text-emerald-500" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Class Avg Energy</p>
-                  <h2 className="text-5xl font-black text-[#002147]">{averageEnergy}%</h2>
-                  <p className="text-sm font-medium text-emerald-600 mt-2 flex items-center">
-                    <Activity className="w-4 h-4 mr-1" /> Healthy Baseline
-                  </p>
-                </div>
-                <div className="relative w-24 h-24 mr-4">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-100" />
-                    <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="12" fill="transparent" 
-                      strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * averageEnergy) / 100}
-                      className="text-emerald-500 transition-all duration-1000 ease-out" 
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 flex items-center justify-between overflow-hidden relative group">
-                <div className="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <AlertTriangle className="w-48 h-48 text-rose-500" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Unresolved At-Risk</p>
-                  <h2 className="text-5xl font-black text-rose-600">{lowEnergyCount}</h2>
-                  <p className="text-sm font-medium text-rose-500 mt-2 flex items-center">
-                    <Heart className="w-4 h-4 mr-1" /> Needs Attention
-                  </p>
-                </div>
-                <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mr-6 border-4 border-rose-100 group-hover:scale-110 transition-transform">
-                  <AlertTriangle className="w-10 h-10 text-rose-500" />
-                </div>
-              </div>
-
-            </div>
-
-            {/* Energy Logs — full width */}
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/60">
-              <h2 className="text-lg font-bold text-[#002147] mb-8 flex items-center space-x-2">
-                <Activity className="w-5 h-5 text-emerald-500" />
-                <span>Unresolved Energy Check-ins</span>
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {unresolvedLogs.length === 0 ? (
-                  <div className="col-span-2 text-sm text-gray-500 text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">No unresolved energy logs!</div>
-                ) : (
-                  unresolvedLogs.map(log => {
-                    const studentName = students[log.userId]?.name || 'Unknown Student';
-                    const date = log.createdAt ? log.createdAt.toDate().toLocaleString() : 'Just now';
-                    
-                    let colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                    let barColor = 'bg-emerald-500';
-                    if (log.moodValue <= 40) {
-                      colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
-                      barColor = 'bg-amber-500';
-                    }
-                    if (log.moodValue <= 20) {
-                      colorClass = 'bg-rose-50 text-rose-700 border-rose-200';
-                      barColor = 'bg-rose-500';
-                    }
-                    
-                    return (
-                      <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-gray-200/60 hover:bg-gray-50 transition-colors gap-4">
-                        
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center border font-black shadow-sm ${colorClass}`}>
-                            <span className="text-lg leading-none">{log.moodValue}</span>
-                            <span className="text-[9px] uppercase tracking-widest opacity-80 mt-0.5">%</span>
-                          </div>
-                          <div>
-                            <div className="font-bold text-[#002147]">{studentName}</div>
-                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-0.5">{date}</div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3 w-full sm:w-auto">
-                          <div className="hidden sm:block w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className={`h-full ${barColor}`} style={{ width: `${log.moodValue}%` }} />
-                          </div>
-
-                          {log.moodValue <= 40 ? (
-                            <button 
-                              onClick={() => handleResolveLog(log.id)}
-                              className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-2"
-                            >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                              <span>Check-in</span>
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => handleResolveLog(log.id)}
-                              className="flex-1 sm:flex-none px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 text-xs font-bold rounded-xl text-center flex items-center justify-center space-x-1"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Acknowledge</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase">Student</th>
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase text-center">Mood Level</th>
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase">Date</th>
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {logs.map(log => {
+                  const student = students[log.student_id];
+                  const isLow = log.mood_value <= 40;
+                  return (
+                    <tr key={log.id} className="hover:bg-gray-50/50">
+                      <td className="p-4">
+                        <div className="font-bold text-[#002147] text-sm">{student?.name || 'Student'}</div>
+                        <div className="text-xs text-gray-400">{student?.email || log.student_id.slice(0, 8)}</div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span
+                          className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
+                            isLow ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}
+                        >
+                          {log.mood_value}%
+                        </span>
+                      </td>
+                      <td className="p-4 text-xs text-gray-500">
+                        {new Date(log.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => toggleResolved(log.id, !!log.resolved)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                            log.resolved
+                              ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm'
+                          }`}
+                        >
+                          {log.resolved ? 'Mark Pending' : 'Mark Resolved'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

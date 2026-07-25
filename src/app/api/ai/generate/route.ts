@@ -1,12 +1,8 @@
 import { generateText, streamText } from 'ai';
 import { getAIProvider } from '@/lib/ai/config';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(req: Request) {
   try {
-    // ── Auth guard: only allow requests from the app itself ────────────────
-    // Accept either a Bearer token (server-to-server) OR the app's own origin
     const authHeader = req.headers.get('authorization') || '';
     const origin = req.headers.get('origin') || '';
     const referer = req.headers.get('referer') || '';
@@ -19,7 +15,6 @@ export async function POST(req: Request) {
     ].filter(Boolean);
     const isInternalOrigin = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
     const hasBearerToken = authHeader.startsWith('Bearer ') && authHeader.length > 20;
-    // Also allow if no origin at all (server-to-server) or same-site
     const noOrigin = !origin;
 
     if (!isInternalOrigin && !hasBearerToken && !noOrigin) {
@@ -35,22 +30,9 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Prompt is required' }), { status: 400 });
     }
 
-    // 1. Fetch global model preference from Firestore (cached via module-level var)
-    let modelId = 'gemini-2.5-flash'; // default: use Flash (faster + cheaper)
-    try {
-      const docRef = doc(db, 'platform', 'settings');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists() && docSnap.data().defaultModel) {
-        modelId = docSnap.data().defaultModel;
-      }
-    } catch (e) {
-      console.warn("Failed to fetch default model, using fallback", e);
-    }
-
-    // 2. Resolve the correct AI Provider using our central config
+    const modelId = 'gemini-2.0-flash';
     const model = getAIProvider(modelId);
 
-    // 3. Generate Content
     if (stream) {
       const result = await streamText({
         model,

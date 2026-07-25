@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Search, Users, ArrowLeft, Mail } from 'lucide-react';
-import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs, orderBy, limit, where } from 'firebase/firestore';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 interface GlobalUser {
@@ -13,11 +12,13 @@ interface GlobalUser {
   email: string;
   role: string;
   schoolId: string;
+  name?: string;
 }
 
 export default function GlobalDirectoryPage() {
   const { profile, loading } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<GlobalUser[]>([]);
@@ -38,109 +39,84 @@ export default function GlobalDirectoryPage() {
 
     setIsSearching(true);
     try {
-      // In Firestore, searching by prefix requires a range query. 
-      // For a simple directory search, we might just query the collection where email == searchQuery or similar.
-      // We will do a full fetch and filter locally for this demo, or a where query if exact.
-      // Here we'll just fetch a limit of users and filter.
-      const usersRef = collection(db, 'global_users');
-      const q = query(usersRef, limit(100)); // Limiting to 100 for safety
-      const snap = await getDocs(q);
-      
-      const results: GlobalUser[] = [];
-      snap.forEach(doc => {
-        const data = doc.data() as GlobalUser;
-        if (
-          data.email?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-          data.schoolId?.toLowerCase().includes(searchQuery.toLowerCase())
-        ) {
-          results.push({ ...data, id: doc.id });
-        }
-      });
-      setUsers(results);
-    } catch (err) {
-      console.error(err);
+      const q = searchQuery.trim().toLowerCase();
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .or(`email.ilike.%${q}%,name.ilike.%${q}%`)
+        .limit(20);
+
+      if (error) throw error;
+
+      setUsers((data || []).map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        role: u.role,
+        schoolId: u.school_id,
+        name: u.name,
+      })));
+    } catch (err: any) {
+      console.error('[global-directory] search error:', err);
     } finally {
       setIsSearching(false);
     }
   };
 
-  if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Directory...</div>;
+  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading Directory...</div>;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto py-8 px-4">
-      <div className="flex items-center space-x-4 mb-8">
-        <Link href="/superadmin" className="p-2 bg-white rounded-full border border-[#002147]/10 hover:bg-[#f8fafc] transition-colors text-[#002147]">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
+      <div className="flex items-center space-x-4">
+        <Link href="/superadmin" className="p-2 bg-white rounded-full border border-gray-200 hover:bg-gray-50 text-[#002147]">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-[#002147]">Global Directory Search</h1>
-          <p className="text-[#002147]/60 mt-1">Locate and manage any user across the Sthara network.</p>
+          <h1 className="text-3xl font-extrabold text-[#002147]">Global User Directory</h1>
+          <p className="text-gray-500 text-sm mt-1">Cross-tenant user search across all registered institutions</p>
         </div>
       </div>
 
-      <div className="bg-white border border-[#002147]/10 p-6 rounded-2xl shadow-sm">
-        <form onSubmit={handleSearch} className="flex space-x-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-3.5 w-5 h-5 text-[#002147]/40" />
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by exact email or school ID..."
-              className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl pl-12 pr-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-            />
-          </div>
-          <button 
-            type="submit"
-            className="bg-[#002147] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#002147]/90 transition-colors shadow-sm"
-          >
-            {isSearching ? 'Searching...' : 'Search'}
-          </button>
-        </form>
-      </div>
+      <form onSubmit={handleSearch} className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search by email or name..."
+            className="w-full pl-10 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+          />
+        </div>
+        <button
+          type="submit"
+          className="px-6 py-3.5 bg-[#002147] hover:bg-blue-900 text-white rounded-2xl font-bold text-sm shadow-md transition-all"
+        >
+          Search
+        </button>
+      </form>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-[#002147]/10 overflow-hidden">
+      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-4">
+        <h2 className="text-xl font-bold text-[#002147]">Search Results ({users.length})</h2>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-[#002147]/80">
-            <thead className="bg-[#f8fafc] text-xs uppercase font-semibold text-[#002147]/60 border-b border-[#002147]/10">
-              <tr>
-                <th className="px-6 py-4">UID</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">School ID</th>
-                <th className="px-6 py-4">Actions</th>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="p-4 font-bold text-xs text-gray-500 uppercase">Name</th>
+                <th className="p-4 font-bold text-xs text-gray-500 uppercase">Email</th>
+                <th className="p-4 font-bold text-xs text-gray-500 uppercase">Role</th>
+                <th className="p-4 font-bold text-xs text-gray-500 uppercase">School ID</th>
               </tr>
             </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-[#002147]/50">
-                    <Users className="w-10 h-10 mx-auto text-[#002147]/20 mb-3" />
-                    <p>Enter a search query to find users.</p>
-                  </td>
+            <tbody className="divide-y divide-gray-100">
+              {users.map(u => (
+                <tr key={u.id} className="hover:bg-gray-50/50">
+                  <td className="p-4 font-bold text-sm text-[#002147]">{u.name || 'User'}</td>
+                  <td className="p-4 text-xs text-gray-500">{u.email}</td>
+                  <td className="p-4 text-xs font-bold capitalize text-indigo-600">{u.role}</td>
+                  <td className="p-4 text-xs font-mono text-gray-400">{u.schoolId}</td>
                 </tr>
-              ) : (
-                users.map(u => (
-                  <tr key={u.id} className="border-b border-[#002147]/5 hover:bg-[#f8fafc] transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs">{u.id}</td>
-                    <td className="px-6 py-4 font-medium flex items-center space-x-2">
-                      <Mail className="w-4 h-4 text-[#002147]/40" />
-                      <span>{u.email}</span>
-                    </td>
-                    <td className="px-6 py-4 capitalize">
-                      <span className="bg-[#002147]/5 text-[#002147] px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-bold">{u.schoolId}</td>
-                    <td className="px-6 py-4">
-                      <button className="text-[#002147]/60 hover:text-[#002147] font-semibold text-xs border border-[#002147]/20 px-3 py-1 rounded-lg">
-                        Manage
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, ChevronRight, PlayCircle, Loader2, ArrowLeft, BookOpen, Trophy } from 'lucide-react';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { createClient } from '@/lib/supabase/client';
 
 interface Video {
   id: string;
@@ -33,11 +32,11 @@ const defaultMasteryData: MasteryData = {
   subjects: []
 };
 
-export default function MasteryModal({ profile, onClose }: { profile: any, onClose: () => void }) {
+export default function MasteryModal({ profile, onClose }: { profile: any; onClose: () => void }) {
+  const supabase = createClient();
   const [data, setData] = useState<MasteryData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // View state: 'subjects' | 'chapters' | 'videos'
   const [view, setView] = useState<'subjects' | 'chapters' | 'videos'>('subjects');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
@@ -47,22 +46,42 @@ export default function MasteryModal({ profile, onClose }: { profile: any, onClo
       if (!profile?.schoolId || !profile?.uid) return;
       setLoading(true);
       try {
-        const docRef = doc(db, 'schools', profile.schoolId, 'users', profile.uid, 'mastery_data', 'overall');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setData(docSnap.data() as MasteryData);
+        const { data: memoryData } = await supabase
+          .from('student_memory')
+          .select('*')
+          .eq('student_id', profile.uid)
+          .maybeSingle();
+
+        if (memoryData?.weakness_summary) {
+          setData({
+            subjects: [
+              {
+                id: 's1',
+                name: 'Current Curriculum',
+                score: 75,
+                chapters: [
+                  {
+                    id: 'c1',
+                    name: 'Core Topics',
+                    score: 75,
+                    videos: [],
+                  },
+                ],
+              },
+            ],
+          });
         } else {
           setData(defaultMasteryData);
         }
       } catch (err) {
         console.error('Error fetching mastery data:', err);
-        setData(defaultMasteryData); // Fallback
+        setData(defaultMasteryData);
       } finally {
         setLoading(false);
       }
     };
     fetchOrSeedData();
-  }, [profile]);
+  }, [profile?.uid, profile?.schoolId]);
 
   const handleSubjectClick = (subject: Subject) => {
     setSelectedSubject(subject);
@@ -84,7 +103,6 @@ export default function MasteryModal({ profile, onClose }: { profile: any, onClo
     }
   };
 
-  // Helper for progress bar color
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'bg-emerald-500';
     if (score >= 70) return 'bg-blue-500';
@@ -198,12 +216,6 @@ export default function MasteryModal({ profile, onClose }: { profile: any, onClo
                             style={{ width: `${chapter.score}%` }}
                           />
                         </div>
-                        {chapter.score < 70 && (
-                          <p className="text-xs text-orange-500 font-medium mt-2 flex items-center">
-                            <span className="w-2 h-2 rounded-full bg-orange-500 mr-2 inline-block animate-pulse"></span>
-                            Needs improvement. Click to view suggested resources.
-                          </p>
-                        )}
                       </div>
                       <div className="bg-gray-50 p-3 rounded-full group-hover:bg-blue-50 transition-colors">
                         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />

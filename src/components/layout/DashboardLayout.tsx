@@ -28,15 +28,39 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      const expectedRole = role.toLowerCase().replace(' ', '');
-      if (!profile || profile.role !== expectedRole) {
-        router.push('/login');
-      }
+    if (loading) return; // Still loading — don't redirect yet
+
+    const expectedRole = role.toLowerCase().replace(/\s+/g, '');
+
+    if (!profile) {
+      // No profile at all — redirect to login
+      router.push('/login');
+      return;
+    }
+
+    const actualRole = profile.role?.toLowerCase().replace(/\s+/g, '') || '';
+    if (actualRole && actualRole !== expectedRole) {
+      // Wrong role — redirect to their correct dashboard
+      if (actualRole === 'superadmin') router.push('/superadmin');
+      else if (actualRole === 'admin') router.push('/admin');
+      else if (actualRole === 'teacher') router.push('/teacher');
+      else if (actualRole === 'parent') router.push('/parent');
+      else if (actualRole === 'student') router.push('/student');
+      else router.push('/login');
     }
   }, [profile, loading, role, router]);
 
-  if (loading || !profile) {
+  // Show spinner while loading
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#002147]" />
+      </div>
+    );
+  }
+
+  // Profile loaded but null — also show spinner briefly (redirect happening via useEffect)
+  if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
         <Loader2 className="w-8 h-8 animate-spin text-[#002147]" />

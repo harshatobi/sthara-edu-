@@ -51,47 +51,33 @@ export default function LoginPage() {
 
     setIsSigningIn(true);
     const inputEmail = email.trim().toLowerCase();
+    const isSuperAdmin = (inputEmail === 'admin@sthara.in' || role === 'superadmin');
 
     try {
-      // Create a fresh supabase client inline so URL is always the hardcoded default
       const supabase = createClient();
 
-      // Sign in directly with Supabase Auth
+      // STEP A: For superadmin, always provision DB row FIRST before signing in
+      // This ensures the users table has a row so AuthContext doesn't kick back to /login
+      if (isSuperAdmin) {
+        try {
+          await fetch('/api/superadmin/create-superadmin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: inputEmail, password, name: 'Super Admin' }),
+          });
+        } catch (provErr) {
+          console.warn('[provision] Skipping provision (will retry after sign-in):', provErr);
+        }
+      }
+
+      // STEP B: Sign in with Supabase Auth
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: inputEmail,
         password,
       });
 
       if (signInError) {
-        // If user doesn't exist yet and it's the superadmin email, provision first
-        if ((signInError.message?.includes('Invalid login credentials') || signInError.message?.includes('Email not confirmed')) &&
-            (inputEmail === 'admin@sthara.in' || role === 'superadmin')) {
-          // Provision via API, then retry sign-in
-          try {
-            const provRes = await fetch('/api/superadmin/create-superadmin', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: inputEmail, password, name: 'Super Admin' }),
-            });
-            if (provRes.ok) {
-              // Retry sign-in after provisioning
-              const { data: retryData, error: retryErr } = await supabase.auth.signInWithPassword({
-                email: inputEmail,
-                password,
-              });
-              if (retryErr || !retryData?.user) {
-                setError(retryErr?.message || 'Account created but sign-in failed. Please try again.');
-                return;
-              }
-              // Success after provisioning
-              router.push('/superadmin');
-              return;
-            }
-          } catch (provErr) {
-            console.warn('Provision error:', provErr);
-          }
-        }
-        setError(signInError.message || 'Invalid email or password.');
+        setError(signInError.message || 'Invalid email or password. Please check your credentials.');
         return;
       }
 
@@ -100,8 +86,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Determine role from DB or metadata
-      let userRole = data.user.user_metadata?.role || role;
+      // STEP C: Determine role — check DB first, fall back to metadata, then selected role
+      let userRole = role; // what user selected in ROLE_SELECT step
       try {
         const { data: userRow } = await supabase
           .from('users')
@@ -109,9 +95,10 @@ export default function LoginPage() {
           .eq('id', data.user.id)
           .maybeSingle();
         if (userRow?.role) userRole = userRow.role;
-      } catch (_) { /* ignore if users table doesn't have the row */ }
+        else if (data.user.user_metadata?.role) userRole = data.user.user_metadata.role;
+      } catch (_) { /* ignore */ }
 
-      // Route to correct dashboard
+      // STEP D: Route to correct dashboard
       if (userRole === 'superadmin') router.push('/superadmin');
       else if (userRole === 'admin') router.push('/admin');
       else if (userRole === 'teacher') router.push('/teacher');

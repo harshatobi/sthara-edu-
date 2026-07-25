@@ -155,7 +155,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
 
       if (error || !userData) {
-        // New user — profile not created yet (happens briefly on first sign up)
+        // Profile row not in users table yet — try falling back to auth metadata
+        const metaRole = (await supabase.auth.getUser()).data.user?.user_metadata?.role;
+        if (metaRole) {
+          console.warn('User DB row missing, using metadata role:', metaRole);
+          setCookie('__trial_ok', 'ok', 3600);
+          setProfile({
+            uid,
+            email: (await supabase.auth.getUser()).data.user?.email || '',
+            role: metaRole as any,
+            name: (await supabase.auth.getUser()).data.user?.user_metadata?.name,
+            trialExpired: false,
+            daysLeftInTrial: 999,
+          });
+          setLoading(false);
+          return;
+        }
         console.warn('User profile not found yet:', uid);
         setProfile(null);
         setLoading(false);

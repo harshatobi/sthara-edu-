@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Users, PlusCircle, X, Sparkles, Activity, Search, ShieldCheck, GraduationCap, School, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Building2, Users, PlusCircle, X, Sparkles, Activity, Search, ShieldCheck, GraduationCap, School, Plus, Trash2, Loader2, Wrench, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,8 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingSchoolId, setDeletingSchoolId] = useState<string | null>(null);
+  const [repairingAdminId, setRepairingAdminId] = useState<string | null>(null);
+  const [repairSuccess, setRepairSuccess] = useState<string>('');
 
   // Form State
   const [schoolCode, setSchoolCode] = useState('');
@@ -118,6 +120,30 @@ This CANNOT be undone. Type the school code to confirm:`;
       alert(`Deletion failed: ${err.message}`);
     } finally {
       setDeletingSchoolId(null);
+    }
+  };
+
+  const handleRepairAdmin = async (school: SchoolItem) => {
+    if (!school.adminEmail || school.adminEmail === 'N/A') {
+      alert('No admin email set for this school. Edit the school first.');
+      return;
+    }
+    setRepairingAdminId(school.id);
+    setRepairSuccess('');
+    try {
+      const res = await fetch('/api/superadmin/repair-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: school.id, adminEmail: school.adminEmail }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Repair failed');
+      setRepairSuccess(`✅ Admin account for ${school.adminEmail} created/reset! Default password: Sthara@123`);
+      setTimeout(() => setRepairSuccess(''), 5000);
+    } catch (err: any) {
+      alert(`Repair failed: ${err.message}`);
+    } finally {
+      setRepairingAdminId(null);
     }
   };
 
@@ -254,6 +280,14 @@ This CANNOT be undone. Type the school code to confirm:`;
           </div>
         </div>
 
+        {/* Repair success notification */}
+        {repairSuccess && (
+          <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-2xl text-green-700 text-sm font-semibold">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>{repairSuccess}</span>
+          </div>
+        )}
+
         {/* Institutions Table */}
         <div className="bg-white border border-gray-200/60 rounded-2xl shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-200/60 flex items-center justify-between bg-gray-50/50">
@@ -300,14 +334,26 @@ This CANNOT be undone. Type the school code to confirm:`;
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <button
-                          onClick={() => handleDeleteSchool(s.id, s.name)}
-                          disabled={deletingSchoolId === s.id}
-                          className="p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete Institution"
-                        >
-                          {deletingSchoolId === s.id ? <Loader2 className="w-4 h-4 animate-spin text-rose-600" /> : <Trash2 className="w-4 h-4" />}
-                        </button>
+                        <div className="flex items-center justify-end space-x-1">
+                          {/* Repair admin account button */}
+                          <button
+                            onClick={() => handleRepairAdmin(s)}
+                            disabled={repairingAdminId === s.id}
+                            className="p-2 text-gray-400 hover:bg-amber-50 hover:text-amber-600 rounded-lg transition-colors disabled:opacity-50"
+                            title={`Create/reset admin account for ${s.adminEmail}`}
+                          >
+                            {repairingAdminId === s.id ? <Loader2 className="w-4 h-4 animate-spin text-amber-600" /> : <Wrench className="w-4 h-4" />}
+                          </button>
+                          {/* Delete school button */}
+                          <button
+                            onClick={() => handleDeleteSchool(s.id, s.name)}
+                            disabled={deletingSchoolId === s.id}
+                            className="p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete Institution"
+                          >
+                            {deletingSchoolId === s.id ? <Loader2 className="w-4 h-4 animate-spin text-rose-600" /> : <Trash2 className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

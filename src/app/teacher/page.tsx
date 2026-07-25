@@ -436,6 +436,134 @@ export default function TeacherDashboard() {
           </div>
         </div>
       )}
+      {/* ── Grading / Task Modal ─────────────────────────────────────────── */}
+      {isTaskModalOpen && (
+        <div className="fixed inset-0 bg-[#002147]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-[#002147]/10 bg-[#f8fafc]">
+              <div>
+                <h3 className="text-xl font-bold text-[#002147]">Grading & Submissions</h3>
+                <p className="text-sm text-[#002147]/60 mt-1">
+                  Class {taskModalClass} • {taskModalSubject}
+                  <span className="ml-2 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                    {classStudents.length} students
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => { setIsTaskModalOpen(false); setSelectedTask(null); }}
+                className="text-[#002147]/40 hover:text-[#dc143c] transition-colors p-2 bg-white rounded-full border border-[#002147]/10 shadow-sm"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left: Assignment list */}
+              <div className="w-2/5 border-r border-gray-100 overflow-y-auto p-4 space-y-2">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Assignments ({classTasks.length})</p>
+                {classTasks.length === 0 ? (
+                  <div className="py-12 text-center text-gray-400 text-sm">No assignments posted yet.</div>
+                ) : (
+                  classTasks.map(task => {
+                    const submittedCount = task.submittedStudentIds?.size ?? 0;
+                    const total = classStudents.length;
+                    const pct = total > 0 ? Math.round((submittedCount / total) * 100) : 0;
+                    const isSelected = selectedTask?.id === task.id;
+                    return (
+                      <button
+                        key={task.id}
+                        onClick={() => setSelectedTask(task)}
+                        className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                          isSelected
+                            ? 'bg-[#002147] text-white border-[#002147]'
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className={`font-bold text-sm mb-1 ${isSelected ? 'text-white' : 'text-[#002147]'}`}>
+                          {task.title}
+                        </div>
+                        <div className={`text-xs mb-2 ${isSelected ? 'text-blue-200' : 'text-gray-500'}`}>
+                          {task.type?.toUpperCase()} · Due {task.due_date || 'N/A'}
+                        </div>
+                        <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-1.5 rounded-full ${isSelected ? 'bg-blue-300' : 'bg-indigo-500'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <div className={`text-xs mt-1 ${isSelected ? 'text-blue-200' : 'text-gray-400'}`}>
+                          {submittedCount}/{total} submitted
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Right: Submission details */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {!selectedTask ? (
+                  <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                    Select an assignment to view submissions
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-[#002147]">{selectedTask.title}</h4>
+                      <button
+                        onClick={() => handleDeleteTask(selectedTask.id)}
+                        className="text-xs text-rose-500 hover:underline flex items-center gap-1 font-bold"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </button>
+                    </div>
+
+                    {classStudents.length === 0 ? (
+                      <div className="py-8 text-center text-gray-400 text-sm">No students in this class.</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {classStudents.map((student: any) => {
+                          const sub = selectedTask.submissionsMap?.[student.id];
+                          const submitted = !!sub;
+                          return (
+                            <div
+                              key={student.id}
+                              className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50"
+                            >
+                              <div>
+                                <div className="font-bold text-sm text-[#002147]">{student.name}</div>
+                                <div className="text-xs text-gray-400">{student.custom_student_id || student.student_class}</div>
+                              </div>
+                              {submitted ? (
+                                <div className="text-right">
+                                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                                    ✓ Submitted
+                                  </span>
+                                  {sub.score !== null && sub.max_score && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Score: {sub.score}/{sub.max_score} ({Math.round((sub.score / sub.max_score) * 100)}%)
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

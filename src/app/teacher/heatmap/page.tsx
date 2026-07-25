@@ -162,11 +162,29 @@ export default function TeacherHeatmap() {
           const studentSubs = subByStudent[s.id] || [];
           const scoresList: number[] = [];
 
-          topics.forEach((t, tIdx) => {
-            // Find student's submission matching this topic/unit
-            const sub = studentSubs.find(sb => sb.score !== null);
-            if (sub && sub.score !== null && sub.max_score) {
-              const pct = Math.round((sub.score / sub.max_score) * 100);
+          topics.forEach((t) => {
+            // Find a submission that matches this topic's keywords or unit label
+            // Also try to match against assignment title/description
+            const topicKeywords = t.keywords.length > 0 ? t.keywords : [t.unit.toLowerCase(), t.label.toLowerCase()];
+
+            // First: look for a submission whose linked assignment matches the topic keywords
+            let matchedSub = studentSubs.find(sb => {
+              if (sb.score === null || !sb.max_score) return false;
+              const assignmentForSub = (assignmentsData || []).find((a: any) => a.id === sb.assignment_id);
+              if (!assignmentForSub) return false;
+              const haystack = `${assignmentForSub.title || ''} ${assignmentForSub.description || ''} ${assignmentForSub.subject || ''}`.toLowerCase();
+              return topicKeywords.some(kw => haystack.includes(kw));
+            });
+
+            // Fallback: match by unit index (position in topics list maps to submission order)
+            if (!matchedSub) {
+              const subsWithScores = studentSubs.filter(sb => sb.score !== null && sb.max_score);
+              const topicIndex = topics.indexOf(t);
+              matchedSub = subsWithScores[topicIndex] || null;
+            }
+
+            if (matchedSub && matchedSub.score !== null && matchedSub.max_score) {
+              const pct = Math.round((matchedSub.score / matchedSub.max_score) * 100);
               newTopicScores[s.id][t.id] = pct;
               scoresList.push(pct);
             }

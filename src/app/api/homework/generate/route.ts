@@ -1,101 +1,99 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { adminDb } from '@/lib/firebase/admin';
+import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
-    const { class: className, subject, topic, teacherId } = await request.json();
+    const { class: className, subject, topic, teacherId, schoolId } = await request.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
-    }
     if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
+      return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
+    }
+
+    const supabase = createAdminClient();
+
+    // Get all students in this class from Supabase (not Firebase)
+    const { data: studentsData, error: studErr } = await supabase
+      .from('users')
+      .select('id, name, student_class, branch, memory_profile')
+      .eq('role', 'student')
+      .eq('school_id', schoolId || '');
+
+    if (studErr) throw studErr;
+
+    const students = (studentsData || []).filter(s =>
+      !className || (s.student_class || s.branch || '').toLowerCase().includes(className.toLowerCase())
+    );
+
+    if (students.length === 0) {
+      return NextResponse.json({ success: true, count: 0, message: 'No students found for this class' });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
+    let successCount = 0;
 
-    // Get all students in this class
-    const studentsSnap = await adminDb.collection('users')
-      .where('role', '==', 'student')
-      .where('studentClass', '==', className)
-      .get();
+    // Process students (limit concurrency to avoid rate limits)
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < students.length; i += BATCH_SIZE) {
+      const batch = students.slice(i, i + BATCH_SIZE);
 
-    const assignments = [];
+      await Promise.all(batch.map(async (student) => {
+        const memory = student.memory_profile as any || { known: [], struggling: [] };
 
-    // Note: In production, firing dozens of Gemini calls simultaneously might hit rate limits.
-    // For this demo, we'll map over them. You might want to process in chunks.
-    const generationPromises = studentsSnap.docs.map(async (doc) => {
-      const studentId = doc.id;
-      const student = doc.data();
-
-      // Fetch memory profile
-      const memoryDoc = await adminDb!.collection('student_memory').doc(studentId).get();
-      const memory = memoryDoc.exists ? memoryDoc.data() : { known: [], struggling: [] };
-
-      const prompt = `You are an expert teacher creating a personalized homework assignment.
+        const prompt = `You are an expert teacher creating a personalized homework assignment.
 Subject: ${subject}
 Topic: ${topic}
 Student Name: ${student.name}
-Student's strengths: ${memory?.known?.join(', ') || 'Unknown'}
-Student's weaknesses: ${memory?.struggling?.join(', ') || 'Unknown'}
+Student's strengths: ${(memory.known || []).join(', ') || 'Not yet assessed'}
+Student's weaknesses: ${(memory.struggling || []).join(', ') || 'Not yet assessed'}
 
-Generate a short, 3-question homework assignment that covers the topic. 
-Adapt the difficulty based on their strengths and weaknesses. If they struggle with a related concept, simplify the first question.
+Generate a short, 3-question homework assignment that covers the topic.
+Adapt the difficulty based on their strengths and weaknesses.
 Format the output as a clean JSON object with a "questions" array containing strings. No markdown blocks, just the JSON string.`;
 
-      try {
-        const model = genAI.getGenerativeModel({
-          model: 'gemini-2.5-pro',
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 }
-        });
+        try {
+          const model = genAI.getGenerativeModel({
+            model: 'gemini-2.0-flash',
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.7 }
+          });
 
-        const response = await model.generateContent(prompt);
+          const response = await model.generateContent(prompt);
+          const parsed = JSON.parse(response.response.text() || '{"questions": ["Describe the main concepts of this topic."]}');
 
-        const parsed = JSON.parse(response.response.text() || '{"questions": ["Error generating questions"]}');
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 7);
 
-        // Note: The UI now uses schools/{schoolId}/assignments/{id} for homework.
-        // Wait, does homework generation write to homework_assignments collection or schools/{schoolId}/assignments?
-        // Let's check where the teacher posts assignments.
-        // The previous issue was that teacher posts to schools/{schoolId}/assignments.
-        // Let's check how the generation writes to firebase.
-        // In the original file, it writes to `homework_assignments` collection.
-        // Wait! In the student portal, we changed homework/[id] to read from schools/{schoolId}/assignments.
-        // Wait! If this generate route writes to `homework_assignments`, then the generated homework won't be visible in schools/{schoolId}/assignments!
-        // But wait! Is there a schoolId in className or teacher?
-        // Let's check if the teacher can generate homework.
-        // If the teacher page uses /api/homework/generate, we should make sure it writes to the correct path if schoolId is available.
-        // Wait, for now let's just keep the collection path unchanged as homework_assignments, or check where student gets list of homework.
-        // Actually, let's keep it as is, we just wanted to fix the grading API key.
-        const assignmentRef = adminDb!.collection('homework_assignments').doc();
-        await assignmentRef.set({
-          studentId,
-          studentName: student.name,
-          class: className,
-          subject,
-          topic,
-          teacherId,
-          questions: parsed.questions,
-          status: 'pending',
-          createdAt: new Date()
-        });
+          // Save to Supabase assignments table (consistent with the rest of the app)
+          await supabase.from('assignments').insert({
+            school_id: schoolId,
+            teacher_id: teacherId || user.id,
+            title: `[AI] ${topic} — Personalized for ${student.name}`,
+            type: 'homework',
+            subject: subject || 'General',
+            class: className || student.student_class || student.branch || '',
+            description: `AI-generated personalized assignment for ${student.name}`,
+            questions: parsed.questions.map((q: string) => ({ questionText: q, marks: null })),
+            due_date: dueDate.toISOString().split('T')[0],
+          });
 
-        assignments.push({ studentId, questions: parsed.questions });
-      } catch (e) {
-        console.error('Failed to generate for student', studentId, e);
-      }
-    });
+          successCount++;
+        } catch (e) {
+          console.error('Failed to generate for student', student.id, e);
+        }
+      }));
+    }
 
-    await Promise.all(generationPromises);
+    return NextResponse.json({ success: true, count: successCount, total: students.length });
 
-    return NextResponse.json({ success: true, count: assignments.length });
-
-  } catch (error) {
+  } catch (error: any) {
     console.error('Homework Generation Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error: ' + error.message }, { status: 500 });
   }
 }

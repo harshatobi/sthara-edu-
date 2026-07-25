@@ -36,8 +36,10 @@ export async function GET(req: NextRequest) {
       teacherId: d.teacher_id,
       subject: d.subject,
       class: d.class,
+      grade: d.grade || d.class,
       topic: d.topic,
       month: d.month,
+      objectives: d.objectives,
       status: d.status,
       createdAt: d.created_at,
     }));
@@ -62,8 +64,10 @@ export async function POST(req: NextRequest) {
         teacher_id: teacherId || null,
         subject: subject || null,
         class: cls || null,
+        grade: body.grade || cls || null,
         topic: topic || null,
         month: month || null,
+        objectives: body.objectives || null,
         status: status || 'pending',
       })
       .select('id')

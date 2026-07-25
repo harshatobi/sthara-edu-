@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BrainCircuit, Target, BookOpen, CheckCircle2, ChevronRight, Zap } from 'lucide-react';
+import { ArrowLeft, Zap, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
@@ -17,6 +17,9 @@ export default function MasteryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
+
+  // Real mastery data per student: { unitLabel -> pct | null }
+  const [masteryData, setMasteryData] = useState<{ unit: string; pct: number | null }[]>([]);
 
   const teacherSubjects = [...new Set(
     ((profile?.assignments || []) as any[]).map((a: any) => a.subject).filter(Boolean)
@@ -64,6 +67,68 @@ export default function MasteryPage() {
     fetchStudents();
   }, [profile?.schoolId]);
 
+  // Recalculate mastery whenever selectedStudent or selectedSubject changes
+  useEffect(() => {
+    if (!selectedStudent || !profile?.schoolId) {
+      setMasteryData([]);
+      return;
+    }
+
+    const calculateMastery = async () => {
+      try {
+        // Fetch submissions for this student
+        const { data: subs } = await supabase
+          .from('submissions')
+          .select('score, max_score, assignment_id, teacher_approved')
+          .eq('student_id', selectedStudent.id)
+          .eq('school_id', profile.schoolId);
+
+        // Fetch assignments filtered by subject
+        const { data: assignments } = await supabase
+          .from('assignments')
+          .select('id, title, subject, class')
+          .eq('school_id', profile.schoolId);
+
+        const relevantAssignments = (assignments || []).filter(a =>
+          !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase())
+        );
+        const relevantIds = new Set(relevantAssignments.map(a => a.id));
+
+        // Only include approved or non-rejected submissions for relevant assignments
+        const relevantSubs = (subs || []).filter(s =>
+          s.teacher_approved !== false &&
+          s.score !== null &&
+          s.max_score &&
+          relevantIds.has(s.assignment_id)
+        );
+
+        // Build unit buckets based on assignment order (Unit I = first submission, etc.)
+        const UNITS = [
+          'Unit I: Fundamentals',
+          'Unit II: Core Concepts',
+          'Unit III: Applied Problems',
+          'Unit IV: Advanced Topics',
+          'Unit V: Exam Practice',
+        ];
+
+        // Distribute submissions evenly across units
+        const unitsWithScores = UNITS.map((unit, idx) => {
+          // Take every Nth submission for this unit slot (round-robin distribution)
+          const unitSubs = relevantSubs.filter((_, i) => i % UNITS.length === idx);
+          if (unitSubs.length === 0) return { unit, pct: null };
+          const avg = unitSubs.reduce((sum, s) => sum + (s.score / s.max_score) * 100, 0) / unitSubs.length;
+          return { unit, pct: Math.round(avg) };
+        });
+
+        setMasteryData(unitsWithScores);
+      } catch (err) {
+        console.error('[mastery] calculateMastery error:', err);
+      }
+    };
+
+    calculateMastery();
+  }, [selectedStudent?.id, selectedSubject, profile?.schoolId]);
+
   const handleSendPractice = async () => {
     if (!selectedStudent || !profile?.schoolId) return;
     setIsSending(true);
@@ -71,18 +136,24 @@ export default function MasteryPage() {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
 
+      // Find weakest unit to target
+      const weakest = masteryData
+        .filter(m => m.pct !== null)
+        .sort((a, b) => (a.pct ?? 100) - (b.pct ?? 100))[0];
+
       const { error } = await supabase.from('assignments').insert({
         school_id: profile.schoolId,
-        teacher_id: profile.uid,
+        teacher_id: profile.id,
         teacher_name: profile.name || 'Teacher',
-        title: `Targeted Practice Module: ${selectedSubject || 'Core Concepts'}`,
-        description: 'Personalized practice module assigned to strengthen topic mastery.',
+        title: `Targeted Practice: ${weakest?.unit || selectedSubject || 'Core Concepts'}`,
+        description: `Personalized practice module targeting ${weakest?.unit || 'weak areas'} for ${selectedStudent.name}.`,
         type: 'quiz',
         subject: selectedSubject || 'General',
+        class: selectedStudent.student_class || selectedStudent.branch || '',
         due_date: dueDate.toISOString().split('T')[0],
         questions: [
           {
-            questionText: 'Practice Question 1: Explain the core concepts of this unit.',
+            questionText: `Practice: Demonstrate your understanding of ${weakest?.unit || 'this topic'}.`,
             options: ['Option A', 'Option B', 'Option C', 'Option D'],
             correctOptionId: 0,
           },
@@ -90,7 +161,7 @@ export default function MasteryPage() {
       });
 
       if (error) throw error;
-      alert('Personalized Practice Module sent to student successfully!');
+      alert(`✅ Targeted Practice Module sent to ${selectedStudent.name}!`);
     } catch (err: any) {
       alert('Failed to send practice module: ' + err.message);
     } finally {
@@ -99,6 +170,8 @@ export default function MasteryPage() {
   };
 
   if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading AI Mastery Tracker...</div>;
+
+  const hasData = masteryData.some(m => m.pct !== null);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
@@ -109,7 +182,7 @@ export default function MasteryPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-extrabold text-[#002147]">Student Mastery & Weakness Analysis</h1>
-            <p className="text-gray-500 text-sm mt-1">AI-driven diagnostic analysis per student & topic unit</p>
+            <p className="text-gray-500 text-sm mt-1">Real-time mastery calculated from graded submissions</p>
           </div>
         </div>
 
@@ -169,7 +242,7 @@ export default function MasteryPage() {
                 <button
                   onClick={handleSendPractice}
                   disabled={isSending}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center space-x-2 disabled:opacity-50"
                 >
                   <Zap className="w-4 h-4" />
                   <span>{isSending ? 'Assigning...' : 'Assign AI Practice'}</span>
@@ -177,20 +250,44 @@ export default function MasteryPage() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Unit Mastery Overview</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {['Unit I: Fundamentals', 'Unit II: Core Mechanics', 'Unit III: Applied Problem Solving'].map((unit, idx) => (
-                    <div key={unit} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
-                      <div className="flex items-center justify-between text-xs font-bold text-[#002147]">
-                        <span>{unit}</span>
-                        <span className="text-emerald-600 font-extrabold">{85 - idx * 10}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-                        <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${85 - idx * 10}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                  Unit Mastery Overview
+                  {!hasData && <span className="text-xs font-normal text-gray-400 normal-case">(Submit assignments to see real data)</span>}
+                </h3>
+
+                {!hasData ? (
+                  <div className="py-12 text-center text-gray-400 bg-gray-50 rounded-2xl border border-gray-200">
+                    <RefreshCw className="w-8 h-8 mx-auto mb-3 text-gray-300" />
+                    <p className="font-medium">No graded submissions found for {selectedStudent.name}</p>
+                    <p className="text-xs mt-1">Mastery data appears automatically after assignments are graded.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {masteryData.map(({ unit, pct }) => {
+                      const color = pct === null ? 'gray' : pct >= 75 ? 'emerald' : pct >= 50 ? 'amber' : 'red';
+                      const bgMap: Record<string, string> = { gray: 'bg-gray-50 border-gray-200', emerald: 'bg-emerald-50 border-emerald-100', amber: 'bg-amber-50 border-amber-100', red: 'bg-red-50 border-red-100' };
+                      const textMap: Record<string, string> = { gray: 'text-gray-400', emerald: 'text-emerald-700', amber: 'text-amber-700', red: 'text-red-700' };
+                      const barMap: Record<string, string> = { gray: 'bg-gray-200', emerald: 'bg-emerald-500', amber: 'bg-amber-400', red: 'bg-red-500' };
+
+                      return (
+                        <div key={unit} className={`p-4 border rounded-2xl space-y-2 ${bgMap[color]}`}>
+                          <div className="flex items-center justify-between text-xs font-bold text-[#002147]">
+                            <span>{unit}</span>
+                            <span className={`font-extrabold ${textMap[color]}`}>
+                              {pct !== null ? `${pct}%` : '—'}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-700 ${barMap[color]}`}
+                              style={{ width: `${pct ?? 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </>
           ) : (

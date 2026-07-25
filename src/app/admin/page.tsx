@@ -48,6 +48,8 @@ export default function AdminDashboard() {
 
   // Extended Data Fields
   const [studentClass, setStudentClass] = useState('');
+  const [classNum, setClassNum]         = useState('1');
+  const [section, setSection]           = useState('A');
   const [branch, setBranch] = useState('');
   const [semester, setSemester] = useState('');
   const [year, setYear] = useState('');
@@ -161,10 +163,11 @@ export default function AdminDashboard() {
           const seq = existingInBranch.length + 1;
           customStudentId = `${profile.schoolId}-${branchKey}-${String(seq).padStart(3, '0')}`;
         } else {
-          parsedClass = studentClass.trim();
+          // Build class string from dropdowns: "Class 10-A" or "Class 10" if standalone
+          parsedClass = section === 'Standalone' ? `Class ${classNum}` : `Class ${classNum}-${section}`;
           const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
           const sequenceNumber = existingStudentsInClass.length + 1;
-          customStudentId = `${profile.schoolId}-${parsedClass}-${String(sequenceNumber).padStart(3, '0')}`.toUpperCase();
+          customStudentId = `${profile.schoolId}-${parsedClass.replace(/\s+/g, '')}-${String(sequenceNumber).padStart(3, '0')}`.toUpperCase();
         }
       }
 
@@ -215,6 +218,8 @@ export default function AdminDashboard() {
       setPassword('');
       setName('');
       setStudentClass('');
+      setClassNum('1');
+      setSection('A');
       setBranch('');
       setSemester('');
       setYear('');
@@ -364,6 +369,37 @@ export default function AdminDashboard() {
 
         </div>
 
+        {/* Admin AI Banner */}
+        <Link href="/admin/ai" className="block">
+          <div className="relative overflow-hidden bg-gradient-to-br from-violet-700 via-indigo-700 to-[#002147] rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-[1.01] transition-all duration-200 border border-indigo-800">
+            <div className="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -mr-10 -mt-10" />
+            <div className="absolute right-16 bottom-0 w-32 h-32 bg-white/5 rounded-full -mb-10" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm flex-shrink-0">
+                  <Sparkles className="w-7 h-7 text-violet-200" />
+                </div>
+                <div>
+                  <div className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">New Feature</div>
+                  <h2 className="text-2xl font-black text-white">Admin AI Intelligence</h2>
+                  <p className="text-indigo-200 text-sm mt-1">Ask questions about student performance, get at-risk reports, and track compliance — all with AI.</p>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {['Top performers', 'At-risk students', 'Class averages', 'Compliance report'].map(tag => (
+                    <span key={tag} className="text-xs font-bold text-indigo-100 bg-white/10 border border-white/20 px-3 py-1 rounded-full">{tag}</span>
+                  ))}
+                </div>
+                <div className="inline-flex items-center gap-2 bg-white text-indigo-700 font-black px-6 py-3 rounded-xl shadow-md hover:bg-indigo-50 transition-all">
+                  <Sparkles className="w-4 h-4" />
+                  Open Admin AI →
+                </div>
+              </div>
+            </div>
+          </div>
+        </Link>
+
         {/* Directory Management Table */}
         <div id="directory-section" className="bg-white border border-gray-200/60 rounded-2xl shadow-sm overflow-hidden scroll-mt-24">
           <div className="p-6 border-b border-gray-200/60 flex items-center justify-between bg-gray-50/50">
@@ -500,17 +536,45 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              {role === 'student' && (
+              {role === 'student' && institutionType !== 'college' && (
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-sm font-bold text-gray-600">Class / Grade</label>
-                  <input
-                    type="text"
-                    required
-                    value={studentClass}
-                    onChange={(e) => setStudentClass(e.target.value)}
-                    placeholder="e.g., Class 10-A"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  />
+                  <label className="text-sm font-bold text-gray-600">Class &amp; Section</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Class Number Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-500">Class</label>
+                      <select
+                        value={classNum}
+                        onChange={e => setClassNum(e.target.value)}
+                        required
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      >
+                        {['1','2','3','4','5','6','7','8','9','10','11','12'].map(c => (
+                          <option key={c} value={c}>Class {c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Section Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-500">Section</label>
+                      <select
+                        value={section}
+                        onChange={e => setSection(e.target.value)}
+                        required
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      >
+                        <option value="Standalone">Standalone (No Section)</option>
+                        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(s => (
+                          <option key={s} value={s}>Section {s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Student will be assigned to: <strong className="text-indigo-600">
+                      {section === 'Standalone' ? `Class ${classNum}` : `Class ${classNum}-${section}`}
+                    </strong>
+                  </p>
                 </div>
               )}
             </div>

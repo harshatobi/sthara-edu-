@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { Users, ArrowLeft, Loader2, Search, Mail, Lock, BookOpen } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { ArrowLeft, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface Student {
@@ -13,18 +12,18 @@ interface Student {
   name: string;
   email: string;
   role?: string;
-  studentClass?: string;
-  demoPassword?: string;
+  student_class?: string;
 }
 
-function SchoolRosterContent() {
+export default function SchoolRosterPage() {
   const { profile, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const schoolId = searchParams.get('id') as string;
-  
+  const supabase = createClient();
+
   const [students, setStudents] = useState<Student[]>([]);
-  const [schoolName, setSchoolName] = useState('Loading...');
+  const [schoolName, setSchoolName] = useState('Institution');
   const [fetching, setFetching] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -35,162 +34,97 @@ function SchoolRosterContent() {
   }, [profile, loading, router]);
 
   useEffect(() => {
+    if (!schoolId) return;
+
     const fetchRoster = async () => {
       setFetching(true);
       try {
-        // Fetch school details
-        const schoolDoc = await getDoc(doc(db, 'schools', schoolId));
-        if (schoolDoc.exists()) {
-          setSchoolName(schoolDoc.data().name);
-        } else {
-          setSchoolName('Unknown School');
-        }
+        const { data: schoolData } = await supabase
+          .from('schools')
+          .select('name')
+          .eq('id', schoolId)
+          .single();
 
-        // Fetch users (students and teachers)
-        const q = query(collection(db, 'users'), where('schoolId', '==', schoolId));
-        const snap = await getDocs(q);
-        const list: Student[] = [];
-        snap.forEach(d => {
-          const data = d.data();
-          if (data.role === 'student' || data.role === 'teacher') {
-            list.push({ id: d.id, ...data } as Student);
-          }
-        });
-        
-        // Sort by role (teacher first), then class, then name
-        list.sort((a, b) => {
-          if (a.role !== b.role) return a.role === 'teacher' ? -1 : 1;
-          if (a.studentClass === b.studentClass) {
-            return a.name.localeCompare(b.name);
-          }
-          return (a.studentClass || '').localeCompare(b.studentClass || '');
-        });
+        if (schoolData) setSchoolName(schoolData.name);
 
-        setStudents(list);
-      } catch (err) {
-        console.error(err);
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('school_id', schoolId);
+
+        setStudents(usersData || []);
+      } catch (err: any) {
+        console.error('[roster] error:', err);
       } finally {
         setFetching(false);
       }
     };
 
-    if (profile?.role === 'superadmin' && schoolId) {
-      fetchRoster();
-    }
-  }, [profile, schoolId]);
+    fetchRoster();
+  }, [schoolId]);
 
-  if (loading || !profile) return <div className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#002147]" /></div>;
+  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading Roster...</div>;
 
-  const filteredStudents = students.filter(s => 
-    s.name?.toLowerCase().includes(search.toLowerCase()) || 
-    s.email?.toLowerCase().includes(search.toLowerCase()) ||
-    s.studentClass?.toLowerCase().includes(search.toLowerCase())
+  const filteredStudents = students.filter(s =>
+    (s.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (s.email || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-[#002147]">{schoolName} - Roster</h1>
-          <p className="text-[#002147]/60 mt-1">Total Enrolled: {students.length} students</p>
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link href="/superadmin" className="p-2 bg-white rounded-full border border-gray-200 hover:bg-gray-50 text-[#002147]">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#002147]">{schoolName} — Roster</h1>
+            <p className="text-gray-500 text-sm mt-1">School ID: {schoolId}</p>
+          </div>
         </div>
-        <Link href="/superadmin/schools" className="px-4 py-2 bg-white border border-[#002147]/10 rounded-xl text-[#002147] font-medium shadow-sm hover:bg-[#f8fafc] flex items-center space-x-2">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Schools</span>
-        </Link>
+
+        <div className="relative w-72">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search roster..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+          />
+        </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#002147]/10">
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative w-96">
-            <Search className="w-5 h-5 absolute left-3 top-2.5 text-[#002147]/40" />
-            <input 
-              type="text" 
-              placeholder="Search by name, email, or class..." 
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl pl-10 pr-4 py-2 text-[#002147] outline-none focus:ring-2 focus:ring-[#002147]/20"
-            />
-          </div>
-        </div>
+      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-4">
+        <h2 className="text-xl font-bold text-[#002147]">Users Directory ({filteredStudents.length})</h2>
 
         {fetching ? (
-          <div className="py-20 text-center text-[#002147]/50">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-[#002147]/40" />
-            Loading student roster...
-          </div>
+          <div className="py-12 text-center text-gray-400">Loading roster...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#002147]/10">
-                  <th className="py-4 px-6 text-sm font-bold text-[#002147]/60 uppercase">Student Name</th>
-                  <th className="py-4 px-6 text-sm font-bold text-[#002147]/60 uppercase">Role</th>
-                  <th className="py-4 px-6 text-sm font-bold text-[#002147]/60 uppercase">Class</th>
-                  <th className="py-4 px-6 text-sm font-bold text-[#002147]/60 uppercase">Login Email</th>
-                  <th className="py-4 px-6 text-sm font-bold text-[#dc143c]/80 uppercase">Demo Password</th>
+                <tr className="border-b border-gray-200">
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase">Name</th>
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase">Email</th>
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase">Role</th>
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase">Class</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredStudents.map((student) => (
-                  <tr key={student.id} className="border-b border-[#002147]/5 hover:bg-[#f8fafc] transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${student.role === 'teacher' ? 'bg-[#f59e0b]/10 text-[#f59e0b]' : 'bg-[#002147]/10 text-[#002147]'}`}>
-                          <Users className="w-5 h-5" />
-                        </div>
-                        <span className="font-bold text-[#002147]">{student.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${student.role === 'teacher' ? 'bg-[#f59e0b]/10 text-[#f59e0b]' : 'bg-[#002147]/5 text-[#002147]/60'}`}>
-                        {student.role}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center space-x-2 text-[#002147]/80">
-                        {student.studentClass ? (
-                          <>
-                            <BookOpen className="w-4 h-4 text-[#002147]/40" />
-                            <span className="font-medium">{student.studentClass}</span>
-                          </>
-                        ) : (
-                          <span className="text-[#002147]/40 italic text-sm">All Classes</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center space-x-2 text-[#002147]/80">
-                        <Mail className="w-4 h-4 text-[#002147]/40" />
-                        <span className="font-medium">{student.email}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center space-x-2 text-[#dc143c]">
-                        <Lock className="w-4 h-4 opacity-50" />
-                        <span className="font-mono font-bold tracking-wider">{student.demoPassword || 'Not Set'}</span>
-                      </div>
-                    </td>
+              <tbody className="divide-y divide-gray-100">
+                {filteredStudents.map(s => (
+                  <tr key={s.id} className="hover:bg-gray-50/50">
+                    <td className="p-4 font-bold text-sm text-[#002147]">{s.name}</td>
+                    <td className="p-4 text-xs text-gray-500">{s.email}</td>
+                    <td className="p-4 text-xs font-bold capitalize text-indigo-600">{s.role || 'user'}</td>
+                    <td className="p-4 text-xs text-gray-500">{s.student_class || 'N/A'}</td>
                   </tr>
                 ))}
-                {filteredStudents.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-10 text-center text-[#002147]/50">No users found in this roster.</td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-export default function SchoolRoster() {
-  return (
-    <Suspense fallback={<div className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#002147]" /></div>}>
-      <SchoolRosterContent />
-    </Suspense>
   );
 }

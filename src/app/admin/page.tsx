@@ -677,6 +677,8 @@ export default function AdminDashboard() {
                 </div>
               )}
 
+            </div>{/* end grid */}
+
             <button
               type="submit"
               disabled={isCreating}

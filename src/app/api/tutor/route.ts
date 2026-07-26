@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const ai = new GoogleGenAI({ apiKey });
     const isCollege = institutionType === 'college';
 
     const knownStr      = memoryData.known.length > 0
@@ -207,28 +207,16 @@ CORE RULES:
       }
     }
 
-    const firstUserMsgIndex = mergedContents.findIndex(c => c.role === 'user');
-    if (firstUserMsgIndex !== -1) {
-      mergedContents[firstUserMsgIndex].parts[0].text = systemInstruction + '\n\n' + mergedContents[firstUserMsgIndex].parts[0].text;
-    }
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: mergedContents,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      },
+    });
 
-    let response;
-    try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      response = await model.generateContent({
-        contents: mergedContents,
-        generationConfig: { temperature: 0.7 }
-      });
-    } catch (modelErr: any) {
-      console.warn('gemini-1.5-flash failed, falling back to gemini-1.5-pro:', modelErr?.message);
-      const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-      response = await fallbackModel.generateContent({
-        contents: mergedContents,
-        generationConfig: { temperature: 0.7 }
-      });
-    }
-
-    const aiText = response.response.text();
+    const aiText = result.text ?? '';
 
     // ── UPDATE STUDENT MEMORY ASYNCHRONOUSLY ─────────────────────────────────
     if (studentId && aiText) {

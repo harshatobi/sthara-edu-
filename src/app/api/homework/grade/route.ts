@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `You are an expert, supportive AI Teacher grading a student's handwritten homework.
 Here are the questions they were assigned:
@@ -37,22 +37,21 @@ Output your response ONLY as a JSON object with this exact structure:
   "newStruggling": ["concept 2"]
 }`;
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: prompt },
+            { inlineData: { data: imageBase64, mimeType } },
+          ],
+        },
+      ],
+      config: { responseMimeType: 'application/json', temperature: 0.2 },
     });
 
-    const response = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: imageBase64,
-          mimeType: mimeType
-        }
-      }
-    ]);
-
-    const parsed = JSON.parse(response.response.text() || '{}');
+    const parsed = JSON.parse(result.text || '{}');
     const grade = parsed.grade || 'N/A';
     const feedback = parsed.feedback || 'No feedback provided.';
     const numericScore = typeof parsed.score === 'number' ? parsed.score : null;

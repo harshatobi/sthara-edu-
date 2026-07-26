@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export async function POST(request: NextRequest) {
@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
 
     const prompt = `You are an expert exam paper generator. 
 Create a 5-question multiple choice quiz for ${grade} based on the following chapters: ${chapters.join(', ')}.
@@ -35,14 +34,14 @@ Each object must have the following structure:
   "correctOptionId": "b"
 }`;
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+    const ai = new GoogleGenAI({ apiKey });
+
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: prompt,
     });
 
-    const response = await model.generateContent(prompt);
-
-    let jsonStr = response.response.text() || "[]";
-    
+    let jsonStr = result.text || '[]';
     // Clean up any potential markdown formatting the model might still add
     jsonStr = jsonStr.replace(/^```json/m, '').replace(/^```/m, '').trim();
 

@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export const dynamic = 'force-dynamic';
@@ -16,10 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: `You are an intelligent Admin AI Assistant for a school management platform called Sthara School OS.
+    const ai = new GoogleGenAI({ apiKey });
+
+    const chat = ai.chats.create({
+      model: 'gemini-2.0-flash',
+      config: {
+        systemInstruction: `You are an intelligent Admin AI Assistant for a school management platform called Sthara School OS.
 You have access to real-time school data provided in each message as context.
 Your role is to:
 1. Provide actionable insights about student performance
@@ -38,21 +40,16 @@ When answering:
 
 IMPORTANT: Only use data that is provided in the context. Do not make up student names or scores.
 If the context shows "No data", tell the admin data is not yet available.`,
-    });
-
-    const chat = model.startChat({
-      history: (history || []).slice(-10).map((h: any) => ({
-        role: h.role,
-        parts: h.parts,
-      })),
+      },
+      history: (history || []).slice(-10),
     });
 
     const fullMessage = context
       ? `${context}\n\n---\nADMIN QUESTION: ${message}`
       : message;
 
-    const result = await chat.sendMessage(fullMessage);
-    const reply = result.response.text();
+    const response = await chat.sendMessage({ message: fullMessage });
+    const reply = response.text;
 
     return NextResponse.json({ success: true, reply });
 

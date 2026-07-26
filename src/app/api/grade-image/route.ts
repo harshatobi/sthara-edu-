@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -138,36 +139,24 @@ OUTPUT: Return ONLY valid JSON:
   "weaknessTags": ["concept_needing_improvement"]
 }`;
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const geminiPayload = isTextOnly
-      ? {
-          contents: [{ parts: [{ text: systemPrompt + '\n\nSTUDENT\'S ANSWER:\n' + submissionText }] }],
-          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-        }
-      : {
-          contents: [{ parts: [{ text: systemPrompt }, { inlineData: { mimeType, data: base64Image } }] }],
-          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-        };
-
-    // Auto-retry up to 3 times
+    // Auto-retry up to 3 times using new @google/genai SDK
     let result: any = null;
     let lastError: any = null;
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY! });
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const geminiResponse = await fetch(geminiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(geminiPayload),
+        const contents = isTextOnly
+          ? [{ role: 'user' as const, parts: [{ text: systemPrompt + '\n\nSTUDENT\'S ANSWER:\n' + submissionText }] }]
+          : [{ role: 'user' as const, parts: [{ text: systemPrompt }, { inlineData: { mimeType, data: base64Image } }] }];
+
+        const genResult = await ai.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents,
+          config: { temperature: 0.2, responseMimeType: 'application/json' },
         });
 
-        if (!geminiResponse.ok) {
-          const errText = await geminiResponse.text();
-          throw new Error(`Gemini API returned ${geminiResponse.status}: ${errText}`);
-        }
-
-        const geminiData = await geminiResponse.json();
-        let textOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        let textOutput = genResult.text || '';
         if (!textOutput) throw new Error('Empty output from Gemini');
 
         textOutput = textOutput.replace(/^```(json)?\s*/gi, '').replace(/\s*```$/g, '').trim();

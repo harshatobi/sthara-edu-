@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, count: 0, message: 'No students found for this class' });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const ai = new GoogleGenAI({ apiKey });
     let successCount = 0;
 
     // Process students (limit concurrency to avoid rate limits)
@@ -59,13 +59,12 @@ Adapt the difficulty based on their strengths and weaknesses.
 Format the output as a clean JSON object with a "questions" array containing strings. No markdown blocks, just the JSON string.`;
 
         try {
-          const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash',
-            generationConfig: { responseMimeType: 'application/json', temperature: 0.7 }
+          const result = await ai.models.generateContent({
+            model: 'gemini-2.0-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json', temperature: 0.7 },
           });
-
-          const response = await model.generateContent(prompt);
-          const parsed = JSON.parse(response.response.text() || '{"questions": ["Describe the main concepts of this topic."]}');
+          const parsed = JSON.parse(result.text || '{"questions": ["Describe the main concepts of this topic."]}');
 
           const dueDate = new Date();
           dueDate.setDate(dueDate.getDate() + 7);

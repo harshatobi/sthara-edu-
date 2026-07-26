@@ -151,7 +151,7 @@ OUTPUT: Return ONLY valid JSON:
           : [{ role: 'user' as const, parts: [{ text: systemPrompt }, { inlineData: { mimeType, data: base64Image } }] }];
 
         const genResult = await ai.models.generateContent({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-2.5-flash',
           contents,
           config: { temperature: 0.2, responseMimeType: 'application/json' },
         });

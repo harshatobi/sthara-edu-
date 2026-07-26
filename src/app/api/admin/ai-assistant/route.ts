@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const ai = new GoogleGenAI({ apiKey });
 
     const chat = ai.chats.create({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       config: {
         systemInstruction: `You are an intelligent Admin AI Assistant for a school management platform called Sthara School OS.
 You have access to real-time school data provided in each message as context.

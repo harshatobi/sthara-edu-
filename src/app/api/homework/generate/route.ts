@@ -60,7 +60,7 @@ Format the output as a clean JSON object with a "questions" array containing str
 
         try {
           const result = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: { responseMimeType: 'application/json', temperature: 0.7 },
           });

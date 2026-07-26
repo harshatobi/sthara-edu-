@@ -5,8 +5,9 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 export async function POST(request: NextRequest) {
   const token = await verifyApiToken(request);
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
-    const { grade, difficulty, chapters } = await request.json();
+    const { grade, difficulty, chapters, numQuestions = 5 } = await request.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -16,50 +17,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const prompt = `You are an expert exam paper generator.
+Create a ${numQuestions}-question multiple choice quiz for ${grade || 'Class 10'} based on the subject/chapters: ${(chapters || ['General']).join(', ')}.
+Difficulty level: ${difficulty || 'CBSE Standard'}.
 
-    const prompt = `You are an expert exam paper generator. 
-Create a 5-question multiple choice quiz for ${grade} based on the following chapters: ${chapters.join(', ')}.
-The difficulty distribution should be: ${difficulty}.
-Return ONLY a raw JSON array of objects (do not include markdown \`\`\`json wrappers). 
-Each object must have the following structure:
+Return ONLY a raw JSON array (no markdown backticks, no explanation). Each item must follow this EXACT structure:
 {
-  "id": "q1",
-  "text": "The question text",
-  "options": [
-    { "id": "a", "text": "Option A" },
-    { "id": "b", "text": "Option B" },
-    { "id": "c", "text": "Option C" },
-    { "id": "d", "text": "Option D" }
-  ],
+  "question": "The full question text?",
+  "options": {
+    "a": "First option text",
+    "b": "Second option text",
+    "c": "Third option text",
+    "d": "Fourth option text"
+  },
   "correctOptionId": "b"
-}`;
+}
+
+Ensure:
+- Questions are curriculum-relevant and clear
+- Exactly ${numQuestions} questions in the array
+- One correct answer per question
+- Options are plausible and varied
+- Return pure JSON array only — no markdown, no explanation`;
 
     const ai = new GoogleGenAI({ apiKey });
 
     const result = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
+      config: { responseMimeType: 'application/json', temperature: 0.6 },
     });
 
-    let jsonStr = result.text || '[]';
-    // Clean up any potential markdown formatting the model might still add
-    jsonStr = jsonStr.replace(/^```json/m, '').replace(/^```/m, '').trim();
+    let jsonStr = (result.text || '[]').trim();
+    // Strip any accidental markdown wrappers
+    jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
 
+    // Handle both array and { questions: [...] } shapes
+    let questions;
     try {
-      const questions = JSON.parse(jsonStr);
-      return NextResponse.json({ questions });
+      const parsed = JSON.parse(jsonStr);
+      questions = Array.isArray(parsed) ? parsed : (parsed.questions || []);
     } catch (parseError) {
-      console.error("Failed to parse JSON from Gemini:", jsonStr);
-      return NextResponse.json(
-        { error: 'Failed to parse generated questions' },
-        { status: 500 }
-      );
+      console.error('Failed to parse JSON from Gemini:', jsonStr.slice(0, 300));
+      return NextResponse.json({ error: 'Failed to parse generated questions. Try again.' }, { status: 500 });
     }
 
+    return NextResponse.json(questions);
+
   } catch (error: any) {
-    console.error('Gemini API Error:', error);
+    console.error('Paper Gen API Error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate paper: ' + error.message },
+      { error: 'Failed to generate paper: ' + (error?.message || 'Unknown error') },
       { status: 500 }
     );
   }

@@ -70,7 +70,7 @@ export default function AdminDashboard() {
       setStatsLoading(true);
       try {
         // Fetch school details
-        const { data: school, error: schoolErr } = await supabase
+        const { data: school } = await supabase
           .from('schools')
           .select('*')
           .eq('id', profile.schoolId)
@@ -83,34 +83,34 @@ export default function AdminDashboard() {
           setSchoolName('School Not Found');
         }
 
-        // Fetch users for school
-        const { data: userRows, error: userErr } = await supabase
-          .from('users')
-          .select('*')
-          .eq('school_id', profile.schoolId);
-
-        if (userErr) throw userErr;
-
-        const usersList: UserData[] = (userRows || []).map((u) => ({
-          id: u.id,
-          name: u.name || 'Unknown',
-          email: u.email || '',
-          role: u.role || 'student',
-          studentClass: u.student_class || u.branch || undefined,
-          customStudentId: u.custom_student_id || undefined,
-          assignments: u.assignments || [],
-          linkedStudents: u.metadata?.linkedStudents || [],
-        }));
-
-        setUsers(usersList);
+        // Fetch users via server-side API route (bypasses RLS)
+        const token = await getAuthToken();
+        const res = await fetch(`/api/admin/users?schoolId=${profile.schoolId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const { users: userRows } = await res.json();
+          const usersList: UserData[] = (userRows || []).map((u: any) => ({
+            id: u.id,
+            name: u.name || 'Unknown',
+            email: u.email || '',
+            role: u.role || 'student',
+            studentClass: u.student_class || u.branch || undefined,
+            customStudentId: u.custom_student_id || undefined,
+            assignments: u.assignments || [],
+            linkedStudents: u.metadata?.linkedStudents || [],
+          }));
+          setUsers(usersList);
+        } else {
+          console.warn('[admin] users API error');
+        }
 
         // Fetch assignments count
-        const { count, error: assignErr } = await supabase
+        const { count } = await supabase
           .from('assignments')
           .select('id', { count: 'exact', head: true })
           .eq('school_id', profile.schoolId);
 
-        if (assignErr) console.warn('[admin] assignments count error:', assignErr);
         setTotalAssignments(count ?? 0);
 
       } catch (err) {
@@ -577,7 +577,105 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               )}
-            </div>
+
+              {/* ── Teacher Class/Subject Assignment ─────────────────── */}
+              {role === 'teacher' && (
+                <div className="md:col-span-2 space-y-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-600">Class &amp; Subject Assignments</label>
+                    <p className="text-xs text-gray-400 mt-0.5">Assign this teacher to one or more classes and subjects</p>
+                  </div>
+                  <div className="space-y-2">
+                    {teacherAssignments.map((assignment, idx) => (
+                      <div key={idx} className="flex gap-3 items-center">
+                        <select
+                          value={assignment.class}
+                          onChange={e => handleAssignmentChange(idx, 'class', e.target.value)}
+                          className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        >
+                          <option value="">Select Class…</option>
+                          {['1','2','3','4','5','6','7','8','9','10','11','12'].map(c =>
+                            ['Standalone','A','B','C','D','E'].map(s => (
+                              <option key={`${c}-${s}`} value={s === 'Standalone' ? `Class ${c}` : `Class ${c}-${s}`}>
+                                {s === 'Standalone' ? `Class ${c}` : `Class ${c}-${s}`}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                        <input
+                          type="text"
+                          value={assignment.subject}
+                          onChange={e => handleAssignmentChange(idx, 'subject', e.target.value)}
+                          placeholder="Subject (e.g. Mathematics)"
+                          className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        />
+                        {teacherAssignments.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAssignmentRow(idx)}
+                            className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddAssignmentRow}
+                    className="text-sm font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" /> Add Another Class/Subject
+                  </button>
+                </div>
+              )}
+
+              {/* ── Parent → Student Linking ──────────────────────────── */}
+              {role === 'parent' && (
+                <div className="md:col-span-2 space-y-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-600">Link to Students</label>
+                    <p className="text-xs text-gray-400 mt-0.5">Select the student(s) this parent is linked to</p>
+                  </div>
+                  {allStudents.length === 0 ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium">
+                      ⚠️ No students registered yet. Create student accounts first, then add parent accounts.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2">
+                      {allStudents.map(s => (
+                        <label
+                          key={s.id}
+                          className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                            selectedStudentsForParent.includes(s.customStudentId!)
+                              ? 'bg-indigo-50 border-indigo-300'
+                              : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedStudentsForParent.includes(s.customStudentId!)}
+                            onChange={() => toggleParentStudentSelection(s.customStudentId!)}
+                            className="w-4 h-4 accent-indigo-600"
+                          />
+                          <div>
+                            <div className="text-sm font-bold text-[#002147]">{s.name}</div>
+                            <div className="text-xs text-gray-400">
+                              {s.customStudentId} • {s.studentClass || 'No class'}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {selectedStudentsForParent.length > 0 && (
+                    <p className="text-xs text-indigo-600 font-semibold">
+                      ✓ Linked to {selectedStudentsForParent.length} student(s): {selectedStudentsForParent.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
 
             <button
               type="submit"

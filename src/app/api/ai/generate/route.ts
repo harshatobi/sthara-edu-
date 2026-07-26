@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Prompt is required' }), { status: 400 });
     }
 
-    const modelId = 'gemini-2.0-flash';
+    const modelId = 'gemini-1.5-flash';
     const model = getAIProvider(modelId);
 
     if (stream) {

@@ -36,7 +36,7 @@ Each object must have the following structure:
 }`;
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-1.5-flash',
     });
 
     const response = await model.generateContent(prompt);

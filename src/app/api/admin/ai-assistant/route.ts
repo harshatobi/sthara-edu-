@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: `You are an intelligent Admin AI Assistant for a school management platform called Sthara School OS.
 You have access to real-time school data provided in each message as context.
 Your role is to:

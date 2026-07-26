@@ -19,7 +19,7 @@ export default function PlatformSettings() {
   // Settings State
   const [platformName, setPlatformName] = useState('Sthara School OS');
   const [supportEmail, setSupportEmail] = useState('support@sthara.com');
-  const [defaultModel, setDefaultModel] = useState('gemini-2.0-flash');
+  const [defaultModel, setDefaultModel] = useState('gemini-1.5-flash');
   const [requireMfa, setRequireMfa] = useState(false);
   const [enableProctoring, setEnableProctoring] = useState(true);
   const [maxStudentsPerSchool, setMaxStudentsPerSchool] = useState('500');
@@ -165,9 +165,8 @@ export default function PlatformSettings() {
                 onChange={e => setDefaultModel(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
               >
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast & Accurate)</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Reasoning)</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legacy)</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast &amp; Accurate)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
               </select>
             </div>
 

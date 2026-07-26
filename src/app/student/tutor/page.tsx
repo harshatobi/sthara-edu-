@@ -434,7 +434,7 @@ export default function StudentAITutor() {
               <Sparkles className="w-8 h-8 text-blue-500" />
               <span>Sthara Interactive Tutor</span>
             </h1>
-            <p className="text-[#002147]/60 mt-1">Powered by Google Gemini 2.5 Flash</p>
+            <p className="text-[#002147]/60 mt-1">Powered by Google Gemini 1.5 Flash</p>
           </div>
         </div>
       </div>

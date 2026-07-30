@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, BookOpen, ChevronDown, RefreshCw } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 import Link from 'next/link';
 
 interface OUTopic {
@@ -62,7 +62,6 @@ function scoreLevel(score: number | null): { label: string; bg: string; text: st
 export default function TeacherHeatmap() {
   const { profile, loading } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
 
   const [selectedClass,    setSelectedClass]    = useState<string>('');
   const [selectedSubject,  setSelectedSubject]  = useState<string>('');
@@ -98,18 +97,18 @@ export default function TeacherHeatmap() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const schoolId = profile.schoolId;
-
-        // 1. Fetch students for school
-        const { data: studentsData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('school_id', schoolId)
-          .eq('role', 'student');
-
-        const classStudents = (studentsData || []).filter(s =>
-          !selectedClass || (s.student_class || s.branch || '').toLowerCase().includes(selectedClass.toLowerCase())
-        );
+        const token = await getAuthToken();
+        const res = await fetch('/api/teacher/heatmap-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            schoolId: profile.schoolId,
+            classFilter: selectedClass,
+            subjectFilter: selectedSubject,
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to fetch heatmap data');
+        const { students: classStudents, assignments: assignmentsData, submissions } = await res.json();
 
         setStudents(classStudents);
 
@@ -120,65 +119,44 @@ export default function TeacherHeatmap() {
           return;
         }
 
-        // 2. Fetch assignments
-        const { data: assignmentsData } = await supabase
-          .from('assignments')
-          .select('*')
-          .eq('school_id', schoolId);
-
-        const assignments = (assignmentsData || []).filter(a =>
+        const assignments = (assignmentsData || []).filter((a: any) =>
           !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase())
         );
-
-        // 3. Fetch submissions (both homework and quizzes)
-        const { data: submissionsData } = await supabase
-          .from('submissions')
-          .select('*')
-          .eq('school_id', schoolId);
-
-        const submissions = submissionsData || [];
 
         const topics = getTopicsForSubject(selectedSubject);
         setTopicCols(topics);
 
-        // 4. Calculate scores per student and topic
         const newTopicScores: Record<string, Record<string, number | null>> = {};
         const newOverall: Record<string, number | null> = {};
 
-        classStudents.forEach(s => {
+        classStudents.forEach((s: any) => {
           newTopicScores[s.id] = {};
           topics.forEach(t => { newTopicScores[s.id][t.id] = null; });
         });
 
-        // Group submissions by student
         const subByStudent: Record<string, any[]> = {};
-        submissions.forEach(sub => {
-          if (sub.teacher_approved === false) return;
+        (submissions || []).forEach((sub: any) => {
           if (!subByStudent[sub.student_id]) subByStudent[sub.student_id] = [];
           subByStudent[sub.student_id].push(sub);
         });
 
-        classStudents.forEach(s => {
+        classStudents.forEach((s: any) => {
           const studentSubs = subByStudent[s.id] || [];
           const scoresList: number[] = [];
 
           topics.forEach((t) => {
-            // Find a submission that matches this topic's keywords or unit label
-            // Also try to match against assignment title/description
             const topicKeywords = t.keywords.length > 0 ? t.keywords : [t.unit.toLowerCase(), t.label.toLowerCase()];
 
-            // First: look for a submission whose linked assignment matches the topic keywords
-            let matchedSub = studentSubs.find(sb => {
+            let matchedSub = studentSubs.find((sb: any) => {
               if (sb.score === null || !sb.max_score) return false;
               const assignmentForSub = (assignmentsData || []).find((a: any) => a.id === sb.assignment_id);
               if (!assignmentForSub) return false;
               const haystack = `${assignmentForSub.title || ''} ${assignmentForSub.description || ''} ${assignmentForSub.subject || ''}`.toLowerCase();
-              return topicKeywords.some(kw => haystack.includes(kw));
+              return topicKeywords.some((kw: string) => haystack.includes(kw));
             });
 
-            // Fallback: match by unit index (position in topics list maps to submission order)
             if (!matchedSub) {
-              const subsWithScores = studentSubs.filter(sb => sb.score !== null && sb.max_score);
+              const subsWithScores = studentSubs.filter((sb: any) => sb.score !== null && sb.max_score);
               const topicIndex = topics.indexOf(t);
               matchedSub = subsWithScores[topicIndex] || null;
             }
@@ -191,7 +169,7 @@ export default function TeacherHeatmap() {
           });
 
           newOverall[s.id] = scoresList.length > 0
-            ? Math.round(scoresList.reduce((a, b) => a + b, 0) / scoresList.length)
+            ? Math.round(scoresList.reduce((a: number, b: number) => a + b, 0) / scoresList.length)
             : null;
         });
 

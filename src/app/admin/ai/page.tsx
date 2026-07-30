@@ -9,7 +9,6 @@ import {
   ChevronDown, Trophy, Target, BarChart3, ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 interface Message {
@@ -42,7 +41,6 @@ const QUICK_PROMPTS = [
 export default function AdminAI() {
   const { profile, loading } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Data
@@ -83,46 +81,13 @@ export default function AdminAI() {
   const loadStudentInsights = async () => {
     setDataLoading(true);
     try {
-      // Fetch all students
-      const { data: studentRows } = await supabase
-        .from('users')
-        .select('id, name, email, student_class, branch, custom_student_id')
-        .eq('school_id', profile!.schoolId)
-        .eq('role', 'student');
-
-      // Fetch all submissions for school
-      const { data: submissions } = await supabase
-        .from('submissions')
-        .select('student_id, score, max_score, teacher_approved')
-        .eq('school_id', profile!.schoolId);
-
-      // Build per-student stats
-      const subsByStudent: Record<string, { score: number; max: number }[]> = {};
-      (submissions || []).forEach(s => {
-        if (s.teacher_approved === false) return;
-        if (s.score === null || !s.max_score) return;
-        if (!subsByStudent[s.student_id]) subsByStudent[s.student_id] = [];
-        subsByStudent[s.student_id].push({ score: s.score, max: s.max_score });
+      const token = await getAuthToken();
+      const res = await fetch(`/api/admin/student-insights?schoolId=${profile!.schoolId}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      const insights: StudentInsight[] = (studentRows || []).map(s => {
-        const subs = subsByStudent[s.id] || [];
-        const totalScore = subs.reduce((a, b) => a + b.score, 0);
-        const totalMax = subs.reduce((a, b) => a + b.max, 0);
-        return {
-          id: s.id,
-          name: s.name || 'Unknown',
-          email: s.email || '',
-          studentClass: s.student_class || s.branch || 'Unassigned',
-          avgScore: subs.length > 0 ? Math.round((totalScore / totalMax) * 100) : null,
-          totalSubmissions: subs.length,
-          customStudentId: s.custom_student_id,
-        };
-      });
-
-      // Sort by avgScore ascending (worst first)
-      insights.sort((a, b) => (a.avgScore ?? 101) - (b.avgScore ?? 101));
-      setStudents(insights);
+      if (!res.ok) throw new Error('Failed to fetch student insights');
+      const { insights } = await res.json();
+      setStudents(insights || []);
     } catch (err) {
       console.error('[admin-ai] loadStudentInsights error:', err);
     } finally {

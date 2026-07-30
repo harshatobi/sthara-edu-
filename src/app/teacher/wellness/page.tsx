@@ -6,6 +6,7 @@ import { Heart, Activity, AlertTriangle, ArrowLeft, ChevronDown, CheckCircle2 } 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 interface WellnessLog {
   id: string;
@@ -106,13 +107,14 @@ export default function TeacherWellnessDashboard() {
 
   const toggleResolved = async (logId: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from('wellness_logs')
-        .update({ resolved: !currentStatus })
-        .eq('id', logId);
-
-      if (error) throw error;
-
+      const authToken = await getAuthToken();
+      const res = await fetch('/api/teacher/acknowledge-situation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ id: logId, schoolId: profile!.schoolId, table: 'wellness_logs', field: 'resolved', value: !currentStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
       setLogs(prev => prev.map(l => (l.id === logId ? { ...l, resolved: !currentStatus } : l)));
     } catch (e: any) {
       alert('Failed to update status: ' + e.message);

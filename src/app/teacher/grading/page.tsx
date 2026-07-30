@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import AiEvaluationView from '@/components/AiEvaluationView';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 interface Submission {
   id: string;
@@ -92,16 +93,23 @@ export default function GradingGalleryPage() {
         ? `${overrideScore}/${overrideMax}`
         : active.grade || `${active.score}/${active.max_score}`;
 
-      const { error } = await supabase
-        .from('submissions')
-        .update({
-          teacher_approved: approved,
+      const authToken = await getAuthToken();
+      const res = await fetch('/api/teacher/review-submission', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          submissionId: active.id,
+          schoolId: profile.schoolId,
+          teacherApproved: approved,
           grade: finalGrade,
-          teacher_note: teacherNote || null,
-        })
-        .eq('id', active.id);
-
-      if (error) throw error;
+          teacherNote: teacherNote || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
 
       setQueue(prev =>
         prev.map(s =>

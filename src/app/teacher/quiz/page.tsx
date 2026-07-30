@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 
@@ -42,11 +43,13 @@ export default function TeacherQuizPage() {
 
   const handleGenerateAI = async () => {
     if (!topic.trim()) return alert('Please enter a topic');
+    if (!targetClass) return alert('Please select a class');
     setIsGenerating(true);
     try {
+      const token = await getAuthToken();
       const res = await fetch('/api/teacher/practice', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           weaknesses: [topic],
           subject: subject || 'General',
@@ -55,6 +58,7 @@ export default function TeacherQuizPage() {
         }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate');
       if (data.questions && Array.isArray(data.questions)) {
         const parsed: Question[] = data.questions.map((q: any) => ({
           question: q.questionText || q.text || q.question || '',
@@ -66,19 +70,11 @@ export default function TeacherQuizPage() {
         }));
         setQuestions(parsed);
       } else {
-        // Fallback default set if AI endpoint returns simple list
-        setQuestions(
-          Array.from({ length: numQuestions }).map((_, i) => ({
-            question: `Sample Question ${i + 1} on ${topic}`,
-            options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
-            correctAnswerIndex: 0,
-            explanation: 'Correct explanation',
-          }))
-        );
+        throw new Error('AI returned unexpected format. Please try again.');
       }
     } catch (err: any) {
       console.error(err);
-      alert('Error generating quiz questions');
+      alert('Error generating quiz questions: ' + err.message);
     } finally {
       setIsGenerating(false);
     }
@@ -91,25 +87,30 @@ export default function TeacherQuizPage() {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
 
-      const { error } = await supabase.from('assignments').insert({
-        school_id: profile.schoolId,
-        teacher_id: profile.uid,
-        teacher_name: profile.name || 'Teacher',
-        title: `AI Quiz: ${topic}`,
-        description: `Automated assessment quiz covering ${topic}.`,
-        type: 'quiz',
-        subject: subject || 'General',
-        class: targetClass || 'All',
-        due_date: dueDate.toISOString().split('T')[0],
-        questions: questions.map(q => ({
-          questionText: q.question,
-          options: q.options,
-          correctOptionId: q.correctAnswerIndex,
-          explanation: q.explanation,
-        })),
+      const token = await getAuthToken();
+      const res = await fetch('/api/teacher/post-assignment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          schoolId: profile.schoolId,
+          teacherId: profile.uid,
+          teacherName: profile.name || 'Teacher',
+          title: `AI Quiz: ${topic}`,
+          description: `Automated assessment quiz covering ${topic}.`,
+          type: 'quiz',
+          subject: subject || 'General',
+          class: targetClass || 'All',
+          dueDate: dueDate.toISOString().split('T')[0],
+          questions: questions.map(q => ({
+            questionText: q.question,
+            options: q.options,
+            correctOptionId: q.correctAnswerIndex,
+            explanation: q.explanation,
+          })),
+        }),
       });
-
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to post quiz');
       alert('Quiz posted successfully!');
       router.push('/teacher');
     } catch (err: any) {
@@ -159,14 +160,19 @@ export default function TeacherQuizPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Target Class / Branch</label>
-            <input
-              type="text"
+            <label className="block text-sm font-bold text-gray-700 mb-2">Target Class</label>
+            <select
               value={targetClass}
               onChange={e => setTargetClass(e.target.value)}
-              placeholder="e.g. B.Com II Year"
               className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-            />
+            >
+              <option value="">— Select assigned class —</option>
+              {[...new Set(
+                (profile?.assignments as any[] || []).map((a: any) => a.class).filter(Boolean)
+              )].map((cls: string) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
           </div>
 
           <div>

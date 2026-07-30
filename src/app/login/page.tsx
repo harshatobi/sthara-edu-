@@ -32,16 +32,46 @@ export default function LoginPage() {
 
     const codeUpper = schoolCode.trim().toUpperCase();
 
-    // Check if this is a SuperAdmin master code
+    // Check if this is a SuperAdmin master code — bypass DB check
     const isMasterCode = SUPERADMIN_CODES.includes(codeUpper);
-    setIsSuperAdminCode(isMasterCode);
-
-    setIsVerifyingCode(true);
-    setTimeout(() => {
-      setIsVerifyingCode(false);
+    if (isMasterCode) {
+      setIsSuperAdminCode(true);
       setStep('ROLE_SELECT');
-    }, 400);
+      return;
+    }
+
+    setIsSuperAdminCode(false);
+    setIsVerifyingCode(true);
+
+    try {
+      const supabase = createClient();
+      // Look up school by code stored in settings JSONB
+      const { data: school, error: dbErr } = await supabase
+        .from('schools')
+        .select('id, name, settings')
+        .or(`settings->code.eq.${codeUpper},invite_code.eq.${codeUpper}`)
+        .maybeSingle();
+
+      if (dbErr) {
+        console.error('[code-check]', dbErr);
+        setSchoolCodeError('Could not verify code. Please try again.');
+        return;
+      }
+
+      if (!school) {
+        setSchoolCodeError('Invalid institution code. Please check and try again.');
+        return;
+      }
+
+      // Valid school found — proceed
+      setStep('ROLE_SELECT');
+    } catch (err: any) {
+      setSchoolCodeError('Network error. Please check your connection.');
+    } finally {
+      setIsVerifyingCode(false);
+    }
   };
+
 
   const handleRoleSelect = (selectedRole: 'student' | 'teacher' | 'admin' | 'parent' | 'superadmin') => {
     setRole(selectedRole);

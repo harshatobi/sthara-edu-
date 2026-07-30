@@ -2,46 +2,112 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
-export async function POST(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const dynamic = 'force-dynamic';
 
-  try {
-    const { grade, difficulty, chapters, numQuestions = 5 } = await request.json();
+type PaperType = 'mcq' | 'saq' | 'laq' | 'mixed';
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Gemini API key not configured on server.' },
-        { status: 500 }
-      );
-    }
+function buildPrompt(
+  grade: string,
+  chapters: string[],
+  difficulty: string,
+  numQuestions: number,
+  paperType: PaperType,
+  subject: string,
+) {
+  const chapterStr = (chapters || ['General']).join(', ');
 
-    const prompt = `You are an expert exam paper generator.
-Create a ${numQuestions}-question multiple choice quiz for ${grade || 'Class 10'} based on the subject/chapters: ${(chapters || ['General']).join(', ')}.
-Difficulty level: ${difficulty || 'CBSE Standard'}.
+  if (paperType === 'mcq') {
+    return `You are an expert exam paper generator for ${grade}, subject: ${subject}.
+Chapters/Topics: ${chapterStr}. Difficulty: ${difficulty}.
+Generate exactly ${numQuestions} multiple-choice questions.
 
-Return ONLY a raw JSON array (no markdown backticks, no explanation). Each item must follow this EXACT structure:
-{
-  "question": "The full question text?",
-  "options": {
-    "a": "First option text",
-    "b": "Second option text",
-    "c": "Third option text",
-    "d": "Fourth option text"
-  },
-  "correctOptionId": "b"
+Return ONLY a raw JSON array — NO markdown, NO explanation:
+[
+  {
+    "type": "mcq",
+    "question": "Full question text?",
+    "options": { "a": "Option A", "b": "Option B", "c": "Option C", "d": "Option D" },
+    "correctOptionId": "b",
+    "marks": 1
+  }
+]
+Each question must have exactly 4 options. One correct answer. Return pure JSON array only.`;
+  }
+
+  if (paperType === 'saq') {
+    return `You are an expert exam paper generator for ${grade}, subject: ${subject}.
+Chapters/Topics: ${chapterStr}. Difficulty: ${difficulty}.
+Generate exactly ${numQuestions} short-answer questions (2–4 marks each, 2–3 sentence model answers).
+
+Return ONLY a raw JSON array — NO markdown, NO explanation:
+[
+  {
+    "type": "saq",
+    "question": "Full question text?",
+    "modelAnswer": "A concise 2-3 sentence model answer.",
+    "marks": 3
+  }
+]`;
+  }
+
+  if (paperType === 'laq') {
+    return `You are an expert exam paper generator for ${grade}, subject: ${subject}.
+Chapters/Topics: ${chapterStr}. Difficulty: ${difficulty}.
+Generate exactly ${numQuestions} long-answer / essay questions (6–10 marks each, detailed model answers).
+
+Return ONLY a raw JSON array — NO markdown, NO explanation:
+[
+  {
+    "type": "laq",
+    "question": "Full question text?",
+    "modelAnswer": "Detailed model answer covering all key points.",
+    "marks": 8
+  }
+]`;
+  }
+
+  // mixed: roughly 40% MCQ, 40% SAQ, 20% LAQ
+  const mcqCount = Math.round(numQuestions * 0.4);
+  const saqCount = Math.round(numQuestions * 0.4);
+  const laqCount = numQuestions - mcqCount - saqCount;
+
+  return `You are an expert exam paper generator for ${grade}, subject: ${subject}.
+Chapters/Topics: ${chapterStr}. Difficulty: ${difficulty}.
+Generate a mixed paper with exactly:
+  - ${mcqCount} MCQ questions (marks: 1 each)
+  - ${saqCount} SAQ questions (marks: 3 each)
+  - ${laqCount} LAQ questions (marks: 8 each)
+Total = ${numQuestions} questions.
+
+Return ONLY a raw JSON array — NO markdown, NO explanation. Use this schema:
+[
+  { "type": "mcq", "question": "...", "options": { "a": "...", "b": "...", "c": "...", "d": "..." }, "correctOptionId": "b", "marks": 1 },
+  { "type": "saq", "question": "...", "modelAnswer": "...", "marks": 3 },
+  { "type": "laq", "question": "...", "modelAnswer": "...", "marks": 8 }
+]
+First output all MCQs, then SAQs, then LAQs. Return pure JSON array only.`;
 }
 
-Ensure:
-- Questions are curriculum-relevant and clear
-- Exactly ${numQuestions} questions in the array
-- One correct answer per question
-- Options are plausible and varied
-- Return pure JSON array only — no markdown, no explanation`;
+export async function POST(request: NextRequest) {
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    const {
+      grade,
+      subject,
+      difficulty,
+      chapters,
+      numQuestions = 10,
+      paperType = 'mcq' as PaperType,
+    } = await request.json();
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: 'Gemini API key not configured.' }, { status: 500 });
+
+    const prompt = buildPrompt(grade, chapters, difficulty, numQuestions, paperType, subject);
 
     const ai = new GoogleGenAI({ apiKey });
-
     const result = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
@@ -49,26 +115,21 @@ Ensure:
     });
 
     let jsonStr = (result.text || '[]').trim();
-    // Strip any accidental markdown wrappers
     jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
 
-    // Handle both array and { questions: [...] } shapes
     let questions;
     try {
       const parsed = JSON.parse(jsonStr);
       questions = Array.isArray(parsed) ? parsed : (parsed.questions || []);
-    } catch (parseError) {
-      console.error('Failed to parse JSON from Gemini:', jsonStr.slice(0, 300));
+    } catch {
+      console.error('[paper-gen] Parse error:', jsonStr.slice(0, 300));
       return NextResponse.json({ error: 'Failed to parse generated questions. Try again.' }, { status: 500 });
     }
 
-    return NextResponse.json(questions);
+    return NextResponse.json({ questions, paperType });
 
   } catch (error: any) {
-    console.error('Paper Gen API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate paper: ' + (error?.message || 'Unknown error') },
-      { status: 500 }
-    );
+    console.error('[paper-gen] Error:', error);
+    return NextResponse.json({ error: 'Failed to generate paper: ' + (error?.message || 'Unknown') }, { status: 500 });
   }
 }

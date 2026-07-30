@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
       topic: d.topic,
       month: d.month,
       objectives: d.objectives,
+      publisher: d.publisher || 'NCERT',
       status: d.status,
       createdAt: d.created_at,
     }));
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
         topic: topic || null,
         month: month || null,
         objectives: body.objectives || null,
+        publisher: body.publisher || 'NCERT',
         status: status || 'pending',
       })
       .select('id')
@@ -90,11 +92,13 @@ export async function PUT(req: NextRequest) {
 
     // Map camelCase fields to snake_case columns
     const update: Record<string, any> = {};
-    if (fields.topic  !== undefined) update.topic  = fields.topic;
-    if (fields.month  !== undefined) update.month  = fields.month;
-    if (fields.status !== undefined) update.status = fields.status;
-    if (fields.subject!== undefined) update.subject= fields.subject;
-    if (fields.class  !== undefined) update.class  = fields.class;
+    if (fields.topic     !== undefined) update.topic     = fields.topic;
+    if (fields.month     !== undefined) update.month     = fields.month;
+    if (fields.status    !== undefined) update.status    = fields.status;
+    if (fields.subject   !== undefined) update.subject   = fields.subject;
+    if (fields.class     !== undefined) update.class     = fields.class;
+    if (fields.publisher !== undefined) update.publisher = fields.publisher;
+    if (fields.objectives!== undefined) update.objectives= fields.objectives;
 
     const { error } = await supabase
       .from('syllabus')

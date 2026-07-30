@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Activity, AlertTriangle, Users, BookOpen, LogOut, Plus, X, Send, CheckSquare, Trash2 } from 'lucide-react';
+import { Activity, AlertTriangle, Users, BookOpen, LogOut, Plus, X, Send, CheckSquare, Trash2,
+  Sparkles, ClipboardList, BarChart2, Brain, BookMarked, Zap } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import Link from 'next/link';
@@ -161,23 +162,26 @@ export default function TeacherDashboard() {
 
   const handleDeleteTask = async (taskId: string) => {
     if (!profile?.schoolId) return;
-    if (!window.confirm("Are you sure you want to permanently delete this assignment?")) return;
+    if (!window.confirm('Are you sure you want to permanently delete this assignment and all its submissions?')) return;
     
     try {
-      const { error } = await supabase
-        .from('assignments')
-        .delete()
-        .eq('id', taskId)
-        .eq('school_id', profile.schoolId);
-
-      if (error) throw error;
+      const authToken = await getAuthToken();
+      const res = await fetch('/api/teacher/delete-assignment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ assignmentId: taskId, schoolId: profile.schoolId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Delete failed');
       
       setClassTasks(prev => prev.filter(t => t.id !== taskId));
       setSelectedTask(null);
-      alert("Assignment has been deleted.");
-    } catch (e) {
-      console.error("Failed to delete assignment:", e);
-      alert("Failed to delete assignment. Please try again.");
+    } catch (e: any) {
+      console.error('Failed to delete assignment:', e);
+      alert('Failed to delete assignment: ' + e.message);
     }
   };
 
@@ -359,6 +363,87 @@ export default function TeacherDashboard() {
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      {/* ── Teacher Tools ───────────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-6 px-2">
+          <h3 className="text-2xl font-bold text-[#002147] flex items-center space-x-3">
+            <Zap className="w-7 h-7 text-amber-500" />
+            <span>Teacher Tools</span>
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[
+            {
+              href: '/teacher/homework',
+              icon: <Sparkles className="w-6 h-6" />,
+              label: 'AI Homework',
+              desc: 'Generate homework sets',
+              gradient: 'from-violet-500 to-indigo-600',
+              bg: 'bg-violet-50',
+              text: 'text-violet-700',
+            },
+            {
+              href: '/teacher/syllabus',
+              icon: <BookMarked className="w-6 h-6" />,
+              label: 'Syllabus Planner',
+              desc: 'Plan topics by month',
+              gradient: 'from-blue-500 to-cyan-600',
+              bg: 'bg-blue-50',
+              text: 'text-blue-700',
+            },
+            {
+              href: '/teacher/quiz',
+              icon: <ClipboardList className="w-6 h-6" />,
+              label: 'Quiz Creator',
+              desc: 'AI quiz generation',
+              gradient: 'from-emerald-500 to-teal-600',
+              bg: 'bg-emerald-50',
+              text: 'text-emerald-700',
+            },
+            {
+              href: '/teacher/heatmap',
+              icon: <BarChart2 className="w-6 h-6" />,
+              label: 'Heatmap',
+              desc: 'Class performance map',
+              gradient: 'from-orange-500 to-red-500',
+              bg: 'bg-orange-50',
+              text: 'text-orange-700',
+            },
+            {
+              href: '/teacher/ai-assistant',
+              icon: <Brain className="w-6 h-6" />,
+              label: 'AI Assistant',
+              desc: 'Lesson & content help',
+              gradient: 'from-pink-500 to-rose-600',
+              bg: 'bg-pink-50',
+              text: 'text-pink-700',
+            },
+            {
+              href: '/teacher/mastery',
+              icon: <Activity className="w-6 h-6" />,
+              label: 'Mastery Tracker',
+              desc: 'Student skill insights',
+              gradient: 'from-amber-500 to-yellow-500',
+              bg: 'bg-amber-50',
+              text: 'text-amber-700',
+            },
+          ].map(tool => (
+            <Link
+              key={tool.href}
+              href={tool.href}
+              className="group flex flex-col items-center text-center p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+            >
+              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tool.gradient} text-white flex items-center justify-center mb-3 shadow-md group-hover:scale-110 transition-transform duration-200`}>
+                {tool.icon}
+              </div>
+              <div className="font-bold text-[#002147] text-sm">{tool.label}</div>
+              <div className="text-xs text-gray-400 mt-0.5 leading-tight">{tool.desc}</div>
+            </Link>
+          ))}
         </div>
       </div>
 

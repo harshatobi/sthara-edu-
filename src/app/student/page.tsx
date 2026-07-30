@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bell, Calendar, TrendingUp, CheckCircle2, LogOut, Loader2, Target, Award, ChevronRight, X } from 'lucide-react';
@@ -50,6 +50,18 @@ export default function StudentDashboard() {
   const [showMasteryModal, setShowMasteryModal] = useState(false);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showScoresModal, setShowScoresModal] = useState(false);
+
+  const searchParams = useSearchParams();
+
+  // Auto-open a specific task when ?task=ID is in the URL
+  useEffect(() => {
+    if (!searchParams) return;
+    const taskId = searchParams.get('task');
+    if (taskId && assignments.length > 0 && !selectedTask) {
+      const found = assignments.find(a => a.id === taskId);
+      if (found) setSelectedTask(found);
+    }
+  }, [searchParams, assignments]);
 
   // Teacher Resources
   const [resources, setResources] = useState<any[]>([]);
@@ -349,10 +361,18 @@ export default function StudentDashboard() {
 
         const studentCustomId = profile.customStudentId || '';
 
+        const studentClass = (profile.studentClass || '').toLowerCase().trim();
+
         const tasks: Assignment[] = (assignRows || [])
           .filter((a) => {
+            // Class-level filter: if assignment specifies a class, it must match the student's class
+            const aClass = (a.class || '').toLowerCase().trim();
+            if (aClass && studentClass && !aClass.includes(studentClass) && !studentClass.includes(aClass)) {
+              return false;
+            }
+            // Student-specific filter: if the assignment is assigned to specific students
             const assignedIds: string[] = a.assigned_student_ids || [];
-            if (assignedIds.length === 0) return true; // general assignment for class
+            if (assignedIds.length === 0) return true; // general class assignment
             return (
               (studentCustomId && assignedIds.includes(studentCustomId)) ||
               assignedIds.includes(uid)

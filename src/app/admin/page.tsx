@@ -234,13 +234,22 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!profile?.schoolId || !confirm('Are you sure you want to delete this user from the school?')) return;
+    if (!profile?.schoolId || !confirm('Are you sure you want to permanently delete this user?')) return;
     try {
-      const { error } = await supabase.from('users').delete().eq('id', userId);
-      if (error) throw error;
+      const authToken = await getAuthToken();
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ userId, schoolId: profile.schoolId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Delete failed');
       setUsers(users.filter(u => u.id !== userId));
     } catch (err: any) {
-      console.error("Error deleting user", err);
+      console.error('Error deleting user', err);
       alert('Failed to delete user: ' + err.message);
     }
   };

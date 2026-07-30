@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
  * POST /api/teacher/get-students
  * Body: { schoolId, classFilter?: string }
  * Returns all students for a school (or filtered by class/branch).
+ * Uses admin client to bypass RLS.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -15,21 +16,25 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    let query = supabase
+    const { data: rows, error } = await supabase
       .from('users')
       .select('*')
       .eq('school_id', schoolId)
       .eq('role', 'student');
 
-    if (classFilter) {
-      // filter by student_class OR branch
-      query = query.or(`student_class.eq.${classFilter},branch.eq.${classFilter}`);
-    }
-
-    const { data: rows, error } = await query;
     if (error) throw error;
 
-    const students = (rows || []).map((d) => ({
+    // Apply class filter in JS — case-insensitive, bidirectional substring
+    // This handles mismatches like "B.Com II Year" vs "b.com ii year"
+    const filtered = classFilter
+      ? (rows || []).filter(s => {
+          const cls = (s.student_class || s.branch || '').toLowerCase().trim();
+          const filter = classFilter.toLowerCase().trim();
+          return cls.includes(filter) || filter.includes(cls);
+        })
+      : (rows || []);
+
+    const students = filtered.map((d) => ({
       id: d.id,
       name: d.name || 'Unknown',
       email: d.email || '',

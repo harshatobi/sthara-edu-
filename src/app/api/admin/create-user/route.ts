@@ -38,17 +38,19 @@ export async function POST(request: NextRequest) {
     const cleanEmail = email.trim().toLowerCase();
     const supabase = createAdminClient(); // Service role — bypasses RLS
 
-    // ── 1. Check if auth user already exists ─────────────────────────────────
-    const { data: listData } = await supabase.auth.admin.listUsers();
-    const existingAuth = (listData?.users || []).find(
-      u => u.email?.toLowerCase() === cleanEmail
-    );
-
+    // ── 1. Check if user already exists by looking up the users table first.
+    //    This avoids the expensive listUsers() full-scan (O(n)) and stays in the
+    //    application DB layer which is fast and correctly indexed on email.
     let userId = '';
+    const { data: existingDbUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', cleanEmail)
+      .maybeSingle();
 
-    if (existingAuth) {
-      // User already exists in auth — update their password & metadata
-      userId = existingAuth.id;
+    if (existingDbUser?.id) {
+      // User already in DB — update their auth password & metadata
+      userId = existingDbUser.id;
       await supabase.auth.admin.updateUserById(userId, {
         password,
         email_confirm: true,
@@ -71,6 +73,7 @@ export async function POST(request: NextRequest) {
       }
       userId = authData.user.id;
     }
+
 
     // ── 2. Upsert user into users table (service role bypasses RLS) ───────────
     const { error: dbErr } = await supabase.from('users').upsert({

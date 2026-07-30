@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Search, ArrowLeft, GraduationCap, BookOpen, UserCheck, Shield } from 'lucide-react';
+import { Users, Search, ArrowLeft, GraduationCap, BookOpen, UserCheck, Shield, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
@@ -35,6 +35,8 @@ export default function AdminDirectoryPage() {
   const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'student' | 'teacher' | 'parent' | 'admin'>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'admin')) router.push('/login');
@@ -42,31 +44,60 @@ export default function AdminDirectoryPage() {
 
   useEffect(() => {
     if (!profile?.schoolId) return;
-
-    const fetchUsers = async () => {
-      setFetching(true);
-      setFetchError('');
-      try {
-        const token = await getAuthToken();
-        const res = await fetch(`/api/admin/users?schoolId=${profile.schoolId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to load users');
-        }
-        const { users: data } = await res.json();
-        setUsers(data || []);
-      } catch (err: any) {
-        console.error('[admin-directory] fetch error:', err);
-        setFetchError(err.message || 'Failed to load directory');
-      } finally {
-        setFetching(false);
-      }
-    };
-
     fetchUsers();
   }, [profile?.schoolId]);
+
+  const fetchUsers = async () => {
+    setFetching(true);
+    setFetchError('');
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(`/api/admin/users?schoolId=${profile!.schoolId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to load users');
+      }
+      const { users: data } = await res.json();
+      setUsers(data || []);
+    } catch (err: any) {
+      setFetchError(err.message || 'Failed to load directory');
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const handleDelete = async (u: UserData) => {
+    if (!profile?.schoolId) return;
+    if (u.id === profile.id) {
+      alert('You cannot delete your own account.');
+      return;
+    }
+    const confirmed = window.confirm(
+      `⚠️ Delete "${u.name}" (${u.role})?\n\nThis will permanently remove their account and all associated data. This action CANNOT be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(u.id);
+    setDeleteError('');
+    try {
+      const token = await getAuthToken();
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: u.id, schoolId: profile.schoolId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      // Remove from local list instantly
+      setUsers(prev => prev.filter(usr => usr.id !== u.id));
+    } catch (err: any) {
+      setDeleteError(err.message || 'Failed to delete user');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading Directory...</div>;
 
@@ -130,10 +161,15 @@ export default function AdminDirectoryPage() {
         ))}
       </div>
 
-      {/* Error */}
+      {/* Errors */}
       {fetchError && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-semibold">
-          ⚠️ {fetchError}
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {fetchError}
+        </div>
+      )}
+      {deleteError && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {deleteError}
         </div>
       )}
 
@@ -167,14 +203,18 @@ export default function AdminDirectoryPage() {
                   <th className="p-4 font-bold text-xs text-gray-500 uppercase">Email</th>
                   <th className="p-4 font-bold text-xs text-gray-500 uppercase">Class / ID</th>
                   <th className="p-4 font-bold text-xs text-gray-500 uppercase">Details</th>
+                  <th className="p-4 font-bold text-xs text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map(u => {
                   const roleConf = ROLE_CONFIG[u.role] || ROLE_CONFIG.admin;
                   const RoleIcon = roleConf.icon;
+                  const isDeleting = deletingId === u.id;
+                  const isSelf = u.id === profile.id;
+
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={u.id} className={`transition-colors ${isDeleting ? 'opacity-40' : 'hover:bg-gray-50/50'}`}>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center font-bold text-gray-600 border border-gray-300 text-sm">
@@ -212,13 +252,28 @@ export default function AdminDirectoryPage() {
                             ))}
                           </div>
                         ) : u.role === 'parent' && u.metadata?.linkedStudents?.length ? (
-                          <div>
-                            <span className="text-purple-600 font-medium">
-                              Linked to: {u.metadata.linkedStudents.join(', ')}
-                            </span>
-                          </div>
+                          <span className="text-purple-600 font-medium">
+                            Linked: {u.metadata.linkedStudents.join(', ')}
+                          </span>
                         ) : (
                           <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {isSelf ? (
+                          <span className="text-xs text-gray-400 font-medium">You</span>
+                        ) : (
+                          <button
+                            onClick={() => handleDelete(u)}
+                            disabled={isDeleting || !!deletingId}
+                            title={`Delete ${u.name}`}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {isDeleting
+                              ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                              : <Trash2 className="w-4 h-4" />
+                            }
+                          </button>
                         )}
                       </td>
                     </tr>

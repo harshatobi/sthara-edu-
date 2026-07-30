@@ -8,6 +8,7 @@ import {
   Trash2, FileText, CheckCircle, Search, Loader2, ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 export default function AssignmentManagerPage() {
   const { profile, loading } = useAuth();
@@ -53,8 +54,17 @@ export default function AssignmentManagerPage() {
     if (!confirm('Are you sure you want to delete this assignment and all its submissions?')) return;
     setDeletingId(id);
     try {
-      const { error } = await supabase.from('assignments').delete().eq('id', id);
-      if (error) throw error;
+      const authToken = await getAuthToken();
+      const res = await fetch('/api/teacher/delete-assignment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ assignmentId: id, schoolId: profile!.schoolId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Delete failed');
       setAssignments(prev => prev.filter(a => a.id !== id));
     } catch (err: any) {
       alert('Failed to delete assignment: ' + err.message);

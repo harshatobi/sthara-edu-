@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export async function POST(request: NextRequest) {
@@ -7,40 +7,49 @@ export async function POST(request: NextRequest) {
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { weaknesses, subject, studentClass } = await request.json();
-
+    const { weaknesses, subject, studentClass, numQuestions = 5 } = await request.json();
     const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
 
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
+    const ai = new GoogleGenAI({ apiKey });
+
+    const topicStr = Array.isArray(weaknesses) ? weaknesses.join(', ') : (weaknesses || 'core topics');
+
+    const prompt = `You are an expert teacher creating a quiz for ${studentClass || 'school students'} studying ${subject || 'their subject'}.
+Topic(s): ${topicStr}
+
+Generate exactly ${numQuestions} multiple-choice questions.
+Return ONLY a raw JSON object (no markdown, no code blocks) in this EXACT format:
+{
+  "questions": [
+    {
+      "questionText": "The full question text here?",
+      "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
+      "correctOptionId": 1
     }
+  ]
+}
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+Rules:
+- correctOptionId is the 0-based INDEX of the correct option in the options array
+- Questions must be specific, educational, and about the topic
+- Each question must have exactly 4 options
+- Return exactly ${numQuestions} questions`;
 
-    const prompt = `You are an expert tutor. A student in ${studentClass || 'their class'} studying ${subject || 'their subject'} has been identified to have weaknesses in the following concepts: ${Array.isArray(weaknesses) ? weaknesses.join(', ') : weaknesses || 'core topics'}.
-Generate a highly targeted 3-question multiple-choice practice module to help them overcome these specific weaknesses.
-Format strictly as a JSON object with a "questions" array.
-Each question should have:
-- "id": a unique string (e.g. "q1", "q2")
-- "questionText": string
-- "options": array of 4 strings
-- "correctOptionId": integer (0 to 3) representing the index of the correct option in the options array.
-
-Output ONLY valid JSON, no markdown.`;
-
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.4 }
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { responseMimeType: 'application/json', temperature: 0.5 },
     });
 
-    const response = await model.generateContent(prompt);
-    const rawText = response.response.text() || '{"questions": []}';
-    const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```/g, '').trim();
-    const parsed = JSON.parse(jsonStr);
+    let rawText = (result.text || '{"questions":[]}').trim();
+    rawText = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    const parsed = JSON.parse(rawText);
     return NextResponse.json(parsed);
 
   } catch (error: any) {
-    console.error('Practice Module Generation Error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to generate practice module' }, { status: 500 });
+    console.error('[practice] Error:', error);
+    return NextResponse.json({ error: error.message || 'Failed to generate quiz' }, { status: 500 });
   }
 }

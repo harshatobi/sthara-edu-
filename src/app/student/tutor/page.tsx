@@ -178,6 +178,7 @@ export default function StudentAITutor() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [resolvedName, setResolvedName] = useState<string>('');  // ensures correct name even if profile.name is stale
   const [isDBReady, setIsDBReady] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [showSBIArrest, setShowSBIArrest] = useState(false);
@@ -195,6 +196,28 @@ export default function StudentAITutor() {
       router.push('/login');
     }
   }, [profile, loading, router]);
+
+  // Resolve the student's real name from DB (fallback if profile.name is missing)
+  useEffect(() => {
+    if (!profile?.uid) return;
+    const name = profile.name || '';
+    if (name) {
+      setResolvedName(name);
+      return;
+    }
+    // If name is blank — fetch directly via API
+    getAuthToken().then(async token => {
+      try {
+        const res = await fetch(`/api/admin/users?schoolId=${profile.schoolId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const { users } = await res.json();
+        const me = (users || []).find((u: any) => u.id === profile.uid);
+        if (me?.name) setResolvedName(me.name);
+      } catch { /* ignore */ }
+    });
+  }, [profile?.uid, profile?.name]);
 
   // Fetch initial messages & listen for realtime updates via Supabase Realtime
   useEffect(() => {
@@ -223,12 +246,13 @@ export default function StudentAITutor() {
         })) as ChatMessage[];
 
         if (fetched.length === 0) {
+          const firstName = (resolvedName || profile?.name || '').split(' ')[0] || 'there';
           const defaultGreeting: ChatMessage = {
             id: 'welcome',
             role: 'model',
             text: profile?.institutionType === 'college'
-              ? `Hello! I'm your AI Academic Assistant. What topic or concept would you like to work through today?`
-              : "Hi there! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you!",
+              ? `Hello ${firstName}! I'm your AI Academic Assistant. What topic or concept would you like to work through today?`
+              : `Hi ${firstName}! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you! 📚`,
           };
           setMessages([defaultGreeting]);
 
@@ -333,8 +357,8 @@ export default function StudentAITutor() {
         body: JSON.stringify({
           messages: contextMessages.map(m => ({ sender: m.role, text: m.text })),
           studentId: profile.uid,
-          studentName: profile.name || profile.email,
-          studentClass: profile.studentClass || 'General',
+          studentName: resolvedName || profile.name || profile.email,
+          studentClass: profile.studentClass || profile.branch || 'General',
           schoolId: profile.schoolId,
           violationCount,
           institutionType: profile.institutionType || 'school',
@@ -434,7 +458,14 @@ export default function StudentAITutor() {
               <Sparkles className="w-8 h-8 text-blue-500" />
               <span>Sthara Interactive Tutor</span>
             </h1>
-            <p className="text-[#002147]/60 mt-1">Powered by Google Gemini 2.5 Flash</p>
+            <p className="text-[#002147]/60 mt-1">
+              Powered by Google Gemini 2.5 Flash
+              {(resolvedName || profile.name) && (
+                <span className="ml-2 text-indigo-600 font-semibold">
+                  · Tutoring {resolvedName || profile.name}
+                </span>
+              )}
+            </p>
           </div>
         </div>
       </div>

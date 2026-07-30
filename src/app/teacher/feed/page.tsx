@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 
 type SituationCategory = 'all' | 'security' | 'academic' | 'wellness' | 'submission';
 
@@ -99,12 +100,14 @@ export default function TeacherFeedPage() {
 
   const handleAcknowledge = async (sitId: string) => {
     try {
-      const { error } = await supabase
-        .from('situations')
-        .update({ acknowledged: true })
-        .eq('id', sitId);
-
-      if (error) throw error;
+      const authToken = await getAuthToken();
+      const res = await fetch('/api/teacher/acknowledge-situation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ id: sitId, schoolId: profile.schoolId, table: 'situations', field: 'acknowledged', value: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
       setSituations(prev => prev.map(s => s.id === sitId ? { ...s, acknowledged: true } : s));
     } catch (err) {
       console.error('Failed to acknowledge:', err);

@@ -24,7 +24,7 @@ export default function TeacherDashboard() {
   const [type, setType] = useState('homework');
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
-  const [homeworkQuestions, setHomeworkQuestions] = useState<{text: string; marks: string}[]>([]);
+  const [homeworkQuestions, setHomeworkQuestions] = useState<{id: string; text: string; marks: string}[]>([]);
   const [questionPaperFile, setQuestionPaperFile] = useState<File | null>(null);
   const [questionPaperPreview, setQuestionPaperPreview] = useState<string | null>(null);
   const [uploadingQP, setUploadingQP] = useState(false);
@@ -508,12 +508,90 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
 
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#002147]/70 mb-1">Description / Instructions</label>
+                    <textarea
+                      rows={3}
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      placeholder="Describe the homework task, what students need to do..."
+                      className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20 resize-none"
+                    />
+                  </div>
+
+                  {/* Questions */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-[#002147]/70">Questions (optional)</label>
+                      <button
+                        type="button"
+                        onClick={() => setHomeworkQuestions(prev => [...prev, { id: String(Date.now()), text: '', marks: '' }])}
+                        className="text-xs font-bold text-[#dc143c] border border-[#dc143c]/30 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        + Add Question
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {homeworkQuestions.map((q, idx) => (
+                        <div key={q.id} className="flex gap-2 items-start">
+                          <div className="w-6 h-6 bg-[#002147] text-white rounded-full flex items-center justify-center text-xs font-bold mt-3 shrink-0">{idx+1}</div>
+                          <input
+                            value={q.text}
+                            onChange={e => setHomeworkQuestions(prev => prev.map((p, i) => i === idx ? { ...p, text: e.target.value } : p))}
+                            placeholder={`Question ${idx + 1}`}
+                            className="flex-1 bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-3 py-2 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                          />
+                          <input
+                            type="number"
+                            value={q.marks}
+                            onChange={e => setHomeworkQuestions(prev => prev.map((p, i) => i === idx ? { ...p, marks: e.target.value } : p))}
+                            placeholder="Marks"
+                            className="w-16 bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-2 py-2 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setHomeworkQuestions(prev => prev.filter((_, i) => i !== idx))}
+                            className="mt-2 text-red-400 hover:text-red-600 text-lg font-black"
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question Paper Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#002147]/70 mb-1">Attach Question Paper (PDF / Image)</label>
+                    <label className="flex items-center gap-3 cursor-pointer bg-[#f8fafc] border border-dashed border-[#002147]/20 rounded-xl px-4 py-3 hover:border-[#dc143c]/40 hover:bg-red-50/20 transition-all">
+                      <span className="text-2xl">📎</span>
+                      <div>
+                        <p className="text-sm font-medium text-[#002147]/70">
+                          {questionPaperFile ? questionPaperFile.name : 'Click to upload PDF or image'}
+                        </p>
+                        <p className="text-xs text-[#002147]/40">PDF, PNG, JPG up to 10MB</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="application/pdf,image/*"
+                        className="sr-only"
+                        onChange={e => {
+                          const f = e.target.files?.[0] || null;
+                          setQuestionPaperFile(f);
+                          setQuestionPaperPreview(f ? URL.createObjectURL(f) : null);
+                        }}
+                      />
+                    </label>
+                    {questionPaperPreview && questionPaperFile?.type.startsWith('image/') && (
+                      <img src={questionPaperPreview} alt="preview" className="mt-2 max-h-32 rounded-xl border border-gray-200 object-contain" />
+                    )}
+                  </div>
+
                   <button
                     type="submit"
                     disabled={isPosting || uploadingQP}
                     className="w-full py-4 bg-[#dc143c] hover:bg-[#b01030] text-white font-bold rounded-xl transition-all shadow-md disabled:opacity-50 mt-4"
                   >
-                    {isPosting ? 'Posting Task...' : 'Post Task to Students'}
+                    {uploadingQP ? 'Uploading paper...' : isPosting ? 'Posting Task...' : 'Post Task to Students'}
                   </button>
                 </form>
               )}

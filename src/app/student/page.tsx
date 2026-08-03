@@ -735,7 +735,11 @@ export default function StudentDashboard() {
                     const sub = task.submission;
                     const aiGrade = sub?.grade || (sub?.score != null && sub?.maxScore ? `${sub.score}/${sub.maxScore}` : null);
                     return (
-                      <Link key={task.id} href="/student/homework" className="block">
+                      <button
+                        key={task.id}
+                        onClick={() => { setSelectedTask(task); setQuizResult(null); setSelectedAnswers({}); }}
+                        className="w-full text-left block"
+                      >
                         <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-2xl hover:border-emerald-300 hover:shadow-sm transition-all group cursor-pointer">
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-[#002147] text-sm truncate">{task.subject || 'Assignment'}: {task.title}</p>
@@ -752,7 +756,7 @@ export default function StudentDashboard() {
                             </span>
                           </div>
                         </div>
-                      </Link>
+                      </button>
                     );
                   })}
                 </div>
@@ -798,7 +802,8 @@ export default function StudentDashboard() {
                     <div className="space-y-6">
                       {selectedTask.questions.map((q: any, i: number) => {
                         const qKey = q.id || String(i);
-                        const questionText = q.question || q.text || 'Question';
+                        // Handle all AI field name variants: question, text, stem, title
+                        const questionText = q.question || q.text || q.stem || q.title || `Question ${i + 1}`;
                         return (
                           <div key={qKey} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                             <div className="flex items-start gap-3 mb-4">

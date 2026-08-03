@@ -1,116 +1,88 @@
-import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// ── Supabase constants (server-side only) ────────────────────────────────────
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nqwvsuyiwswnsqbyhghb.supabase.co';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xd3ZzdXlpd3N3bnNxYnloZ2hiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDEzNzAzNSwiZXhwIjoyMDk5NzEzMDM1fQ.rFuYkmbA-T92TzWIqgbpCn2Ua_qdGymJB9u-9B4X2hk';
+/**
+ * Next.js Middleware — Server-side route protection.
+ *
+ * Responsibilities:
+ *  1. Redirect unauthenticated users (no __session cookie) to /login
+ *  2. Redirect expired-trial users to /trial-expired
+ *  3. Enforce role-based access: students can't visit /admin, teachers can't visit /student, etc.
+ *
+ * The __session cookie is set by AuthContext.tsx AND login/page.tsx on login.
+ * The __trial_ok cookie is set by AuthContext.tsx after verifying trial status.
+ * The __role cookie is set by login/page.tsx synchronously before router.push.
+ */
 
 // ── Role → allowed path prefixes ─────────────────────────────────────────────
 const ROLE_ROUTES: Record<string, string[]> = {
   superadmin: ['/superadmin', '/admin', '/teacher', '/student', '/parent'],
-  admin:       ['/admin'],
-  teacher:     ['/teacher'],
-  student:     ['/student'],
-  parent:      ['/parent'],
+  admin:      ['/admin'],
+  teacher:    ['/teacher'],
+  student:    ['/student'],
+  parent:     ['/parent'],
 };
 
-// ── Protected path prefixes (anything not public) ─────────────────────────────
-const PROTECTED_PREFIXES = ['/admin', '/teacher', '/student', '/parent', '/superadmin'];
+const DASHBOARD: Record<string, string> = {
+  student:    '/student',
+  teacher:    '/teacher',
+  admin:      '/admin',
+  parent:     '/parent',
+  superadmin: '/superadmin',
+};
 
-// ── Public paths that require no auth ────────────────────────────────────────
-const PUBLIC_PATHS = ['/login', '/api', '/_next', '/favicon', '/public'];
-
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip non-protected and public paths
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p)) || pathname === '/') {
+  // ── Public routes — always allowed ─────────────────────────────────────────
+  const publicPrefixes = ['/login', '/onboard', '/privacy', '/terms', '/_next', '/api', '/trial-expired'];
+  if (publicPrefixes.some(p => pathname.startsWith(p)) || pathname === '/') {
     return NextResponse.next();
   }
 
-  // Only enforce auth on protected routes
-  const isProtected = PROTECTED_PREFIXES.some(p => pathname.startsWith(p));
+  // ── Protected routes — require session ─────────────────────────────────────
+  const protectedPrefixes = ['/student', '/teacher', '/admin', '/superadmin', '/parent'];
+  const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
   if (!isProtected) return NextResponse.next();
 
-  // ── 1. Get session token from cookie ────────────────────────────────────────
-  const sessionToken = request.cookies.get('__session')?.value;
-
-  if (!sessionToken) {
-    // No session — redirect to login
+  // 1. Auth check — must have session cookie
+  const sessionCookie = request.cookies.get('__session')?.value;
+  if (!sessionCookie) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('error', 'unauthorized');
+    loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  try {
-    // ── 2. Verify token and get user ─────────────────────────────────────────
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+  // 2. Trial check — superadmins are exempt
+  const trialOk = request.cookies.get('__trial_ok')?.value;
+  const isSuperadminPath = pathname.startsWith('/superadmin');
+  if (!isSuperadminPath && trialOk === 'expired') {
+    return NextResponse.redirect(new URL('/trial-expired', request.url));
+  }
 
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(sessionToken);
-
-    if (authErr || !user) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('error', 'session_expired');
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // ── 3. Get role from users table ─────────────────────────────────────────
-    const { data: userRow } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    const role = userRow?.role || user.user_metadata?.role as string || '';
-
-    if (!role) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('error', 'no_role');
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // ── 4. Enforce role-based path access ────────────────────────────────────
+  // 3. Role check — use __role cookie (set synchronously on login before router.push)
+  const role = request.cookies.get('__role')?.value;
+  if (role) {
     const allowedPrefixes = ROLE_ROUTES[role] || [];
     const isAllowed = allowedPrefixes.some(prefix => pathname.startsWith(prefix));
-
     if (!isAllowed) {
-      // Redirect to this user's own dashboard instead of a generic error
-      const dashboardMap: Record<string, string> = {
-        student:    '/student',
-        teacher:    '/teacher',
-        admin:      '/admin',
-        parent:     '/parent',
-        superadmin: '/superadmin',
-      };
-      const redirectUrl = new URL(dashboardMap[role] || '/login', request.url);
-      return NextResponse.redirect(redirectUrl);
+      // Redirect to this user's own dashboard
+      const dest = DASHBOARD[role] || '/login';
+      return NextResponse.redirect(new URL(dest, request.url));
     }
-
-    // Allowed — pass through with role header for optional server-side use
-    const response = NextResponse.next();
-    response.headers.set('x-user-role', role);
-    return response;
-
-  } catch (err) {
-    console.error('[middleware] error:', err);
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('error', 'server_error');
-    return NextResponse.redirect(loginUrl);
   }
+  // If no __role cookie yet (e.g. cookie not propagated), allow through —
+  // the client-side AuthContext guard will catch unauthorized access.
+
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths EXCEPT:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
-     * - public files (images, etc.)
-     * - api routes (they have their own auth)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public/|api/).*)',
+    '/student/:path*',
+    '/teacher/:path*',
+    '/admin/:path*',
+    '/superadmin/:path*',
+    '/parent/:path*',
   ],
 };

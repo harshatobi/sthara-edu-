@@ -135,12 +135,14 @@ export default function LoginPage() {
         else if (data.user.user_metadata?.role) userRole = data.user.user_metadata.role;
       } catch (_) { /* ignore */ }
 
-      // ── Set __session cookie NOW (before router.push) so middleware sees it ──
-      // Without this, the cookie is set asynchronously by AuthContext.onAuthStateChange,
-      // which fires AFTER router.push — causing the middleware to redirect back to login.
+      // ── Set cookies NOW (before router.push) so middleware sees them ──────
+      // __session: proves the user is authenticated
+      // __role:    tells middleware which paths this user is allowed to visit
+      // Both must be set before router.push or middleware redirects back to /login
       if (data.session?.access_token) {
         document.cookie = `__session=${data.session.access_token}; path=/; max-age=3600; SameSite=Strict`;
       }
+      document.cookie = `__role=${userRole}; path=/; max-age=3600; SameSite=Strict`;
 
       // Route to correct dashboard
       if (userRole === 'superadmin') router.push('/superadmin');
@@ -148,6 +150,7 @@ export default function LoginPage() {
       else if (userRole === 'teacher') router.push('/teacher');
       else if (userRole === 'parent') router.push('/parent');
       else router.push('/student');
+
 
 
     } catch (err: any) {

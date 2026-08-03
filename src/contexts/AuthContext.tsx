@@ -101,11 +101,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
     clearCookie('__session');
     clearCookie('__trial_ok');
+    clearCookie('__role');
     setProfile(null);
     setUser(null);
     setSession(null);
     router.push('/login');
   };
+
 
   useEffect(() => {
     const supabase = createClient();

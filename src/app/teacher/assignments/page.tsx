@@ -37,6 +37,7 @@ export default function AssignmentManagerPage() {
           .from('assignments')
           .select('*')
           .eq('school_id', profile.schoolId)
+          .eq('teacher_id', profile.uid)   // ✅ only THIS teacher's assignments
           .order('created_at', { ascending: false });
 
         if (error) throw error;

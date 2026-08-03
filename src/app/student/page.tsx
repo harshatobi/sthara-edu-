@@ -463,6 +463,9 @@ export default function StudentDashboard() {
               units: a.units || [],
               totalMarks: a.total_marks || undefined,
               assignedStudentIds: a.assigned_student_ids || [],
+              // ✅ Manually uploaded question paper (image or PDF)
+              questionPaperUrl: a.question_paper_url || null,
+              questionPaperType: a.question_paper_type || null,
               submission: sub ? {
                 id: sub.id,
                 score: sub.score,
@@ -868,7 +871,48 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmitTask} className="space-y-6">
+                  {/* ── Manually Uploaded Question Paper (teacher-uploaded image or PDF) ── */}
+                  {selectedTask.questionPaperUrl && (
+                    <div className="rounded-2xl overflow-hidden border-2 border-violet-200 bg-violet-50">
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-violet-100 border-b border-violet-200">
+                        <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                        </svg>
+                        <span className="text-xs font-black text-violet-700 uppercase tracking-wider">Question Paper</span>
+                        <span className="ml-auto text-[10px] font-medium text-violet-500">uploaded by teacher</span>
+                      </div>
+                      {selectedTask.questionPaperType === 'image' ? (
+                        <img
+                          src={selectedTask.questionPaperUrl}
+                          alt="Question Paper"
+                          className="w-full object-contain max-h-[60vh]"
+                        />
+                      ) : (
+                        <a
+                          href={selectedTask.questionPaperUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-4 hover:bg-violet-100 transition-colors"
+                        >
+                          <div className="w-10 h-10 bg-violet-200 rounded-xl flex items-center justify-center shrink-0">
+                            <svg className="w-5 h-5 text-violet-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="font-bold text-violet-800 text-sm">Open Question Paper (PDF)</p>
+                            <p className="text-xs text-violet-500">Tap to open in a new tab</p>
+                          </div>
+                          <svg className="w-4 h-4 text-violet-500 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   {/* Questions — displayed read-only for open-ended, interactive for MCQ */}
+
                   {selectedTask.questions && selectedTask.questions.length > 0 && (
                     <div className="space-y-4">
                       {selectedTask.questions.map((q: any, i: number) => {

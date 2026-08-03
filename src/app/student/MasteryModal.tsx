@@ -1,266 +1,326 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ChevronRight, PlayCircle, Loader2, ArrowLeft, BookOpen, Trophy } from 'lucide-react';
+import { X, Loader2, TrendingUp, BookOpen, AlertTriangle, CheckCircle2, Minus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-interface Video {
-  id: string;
-  title: string;
-  duration: string;
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface TopicRow {
+  unitId: string;
+  unitLabel: string;
+  score: number | null;       // average % score across submissions for this unit
+  submissionCount: number;
 }
 
-interface Chapter {
-  id: string;
-  name: string;
-  score: number;
-  videos: Video[];
+interface SubjectBlock {
+  subject: string;
+  overallScore: number | null;
+  topics: TopicRow[];
 }
 
-interface Subject {
-  id: string;
-  name: string;
-  score: number;
-  chapters: Chapter[];
-}
-
-interface MasteryData {
-  subjects: Subject[];
-}
-
-const defaultMasteryData: MasteryData = {
-  subjects: []
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const UNIT_ORDER = ['unit_1', 'unit_2', 'unit_3', 'unit_4', 'unit_5', 'general'];
+const UNIT_LABEL: Record<string, string> = {
+  unit_1: 'Unit I',
+  unit_2: 'Unit II',
+  unit_3: 'Unit III',
+  unit_4: 'Unit IV',
+  unit_5: 'Unit V',
+  general: 'General',
 };
 
+function heatCell(score: number | null) {
+  if (score === null)  return { bg: 'bg-gray-100',    text: 'text-gray-400',    border: 'border-gray-200',    icon: null,         label: 'No data' };
+  if (score >= 75)     return { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', icon: 'check',      label: `${score}%` };
+  if (score >= 50)     return { bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-200',   icon: 'trend',      label: `${score}%` };
+  return                { bg: 'bg-red-50',      text: 'text-red-700',     border: 'border-red-200',     icon: 'alert',      label: `${score}%` };
+}
+
+function barColor(score: number | null) {
+  if (score === null) return 'bg-gray-200';
+  if (score >= 75) return 'bg-emerald-500';
+  if (score >= 50) return 'bg-amber-400';
+  return 'bg-red-500';
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function MasteryModal({ profile, onClose }: { profile: any; onClose: () => void }) {
   const supabase = createClient();
-  const [data, setData] = useState<MasteryData | null>(null);
+  const [blocks, setBlocks] = useState<SubjectBlock[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [view, setView] = useState<'subjects' | 'chapters' | 'videos'>('subjects');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchOrSeedData = async () => {
-      if (!profile?.schoolId || !profile?.uid) return;
+    if (!profile?.uid) return;
+
+    const buildHeatmap = async () => {
       setLoading(true);
       try {
-        const { data: memoryData } = await supabase
-          .from('student_memory')
-          .select('*')
+        // 1. Fetch all of the student's graded submissions
+        const { data: subs } = await supabase
+          .from('submissions')
+          .select('assignment_id, score, max_score, teacher_approved')
           .eq('student_id', profile.uid)
-          .maybeSingle();
+          .not('score', 'is', null)
+          .not('max_score', 'is', null);
 
-        if (memoryData?.weakness_summary) {
-          setData({
-            subjects: [
-              {
-                id: 's1',
-                name: 'Current Curriculum',
-                score: 75,
-                chapters: [
-                  {
-                    id: 'c1',
-                    name: 'Core Topics',
-                    score: 75,
-                    videos: [],
-                  },
-                ],
-              },
-            ],
-          });
-        } else {
-          setData(defaultMasteryData);
+        if (!subs || subs.length === 0) {
+          setBlocks([]);
+          return;
         }
+
+        // 2. Fetch the assignments those submissions belong to
+        const assignIds = [...new Set(subs.map(s => s.assignment_id))];
+        const { data: assigns } = await supabase
+          .from('assignments')
+          .select('id, subject, units, title')
+          .in('id', assignIds);
+
+        if (!assigns || assigns.length === 0) {
+          setBlocks([]);
+          return;
+        }
+
+        // 3. Build a lookup: assignmentId → assignment
+        const assignMap: Record<string, any> = {};
+        assigns.forEach(a => { assignMap[a.id] = a; });
+
+        // 4. Group submissions by subject → unit → scores[]
+        // Structure: { subject: { unitId: number[] } }
+        const grouped: Record<string, Record<string, number[]>> = {};
+
+        subs.forEach(sub => {
+          const assign = assignMap[sub.assignment_id];
+          if (!assign) return;
+          const subject = assign.subject || 'General';
+          const pct = Math.round((sub.score / sub.max_score) * 100);
+
+          if (!grouped[subject]) grouped[subject] = {};
+
+          const units: string[] = Array.isArray(assign.units) && assign.units.length > 0
+            ? assign.units
+            : ['general'];
+
+          units.forEach(unitId => {
+            if (!grouped[subject][unitId]) grouped[subject][unitId] = [];
+            grouped[subject][unitId].push(pct);
+          });
+        });
+
+        // 5. Convert to SubjectBlock[]
+        const result: SubjectBlock[] = Object.entries(grouped).map(([subject, unitMap]) => {
+          const topics: TopicRow[] = UNIT_ORDER
+            .filter(u => unitMap[u])
+            .map(u => {
+              const scores = unitMap[u];
+              const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+              return {
+                unitId: u,
+                unitLabel: UNIT_LABEL[u] || u,
+                score: avg,
+                submissionCount: scores.length,
+              };
+            });
+
+          // Also pick up any custom unit IDs not in UNIT_ORDER
+          Object.keys(unitMap)
+            .filter(u => !UNIT_ORDER.includes(u))
+            .forEach(u => {
+              const scores = unitMap[u];
+              const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+              topics.push({ unitId: u, unitLabel: u, score: avg, submissionCount: scores.length });
+            });
+
+          const allScores = topics.map(t => t.score).filter(s => s !== null) as number[];
+          const overall = allScores.length
+            ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+            : null;
+
+          return { subject, overallScore: overall, topics };
+        });
+
+        // Sort: subjects with most topics first
+        result.sort((a, b) => b.topics.length - a.topics.length);
+        setBlocks(result);
+        if (result.length > 0) setSelectedSubject(result[0].subject);
       } catch (err) {
-        console.error('Error fetching mastery data:', err);
-        setData(defaultMasteryData);
+        console.error('[MasteryModal]', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchOrSeedData();
-  }, [profile?.uid, profile?.schoolId]);
 
-  const handleSubjectClick = (subject: Subject) => {
-    setSelectedSubject(subject);
-    setView('chapters');
-  };
+    buildHeatmap();
+  }, [profile?.uid]);
 
-  const handleChapterClick = (chapter: Chapter) => {
-    setSelectedChapter(chapter);
-    setView('videos');
-  };
-
-  const handleBack = () => {
-    if (view === 'videos') {
-      setView('chapters');
-      setSelectedChapter(null);
-    } else if (view === 'chapters') {
-      setView('subjects');
-      setSelectedSubject(null);
-    }
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return 'bg-emerald-500';
-    if (score >= 70) return 'bg-blue-500';
-    if (score >= 50) return 'bg-orange-500';
-    return 'bg-red-500';
-  };
+  const activeBlock = blocks.find(b => b.subject === selectedSubject) ?? null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#002147]/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 border border-white/20">
-        
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#002147] to-[#003366] p-6 text-white flex justify-between items-center shrink-0">
-          <div className="flex items-center space-x-4">
-            {view !== 'subjects' && (
-              <button onClick={handleBack} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
-                <ArrowLeft className="w-5 h-5 text-white" />
-              </button>
-            )}
-            <div>
-              <h2 className="text-2xl font-bold flex items-center space-x-2">
-                <Trophy className="w-6 h-6 text-orange-400" />
-                <span>
-                  {view === 'subjects' ? 'Overall Mastery' : 
-                   view === 'chapters' ? `${selectedSubject?.name} Mastery` : 
-                   `${selectedChapter?.name} Resources`}
-                </span>
-              </h2>
-              <p className="text-blue-200 text-sm mt-1">
-                {view === 'subjects' ? 'Track your proficiency across all subjects.' : 
-                 view === 'chapters' ? 'Drill down into specific chapters and topics.' : 
-                 'Review suggested videos to improve your understanding.'}
-              </p>
-            </div>
+        <div className="bg-gradient-to-r from-[#002147] to-[#003b80] p-6 text-white flex justify-between items-center shrink-0">
+          <div>
+            <h2 className="text-2xl font-black">📊 My Performance Heatmap</h2>
+            <p className="text-blue-200 text-sm mt-1">
+              Based on your graded submissions — unit by unit
+            </p>
           </div>
-          <button onClick={onClose} className="p-2 bg-white/10 rounded-full hover:bg-red-500 hover:text-white transition-all text-white/70">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-2 bg-white/10 rounded-full hover:bg-red-500 transition-all">
+            <X className="w-5 h-5 text-white" />
           </button>
         </div>
 
-        {/* Content Area */}
-        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/50 relative min-h-[400px]">
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto bg-gray-50">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
-              <p className="text-[#002147]/60 font-medium">Analyzing learning patterns...</p>
+            <div className="flex flex-col items-center justify-center h-64">
+              <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-3" />
+              <p className="text-gray-500 font-medium">Computing your heatmap from real data…</p>
             </div>
-          ) : !data ? (
-            <div className="text-center text-red-500 p-10 h-full flex items-center justify-center">Failed to load mastery data.</div>
+          ) : blocks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center p-8">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <BookOpen className="w-10 h-10 text-gray-300" />
+              </div>
+              <h3 className="font-black text-gray-600 text-lg">No graded work yet</h3>
+              <p className="text-gray-400 text-sm mt-2 max-w-xs">
+                Complete and submit assignments. Once your teacher grades them, your heatmap will appear here.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-6">
-              
-              {/* SUBJECTS VIEW */}
-              {view === 'subjects' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {data.subjects.map(subject => (
-                    <div 
-                      key={subject.id} 
-                      onClick={() => handleSubjectClick(subject)}
-                      className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
+            <div className="p-6 space-y-6">
+
+              {/* Subject tabs */}
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {blocks.map(b => {
+                  const cell = heatCell(b.overallScore);
+                  const isActive = b.subject === selectedSubject;
+                  return (
+                    <button
+                      key={b.subject}
+                      onClick={() => setSelectedSubject(b.subject)}
+                      className={`flex-shrink-0 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all whitespace-nowrap border ${
+                        isActive
+                          ? 'bg-[#002147] text-white border-[#002147] shadow-md'
+                          : `${cell.bg} ${cell.text} ${cell.border} hover:opacity-80`
+                      }`}
                     >
-                      <div className="flex justify-between items-end mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="bg-blue-50 p-3 rounded-xl">
-                            <BookOpen className="w-6 h-6 text-blue-600" />
-                          </div>
-                          <h3 className="text-xl font-bold text-[#002147]">{subject.name}</h3>
-                        </div>
-                        <span className="text-2xl font-black text-[#002147]">{subject.score}%</span>
-                      </div>
-                      
-                      <div className="w-full bg-gray-100 rounded-full h-3 mb-2 overflow-hidden">
-                        <div 
-                          className={`h-3 rounded-full ${getScoreColor(subject.score)} transition-all duration-1000 ease-out`}
-                          style={{ width: `${subject.score}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs font-bold text-gray-400 mt-2">
-                        <span>Beginner</span>
-                        <span className="text-blue-500">Proficient</span>
-                        <span>Master</span>
-                      </div>
+                      {b.subject}
+                      {b.overallScore !== null && (
+                        <span className={`ml-2 text-xs font-black ${isActive ? 'text-blue-200' : ''}`}>
+                          {b.overallScore}%
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Overall subject score card */}
+              {activeBlock && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-black text-[#002147] text-lg">{activeBlock.subject}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {activeBlock.topics.length} unit{activeBlock.topics.length !== 1 ? 's' : ''} assessed •{' '}
+                        {activeBlock.topics.reduce((s, t) => s + t.submissionCount, 0)} total submissions
+                      </p>
                     </div>
-                  ))}
+                    {activeBlock.overallScore !== null && (
+                      <div className={`text-3xl font-black px-5 py-2 rounded-2xl ${heatCell(activeBlock.overallScore).bg} ${heatCell(activeBlock.overallScore).text}`}>
+                        {activeBlock.overallScore}%
+                      </div>
+                    )}
+                  </div>
+                  {/* Subject progress bar */}
+                  <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                    <div
+                      className={`h-3 rounded-full transition-all duration-1000 ${barColor(activeBlock.overallScore)}`}
+                      style={{ width: `${activeBlock.overallScore ?? 0}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400 font-semibold mt-1.5">
+                    <span>Beginner</span><span>Developing</span><span>Mastered</span>
+                  </div>
                 </div>
               )}
 
-              {/* CHAPTERS VIEW */}
-              {view === 'chapters' && selectedSubject && (
-                <div className="space-y-4 animate-in slide-in-from-right-8 duration-300">
-                  {selectedSubject.chapters.map(chapter => (
-                    <div 
-                      key={chapter.id}
-                      onClick={() => handleChapterClick(chapter)}
-                      className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group"
-                    >
-                      <div className="flex-1 pr-6">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-bold text-lg text-[#002147] group-hover:text-blue-600 transition-colors">{chapter.name}</h4>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            chapter.score >= 85 ? 'bg-emerald-100 text-emerald-700' :
-                            chapter.score >= 70 ? 'bg-blue-100 text-blue-700' :
-                            'bg-orange-100 text-orange-700'
+              {/* Unit-level heatmap grid */}
+              {activeBlock && activeBlock.topics.length > 0 && (
+                <div>
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">
+                    Unit-Level Breakdown
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {activeBlock.topics.map(topic => {
+                      const cell = heatCell(topic.score);
+                      return (
+                        <div
+                          key={topic.unitId}
+                          className={`p-4 rounded-2xl border ${cell.bg} ${cell.border} flex items-center gap-4`}
+                        >
+                          {/* Icon */}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            topic.score === null ? 'bg-gray-200' :
+                            topic.score >= 75 ? 'bg-emerald-500' :
+                            topic.score >= 50 ? 'bg-amber-400' : 'bg-red-500'
                           }`}>
-                            {chapter.score}% Mastery
-                          </span>
+                            {topic.score === null ? (
+                              <Minus className="w-5 h-5 text-gray-400" />
+                            ) : topic.score >= 75 ? (
+                              <CheckCircle2 className="w-5 h-5 text-white" />
+                            ) : topic.score >= 50 ? (
+                              <TrendingUp className="w-5 h-5 text-white" />
+                            ) : (
+                              <AlertTriangle className="w-5 h-5 text-white" />
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className={`font-black text-sm ${cell.text}`}>{topic.unitLabel}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {topic.submissionCount} submission{topic.submissionCount !== 1 ? 's' : ''}
+                            </div>
+                            {/* Bar */}
+                            <div className="w-full bg-white/60 rounded-full h-1.5 mt-2 overflow-hidden">
+                              <div
+                                className={`h-1.5 rounded-full ${barColor(topic.score)}`}
+                                style={{ width: `${topic.score ?? 0}%`, transition: 'width 1s ease-out' }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Score badge */}
+                          <div className={`text-xl font-black ${cell.text} shrink-0`}>
+                            {topic.score !== null ? `${topic.score}%` : '—'}
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                          <div 
-                            className={`h-2 rounded-full ${getScoreColor(chapter.score)} transition-all duration-1000 ease-out`}
-                            style={{ width: `${chapter.score}%` }}
-                          />
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-full group-hover:bg-blue-50 transition-colors">
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
-              {/* VIDEOS VIEW */}
-              {view === 'videos' && selectedChapter && (
-                <div className="space-y-4 animate-in slide-in-from-right-8 duration-300">
-                  {selectedChapter.videos.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
-                      <PlayCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500 font-medium">No recommended videos for this chapter right now.</p>
-                    </div>
-                  ) : (
-                    selectedChapter.videos.map(video => (
-                      <div 
-                        key={video.id}
-                        className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between hover:shadow-md transition-all group"
-                      >
-                        <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-                          <div className="w-32 h-20 bg-gray-900 rounded-xl relative overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform shadow-inner cursor-pointer">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <PlayCircle className="w-8 h-8 text-white/80 group-hover:text-white group-hover:scale-110 transition-all" />
-                            </div>
-                            <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                              {video.duration}
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-[#002147] group-hover:text-blue-600 transition-colors line-clamp-2">{video.title}</h4>
-                            <p className="text-xs text-gray-500 font-medium mt-1">Sthara Diagnostic Engine Recommendation</p>
-                          </div>
-                        </div>
-                        <button className="w-full sm:w-auto bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-5 py-2.5 rounded-xl font-bold transition-colors">
-                          Watch Now
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-100 text-xs font-semibold text-gray-500">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />≥75% Mastered
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-amber-400 inline-block" />50–74% Developing
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />&lt;50% Needs work
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-gray-300 inline-block" />No submissions
+                </span>
+                <span className="ml-auto text-gray-400">Updated from graded submissions</span>
+              </div>
             </div>
           )}
         </div>

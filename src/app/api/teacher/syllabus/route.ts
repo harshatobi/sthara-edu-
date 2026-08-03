@@ -61,16 +61,17 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('syllabus')
       .insert({
-        school_id: schoolId,
+        school_id:  schoolId,
         teacher_id: teacherId || null,
-        subject: subject || null,
-        class: cls || null,
-        grade: body.grade || cls || null,
-        topic: topic || null,
-        month: month || null,
+        subject:    subject || null,
+        class:      cls || null,
+        grade:      body.grade || cls || null,
+        topic:      topic || null,
+        month:      month || null,
         objectives: body.objectives || null,
-        publisher: body.publisher || 'NCERT',
-        status: status || 'pending',
+        publisher:  body.publisher || 'NCERT',
+        unit_id:    body.unitId || null,   // ← NEW: stores unit_1…unit_5 tag
+        status:     status || 'pending',
       })
       .select('id')
       .single();

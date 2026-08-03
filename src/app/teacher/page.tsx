@@ -261,6 +261,12 @@ export default function TeacherDashboard() {
     }
   };
 
+  // Unit ID → display label
+  const UNIT_LABELS: Record<string, string> = {
+    unit_1: 'Unit I', unit_2: 'Unit II', unit_3: 'Unit III',
+    unit_4: 'Unit IV', unit_5: 'Unit V',
+  };
+
   const handleSaveGrade = async (studentId: string, submissionId: string, taskSubject: string) => {
     if (!profile?.uid) return;
     setSavingGrade(true);
@@ -288,7 +294,7 @@ export default function TeacherDashboard() {
 
       if (subErr) throw subErr;
 
-      // Update student memory_profile (mastery)
+      // ── Update student memory_profile with per-TOPIC scores ──────────────
       try {
         const { data: userRow } = await supabase
           .from('users')
@@ -296,16 +302,34 @@ export default function TeacherDashboard() {
           .eq('id', studentId)
           .maybeSingle();
 
-        const mem = (userRow?.memory_profile as any) || { known: [], struggling: [] };
-        const knownSet = new Set<string>(mem.known || []);
-        const strugglingSet = new Set<string>(mem.struggling || []);
+        const mem = (userRow?.memory_profile as any) || {};
+        const knownSet   = new Set<string>(mem.known || []);
+        const struggling = new Set<string>(mem.struggling || []);
+        // Existing per-topic score map: { "Subject__unit_1": 85, ... }
+        const topicScores: Record<string, number> = mem.topicScores || {};
 
-        if (taskSubject && pct >= 70) {
-          knownSet.add(taskSubject);
-          strugglingSet.delete(taskSubject);
-        } else if (taskSubject && pct < 50) {
-          strugglingSet.add(taskSubject);
-          knownSet.delete(taskSubject);
+        // Get the units[] tagged on this specific assignment
+        const assignmentUnits: string[] = selectedTask?.units || [];
+
+        if (assignmentUnits.length > 0) {
+          // Store a score entry for each tagged unit
+          assignmentUnits.forEach((unitId: string) => {
+            const key = `${taskSubject}__${unitId}`;
+            topicScores[key] = pct;
+            if (pct >= 70) {
+              knownSet.add(key);
+              struggling.delete(key);
+            } else if (pct < 50) {
+              struggling.add(key);
+              knownSet.delete(key);
+            }
+          });
+        } else {
+          // No units tagged — fall back to subject-level entry
+          const key = `${taskSubject}__general`;
+          topicScores[key] = pct;
+          if (pct >= 70) { knownSet.add(key); struggling.delete(key); }
+          else if (pct < 50) { struggling.add(key); knownSet.delete(key); }
         }
 
         await supabase
@@ -313,10 +337,11 @@ export default function TeacherDashboard() {
           .update({
             memory_profile: {
               ...mem,
+              topicScores,
               known: Array.from(knownSet),
-              struggling: Array.from(strugglingSet),
+              struggling: Array.from(struggling),
               lastUpdated: new Date().toISOString(),
-            }
+            },
           })
           .eq('id', studentId);
       } catch (masteryErr) {
@@ -333,7 +358,10 @@ export default function TeacherDashboard() {
 
       setEditingSubId(null);
       setExpandedStudentId(null);
-      alert(`✅ Grade saved: ${grade} (${pct}%). Student mastery updated.`);
+
+      const unitNames = (selectedTask?.units || [])
+        .map((u: string) => UNIT_LABELS[u] || u).join(', ');
+      alert(`✅ Grade saved: ${grade} (${pct}%)\nTopics updated: ${unitNames || taskSubject}`);
     } catch (err: any) {
       alert('Failed to save grade: ' + err.message);
     } finally {

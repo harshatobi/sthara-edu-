@@ -5,27 +5,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Plus, X, Loader2, Trash2, Send,
-  BookOpen, Library, CheckCircle2
+  Library, CheckCircle2, Sparkles, AlertCircle,
 } from 'lucide-react';
+
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
+import { lookupCurriculum, type CurriculumChapter } from '@/lib/curriculumDb';
 
 const MONTHS = ['June','July','August','September','October','November','December','January','February','March','April','May'];
 
-// ── Publisher / Board options ────────────────────────────────────────────────
+// ── Publisher / Board options ─────────────────────────────────────────────────
 const PUBLISHERS = [
-  { value: 'NCERT',          label: 'NCERT',                     color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { value: 'CBSE Generic',   label: 'CBSE (Generic)',            color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  { value: 'ICSE',           label: 'ICSE / ISC',                color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  { value: 'State Board',    label: 'State Board',               color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { value: 'SSC',            label: 'SSC (Maharashtra)',         color: 'bg-orange-50 text-orange-700 border-orange-200' },
-  { value: 'IGCSE',          label: 'Cambridge IGCSE',           color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { value: 'IB',             label: 'IB (International)',        color: 'bg-rose-50 text-rose-700 border-rose-200' },
-  { value: 'S. Chand',       label: 'S. Chand',                  color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
-  { value: 'RD Sharma',      label: 'RD Sharma',                 color: 'bg-teal-50 text-teal-700 border-teal-200' },
-  { value: 'Lakhmir Singh',  label: 'Lakhmir Singh',             color: 'bg-sky-50 text-sky-700 border-sky-200' },
-  { value: 'Custom',         label: 'Custom / School-specific',  color: 'bg-gray-100 text-gray-700 border-gray-300' },
+  { value: 'NCERT',        label: 'NCERT',                    color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { value: 'CBSE Generic', label: 'CBSE (Generic)',           color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { value: 'ICSE',         label: 'ICSE / ISC',               color: 'bg-purple-50 text-purple-700 border-purple-200' },
+  { value: 'State Board',  label: 'State Board / OU',         color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { value: 'SSC',          label: 'SSC (Maharashtra)',        color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { value: 'IGCSE',        label: 'Cambridge IGCSE',          color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { value: 'IB',           label: 'IB (International)',       color: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { value: 'Custom',       label: 'Custom / School-specific', color: 'bg-gray-100 text-gray-700 border-gray-300' },
 ];
 
 function publisherStyle(val: string) {
@@ -35,26 +33,32 @@ function publisherStyle(val: string) {
 export default function SyllabusPlanner() {
   const { profile, loading } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
 
   const [syllabus, setSyllabus] = useState<{ [key: string]: any[] }>({});
   const [selectedMonth, setSelectedMonth] = useState('June');
 
-  // Add Topic Modal state
+  // ── Add Topic Modal ───────────────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newTopic, setNewTopic] = useState('');
-  const [newSubject, setNewSubject] = useState('');
+  const [newTopic, setNewTopic]         = useState('');
+  const [newSubject, setNewSubject]     = useState('');
   const [newObjectives, setNewObjectives] = useState('');
-  const [newClass, setNewClass] = useState('');
+  const [newClass, setNewClass]         = useState('');
   const [newPublisher, setNewPublisher] = useState('NCERT');
-  const [isAdding, setIsAdding] = useState(false);
-  const [addError, setAddError] = useState('');
-  const [addSuccess, setAddSuccess] = useState(false);
+  const [isAdding, setIsAdding]         = useState(false);
+  const [addError, setAddError]         = useState('');
+  const [addSuccess, setAddSuccess]     = useState(false);
 
-  // Filter state
+  // ── Auto-syllabus state ───────────────────────────────────────────────────
+  const [autoPreview, setAutoPreview]   = useState<CurriculumChapter[] | null>(null);
+  const [autoDesc, setAutoDesc]         = useState('');
+  const [isAutoLoading, setIsAutoLoading] = useState(false);
+  const [autoLoadDone, setAutoLoadDone] = useState(false);
+
+  // ── Filter state ─────────────────────────────────────────────────────────
   const [filterPublisher, setFilterPublisher] = useState<string>('All');
-  const [filterSubject, setFilterSubject] = useState<string>('All');
+  const [filterSubject,   setFilterSubject]   = useState<string>('All');
 
+  // Derive teacher subjects & classes from profile.assignments
   const teacherSubjects = [...new Set(
     ((profile?.assignments || []) as any[]).map((a: any) => a.subject).filter(Boolean)
   )] as string[];
@@ -63,12 +67,12 @@ export default function SyllabusPlanner() {
     ((profile?.assignments || []) as any[]).map((a: any) => a.class).filter(Boolean)
   )] as string[];
 
+  // ── Load syllabus from DB ─────────────────────────────────────────────────
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'teacher')) {
       router.push('/login');
       return;
     }
-
     if (profile?.schoolId && profile?.uid) {
       const fetchSyllabus = async () => {
         try {
@@ -79,18 +83,14 @@ export default function SyllabusPlanner() {
           );
           const data = await res.json();
           const loaded: { [key: string]: any[] } = Object.fromEntries(MONTHS.map(m => [m, []]));
-          
           (data.modules || []).forEach((mod: any) => {
-            if (loaded[mod.month] !== undefined) {
-              loaded[mod.month].push(mod);
-            }
+            if (loaded[mod.month] !== undefined) loaded[mod.month].push(mod);
           });
           setSyllabus(loaded);
         } catch (err) {
           console.error('[syllabus load]', err);
         }
       };
-
       fetchSyllabus();
     }
   }, [profile, loading, router]);
@@ -98,29 +98,94 @@ export default function SyllabusPlanner() {
   // Pre-fill subject/class from teacher assignments
   useEffect(() => {
     if (teacherSubjects.length > 0 && !newSubject) setNewSubject(teacherSubjects[0]);
-    if (teacherClasses.length > 0 && !newClass) setNewClass(teacherClasses[0]);
+    if (teacherClasses.length  > 0 && !newClass)   setNewClass(teacherClasses[0]);
   }, [teacherSubjects, teacherClasses]);
 
+  // ── Auto-preview: trigger when publisher + subject + class all set ─────────
+  useEffect(() => {
+    setAutoPreview(null);
+    setAutoDesc('');
+    setAutoLoadDone(false);
+    if (!newPublisher || !newSubject || !newClass) return;
+
+    const entry = lookupCurriculum(newPublisher, newSubject, newClass);
+    if (entry) {
+      setAutoPreview(entry.chapters);
+      setAutoDesc(entry.description);
+    }
+  }, [newPublisher, newSubject, newClass]);
+
+  // ── Auto-load: bulk insert all chapters from curriculum DB ────────────────
+  const handleAutoLoad = async () => {
+    if (!autoPreview || !profile?.schoolId || !profile?.uid) return;
+    setIsAutoLoading(true);
+    try {
+      const authToken = await getAuthToken();
+      // Insert each chapter in sequence (avoid duplicate detection on backend is best-effort)
+      const newMods: any[] = [];
+      for (const ch of autoPreview) {
+        const res = await fetch('/api/teacher/syllabus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({
+            schoolId:   profile.schoolId,
+            teacherId:  profile.uid,
+            month:      ch.month,
+            topic:      ch.topic,
+            subject:    newSubject,
+            objectives: ch.objectives,
+            grade:      newClass,
+            publisher:  newPublisher,
+            unitId:     ch.unitId,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.id) {
+          newMods.push({
+            id:         data.id,
+            month:      ch.month,
+            topic:      ch.topic,
+            subject:    newSubject,
+            objectives: ch.objectives,
+            grade:      newClass,
+            publisher:  newPublisher,
+            unitId:     ch.unitId,
+          });
+        }
+      }
+
+      // Update local state
+      setSyllabus(prev => {
+        const next = { ...prev };
+        newMods.forEach(mod => {
+          if (next[mod.month] !== undefined) next[mod.month] = [...next[mod.month], mod];
+        });
+        return next;
+      });
+
+      setAutoLoadDone(true);
+    } catch (err: any) {
+      alert('Auto-load failed: ' + err.message);
+    } finally {
+      setIsAutoLoading(false);
+    }
+  };
+
+  // ── Delete a module ───────────────────────────────────────────────────────
   const handleDeleteModule = async (modId: string) => {
     if (!confirm('Are you sure you want to delete this syllabus topic?')) return;
     try {
       const authToken = await getAuthToken();
       const res = await fetch('/api/teacher/syllabus', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ schoolId: profile!.schoolId, id: modId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
-
       setSyllabus(prev => {
         const next = { ...prev };
-        Object.keys(next).forEach(m => {
-          next[m] = next[m].filter(mod => mod.id !== modId);
-        });
+        Object.keys(next).forEach(m => { next[m] = next[m].filter(mod => mod.id !== modId); });
         return next;
       });
     } catch (e: any) {
@@ -128,33 +193,29 @@ export default function SyllabusPlanner() {
     }
   };
 
+  // ── Add a single topic ────────────────────────────────────────────────────
   const handleAddTopic = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTopic.trim() || !profile?.schoolId) return;
     setIsAdding(true);
     setAddError('');
     setAddSuccess(false);
-
     try {
       const authToken = await getAuthToken();
       const res = await fetch('/api/teacher/syllabus', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({
-          schoolId: profile.schoolId,
-          teacherId: profile.uid,
-          month: selectedMonth,
-          topic: newTopic.trim(),
-          subject: newSubject.trim(),
+          schoolId:   profile.schoolId,
+          teacherId:  profile.uid,
+          month:      selectedMonth,
+          topic:      newTopic.trim(),
+          subject:    newSubject.trim(),
           objectives: newObjectives.trim(),
-          grade: newClass.trim(),
-          publisher: newPublisher,
+          grade:      newClass.trim(),
+          publisher:  newPublisher,
         }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to add topic');
 
@@ -167,19 +228,11 @@ export default function SyllabusPlanner() {
         grade: newClass.trim(),
         publisher: newPublisher,
       };
-
-      setSyllabus(prev => ({
-        ...prev,
-        [selectedMonth]: [...(prev[selectedMonth] || []), newMod],
-      }));
-
+      setSyllabus(prev => ({ ...prev, [selectedMonth]: [...(prev[selectedMonth] || []), newMod] }));
       setAddSuccess(true);
       setNewTopic('');
       setNewObjectives('');
-      setTimeout(() => {
-        setIsAddModalOpen(false);
-        setAddSuccess(false);
-      }, 1200);
+      setTimeout(() => { setIsAddModalOpen(false); setAddSuccess(false); }, 1200);
     } catch (err: any) {
       setAddError(err.message);
     } finally {
@@ -187,18 +240,19 @@ export default function SyllabusPlanner() {
     }
   };
 
-  // ── Filtering ──────────────────────────────────────────────────────────────
-  const monthTopics = syllabus[selectedMonth] || [];
-  const visibleTopics = monthTopics.filter(mod => {
+  // ── Computed values ───────────────────────────────────────────────────────
+  const monthTopics    = syllabus[selectedMonth] || [];
+  const visibleTopics  = monthTopics.filter(mod => {
     const pubMatch = filterPublisher === 'All' || (mod.publisher || 'NCERT') === filterPublisher;
-    const subMatch = filterSubject === 'All' || mod.subject === filterSubject;
+    const subMatch = filterSubject   === 'All' || mod.subject === filterSubject;
     return pubMatch && subMatch;
   });
-
   const allSubjectsInMonth = [...new Set(monthTopics.map((m: any) => m.subject).filter(Boolean))];
   const totalTopics = Object.values(syllabus).reduce((acc, arr) => acc + arr.length, 0);
 
-  if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Syllabus Planner...</div>;
+  if (loading || !profile) return (
+    <div className="p-10 text-[#002147] text-center font-medium">Loading Syllabus Planner…</div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
@@ -216,13 +270,11 @@ export default function SyllabusPlanner() {
             </p>
           </div>
         </div>
-
         <button
           onClick={() => { setIsAddModalOpen(true); setAddError(''); setAddSuccess(false); }}
           className="flex items-center gap-2 px-5 py-3 bg-[#002147] hover:bg-[#003b80] text-white font-bold rounded-2xl shadow-md text-sm transition-all active:scale-95"
         >
-          <Plus className="w-4 h-4" />
-          Add Topic
+          <Plus className="w-4 h-4" /> Add Topic
         </button>
       </div>
 
@@ -246,8 +298,6 @@ export default function SyllabusPlanner() {
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-center">
         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Filter:</span>
-
-        {/* Publisher filter */}
         <select
           value={filterPublisher}
           onChange={e => setFilterPublisher(e.target.value)}
@@ -256,8 +306,6 @@ export default function SyllabusPlanner() {
           <option value="All">All Publishers</option>
           {PUBLISHERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
         </select>
-
-        {/* Subject filter */}
         <select
           value={filterSubject}
           onChange={e => setFilterSubject(e.target.value)}
@@ -266,12 +314,8 @@ export default function SyllabusPlanner() {
           <option value="All">All Subjects</option>
           {allSubjectsInMonth.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-
         {(filterPublisher !== 'All' || filterSubject !== 'All') && (
-          <button
-            onClick={() => { setFilterPublisher('All'); setFilterSubject('All'); }}
-            className="text-xs text-rose-500 font-bold hover:underline"
-          >
+          <button onClick={() => { setFilterPublisher('All'); setFilterSubject('All'); }} className="text-xs text-rose-500 font-bold hover:underline">
             Clear
           </button>
         )}
@@ -299,7 +343,6 @@ export default function SyllabusPlanner() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {visibleTopics.map(mod => (
             <div key={mod.id} className="p-5 bg-gray-50 border border-gray-200 rounded-2xl space-y-2.5 relative group hover:border-indigo-200 transition-colors">
-              {/* Subject + Publisher badges */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase border border-blue-100">
                   {mod.subject || 'Subject'}
@@ -308,6 +351,11 @@ export default function SyllabusPlanner() {
                   <Library className="w-3 h-3 inline-block mr-1 -mt-px" />
                   {mod.publisher || 'NCERT'}
                 </span>
+                {mod.unitId && (
+                  <span className="text-xs font-bold px-2 py-1 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
+                    {mod.unitId.replace('_', ' ').replace('unit', 'Unit')}
+                  </span>
+                )}
               </div>
               <h3 className="text-base font-bold text-[#002147]">{mod.topic}</h3>
               {mod.objectives && <p className="text-xs text-gray-500 leading-relaxed">{mod.objectives}</p>}
@@ -343,49 +391,31 @@ export default function SyllabusPlanner() {
         </div>
       </div>
 
-      {/* Add Topic Modal */}
+      {/* ── Add Topic / Auto-Load Modal ────────────────────────────────────── */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-[#002147]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-[#f8fafc] rounded-t-2xl">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            
+            {/* Modal header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-[#f8fafc] rounded-t-2xl shrink-0">
               <div>
-                <h3 className="text-xl font-bold text-[#002147]">Add Syllabus Topic</h3>
-                <p className="text-sm text-gray-500 mt-1">Adding to <strong>{selectedMonth}</strong></p>
+                <h3 className="text-xl font-bold text-[#002147]">Add Syllabus Topics</h3>
+                <p className="text-sm text-gray-500 mt-1">Auto-load from curriculum database or add a single topic manually</p>
               </div>
               <button onClick={() => setIsAddModalOpen(false)} className="p-2 rounded-full border border-gray-200 hover:bg-gray-100 text-gray-500">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddTopic} className="p-6 space-y-4">
-              {addError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">{addError}</div>
-              )}
-              {addSuccess && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" /> Topic added successfully!
-                </div>
-              )}
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
 
-              {/* Topic Name */}
+              {/* ── STEP 1: Select Publisher / Board ── */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Topic / Chapter Name *</label>
-                <input
-                  required
-                  value={newTopic}
-                  onChange={e => setNewTopic(e.target.value)}
-                  placeholder="e.g. Quadratic Equations, Photosynthesis..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Publisher / Board */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   <Library className="w-3.5 h-3.5 inline-block mr-1 -mt-px" />
-                  Publisher / Board / Curriculum
+                  Step 1 — Select Board / Publisher
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {PUBLISHERS.map(pub => (
                     <button
                       key={pub.value}
@@ -403,10 +433,10 @@ export default function SyllabusPlanner() {
                 </div>
               </div>
 
-              {/* Subject + Class */}
+              {/* ── STEP 2: Subject + Class ── */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Subject</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Step 2 — Subject</label>
                   <select
                     value={newSubject}
                     onChange={e => setNewSubject(e.target.value)}
@@ -417,7 +447,7 @@ export default function SyllabusPlanner() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Class</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Class / Year</label>
                   <select
                     value={newClass}
                     onChange={e => setNewClass(e.target.value)}
@@ -429,27 +459,124 @@ export default function SyllabusPlanner() {
                 </div>
               </div>
 
-              {/* Learning Objectives */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Learning Objectives <span className="text-gray-400 font-normal">(optional)</span></label>
-                <textarea
-                  rows={3}
-                  value={newObjectives}
-                  onChange={e => setNewObjectives(e.target.value)}
-                  placeholder="e.g. Students will understand how to solve quadratic equations using factorization..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                />
+              {/* ── AUTO-SYLLABUS PANEL ── */}
+              {autoPreview && autoPreview.length > 0 && (
+                <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 overflow-hidden">
+                  {/* Banner */}
+                  <div className="flex items-center justify-between p-4 bg-indigo-100 border-b border-indigo-200">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-indigo-600" />
+                      <div>
+                        <p className="font-black text-indigo-800 text-sm">✅ Curriculum Found!</p>
+                        <p className="text-xs text-indigo-600 mt-0.5">{autoDesc}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold bg-indigo-200 text-indigo-800 px-2.5 py-1 rounded-full">
+                      {autoPreview.length} chapters
+                    </span>
+                  </div>
+
+                  {/* Preview of chapters */}
+                  <div className="p-4 space-y-2 max-h-52 overflow-y-auto">
+                    {autoPreview.map((ch, i) => (
+                      <div key={i} className="flex items-start gap-3 p-2.5 bg-white rounded-xl border border-indigo-100">
+                        <span className="shrink-0 mt-0.5 text-[10px] font-black bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md">
+                          {ch.unitId.replace('unit_', 'U')} · {ch.month.slice(0,3)}
+                        </span>
+                        <div>
+                          <p className="text-xs font-bold text-[#002147]">{ch.topic}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed line-clamp-1">{ch.objectives}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Load button */}
+                  <div className="p-4 border-t border-indigo-200">
+                    {autoLoadDone ? (
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                        <CheckCircle2 className="w-5 h-5" />
+                        All {autoPreview.length} chapters loaded into your syllabus!
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleAutoLoad}
+                        disabled={isAutoLoading}
+                        className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-sm transition-all shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
+                      >
+                        {isAutoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        {isAutoLoading ? 'Loading syllabus…' : `Auto-Load All ${autoPreview.length} Chapters into My Syllabus`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* No match notice */}
+              {newPublisher && newSubject && newClass && !autoPreview && (
+                <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-amber-800">No built-in curriculum found</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      No preset chapters for <strong>{newSubject}</strong> ({newPublisher}, Class {newClass}). Use the manual form below to add individual topics.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── DIVIDER ── */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Or add a single topic manually</span>
+                <div className="flex-1 h-px bg-gray-200" />
               </div>
 
-              <button
-                type="submit"
-                disabled={isAdding || !newTopic.trim()}
-                className="w-full py-3.5 bg-[#002147] hover:bg-[#003b80] text-white font-bold rounded-xl text-sm transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {isAdding ? 'Adding Topic...' : 'Add to Syllabus'}
-              </button>
-            </form>
+              {/* ── Manual form ── */}
+              <form onSubmit={handleAddTopic} className="space-y-4">
+                {addError && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">{addError}</div>
+                )}
+                {addSuccess && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Topic added successfully!
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                    Topic / Chapter Name * <span className="text-gray-400 font-normal text-xs">(adding to <strong>{selectedMonth}</strong>)</span>
+                  </label>
+                  <input
+                    value={newTopic}
+                    onChange={e => setNewTopic(e.target.value)}
+                    placeholder="e.g. Issue of Shares, Quadratic Equations…"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Learning Objectives <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <textarea
+                    rows={2}
+                    value={newObjectives}
+                    onChange={e => setNewObjectives(e.target.value)}
+                    placeholder="Students will be able to…"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAdding || !newTopic.trim()}
+                  className="w-full py-3.5 bg-[#002147] hover:bg-[#003b80] text-white font-bold rounded-xl text-sm transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {isAdding ? 'Adding…' : 'Add to Syllabus'}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

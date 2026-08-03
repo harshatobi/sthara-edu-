@@ -136,6 +136,16 @@ export default function StudentDashboard() {
   const handleSubmitTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.schoolId || !selectedTask) return;
+
+    // Block open-ended homework if no photo uploaded
+    const hasOpenEnded = selectedTask.questions && selectedTask.questions.length > 0 &&
+      !selectedTask.questions.every((q: any) => Array.isArray(q.options) && q.options.length > 0);
+    const isPlainHomework = !selectedTask.questions || selectedTask.questions.length === 0;
+    if ((hasOpenEnded || isPlainHomework) && attachmentFiles.length === 0) {
+      alert('📸 Please upload a photo of your handwritten work before submitting.');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitStatus('');
     
@@ -266,6 +276,51 @@ export default function StudentDashboard() {
             submissionData.maxScore = aiData.maxTotalScore ?? assignmentTotalMarks;
             submissionData.total = aiData.maxTotalScore ?? assignmentTotalMarks;
             submissionData.grade = aiData.grade || `${aiData.totalScore}/${aiData.maxTotalScore}`;
+
+            // ─── Update True Mastery (memory_profile) ───────────────────────
+            try {
+              setSubmitStatus('📊 Updating your mastery profile...');
+              const pct = aiData.percentageScore ?? Math.round((aiData.totalScore / (aiData.maxTotalScore || 1)) * 100);
+              const subject = selectedTask.subject || '';
+
+              // Fetch current memory_profile
+              const { data: userRow } = await supabase
+                .from('users')
+                .select('memory_profile')
+                .eq('id', profile.uid)
+                .maybeSingle();
+
+              const mem = (userRow?.memory_profile as any) || { known: [], struggling: [] };
+              const knownSet = new Set<string>(mem.known || []);
+              const strugglingSet = new Set<string>(mem.struggling || []);
+
+              // If score ≥ 70% → subject is "known", remove from struggling
+              if (subject && pct >= 70) {
+                knownSet.add(subject);
+                strugglingSet.delete(subject);
+              }
+
+              // Add AI-detected weakness tags → struggling (avoid duplicating known)
+              if (Array.isArray(aiData.weaknessTags)) {
+                aiData.weaknessTags.forEach((tag: string) => {
+                  if (tag && !knownSet.has(tag)) strugglingSet.add(tag);
+                });
+              }
+
+              await supabase
+                .from('users')
+                .update({
+                  memory_profile: {
+                    ...mem,
+                    known: Array.from(knownSet),
+                    struggling: Array.from(strugglingSet),
+                    lastUpdated: new Date().toISOString(),
+                  }
+                })
+                .eq('id', profile.uid);
+            } catch (masteryErr) {
+              console.warn('Mastery update failed (non-fatal):', masteryErr);
+            }
           } else {
             throw new Error(`AI grading returned error code ${response.status}. Please try again.`);
           }
@@ -813,30 +868,29 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmitTask} className="space-y-6">
-                  {selectedTask.questions && selectedTask.questions.length > 0 ? (
-                    <div className="space-y-6">
+                  {/* Questions — displayed read-only for open-ended, interactive for MCQ */}
+                  {selectedTask.questions && selectedTask.questions.length > 0 && (
+                    <div className="space-y-4">
                       {selectedTask.questions.map((q: any, i: number) => {
                         const qKey = q.id || String(i);
-                        // Handle ALL AI field name variants
                         const questionText = q.questionText || q.question || q.text || q.stem || q.title || `Question ${i + 1}`;
                         const hasOptions = Array.isArray(q.options) && q.options.length > 0;
                         return (
-                          <div key={qKey} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                            <div className="flex items-start gap-3 mb-4">
+                          <div key={qKey} className="bg-[#f8fafc] border border-gray-200 rounded-2xl p-5">
+                            <div className="flex items-start gap-3 mb-3">
                               <div className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{i+1}</div>
                               <div className="flex-1">
                                 <p className="font-bold text-[#002147] text-base leading-relaxed">{questionText}</p>
-                                {q.type && q.type !== 'mcq' && (
-                                  <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 capitalize">
-                                    {q.type === 'short' ? 'Short Answer' : q.type === 'long' ? 'Long Answer' : q.type}
-                                    {q.marks ? ` • ${q.marks} mark${q.marks !== 1 ? 's' : ''}` : ''}
+                                {q.marks && (
+                                  <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                    {q.marks} mark{q.marks !== 1 ? 's' : ''}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            {hasOptions ? (
-                              // MCQ — render clickable option buttons
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 ml-11">
+                            {hasOptions && (
+                              // MCQ — render clickable A/B/C/D buttons
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-11">
                                 {q.options.map((opt: any, optIdx: number) => {
                                   const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
                                   const optKey = String(optIdx);
@@ -849,7 +903,7 @@ export default function StudentDashboard() {
                                       className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${
                                         isSelected
                                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
-                                          : 'bg-gray-50 border-gray-200 text-[#002147] hover:border-indigo-300 hover:bg-indigo-50'
+                                          : 'bg-white border-gray-200 text-[#002147] hover:border-indigo-300 hover:bg-indigo-50'
                                       }`}
                                     >
                                       <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 ${
@@ -860,74 +914,92 @@ export default function StudentDashboard() {
                                   );
                                 })}
                               </div>
-                            ) : (
-                              // Open-ended — render a text area
-                              <div className="ml-11">
-                                <textarea
-                                  rows={3}
-                                  value={selectedAnswers[qKey] || ''}
-                                  onChange={e => setSelectedAnswers(prev => ({ ...prev, [qKey]: e.target.value }))}
-                                  placeholder="Write your answer here..."
-                                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
-                                />
-                              </div>
                             )}
+                            {/* Open-ended: no text area — student writes on paper and uploads photo */}
                           </div>
                         );
                       })}
                     </div>
-                  ) : (
-                    <div>
-                      <label className="block text-sm font-medium text-[#002147]/70 mb-1">Your Submission (Link or Text)</label>
-                      <textarea 
-                        rows={4}
-                        value={submissionText}
-                        onChange={e => setSubmissionText(e.target.value)}
-                        placeholder="Type your answer here, or attach images below..."
-                        className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-4 py-3 text-[#002147] focus:outline-none focus:ring-2 focus:ring-[#002147]/20" 
-                      />
-                      
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-sm font-medium text-[#002147]/70">Attach Homework Pages (Images)</label>
-                          <span className="text-xs text-[#002147]/40">{attachmentFiles.length}/6 pages</span>
-                        </div>
+                  )}
 
-                        <div className="flex flex-wrap gap-3 mb-2">
-                          {attachmentFiles.map((file, idx) => (
-                            <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#002147]/10 bg-white shadow-sm group">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`Page ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeAttachmentFile(idx)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black"
-                              >
-                                ×
-                              </button>
+                  {/* Photo Upload Zone — for open-ended homework and plain homework */}
+                  {(() => {
+                    const hasOpenEnded = selectedTask.questions && selectedTask.questions.length > 0 &&
+                      !selectedTask.questions.every((q: any) => Array.isArray(q.options) && q.options.length > 0);
+                    const isPlainHomework = !selectedTask.questions || selectedTask.questions.length === 0;
+                    if (!hasOpenEnded && !isPlainHomework) return null; // pure MCQ — no upload zone
+                    return (
+                      <div className="mt-2">
+                        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-dashed border-indigo-200 rounded-2xl p-6">
+                          <div className="text-center mb-4">
+                            <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                              <svg className="w-7 h-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                              </svg>
                             </div>
-                          ))}
+                            <h4 className="font-black text-[#002147] text-base">📸 Upload Your Handwritten Work</h4>
+                            <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">Write your answers on paper, then take a clear photo and upload it here. Our AI will read and grade it instantly.</p>
+                          </div>
 
+                          {/* Photo Previews */}
+                          {attachmentFiles.length > 0 && (
+                            <div className="flex flex-wrap gap-3 mb-4 justify-center">
+                              {attachmentFiles.map((file, idx) => (
+                                <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-indigo-300 bg-white shadow-sm group">
+                                  <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={`Page ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAttachmentFile(idx)}
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-black shadow"
+                                  >
+                                    ×
+                                  </button>
+                                  <span className="absolute bottom-1 left-1 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded-full">P{idx+1}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Upload / Camera Button */}
                           {attachmentFiles.length < 6 && (
-                            <label className="w-20 h-20 rounded-xl border-2 border-dashed border-[#002147]/20 flex flex-col items-center justify-center cursor-pointer hover:border-[#dc143c]/50 hover:bg-red-50/30 transition-all bg-white">
-                              <span className="text-2xl text-[#002147]/30 leading-none">+</span>
-                              <span className="text-[9px] text-[#002147]/40 mt-1 font-medium">Add Page</span>
+                            <label className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm cursor-pointer transition-all border-2 ${
+                              attachmentFiles.length === 0
+                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
+                                : 'bg-white hover:bg-indigo-50 text-indigo-600 border-indigo-300'
+                            }`}>
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                              </svg>
+                              {attachmentFiles.length === 0 ? '📷 Upload Photo of Answer Sheet' : `Add Another Page (${attachmentFiles.length}/6)`}
                               <input
                                 type="file"
                                 accept="image/*"
+                                capture="environment"
                                 multiple
                                 className="sr-only"
                                 onChange={handleFileChange}
                               />
                             </label>
                           )}
+
+                          {attachmentFiles.length === 0 && (
+                            <p className="text-center text-xs text-indigo-400 mt-2 font-medium">📱 Opens camera directly on your phone</p>
+                          )}
+                          {attachmentFiles.length > 0 && (
+                            <p className="text-center text-xs text-emerald-600 mt-2 font-semibold">✅ {attachmentFiles.length} page{attachmentFiles.length !== 1 ? 's' : ''} ready — AI will grade your handwriting</p>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
+
+
                   
                   <button 
                     type="submit" 

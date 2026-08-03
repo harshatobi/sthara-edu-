@@ -27,12 +27,13 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .maybeSingle();
 
-    // Superadmins can see any school; regular admins must belong to the school
-    if (!reqUser || (reqUser.role !== 'superadmin' && reqUser.school_id !== schoolId)) {
+    // Must be admin or superadmin
+    if (!reqUser || !['admin', 'superadmin'].includes(reqUser.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (!['admin', 'superadmin'].includes(reqUser.role)) {
+    // Superadmins can see any school; regular admins must belong to the school
+    if (reqUser.role !== 'superadmin' && reqUser.school_id !== schoolId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

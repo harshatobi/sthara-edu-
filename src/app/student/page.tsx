@@ -155,7 +155,13 @@ export default function StudentDashboard() {
         || (selectedTask.tasks?.reduce((sum: number, t: any) => sum + (t.marks || 0), 0))
         || (selectedTask.questions?.length ? selectedTask.questions.length : 10);
 
-      if (selectedTask.questions && selectedTask.questions.length > 0) {
+      // Determine if this is a true MCQ quiz (has option arrays) or open-ended homework
+      const isMcqQuiz = selectedTask.questions &&
+        selectedTask.questions.length > 0 &&
+        Array.isArray(selectedTask.questions[0]?.options) &&
+        selectedTask.questions[0].options.length > 0;
+
+      if (isMcqQuiz) {
         let score = 0;
         selectedTask.questions.forEach((q: any, qIdx: number) => {
           const selectedVal = selectedAnswers[q.id || String(qIdx)];
@@ -174,10 +180,18 @@ export default function StudentDashboard() {
           total: selectedTask.questions.length,
         };
       } else {
+        // Open-ended questions or plain homework — collect text answers
+        const answersText = selectedTask.questions && selectedTask.questions.length > 0
+          ? selectedTask.questions.map((q: any, i: number) => {
+              const qKey = q.id || String(i);
+              const qText = q.questionText || q.question || q.text || q.stem || `Q${i+1}`;
+              return `${qText}\nAnswer: ${selectedAnswers[qKey] || '(no answer)'}\n`;
+            }).join('\n')
+          : submissionText;
         submissionData = {
           ...submissionData,
           type: 'homework',
-          text: submissionText,
+          text: answersText || submissionText,
         };
       }
 
@@ -209,8 +223,8 @@ export default function StudentDashboard() {
       }
 
       // AI Grade for homework
-      const isHomework = !(selectedTask.questions && selectedTask.questions.length > 0);
-      if (isHomework && (submissionData.imageUrl || submissionText.trim())) {
+      const isHomework = !isMcqQuiz;
+      if (isHomework && (submissionData.imageUrl || submissionText.trim() || submissionData.text?.trim())) {
         setSubmitStatus('🤖 AI Examiner is grading your work...');
         try {
           const authToken = await getAuthToken();
@@ -230,7 +244,8 @@ export default function StudentDashboard() {
             gradePayload.imageBase64 = compressed.base64;
             gradePayload.mimeType = compressed.mimeType;
           } else {
-            gradePayload.submissionText = submissionText.trim();
+            // Pass the formatted Q&A text (open-ended) or plain submission text
+            gradePayload.submissionText = (submissionData.text || submissionText).trim();
           }
 
           const response = await fetch('/api/grade-image', {
@@ -802,38 +817,61 @@ export default function StudentDashboard() {
                     <div className="space-y-6">
                       {selectedTask.questions.map((q: any, i: number) => {
                         const qKey = q.id || String(i);
-                        // Handle all AI field name variants: question, text, stem, title
-                        const questionText = q.question || q.text || q.stem || q.title || `Question ${i + 1}`;
+                        // Handle ALL AI field name variants
+                        const questionText = q.questionText || q.question || q.text || q.stem || q.title || `Question ${i + 1}`;
+                        const hasOptions = Array.isArray(q.options) && q.options.length > 0;
                         return (
                           <div key={qKey} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                             <div className="flex items-start gap-3 mb-4">
                               <div className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{i+1}</div>
-                              <p className="font-bold text-[#002147] text-base leading-relaxed">{questionText}</p>
+                              <div className="flex-1">
+                                <p className="font-bold text-[#002147] text-base leading-relaxed">{questionText}</p>
+                                {q.type && q.type !== 'mcq' && (
+                                  <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 capitalize">
+                                    {q.type === 'short' ? 'Short Answer' : q.type === 'long' ? 'Long Answer' : q.type}
+                                    {q.marks ? ` • ${q.marks} mark${q.marks !== 1 ? 's' : ''}` : ''}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 ml-11">
-                              {q.options.map((opt: any, optIdx: number) => {
-                                const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
-                                const optKey = String(optIdx);
-                                const isSelected = selectedAnswers[qKey] === optKey;
-                                return (
-                                  <button
-                                    key={optKey}
-                                    type="button"
-                                    onClick={() => setSelectedAnswers(prev => ({ ...prev, [qKey]: optKey }))}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${
-                                      isSelected
-                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
-                                        : 'bg-gray-50 border-gray-200 text-[#002147] hover:border-indigo-300 hover:bg-indigo-50'
-                                    }`}
-                                  >
-                                    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 ${
-                                      isSelected ? 'border-white bg-white text-indigo-600' : 'border-gray-300 text-gray-500'
-                                    }`}>{String.fromCharCode(65+optIdx)}</span>
-                                    {optText}
-                                  </button>
-                                );
-                              })}
-                            </div>
+                            {hasOptions ? (
+                              // MCQ — render clickable option buttons
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 ml-11">
+                                {q.options.map((opt: any, optIdx: number) => {
+                                  const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
+                                  const optKey = String(optIdx);
+                                  const isSelected = selectedAnswers[qKey] === optKey;
+                                  return (
+                                    <button
+                                      key={optKey}
+                                      type="button"
+                                      onClick={() => setSelectedAnswers(prev => ({ ...prev, [qKey]: optKey }))}
+                                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${
+                                        isSelected
+                                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                                          : 'bg-gray-50 border-gray-200 text-[#002147] hover:border-indigo-300 hover:bg-indigo-50'
+                                      }`}
+                                    >
+                                      <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 ${
+                                        isSelected ? 'border-white bg-white text-indigo-600' : 'border-gray-300 text-gray-500'
+                                      }`}>{String.fromCharCode(65+optIdx)}</span>
+                                      {optText}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              // Open-ended — render a text area
+                              <div className="ml-11">
+                                <textarea
+                                  rows={3}
+                                  value={selectedAnswers[qKey] || ''}
+                                  onChange={e => setSelectedAnswers(prev => ({ ...prev, [qKey]: e.target.value }))}
+                                  placeholder="Write your answer here..."
+                                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+                                />
+                              </div>
+                            )}
                           </div>
                         );
                       })}

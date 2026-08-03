@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, TrendingUp, Users, BookOpen, ChevronRight, X, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 import Link from 'next/link';
+
 
 function getScoreColor(score: number | null) {
   if (score === null) return { bg: 'bg-gray-50', text: 'text-gray-400', bar: 'bg-gray-200', border: 'border-gray-100', label: 'No Data' };
@@ -32,7 +33,6 @@ interface StudentDetail {
 export default function AdminHeatmap() {
   const { profile, loading } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
 
   const [classSummaries, setClassSummaries] = useState<ClassSummary[]>([]);
   const [allSubjects, setAllSubjects] = useState<string[]>([]);
@@ -55,41 +55,26 @@ export default function AdminHeatmap() {
     const fetchHeatmap = async () => {
       setIsLoading(true);
       try {
-        const schoolId = profile.schoolId;
+        const token = await getAuthToken();
+        const res = await fetch('/api/admin/heatmap-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ schoolId: profile.schoolId }),
+        });
+        if (!res.ok) throw new Error('Failed to fetch heatmap data');
+        const { students: allStudents, assignments: assignmentsData, submissions: submissionsData } = await res.json();
 
-        // 1. Get all students
-        const { data: studentsData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('school_id', schoolId)
-          .eq('role', 'student');
-
-        const allStudents = studentsData || [];
-
-        // 2. Group students by class
+        // Group students by class
         const classMap: Record<string, any[]> = {};
-        allStudents.forEach(s => {
+        (allStudents || []).forEach((s: any) => {
           const cls = s.student_class || s.branch || 'Unassigned';
           if (!classMap[cls]) classMap[cls] = [];
           classMap[cls].push(s);
         });
 
-        // 3. Get all assignments
-        const { data: assignmentsData } = await supabase
-          .from('assignments')
-          .select('*')
-          .eq('school_id', schoolId);
-
         const assignments = assignmentsData || [];
-        const assignMap = new Map(assignments.map(a => [a.id, a]));
-
-        // 4. Get all submissions (both homework and quizzes)
-        const { data: submissionsData } = await supabase
-          .from('submissions')
-          .select('*')
-          .eq('school_id', schoolId);
-
         const submissions = submissionsData || [];
+        const assignMap = new Map(assignments.map((a: any) => [a.id, a]));
 
         const subjectSet = new Set<string>();
         const allSubs: Record<string, Record<string, { score: number; max: number }[]>> = {};

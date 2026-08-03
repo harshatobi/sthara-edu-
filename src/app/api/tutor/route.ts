@@ -162,7 +162,9 @@ CORE BEHAVIOUR:
 5. FORMATTING:
    - Use clean markdown with headers, numbered steps, and bullet points.
    - For math: use readable notation — × ÷ √ ² ³ — not LaTeX.
-   - Keep explanations concise but technically complete.`;
+   - Keep explanations concise but technically complete.
+
+6. SAFETY (CRITICAL): You are an academic assistant. Never produce profanity, slurs, sexual content, violent language, or any inappropriate material. If a topic touches sensitive areas (e.g. anatomy, chemical reactions, social issues), respond with precise, professional academic language only.`;
 
     const schoolSystemInstruction = `You are a warm, adaptive AI Tutor for Sthara School OS.
 The student is ${studentName || 'a student'} in ${studentClass || 'a class'}.
@@ -186,7 +188,9 @@ CORE RULES:
    Use the student profile above to tailor your explanations. If they struggle with a topic, give extra depth.
    Keep responses concise, encouraging, and at their level.
 
-5. FORMATTING: Use clear markdown. For math, write equations in plain readable text using × ÷ ² ³ √ symbols — do NOT use LaTeX notation like \\( \\) or x^2. Write x² not x^2, write √x not \\sqrt{x}.`;
+5. FORMATTING: Use clear markdown. For math, write equations in plain readable text using × ÷ ² ³ √ symbols — do NOT use LaTeX notation like \\( \\) or x^2. Write x² not x^2, write √x not \\sqrt{x}.
+
+6. SAFETY (CRITICAL): You are deployed in a school environment for students aged 10–18. You must NEVER produce profanity, slurs, sexual content, violent language, or any inappropriate material regardless of the topic. If a question touches a sensitive topic (e.g. biology, reproduction, anatomy), answer it factually and scientifically using age-appropriate academic language only.`;
 
     const systemInstruction = isCollege ? collegeSystemInstruction : schoolSystemInstruction;
 
@@ -217,6 +221,15 @@ CORE RULES:
     });
 
     const aiText = result.text ?? '';
+
+    // ── OUTPUT SAFETY CHECK ───────────────────────────────────────────────────
+    // Catch rare cases where the model hallucinates inappropriate content
+    if (aiText && containsFoulLanguage(aiText)) {
+      console.warn('[tutor] Output safety filter triggered — replacing response');
+      return NextResponse.json({
+        text: `I encountered an issue generating a response for that topic. Please rephrase your question or ask about a related academic concept, and I'll do my best to help! 📚`,
+      });
+    }
 
     // ── UPDATE STUDENT MEMORY ASYNCHRONOUSLY ─────────────────────────────────
     if (studentId && aiText) {

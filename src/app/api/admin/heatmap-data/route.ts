@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .maybeSingle();
 
-    if (!reqUser || reqUser.school_id !== schoolId && reqUser.role !== 'superadmin') {
+    // Superadmins can see any school; regular admins must belong to the school
+    if (!reqUser || (reqUser.role !== 'superadmin' && reqUser.school_id !== schoolId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

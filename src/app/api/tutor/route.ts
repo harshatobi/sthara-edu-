@@ -14,10 +14,13 @@ const FOUL_WORDS = [
 ];
 
 function containsFoulLanguage(text: string): boolean {
+  // Normalize: lowercase, replace non-alphanumeric with spaces
   const lower = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
   return FOUL_WORDS.some(word => {
+    // ONLY use word-boundary regex — never plain includes()
+    // because includes('ass') would false-positive on 'class', 'mass', 'surpass', etc.
     const regex = new RegExp(`\\b${word}\\b`, 'i');
-    return regex.test(lower) || lower.includes(word);
+    return regex.test(lower);
   });
 }
 

@@ -10,6 +10,7 @@ import AiEvaluationView from '@/components/AiEvaluationView';
 import MasteryModal from './MasteryModal';
 import PendingTasksModal from './PendingTasksModal';
 import RecentScoresModal from './RecentScoresModal';
+import StudentHeatmapSidebar from './StudentHeatmapSidebar';
 import { createClient } from '@/lib/supabase/client';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import ReactMarkdown from 'react-markdown';
@@ -659,7 +660,11 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto pb-16">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto pb-16">
+      {/* Two-column layout: main content + heatmap sidebar */}
+      <div className="flex gap-6 items-start">
+      {/* ── LEFT COLUMN: all existing content ─────────────────────────────── */}
+      <div className="flex-1 min-w-0 space-y-10">
       
       {/* Premium Hero Header */}
       <div className="relative bg-gradient-to-br from-[#002147] via-[#003366] to-[#001a33] rounded-[2rem] p-10 overflow-hidden shadow-2xl border border-white/10">
@@ -1329,6 +1334,15 @@ export default function StudentDashboard() {
       {showScoresModal && (
         <RecentScoresModal onClose={() => setShowScoresModal(false)} />
       )}
+
+      </div>{/* end left column */}
+
+      {/* ── RIGHT COLUMN: Heatmap Sidebar ─────────────────────────────────── */}
+      <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto">
+        <StudentHeatmapSidebar profile={profile} />
+      </div>
+
+      </div>{/* end two-column flex */}
     </div>
   );
 }

@@ -29,6 +29,8 @@ interface Assignment {
   units?: string[];
   totalMarks?: number;
   assignedStudentIds?: string[];
+  questionPaperUrl?: string | null;
+  questionPaperType?: string | null;
   submission?: any;
 }
 
@@ -50,6 +52,13 @@ export default function StudentDashboard() {
   const [showMasteryModal, setShowMasteryModal] = useState(false);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showScoresModal, setShowScoresModal] = useState(false);
+
+  // ── Quiz Proctoring ─────────────────────────────────────────────────────
+  const [showProctoringWarning, setShowProctoringWarning] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [pendingQuizTask, setPendingQuizTask] = useState<Assignment | null>(null);
+  const isSubmittingRef = { current: false };
 
   const searchParams = useSearchParams();
 
@@ -132,6 +141,78 @@ export default function StudentDashboard() {
   const removeAttachmentFile = (idx: number) => {
     setAttachmentFiles(prev => prev.filter((_, i) => i !== idx));
   };
+
+  // ── Quiz proctoring: tab-switch detection ──────────────────────────────────
+  useEffect(() => {
+    // Only activate when an MCQ quiz is open and student hasn't submitted yet
+    const isMcqActive = quizStarted && selectedTask &&
+      Array.isArray(selectedTask.questions) &&
+      selectedTask.questions.length > 0 &&
+      Array.isArray(selectedTask.questions[0]?.options) &&
+      !selectedTask.submission;
+
+    if (!isMcqActive) return;
+
+    const handleVisibilityChange = async () => {
+      if (document.hidden) {
+        const newCount = tabSwitchCount + 1;
+        setTabSwitchCount(newCount);
+
+        // Notify teacher via proctoring alert API
+        try {
+          await fetch('/api/student/proctor-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              schoolId: profile?.schoolId,
+              studentId: profile?.uid,
+              studentName: profile?.name,
+              taskId: selectedTask.id,
+              taskTitle: selectedTask.title,
+              switchCount: newCount,
+              timestamp: new Date().toISOString(),
+            }),
+          });
+        } catch (e) { /* silent */ }
+
+        if (newCount >= 3) {
+          alert(
+            '🚨 FINAL WARNING — You have switched tabs 3 times.\n\nYour quiz is being automatically submitted now. You cannot attempt it again.'
+          );
+          // Auto-submit the quiz
+          const fakeEvent = { preventDefault: () => {} } as any;
+          handleSubmitTask(fakeEvent);
+        } else {
+          alert(
+            `⚠️ Tab Switch Detected (${newCount}/3)\n\nYour teacher has been notified. If you switch tabs ${3 - newCount} more time(s), your quiz will be automatically submitted.`
+          );
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [quizStarted, selectedTask, tabSwitchCount, profile]);
+
+  // ── Quiz proctoring: auto-submit on page unload ────────────────────────────
+  useEffect(() => {
+    const isMcqActive = quizStarted && selectedTask &&
+      Array.isArray(selectedTask.questions) &&
+      selectedTask.questions.length > 0 &&
+      Array.isArray(selectedTask.questions[0]?.options) &&
+      !selectedTask.submission;
+
+    if (!isMcqActive) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Your quiz will be auto-submitted if you leave this page.';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [quizStarted, selectedTask]);
 
   const handleSubmitTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -795,7 +876,21 @@ export default function StudentDashboard() {
                       time={`Due: ${task.dueDate || 'No Set Date'} • Posted by ${task.teacherName || 'Teacher'}`}
                       type={task.type as 'homework' | 'video' | 'announcement'}
                       status="pending"
-                      onClick={() => { setSelectedTask(task); setQuizResult(null); }}
+                      onClick={() => {
+                        // MCQ quizzes: show proctoring warning first
+                        const isMcq = Array.isArray(task.questions) &&
+                          task.questions.length > 0 &&
+                          Array.isArray(task.questions[0]?.options);
+                        if (isMcq && !task.submission) {
+                          setPendingQuizTask(task);
+                          setShowProctoringWarning(true);
+                          setQuizResult(null);
+                        } else {
+                          setSelectedTask(task);
+                          setQuizResult(null);
+                          setQuizStarted(false);
+                        }
+                      }}
                     />
                   ))}
                 </div>
@@ -845,10 +940,36 @@ export default function StudentDashboard() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 border-b border-[#002147]/10 bg-[#f8fafc]">
               <div>
-                <h3 className="text-xl font-bold text-[#002147]">Submit Task</h3>
+                <h3 className="text-xl font-bold text-[#002147]">
+                  {selectedTask.submission ? '📋 View Submission' : '📝 Submit Task'}
+                </h3>
                 <p className="text-sm text-[#002147]/60 mt-1">{selectedTask.title}</p>
+                {quizStarted && !selectedTask.submission && (
+                  <span className="inline-flex items-center gap-1 mt-1 text-xs font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                    🔴 PROCTORED · Tab switches: {tabSwitchCount}/3
+                  </span>
+                )}
               </div>
-              <button onClick={() => { setSelectedTask(null); setQuizResult(null); setSelectedAnswers({}); }} className="text-[#002147]/40 hover:text-[#dc143c] transition-colors">
+              <button
+                onClick={() => {
+                  if (quizStarted && !selectedTask.submission) {
+                    const leave = window.confirm(
+                      '⚠️ Warning: Leaving will auto-submit your quiz and you cannot attempt it again.\n\nAre you sure you want to exit?'
+                    );
+                    if (!leave) return;
+                    // Auto-submit before closing
+                    const fakeEvent = { preventDefault: () => {} } as any;
+                    handleSubmitTask(fakeEvent);
+                    return;
+                  }
+                  setSelectedTask(null);
+                  setQuizResult(null);
+                  setSelectedAnswers({});
+                  setQuizStarted(false);
+                  setTabSwitchCount(0);
+                }}
+                className="text-[#002147]/40 hover:text-[#dc143c] transition-colors"
+              >
                 ✕
               </button>
             </div>
@@ -932,33 +1053,76 @@ export default function StudentDashboard() {
                                 )}
                               </div>
                             </div>
-                            {hasOptions && (
-                              // MCQ — render clickable A/B/C/D buttons
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-11">
-                                {q.options.map((opt: any, optIdx: number) => {
-                                  const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
-                                  const optKey = String(optIdx);
-                                  const isSelected = selectedAnswers[qKey] === optKey;
-                                  return (
-                                    <button
-                                      key={optKey}
-                                      type="button"
-                                      onClick={() => setSelectedAnswers(prev => ({ ...prev, [qKey]: optKey }))}
-                                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${
-                                        isSelected
-                                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
-                                          : 'bg-white border-gray-200 text-[#002147] hover:border-indigo-300 hover:bg-indigo-50'
-                                      }`}
-                                    >
-                                      <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 ${
-                                        isSelected ? 'border-white bg-white text-indigo-600' : 'border-gray-300 text-gray-500'
-                                      }`}>{String.fromCharCode(65+optIdx)}</span>
-                                      {optText}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
+                            {hasOptions && (() => {
+                              const isViewOnly = !!selectedTask.submission;
+                              const submittedAnswers: Record<string, string> =
+                                selectedTask.submission?.answers || {};
+                              return (
+                                // MCQ — render clickable A/B/C/D buttons (or read-only if submitted)
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-11">
+                                  {q.options.map((opt: any, optIdx: number) => {
+                                    const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
+                                    const optKey = String(optIdx);
+                                    const isSelected = isViewOnly
+                                      ? submittedAnswers[qKey] === optKey
+                                      : selectedAnswers[qKey] === optKey;
+                                    const isCorrect = q.correctAnswerIndex !== undefined
+                                      ? optIdx === q.correctAnswerIndex
+                                      : optKey === q.correctOptionId;
+                                    const wasSelectedWrong = isViewOnly && isSelected && !isCorrect;
+                                    const isCorrectAnswer = isViewOnly && isCorrect;
+
+                                    let btnClass = 'flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all w-full ';
+                                    let circleClass = 'w-6 h-6 rounded-full border-2 flex items-center justify-center font-black text-xs shrink-0 ';
+
+                                    if (isViewOnly) {
+                                      if (isCorrectAnswer) {
+                                        btnClass += 'bg-emerald-50 border-emerald-400 text-emerald-800 cursor-default';
+                                        circleClass += 'border-emerald-500 bg-emerald-500 text-white';
+                                      } else if (wasSelectedWrong) {
+                                        btnClass += 'bg-red-50 border-red-400 text-red-800 cursor-default';
+                                        circleClass += 'border-red-500 bg-red-500 text-white';
+                                      } else {
+                                        btnClass += 'bg-white border-gray-200 text-gray-400 cursor-default opacity-60';
+                                        circleClass += 'border-gray-300 text-gray-400';
+                                      }
+                                    } else {
+                                      btnClass += isSelected
+                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                                        : 'bg-white border-gray-200 text-[#002147] hover:border-indigo-300 hover:bg-indigo-50';
+                                      circleClass += isSelected
+                                        ? 'border-white bg-white text-indigo-600'
+                                        : 'border-gray-300 text-gray-500';
+                                    }
+
+                                    return (
+                                      <button
+                                        key={optKey}
+                                        type="button"
+                                        disabled={isViewOnly}
+                                        onClick={() => {
+                                          if (!isViewOnly) {
+                                            setSelectedAnswers(prev => ({ ...prev, [qKey]: optKey }));
+                                          }
+                                        }}
+                                        className={btnClass}
+                                      >
+                                        <span className={circleClass}>
+                                          {isViewOnly && isCorrectAnswer ? '✓' : isViewOnly && wasSelectedWrong ? '✗' : String.fromCharCode(65 + optIdx)}
+                                        </span>
+                                        {optText}
+                                        {isViewOnly && isCorrectAnswer && (
+                                          <span className="ml-auto text-[10px] font-black text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Correct</span>
+                                        )}
+                                        {isViewOnly && wasSelectedWrong && (
+                                          <span className="ml-auto text-[10px] font-black text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full">Your Answer</span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
                             {/* Open-ended: no text area — student writes on paper and uploads photo */}
                           </div>
                         );
@@ -1044,18 +1208,111 @@ export default function StudentDashboard() {
                   })()}
 
 
-                  
-                  <button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full bg-[#dc143c] text-white py-3 rounded-xl font-semibold hover:bg-[#dc143c]/90 transition-colors disabled:opacity-50 mt-4 shadow-lg flex flex-col items-center justify-center"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center space-x-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></span>
-                    ) : 'Turn In Task'}
-                  </button>
+                  {/* ── Submit / Turn In Button ── */}
+                  {selectedTask.submission ? (
+                    // Already submitted — show read-only indicator, no submit button
+                    <div className="w-full mt-4 py-3 bg-emerald-50 border-2 border-emerald-200 rounded-xl text-center">
+                      <p className="font-black text-emerald-700">✅ Already Submitted</p>
+                      <p className="text-xs text-emerald-500 mt-0.5">This assignment has been locked. You cannot re-submit.</p>
+                    </div>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      onClick={(e) => {
+                        // MCQ quizzes get a hard confirmation gate
+                        const isMcq = selectedTask.questions?.length > 0 &&
+                          Array.isArray(selectedTask.questions[0]?.options);
+                        if (isMcq) {
+                          const confirmed = window.confirm(
+                            '⚠️ Final Confirmation\n\nOnce you submit this quiz, you CANNOT go back or change your answers.\nYour submission is final.\n\nAre you ready to submit?'
+                          );
+                          if (!confirmed) {
+                            e.preventDefault();
+                            return;
+                          }
+                        }
+                      }}
+                      className="w-full bg-[#dc143c] text-white py-3 rounded-xl font-semibold hover:bg-[#dc143c]/90 transition-colors disabled:opacity-50 mt-4 shadow-lg flex flex-col items-center justify-center"
+                    >
+                      {isSubmitting ? (
+                        <span className="flex items-center space-x-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></span>
+                      ) : 'Turn In Task'}
+                    </button>
+                  )}
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Quiz Proctoring Warning Modal ─────────────────────────────────── */}
+      {showProctoringWarning && pendingQuizTask && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Red warning header */}
+            <div className="bg-gradient-to-br from-red-600 to-rose-700 p-8 text-center">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">🔒</span>
+              </div>
+              <h2 className="text-2xl font-black text-white">Proctored Quiz</h2>
+              <p className="text-red-100 text-sm mt-1 font-medium">{pendingQuizTask.title}</p>
+            </div>
+
+            {/* Rules */}
+            <div className="p-6 space-y-4">
+              <p className="text-[#002147] font-black text-base text-center">Please read these rules carefully before starting</p>
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
+                  <span className="text-xl shrink-0">👁️</span>
+                  <div>
+                    <p className="font-bold text-amber-900 text-sm">Tab Switching is Monitored</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Every time you switch tabs or leave this window, your teacher is instantly notified. After 3 switches, your quiz is auto-submitted.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-2xl">
+                  <span className="text-xl shrink-0">🚪</span>
+                  <div>
+                    <p className="font-bold text-red-900 text-sm">Exiting Auto-Submits Your Quiz</p>
+                    <p className="text-xs text-red-700 mt-0.5">If you close this page or navigate away, your quiz will be automatically submitted with whatever answers you have selected. You cannot re-attempt.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-2xl">
+                  <span className="text-xl shrink-0">✅</span>
+                  <div>
+                    <p className="font-bold text-blue-900 text-sm">Submission is Final</p>
+                    <p className="text-xs text-blue-700 mt-0.5">Once you click "Turn In Task", your answers are locked. You will be asked to confirm before final submission.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowProctoringWarning(false);
+                    setPendingQuizTask(null);
+                  }}
+                  className="py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedTask(pendingQuizTask);
+                    setQuizStarted(true);
+                    setTabSwitchCount(0);
+                    setShowProctoringWarning(false);
+                    setPendingQuizTask(null);
+                  }}
+                  className="py-3 rounded-xl bg-[#002147] text-white font-black text-sm hover:bg-[#003b80] transition-colors shadow-lg"
+                >
+                  I Understand — Start Quiz
+                </button>
+              </div>
             </div>
           </div>
         </div>

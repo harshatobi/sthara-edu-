@@ -48,6 +48,14 @@ export default function TeacherDashboard() {
   // Submission detail viewer
   const [viewSubmission, setViewSubmission] = useState<{ sub: any; student: any; taskId: string } | null>(null);
 
+  // Teacher grade editing
+  const [editingSubId, setEditingSubId] = useState<string | null>(null);
+  const [editScore, setEditScore] = useState('');
+  const [editMaxScore, setEditMaxScore] = useState('');
+  const [editFeedback, setEditFeedback] = useState('');
+  const [savingGrade, setSavingGrade] = useState(false);
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!profile?.schoolId || !profile?.assignments?.length) { setPlatformLoading(false); return; }
     const compute = async () => {
@@ -250,6 +258,86 @@ export default function TeacherDashboard() {
     } finally {
       setIsPosting(false);
       setUploadingQP(false);
+    }
+  };
+
+  const handleSaveGrade = async (studentId: string, submissionId: string, taskSubject: string) => {
+    if (!profile?.uid) return;
+    setSavingGrade(true);
+    try {
+      const score = parseFloat(editScore);
+      const maxScore = parseFloat(editMaxScore);
+      if (isNaN(score) || isNaN(maxScore) || maxScore <= 0) {
+        alert('Please enter valid score and max score values.');
+        return;
+      }
+      const pct = Math.round((score / maxScore) * 100);
+      const grade = `${score}/${maxScore}`;
+
+      // Update submission with teacher-corrected grade
+      const { error: subErr } = await supabase
+        .from('submissions')
+        .update({
+          final_grade: grade,
+          score: score,
+          max_score: maxScore,
+          teacher_approved: true,
+          teacher_feedback: editFeedback || null,
+        })
+        .eq('id', submissionId);
+
+      if (subErr) throw subErr;
+
+      // Update student memory_profile (mastery)
+      try {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('memory_profile')
+          .eq('id', studentId)
+          .maybeSingle();
+
+        const mem = (userRow?.memory_profile as any) || { known: [], struggling: [] };
+        const knownSet = new Set<string>(mem.known || []);
+        const strugglingSet = new Set<string>(mem.struggling || []);
+
+        if (taskSubject && pct >= 70) {
+          knownSet.add(taskSubject);
+          strugglingSet.delete(taskSubject);
+        } else if (taskSubject && pct < 50) {
+          strugglingSet.add(taskSubject);
+          knownSet.delete(taskSubject);
+        }
+
+        await supabase
+          .from('users')
+          .update({
+            memory_profile: {
+              ...mem,
+              known: Array.from(knownSet),
+              struggling: Array.from(strugglingSet),
+              lastUpdated: new Date().toISOString(),
+            }
+          })
+          .eq('id', studentId);
+      } catch (masteryErr) {
+        console.warn('Mastery update failed:', masteryErr);
+      }
+
+      // Refresh local state
+      setClassTasks(prev => prev.map(t => {
+        if (t.id !== selectedTask?.id) return t;
+        const newSubMap = { ...t.submissionsMap };
+        newSubMap[studentId] = { ...newSubMap[studentId], score, maxScore, finalGrade: grade, teacherApproved: true };
+        return { ...t, submissionsMap: newSubMap };
+      }));
+
+      setEditingSubId(null);
+      setExpandedStudentId(null);
+      alert(`✅ Grade saved: ${grade} (${pct}%). Student mastery updated.`);
+    } catch (err: any) {
+      alert('Failed to save grade: ' + err.message);
+    } finally {
+      setSavingGrade(false);
     }
   };
 
@@ -665,7 +753,7 @@ export default function TeacherDashboard() {
                 )}
               </div>
 
-              {/* Right: Submission details */}
+              {/* Right: Submission details with AI grading + teacher edit */}
               <div className="flex-1 overflow-y-auto p-4">
                 {!selectedTask ? (
                   <div className="h-full flex items-center justify-center text-gray-400 text-sm">
@@ -686,34 +774,170 @@ export default function TeacherDashboard() {
                     {classStudents.length === 0 ? (
                       <div className="py-8 text-center text-gray-400 text-sm">No students in this class.</div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {classStudents.map((student: any) => {
                           const sub = selectedTask.submissionsMap?.[student.id];
                           const submitted = !!sub;
+                          const isExpanded = expandedStudentId === student.id;
+                          const aiResult = sub?.aiResult;
+                          const displayScore = sub?.finalGrade || (sub?.score != null && sub?.maxScore ? `${sub.score}/${sub.maxScore}` : null);
+                          const scoreNum = sub?.score ?? (sub?.maxScore ? 0 : null);
+                          const maxNum = sub?.maxScore ?? null;
+                          const pct = scoreNum != null && maxNum ? Math.round((scoreNum / maxNum) * 100) : null;
+                          const isEditing = editingSubId === student.id;
+
                           return (
-                            <div
-                              key={student.id}
-                              className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50"
-                            >
-                              <div>
-                                <div className="font-bold text-sm text-[#002147]">{student.name}</div>
-                                <div className="text-xs text-gray-400">{student.custom_student_id || student.student_class}</div>
+                            <div key={student.id} className="rounded-2xl border border-gray-200 overflow-hidden">
+                              {/* Student row header */}
+                              <div
+                                className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${
+                                  isExpanded ? 'bg-[#002147] text-white' : 'bg-gray-50 hover:bg-gray-100'
+                                }`}
+                                onClick={() => {
+                                  if (submitted) setExpandedStudentId(isExpanded ? null : student.id);
+                                }}
+                              >
+                                <div>
+                                  <div className={`font-bold text-sm ${isExpanded ? 'text-white' : 'text-[#002147]'}`}>{student.name}</div>
+                                  <div className={`text-xs ${isExpanded ? 'text-blue-200' : 'text-gray-400'}`}>{student.custom_student_id || student.student_class}</div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {submitted ? (
+                                    <>
+                                      {displayScore && (
+                                        <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${
+                                          pct != null ? (pct >= 70 ? 'bg-emerald-100 text-emerald-700' : pct >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-blue-50 text-blue-700'
+                                        }`}>
+                                          {displayScore}
+                                        </span>
+                                      )}
+                                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                        isExpanded ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                                      }`}>
+                                        {sub?.aiGraded ? '🤖 AI Graded' : '✓ Submitted'}
+                                      </span>
+                                      {submitted && <span className={`text-xs ${isExpanded ? 'text-blue-200' : 'text-gray-400'}`}>▾</span>}
+                                    </>
+                                  ) : (
+                                    <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">Pending</span>
+                                  )}
+                                </div>
                               </div>
-                              {submitted ? (
-                                <div className="text-right">
-                                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-                                    ✓ Submitted
-                                  </span>
-                                  {sub.score !== null && sub.max_score && (
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      Score: {sub.score}/{sub.max_score} ({Math.round((sub.score / sub.max_score) * 100)}%)
+
+                              {/* Expanded: AI result + image + teacher edit */}
+                              {isExpanded && submitted && (
+                                <div className="p-4 space-y-4 bg-white border-t border-gray-100">
+
+                                  {/* Submitted images */}
+                                  {Array.isArray(sub?.imageUrls) && sub.imageUrls.length > 0 && (
+                                    <div>
+                                      <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Student's Handwritten Work</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {sub.imageUrls.map((url: string, idx: number) => (
+                                          <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                                            <img src={url} alt={`Page ${idx+1}`} className="w-24 h-24 object-cover rounded-xl border-2 border-indigo-200 hover:border-indigo-500 transition-colors" />
+                                          </a>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* AI Grading Breakdown */}
+                                  {aiResult && (
+                                    <div>
+                                      <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">🤖 AI Grading Breakdown</p>
+                                      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-3 border border-indigo-100 mb-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="font-black text-indigo-800">{aiResult.grade || displayScore}</span>
+                                          <span className="text-xs text-indigo-600 font-semibold">{aiResult.percentageScore != null ? `${aiResult.percentageScore}%` : ''}</span>
+                                        </div>
+                                        {aiResult.summary && <p className="text-xs text-indigo-700 leading-relaxed">{aiResult.summary}</p>}
+                                      </div>
+                                      {Array.isArray(aiResult.questions) && aiResult.questions.map((q: any, qi: number) => (
+                                        <div key={qi} className="mb-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <p className="text-xs font-bold text-[#002147] flex-1">{q.questionText || `Q${qi+1}`}</p>
+                                            <span className={`text-xs font-black px-2 py-0.5 rounded-lg shrink-0 ${
+                                              q.isFinalAnswerCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                            }`}>{q.awardedScore}/{q.maxScore}</span>
+                                          </div>
+                                          {q.lostMarksReason && <p className="text-xs text-red-600 mt-1">⚠ {q.lostMarksReason}</p>}
+                                        </div>
+                                      ))}
+                                      {Array.isArray(aiResult.weaknessTags) && aiResult.weaknessTags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {aiResult.weaknessTags.map((tag: string, ti: number) => (
+                                            <span key={ti} className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">⚡ {tag}</span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Teacher Grade Edit */}
+                                  {!isEditing ? (
+                                    <button
+                                      onClick={() => {
+                                        setEditingSubId(student.id);
+                                        setEditScore(String(scoreNum ?? ''));
+                                        setEditMaxScore(String(maxNum ?? ''));
+                                        setEditFeedback('');
+                                      }}
+                                      className="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 text-indigo-600 font-bold text-sm hover:bg-indigo-50 transition-colors"
+                                    >
+                                      ✏️ Override / Confirm Grade
+                                    </button>
+                                  ) : (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                                      <p className="text-xs font-black text-amber-800 uppercase tracking-wider">Teacher Grade Override</p>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <label className="text-xs font-semibold text-gray-500 mb-1 block">Score</label>
+                                          <input
+                                            type="number"
+                                            value={editScore}
+                                            onChange={e => setEditScore(e.target.value)}
+                                            className="w-full bg-white border border-amber-300 rounded-lg px-3 py-2 text-sm font-bold text-[#002147] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-xs font-semibold text-gray-500 mb-1 block">Out of</label>
+                                          <input
+                                            type="number"
+                                            value={editMaxScore}
+                                            onChange={e => setEditMaxScore(e.target.value)}
+                                            className="w-full bg-white border border-amber-300 rounded-lg px-3 py-2 text-sm font-bold text-[#002147] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <label className="text-xs font-semibold text-gray-500 mb-1 block">Feedback (optional)</label>
+                                        <textarea
+                                          rows={2}
+                                          value={editFeedback}
+                                          onChange={e => setEditFeedback(e.target.value)}
+                                          placeholder="Add feedback for the student..."
+                                          className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-sm text-[#002147] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                                        />
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleSaveGrade(student.id, sub?.id || student.id, selectedTask.subject)}
+                                          disabled={savingGrade}
+                                          className="flex-1 py-2.5 bg-[#002147] text-white rounded-xl font-bold text-sm hover:bg-[#003b80] disabled:opacity-50 transition-colors"
+                                        >
+                                          {savingGrade ? 'Saving...' : '✅ Save & Update Mastery'}
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingSubId(null)}
+                                          className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
-                              ) : (
-                                <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
-                                  Pending
-                                </span>
                               )}
                             </div>
                           );

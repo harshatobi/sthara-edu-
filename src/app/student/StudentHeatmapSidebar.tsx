@@ -59,35 +59,46 @@ export default function StudentHeatmapSidebar({ profile }: { profile: any }) {
     const buildHeatmap = async () => {
       setLoading(true);
       try {
-        // 1. Graded submissions for this student
-        const { data: subs } = await supabase
+        // 1. ALL submissions for this student (AI-graded OR teacher-graded)
+        // We show score-based data when available, pending state when not yet graded
+        const { data: subs, error: subErr } = await supabase
           .from('submissions')
           .select('assignment_id, score, max_score, teacher_approved')
-          .eq('student_id', profile.uid)
-          .not('score', 'is', null)
-          .not('max_score', 'is', null);
+          .eq('student_id', profile.uid);
 
+        if (subErr) console.error('[Heatmap] submissions query error:', subErr);
         if (!subs || subs.length === 0) { setBlocks([]); return; }
 
+        // Only use submissions that have a numeric score
+        const scoredSubs = subs.filter(s => s.score !== null && s.max_score !== null && s.max_score > 0);
+
         // 2. Assignments those submissions belong to
-        const assignIds = [...new Set(subs.map(s => s.assignment_id))];
-        const { data: assigns } = await supabase
+        const allAssignIds = [...new Set(subs.map(s => s.assignment_id))];
+        const { data: assigns, error: assignErr } = await supabase
           .from('assignments')
           .select('id, subject, units, title')
-          .in('id', assignIds);
+          .in('id', allAssignIds);
 
+        if (assignErr) console.error('[Heatmap] assignments query error:', assignErr);
         if (!assigns || assigns.length === 0) { setBlocks([]); return; }
 
         const assignMap: Record<string, any> = {};
         assigns.forEach(a => { assignMap[a.id] = a; });
 
-        // 3. Group: subject → unitId → scores[]
+        // 3. Group: subject → unitId → scores[] (only from scored subs)
         const grouped: Record<string, Record<string, number[]>> = {};
+        // Also track subjects that have any submission (for pending display)
+        const pendingSubjects = new Set<string>();
+
         subs.forEach(sub => {
           const assign = assignMap[sub.assignment_id];
           if (!assign) return;
           const subject = assign.subject || 'General';
-          const pct = Math.round((sub.score / Math.max(sub.max_score, 1)) * 100);
+          if (sub.score === null || sub.max_score === null || sub.max_score === 0) {
+            pendingSubjects.add(subject);
+            return;
+          }
+          const pct = Math.round((sub.score / sub.max_score) * 100);
           if (!grouped[subject]) grouped[subject] = {};
 
           const units: string[] = Array.isArray(assign.units) && assign.units.length > 0
@@ -98,6 +109,11 @@ export default function StudentHeatmapSidebar({ profile }: { profile: any }) {
             if (!grouped[subject][uid]) grouped[subject][uid] = [];
             grouped[subject][uid].push(Math.min(100, Math.max(0, pct)));
           });
+        });
+
+        // Add pending subjects as empty blocks if not already in grouped
+        pendingSubjects.forEach(sub => {
+          if (!grouped[sub]) grouped[sub] = {};
         });
 
         // 4. Convert to SubjectBlock[]
@@ -234,12 +250,12 @@ export default function StudentHeatmapSidebar({ profile }: { profile: any }) {
 
         {!loading && blocks.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 text-center px-6">
-            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-              <BookOpen className="w-7 h-7 text-gray-300" />
+            <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-3">
+              <BookOpen className="w-7 h-7 text-amber-400" />
             </div>
-            <p className="font-bold text-gray-500 text-sm">No graded work yet</p>
+            <p className="font-bold text-gray-600 text-sm">No submissions yet</p>
             <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-              Once your teacher grades your submissions, your performance heatmap will appear here.
+              Complete your assignments. Your mastery heatmap builds automatically from your graded work.
             </p>
           </div>
         )}

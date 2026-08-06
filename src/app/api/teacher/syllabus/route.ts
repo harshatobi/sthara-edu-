@@ -58,6 +58,27 @@ export async function POST(req: NextRequest) {
     if (!schoolId) return NextResponse.json({ error: 'Missing schoolId' }, { status: 400 });
 
     const supabase = createAdminClient();
+
+    // ── Deduplication check ───────────────────────────────────────────────────
+    // If a row with the same teacher + topic + month + subject already exists,
+    // return the existing ID rather than creating a duplicate.
+    if (teacherId && topic && month) {
+      let dupQuery = supabase
+        .from('syllabus')
+        .select('id')
+        .eq('school_id', schoolId)
+        .eq('teacher_id', teacherId)
+        .ilike('topic', topic.trim())
+        .eq('month', month);
+
+      if (subject) dupQuery = dupQuery.ilike('subject', subject.trim());
+
+      const { data: existing } = await dupQuery.maybeSingle();
+      if (existing?.id) {
+        return NextResponse.json({ success: true, id: existing.id, isDuplicate: true });
+      }
+    }
+
     const { data, error } = await supabase
       .from('syllabus')
       .insert({
@@ -70,7 +91,7 @@ export async function POST(req: NextRequest) {
         month:      month || null,
         objectives: body.objectives || null,
         publisher:  body.publisher || 'NCERT',
-        unit_id:    body.unitId || null,   // ← NEW: stores unit_1…unit_5 tag
+        unit_id:    body.unitId || null,
         status:     status || 'pending',
       })
       .select('id')

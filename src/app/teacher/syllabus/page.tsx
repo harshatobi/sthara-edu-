@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Plus, X, Loader2, Trash2, Send,
   Library, CheckCircle2, Sparkles, AlertCircle,
+  BookOpen, ChevronRight, Map, Lightbulb, Target,
 } from 'lucide-react';
 
 import Link from 'next/link';
@@ -14,7 +15,6 @@ import { lookupCurriculum, type CurriculumChapter } from '@/lib/curriculumDb';
 
 const MONTHS = ['June','July','August','September','October','November','December','January','February','March','April','May'];
 
-// ── Publisher / Board options ─────────────────────────────────────────────────
 const PUBLISHERS = [
   { value: 'NCERT',        label: 'NCERT',                    color: 'bg-blue-50 text-blue-700 border-blue-200' },
   { value: 'CBSE Generic', label: 'CBSE (Generic)',           color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
@@ -28,6 +28,13 @@ const PUBLISHERS = [
 
 function publisherStyle(val: string) {
   return PUBLISHERS.find(p => p.value === val)?.color ?? 'bg-gray-100 text-gray-600 border-gray-200';
+}
+
+interface LearningPath {
+  overview: string;
+  milestones: { title: string; description: string }[];
+  resources: { id: string; title: string; type: string }[];
+  teacherNotes: string;
 }
 
 export default function SyllabusPlanner() {
@@ -58,7 +65,12 @@ export default function SyllabusPlanner() {
   const [filterPublisher, setFilterPublisher] = useState<string>('All');
   const [filterSubject,   setFilterSubject]   = useState<string>('All');
 
-  // Derive teacher subjects & classes from profile.assignments
+  // ── Learning Path Panel ───────────────────────────────────────────────────
+  const [selectedChapter, setSelectedChapter] = useState<any | null>(null);
+  const [learningPath, setLearningPath]       = useState<LearningPath | null>(null);
+  const [isLoadingPath, setIsLoadingPath]     = useState(false);
+  const [pathError, setPathError]             = useState('');
+
   const teacherSubjects = [...new Set(
     ((profile?.assignments || []) as any[]).map((a: any) => a.subject).filter(Boolean)
   )] as string[];
@@ -95,19 +107,18 @@ export default function SyllabusPlanner() {
     }
   }, [profile, loading, router]);
 
-  // Pre-fill subject/class from teacher assignments
+  // Pre-fill subject/class
   useEffect(() => {
     if (teacherSubjects.length > 0 && !newSubject) setNewSubject(teacherSubjects[0]);
     if (teacherClasses.length  > 0 && !newClass)   setNewClass(teacherClasses[0]);
   }, [teacherSubjects, teacherClasses]);
 
-  // ── Auto-preview: trigger when publisher + subject + class all set ─────────
+  // ── Auto-preview ──────────────────────────────────────────────────────────
   useEffect(() => {
     setAutoPreview(null);
     setAutoDesc('');
     setAutoLoadDone(false);
     if (!newPublisher || !newSubject || !newClass) return;
-
     const entry = lookupCurriculum(newPublisher, newSubject, newClass);
     if (entry) {
       setAutoPreview(entry.chapters);
@@ -115,13 +126,12 @@ export default function SyllabusPlanner() {
     }
   }, [newPublisher, newSubject, newClass]);
 
-  // ── Auto-load: bulk insert all chapters from curriculum DB ────────────────
+  // ── Auto-load: bulk insert with server-side dedup ─────────────────────────
   const handleAutoLoad = async () => {
     if (!autoPreview || !profile?.schoolId || !profile?.uid) return;
     setIsAutoLoading(true);
     try {
       const authToken = await getAuthToken();
-      // Insert each chapter in sequence (avoid duplicate detection on backend is best-effort)
       const newMods: any[] = [];
       for (const ch of autoPreview) {
         const res = await fetch('/api/teacher/syllabus', {
@@ -141,6 +151,7 @@ export default function SyllabusPlanner() {
         });
         const data = await res.json();
         if (res.ok && data.id) {
+          // Only add to local state if it's NOT a duplicate already in our state
           newMods.push({
             id:         data.id,
             month:      ch.month,
@@ -154,11 +165,17 @@ export default function SyllabusPlanner() {
         }
       }
 
-      // Update local state
+      // Merge into state — de-duplicate by ID to prevent visual doubles
       setSyllabus(prev => {
         const next = { ...prev };
+        const existingIds = new Set(
+          Object.values(next).flat().map((m: any) => m.id)
+        );
         newMods.forEach(mod => {
-          if (next[mod.month] !== undefined) next[mod.month] = [...next[mod.month], mod];
+          if (!existingIds.has(mod.id) && next[mod.month] !== undefined) {
+            next[mod.month] = [...next[mod.month], mod];
+            existingIds.add(mod.id);
+          }
         });
         return next;
       });
@@ -188,6 +205,7 @@ export default function SyllabusPlanner() {
         Object.keys(next).forEach(m => { next[m] = next[m].filter(mod => mod.id !== modId); });
         return next;
       });
+      if (selectedChapter?.id === modId) setSelectedChapter(null);
     } catch (e: any) {
       alert('Delete failed: ' + e.message);
     }
@@ -228,7 +246,13 @@ export default function SyllabusPlanner() {
         grade: newClass.trim(),
         publisher: newPublisher,
       };
-      setSyllabus(prev => ({ ...prev, [selectedMonth]: [...(prev[selectedMonth] || []), newMod] }));
+
+      // Only add if ID not already present (dedup)
+      setSyllabus(prev => {
+        const existing = (prev[selectedMonth] || []).some((m: any) => m.id === newMod.id);
+        if (existing) return prev;
+        return { ...prev, [selectedMonth]: [...(prev[selectedMonth] || []), newMod] };
+      });
       setAddSuccess(true);
       setNewTopic('');
       setNewObjectives('');
@@ -237,6 +261,36 @@ export default function SyllabusPlanner() {
       setAddError(err.message);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  // ── Open Learning Path Panel ──────────────────────────────────────────────
+  const openLearningPath = async (mod: any) => {
+    setSelectedChapter(mod);
+    setLearningPath(null);
+    setPathError('');
+    setIsLoadingPath(true);
+    try {
+      const res = await fetch('/api/teacher/curriculum-gen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic:      mod.topic,
+          subject:    mod.subject,
+          grade:      mod.grade || mod.class,
+          objectives: mod.objectives,
+          month:      mod.month,
+          publisher:  mod.publisher,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to generate learning path');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setLearningPath(data);
+    } catch (err: any) {
+      setPathError(err.message || 'Failed to generate learning path');
+    } finally {
+      setIsLoadingPath(false);
     }
   };
 
@@ -253,6 +307,13 @@ export default function SyllabusPlanner() {
   if (loading || !profile) return (
     <div className="p-10 text-[#002147] text-center font-medium">Loading Syllabus Planner…</div>
   );
+
+  const resourceIcon = (type: string) => {
+    if (type === 'video')       return '🎥';
+    if (type === 'interactive') return '🧩';
+    if (type === 'document')    return '📄';
+    return '📚';
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
@@ -321,77 +382,196 @@ export default function SyllabusPlanner() {
         )}
       </div>
 
-      {/* Topics Grid */}
-      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-[#002147]">
-            {selectedMonth} Topics
-            {visibleTopics.length !== monthTopics.length && (
-              <span className="ml-2 text-sm text-indigo-600 font-semibold">
-                ({visibleTopics.length} of {monthTopics.length} shown)
-              </span>
-            )}
-          </h2>
-          <button
-            onClick={() => { setIsAddModalOpen(true); setAddError(''); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add to {selectedMonth}
-          </button>
-        </div>
+      {/* Two-column layout when learning path is open */}
+      <div className={`flex gap-6 ${selectedChapter ? 'items-start' : ''}`}>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {visibleTopics.map(mod => (
-            <div key={mod.id} className="p-5 bg-gray-50 border border-gray-200 rounded-2xl space-y-2.5 relative group hover:border-indigo-200 transition-colors">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase border border-blue-100">
-                  {mod.subject || 'Subject'}
+        {/* Topics Grid */}
+        <div className={`bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-4 transition-all ${selectedChapter ? 'flex-1 min-w-0' : 'w-full'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-[#002147]">
+              {selectedMonth} Topics
+              {visibleTopics.length !== monthTopics.length && (
+                <span className="ml-2 text-sm text-indigo-600 font-semibold">
+                  ({visibleTopics.length} of {monthTopics.length} shown)
                 </span>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${publisherStyle(mod.publisher || 'NCERT')}`}>
-                  <Library className="w-3 h-3 inline-block mr-1 -mt-px" />
-                  {mod.publisher || 'NCERT'}
-                </span>
-                {mod.unitId && (
-                  <span className="text-xs font-bold px-2 py-1 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
-                    {mod.unitId.replace('_', ' ').replace('unit', 'Unit')}
+              )}
+            </h2>
+            <button
+              onClick={() => { setIsAddModalOpen(true); setAddError(''); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add to {selectedMonth}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {visibleTopics.map(mod => (
+              <div
+                key={mod.id}
+                className={`p-5 bg-gray-50 border rounded-2xl space-y-2.5 relative group hover:border-indigo-200 transition-colors cursor-pointer ${
+                  selectedChapter?.id === mod.id ? 'border-indigo-400 bg-indigo-50/40' : 'border-gray-200'
+                }`}
+                onClick={() => openLearningPath(mod)}
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase border border-blue-100">
+                    {mod.subject || 'Subject'}
                   </span>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${publisherStyle(mod.publisher || 'NCERT')}`}>
+                    <Library className="w-3 h-3 inline-block mr-1 -mt-px" />
+                    {mod.publisher || 'NCERT'}
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-[#002147]">{mod.topic}</h3>
+                {mod.objectives && <p className="text-xs text-gray-500 leading-relaxed">{mod.objectives}</p>}
+                <div className="flex items-center justify-between pt-1 text-xs text-gray-400">
+                  <span>Class: {mod.grade || mod.class || 'All'}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1 text-indigo-500 font-bold">
+                      <BookOpen className="w-3.5 h-3.5" /> Learning Path
+                    </span>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDeleteModule(mod.id); }}
+                      className="text-rose-500 hover:underline flex items-center gap-1 font-bold"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {visibleTopics.length === 0 && (
+              <div className="col-span-full py-12 text-center text-gray-400">
+                {monthTopics.length === 0 ? (
+                  <>
+                    <p>No syllabus topics planned for {selectedMonth}.</p>
+                    <button
+                      onClick={() => setIsAddModalOpen(true)}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#002147] text-white rounded-xl text-sm font-bold hover:bg-[#003b80] transition-all"
+                    >
+                      <Plus className="w-4 h-4" /> Add First Topic
+                    </button>
+                  </>
+                ) : (
+                  <p>No topics match the current filters.</p>
                 )}
               </div>
-              <h3 className="text-base font-bold text-[#002147]">{mod.topic}</h3>
-              {mod.objectives && <p className="text-xs text-gray-500 leading-relaxed">{mod.objectives}</p>}
-              <div className="flex items-center justify-between pt-1 text-xs text-gray-400">
-                <span>Class: {mod.grade || mod.class || 'All'}</span>
-                <button
-                  onClick={() => handleDeleteModule(mod.id)}
-                  className="text-rose-500 hover:underline flex items-center gap-1 font-bold"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            )}
+          </div>
+        </div>
 
-          {visibleTopics.length === 0 && (
-            <div className="col-span-full py-12 text-center text-gray-400">
-              {monthTopics.length === 0 ? (
+        {/* ── Learning Path Slide-Over Panel ─────────────────────────────────── */}
+        {selectedChapter && (
+          <div className="w-96 shrink-0 bg-white rounded-3xl border border-indigo-200 shadow-lg overflow-hidden animate-in slide-in-from-right duration-300">
+            {/* Panel header */}
+            <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white relative">
+              <button
+                onClick={() => { setSelectedChapter(null); setLearningPath(null); }}
+                className="absolute top-4 right-4 p-1.5 bg-white/20 hover:bg-white/30 rounded-full"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2 mb-3">
+                <Map className="w-5 h-5 opacity-80" />
+                <span className="text-xs font-bold uppercase tracking-wider opacity-80">AI Learning Path</span>
+              </div>
+              <h3 className="text-lg font-black leading-tight">{selectedChapter.topic}</h3>
+              <p className="text-sm opacity-70 mt-1">{selectedChapter.subject} · Class {selectedChapter.grade || selectedChapter.class}</p>
+            </div>
+
+            <div className="overflow-y-auto max-h-[70vh] p-6 space-y-6">
+              {isLoadingPath && (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin" />
+                    <Sparkles className="w-5 h-5 text-indigo-600 absolute inset-0 m-auto" />
+                  </div>
+                  <p className="text-sm text-gray-500 font-medium">Generating learning path…</p>
+                  <p className="text-xs text-gray-400">This takes 5–10 seconds</p>
+                </div>
+              )}
+
+              {pathError && (
+                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                  <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-700">Failed to generate</p>
+                    <p className="text-xs text-red-600 mt-1">{pathError}</p>
+                    <button
+                      onClick={() => openLearningPath(selectedChapter)}
+                      className="mt-2 text-xs font-bold text-red-600 hover:underline"
+                    >
+                      Try again →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {learningPath && !isLoadingPath && (
                 <>
-                  <p>No syllabus topics planned for {selectedMonth}.</p>
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#002147] text-white rounded-xl text-sm font-bold hover:bg-[#003b80] transition-all"
-                  >
-                    <Plus className="w-4 h-4" /> Add First Topic
-                  </button>
+                  {/* Overview */}
+                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lightbulb className="w-4 h-4 text-indigo-600" />
+                      <span className="text-xs font-black text-indigo-700 uppercase tracking-wider">Overview</span>
+                    </div>
+                    <p className="text-sm text-indigo-900 leading-relaxed">{learningPath.overview}</p>
+                  </div>
+
+                  {/* Milestones / Teaching Phases */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-gray-600" />
+                      <span className="text-xs font-black text-gray-700 uppercase tracking-wider">Teaching Phases</span>
+                    </div>
+                    {learningPath.milestones.map((ms, i) => (
+                      <div key={i} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center shrink-0">
+                            {i + 1}
+                          </div>
+                          {i < learningPath.milestones.length - 1 && (
+                            <div className="w-0.5 flex-1 bg-indigo-100 mt-1.5 mb-0" />
+                          )}
+                        </div>
+                        <div className="pb-4 flex-1">
+                          <p className="text-sm font-bold text-[#002147]">{ms.title}</p>
+                          <p className="text-xs text-gray-600 mt-1 leading-relaxed">{ms.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Resources */}
+                  {learningPath.resources && learningPath.resources.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-black text-gray-700 uppercase tracking-wider">Resources</span>
+                      {learningPath.resources.map(res => (
+                        <div key={res.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                          <span className="text-base">{resourceIcon(res.type)}</span>
+                          <span className="text-xs text-gray-700 font-medium">{res.title}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-400 ml-auto shrink-0" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Teacher Notes */}
+                  {learningPath.teacherNotes && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                      <p className="text-xs font-black text-amber-700 uppercase tracking-wider mb-2">📌 Teacher Notes</p>
+                      <p className="text-xs text-amber-900 leading-relaxed">{learningPath.teacherNotes}</p>
+                    </div>
+                  )}
                 </>
-              ) : (
-                <p>No topics match the current filters.</p>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Add Topic / Auto-Load Modal ────────────────────────────────────── */}
+      {/* ── Add Topic / Auto-Load Modal ──────────────────────────────────────── */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-[#002147]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
@@ -476,7 +656,7 @@ export default function SyllabusPlanner() {
                     </span>
                   </div>
 
-                  {/* Preview of chapters */}
+                  {/* Preview */}
                   <div className="p-4 space-y-2 max-h-52 overflow-y-auto">
                     {autoPreview.map((ch, i) => (
                       <div key={i} className="flex items-start gap-3 p-2.5 bg-white rounded-xl border border-indigo-100">
@@ -520,20 +700,20 @@ export default function SyllabusPlanner() {
                   <div>
                     <p className="text-sm font-bold text-amber-800">No built-in curriculum found</p>
                     <p className="text-xs text-amber-700 mt-1">
-                      No preset chapters for <strong>{newSubject}</strong> ({newPublisher}, Class {newClass}). Use the manual form below to add individual topics.
+                      No preset chapters for <strong>{newSubject}</strong> ({newPublisher}, Class {newClass}). Use the manual form below.
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* ── DIVIDER ── */}
+              {/* Divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-200" />
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Or add a single topic manually</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
 
-              {/* ── Manual form ── */}
+              {/* Manual form */}
               <form onSubmit={handleAddTopic} className="space-y-4">
                 {addError && (
                   <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">{addError}</div>

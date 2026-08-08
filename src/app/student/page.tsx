@@ -421,26 +421,49 @@ export default function StudentDashboard() {
         }
       }
 
-      // Save submission into Supabase submissions table
+      // Save submission — update if one already exists (e.g. retry after image upload failure), insert if new
       setSubmitStatus('Saving submission...');
-      const { error: insertErr } = await supabase
-        .from('submissions')
-        .insert({
-          assignment_id: selectedTask.id,
-          student_id: profile.uid,
-          school_id: profile.schoolId,
-          score: submissionData.score ?? null,
-          max_score: submissionData.maxScore ?? null,
-          grade: submissionData.grade || null,
-          ai_graded: !!submissionData.aiGraded,
-          ai_result: submissionData.aiResult || null,
-          image_urls: submissionData.imageUrls || [],
-          submission_text: submissionText || null,
-          answers: selectedAnswers || null,
-          type: submissionData.type || 'homework',
-        });
+      const existingSubId = selectedTask.submission?.id ?? null;
+      let saveErr: any = null;
 
-      if (insertErr) throw insertErr;
+      if (existingSubId) {
+        // Update the existing row (e.g. student is resubmitting with images)
+        const { error } = await supabase
+          .from('submissions')
+          .update({
+            score: submissionData.score ?? null,
+            max_score: submissionData.maxScore ?? null,
+            grade: submissionData.grade || null,
+            ai_graded: !!submissionData.aiGraded,
+            ai_result: submissionData.aiResult || null,
+            image_urls: submissionData.imageUrls || [],
+            submission_text: submissionText || null,
+            answers: selectedAnswers || null,
+          })
+          .eq('id', existingSubId);
+        saveErr = error;
+      } else {
+        // Insert a brand-new submission row
+        const { error } = await supabase
+          .from('submissions')
+          .insert({
+            assignment_id: selectedTask.id,
+            student_id: profile.uid,
+            school_id: profile.schoolId,
+            score: submissionData.score ?? null,
+            max_score: submissionData.maxScore ?? null,
+            grade: submissionData.grade || null,
+            ai_graded: !!submissionData.aiGraded,
+            ai_result: submissionData.aiResult || null,
+            image_urls: submissionData.imageUrls || [],
+            submission_text: submissionText || null,
+            answers: selectedAnswers || null,
+            type: submissionData.type || 'homework',
+          });
+        saveErr = error;
+      }
+
+      if (saveErr) throw saveErr;
 
       setAssignments(prev => prev.map(a =>
         a.id === selectedTask.id
@@ -1246,11 +1269,22 @@ export default function StudentDashboard() {
 
 
                   {/* ── Submit / Turn In Button ── */}
-                  {selectedTask.submission ? (
-                    // Already submitted — show read-only indicator, no submit button
+                  {selectedTask.submission && (
+                    selectedTask.submission.imageUrls?.length > 0 ||
+                    selectedTask.submission.imageUrl
+                  ) ? (
+                    // Fully submitted with images — locked
                     <div className="w-full mt-4 py-3 bg-emerald-50 border-2 border-emerald-200 rounded-xl text-center">
                       <p className="font-black text-emerald-700">✅ Already Submitted</p>
-                      <p className="text-xs text-emerald-500 mt-0.5">This assignment has been locked. You cannot re-submit.</p>
+                      <p className="text-xs text-emerald-500 mt-0.5">Your work has been received and graded.</p>
+                    </div>
+                  ) : selectedTask.submission && attachmentFiles.length === 0 ? (
+                    // Submitted but no images yet — prompt to upload
+                    <div className="w-full mt-4 space-y-2">
+                      <div className="py-3 bg-amber-50 border-2 border-amber-200 rounded-xl text-center">
+                        <p className="font-black text-amber-700">⚠️ Submission Incomplete</p>
+                        <p className="text-xs text-amber-600 mt-0.5">Your answer was saved but the image upload failed. Please upload your handwritten work above and click Submit.</p>
+                      </div>
                     </div>
                   ) : (
                     <button
@@ -1274,7 +1308,7 @@ export default function StudentDashboard() {
                     >
                       {isSubmitting ? (
                         <span className="flex items-center space-x-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></span>
-                      ) : 'Turn In Task'}
+                      ) : selectedTask.submission ? '📤 Submit Work' : 'Turn In Task'}
                     </button>
                   )}
                 </form>

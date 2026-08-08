@@ -244,8 +244,10 @@ export default function StudentDashboard() {
       };
 
       const assignmentTotalMarks = selectedTask.totalMarks
-        || (selectedTask.tasks?.reduce((sum: number, t: any) => sum + (t.marks || 0), 0))
-        || (selectedTask.questions?.length ? selectedTask.questions.length : 10);
+        // Sum per-question marks if set (e.g. 1 question worth 5 marks → 5)
+        || (selectedTask.questions?.reduce((sum: number, q: any) => sum + (q.marks || 0), 0) || 0) > 0
+          ? selectedTask.questions?.reduce((sum: number, q: any) => sum + (q.marks || 0), 0)
+          : (selectedTask.tasks?.reduce((sum: number, t: any) => sum + (t.marks || 0), 0) || 10);
 
       // Determine if this is a true MCQ quiz (has option arrays) or open-ended homework
       const isMcqQuiz = selectedTask.questions &&

@@ -815,15 +815,19 @@ export default function TeacherDashboard() {
                           const submitted = !!sub;
                           const isExpanded = expandedStudentId === student.id;
                           const aiResult = sub?.aiResult;
-                          // Use the assignment's teacher-set total as the authoritative max.
-                          // This means even old submissions with a wrong max_score in DB
-                          // (e.g. 1 instead of 5) will display the correct teacher-set marks.
-                          const taskTotalMarks = selectedTask.totalMarks
-                            || (selectedTask.questions?.reduce((s: number, q: any) => s + (q.marks || 0), 0) || 0) > 0
-                              ? selectedTask.questions?.reduce((s: number, q: any) => s + (q.marks || 0), 0)
-                              : null;
+                          // Authoritative max = teacher-set marks, NOT the stale DB submission value.
+                          // Try: (1) assignment totalMarks, (2) sum of per-question marks, (3) sub.maxScore
+                          const perQSum: number = (selectedTask.questions || []).reduce(
+                            (s: number, q: any) => s + (Number(q.marks) || 0), 0
+                          );
+                          const taskTotalMarks: number | null =
+                            (selectedTask.totalMarks && Number(selectedTask.totalMarks) > 0)
+                              ? Number(selectedTask.totalMarks)
+                              : perQSum > 0
+                                ? perQSum
+                                : null;
                           const scoreNum = sub?.score ?? (sub?.maxScore != null ? 0 : null);
-                          const maxNum = taskTotalMarks || sub?.maxScore || null;
+                          const maxNum = taskTotalMarks ?? sub?.maxScore ?? null;
                           const displayScore = sub?.finalGrade
                             || (scoreNum != null && maxNum ? `${scoreNum}/${maxNum}` : null);
                           const pct = scoreNum != null && maxNum ? Math.round((scoreNum / maxNum) * 100) : null;

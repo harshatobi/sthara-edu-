@@ -289,23 +289,27 @@ export default function StudentDashboard() {
         };
       }
 
-      // Upload files to Supabase Storage bucket 'submissions'
+      // Upload files via server-side API (uses admin client to bypass Supabase Storage RLS)
       if (attachmentFiles.length > 0) {
         setSubmitStatus(`Uploading ${attachmentFiles.length} page(s) to secure storage...`);
         try {
+          const authToken = await getAuthToken();
           const uploadResults = await Promise.all(
             attachmentFiles.map(async (file, idx) => {
-              const ext = file.name.split('.').pop() || 'jpg';
-              const path = `${profile.uid}/${selectedTask.id}/${Date.now()}_page${idx + 1}.${ext}`;
-              const { error: uploadErr } = await supabase.storage
-                .from('submissions')
-                .upload(path, file, { contentType: file.type, upsert: true });
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('studentId', profile.uid);
+              formData.append('assignmentId', selectedTask.id);
+              formData.append('pageIndex', String(idx));
 
-              if (uploadErr) throw uploadErr;
-              const { data: publicUrlData } = supabase.storage
-                .from('submissions')
-                .getPublicUrl(path);
-              return publicUrlData.publicUrl;
+              const res = await fetch('/api/student/upload-submission', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}` },
+                body: formData,
+              });
+              const data = await res.json();
+              if (!res.ok || !data.url) throw new Error(data.error || 'Upload failed');
+              return data.url as string;
             })
           );
           submissionData.imageUrls = uploadResults;

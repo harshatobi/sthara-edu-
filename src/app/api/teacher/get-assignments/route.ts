@@ -11,20 +11,20 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const { schoolId, teacherId } = await req.json();
+    // Both schoolId AND teacherId are required — without teacherId we would
+    // leak every assignment in the school across all teachers.
     if (!schoolId) return NextResponse.json({ error: 'Missing schoolId' }, { status: 400 });
+    if (!teacherId) return NextResponse.json({ error: 'Missing teacherId' }, { status: 400 });
 
     const supabase = createAdminClient();
 
-    // Fetch assignments for this teacher
-    let query = supabase
+    // Always filter by teacher_id — never return school-wide data
+    const query = supabase
       .from('assignments')
       .select('*')
       .eq('school_id', schoolId)
+      .eq('teacher_id', teacherId)          // ← always required, never conditional
       .order('created_at', { ascending: false });
-
-    if (teacherId) {
-      query = query.eq('teacher_id', teacherId);
-    }
 
     const { data: assignmentRows, error: assignErr } = await query;
     if (assignErr) throw assignErr;

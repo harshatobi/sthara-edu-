@@ -493,12 +493,40 @@ export default function StudentDashboard() {
 
     const fetchAssignments = async () => {
       try {
-        // Query assignments table from Supabase
-        const { data: assignRows, error: assignErr } = await supabase
+        // ── Step 1: Find which teachers teach this student's class ────────────
+        // Look at the 'users' table for teachers whose assignments[] include this class.
+        // This prevents a student from seeing assignments from unrelated teachers.
+        const studentClass = (profile.studentClass || '').toLowerCase().trim();
+
+        const { data: teacherRows } = await supabase
+          .from('users')
+          .select('uid, assignments')
+          .eq('school_id', schoolId)
+          .eq('role', 'teacher');
+
+        // Collect teacher UIDs who teach the student's class
+        const relevantTeacherIds = new Set<string>();
+        (teacherRows || []).forEach((t: any) => {
+          const teacherAssignments: any[] = t.assignments || [];
+          const teachesThisClass = teacherAssignments.some((a: any) => {
+            const tc = (a.class || '').toLowerCase().trim();
+            return !studentClass || !tc || tc.includes(studentClass) || studentClass.includes(tc);
+          });
+          if (teachesThisClass && t.uid) relevantTeacherIds.add(t.uid);
+        });
+
+        // ── Step 2: Fetch assignments only from those teachers ────────────────
+        let assignQuery = supabase
           .from('assignments')
           .select('*')
           .eq('school_id', schoolId);
 
+        // If we found relevant teachers, scope to them; otherwise fall back to school-wide
+        if (relevantTeacherIds.size > 0) {
+          assignQuery = assignQuery.in('teacher_id', [...relevantTeacherIds]);
+        }
+
+        const { data: assignRows, error: assignErr } = await assignQuery;
         if (assignErr) throw assignErr;
 
         // Fetch submissions by this student
@@ -512,8 +540,6 @@ export default function StudentDashboard() {
         const subMap = new Map((subRows || []).map(s => [s.assignment_id, s]));
 
         const studentCustomId = profile.customStudentId || '';
-
-        const studentClass = (profile.studentClass || '').toLowerCase().trim();
 
         const tasks: Assignment[] = (assignRows || [])
           .filter((a) => {

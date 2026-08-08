@@ -60,10 +60,28 @@ export default function GradingGalleryPage() {
     const fetchSubmissions = async () => {
       setFetching(true);
       try {
+        // Step 1: Get this teacher's assignment IDs only
+        const { data: assignData, error: assignErr } = await supabase
+          .from('assignments')
+          .select('id')
+          .eq('school_id', profile.schoolId)
+          .eq('teacher_id', profile.uid);
+
+        if (assignErr) throw assignErr;
+
+        const assignmentIds = (assignData || []).map((a: any) => a.id);
+
+        if (assignmentIds.length === 0) {
+          setQueue([]);
+          setFetching(false);
+          return;
+        }
+
+        // Step 2: Fetch submissions ONLY for this teacher's assignments
         const { data: subsData, error: subsErr } = await supabase
           .from('submissions')
           .select('*')
-          .eq('school_id', profile.schoolId)
+          .in('assignment_id', assignmentIds)
           .order('created_at', { ascending: false });
 
         if (subsErr) throw subsErr;
@@ -83,7 +101,7 @@ export default function GradingGalleryPage() {
     };
 
     fetchSubmissions();
-  }, [profile?.schoolId]);
+  }, [profile?.schoolId, profile?.uid]);
 
   const handleReview = async (approved: boolean) => {
     if (!active || !profile?.schoolId) return;

@@ -52,11 +52,36 @@ export default function StudentHomework() {
 
     const fetchAssignments = async () => {
       try {
-        const { data: assignRows, error } = await supabase
+        const studentClass = (profile.studentClass || '').toLowerCase().trim();
+
+        // ── Step 1: Find teachers who teach this student's class ──────────────
+        const { data: teacherRows } = await supabase
+          .from('users')
+          .select('uid, assignments')
+          .eq('school_id', profile.schoolId)
+          .eq('role', 'teacher');
+
+        const relevantTeacherIds = new Set<string>();
+        (teacherRows || []).forEach((t: any) => {
+          const tas: any[] = t.assignments || [];
+          const teachesClass = tas.some((a: any) => {
+            const tc = (a.class || '').toLowerCase().trim();
+            return !studentClass || !tc || tc.includes(studentClass) || studentClass.includes(tc);
+          });
+          if (teachesClass && t.uid) relevantTeacherIds.add(t.uid);
+        });
+
+        // ── Step 2: Fetch only from those teachers ────────────────────────────
+        let assignQuery = supabase
           .from('assignments')
           .select('*')
           .eq('school_id', profile.schoolId);
 
+        if (relevantTeacherIds.size > 0) {
+          assignQuery = assignQuery.in('teacher_id', [...relevantTeacherIds]);
+        }
+
+        const { data: assignRows, error } = await assignQuery;
         if (error) throw error;
 
         const { data: subRows } = await supabase
@@ -66,7 +91,6 @@ export default function StudentHomework() {
 
         const subMap = new Map((subRows || []).map(s => [s.assignment_id, s]));
         const studentCustomId = profile.customStudentId || '';
-        const studentClass = (profile.studentClass || '').toLowerCase().trim();
 
         const list: Assignment[] = (assignRows || [])
           .filter(a => {

@@ -1269,48 +1269,58 @@ export default function StudentDashboard() {
 
 
                   {/* ── Submit / Turn In Button ── */}
-                  {selectedTask.submission && (
-                    selectedTask.submission.imageUrls?.length > 0 ||
-                    selectedTask.submission.imageUrl
-                  ) ? (
-                    // Fully submitted with images — locked
-                    <div className="w-full mt-4 py-3 bg-emerald-50 border-2 border-emerald-200 rounded-xl text-center">
-                      <p className="font-black text-emerald-700">✅ Already Submitted</p>
-                      <p className="text-xs text-emerald-500 mt-0.5">Your work has been received and graded.</p>
-                    </div>
-                  ) : selectedTask.submission && attachmentFiles.length === 0 ? (
-                    // Submitted but no images yet — prompt to upload
-                    <div className="w-full mt-4 space-y-2">
-                      <div className="py-3 bg-amber-50 border-2 border-amber-200 rounded-xl text-center">
-                        <p className="font-black text-amber-700">⚠️ Submission Incomplete</p>
-                        <p className="text-xs text-amber-600 mt-0.5">Your answer was saved but the image upload failed. Please upload your handwritten work above and click Submit.</p>
+                  {(() => {
+                    // Submission is fully complete only if images were saved in DB
+                    const isFullySubmitted = selectedTask.submission && (
+                      selectedTask.submission.imageUrls?.length > 0 ||
+                      selectedTask.submission.imageUrl
+                    );
+
+                    if (isFullySubmitted) {
+                      return (
+                        <div className="w-full mt-4 py-3 bg-emerald-50 border-2 border-emerald-200 rounded-xl text-center">
+                          <p className="font-black text-emerald-700">✅ Already Submitted</p>
+                          <p className="text-xs text-emerald-500 mt-0.5">Your work has been received and graded.</p>
+                        </div>
+                      );
+                    }
+
+                    // Submission incomplete (image upload failed) or brand new — always show submit button
+                    return (
+                      <div className="mt-4 space-y-2">
+                        {selectedTask.submission && (
+                          <div className="py-2.5 px-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                            <p className="font-bold text-amber-700 text-sm">⚠️ Image upload failed previously — upload your work above and resubmit</p>
+                          </div>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={isSubmitting || attachmentFiles.length === 0}
+                          onClick={(e) => {
+                            const isMcq = selectedTask.questions?.length > 0 &&
+                              Array.isArray(selectedTask.questions[0]?.options);
+                            if (isMcq) {
+                              const confirmed = window.confirm(
+                                '⚠️ Final Confirmation\n\nOnce you submit this quiz, you CANNOT go back or change your answers.\nYour submission is final.\n\nAre you ready to submit?'
+                              );
+                              if (!confirmed) { e.preventDefault(); return; }
+                            }
+                          }}
+                          className="w-full bg-[#dc143c] text-white py-3 rounded-xl font-semibold hover:bg-[#dc143c]/90 transition-colors disabled:opacity-40 shadow-lg flex items-center justify-center gap-2"
+                        >
+                          {isSubmitting ? (
+                            <><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></>
+                          ) : attachmentFiles.length === 0 ? (
+                            '📸 Upload your work above to submit'
+                          ) : selectedTask.submission ? (
+                            `📤 Submit Work (${attachmentFiles.length} page${attachmentFiles.length > 1 ? 's' : ''})`
+                          ) : (
+                            `✅ Turn In Task (${attachmentFiles.length} page${attachmentFiles.length > 1 ? 's' : ''})`
+                          )}
+                        </button>
                       </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      onClick={(e) => {
-                        // MCQ quizzes get a hard confirmation gate
-                        const isMcq = selectedTask.questions?.length > 0 &&
-                          Array.isArray(selectedTask.questions[0]?.options);
-                        if (isMcq) {
-                          const confirmed = window.confirm(
-                            '⚠️ Final Confirmation\n\nOnce you submit this quiz, you CANNOT go back or change your answers.\nYour submission is final.\n\nAre you ready to submit?'
-                          );
-                          if (!confirmed) {
-                            e.preventDefault();
-                            return;
-                          }
-                        }
-                      }}
-                      className="w-full bg-[#dc143c] text-white py-3 rounded-xl font-semibold hover:bg-[#dc143c]/90 transition-colors disabled:opacity-50 mt-4 shadow-lg flex flex-col items-center justify-center"
-                    >
-                      {isSubmitting ? (
-                        <span className="flex items-center space-x-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></span>
-                      ) : selectedTask.submission ? '📤 Submit Work' : 'Turn In Task'}
-                    </button>
-                  )}
+                    );
+                  })()}
                 </form>
               )}
             </div>

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { submissionId, schoolId, teacherApproved, grade, teacherNote } = await request.json();
+    const { submissionId, schoolId, teacherApproved, grade, teacherNote, overrideScore, overrideMax } = await request.json();
 
     if (!submissionId || !schoolId) {
       return NextResponse.json({ error: 'submissionId and schoolId are required' }, { status: 400 });
@@ -34,14 +34,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Build the update payload — always update approval/grade fields
+    const updatePayload: Record<string, any> = {
+      teacher_approved: teacherApproved,
+      grade: grade || null,
+      teacher_note: teacherNote || null,
+      final_grade: grade || null,
+    };
+
+    // If teacher provided numeric score override, write those too so
+    // percentages, heatmaps, and mastery calculations stay accurate.
+    if (overrideScore !== undefined && overrideScore !== null && overrideScore !== '') {
+      updatePayload.score = parseFloat(String(overrideScore));
+    }
+    if (overrideMax !== undefined && overrideMax !== null && overrideMax !== '') {
+      updatePayload.max_score = parseFloat(String(overrideMax));
+    }
+
     const { error: updateErr } = await supabase
       .from('submissions')
-      .update({
-        teacher_approved: teacherApproved,
-        grade: grade || null,
-        teacher_note: teacherNote || null,
-        final_grade: grade || null,
-      })
+      .update(updatePayload)
       .eq('id', submissionId)
       .eq('school_id', schoolId);
 

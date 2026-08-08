@@ -150,7 +150,8 @@ export default function TeacherDashboard() {
       const assignData = await assignRes.json();
       const allAssignments: any[] = assignData.assignments || [];
 
-      const filtered = allAssignments.filter(a => a.class === className || a.subject === subjectName);
+      // Must match BOTH class AND subject — using || caused cross-subject bleed
+      const filtered = allAssignments.filter(a => a.class === className && a.subject === subjectName);
 
       const tasksWithStats = filtered.map(task => {
         const submittedStudentIds = new Set(Object.keys(task.submittedData || {}));
@@ -881,17 +882,35 @@ export default function TeacherDashboard() {
                                         </div>
                                         {aiResult.summary && <p className="text-xs text-indigo-700 leading-relaxed">{aiResult.summary}</p>}
                                       </div>
-                                      {Array.isArray(aiResult.questions) && aiResult.questions.map((q: any, qi: number) => (
-                                        <div key={qi} className="mb-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                          <div className="flex items-start justify-between gap-2">
-                                            <p className="text-xs font-bold text-[#002147] flex-1">{q.questionText || `Q${qi+1}`}</p>
-                                            <span className={`text-xs font-black px-2 py-0.5 rounded-lg shrink-0 ${
-                                              q.isFinalAnswerCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                                            }`}>{q.awardedScore}/{q.maxScore}</span>
-                                          </div>
-                                          {q.lostMarksReason && <p className="text-xs text-red-600 mt-1">⚠ {q.lostMarksReason}</p>}
-                                        </div>
-                                      ))}
+                                      {Array.isArray(aiResult.questions) && (() => {
+                                        // The AI may use an internal per-question maxScore (e.g. 1 each)
+                                        // but the real assignment total may differ (e.g. 5 total).
+                                        // Scale each question's marks to reflect the real total.
+                                        const aiInternalTotal = aiResult.questions.reduce(
+                                          (s: number, q: any) => s + (parseFloat(q.maxScore) || 1), 0
+                                        );
+                                        const realTotal = sub?.maxScore || aiResult.maxTotalScore || aiInternalTotal;
+                                        const scale = aiInternalTotal > 0 ? realTotal / aiInternalTotal : 1;
+                                        return aiResult.questions.map((q: any, qi: number) => {
+                                          const rawMax = parseFloat(q.maxScore) || 1;
+                                          const rawAwarded = parseFloat(q.awardedScore) ?? 0;
+                                          const scaledMax = Math.round(rawMax * scale * 10) / 10;
+                                          const scaledAwarded = Math.round(rawAwarded * scale * 10) / 10;
+                                          return (
+                                            <div key={qi} className="mb-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                              <div className="flex items-start justify-between gap-2">
+                                                <p className="text-xs font-bold text-[#002147] flex-1">{q.questionText || `Q${qi+1}`}</p>
+                                                <span className={`text-xs font-black px-2 py-0.5 rounded-lg shrink-0 ${
+                                                  q.isFinalAnswerCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                  {scaledAwarded}/{scaledMax}
+                                                </span>
+                                              </div>
+                                              {q.lostMarksReason && <p className="text-xs text-red-600 mt-1">⚠ {q.lostMarksReason}</p>}
+                                            </div>
+                                          );
+                                        });
+                                      })()}
                                       {Array.isArray(aiResult.weaknessTags) && aiResult.weaknessTags.length > 0 && (
                                         <div className="flex flex-wrap gap-1 mt-1">
                                           {aiResult.weaknessTags.map((tag: string, ti: number) => (

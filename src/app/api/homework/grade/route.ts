@@ -17,6 +17,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
     }
 
+    // ── Fetch real total_marks from the assignment row ────────────────────────
+    const supabase = createAdminClient();
+    let totalMarks = 10; // default fallback
+    if (assignmentId) {
+      const { data: assignRow } = await supabase
+        .from('assignments')
+        .select('total_marks')
+        .eq('id', assignmentId)
+        .maybeSingle();
+      if (assignRow?.total_marks) totalMarks = assignRow.total_marks;
+    }
+
     const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `You are an expert, supportive AI Teacher grading a student's handwritten homework.
@@ -24,14 +36,14 @@ Here are the questions they were assigned:
 ${(questions || []).map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}
 
 Analyze the attached image of their work.
-1. Grade it out of 10.
+1. Grade it out of ${totalMarks}.
 2. Provide constructive feedback. Be encouraging.
 3. Determine what concepts they have mastered ("known") and what they still struggle with ("struggling").
 
 Output your response ONLY as a JSON object with this exact structure:
 {
-  "grade": "String (e.g., '8/10')",
-  "score": number (numeric score out of 10),
+  "grade": "String (e.g., '8/${totalMarks}')",
+  "score": number (numeric score out of ${totalMarks}),
   "feedback": "String",
   "newKnown": ["concept 1"],
   "newStruggling": ["concept 2"]
@@ -54,7 +66,7 @@ Output your response ONLY as a JSON object with this exact structure:
     const parsed = JSON.parse(result.text || '{}');
     const grade = parsed.grade || 'N/A';
     const feedback = parsed.feedback || 'No feedback provided.';
-    const numericScore = typeof parsed.score === 'number' ? parsed.score : null;
+    const numericScore = typeof parsed.score === 'number' ? Math.min(parsed.score, totalMarks) : null;
 
     // Update submission in Supabase (replaces Firebase write)
     const supabase = createAdminClient();
@@ -76,7 +88,7 @@ Output your response ONLY as a JSON object with this exact structure:
               ai_feedback: feedback,
               ai_grade: grade,
               score: numericScore,
-              max_score: 10,
+              max_score: totalMarks,   // ← use real assignment total, not hardcoded 10
               updated_at: new Date().toISOString(),
             })
             .eq('id', existingSub.id);
@@ -89,7 +101,7 @@ Output your response ONLY as a JSON object with this exact structure:
             ai_feedback: feedback,
             ai_grade: grade,
             score: numericScore,
-            max_score: 10,
+            max_score: totalMarks,     // ← use real assignment total, not hardcoded 10
             teacher_approved: null, // pending teacher review
           });
         }

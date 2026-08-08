@@ -222,6 +222,11 @@ export default function TeacherDashboard() {
         setUploadingQP(false);
       }
 
+      // Compute total marks from per-question marks (sum), so the AI always
+      // knows the real ceiling and max_score is stored correctly in the DB.
+      const filteredQs = homeworkQuestions.filter(q => q.text.trim());
+      const computedTotalMarks = filteredQs.reduce((sum, q) => sum + (q.marks ? Number(q.marks) : 0), 0) || null;
+
       const res = await fetch('/api/teacher/post-assignment', {
         method: 'POST',
         headers: {
@@ -234,10 +239,11 @@ export default function TeacherDashboard() {
           type,
           dueDate,
           description,
-          questions: homeworkQuestions.filter(q => q.text.trim()).map(q => ({
+          questions: filteredQs.map(q => ({
             text: q.text.trim(),
             marks: q.marks ? Number(q.marks) : null,
           })),
+          totalMarks: computedTotalMarks,   // ← always send the real total
           questionPaperUrl,
           questionPaperType,
           class: selectedClass,
@@ -289,7 +295,7 @@ export default function TeacherDashboard() {
           score: score,
           max_score: maxScore,
           teacher_approved: true,
-          teacher_feedback: editFeedback || null,
+          teacher_note: editFeedback || null,   // ← correct column name
         })
         .eq('id', submissionId);
 
@@ -809,9 +815,17 @@ export default function TeacherDashboard() {
                           const submitted = !!sub;
                           const isExpanded = expandedStudentId === student.id;
                           const aiResult = sub?.aiResult;
-                          const displayScore = sub?.finalGrade || (sub?.score != null && sub?.maxScore ? `${sub.score}/${sub.maxScore}` : null);
-                          const scoreNum = sub?.score ?? (sub?.maxScore ? 0 : null);
-                          const maxNum = sub?.maxScore ?? null;
+                          // Use the assignment's teacher-set total as the authoritative max.
+                          // This means even old submissions with a wrong max_score in DB
+                          // (e.g. 1 instead of 5) will display the correct teacher-set marks.
+                          const taskTotalMarks = selectedTask.totalMarks
+                            || (selectedTask.questions?.reduce((s: number, q: any) => s + (q.marks || 0), 0) || 0) > 0
+                              ? selectedTask.questions?.reduce((s: number, q: any) => s + (q.marks || 0), 0)
+                              : null;
+                          const scoreNum = sub?.score ?? (sub?.maxScore != null ? 0 : null);
+                          const maxNum = taskTotalMarks || sub?.maxScore || null;
+                          const displayScore = sub?.finalGrade
+                            || (scoreNum != null && maxNum ? `${scoreNum}/${maxNum}` : null);
                           const pct = scoreNum != null && maxNum ? Math.round((scoreNum / maxNum) * 100) : null;
                           const isEditing = editingSubId === student.id;
 
@@ -877,8 +891,9 @@ export default function TeacherDashboard() {
                                       <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">🤖 AI Grading Breakdown</p>
                                       <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-3 border border-indigo-100 mb-2">
                                         <div className="flex items-center justify-between mb-1">
-                                          <span className="font-black text-indigo-800">{aiResult.grade || displayScore}</span>
-                                          <span className="text-xs text-indigo-600 font-semibold">{aiResult.percentageScore != null ? `${aiResult.percentageScore}%` : ''}</span>
+                                          {/* Always show the corrected score using teacher-set marks, not the stale AI-stored grade string */}
+                                          <span className="font-black text-indigo-800">{displayScore || aiResult.grade}</span>
+                                          <span className="text-xs text-indigo-600 font-semibold">{pct != null ? `${pct}%` : (aiResult.percentageScore != null ? `${aiResult.percentageScore}%` : '')}</span>
                                         </div>
                                         {aiResult.summary && <p className="text-xs text-indigo-700 leading-relaxed">{aiResult.summary}</p>}
                                       </div>

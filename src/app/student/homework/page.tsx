@@ -210,7 +210,11 @@ export default function StudentHomework() {
       {/* Assignment cards */}
       <div className="space-y-3">
         {filtered.map(a => (
-          <div key={a.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+          <Link
+            key={a.id}
+            href={`/student?task=${a.id}`}
+            className="block bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+          >
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -235,20 +239,23 @@ export default function StudentHomework() {
 
               <div className="flex items-center gap-3 shrink-0">
                 {a.status === 'completed' ? (
-                  <div className="text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
                       <CheckCircle className="w-3.5 h-3.5" /> Submitted
                     </span>
                     {a.grade && (
-                      <p className="text-xs font-mono font-bold text-gray-700 mt-1.5 text-right">
+                      <p className="text-xs font-mono font-bold text-gray-700">
                         {a.score != null && a.maxScore != null
                           ? `${a.score}/${a.maxScore} (${Math.round((a.score / a.maxScore) * 100)}%)`
                           : `Grade: ${a.grade}`}
                       </p>
                     )}
-                    {a.teacherApproved === false && (
-                      <p className="text-xs text-amber-600 font-semibold mt-1">Awaiting review</p>
-                    )}
+                    <Link
+                      href={`/student?task=${a.id}`}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#002147] text-white text-xs font-bold rounded-xl hover:bg-blue-900 transition-all shadow-sm mt-1"
+                    >
+                      View AI Analysis ↗
+                    </Link>
                   </div>
                 ) : (
                   <Link
@@ -260,7 +267,7 @@ export default function StudentHomework() {
                 )}
               </div>
             </div>
-          </div>
+          </Link>
         ))}
 
         {filtered.length === 0 && (

@@ -30,13 +30,14 @@ const UNIT_LABEL: Record<string, string> = {
   unit_5: 'Unit V: Revision & Synthesis',
 };
 
-function scoreColor(s: number | null, itemCount: number = 4) {
-  if (s === null || itemCount < 4) {
-    return { bg: 'bg-gray-100/90', text: 'text-gray-400', bar: 'bg-gray-300', border: 'border-gray-200', badge: 'bg-gray-200 text-gray-600', band: 'insufficient', label: 'Insufficient Evidence' };
+function scoreColor(s: number | null, itemCount: number = 1) {
+  if (s === null || itemCount === 0) {
+    return { bg: 'bg-gray-100/90', text: 'text-gray-400', bar: 'bg-gray-300', border: 'border-gray-200', badge: 'bg-gray-200 text-gray-600', band: 'insufficient', label: 'No Data' };
   }
-  if (s >= 75)   return { bg: 'bg-emerald-50/80', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-800', band: itemCount < 8 ? 'provisional' : 'firm', label: `${s}%` };
-  if (s >= 50)   return { bg: 'bg-amber-50/80', text: 'text-amber-700', bar: 'bg-amber-400', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-800', band: itemCount < 8 ? 'provisional' : 'firm', label: `${s}%` };
-  return           { bg: 'bg-red-50/80', text: 'text-red-700', bar: 'bg-red-500', border: 'border-red-200', badge: 'bg-red-100 text-red-800', band: itemCount < 8 ? 'provisional' : 'firm', label: `${s}%` };
+  const band = itemCount >= 8 ? 'firm' : itemCount >= 4 ? 'provisional' : 'initial';
+  if (s >= 75)   return { bg: 'bg-emerald-50/80', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-800', band, label: `${s}%` };
+  if (s >= 50)   return { bg: 'bg-amber-50/80', text: 'text-amber-700', bar: 'bg-amber-400', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-800', band, label: `${s}%` };
+  return           { bg: 'bg-red-50/80', text: 'text-red-700', bar: 'bg-red-500', border: 'border-red-200', badge: 'bg-red-100 text-red-800', band, label: `${s}%` };
 }
 
 function overallGrade(s: number | null): string {
@@ -304,7 +305,7 @@ export default function StudentMasteryPage() {
                           className={`p-5 rounded-2xl border ${uc.bg} ${uc.border} flex items-center gap-4 shadow-sm hover:shadow-md transition-all`}
                         >
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${uc.bar}`}>
-                            {unit.score === null || unit.submissionCount < 4 ? (
+                            {unit.score === null ? (
                               <Minus className="w-6 h-6 text-gray-400" />
                             ) : unit.score >= 75 ? (
                               <CheckCircle2 className="w-6 h-6 text-white" />
@@ -324,24 +325,24 @@ export default function StudentMasteryPage() {
                                     Provisional
                                   </span>
                                 )}
-                                {uc.band === 'insufficient' && (
-                                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 border border-gray-300">
-                                    Grey (0-3 items)
+                                {uc.band === 'initial' && (
+                                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300">
+                                    Initial Evidence
                                   </span>
                                 )}
                                 <span className={`text-base font-black ${uc.text}`}>
-                                  {unit.score !== null && unit.submissionCount >= 4 ? `${unit.score}%` : '—'}
+                                  {unit.score !== null ? `${unit.score}%` : '—'}
                                 </span>
                               </div>
                             </div>
                             <div className="w-full bg-white/70 rounded-full h-2 mt-2 overflow-hidden border border-black/5">
                               <div
                                 className={`h-2 rounded-full transition-all duration-700 ${uc.bar}`}
-                                style={{ width: `${unit.submissionCount < 4 ? 0 : (unit.score ?? 0)}%` }}
+                                style={{ width: `${unit.score ?? 0}%` }}
                               />
                             </div>
                             <p className="text-xs text-gray-400 font-medium mt-1.5">
-                              {unit.submissionCount} item{unit.submissionCount !== 1 ? 's' : ''} recorded {unit.submissionCount < 4 ? '(needs ≥4 for score)' : ''}
+                              {unit.submissionCount} submission{unit.submissionCount !== 1 ? 's' : ''} recorded
                             </p>
                           </div>
                         </div>

@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
  *   - assignmentId: the assignment ID
  *   - pageIndex: 0-based page number
  *
- * Uses the service-role admin client to bypass storage RLS policies.
+ * Uses the service-role admin client to upload to Supabase Storage.
+ * Auto-creates the 'submissions' bucket if missing, or falls back to Base64 data URL.
  * Returns { url: string } on success.
  */
 export async function POST(req: NextRequest) {
@@ -30,32 +31,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing file, studentId, or assignmentId' }, { status: 400 });
     }
 
-    // Only allow the authenticated user to upload their own files
     if (user.id !== studentId) {
       return NextResponse.json({ error: 'Forbidden: can only upload your own submissions' }, { status: 403 });
     }
 
-    const ext = file.name.split('.').pop() || 'jpg';
-    const path = `${studentId}/${assignmentId}/${Date.now()}_page${Number(pageIndex) + 1}.${ext}`;
-
     const supabase = createAdminClient();
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const mimeType = file.type || 'image/jpeg';
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${studentId}/${assignmentId}/${Date.now()}_page${Number(pageIndex) + 1}.${ext}`;
 
+    // 1. Ensure 'submissions' storage bucket exists
+    try {
+      await supabase.storage.createBucket('submissions', {
+        public: true,
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic'],
+      });
+    } catch {
+      // Ignore if bucket already exists
+    }
+
+    // 2. Try uploading to Supabase Storage
     const { error: uploadErr } = await supabase.storage
       .from('submissions')
       .upload(path, buffer, {
-        contentType: file.type,
+        contentType: mimeType,
         upsert: true,
       });
 
-    if (uploadErr) throw uploadErr;
+    if (!uploadErr) {
+      const { data: publicUrlData } = supabase.storage
+        .from('submissions')
+        .getPublicUrl(path);
 
-    const { data: publicUrlData } = supabase.storage
-      .from('submissions')
-      .getPublicUrl(path);
+      return NextResponse.json({ url: publicUrlData.publicUrl });
+    }
 
-    return NextResponse.json({ url: publicUrlData.publicUrl });
+    console.warn('[upload-submission] Storage bucket upload error, falling back to data URL:', uploadErr.message);
+
+    // 3. Fallback: Convert to Base64 data URL if storage bucket fails/missing
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+
+    return NextResponse.json({ url: dataUrl });
   } catch (err: any) {
     console.error('[upload-submission]', err);
     return NextResponse.json({ error: err.message || 'Upload failed' }, { status: 500 });

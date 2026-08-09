@@ -1410,14 +1410,6 @@ export default function StudentDashboard() {
         <RecentScoresModal onClose={() => setShowScoresModal(false)} />
       )}
 
-      </div>{/* end left column */}
-
-      {/* ── RIGHT COLUMN: Heatmap Sidebar ─────────────────────────────────── */}
-      <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto">
-        <StudentHeatmapSidebar profile={profile} />
-      </div>
-
-      </div>{/* end two-column flex */}
     </div>
   );
 }

@@ -101,9 +101,17 @@ export default function StudentHeatmapSidebar({ profile }: { profile: any }) {
           const pct = Math.round((sub.score / sub.max_score) * 100);
           if (!grouped[subject]) grouped[subject] = {};
 
-          const units: string[] = Array.isArray(assign.units) && assign.units.length > 0
-            ? assign.units
-            : ['general'];
+          // Determine units/topics for this assignment
+          const rawUnits: string[] = Array.isArray(assign.units) && assign.units.length > 0
+            ? assign.units.filter(u => u !== 'general' && u !== 'General')
+            : [];
+          
+          // If no units tagged, use the assignment title formatted as a topic name
+          const fallbackTopic = assign.title
+            ? assign.title.trim().charAt(0).toUpperCase() + assign.title.trim().slice(1)
+            : 'Core Concepts';
+
+          const units: string[] = rawUnits.length > 0 ? rawUnits : [fallbackTopic];
 
           units.forEach(uid => {
             if (!grouped[subject][uid]) grouped[subject][uid] = [];
@@ -118,13 +126,14 @@ export default function StudentHeatmapSidebar({ profile }: { profile: any }) {
 
         // 4. Convert to SubjectBlock[]
         const result: SubjectBlock[] = Object.entries(grouped).map(([subject, unitMap]) => {
-          const ordered = UNIT_ORDER.filter(u => unitMap[u]);
-          const extras  = Object.keys(unitMap).filter(u => !UNIT_ORDER.includes(u));
+          const ordered = UNIT_ORDER.filter(u => u !== 'general' && unitMap[u]);
+          const extras  = Object.keys(unitMap).filter(u => !UNIT_ORDER.includes(u) && u !== 'general');
 
           const units: UnitRow[] = [...ordered, ...extras].map(u => {
             const scores = unitMap[u];
             const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-            return { unitId: u, unitLabel: UNIT_LABEL[u] || u, score: avg, submissionCount: scores.length };
+            const label = UNIT_LABEL[u] || (u.charAt(0).toUpperCase() + u.slice(1));
+            return { unitId: u, unitLabel: label, score: avg, submissionCount: scores.length };
           });
 
           const allScores = units.map(t => t.score).filter(Boolean) as number[];

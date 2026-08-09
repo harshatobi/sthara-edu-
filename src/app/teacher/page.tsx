@@ -332,8 +332,11 @@ export default function TeacherDashboard() {
             }
           });
         } else {
-          // No units tagged — fall back to subject-level entry
-          const key = `${taskSubject}__general`;
+          // No units tagged — fall back to assignment title entry instead of 'general'
+          const topicName = selectedTask?.title
+            ? selectedTask.title.trim().charAt(0).toUpperCase() + selectedTask.title.trim().slice(1)
+            : 'Core Concepts';
+          const key = `${taskSubject}__${topicName}`;
           topicScores[key] = pct;
           if (pct >= 70) { knownSet.add(key); struggling.delete(key); }
           else if (pct < 50) { struggling.add(key); knownSet.delete(key); }

@@ -97,9 +97,15 @@ export default function MasteryModal({ profile, onClose }: { profile: any; onClo
 
           if (!grouped[subject]) grouped[subject] = {};
 
-          const units: string[] = Array.isArray(assign.units) && assign.units.length > 0
-            ? assign.units
-            : ['general'];
+          const rawUnits: string[] = Array.isArray(assign.units) && assign.units.length > 0
+            ? assign.units.filter(u => u !== 'general' && u !== 'General')
+            : [];
+          
+          const fallbackTopic = assign.title
+            ? assign.title.trim().charAt(0).toUpperCase() + assign.title.trim().slice(1)
+            : 'Core Concepts';
+
+          const units: string[] = rawUnits.length > 0 ? rawUnits : [fallbackTopic];
 
           units.forEach(unitId => {
             if (!grouped[subject][unitId]) grouped[subject][unitId] = [];
@@ -110,13 +116,14 @@ export default function MasteryModal({ profile, onClose }: { profile: any; onClo
         // 5. Convert to SubjectBlock[]
         const result: SubjectBlock[] = Object.entries(grouped).map(([subject, unitMap]) => {
           const topics: TopicRow[] = UNIT_ORDER
-            .filter(u => unitMap[u])
+            .filter(u => u !== 'general' && unitMap[u])
             .map(u => {
               const scores = unitMap[u];
               const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+              const label = UNIT_LABEL[u] || (u.charAt(0).toUpperCase() + u.slice(1));
               return {
                 unitId: u,
-                unitLabel: UNIT_LABEL[u] || u,
+                unitLabel: label,
                 score: avg,
                 submissionCount: scores.length,
               };
@@ -124,11 +131,12 @@ export default function MasteryModal({ profile, onClose }: { profile: any; onClo
 
           // Also pick up any custom unit IDs not in UNIT_ORDER
           Object.keys(unitMap)
-            .filter(u => !UNIT_ORDER.includes(u))
+            .filter(u => !UNIT_ORDER.includes(u) && u !== 'general')
             .forEach(u => {
               const scores = unitMap[u];
               const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-              topics.push({ unitId: u, unitLabel: u, score: avg, submissionCount: scores.length });
+              const label = u.charAt(0).toUpperCase() + u.slice(1);
+              topics.push({ unitId: u, unitLabel: label, score: avg, submissionCount: scores.length });
             });
 
           const allScores = topics.map(t => t.score).filter(s => s !== null) as number[];

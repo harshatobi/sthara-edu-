@@ -36,6 +36,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: schoolId, title, teacherId' }, { status: 400 });
     }
 
+    // ── AI Topic & Curriculum Unit Analysis ──────────────────────────────────
+    let finalUnits: string[] = Array.isArray(units) && units.length > 0 ? units : [];
+
+    if (finalUnits.length === 0) {
+      // Try AI extraction of topic/unit from curriculum content
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey) {
+        try {
+          const { GoogleGenAI } = await import('@google/genai');
+          const ai = new GoogleGenAI({ apiKey });
+          const prompt = `You are a curriculum expert for school education.
+Analyze this posted homework/assignment for ${assignmentClass || 'Class 10'} ${subject || 'Science'}:
+Title: "${title}"
+Description: "${description || ''}"
+Questions: ${JSON.stringify(questions || [])}
+
+Extract 1-2 concise, formal curriculum topic/unit names (e.g. "Chemical Reactions and Equations", "Acids, Bases and Salts", "Life Processes", "Quadratic Equations").
+Return ONLY a JSON array of strings, e.g.: ["Chemical Reactions and Equations"]`;
+
+          const aiRes = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json', temperature: 0.1 },
+          });
+
+          const parsed = JSON.parse(aiRes.text || '[]');
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            finalUnits = parsed.map((u: string) => String(u).trim()).filter(Boolean);
+          }
+        } catch (aiErr) {
+          console.warn('[post-assignment] AI topic extraction failed, using title fallback:', aiErr);
+        }
+      }
+
+      // Fallback: Use formatted title if AI topic extraction was empty
+      if (finalUnits.length === 0) {
+        const cleanTitle = title.trim().replace(/^homework:?\s*/i, '');
+        const formattedTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+        finalUnits = [formattedTitle];
+      }
+    }
+
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
@@ -54,7 +96,7 @@ export async function POST(req: NextRequest) {
         questions: questions || [],
         question_paper_url: questionPaperUrl || null,
         assigned_student_ids: assignedStudentIds || [],
-        units: units || [],
+        units: finalUnits,
         status: 'published',
       })
       .select('id')

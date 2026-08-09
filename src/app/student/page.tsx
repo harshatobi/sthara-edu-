@@ -722,49 +722,52 @@ export default function StudentDashboard() {
       <div className="flex-1 min-w-0 space-y-10">
       
       {/* Premium Hero Header */}
-      <div className="relative bg-gradient-to-br from-[#002147] via-[#003366] to-[#001a33] rounded-[2rem] p-10 overflow-hidden shadow-2xl border border-white/10">
+      <div className="relative bg-gradient-to-br from-[#002147] via-[#003366] to-[#001a33] rounded-[2.5rem] p-8 md:p-10 overflow-hidden shadow-2xl border border-white/10">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-orange-500/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <div className="flex items-center space-x-3 mb-3">
-              <span className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold font-mono shadow-sm tracking-wide">
-                {profile.customStudentId || 'ID Pending'}
+            <div className="flex flex-wrap items-center gap-2.5 mb-3">
+              <span className="bg-white/15 backdrop-blur-md border border-white/20 text-white px-3.5 py-1 rounded-full text-xs font-bold font-mono shadow-sm tracking-wide">
+                {(() => {
+                  const raw = profile.customStudentId || '';
+                  if (!raw) return 'ID Pending';
+                  if (raw.length > 20) {
+                    const parts = raw.split('-');
+                    const lastPart = parts[parts.length - 1];
+                    return `ID: ${lastPart.length <= 8 ? lastPart : raw.substring(0, 10)}`;
+                  }
+                  return `ID: ${raw}`;
+                })()}
               </span>
-              <span className="text-blue-200 font-medium text-sm bg-[#001a33]/50 px-3 py-1 rounded-full border border-white/5">
+              <span className="text-blue-100 font-semibold text-xs bg-white/10 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/15">
                 {profile.institutionType === 'college'
-                  ? `${profile.branch || 'Branch N/A'} · ${profile.year || ''} · ${profile.semester || ''}`
+                  ? `${profile.branch || 'Branch N/A'} · ${profile.year || ''}`
                   : `Class: ${profile.studentClass || 'Unassigned'}`
                 }
               </span>
+              <span className="text-emerald-300 font-semibold text-xs bg-emerald-500/20 backdrop-blur-md px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Student
+              </span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 to-orange-500">{(profile.name || 'Student').split(' ')[0]}</span>!
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-2 leading-tight">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400">{(profile.name || 'Student').split(' ')[0]}</span>!
             </h2>
-            <p className="text-blue-100 text-lg max-w-xl font-medium opacity-90">
+            <p className="text-blue-100 text-sm md:text-base max-w-xl font-medium opacity-90 leading-relaxed">
               {profile.institutionType === 'college'
                 ? 'Your academic dashboard. Stay on top of your coursework and assignments.'
                 : 'Ready to crush today\'s goals? Your personalized learning path awaits.'}
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 px-6 py-4 rounded-2xl shadow-xl flex items-center justify-between sm:justify-start space-x-4">
-              <span className="text-sm font-bold text-white uppercase tracking-wider">Energy</span>
-              <div className="flex space-x-3 bg-black/20 p-1.5 rounded-full border border-white/5">
-                <button className="text-2xl hover:scale-125 transition-transform opacity-60 hover:opacity-100 grayscale hover:grayscale-0">😴</button>
-                <button className="text-2xl hover:scale-125 transition-transform opacity-60 hover:opacity-100 grayscale hover:grayscale-0">😐</button>
-                <button className="text-2xl hover:scale-110 transition-transform ring-2 ring-orange-500 rounded-full bg-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.5)]">🚀</button>
-              </div>
-            </div>
-            
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             <button 
               onClick={signOut}
-              className="flex items-center justify-center space-x-2 bg-white/5 border border-white/10 px-5 py-4 rounded-2xl shadow-sm hover:bg-white/10 text-white transition-all font-bold group"
+              className="flex items-center justify-center space-x-2 bg-white/10 border border-white/20 px-5 py-3 rounded-2xl shadow-md hover:bg-red-500/20 hover:border-red-400/40 text-white transition-all font-bold text-sm group backdrop-blur-md"
             >
-              <LogOut className="w-5 h-5 text-red-400 group-hover:text-red-300" />
+              <LogOut className="w-4 h-4 text-red-300 group-hover:text-red-200 transition-colors" />
               <span className="group-hover:text-red-100 whitespace-nowrap">Sign Out</span>
             </button>
           </div>

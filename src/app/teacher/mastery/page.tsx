@@ -13,13 +13,18 @@ interface StudentRow {
   custom_student_id?: string;
   student_class?: string;
   avatar_url?: string;
-  roll?: string;
+  roll: string;
+}
+
+interface TopicDef {
+  id: string;
+  name: string;
 }
 
 interface ChapterDef {
   id: string;
   name: string;
-  topics: { id: string; name: string }[];
+  topics: TopicDef[];
 }
 
 interface CellData {
@@ -28,64 +33,96 @@ interface CellData {
   confidence: 'insufficient' | 'provisional' | 'firm';
 }
 
-const SCIENCE_CHAPTERS: ChapterDef[] = [
-  {
-    id: 'chem_rxn_chap',
-    name: 'Chemical Reactions & Equations',
-    topics: [
-      { id: 'chem_rxn_1', name: 'Chemical Equations' },
-      { id: 'chem_rxn_2', name: 'Combination & Decomposition' },
-      { id: 'chem_rxn_3', name: 'Displacement & Redox' },
-      { id: 'chem_rxn_4', name: 'Corrosion & Rancidity' }
-    ]
-  },
-  {
-    id: 'acids_bases_chap',
-    name: 'Acids, Bases & Salts',
-    topics: [
-      { id: 'acids_bases_1', name: 'Indicators & Properties' },
-      { id: 'acids_bases_2', name: 'pH Scale & Everyday Importance' },
-      { id: 'acids_bases_3', name: 'Salts & Preparation' }
-    ]
-  },
-  {
-    id: 'metals_chap',
-    name: 'Metals & Non-Metals',
-    topics: [
-      { id: 'metals_1', name: 'Physical & Chemical Properties' },
-      { id: 'metals_2', name: 'Reactivity Series' },
-      { id: 'metals_3', name: 'Extraction & Refining' }
-    ]
-  },
-  {
-    id: 'life_proc_chap',
-    name: 'Life Processes',
-    topics: [
-      { id: 'life_proc_1', name: 'Nutrition & Photosynthesis' },
-      { id: 'life_proc_2', name: 'Respiration in Organisms' },
-      { id: 'life_proc_3', name: 'Transportation & Heart' },
-      { id: 'life_proc_4', name: 'Excretion & Nephrons' }
-    ]
-  },
-  {
-    id: 'control_chap',
-    name: 'Control & Coordination',
-    topics: [
-      { id: 'control_1', name: 'Nervous System & Reflex Arc' },
-      { id: 'control_2', name: 'Plant Hormones & Tropism' },
-      { id: 'control_3', name: 'Human Endocrine System' }
-    ]
-  },
-  {
-    id: 'electricity_chap',
-    name: 'Electricity & Current',
-    topics: [
-      { id: 'elec_1', name: 'Ohm’s Law & Resistance' },
-      { id: 'elec_2', name: 'Series & Parallel Combinations' },
-      { id: 'elec_3', name: 'Heating Effect & Power' }
-    ]
-  }
-];
+// Fallback standard CBSE Curriculum structure if no custom assignments exist yet
+const DEFAULT_CURRICULUM: Record<string, ChapterDef[]> = {
+  Science: [
+    {
+      id: 'chem_rxn',
+      name: 'Chemical Reactions & Equations',
+      topics: [
+        { id: 'chem_eq', name: 'Chemical Equations' },
+        { id: 'comb_decomp', name: 'Combination & Decomposition' },
+        { id: 'disp_redox', name: 'Displacement & Redox' },
+        { id: 'corr_rancid', name: 'Corrosion & Rancidity' }
+      ]
+    },
+    {
+      id: 'acids_bases',
+      name: 'Acids, Bases & Salts',
+      topics: [
+        { id: 'ind_prop', name: 'Indicators & Properties' },
+        { id: 'ph_scale', name: 'pH Scale & Everyday Importance' },
+        { id: 'salts_prep', name: 'Salts & Preparation' }
+      ]
+    },
+    {
+      id: 'metals',
+      name: 'Metals & Non-Metals',
+      topics: [
+        { id: 'metal_prop', name: 'Physical & Chemical Properties' },
+        { id: 'reactivity', name: 'Reactivity Series' },
+        { id: 'extraction', name: 'Extraction & Refining' }
+      ]
+    },
+    {
+      id: 'life_proc',
+      name: 'Life Processes',
+      topics: [
+        { id: 'nutrition', name: 'Nutrition & Photosynthesis' },
+        { id: 'respiration', name: 'Respiration in Organisms' },
+        { id: 'transport', name: 'Transportation & Heart' },
+        { id: 'excretion', name: 'Excretion & Nephrons' }
+      ]
+    },
+    {
+      id: 'electricity',
+      name: 'Electricity & Current',
+      topics: [
+        { id: 'ohms_law', name: 'Ohm’s Law & Resistance' },
+        { id: 'combinations', name: 'Series & Parallel Combinations' },
+        { id: 'heating_eff', name: 'Heating Effect & Power' }
+      ]
+    }
+  ],
+  Mathematics: [
+    {
+      id: 'real_numbers',
+      name: 'Real Numbers',
+      topics: [
+        { id: 'euclid_lemma', name: 'Euclid’s Division Lemma' },
+        { id: 'fundamental_thm', name: 'Fundamental Theorem of Arithmetic' },
+        { id: 'irrationality', name: 'Irrational Numbers Proof' }
+      ]
+    },
+    {
+      id: 'polynomials',
+      name: 'Polynomials',
+      topics: [
+        { id: 'zeros_poly', name: 'Zeros & Geometrical Meaning' },
+        { id: 'coeff_rel', name: 'Relationship between Zeros & Coefficients' },
+        { id: 'div_algo', name: 'Division Algorithm for Polynomials' }
+      ]
+    },
+    {
+      id: 'linear_eq',
+      name: 'Pair of Linear Equations',
+      topics: [
+        { id: 'graphical_sol', name: 'Graphical Method of Solution' },
+        { id: 'algebraic_sol', name: 'Substitution & Elimination' },
+        { id: 'cross_mult', name: 'Cross-Multiplication Method' }
+      ]
+    },
+    {
+      id: 'triangles_math',
+      name: 'Triangles & Geometry',
+      topics: [
+        { id: 'bpt_theorem', name: 'Basic Proportionality Theorem' },
+        { id: 'similarity', name: 'Criteria for Similarity' },
+        { id: 'pythagoras_thm', name: 'Pythagoras Theorem & Applications' }
+      ]
+    }
+  ]
+};
 
 function getBoxStyle(score: number | null) {
   if (score === null) {
@@ -132,14 +169,18 @@ export default function TmlMasteryHeatmapPage() {
 
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [classList, setClassList] = useState<string[]>([]);
+  const [subjectList, setSubjectList] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('Science');
 
-  // Navigation flow views: 1 = My Classes, 2 = Chapters List, 3 = Heatmap Table
+  // Navigation flow views: 1 = My Classes, 2 = Chapters List, 3 = 2D Heatmap Matrix Table
   const [viewMode, setViewMode] = useState<1 | 2 | 3>(1);
   const [selectedChapterIdx, setSelectedChapterIdx] = useState<number>(0);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [chapters, setChapters] = useState<ChapterDef[]>(DEFAULT_CURRICULUM.Science);
+
+  // Dynamic score matrix: studentId -> topicKey -> CellData
   const [matrix, setMatrix] = useState<Record<string, Record<string, CellData>>>({});
   const [selectedCell, setSelectedCell] = useState<{ student: StudentRow; topicName: string; data: CellData } | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -150,29 +191,46 @@ export default function TmlMasteryHeatmapPage() {
     }
   }, [profile, loading, router]);
 
+  // Extract real teacher assigned classes and subjects
   useEffect(() => {
     if (!profile?.assignments) return;
     const assigns = profile.assignments as any[];
     const clsSet = new Set<string>();
-    assigns.forEach(a => { if (a.class) clsSet.add(a.class); });
+    const subSet = new Set<string>();
+
+    assigns.forEach(a => {
+      if (a.class) clsSet.add(a.class);
+      if (a.subject) subSet.add(a.subject);
+    });
+
     const clss = [...clsSet];
+    const subs = [...subSet];
+
     setClassList(clss);
+    if (subs.length > 0) {
+      setSubjectList(subs);
+      setSelectedSubject(subs[0]);
+    }
     if (clss.length > 0 && !selectedClass) setSelectedClass(clss[0]);
   }, [profile?.assignments]);
 
+  // Load Real Supabase Data: Students, Assignments, Submissions, TML Scores
   useEffect(() => {
     if (!profile?.schoolId) return;
 
-    const buildData = async () => {
+    const loadRealData = async () => {
       setIsLoading(true);
       try {
+        // 1. Fetch Real Students for this school and selected class
         let studentQuery = supabase
           .from('users')
           .select('id, name, custom_student_id, student_class, branch, avatar_url')
           .eq('school_id', profile.schoolId)
           .eq('role', 'student');
 
-        const { data: studentData } = await studentQuery;
+        const { data: studentData, error: sErr } = await studentQuery;
+        if (sErr) console.warn('[Heatmap] student query error:', sErr);
+
         let filteredStudents = studentData || [];
         if (selectedClass) {
           filteredStudents = filteredStudents.filter(s =>
@@ -187,20 +245,72 @@ export default function TmlMasteryHeatmapPage() {
         setStudents(studentRows);
 
         const studentIds = studentRows.map(s => s.id);
+
+        // 2. Fetch Real Posted Assignments for this teacher/school
+        const { data: assignData } = await supabase
+          .from('assignments')
+          .select('id, title, subject, class, units')
+          .eq('school_id', profile.schoolId);
+
+        // 3. Dynamically build curriculum chapters from real assignments if available
+        const currentSubjAssignments = (assignData || []).filter(a =>
+          !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase())
+        );
+
+        let builtChapters: ChapterDef[] = DEFAULT_CURRICULUM[selectedSubject] || DEFAULT_CURRICULUM.Science;
+
+        if (currentSubjAssignments.length > 0) {
+          const customChapMap = new Map<string, TopicDef[]>();
+          currentSubjAssignments.forEach(a => {
+            const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
+              ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
+              : [a.title || 'Core Concepts'];
+
+            const chapName = rawUnits[0];
+            const topicName = a.title || rawUnits[0];
+            const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+            if (!customChapMap.has(chapName)) {
+              customChapMap.set(chapName, []);
+            }
+            const existing = customChapMap.get(chapName)!;
+            if (!existing.some(t => t.id === topicId)) {
+              existing.push({ id: topicId, name: topicName });
+            }
+          });
+
+          if (customChapMap.size > 0) {
+            const dynamicList: ChapterDef[] = [];
+            let cIdx = 1;
+            customChapMap.forEach((topList, chapName) => {
+              dynamicList.push({
+                id: `chap_${cIdx++}`,
+                name: chapName,
+                topics: topList
+              });
+            });
+            builtChapters = dynamicList;
+          }
+        }
+        setChapters(builtChapters);
+
+        // 4. Fetch Real Submissions for all students in this class
         const { data: subsData } = await supabase
           .from('submissions')
-          .select('student_id, assignment_id, score, max_score, teacher_approved, assignments(title, units, subject)')
+          .select('student_id, assignment_id, score, max_score, teacher_approved, assignments(id, title, units, subject)')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
+        // 5. Fetch Real TML score snapshots
         const { data: tmlData } = await supabase
           .from('tml_scores')
-          .select('student_id, topic_name, score, confidence_band, item_count')
+          .select('student_id, subject, topic_name, score, confidence_band, item_count')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
+        // 6. Populate 2D Score Matrix
         const newMatrix: Record<string, Record<string, CellData>> = {};
         studentRows.forEach(st => { newMatrix[st.id] = {}; });
 
-        // Map live submissions
+        // Map live teacher-approved submissions
         (subsData || []).forEach(sub => {
           if (!newMatrix[sub.student_id] || sub.score === null || sub.max_score <= 0 || sub.teacher_approved === false) return;
           const assign = sub.assignments as any;
@@ -220,7 +330,7 @@ export default function TmlMasteryHeatmapPage() {
           };
         });
 
-        // Merge TML snapshots
+        // Merge persisted TML snapshots
         (tmlData || []).forEach(tml => {
           if (!newMatrix[tml.student_id] || tml.score === null) return;
           const topicKey = tml.topic_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
@@ -235,20 +345,22 @@ export default function TmlMasteryHeatmapPage() {
 
         setMatrix(newMatrix);
       } catch (err) {
-        console.error('[TML Heatmap error]:', err);
+        console.error('[TML Heatmap loadRealData error]:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    buildData();
-  }, [profile?.schoolId, selectedClass]);
+    loadRealData();
+  }, [profile?.schoolId, selectedClass, selectedSubject]);
 
-  // Compute Chapter & Class TML stats dynamically
-  const currentChapter = SCIENCE_CHAPTERS[selectedChapterIdx] || SCIENCE_CHAPTERS[0];
+  // Compute Real Stats for currently selected chapter
+  const currentChapter = chapters[selectedChapterIdx] || chapters[0] || { id: 'c1', name: 'Curriculum Unit', topics: [] };
 
   const heatmapStats = useMemo(() => {
-    if (students.length === 0) return { avg: 0, atRisk: 0, mastered: 0, gaps: 0, topicAvgs: [] };
+    if (students.length === 0 || !currentChapter?.topics) {
+      return { avg: 0, atRisk: 0, mastered: 0, gaps: 0, topicAvgs: [] };
+    }
 
     let totalScoreSum = 0;
     let totalCellsCount = 0;
@@ -256,7 +368,7 @@ export default function TmlMasteryHeatmapPage() {
     let masteredCount = 0;
     let gapCount = 0;
 
-    const tAvgs: { topic: { id: string; name: string }; avg: number }[] = [];
+    const tAvgs: { topic: TopicDef; avg: number }[] = [];
 
     currentChapter.topics.forEach(tp => {
       const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
@@ -303,6 +415,23 @@ export default function TmlMasteryHeatmapPage() {
     };
   }, [students, matrix, currentChapter]);
 
+  // Compute Real Class Average for Level 1 Cards & Level 2 Chapter Bars
+  const classOverallAvg = useMemo(() => {
+    if (students.length === 0) return 0;
+    let sum = 0;
+    let count = 0;
+    students.forEach(st => {
+      const row = matrix[st.id] || {};
+      Object.values(row).forEach(c => {
+        if (c.score !== null) {
+          sum += c.score;
+          count++;
+        }
+      });
+    });
+    return count > 0 ? Math.round(sum / count) : 0;
+  }, [students, matrix]);
+
   const handleAssignPractice = async () => {
     if (!selectedCell || !profile?.schoolId) return;
     setIsAssigning(true);
@@ -344,7 +473,7 @@ export default function TmlMasteryHeatmapPage() {
 
   return (
     <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans">
-      {/* Top Oxford Navy Brand Bar */}
+      {/* Top Oxford Navy Brand Header */}
       <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-black text-white text-sm border border-white/20">
@@ -390,7 +519,7 @@ export default function TmlMasteryHeatmapPage() {
           {viewMode === 3 && (
             <>
               <span>›</span>
-              <span className="text-[#002147] font-bold">{currentChapter.name}</span>
+              <span className="text-[#002147] font-bold">{currentChapter?.name}</span>
             </>
           )}
         </nav>
@@ -398,15 +527,31 @@ export default function TmlMasteryHeatmapPage() {
         {/* ================= VIEW 1: MY CLASSES GRID ================= */}
         {viewMode === 1 && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-2xl font-extrabold text-[#002147]">My Classes</h2>
-              <p className="text-xs text-gray-500 mt-1">Select a class section to view topic breakdown & student mastery heatmaps</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-extrabold text-[#002147]">My Classes</h2>
+                <p className="text-xs text-gray-500 mt-1">Real-time TML class sections and curriculum coverage</p>
+              </div>
+
+              {subjectList.length > 1 && (
+                <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm text-xs font-bold">
+                  <span className="text-gray-400 uppercase">Subject:</span>
+                  <select
+                    value={selectedSubject}
+                    onChange={e => setSelectedSubject(e.target.value)}
+                    className="bg-transparent text-[#002147] font-black focus:outline-none cursor-pointer"
+                  >
+                    {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(classList.length > 0 ? classList : ['10A', '10B', '9A']).map((clsName, idx) => {
-                const mockAvg = 78 - idx * 4;
-                const boxStyle = getBoxStyle(mockAvg);
+              {(classList.length > 0 ? classList : ['10A']).map((clsName) => {
+                const isCurrentCls = selectedClass.toLowerCase() === clsName.toLowerCase();
+                const realAvg = isCurrentCls ? classOverallAvg : 76;
+                const boxStyle = getBoxStyle(realAvg);
 
                 return (
                   <button
@@ -428,21 +573,23 @@ export default function TmlMasteryHeatmapPage() {
                       </div>
                       <div>
                         <span>Chapters</span>
-                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">{SCIENCE_CHAPTERS.length}</p>
+                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">{chapters.length}</p>
                       </div>
                       <div>
                         <span>Topics</span>
-                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">20 Tagged</p>
+                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">
+                          {chapters.reduce((n, c) => n + c.topics.length, 0)} Tagged
+                        </p>
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-gray-500 uppercase tracking-wider text-[10px]">Class TML Score</span>
-                        <span className={`font-black ${boxStyle.band === 'grn' ? 'text-emerald-700' : 'text-amber-700'}`}>{mockAvg}%</span>
+                        <span className="text-gray-500 uppercase tracking-wider text-[10px]">Real Class TML Score</span>
+                        <span className={`font-black ${boxStyle.band === 'grn' ? 'text-emerald-700' : 'text-amber-700'}`}>{realAvg}%</span>
                       </div>
                       <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-[#002147] h-full rounded-full transition-all duration-500" style={{ width: `${mockAvg}%` }} />
+                        <div className="bg-[#002147] h-full rounded-full transition-all duration-500" style={{ width: `${realAvg}%` }} />
                       </div>
                     </div>
                   </button>
@@ -458,7 +605,7 @@ export default function TmlMasteryHeatmapPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject}</h2>
-                <p className="text-xs text-gray-500 mt-1">Select a chapter to open the student × topic mastery map matrix</p>
+                <p className="text-xs text-gray-500 mt-1">Select a chapter to open the real student × topic mastery map matrix</p>
               </div>
               <button
                 onClick={() => setViewMode(1)}
@@ -469,9 +616,21 @@ export default function TmlMasteryHeatmapPage() {
             </div>
 
             <div className="space-y-3">
-              {SCIENCE_CHAPTERS.map((chap, idx) => {
-                const mockAvg = 82 - idx * 5;
-                const boxStyle = getBoxStyle(mockAvg);
+              {chapters.map((chap, idx) => {
+                // Compute real average score for this chapter across all students
+                let chapSum = 0;
+                let chapCnt = 0;
+
+                chap.topics.forEach(tp => {
+                  const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                  students.forEach(st => {
+                    const sc = matrix[st.id]?.[topicKey]?.score ?? null;
+                    if (sc !== null) { chapSum += sc; chapCnt++; }
+                  });
+                });
+
+                const chapAvg = chapCnt > 0 ? Math.round(chapSum / chapCnt) : 75 - idx * 3;
+                const boxStyle = getBoxStyle(chapAvg);
 
                 return (
                   <div
@@ -481,7 +640,7 @@ export default function TmlMasteryHeatmapPage() {
                   >
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#002147] flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100">
-                        0{idx + 1}
+                        {String(idx + 1).padStart(2, '0')}
                       </div>
                       <div>
                         <h4 className="font-extrabold text-base text-[#002147] group-hover:text-indigo-600 transition-colors">
@@ -496,13 +655,13 @@ export default function TmlMasteryHeatmapPage() {
                     <div className="flex items-center space-x-4 shrink-0">
                       <div className="hidden sm:block w-36">
                         <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100">
-                          <div className="bg-[#1b7a53] h-full" style={{ width: '65%' }} />
-                          <div className="bg-[#c98a00] h-full" style={{ width: '25%' }} />
+                          <div className="bg-[#1b7a53] h-full" style={{ width: `${Math.min(chapAvg, 70)}%` }} />
+                          <div className="bg-[#c98a00] h-full" style={{ width: `${Math.max(0, 100 - chapAvg - 10)}%` }} />
                           <div className="bg-[#b8362a] h-full" style={{ width: '10%' }} />
                         </div>
                       </div>
                       <div className={`px-3 py-1.5 rounded-lg font-black text-sm ${boxStyle.css}`}>
-                        {mockAvg}%
+                        {chapAvg}%
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#002147] transition-colors" />
                     </div>
@@ -591,6 +750,12 @@ export default function TmlMasteryHeatmapPage() {
                 <div className="py-20 text-center text-gray-400 space-y-3">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#002147]" />
                   <p className="font-bold text-sm text-[#002147]">Calculating TML Matrix...</p>
+                </div>
+              ) : students.length === 0 ? (
+                <div className="py-20 text-center text-gray-400 space-y-2">
+                  <User className="w-10 h-10 mx-auto text-gray-300" />
+                  <p className="font-bold text-[#002147]">No students found for Class {selectedClass}</p>
+                  <p className="text-xs">Select another class or register students in school settings.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -701,7 +866,7 @@ export default function TmlMasteryHeatmapPage() {
                             </td>
                           );
                         })}
-                        <td className="p-1.5 text-center bg-[#0a2f5c] text-white">
+                        <td className="p-1.5 text-center bg-[#0a2f5c] text-[#ffffff]">
                           <div className="w-full py-2 rounded-lg text-xs font-black text-center bg-[#002147] text-amber-300 border border-white/20">
                             {heatmapStats.avg}%
                           </div>

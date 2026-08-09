@@ -1299,16 +1299,45 @@ export default function StudentDashboard() {
                                         )}
                                       </div>
 
-                                      {/* Where Student Went Wrong */}
-                                      {q.lostMarksReason && (
-                                        <div className="mt-2 text-xs font-semibold text-red-700 bg-red-100/80 p-2.5 rounded-xl border border-red-200">
-                                          <span className="font-black">⚠ Where you went wrong: </span>
-                                          {q.lostMarksReason}
+                                      {/* Transcribed Handwriting */}
+                                      {q.studentWrittenAnswer && (
+                                        <div className="mt-2 text-xs text-gray-700 bg-white/80 p-2.5 rounded-xl border border-gray-200">
+                                          <span className="font-bold text-gray-500 block text-[10px] uppercase">✍ Your Written Answer (Transcribed):</span>
+                                          <p className="italic mt-0.5 text-gray-800 font-serif">{q.studentWrittenAnswer}</p>
                                         </div>
                                       )}
+
+                                      {/* What Student Got Right */}
+                                      {q.whatStudentGotRight && (
+                                        <div className="mt-2 text-xs text-emerald-800 bg-emerald-100/60 p-2.5 rounded-xl border border-emerald-200">
+                                          <span className="font-black text-emerald-900">✅ What you got right: </span>
+                                          {q.whatStudentGotRight}
+                                        </div>
+                                      )}
+
+                                      {/* Where Student Went Wrong */}
+                                      {q.lostMarksReason && (
+                                        <div className="mt-2 text-xs font-semibold text-rose-900 bg-rose-100/70 p-2.5 rounded-xl border border-rose-200">
+                                          <span className="font-black text-rose-950">⚠ Where you went wrong: </span>
+                                          {q.lostMarksReason}
+                                          {q.exactStepByStepMistake && (
+                                            <p className="mt-1 text-[11px] text-rose-800 font-normal">
+                                              <span className="font-bold">Exact Error Step: </span>{q.exactStepByStepMistake}
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Key Concept & How to Fix */}
                                       {q.teacherExplanation && (
-                                        <div className="mt-1.5 text-xs text-indigo-700 font-medium">
-                                          💡 Key Concept: {q.teacherExplanation}
+                                        <div className="mt-2 text-xs text-indigo-900 bg-indigo-50 p-2.5 rounded-xl border border-indigo-100">
+                                          <span className="font-black text-indigo-950">💡 Key Concept: </span>
+                                          {q.teacherExplanation}
+                                          {q.howToFix && (
+                                            <p className="mt-1 text-[11px] text-indigo-800 font-semibold">
+                                              <span className="font-bold">🎯 How to fix: </span>{q.howToFix}
+                                            </p>
+                                          )}
                                         </div>
                                       )}
                                     </div>

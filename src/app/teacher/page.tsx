@@ -314,6 +314,13 @@ export default function TeacherDashboard() {
 
       if (subErr) throw subErr;
 
+      // ── Trigger TML Score Computation & Persistence ────────────────────────
+      fetch('/api/tml/compute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, subject: taskSubject }),
+      }).catch(e => console.warn('[TML AutoCompute] error:', e));
+
       // ── Update student memory_profile with per-TOPIC scores ──────────────
       try {
         const { data: userRow } = await supabase
@@ -959,16 +966,38 @@ export default function TeacherDashboard() {
                                           const scaledMax = Math.round(rawMax * scale * 10) / 10;
                                           const scaledAwarded = Math.round(rawAwarded * scale * 10) / 10;
                                           return (
-                                            <div key={qi} className="mb-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                            <div key={qi} className="mb-2.5 p-3 bg-gray-50 rounded-xl border border-gray-200">
                                               <div className="flex items-start justify-between gap-2">
                                                 <p className="text-xs font-bold text-[#002147] flex-1">{q.questionText || `Q${qi+1}`}</p>
                                                 <span className={`text-xs font-black px-2 py-0.5 rounded-lg shrink-0 ${
-                                                  q.isFinalAnswerCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                                  q.isFinalAnswerCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                                                 }`}>
                                                   {scaledAwarded}/{scaledMax}
                                                 </span>
                                               </div>
-                                              {q.lostMarksReason && <p className="text-xs text-red-600 mt-1">⚠ {q.lostMarksReason}</p>}
+                                              {q.studentWrittenAnswer && (
+                                                <p className="text-xs italic text-gray-700 mt-1 bg-white p-2 rounded-lg border border-gray-200 font-serif">
+                                                  ✍ Transcribed Answer: "{q.studentWrittenAnswer}"
+                                                </p>
+                                              )}
+                                              {q.whatStudentGotRight && (
+                                                <p className="text-xs text-emerald-800 font-semibold mt-1">
+                                                  ✅ Correct Parts: {q.whatStudentGotRight}
+                                                </p>
+                                              )}
+                                              {q.lostMarksReason && (
+                                                <p className="text-xs text-rose-800 font-bold mt-1 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                                                  ⚠ Where Student Went Wrong: {q.lostMarksReason}
+                                                  {q.exactStepByStepMistake && (
+                                                    <span className="block font-normal mt-0.5 text-[11px] text-rose-700">Step Error: {q.exactStepByStepMistake}</span>
+                                                  )}
+                                                </p>
+                                              )}
+                                              {q.howToFix && (
+                                                <p className="text-[11px] text-indigo-800 font-semibold mt-1">
+                                                  💡 Correction Guide: {q.howToFix}
+                                                </p>
+                                              )}
                                             </div>
                                           );
                                         });

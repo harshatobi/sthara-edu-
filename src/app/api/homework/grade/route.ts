@@ -5,6 +5,11 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * POST /api/homework/grade
+ * Grades student handwritten work image using Gemini 2.5 Flash
+ * Generates an in-depth, step-by-step AI diagnostic mistake analysis.
+ */
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,36 +22,67 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
     }
 
-    // ── Fetch real total_marks from the assignment row ────────────────────────
     const supabase = createAdminClient();
-    let totalMarks = 10; // default fallback
+    let totalMarks = 10;
+    let assignmentTitle = 'Homework Task';
+    let assignmentSubject = 'General';
+
     if (assignmentId) {
       const { data: assignRow } = await supabase
         .from('assignments')
-        .select('total_marks')
+        .select('total_marks, title, subject, units')
         .eq('id', assignmentId)
         .maybeSingle();
       if (assignRow?.total_marks) totalMarks = assignRow.total_marks;
+      if (assignRow?.title) assignmentTitle = assignRow.title;
+      if (assignRow?.subject) assignmentSubject = assignRow.subject;
     }
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `You are an expert, supportive AI Teacher grading a student's handwritten homework.
-Here are the questions they were assigned:
-${(questions || []).map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}
+    const prompt = `You are a master CBSE Master Teacher conducting a detailed, thorough diagnostic grading of a student's handwritten homework.
+Assignment: "${assignmentTitle}" (Subject: ${assignmentSubject}, Total Marks: ${totalMarks}).
 
-Analyze the attached image of their work.
-1. Grade it out of ${totalMarks}.
-2. Provide constructive feedback. Be encouraging.
-3. Determine what concepts they have mastered ("known") and what they still struggle with ("struggling").
+Questions assigned:
+${(questions || []).map((q: any, i: number) => {
+  const text = typeof q === 'string' ? q : (q.questionText || q.question || `Question ${i + 1}`);
+  const m = typeof q === 'object' && q.marks ? ` (${q.marks} marks)` : '';
+  return `${i + 1}. ${text}${m}`;
+}).join('\n')}
 
-Output your response ONLY as a JSON object with this exact structure:
+Analyze the attached handwritten answer sheet image meticulously.
+Provide a rich, highly detailed, question-by-question breakdown explaining:
+1. Exactly what the student wrote (handwriting transcription).
+2. What they got right (praise specific steps/formulas/reasoning).
+3. Where they went wrong (exact line, step, missing state symbols, formula errors, calculation errors).
+4. The exact reason marks were lost.
+5. How to fix the mistake step-by-step with the correct solution and key concept explanation.
+
+Output your response ONLY as a single valid JSON object matching this exact schema:
 {
-  "grade": "String (e.g., '8/${totalMarks}')",
+  "grade": "String (e.g., '4/${totalMarks}')",
   "score": number (numeric score out of ${totalMarks}),
-  "feedback": "String",
-  "newKnown": ["concept 1"],
-  "newStruggling": ["concept 2"]
+  "percentageScore": number (0 to 100),
+  "summary": "Thorough 2-3 sentence overall diagnostic summary of the student's work.",
+  "feedback": "Encouraging, actionable teacher feedback for the student.",
+  "questions": [
+    {
+      "questionNumber": 1,
+      "questionText": "Full question text",
+      "awardedScore": number,
+      "maxScore": number,
+      "isFinalAnswerCorrect": boolean,
+      "studentWrittenAnswer": "Transcription of student's handwriting for this question",
+      "whatStudentGotRight": "Detailed explanation of what the student got right",
+      "lostMarksReason": "Detailed explanation of why marks were deducted and where they went wrong",
+      "exactStepByStepMistake": "Specific line/calculation error description",
+      "teacherExplanation": "Key concept and textbook explanation",
+      "howToFix": "Step-by-step correction guide for the student"
+    }
+  ],
+  "weaknessTags": ["concept_tag_1", "concept_tag_2"],
+  "newKnown": ["concept_1"],
+  "newStruggling": ["concept_2"]
 }`;
 
     const result = await ai.models.generateContent({
@@ -64,92 +100,101 @@ Output your response ONLY as a JSON object with this exact structure:
     });
 
     const parsed = JSON.parse(result.text || '{}');
-    const grade = parsed.grade || 'N/A';
-    const feedback = parsed.feedback || 'No feedback provided.';
     const numericScore = typeof parsed.score === 'number' ? Math.min(parsed.score, totalMarks) : null;
+    const gradeString = parsed.grade || (numericScore !== null ? `${numericScore}/${totalMarks}` : 'N/A');
 
-    // Update submission in Supabase (replaces Firebase write)
+    // Save or Update submission record in Supabase
     if (assignmentId && studentId) {
-      try {
-        // Update submission record with AI score
-        const { data: existingSub } = await supabase
-          .from('submissions')
-          .select('id')
-          .eq('assignment_id', assignmentId)
-          .eq('student_id', studentId)
-          .maybeSingle();
+      const { data: existingSub } = await supabase
+        .from('submissions')
+        .select('id')
+        .eq('assignment_id', assignmentId)
+        .eq('student_id', studentId)
+        .maybeSingle();
 
-        if (existingSub) {
-          await supabase
-            .from('submissions')
-            .update({
-              ai_feedback: feedback,
-              ai_grade: grade,
-              score: numericScore,
-              max_score: totalMarks,   // ← use real assignment total, not hardcoded 10
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingSub.id);
-        } else {
-          // Create a new submission record if it doesn't exist
-          await supabase.from('submissions').insert({
+      let subId = existingSub?.id;
+
+      if (existingSub) {
+        await supabase
+          .from('submissions')
+          .update({
+            ai_feedback: parsed.feedback || parsed.summary || 'AI grading complete.',
+            ai_grade: gradeString,
+            score: numericScore,
+            max_score: totalMarks,
+            ai_result: parsed, // Save full rich diagnostic JSON
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingSub.id);
+      } else {
+        const { data: newSub } = await supabase.from('submissions').insert({
+          assignment_id: assignmentId,
+          student_id: studentId,
+          school_id: schoolId || null,
+          ai_feedback: parsed.feedback || parsed.summary || 'AI grading complete.',
+          ai_grade: gradeString,
+          score: numericScore,
+          max_score: totalMarks,
+          ai_result: parsed,
+          teacher_approved: null, // pending teacher approval before updating heatmaps
+        }).select('id').single();
+
+        if (newSub?.id) subId = newSub.id;
+      }
+
+      // Persist submission items for TML metric engine if questions exist
+      if (subId && Array.isArray(parsed.questions)) {
+        for (let i = 0; i < parsed.questions.length; i++) {
+          const q = parsed.questions[i];
+          await supabase.from('submission_items').insert({
+            submission_id: subId,
             assignment_id: assignmentId,
             student_id: studentId,
             school_id: schoolId || null,
-            ai_feedback: feedback,
-            ai_grade: grade,
-            score: numericScore,
-            max_score: totalMarks,     // ← use real assignment total, not hardcoded 10
-            teacher_approved: null, // pending teacher review
+            question_index: i + 1,
+            component_type: 'homework',
+            score: q.awardedScore || 0,
+            max_score: q.maxScore || 1,
+            teacher_confirmed: false,
           });
         }
+      }
 
-        // Persist append-only TML score history entry
-        if (numericScore !== null && totalMarks > 0) {
-          const pct = Math.min(100, Math.max(0, Math.round((numericScore / totalMarks) * 100)));
-          await supabase.from('tml_scores').insert({
-            student_id: studentId,
-            school_id: schoolId || null,
-            subject: assignRow?.subject || 'General',
-            score: pct,
-            components: {
-              assignmentId,
-              grade,
-              numericScore,
-              maxScore: totalMarks,
-              source: 'ai_grade',
+      // Update student memory profile
+      if (parsed.newKnown?.length || parsed.newStruggling?.length) {
+        const { data: studentRow } = await supabase
+          .from('users')
+          .select('memory_profile')
+          .eq('id', studentId)
+          .maybeSingle();
+
+        const existingMemory = (studentRow?.memory_profile as any) || { known: [], struggling: [] };
+        const updatedKnown = Array.from(new Set([...(existingMemory.known || []), ...(parsed.newKnown || [])]));
+        const updatedStruggling = Array.from(new Set([...(existingMemory.struggling || []), ...(parsed.newStruggling || [])]));
+
+        await supabase
+          .from('users')
+          .update({
+            memory_profile: {
+              ...existingMemory,
+              known: updatedKnown,
+              struggling: updatedStruggling,
+              lastAssessed: new Date().toISOString(),
             },
-            computed_at: new Date().toISOString(),
-          });
-        }
-
-        // Update student memory profile in Supabase users table
-        if (parsed.newKnown?.length || parsed.newStruggling?.length) {
-          const { data: studentRow } = await supabase
-            .from('users')
-            .select('memory_profile')
-            .eq('id', studentId)
-            .maybeSingle();
-
-          const existingMemory = (studentRow?.memory_profile as any) || { known: [], struggling: [] };
-          const mergedKnown = Array.from(new Set([...(existingMemory.known || []), ...(parsed.newKnown || [])]));
-          const mergedStruggling = Array.from(new Set([...(existingMemory.struggling || []), ...(parsed.newStruggling || [])]));
-
-          await supabase
-            .from('users')
-            .update({ memory_profile: { known: mergedKnown, struggling: mergedStruggling, lastUpdated: new Date().toISOString() } })
-            .eq('id', studentId);
-        }
-      } catch (dbErr) {
-        console.warn('Supabase update failed (non-critical):', dbErr);
-        // Don't throw - AI grading succeeded, only DB write failed
+          })
+          .eq('id', studentId);
       }
     }
 
-    return NextResponse.json({ success: true, grade, feedback, score: numericScore });
-
-  } catch (error: any) {
-    console.error('Grading Error:', error?.message || error);
-    return NextResponse.json({ error: 'Grading failed: ' + (error?.message || 'Unknown error') }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      grade: gradeString,
+      score: numericScore,
+      totalMarks,
+      aiResult: parsed,
+    });
+  } catch (err: any) {
+    console.error('[AI Homework Grade Error]:', err);
+    return NextResponse.json({ error: err.message || 'AI grading failed' }, { status: 500 });
   }
 }

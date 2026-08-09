@@ -174,14 +174,22 @@ export default function ClassMasteryMatrixPage() {
         }
         setTopics(topicColumns);
 
+        const studentIds = filteredStudents.map(s => s.id);
+
+        // Fetch submissions for all students in this class/school
         const { data: subsData } = await supabase
           .from('submissions')
           .select('student_id, assignment_id, score, max_score, teacher_approved')
-          .eq('school_id', profile.schoolId)
-          .eq('teacher_approved', true);
+          .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
+
+        // Fetch persisted TML scores
+        const { data: tmlData } = await supabase
+          .from('tml_scores')
+          .select('student_id, subject, topic_name, score, confidence_band, item_count')
+          .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
         const assignToTopic: Record<string, string> = {};
-        relevantAssignments.forEach(a => {
+        (assignData || []).forEach(a => {
           const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
             ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
             : [];
@@ -198,25 +206,45 @@ export default function ClassMasteryMatrixPage() {
           });
         });
 
+        // 1. Map submissions
         (subsData || []).forEach(sub => {
           if (!newMatrix[sub.student_id]) return;
+
+          // Require score to be non-null (and teacher_approved !== false)
+          if (sub.score === null || sub.max_score <= 0 || sub.teacher_approved === false) return;
+
           const topicId = assignToTopic[sub.assignment_id] || topicColumns[0]?.id;
           if (!topicId || !newMatrix[sub.student_id][topicId]) return;
 
-          if (sub.score !== null && sub.max_score > 0) {
-            const current = newMatrix[sub.student_id][topicId];
-            const pct = (sub.score / sub.max_score) * 100;
-            const newCount = current.count + 1;
-            const newAvg = current.score === null
-              ? pct
-              : (current.score * current.count + pct) / newCount;
+          const current = newMatrix[sub.student_id][topicId];
+          const pct = (sub.score / sub.max_score) * 100;
+          const newCount = current.count + 1;
+          const newAvg = current.score === null
+            ? pct
+            : (current.score * current.count + pct) / newCount;
 
-            const conf = newCount >= 8 ? 'firm' : newCount >= 4 ? 'provisional' : 'insufficient';
+          const conf = newCount >= 8 ? 'firm' : newCount >= 4 ? 'provisional' : 'insufficient';
 
-            newMatrix[sub.student_id][topicId] = {
-              score: Math.round(newAvg),
-              count: newCount,
-              confidence: conf,
+          newMatrix[sub.student_id][topicId] = {
+            score: Math.round(newAvg),
+            count: newCount,
+            confidence: conf,
+          };
+        });
+
+        // 2. Merge persisted TML scores for extra topic precision
+        (tmlData || []).forEach(tml => {
+          if (!newMatrix[tml.student_id] || tml.score === null) return;
+          const topicId = tml.topic_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          const targetCol = topicColumns.find(tc => tc.id === topicId || tc.name.toLowerCase() === tml.topic_name.toLowerCase());
+          if (!targetCol || !newMatrix[tml.student_id][targetCol.id]) return;
+
+          const current = newMatrix[tml.student_id][targetCol.id];
+          if (current.score === null) {
+            newMatrix[tml.student_id][targetCol.id] = {
+              score: Math.round(tml.score),
+              count: tml.item_count || 4,
+              confidence: (tml.confidence_band as any) || 'provisional',
             };
           }
         });

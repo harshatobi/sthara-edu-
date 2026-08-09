@@ -59,18 +59,18 @@ export default function StudentHeatmapSidebar({ profile }: { profile: any }) {
     const buildHeatmap = async () => {
       setLoading(true);
       try {
-        // 1. ALL submissions for this student (AI-graded OR teacher-graded)
-        // We show score-based data when available, pending state when not yet graded
+        // 1. Only submissions that have been APPROVED by the teacher
         const { data: subs, error: subErr } = await supabase
           .from('submissions')
           .select('assignment_id, score, max_score, teacher_approved')
-          .eq('student_id', profile.uid);
+          .eq('student_id', profile.uid)
+          .eq('teacher_approved', true);
 
         if (subErr) console.error('[Heatmap] submissions query error:', subErr);
         if (!subs || subs.length === 0) { setBlocks([]); return; }
 
-        // Only use submissions that have a numeric score
-        const scoredSubs = subs.filter(s => s.score !== null && s.max_score !== null && s.max_score > 0);
+        // Only use submissions that have a numeric score and teacher approval
+        const scoredSubs = subs.filter(s => s.score !== null && s.max_score !== null && s.max_score > 0 && s.teacher_approved === true);
 
         // 2. Assignments those submissions belong to
         const allAssignIds = [...new Set(subs.map(s => s.assignment_id))];

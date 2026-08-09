@@ -56,11 +56,12 @@ export default function MasteryModal({ profile, onClose }: { profile: any; onClo
     const buildHeatmap = async () => {
       setLoading(true);
       try {
-        // 1. Fetch all of the student's graded submissions
+        // 1. Fetch all of the student's TEACHER-APPROVED graded submissions
         const { data: subs } = await supabase
           .from('submissions')
           .select('assignment_id, score, max_score, teacher_approved')
           .eq('student_id', profile.uid)
+          .eq('teacher_approved', true)
           .not('score', 'is', null)
           .not('max_score', 'is', null);
 

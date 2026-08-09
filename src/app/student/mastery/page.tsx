@@ -64,7 +64,8 @@ export default function StudentMasteryPage() {
         const { data: subs, error: subErr } = await supabase
           .from('submissions')
           .select('assignment_id, score, max_score, teacher_approved')
-          .eq('student_id', profile.uid);
+          .eq('student_id', profile.uid)
+          .eq('teacher_approved', true);
 
         if (subErr) console.error('[MasteryPage] submissions error:', subErr);
         if (!subs || subs.length === 0) { setBlocks([]); return; }

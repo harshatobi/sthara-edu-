@@ -1189,82 +1189,216 @@ export default function StudentDashboard() {
                     </div>
                   )}
 
-                  {/* Photo Upload Zone — for open-ended homework and plain homework */}
-                  {(() => {
-                    const hasOpenEnded = selectedTask.questions && selectedTask.questions.length > 0 &&
-                      !selectedTask.questions.every((q: any) => Array.isArray(q.options) && q.options.length > 0);
-                    const isPlainHomework = !selectedTask.questions || selectedTask.questions.length === 0;
-                    if (!hasOpenEnded && !isPlainHomework) return null; // pure MCQ — no upload zone
-                    return (
-                      <div className="mt-2">
-                        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-dashed border-indigo-200 rounded-2xl p-6">
-                          <div className="text-center mb-4">
-                            <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-7 h-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-                              </svg>
-                            </div>
-                            <h4 className="font-black text-[#002147] text-base">📸 Upload Your Handwritten Work</h4>
-                            <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">Write your answers on paper, then take a clear photo and upload it here. Our AI will read and grade it instantly.</p>
-                          </div>
+                  {/* ── Submission View (When already submitted) OR Photo Upload Zone (When submitting) ── */}
+                  {selectedTask.submission ? (
+                    <div className="space-y-5 mt-4">
+                      {/* Submitted Handwritten Work */}
+                      {(() => {
+                        const sub = selectedTask.submission;
+                        const rawImgs = sub.imageUrls || sub.imageUrl || sub.image_urls || sub.attachmentUrl;
+                        const imageList: string[] = Array.isArray(rawImgs)
+                          ? rawImgs
+                          : (typeof rawImgs === 'string' && rawImgs.trim().length > 0 ? [rawImgs.trim()] : []);
 
-                          {/* Photo Previews */}
-                          {attachmentFiles.length > 0 && (
-                            <div className="flex flex-wrap gap-3 mb-4 justify-center">
-                              {attachmentFiles.map((file, idx) => (
-                                <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-indigo-300 bg-white shadow-sm group">
+                        if (imageList.length === 0) return null;
+
+                        return (
+                          <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4">
+                            <p className="text-xs font-black text-[#002147] uppercase tracking-wider mb-2">📸 Your Submitted Handwritten Answer Sheet</p>
+                            <div className="flex flex-wrap gap-3">
+                              {imageList.map((url: string, idx: number) => (
+                                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="group relative">
                                   <img
-                                    src={URL.createObjectURL(file)}
-                                    alt={`Page ${idx + 1}`}
-                                    className="w-full h-full object-cover"
+                                    src={url}
+                                    alt={`Submitted Page ${idx + 1}`}
+                                    className="w-28 h-28 object-cover rounded-xl border-2 border-indigo-200 group-hover:border-indigo-600 transition-all shadow-sm"
                                   />
-                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeAttachmentFile(idx)}
-                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-black shadow"
-                                  >
-                                    ×
-                                  </button>
-                                  <span className="absolute bottom-1 left-1 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded-full">P{idx+1}</span>
-                                </div>
+                                  <span className="absolute bottom-1 right-1 bg-[#002147]/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                                    Page {idx + 1} ↗
+                                  </span>
+                                </a>
                               ))}
                             </div>
-                          )}
+                          </div>
+                        );
+                      })()}
 
-                          {/* Upload / Camera Button */}
-                          {attachmentFiles.length < 6 && (
-                            <label className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm cursor-pointer transition-all border-2 ${
-                              attachmentFiles.length === 0
-                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
-                                : 'bg-white hover:bg-indigo-50 text-indigo-600 border-indigo-300'
-                            }`}>
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                              </svg>
-                              {attachmentFiles.length === 0 ? '📷 Upload Photo of Answer Sheet' : `Add Another Page (${attachmentFiles.length}/6)`}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                multiple
-                                className="sr-only"
-                                onChange={handleFileChange}
-                              />
-                            </label>
-                          )}
+                      {/* AI Evaluation & Where Student Went Wrong */}
+                      {(() => {
+                        const sub = selectedTask.submission;
+                        const ai = sub.aiResult || sub.ai_feedback || {};
+                        const questions = Array.isArray(ai.questions) ? ai.questions : [];
+                        const scoreNum = sub.score ?? (sub.maxScore != null ? 0 : null);
+                        const maxNum = sub.maxScore || selectedTask.totalMarks || 5;
+                        const displayScore = sub.finalGrade || (scoreNum != null ? `${scoreNum}/${maxNum}` : null);
+                        const pct = scoreNum != null && maxNum ? Math.round((scoreNum / maxNum) * 100) : (ai.percentageScore || null);
 
-                          {attachmentFiles.length === 0 && (
-                            <p className="text-center text-xs text-indigo-400 mt-2 font-medium">📱 Opens camera directly on your phone</p>
-                          )}
-                          {attachmentFiles.length > 0 && (
-                            <p className="text-center text-xs text-emerald-600 mt-2 font-semibold">✅ {attachmentFiles.length} page{attachmentFiles.length !== 1 ? 's' : ''} ready — AI will grade your handwriting</p>
-                          )}
+                        return (
+                          <div className="space-y-3">
+                            <div className="bg-gradient-to-r from-indigo-900 to-[#002147] text-white p-5 rounded-2xl shadow-md">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/20">
+                                    {sub.teacher_approved ? '✓ Teacher Approved' : '🤖 AI Evaluated (Pending Teacher Review)'}
+                                  </span>
+                                </div>
+                                {displayScore && (
+                                  <span className="text-2xl font-black text-amber-300">
+                                    {displayScore} {pct != null ? `(${pct}%)` : ''}
+                                  </span>
+                                )}
+                              </div>
+                              {sub.ai_feedback && (
+                                <p className="text-sm text-indigo-100 mt-2 leading-relaxed font-medium">{typeof sub.ai_feedback === 'string' ? sub.ai_feedback : (ai.summary || 'AI grading complete.')}</p>
+                              )}
+                              {sub.teacher_note && (
+                                <div className="mt-3 p-3 bg-amber-400/20 border border-amber-400/30 rounded-xl text-xs text-amber-100 font-semibold">
+                                  📝 Teacher Feedback: {sub.teacher_note}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Detailed Question Errors & Suggestions */}
+                            {questions.length > 0 && (
+                              <div className="space-y-2">
+                                <h5 className="text-xs font-black text-[#002147] uppercase tracking-wider px-1">Detailed AI Question Analysis</h5>
+                                {questions.map((q: any, qi: number) => {
+                                  const isCorrect = q.isFinalAnswerCorrect !== false;
+                                  return (
+                                    <div
+                                      key={qi}
+                                      className={`p-4 rounded-2xl border ${
+                                        isCorrect ? 'bg-emerald-50/60 border-emerald-200' : 'bg-red-50/60 border-red-200'
+                                      }`}
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-2">
+                                          <span className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-xs ${
+                                            isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                                          }`}>
+                                            {isCorrect ? '✓' : '✗'}
+                                          </span>
+                                          <p className="font-bold text-[#002147] text-sm">{q.questionText || `Question ${qi+1}`}</p>
+                                        </div>
+                                        {q.awardedScore != null && (
+                                          <span className={`text-xs font-black px-2 py-0.5 rounded-lg shrink-0 ${
+                                            isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                                          }`}>
+                                            {q.awardedScore}/{q.maxScore || 1}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* Where Student Went Wrong */}
+                                      {q.lostMarksReason && (
+                                        <div className="mt-2 text-xs font-semibold text-red-700 bg-red-100/80 p-2.5 rounded-xl border border-red-200">
+                                          <span className="font-black">⚠ Where you went wrong: </span>
+                                          {q.lostMarksReason}
+                                        </div>
+                                      )}
+                                      {q.teacherExplanation && (
+                                        <div className="mt-1.5 text-xs text-indigo-700 font-medium">
+                                          💡 Key Concept: {q.teacherExplanation}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {Array.isArray(ai.weaknessTags) && ai.weaknessTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                <span className="text-xs font-bold text-gray-400 mr-1">Focus Areas:</span>
+                                {ai.weaknessTags.map((tag: string, ti: number) => (
+                                  <span key={ti} className="text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-200 px-2.5 py-0.5 rounded-full">
+                                    ⚡ {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    /* Photo Upload Zone — for open-ended homework and plain homework when not yet submitted */
+                    (() => {
+                      const hasOpenEnded = selectedTask.questions && selectedTask.questions.length > 0 &&
+                        !selectedTask.questions.every((q: any) => Array.isArray(q.options) && q.options.length > 0);
+                      const isPlainHomework = !selectedTask.questions || selectedTask.questions.length === 0;
+                      if (!hasOpenEnded && !isPlainHomework) return null; // pure MCQ — no upload zone
+                      return (
+                        <div className="mt-2">
+                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-dashed border-indigo-200 rounded-2xl p-6">
+                            <div className="text-center mb-4">
+                              <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                <svg className="w-7 h-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                                </svg>
+                              </div>
+                              <h4 className="font-black text-[#002147] text-base">📸 Upload Your Handwritten Work</h4>
+                              <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">Write your answers on paper, then take a clear photo and upload it here. Our AI will read and grade it instantly.</p>
+                            </div>
+
+                            {/* Photo Previews */}
+                            {attachmentFiles.length > 0 && (
+                              <div className="flex flex-wrap gap-3 mb-4 justify-center">
+                                {attachmentFiles.map((file, idx) => (
+                                  <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-indigo-300 bg-white shadow-sm group">
+                                    <img
+                                      src={URL.createObjectURL(file)}
+                                      alt={`Page ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeAttachmentFile(idx)}
+                                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-black shadow"
+                                    >
+                                      ×
+                                    </button>
+                                    <span className="absolute bottom-1 left-1 text-[10px] font-bold bg-black/50 text-white px-1.5 py-0.5 rounded-full">P{idx+1}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Upload / Camera Button */}
+                            {attachmentFiles.length < 6 && (
+                              <label className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm cursor-pointer transition-all border-2 ${
+                                attachmentFiles.length === 0
+                                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
+                                  : 'bg-white hover:bg-indigo-50 text-indigo-600 border-indigo-300'
+                              }`}>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                </svg>
+                                {attachmentFiles.length === 0 ? '📷 Upload Photo of Answer Sheet' : `Add Another Page (${attachmentFiles.length}/6)`}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  multiple
+                                  className="sr-only"
+                                  onChange={handleFileChange}
+                                />
+                              </label>
+                            )}
+
+                            {attachmentFiles.length === 0 && (
+                              <p className="text-center text-xs text-indigo-400 mt-2 font-medium">📱 Opens camera directly on your phone</p>
+                            )}
+                            {attachmentFiles.length > 0 && (
+                              <p className="text-center text-xs text-emerald-600 mt-2 font-semibold">✅ {attachmentFiles.length} page{attachmentFiles.length !== 1 ? 's' : ''} ready — AI will grade your handwriting</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()
+                  )}
 
 
                   {/* ── Submit / Turn In Button ── */}

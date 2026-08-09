@@ -287,17 +287,30 @@ export default function TeacherDashboard() {
       const pct = Math.round((score / maxScore) * 100);
       const grade = `${score}/${maxScore}`;
 
-      // Update submission with teacher-corrected grade
-      const { error: subErr } = await supabase
+      // Update submission with teacher-corrected grade (fallback gracefully if teacher_note column missing)
+      let { error: subErr } = await supabase
         .from('submissions')
         .update({
           final_grade: grade,
           score: score,
           max_score: maxScore,
           teacher_approved: true,
-          teacher_note: editFeedback || null,   // ← correct column name
+          teacher_note: editFeedback || null,
         })
         .eq('id', submissionId);
+
+      if (subErr && (subErr.message.includes('teacher_note') || subErr.code === 'PGRST204')) {
+        const { error: fallbackErr } = await supabase
+          .from('submissions')
+          .update({
+            final_grade: grade,
+            score: score,
+            max_score: maxScore,
+            teacher_approved: true,
+          })
+          .eq('id', submissionId);
+        subErr = fallbackErr;
+      }
 
       if (subErr) throw subErr;
 
@@ -879,18 +892,34 @@ export default function TeacherDashboard() {
                                 <div className="p-4 space-y-4 bg-white border-t border-gray-100">
 
                                   {/* Submitted images */}
-                                  {Array.isArray(sub?.imageUrls) && sub.imageUrls.length > 0 && (
-                                    <div>
-                                      <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Student's Handwritten Work</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        {sub.imageUrls.map((url: string, idx: number) => (
-                                          <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
-                                            <img src={url} alt={`Page ${idx+1}`} className="w-24 h-24 object-cover rounded-xl border-2 border-indigo-200 hover:border-indigo-500 transition-colors" />
-                                          </a>
-                                        ))}
+                                  {(() => {
+                                    const rawImgs = sub?.imageUrls || sub?.imageUrl || sub?.image_urls || sub?.attachmentUrl;
+                                    const imageList: string[] = Array.isArray(rawImgs)
+                                      ? rawImgs
+                                      : (typeof rawImgs === 'string' && rawImgs.trim().length > 0 ? [rawImgs.trim()] : []);
+
+                                    if (imageList.length === 0) return null;
+
+                                    return (
+                                      <div>
+                                        <p className="text-xs font-black text-[#002147] uppercase tracking-wider mb-2">📸 Student's Handwritten Work</p>
+                                        <div className="flex flex-wrap gap-3">
+                                          {imageList.map((url: string, idx: number) => (
+                                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="group relative">
+                                              <img
+                                                src={url}
+                                                alt={`Page ${idx+1}`}
+                                                className="w-32 h-32 object-cover rounded-2xl border-2 border-indigo-200 group-hover:border-indigo-600 transition-all shadow-sm group-hover:shadow-md"
+                                              />
+                                              <span className="absolute bottom-1.5 right-1.5 bg-[#002147]/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                Page {idx+1} ↗
+                                              </span>
+                                            </a>
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
+                                    );
+                                  })()}
 
                                   {/* AI Grading Breakdown */}
                                   {aiResult && (

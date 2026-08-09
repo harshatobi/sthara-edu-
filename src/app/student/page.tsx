@@ -715,11 +715,7 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto pb-16">
-      {/* Two-column layout: main content + heatmap sidebar */}
-      <div className="flex gap-6 items-start">
-      {/* ── LEFT COLUMN: all existing content ─────────────────────────────── */}
-      <div className="flex-1 min-w-0 space-y-10">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto pb-16 space-y-10">
       
       {/* Premium Hero Header */}
       <div className="relative bg-gradient-to-br from-[#002147] via-[#003366] to-[#001a33] rounded-[2.5rem] p-8 md:p-10 overflow-hidden shadow-2xl border border-white/10">
@@ -778,7 +774,7 @@ export default function StudentDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div 
           className="bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all hover:-translate-y-1 cursor-pointer"
-          onClick={() => setShowMasteryModal(true)}
+          onClick={() => router.push('/student/mastery')}
         >
           <div className="flex justify-between items-start mb-4">
             <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">

@@ -148,6 +148,16 @@ export interface Class {
   created_at: string;
 }
 
+export interface TmlScore {
+  id: string;
+  student_id: string;
+  school_id: string;
+  subject: string;
+  score: number;
+  components: Record<string, any>;
+  computed_at: string;
+}
+
 // Database shape for Supabase client typing
 export interface Database {
   public: {
@@ -164,6 +174,7 @@ export interface Database {
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
       materials:     { Row: Material;     Insert: Partial<Material>;     Update: Partial<Material> };
       classes:       { Row: Class;        Insert: Partial<Class>;        Update: Partial<Class> };
+      tml_scores:    { Row: TmlScore;     Insert: Partial<TmlScore>;     Update: Partial<TmlScore> };
     };
   };
 }

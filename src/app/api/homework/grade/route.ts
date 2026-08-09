@@ -104,6 +104,25 @@ Output your response ONLY as a JSON object with this exact structure:
           });
         }
 
+        // Persist append-only TML score history entry
+        if (numericScore !== null && totalMarks > 0) {
+          const pct = Math.min(100, Math.max(0, Math.round((numericScore / totalMarks) * 100)));
+          await supabase.from('tml_scores').insert({
+            student_id: studentId,
+            school_id: schoolId || null,
+            subject: assignRow?.subject || 'General',
+            score: pct,
+            components: {
+              assignmentId,
+              grade,
+              numericScore,
+              maxScore: totalMarks,
+              source: 'ai_grade',
+            },
+            computed_at: new Date().toISOString(),
+          });
+        }
+
         // Update student memory profile in Supabase users table
         if (parsed.newKnown?.length || parsed.newStruggling?.length) {
           const { data: studentRow } = await supabase

@@ -122,43 +122,55 @@ export default function WellnessPage() {
         <p className="text-gray-500 text-sm mt-1">Track your daily energy, de-stress, and keep your mind balanced.</p>
       </div>
 
-      {/* Mood Check-In */}
-      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
-            <Heart className="w-6 h-6" />
+      {/* Mood Check-In (Feature Flagged) */}
+      {process.env.NEXT_PUBLIC_FEATURE_WELLNESS_CHECKIN_ENABLED === 'true' ? (
+        <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+              <Heart className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[#002147]">Daily Mood Check-In</h2>
+              <p className="text-xs text-gray-500">How are you feeling about your studies today?</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {MOODS.map(m => {
+              const isSelected = todaysMood === m.value;
+              return (
+                <button
+                  key={m.label}
+                  onClick={() => logMood(m.value)}
+                  className={`p-4 rounded-2xl border text-center transition-all ${m.hover} ${
+                    isSelected ? `${m.color} ring-2 ring-indigo-600 shadow-sm scale-105` : 'border-gray-200 bg-gray-50/50'
+                  }`}
+                >
+                  <div className="text-3xl mb-1">{m.icon}</div>
+                  <div className="font-bold text-xs text-gray-700">{m.label}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          {todaysMood && (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center space-x-3 text-emerald-800 text-xs font-semibold">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <span>Check-in recorded for today! Your wellbeing helps personalize your study workload.</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-amber-50/80 border-2 border-amber-200/80 rounded-3xl p-6 flex items-center gap-4 text-amber-900 text-xs font-semibold shadow-sm">
+          <div className="w-10 h-10 bg-amber-400 text-white rounded-2xl flex items-center justify-center shrink-0 font-bold">
+            <Heart className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#002147]">Daily Mood Check-In</h2>
-            <p className="text-xs text-gray-500">How are you feeling about your studies today?</p>
+            <p className="font-bold text-sm text-amber-950">Wellness Logging Pending DPDP Consent Verification</p>
+            <p className="text-amber-800 mt-0.5">Daily energy & mood logging is currently paused until student consent verification lands. Mindset & breathing exercises remain fully available below.</p>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {MOODS.map(m => {
-            const isSelected = todaysMood === m.value;
-            return (
-              <button
-                key={m.label}
-                onClick={() => logMood(m.value)}
-                className={`p-4 rounded-2xl border text-center transition-all ${m.hover} ${
-                  isSelected ? `${m.color} ring-2 ring-indigo-600 shadow-sm scale-105` : 'border-gray-200 bg-gray-50/50'
-                }`}
-              >
-                <div className="text-3xl mb-1">{m.icon}</div>
-                <div className="font-bold text-xs text-gray-700">{m.label}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {todaysMood && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center space-x-3 text-emerald-800 text-xs font-semibold">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <span>Check-in recorded for today! Your wellbeing helps personalize your study workload.</span>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* 4-7-8 Breathing Exercise */}
       <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">

@@ -1098,7 +1098,10 @@ export default function StudentDashboard() {
                       {selectedTask.questions.map((q: any, i: number) => {
                         const qKey = q.id || String(i);
                         const questionText = q.questionText || q.question || q.text || q.stem || q.title || `Question ${i + 1}`;
-                        const hasOptions = Array.isArray(q.options) && q.options.length > 0;
+                        const optionsList = (Array.isArray(q.options) && q.options.length > 0)
+                          ? q.options
+                          : ['Option A', 'Option B', 'Option C', 'Option D'];
+
                         return (
                           <div key={qKey} className="bg-[#f8fafc] border border-gray-200 rounded-2xl p-5">
                             <div className="flex items-start gap-3 mb-3">
@@ -1112,14 +1115,14 @@ export default function StudentDashboard() {
                                 )}
                               </div>
                             </div>
-                            {hasOptions && (() => {
+                            {(() => {
                               const isViewOnly = !!selectedTask.submission;
                               const submittedAnswers: Record<string, string> =
                                 selectedTask.submission?.answers || {};
                               return (
                                 // MCQ — render clickable A/B/C/D buttons (or read-only if submitted)
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-11">
-                                  {q.options.map((opt: any, optIdx: number) => {
+                                  {optionsList.map((opt: any, optIdx: number) => {
                                     const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
                                     const optKey = String(optIdx);
                                     const isSelected = isViewOnly

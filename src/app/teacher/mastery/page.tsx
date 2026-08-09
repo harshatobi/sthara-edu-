@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, RefreshCw, Zap, User, Layers } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Zap, User, ChevronRight, Layers, Award, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
@@ -13,12 +13,13 @@ interface StudentRow {
   custom_student_id?: string;
   student_class?: string;
   avatar_url?: string;
+  roll?: string;
 }
 
-interface TopicColumn {
+interface ChapterDef {
   id: string;
   name: string;
-  subject: string;
+  topics: { id: string; name: string }[];
 }
 
 interface CellData {
@@ -27,56 +28,120 @@ interface CellData {
   confidence: 'insufficient' | 'provisional' | 'firm';
 }
 
-function getLetterGrade(s: number | null): string {
-  if (s === null) return '—';
-  if (s >= 95) return 'A+';
-  if (s >= 90) return 'A';
-  if (s >= 85) return 'A-';
-  if (s >= 75) return 'B+';
-  if (s >= 65) return 'B';
-  if (s >= 55) return 'C+';
-  if (s >= 50) return 'C';
-  return 'D';
-}
-
-function getGradeBadgeStyle(letter: string) {
-  if (letter === 'A+' || letter === 'A') return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-  if (letter === 'A-' || letter === 'B+') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (letter === 'B' || letter === 'C+') return 'bg-amber-100 text-amber-800 border-amber-300';
-  if (letter === 'C') return 'bg-orange-100 text-orange-800 border-orange-300';
-  if (letter === 'D') return 'bg-rose-100 text-rose-800 border-rose-300';
-  return 'bg-gray-100 text-gray-500 border-gray-200';
-}
-
-// Fixed set of standard CBSE Science & Math topics matching exact design layout
-const DEFAULT_TOPICS: TopicColumn[] = [
-  { id: 'chem_rxn', name: 'Chemical Reactions', subject: 'Science' },
-  { id: 'acids_bases', name: 'Acids, Bases & Salts', subject: 'Science' },
-  { id: 'metals_nonmetals', name: 'Metals & Non-Metals', subject: 'Science' },
-  { id: 'life_proc', name: 'Life Processes', subject: 'Science' },
-  { id: 'control_coord', name: 'Control & Coordination', subject: 'Science' },
-  { id: 'comp_curr', name: 'Computing Current', subject: 'Science' },
-  { id: 'eff_curr_1', name: 'Effects & Current', subject: 'Science' },
-  { id: 'eff_curr_2', name: 'Effects of Current', subject: 'Science' },
-  { id: 'nat_resources', name: 'Natural Resources', subject: 'Science' },
+const SCIENCE_CHAPTERS: ChapterDef[] = [
+  {
+    id: 'chem_rxn_chap',
+    name: 'Chemical Reactions & Equations',
+    topics: [
+      { id: 'chem_rxn_1', name: 'Chemical Equations' },
+      { id: 'chem_rxn_2', name: 'Combination & Decomposition' },
+      { id: 'chem_rxn_3', name: 'Displacement & Redox' },
+      { id: 'chem_rxn_4', name: 'Corrosion & Rancidity' }
+    ]
+  },
+  {
+    id: 'acids_bases_chap',
+    name: 'Acids, Bases & Salts',
+    topics: [
+      { id: 'acids_bases_1', name: 'Indicators & Properties' },
+      { id: 'acids_bases_2', name: 'pH Scale & Everyday Importance' },
+      { id: 'acids_bases_3', name: 'Salts & Preparation' }
+    ]
+  },
+  {
+    id: 'metals_chap',
+    name: 'Metals & Non-Metals',
+    topics: [
+      { id: 'metals_1', name: 'Physical & Chemical Properties' },
+      { id: 'metals_2', name: 'Reactivity Series' },
+      { id: 'metals_3', name: 'Extraction & Refining' }
+    ]
+  },
+  {
+    id: 'life_proc_chap',
+    name: 'Life Processes',
+    topics: [
+      { id: 'life_proc_1', name: 'Nutrition & Photosynthesis' },
+      { id: 'life_proc_2', name: 'Respiration in Organisms' },
+      { id: 'life_proc_3', name: 'Transportation & Heart' },
+      { id: 'life_proc_4', name: 'Excretion & Nephrons' }
+    ]
+  },
+  {
+    id: 'control_chap',
+    name: 'Control & Coordination',
+    topics: [
+      { id: 'control_1', name: 'Nervous System & Reflex Arc' },
+      { id: 'control_2', name: 'Plant Hormones & Tropism' },
+      { id: 'control_3', name: 'Human Endocrine System' }
+    ]
+  },
+  {
+    id: 'electricity_chap',
+    name: 'Electricity & Current',
+    topics: [
+      { id: 'elec_1', name: 'Ohm’s Law & Resistance' },
+      { id: 'elec_2', name: 'Series & Parallel Combinations' },
+      { id: 'elec_3', name: 'Heating Effect & Power' }
+    ]
+  }
 ];
 
-export default function ClassMasteryMatrixPage() {
+function getBoxStyle(score: number | null) {
+  if (score === null) {
+    return {
+      css: 'bg-[#eef3f8] text-[#a9b8c8] border-[#e2e9f1]',
+      band: 'na',
+      label: '—'
+    };
+  }
+  if (score < 50) {
+    const isExtreme = score < 35;
+    return {
+      css: isExtreme
+        ? 'bg-[#b8362a] text-white border-[#b8362a] font-black'
+        : 'bg-[#f7d8d3] text-[#7a2119] border-[#e0a89f] font-bold',
+      band: 'red',
+      label: `${score}%`
+    };
+  }
+  if (score < 75) {
+    const isExtreme = score >= 70;
+    return {
+      css: isExtreme
+        ? 'bg-[#c98a00] text-white border-[#c98a00] font-black'
+        : 'bg-[#f9e6bb] text-[#77510a] border-[#e6c87e] font-bold',
+      band: 'amb',
+      label: `${score}%`
+    };
+  }
+  const isExtreme = score >= 90;
+  return {
+    css: isExtreme
+      ? 'bg-[#1b7a53] text-white border-[#1b7a53] font-black'
+      : 'bg-[#c8e7d7] text-[#0e5237] border-[#93cbb0] font-bold',
+    band: 'grn',
+    label: `${score}%`
+  };
+}
+
+export default function TmlMasteryHeatmapPage() {
   const { profile, loading } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
   const [students, setStudents] = useState<StudentRow[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [classList, setClassList] = useState<string[]>([]);
-  const [subjectList, setSubjectList] = useState<string[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('Science');
+
+  // Navigation flow views: 1 = My Classes, 2 = Chapters List, 3 = Heatmap Table
+  const [viewMode, setViewMode] = useState<1 | 2 | 3>(1);
+  const [selectedChapterIdx, setSelectedChapterIdx] = useState<number>(0);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [topics, setTopics] = useState<TopicColumn[]>(DEFAULT_TOPICS);
   const [matrix, setMatrix] = useState<Record<string, Record<string, CellData>>>({});
-
-  const [selectedCell, setSelectedCell] = useState<{ student: StudentRow; topic: TopicColumn; data: CellData } | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{ student: StudentRow; topicName: string; data: CellData } | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
@@ -87,30 +152,18 @@ export default function ClassMasteryMatrixPage() {
 
   useEffect(() => {
     if (!profile?.assignments) return;
-
     const assigns = profile.assignments as any[];
-    const subSet = new Set<string>();
     const clsSet = new Set<string>();
-
-    assigns.forEach(a => {
-      if (a.subject) subSet.add(a.subject);
-      if (a.class) clsSet.add(a.class);
-    });
-
-    const subs = [...subSet];
+    assigns.forEach(a => { if (a.class) clsSet.add(a.class); });
     const clss = [...clsSet];
-
-    setSubjectList(subs);
     setClassList(clss);
-
-    if (subs.length > 0 && !selectedSubject) setSelectedSubject(subs[0]);
     if (clss.length > 0 && !selectedClass) setSelectedClass(clss[0]);
   }, [profile?.assignments]);
 
   useEffect(() => {
     if (!profile?.schoolId) return;
 
-    const buildMatrix = async () => {
+    const buildData = async () => {
       setIsLoading(true);
       try {
         let studentQuery = supabase
@@ -119,146 +172,136 @@ export default function ClassMasteryMatrixPage() {
           .eq('school_id', profile.schoolId)
           .eq('role', 'student');
 
-        const { data: studentData, error: sErr } = await studentQuery;
-        if (sErr) throw sErr;
-
+        const { data: studentData } = await studentQuery;
         let filteredStudents = studentData || [];
         if (selectedClass) {
           filteredStudents = filteredStudents.filter(s =>
             (s.student_class || s.branch || '').toLowerCase() === selectedClass.toLowerCase()
           );
         }
-        setStudents(filteredStudents);
 
-        let assignQuery = supabase
-          .from('assignments')
-          .select('id, title, subject, class, units')
-          .eq('school_id', profile.schoolId);
+        const studentRows: StudentRow[] = filteredStudents.map((s, idx) => ({
+          ...s,
+          roll: String(idx + 1).padStart(2, '0')
+        }));
+        setStudents(studentRows);
 
-        const { data: assignData } = await assignQuery;
-        const relevantAssignments = (assignData || []).filter(a =>
-          !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase())
-        );
-
-        const topicMap = new Map<string, TopicColumn>();
-        relevantAssignments.forEach(a => {
-          const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
-            ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
-            : [];
-
-          const topicName = rawUnits.length > 0
-            ? rawUnits[0]
-            : (a.title ? a.title.trim() : 'Core Concepts');
-
-          const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          if (!topicMap.has(topicId)) {
-            topicMap.set(topicId, {
-              id: topicId,
-              name: topicName,
-              subject: a.subject || selectedSubject || 'Science',
-            });
-          }
-        });
-
-        // Use default topics list if no dynamically extracted topics exist yet
-        let topicColumns = Array.from(topicMap.values());
-        if (topicColumns.length === 0) {
-          topicColumns = DEFAULT_TOPICS;
-        } else {
-          // Ensure we have at least 5-9 columns for a complete grid layout
-          DEFAULT_TOPICS.forEach(dt => {
-            if (!topicColumns.some(tc => tc.id === dt.id)) {
-              topicColumns.push(dt);
-            }
-          });
-        }
-        setTopics(topicColumns);
-
-        const studentIds = filteredStudents.map(s => s.id);
-
-        // Fetch submissions for all students in this class/school
+        const studentIds = studentRows.map(s => s.id);
         const { data: subsData } = await supabase
           .from('submissions')
-          .select('student_id, assignment_id, score, max_score, teacher_approved')
+          .select('student_id, assignment_id, score, max_score, teacher_approved, assignments(title, units, subject)')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        // Fetch persisted TML scores
         const { data: tmlData } = await supabase
           .from('tml_scores')
-          .select('student_id, subject, topic_name, score, confidence_band, item_count')
+          .select('student_id, topic_name, score, confidence_band, item_count')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        const assignToTopic: Record<string, string> = {};
-        (assignData || []).forEach(a => {
-          const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
-            ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
-            : [];
-          const topicName = rawUnits.length > 0 ? rawUnits[0] : (a.title ? a.title.trim() : 'Core Concepts');
-          assignToTopic[a.id] = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        });
-
         const newMatrix: Record<string, Record<string, CellData>> = {};
+        studentRows.forEach(st => { newMatrix[st.id] = {}; });
 
-        filteredStudents.forEach(st => {
-          newMatrix[st.id] = {};
-          topicColumns.forEach(tp => {
-            newMatrix[st.id][tp.id] = { score: null, count: 0, confidence: 'insufficient' };
-          });
-        });
-
-        // 1. Map submissions
+        // Map live submissions
         (subsData || []).forEach(sub => {
-          if (!newMatrix[sub.student_id]) return;
+          if (!newMatrix[sub.student_id] || sub.score === null || sub.max_score <= 0 || sub.teacher_approved === false) return;
+          const assign = sub.assignments as any;
+          const rawUnits = Array.isArray(assign?.units) && assign.units.length > 0 ? assign.units : [assign?.title || 'Core'];
+          const topicKey = rawUnits[0].toLowerCase().replace(/[^a-z0-9]/g, '_');
 
-          // Require score to be non-null (and teacher_approved !== false)
-          if (sub.score === null || sub.max_score <= 0 || sub.teacher_approved === false) return;
-
-          const topicId = assignToTopic[sub.assignment_id] || topicColumns[0]?.id;
-          if (!topicId || !newMatrix[sub.student_id][topicId]) return;
-
-          const current = newMatrix[sub.student_id][topicId];
+          const current = newMatrix[sub.student_id][topicKey] || { score: null, count: 0, confidence: 'insufficient' };
           const pct = (sub.score / sub.max_score) * 100;
           const newCount = current.count + 1;
-          const newAvg = current.score === null
-            ? pct
-            : (current.score * current.count + pct) / newCount;
-
+          const newAvg = current.score === null ? pct : (current.score * current.count + pct) / newCount;
           const conf = newCount >= 8 ? 'firm' : newCount >= 4 ? 'provisional' : 'insufficient';
 
-          newMatrix[sub.student_id][topicId] = {
+          newMatrix[sub.student_id][topicKey] = {
             score: Math.round(newAvg),
             count: newCount,
-            confidence: conf,
+            confidence: conf
           };
         });
 
-        // 2. Merge persisted TML scores for extra topic precision
+        // Merge TML snapshots
         (tmlData || []).forEach(tml => {
           if (!newMatrix[tml.student_id] || tml.score === null) return;
-          const topicId = tml.topic_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          const targetCol = topicColumns.find(tc => tc.id === topicId || tc.name.toLowerCase() === tml.topic_name.toLowerCase());
-          if (!targetCol || !newMatrix[tml.student_id][targetCol.id]) return;
-
-          const current = newMatrix[tml.student_id][targetCol.id];
-          if (current.score === null) {
-            newMatrix[tml.student_id][targetCol.id] = {
+          const topicKey = tml.topic_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          if (!newMatrix[tml.student_id][topicKey] || newMatrix[tml.student_id][topicKey].score === null) {
+            newMatrix[tml.student_id][topicKey] = {
               score: Math.round(tml.score),
               count: tml.item_count || 4,
-              confidence: (tml.confidence_band as any) || 'provisional',
+              confidence: (tml.confidence_band as any) || 'provisional'
             };
           }
         });
 
         setMatrix(newMatrix);
       } catch (err) {
-        console.error('[ClassMatrix] error building matrix:', err);
+        console.error('[TML Heatmap error]:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    buildMatrix();
-  }, [profile?.schoolId, selectedClass, selectedSubject]);
+    buildData();
+  }, [profile?.schoolId, selectedClass]);
+
+  // Compute Chapter & Class TML stats dynamically
+  const currentChapter = SCIENCE_CHAPTERS[selectedChapterIdx] || SCIENCE_CHAPTERS[0];
+
+  const heatmapStats = useMemo(() => {
+    if (students.length === 0) return { avg: 0, atRisk: 0, mastered: 0, gaps: 0, topicAvgs: [] };
+
+    let totalScoreSum = 0;
+    let totalCellsCount = 0;
+    let atRiskStudents = 0;
+    let masteredCount = 0;
+    let gapCount = 0;
+
+    const tAvgs: { topic: { id: string; name: string }; avg: number }[] = [];
+
+    currentChapter.topics.forEach(tp => {
+      const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      let tSum = 0;
+      let tCount = 0;
+
+      students.forEach(st => {
+        const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id];
+        const sc = cell?.score ?? null;
+        if (sc !== null) {
+          tSum += sc;
+          tCount++;
+          totalScoreSum += sc;
+          totalCellsCount++;
+          if (sc >= 75) masteredCount++;
+          if (sc < 50) gapCount++;
+        }
+      });
+
+      tAvgs.push({
+        topic: tp,
+        avg: tCount > 0 ? Math.round(tSum / tCount) : 0
+      });
+    });
+
+    students.forEach(st => {
+      let stSum = 0;
+      let stCnt = 0;
+      currentChapter.topics.forEach(tp => {
+        const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const sc = matrix[st.id]?.[topicKey]?.score ?? null;
+        if (sc !== null) { stSum += sc; stCnt++; }
+      });
+      if (stCnt > 0 && (stSum / stCnt) < 50) atRiskStudents++;
+    });
+
+    const overallAvg = totalCellsCount > 0 ? Math.round(totalScoreSum / totalCellsCount) : 0;
+    return {
+      avg: overallAvg,
+      atRisk: atRiskStudents,
+      mastered: masteredCount,
+      gaps: gapCount,
+      topicAvgs: tAvgs
+    };
+  }, [students, matrix, currentChapter]);
 
   const handleAssignPractice = async () => {
     if (!selectedCell || !profile?.schoolId) return;
@@ -271,16 +314,16 @@ export default function ClassMasteryMatrixPage() {
         school_id: profile.schoolId,
         teacher_id: profile.id,
         teacher_name: profile.name || 'Teacher',
-        title: `Targeted Practice: ${selectedCell.topic.name}`,
-        description: `Personalized practice module targeting ${selectedCell.topic.name} for ${selectedCell.student.name}.`,
+        title: `Targeted AI Practice: ${selectedCell.topicName}`,
+        description: `Personalized practice module targeting ${selectedCell.topicName} for ${selectedCell.student.name}.`,
         type: 'quiz',
-        subject: selectedCell.topic.subject || selectedSubject || 'General',
-        class: selectedCell.student.student_class || selectedClass || '',
-        units: [selectedCell.topic.name],
+        subject: selectedSubject,
+        class: selectedClass || '10A',
+        units: [selectedCell.topicName],
         due_date: dueDate.toISOString().split('T')[0],
         questions: [
           {
-            questionText: `Solve: Demonstrating mastery in ${selectedCell.topic.name}.`,
+            questionText: `Demonstrating mastery in ${selectedCell.topicName}`,
             options: ['Option A', 'Option B', 'Option C', 'Option D'],
             correctOptionId: 0,
           },
@@ -288,7 +331,7 @@ export default function ClassMasteryMatrixPage() {
       });
 
       if (error) throw error;
-      alert(`✅ Targeted AI Practice module created for ${selectedCell.student.name}!`);
+      alert(`✅ Targeted AI Practice assigned to ${selectedCell.student.name}!`);
       setSelectedCell(null);
     } catch (err: any) {
       alert('Failed to assign practice: ' + err.message);
@@ -297,198 +340,392 @@ export default function ClassMasteryMatrixPage() {
     }
   };
 
-  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading Class Mastery Matrix...</div>;
+  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading TML Mastery Matrix...</div>;
 
   return (
-    <div className="max-w-[1500px] mx-auto space-y-6 animate-in fade-in duration-500 pb-20 px-2 sm:px-4">
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans">
+      {/* Top Oxford Navy Brand Bar */}
+      <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-black text-white text-sm border border-white/20">
+            S
+          </div>
+          <div className="font-extrabold text-base tracking-tight">
+            Sthara <span className="font-normal text-xs text-white/70 uppercase tracking-widest ml-2">School OS · TML Heatmap</span>
+          </div>
+        </div>
+
         <div className="flex items-center space-x-4">
-          <Link href="/teacher" className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl text-[#002147] border border-gray-200 transition-all">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-extrabold text-[#002147]">Class Mastery Heatmap Grid</h1>
-            <p className="text-gray-500 text-xs mt-0.5">Real-time student performance matrix per curriculum chapter</p>
+          <div className="flex items-center space-x-2 text-xs">
+            <span className="text-white/70">Signed in as:</span>
+            <span className="font-bold text-amber-300">{profile.name || 'Teacher'}</span>
           </div>
-        </div>
-
-        {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3">
           {classList.length > 0 && (
-            <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-              <span className="text-xs font-bold text-gray-500 pl-2">Class:</span>
-              <select
-                value={selectedClass}
-                onChange={e => setSelectedClass(e.target.value)}
-                className="bg-white text-[#002147] font-bold px-3 py-1.5 rounded-lg text-xs outline-none cursor-pointer border border-gray-200"
-              >
-                {classList.map(c => <option key={c} value={c}>Class {c}</option>)}
-              </select>
-            </div>
-          )}
-
-          {subjectList.length > 0 && (
-            <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-              <span className="text-xs font-bold text-gray-500 pl-2">Subject:</span>
-              <select
-                value={selectedSubject}
-                onChange={e => setSelectedSubject(e.target.value)}
-                className="bg-white text-[#002147] font-bold px-3 py-1.5 rounded-lg text-xs outline-none cursor-pointer border border-gray-200"
-              >
-                {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              className="bg-white/10 text-white font-bold text-xs px-3 py-1.5 rounded-lg border border-white/30 focus:outline-none cursor-pointer"
+            >
+              {classList.map(c => <option key={c} value={c} className="text-[#002147] bg-white">Class {c}</option>)}
+            </select>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Color Code Legend */}
-      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs font-bold">
-        <div className="flex items-center gap-2 text-gray-500 uppercase tracking-wider font-black text-[11px]">
-          <Layers className="w-4 h-4 text-indigo-600" />
-          <span>Mastery Scale:</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-md bg-[#22c55e] text-white flex items-center justify-center text-[10px] font-black">75+</span>
-            <span className="text-gray-700">Mastered (Green)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-md bg-[#eab308] text-black flex items-center justify-center text-[10px] font-black">50+</span>
-            <span className="text-gray-700">Developing (Yellow)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-md bg-[#ef4444] text-white flex items-center justify-center text-[10px] font-black">&lt;50</span>
-            <span className="text-gray-700">Needs Work (Red)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-md bg-[#9ca3af] text-white flex items-center justify-center text-[10px] font-black">-</span>
-            <span className="text-gray-500">Insufficient Data (Grey)</span>
-          </div>
-        </div>
-      </div>
+      {/* Main Container */}
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
+        {/* Breadcrumb Navigation Bar */}
+        <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500">
+          <button onClick={() => setViewMode(1)} className="hover:text-[#002147] transition-colors">
+            {selectedSubject} · My Classes
+          </button>
+          {viewMode >= 2 && (
+            <>
+              <span>›</span>
+              <button onClick={() => setViewMode(2)} className="hover:text-[#002147] transition-colors">
+                Class {selectedClass || '10A'}
+              </button>
+            </>
+          )}
+          {viewMode === 3 && (
+            <>
+              <span>›</span>
+              <span className="text-[#002147] font-bold">{currentChapter.name}</span>
+            </>
+          )}
+        </nav>
 
-      {/* 2D CLASS MASTERY MATRIX GRID TABLE */}
-      <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden">
-        {isLoading ? (
-          <div className="py-24 text-center text-gray-400 space-y-3">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-600" />
-            <p className="font-bold text-sm text-[#002147]">Building Class Mastery Heatmap Matrix...</p>
-          </div>
-        ) : students.length === 0 ? (
-          <div className="py-24 text-center text-gray-400">
-            <User className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-            <p className="font-bold text-base text-[#002147]">No students found for Class {selectedClass}</p>
-            <p className="text-xs mt-1">Select another class or register students in school settings.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse border border-gray-300 text-sm">
-              {/* Header Row: Student Name + Topics + Overall Grade */}
-              <thead>
-                <tr className="bg-[#f8fafc] border-b border-gray-300 text-[#002147]">
-                  <th className="p-3 pl-4 font-black text-xs text-gray-800 w-56 sticky left-0 bg-[#f8fafc] z-20 border-r border-gray-300 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                    Student Name
-                  </th>
-                  {topics.map(t => (
-                    <th key={t.id} className="p-3 font-bold text-xs text-center min-w-[130px] border-r border-gray-300 align-top">
-                      <div className="leading-tight text-gray-800" title={t.name}>{t.name}</div>
-                    </th>
-                  ))}
-                  <th className="p-3 pr-4 font-black text-xs text-center w-28 bg-[#f1f5f9] border-l-2 border-gray-300 text-gray-800">
-                    Overall Grade
-                  </th>
-                </tr>
-              </thead>
+        {/* ================= VIEW 1: MY CLASSES GRID ================= */}
+        {viewMode === 1 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-2xl font-extrabold text-[#002147]">My Classes</h2>
+              <p className="text-xs text-gray-500 mt-1">Select a class section to view topic breakdown & student mastery heatmaps</p>
+            </div>
 
-              {/* Rows: Student x Topics */}
-              <tbody className="divide-y divide-gray-200">
-                {students.map((st, sIdx) => {
-                  const studentRow = matrix[st.id] || {};
-                  const validCells = Object.values(studentRow).filter(c => c.score !== null);
-                  const studentAvg = validCells.length > 0
-                    ? Math.round(validCells.reduce((sum, c) => sum + (c.score || 0), 0) / validCells.length)
-                    : null;
-                  const letterGrade = getLetterGrade(studentAvg);
-                  const letterStyle = getGradeBadgeStyle(letterGrade);
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {(classList.length > 0 ? classList : ['10A', '10B', '9A']).map((clsName, idx) => {
+                const mockAvg = 78 - idx * 4;
+                const boxStyle = getBoxStyle(mockAvg);
 
-                  // Generate initial colors for student avatars
-                  const bgColors = ['bg-indigo-600', 'bg-blue-600', 'bg-violet-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-teal-600', 'bg-purple-600'];
-                  const avatarBg = bgColors[sIdx % bgColors.length];
+                return (
+                  <button
+                    key={clsName}
+                    onClick={() => { setSelectedClass(clsName); setViewMode(2); }}
+                    className="bg-white border border-gray-200 rounded-2xl p-6 text-left shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border-l-4 border-l-[#002147] space-y-4 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-extrabold text-[#002147]">Class {clsName}</h3>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        {selectedSubject} · CBSE
+                      </span>
+                    </div>
 
-                  return (
-                    <tr key={st.id} className="hover:bg-slate-50/80 transition-colors group border-b border-gray-200">
-                      {/* Student Name Cell with Round Avatar */}
-                      <td className="p-3 pl-4 font-bold text-xs text-[#002147] sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-gray-300 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                        <div className="flex items-center space-x-2.5">
-                          {st.avatar_url ? (
-                            <img src={st.avatar_url} alt={st.name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200 shadow-sm" />
-                          ) : (
-                            <div className={`w-8 h-8 rounded-full ${avatarBg} text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm`}>
-                              {st.name ? st.name.charAt(0).toUpperCase() : 'S'}
-                            </div>
-                          )}
-                          <span className="font-extrabold text-[#002147] text-xs truncate max-w-[150px]">{st.name}</span>
-                        </div>
-                      </td>
+                    <div className="grid grid-cols-3 gap-2 text-xs text-gray-500 uppercase tracking-wider border-y border-gray-100 py-3">
+                      <div>
+                        <span>Students</span>
+                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">{students.length || 20}</p>
+                      </div>
+                      <div>
+                        <span>Chapters</span>
+                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">{SCIENCE_CHAPTERS.length}</p>
+                      </div>
+                      <div>
+                        <span>Topics</span>
+                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">20 Tagged</p>
+                      </div>
+                    </div>
 
-                      {/* Topic Percentage Cell Badges */}
-                      {topics.map(t => {
-                        const cell = studentRow[t.id];
-                        const hasScore = cell && cell.score !== null;
-                        const score = cell?.score ?? null;
-
-                        let pillClass = 'bg-[#9ca3af] text-white'; // Grey
-                        if (hasScore) {
-                          if (score! >= 75) pillClass = 'bg-[#22c55e] text-white';        // Green
-                          else if (score! >= 50) pillClass = 'bg-[#eab308] text-[#002147]'; // Yellow
-                          else pillClass = 'bg-[#ef4444] text-white';                     // Red
-                        }
-
-                        return (
-                          <td key={t.id} className="p-2 text-center border-r border-gray-200 align-middle">
-                            <button
-                              onClick={() => setSelectedCell({ student: st, topic: t, data: cell })}
-                              className="w-full focus:outline-none"
-                            >
-                              <div className={`w-16 mx-auto py-1.5 rounded-lg font-black text-xs text-center shadow-sm transition-transform hover:scale-105 cursor-pointer ${pillClass}`}>
-                                {hasScore ? `${score}%` : '-'}
-                              </div>
-                            </button>
-                          </td>
-                        );
-                      })}
-
-                      {/* Overall Grade Badge Column */}
-                      <td className="p-2 text-center bg-[#f8fafc] border-l-2 border-gray-300 align-middle">
-                        {studentAvg !== null ? (
-                          <span className={`inline-block w-10 py-1 rounded-lg text-xs font-black border text-center shadow-sm ${letterStyle}`}>
-                            {letterGrade}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-400 font-bold">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-gray-500 uppercase tracking-wider text-[10px]">Class TML Score</span>
+                        <span className={`font-black ${boxStyle.band === 'grn' ? 'text-emerald-700' : 'text-amber-700'}`}>{mockAvg}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div className="bg-[#002147] h-full rounded-full transition-all duration-500" style={{ width: `${mockAvg}%` }} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Drill-down / Assign Practice Modal */}
+        {/* ================= VIEW 2: CHAPTERS LIST ================= */}
+        {viewMode === 2 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject}</h2>
+                <p className="text-xs text-gray-500 mt-1">Select a chapter to open the student × topic mastery map matrix</p>
+              </div>
+              <button
+                onClick={() => setViewMode(1)}
+                className="px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Classes
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {SCIENCE_CHAPTERS.map((chap, idx) => {
+                const mockAvg = 82 - idx * 5;
+                const boxStyle = getBoxStyle(mockAvg);
+
+                return (
+                  <div
+                    key={chap.id}
+                    onClick={() => { setSelectedChapterIdx(idx); setViewMode(3); }}
+                    className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-sm hover:shadow-md hover:border-[#002147] transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#002147] flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100">
+                        0{idx + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-base text-[#002147] group-hover:text-indigo-600 transition-colors">
+                          {chap.name}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {chap.topics.length} tagged topics: {chap.topics.map(t => t.name).join(' · ')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4 shrink-0">
+                      <div className="hidden sm:block w-36">
+                        <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100">
+                          <div className="bg-[#1b7a53] h-full" style={{ width: '65%' }} />
+                          <div className="bg-[#c98a00] h-full" style={{ width: '25%' }} />
+                          <div className="bg-[#b8362a] h-full" style={{ width: '10%' }} />
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1.5 rounded-lg font-black text-sm ${boxStyle.css}`}>
+                        {mockAvg}%
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#002147] transition-colors" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ================= VIEW 3: 2D HEATMAP MATRIX TABLE ================= */}
+        {viewMode === 3 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Header & Control Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+              <div>
+                <h2 className="text-2xl font-extrabold text-[#002147]">{currentChapter.name}</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Class {selectedClass || '10A'} · {selectedSubject} · {students.length} students × {currentChapter.topics.length} topics
+                </p>
+              </div>
+              <button
+                onClick={() => setViewMode(2)}
+                className="px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all flex items-center gap-1.5 self-start sm:self-auto"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Chapters
+              </button>
+            </div>
+
+            {/* Stat Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Chapter TML</span>
+                <p className="text-2xl font-black text-[#002147] mt-1">{heatmapStats.avg}%</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Students At Risk</span>
+                <p className="text-2xl font-black text-[#b8362a] mt-1">{heatmapStats.atRisk} <span className="text-xs font-bold text-gray-400">/ {students.length}</span></p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Mastered Cells</span>
+                <p className="text-2xl font-black text-[#1b7a53] mt-1">{heatmapStats.mastered}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Gap Cells</span>
+                <p className="text-2xl font-black text-[#c98a00] mt-1">{heatmapStats.gaps}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm col-span-2 sm:col-span-1">
+                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Weakest Topic</span>
+                <p className="text-xs font-bold text-[#002147] mt-1 truncate">
+                  {heatmapStats.topicAvgs.length > 0
+                    ? [...heatmapStats.topicAvgs].sort((a, b) => a.avg - b.avg)[0]?.topic.name
+                    : 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            {/* Color Legend Bar */}
+            <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-gray-600">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-[#f7d8d3] border border-[#e0a89f]" />
+                  <span>Needs support &lt;50%</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-[#f9e6bb] border border-[#e6c87e]" />
+                  <span>Approaching 50–74%</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-[#c8e7d7] border border-[#93cbb0]" />
+                  <span>Mastered ≥75%</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-[#eef3f8] border border-[#e2e9f1]" />
+                  <span>Not attempted</span>
+                </div>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
+                Solid fill = extreme band (&lt;35% / ≥90%)
+              </span>
+            </div>
+
+            {/* Matrix Heatmap Table */}
+            <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden">
+              {isLoading ? (
+                <div className="py-20 text-center text-gray-400 space-y-3">
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#002147]" />
+                  <p className="font-bold text-sm text-[#002147]">Calculating TML Matrix...</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse border border-gray-300 text-xs">
+                    <thead>
+                      <tr className="bg-[#002147] text-white">
+                        <th className="p-3.5 pl-5 font-black uppercase text-[11px] tracking-wider w-60 sticky left-0 bg-[#002147] z-20 border-r border-white/20 shadow-md">
+                          Student
+                        </th>
+                        {currentChapter.topics.map(tp => (
+                          <th key={tp.id} className="p-3.5 font-bold text-center border-r border-white/20 min-w-[140px] align-top">
+                            <div className="leading-snug">{tp.name}</div>
+                            <span className="block text-[9px] text-white/60 font-normal uppercase tracking-widest mt-1">Topic</span>
+                          </th>
+                        ))}
+                        <th className="p-3.5 font-black text-center bg-[#0a2f5c] w-32 border-l-2 border-white/30">
+                          <div>Student TML</div>
+                          <span className="block text-[9px] text-white/60 font-normal uppercase tracking-widest mt-1">Chapter</span>
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-gray-200">
+                      {students.map((st, sIdx) => {
+                        let stSum = 0;
+                        let stCount = 0;
+
+                        currentChapter.topics.forEach(tp => {
+                          const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                          const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id];
+                          if (cell?.score !== null && cell?.score !== undefined) {
+                            stSum += cell.score;
+                            stCount++;
+                          }
+                        });
+
+                        const stAvg = stCount > 0 ? Math.round(stSum / stCount) : null;
+                        const stBoxStyle = getBoxStyle(stAvg);
+
+                        const bgColors = ['bg-[#002147]', 'bg-indigo-600', 'bg-blue-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600'];
+                        const avatarBg = bgColors[sIdx % bgColors.length];
+
+                        return (
+                          <tr key={st.id} className="hover:bg-slate-50 transition-colors group">
+                            {/* Sticky Student Column */}
+                            <td className="p-3 pl-5 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-gray-300 shadow-md">
+                              <div className="flex items-center space-x-3">
+                                {st.avatar_url ? (
+                                  <img src={st.avatar_url} alt={st.name} className="w-7 h-7 rounded-full object-cover shrink-0 border border-gray-200" />
+                                ) : (
+                                  <div className={`w-7 h-7 rounded-full ${avatarBg} text-white flex items-center justify-center font-bold text-[10px] shrink-0`}>
+                                    {st.name ? st.name.split(' ').map(n => n[0]).join('') : 'S'}
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-bold text-[#002147] text-xs leading-none truncate max-w-[130px]">{st.name}</p>
+                                  <span className="text-[10px] text-gray-400 font-medium">Roll {st.roll}</span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Topic Score Boxes */}
+                            {currentChapter.topics.map(tp => {
+                              const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                              const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id] || { score: null, count: 0, confidence: 'insufficient' };
+                              const boxStyle = getBoxStyle(cell.score);
+
+                              return (
+                                <td key={tp.id} className="p-1.5 text-center border-r border-gray-200 align-middle">
+                                  <button
+                                    onClick={() => setSelectedCell({ student: st, topicName: tp.name, data: cell })}
+                                    className={`w-full py-2.5 rounded-lg border text-xs text-center transition-all duration-150 cursor-pointer hover:scale-105 hover:shadow-md ${boxStyle.css}`}
+                                    title={`${st.name} · ${tp.name}\n${cell.score === null ? 'Not attempted' : `${cell.score}% mastery · ${cell.count} evidence points`}`}
+                                  >
+                                    {boxStyle.label}
+                                  </button>
+                                </td>
+                              );
+                            })}
+
+                            {/* Row Average (Student TML) */}
+                            <td className="p-1.5 text-center bg-[#f8fafc] border-l-2 border-gray-300 align-middle">
+                              <div className={`w-full py-2.5 rounded-lg border text-xs text-center font-black ${stBoxStyle.css}`}>
+                                {stBoxStyle.label}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+
+                    {/* Table Footer: Topic Average Row */}
+                    <tfoot>
+                      <tr className="bg-slate-100 border-t-2 border-gray-300 font-bold">
+                        <td className="p-3 pl-5 sticky left-0 bg-slate-100 z-20 border-r border-gray-300 text-gray-600 uppercase text-[10px] tracking-wider">
+                          Topic Average
+                        </td>
+                        {currentChapter.topics.map(tp => {
+                          const tStat = heatmapStats.topicAvgs.find(t => t.topic.id === tp.id);
+                          const avgVal = tStat ? tStat.avg : 0;
+                          const boxStyle = getBoxStyle(avgVal);
+
+                          return (
+                            <td key={tp.id} className="p-1.5 text-center border-r border-gray-300">
+                              <div className={`w-full py-2 rounded-lg text-xs font-black text-center ${boxStyle.css}`}>
+                                {avgVal}%
+                              </div>
+                            </td>
+                          );
+                        })}
+                        <td className="p-1.5 text-center bg-[#0a2f5c] text-white">
+                          <div className="w-full py-2 rounded-lg text-xs font-black text-center bg-[#002147] text-amber-300 border border-white/20">
+                            {heatmapStats.avg}%
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Practice Module Modal */}
       {selectedCell && (
-        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">
             <div className="flex justify-between items-start border-b border-gray-100 pb-3">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full">
                   Topic Diagnostic
                 </span>
-                <h3 className="text-lg font-extrabold text-[#002147] mt-1">{selectedCell.topic.name}</h3>
+                <h3 className="text-lg font-extrabold text-[#002147] mt-1">{selectedCell.topicName}</h3>
                 <p className="text-xs text-gray-500">Student: {selectedCell.student.name}</p>
               </div>
               <button onClick={() => setSelectedCell(null)} className="text-gray-400 hover:text-gray-600 font-bold p-1">✕</button>
@@ -496,14 +733,14 @@ export default function ClassMasteryMatrixPage() {
 
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 font-medium">Calculated Score:</span>
+                <span className="text-gray-500 font-medium">True Mastery Level (TML):</span>
                 <span className="font-black text-base text-[#002147]">
-                  {selectedCell.data.score !== null ? `${selectedCell.data.score}%` : 'No data recorded yet'}
+                  {selectedCell.data.score !== null ? `${selectedCell.data.score}%` : 'Not attempted'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Teacher-Approved Submissions:</span>
-                <span className="font-bold text-gray-700">{selectedCell.data.count} submission(s)</span>
+                <span>Evidence Submissions:</span>
+                <span className="font-bold text-gray-700">{selectedCell.data.count} item(s) recorded</span>
               </div>
             </div>
 
@@ -511,10 +748,10 @@ export default function ClassMasteryMatrixPage() {
               <button
                 onClick={handleAssignPractice}
                 disabled={isAssigning}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full py-3 bg-[#002147] hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
               >
-                <Zap className="w-4 h-4" />
-                <span>{isAssigning ? 'Creating Task...' : `Assign Practice on ${selectedCell.topic.name}`}</span>
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>{isAssigning ? 'Creating Task...' : `Assign Targeted AI Practice on ${selectedCell.topicName}`}</span>
               </button>
               <button
                 onClick={() => setSelectedCell(null)}

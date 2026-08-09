@@ -240,8 +240,13 @@ export default function TeacherDashboard() {
           dueDate,
           description,
           questions: filteredQs.map(q => ({
+            questionText: q.text.trim(),
             text: q.text.trim(),
-            marks: q.marks ? Number(q.marks) : null,
+            options: (q.options && q.options.filter((o: string) => o.trim() !== '').length > 0)
+              ? q.options.map((o: string) => o.trim())
+              : ['Option A', 'Option B', 'Option C', 'Option D'],
+            correctOptionId: q.correctOptionId ?? 0,
+            marks: q.marks ? Number(q.marks) : 1,
           })),
           totalMarks: computedTotalMarks,   // ← always send the real total
           questionPaperUrl,
@@ -672,36 +677,72 @@ export default function TeacherDashboard() {
                       <label className="block text-sm font-medium text-[#002147]/70">Questions (optional)</label>
                       <button
                         type="button"
-                        onClick={() => setHomeworkQuestions(prev => [...prev, { id: String(Date.now()), text: '', marks: '' }])}
+                        onClick={() => setHomeworkQuestions(prev => [
+                          ...prev,
+                          { id: String(Date.now()), text: '', marks: '1', options: ['', '', '', ''], correctOptionId: 0 }
+                        ])}
                         className="text-xs font-bold text-[#dc143c] border border-[#dc143c]/30 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
                       >
                         + Add Question
                       </button>
                     </div>
-                    <div className="space-y-2">
-                      {homeworkQuestions.map((q, idx) => (
-                        <div key={q.id} className="flex gap-2 items-start">
-                          <div className="w-6 h-6 bg-[#002147] text-white rounded-full flex items-center justify-center text-xs font-bold mt-3 shrink-0">{idx+1}</div>
-                          <input
-                            value={q.text}
-                            onChange={e => setHomeworkQuestions(prev => prev.map((p, i) => i === idx ? { ...p, text: e.target.value } : p))}
-                            placeholder={`Question ${idx + 1}`}
-                            className="flex-1 bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-3 py-2 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-                          />
-                          <input
-                            type="number"
-                            value={q.marks}
-                            onChange={e => setHomeworkQuestions(prev => prev.map((p, i) => i === idx ? { ...p, marks: e.target.value } : p))}
-                            placeholder="Marks"
-                            className="w-16 bg-[#f8fafc] border border-[#002147]/10 rounded-xl px-2 py-2 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setHomeworkQuestions(prev => prev.filter((_, i) => i !== idx))}
-                            className="mt-2 text-red-400 hover:text-red-600 text-lg font-black"
-                          >×</button>
-                        </div>
-                      ))}
+                    <div className="space-y-3">
+                      {homeworkQuestions.map((q, idx) => {
+                        const opts = Array.isArray(q.options) ? q.options : ['', '', '', ''];
+                        return (
+                          <div key={q.id} className="p-3 bg-[#f8fafc] border border-gray-200 rounded-xl space-y-2">
+                            <div className="flex gap-2 items-center">
+                              <div className="w-6 h-6 bg-[#002147] text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{idx+1}</div>
+                              <input
+                                value={q.text}
+                                onChange={e => setHomeworkQuestions(prev => prev.map((p, i) => i === idx ? { ...p, text: e.target.value } : p))}
+                                placeholder={`Question ${idx + 1} text...`}
+                                className="flex-1 bg-white border border-[#002147]/10 rounded-xl px-3 py-2 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20"
+                              />
+                              <input
+                                type="number"
+                                value={q.marks}
+                                onChange={e => setHomeworkQuestions(prev => prev.map((p, i) => i === idx ? { ...p, marks: e.target.value } : p))}
+                                placeholder="Marks"
+                                className="w-16 bg-white border border-[#002147]/10 rounded-xl px-2 py-2 text-[#002147] text-sm focus:outline-none focus:ring-2 focus:ring-[#002147]/20 text-center font-bold"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setHomeworkQuestions(prev => prev.filter((_, i) => i !== idx))}
+                                className="text-red-400 hover:text-red-600 text-lg font-black px-1"
+                              >×</button>
+                            </div>
+
+                            {/* MCQ Options A, B, C, D */}
+                            <div className="grid grid-cols-2 gap-2 pt-1 pl-8">
+                              {['A', 'B', 'C', 'D'].map((letter, optIdx) => (
+                                <div key={optIdx} className="flex items-center space-x-1.5">
+                                  <input
+                                    type="radio"
+                                    name={`correct_${q.id}`}
+                                    checked={(q.correctOptionId ?? 0) === optIdx}
+                                    onChange={() => setHomeworkQuestions(prev => prev.map((p, i) => i === idx ? { ...p, correctOptionId: optIdx } : p))}
+                                    className="cursor-pointer"
+                                    title="Mark as correct answer"
+                                  />
+                                  <span className="text-xs font-bold text-gray-500 w-4">{letter}.</span>
+                                  <input
+                                    value={opts[optIdx] || ''}
+                                    onChange={e => setHomeworkQuestions(prev => prev.map((p, i) => {
+                                      if (i !== idx) return p;
+                                      const newOpts = [...(p.options || ['', '', '', ''])];
+                                      newOpts[optIdx] = e.target.value;
+                                      return { ...p, options: newOpts };
+                                    }))}
+                                    placeholder={`Option ${letter}`}
+                                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-[#002147]"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 

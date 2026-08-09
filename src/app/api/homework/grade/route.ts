@@ -69,8 +69,6 @@ Output your response ONLY as a JSON object with this exact structure:
     const numericScore = typeof parsed.score === 'number' ? Math.min(parsed.score, totalMarks) : null;
 
     // Update submission in Supabase (replaces Firebase write)
-    const supabase = createAdminClient();
-
     if (assignmentId && studentId) {
       try {
         // Update submission record with AI score

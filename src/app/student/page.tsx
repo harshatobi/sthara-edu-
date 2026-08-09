@@ -1097,32 +1097,35 @@ export default function StudentDashboard() {
                     <div className="space-y-4">
                       {selectedTask.questions.map((q: any, i: number) => {
                         const qKey = q.id || String(i);
-                        const questionText = q.questionText || q.question || q.text || q.stem || q.title || `Question ${i + 1}`;
-                        const optionsList = (Array.isArray(q.options) && q.options.length > 0)
-                          ? q.options
-                          : ['Option A', 'Option B', 'Option C', 'Option D'];
+                        const rawOptions = Array.isArray(q.options) ? q.options.filter(Boolean) : [];
+                        const hasRealOptions = rawOptions.length > 0 && rawOptions.some(o => {
+                          const str = (typeof o === 'string' ? o : (o.text || '')).trim().toLowerCase();
+                          return str !== '' && str !== 'option a' && str !== 'option b' && str !== 'option c' && str !== 'option d';
+                        });
 
                         return (
                           <div key={qKey} className="bg-[#f8fafc] border border-gray-200 rounded-2xl p-5">
-                            <div className="flex items-start gap-3 mb-3">
+                            <div className="flex items-start gap-3 mb-2">
                               <div className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{i+1}</div>
                               <div className="flex-1">
                                 <p className="font-bold text-[#002147] text-base leading-relaxed">{questionText}</p>
                                 {q.marks && (
-                                  <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                  <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
                                     {q.marks} mark{q.marks !== 1 ? 's' : ''}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            {(() => {
-                              const isViewOnly = !!selectedTask.submission;
-                              const submittedAnswers: Record<string, string> =
-                                selectedTask.submission?.answers || {};
-                              return (
-                                // MCQ — render clickable A/B/C/D buttons (or read-only if submitted)
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-11">
-                                  {optionsList.map((opt: any, optIdx: number) => {
+
+                            {hasRealOptions ? (
+                              (() => {
+                                const isViewOnly = !!selectedTask.submission;
+                                const submittedAnswers: Record<string, string> =
+                                  selectedTask.submission?.answers || {};
+                                return (
+                                  // MCQ — render clickable A/B/C/D buttons (or read-only if submitted)
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-11 mt-3">
+                                    {rawOptions.map((opt: any, optIdx: number) => {
                                     const optText = typeof opt === 'string' ? opt : (opt.text || String(opt));
                                     const optKey = String(optIdx);
                                     const isSelected = isViewOnly
@@ -1184,8 +1187,12 @@ export default function StudentDashboard() {
                                   })}
                                 </div>
                               );
-                            })()}
-                            {/* Open-ended: no text area — student writes on paper and uploads photo */}
+                            })()
+                          ) : (
+                            <div className="ml-11 mt-2 text-xs text-indigo-800 bg-indigo-50 p-2.5 rounded-xl border border-indigo-100 font-semibold flex items-center gap-2">
+                              <span>✍ Subjective Question: Write your answer on paper and upload a clear photo of your work below.</span>
+                            </div>
+                          )}
                           </div>
                         );
                       })}

@@ -905,10 +905,21 @@ export default function TeacherDashboard() {
                                         <p className="text-xs font-black text-[#002147] uppercase tracking-wider mb-2">📸 Student's Handwritten Work</p>
                                         <div className="flex flex-wrap gap-3">
                                           {imageList.map((url: string, idx: number) => (
-                                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="group relative">
+                                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="group relative block">
                                               <img
                                                 src={url}
                                                 alt={`Page ${idx+1}`}
+                                                onError={(e) => {
+                                                  // Fallback for old 404 links uploaded before storage bucket setup
+                                                  (e.target as HTMLElement).style.display = 'none';
+                                                  const parent = (e.target as HTMLElement).parentElement;
+                                                  if (parent && !parent.querySelector('.img-error-fallback')) {
+                                                    const fb = document.createElement('div');
+                                                    fb.className = 'img-error-fallback w-32 h-32 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50 p-2 flex flex-col items-center justify-center text-center';
+                                                    fb.innerHTML = '<span class="text-xs font-bold text-amber-800">📷 Answer Sheet</span><span class="text-[10px] text-amber-600 mt-1">Uploaded before storage setup</span>';
+                                                    parent.appendChild(fb);
+                                                  }
+                                                }}
                                                 className="w-32 h-32 object-cover rounded-2xl border-2 border-indigo-200 group-hover:border-indigo-600 transition-all shadow-sm group-hover:shadow-md"
                                               />
                                               <span className="absolute bottom-1.5 right-1.5 bg-[#002147]/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">

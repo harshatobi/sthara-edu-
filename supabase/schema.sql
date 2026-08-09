@@ -9,6 +9,11 @@ UPDATE public.users SET role = 'student' WHERE role IS NULL;
 ALTER TABLE public.users ALTER COLUMN role SET NOT NULL;
 ALTER TABLE public.users ALTER COLUMN role SET DEFAULT 'student';
 
+-- CREATE PUBLIC STORAGE BUCKET FOR SUBMISSIONS
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('submissions', 'submissions', true) 
+ON CONFLICT (id) DO UPDATE SET public = true;
+
 -- 2. ENFORCE UNIQUENESS ON submissions(assignment_id, student_id) (P0)
 DELETE FROM public.submissions a USING public.submissions b
 WHERE a.assignment_id = b.assignment_id

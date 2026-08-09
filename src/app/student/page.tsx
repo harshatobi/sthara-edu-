@@ -1207,10 +1207,20 @@ export default function StudentDashboard() {
                             <p className="text-xs font-black text-[#002147] uppercase tracking-wider mb-2">📸 Your Submitted Handwritten Answer Sheet</p>
                             <div className="flex flex-wrap gap-3">
                               {imageList.map((url: string, idx: number) => (
-                                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="group relative">
+                                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="group relative block">
                                   <img
                                     src={url}
                                     alt={`Submitted Page ${idx + 1}`}
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = 'none';
+                                      const parent = (e.target as HTMLElement).parentElement;
+                                      if (parent && !parent.querySelector('.img-error-fallback')) {
+                                        const fb = document.createElement('div');
+                                        fb.className = 'img-error-fallback w-28 h-28 rounded-xl border-2 border-dashed border-indigo-300 bg-white p-2 flex flex-col items-center justify-center text-center';
+                                        fb.innerHTML = '<span class="text-xs font-bold text-indigo-800">📷 Answer Sheet</span><span class="text-[9px] text-gray-500 mt-1">Old submission link</span>';
+                                        parent.appendChild(fb);
+                                      }
+                                    }}
                                     className="w-28 h-28 object-cover rounded-xl border-2 border-indigo-200 group-hover:border-indigo-600 transition-all shadow-sm"
                                   />
                                   <span className="absolute bottom-1 right-1 bg-[#002147]/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">

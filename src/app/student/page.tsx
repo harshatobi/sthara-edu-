@@ -1096,8 +1096,12 @@ export default function StudentDashboard() {
                   {selectedTask.questions && selectedTask.questions.length > 0 && (
                     <div className="space-y-4">
                       {selectedTask.questions.map((q: any, i: number) => {
-                        const qKey = q.id || String(i);
-                        const rawOptions = Array.isArray(q.options) ? q.options.filter(Boolean) : [];
+                        const qKey = typeof q === 'object' && q.id ? q.id : String(i);
+                        const questionText = typeof q === 'string'
+                          ? q
+                          : (q.questionText || q.question || q.text || q.stem || q.title || `Question ${i + 1}`);
+
+                        const rawOptions = typeof q === 'object' && Array.isArray(q.options) ? q.options.filter(Boolean) : [];
                         const hasRealOptions = rawOptions.length > 0 && rawOptions.some(o => {
                           const str = (typeof o === 'string' ? o : (o.text || '')).trim().toLowerCase();
                           return str !== '' && str !== 'option a' && str !== 'option b' && str !== 'option c' && str !== 'option d';
@@ -1109,7 +1113,7 @@ export default function StudentDashboard() {
                               <div className="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">{i+1}</div>
                               <div className="flex-1">
                                 <p className="font-bold text-[#002147] text-base leading-relaxed">{questionText}</p>
-                                {q.marks && (
+                                {typeof q === 'object' && q.marks && (
                                   <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
                                     {q.marks} mark{q.marks !== 1 ? 's' : ''}
                                   </span>

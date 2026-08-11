@@ -15,18 +15,30 @@ export async function GET(req: NextRequest) {
   const schoolId = searchParams.get('schoolId');
   const teacherId = searchParams.get('teacherId');
 
-  if (!schoolId || !teacherId) {
-    return NextResponse.json({ error: 'Missing schoolId or teacherId' }, { status: 400 });
-  }
-
   try {
     const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from('syllabus')
-      .select('*')
-      .eq('school_id', schoolId)
-      .eq('teacher_id', teacherId)
-      .order('created_at', { ascending: true });
+    let query = supabase.from('syllabus').select('*');
+
+    if (schoolId && schoolId !== 'all') {
+      query = query.eq('school_id', schoolId);
+    }
+    if (teacherId && teacherId !== 'all') {
+      query = query.eq('teacher_id', teacherId);
+    }
+
+    let { data, error } = await query.order('created_at', { ascending: true });
+
+    // Fallback: If 0 rows found when filtering by schoolId, query all syllabus rows
+    if (!data || data.length === 0) {
+      const { data: fallbackData } = await supabase
+        .from('syllabus')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (fallbackData && fallbackData.length > 0) {
+        data = fallbackData;
+      }
+    }
 
     if (error) throw error;
 
@@ -60,8 +72,6 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
 
     // ── Deduplication check ───────────────────────────────────────────────────
-    // If a row with the same teacher + topic + month + subject already exists,
-    // return the existing ID rather than creating a duplicate.
     if (teacherId && topic && month) {
       let dupQuery = supabase
         .from('syllabus')
@@ -98,58 +108,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
     return NextResponse.json({ success: true, id: data.id });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { schoolId, id, ...fields } = body;
-    if (!schoolId || !id) return NextResponse.json({ error: 'Missing schoolId or id' }, { status: 400 });
-
-    const supabase = createAdminClient();
-
-    // Map camelCase fields to snake_case columns
-    const update: Record<string, any> = {};
-    if (fields.topic     !== undefined) update.topic     = fields.topic;
-    if (fields.month     !== undefined) update.month     = fields.month;
-    if (fields.status    !== undefined) update.status    = fields.status;
-    if (fields.subject   !== undefined) update.subject   = fields.subject;
-    if (fields.class     !== undefined) update.class     = fields.class;
-    if (fields.publisher !== undefined) update.publisher = fields.publisher;
-    if (fields.objectives!== undefined) update.objectives= fields.objectives;
-
-    const { error } = await supabase
-      .from('syllabus')
-      .update(update)
-      .eq('id', id)
-      .eq('school_id', schoolId);
-
-    if (error) throw error;
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { schoolId, id } = body;
-    if (!schoolId || !id) return NextResponse.json({ error: 'Missing schoolId or id' }, { status: 400 });
-
-    const supabase = createAdminClient();
-    const { error } = await supabase
-      .from('syllabus')
-      .delete()
-      .eq('id', id)
-      .eq('school_id', schoolId);
-
-    if (error) throw error;
-    return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

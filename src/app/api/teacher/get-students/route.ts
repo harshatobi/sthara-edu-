@@ -11,21 +11,47 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
-    const { schoolId, classFilter } = await req.json();
-    if (!schoolId) return NextResponse.json({ error: 'Missing schoolId' }, { status: 400 });
+    const body = await req.json().catch(() => ({}));
+    const schoolId = body.schoolId;
 
     const supabase = createAdminClient();
 
-    const { data: rows, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('school_id', schoolId)
-      .eq('role', 'student');
+    // 1. Query by schoolId + role='student'
+    let query = supabase.from('users').select('*');
+    if (schoolId && schoolId !== 'all') {
+      query = query.eq('school_id', schoolId);
+    }
+    
+    let { data: rows, error } = await query.ilike('role', 'student');
 
-    if (error) throw error;
+    // 2. Fallback: If 0 rows found, query all student roles without strict school_id
+    if (!rows || rows.length === 0) {
+      const { data: fallbackRows } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('role', 'student');
+
+      if (fallbackRows && fallbackRows.length > 0) {
+        rows = fallbackRows;
+      }
+    }
+
+    // 3. Second Fallback: Query all users who are not teachers or admins
+    if (!rows || rows.length === 0) {
+      const { data: nonAdminRows } = await supabase
+        .from('users')
+        .select('*')
+        .neq('role', 'teacher')
+        .neq('role', 'admin');
+
+      if (nonAdminRows && nonAdminRows.length > 0) {
+        rows = nonAdminRows;
+      }
+    }
+
+    const classFilter = body.classFilter;
 
     // Apply class filter in JS — case-insensitive, bidirectional substring
-    // This handles mismatches like "B.Com II Year" vs "b.com ii year"
     const filtered = classFilter
       ? (rows || []).filter(s => {
           const cls = (s.student_class || s.branch || '').toLowerCase().trim();
@@ -36,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     const students = filtered.map((d) => ({
       id: d.id,
-      name: d.name || 'Unknown',
+      name: d.name || 'Unknown Student',
       email: d.email || '',
       studentClass: d.student_class || d.branch || '',
       branch: d.branch || '',

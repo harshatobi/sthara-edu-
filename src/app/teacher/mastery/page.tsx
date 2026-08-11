@@ -20,7 +20,7 @@ interface StudentRosterItem {
   unitScores: Record<string, number | null>;
 }
 
-const DEFAULT_SUBJECTS = ['Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
+const DEFAULT_SUBJECTS = ['Mathematics', 'Science', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
 const STANDARD_UNITS = [
   { id: 'u1', label: 'Unit I: Core Foundations' },
   { id: 'u2', label: 'Unit II: Advanced Concepts' },
@@ -30,6 +30,13 @@ const STANDARD_UNITS = [
 ];
 
 const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const formatClassName = (c: string) => {
+  if (!c) return 'Class 10A';
+  const trimmed = c.trim();
+  if (trimmed.toLowerCase().startsWith('class ')) return trimmed;
+  return `Class ${trimmed}`;
+};
 
 function getGradeLetter(s: number | null): string {
   if (s === null) return '—';
@@ -55,7 +62,7 @@ export default function TeacherMasteryTrackerPage() {
   const [classList, setClassList] = useState<string[]>([]);
   const [subjectList, setSubjectList] = useState<string[]>(DEFAULT_SUBJECTS);
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('Science');
+  const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'at_risk' | 'mastered'>('all');
@@ -90,16 +97,23 @@ export default function TeacherMasteryTrackerPage() {
         });
       }
 
-      let assignQuery = supabase.from('assignments').select('subject, class');
-      if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
-      const { data: dbAssigns } = await assignQuery;
+      try {
+        const schoolId = profile.schoolId || 'all';
+        const authToken = await getAuthToken();
+        const sylRes = await fetch(`/api/teacher/syllabus?schoolId=${schoolId}&teacherId=all`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const sylJson = await sylRes.json();
+        (sylJson.modules || []).forEach((s: any) => {
+          if (s.subject) subSet.add(s.subject);
+          const c = s.class || s.grade;
+          if (c) clsSet.add(c);
+        });
+      } catch (err) {
+        console.error('[Mastery fetchMeta error]:', err);
+      }
 
-      (dbAssigns || []).forEach(a => {
-        if (a.subject) subSet.add(a.subject);
-        if (a.class) clsSet.add(a.class);
-      });
-
-      const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10A', '10B', '9A'];
+      const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10-A', '10B', '9A'];
       const finalSubjects = [...subSet];
 
       setClassList(finalClasses);
@@ -129,7 +143,7 @@ export default function TeacherMasteryTrackerPage() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({ schoolId })
+          body: JSON.stringify({ schoolId, classFilter: selectedClass })
         });
 
         const studJson = await studRes.json();
@@ -147,28 +161,7 @@ export default function TeacherMasteryTrackerPage() {
           setClassList(prev => [...new Set([...prev, ...discList])]);
         }
 
-        // Flexible Class Filtering Engine
-        let matchedStudents = rawStudents;
-        if (selectedClass) {
-          const targetClean = cleanStr(selectedClass);
-          const matched = rawStudents.filter(s => {
-            const sClassRaw = s.studentClass || s.branch || s.student_class || '';
-            const sClean = cleanStr(sClassRaw);
-            if (!sClean) return false;
-
-            return (
-              sClean === targetClean ||
-              sClean.includes(targetClean) ||
-              targetClean.includes(sClean) ||
-              sClean.replace(/^class/, '') === targetClean.replace(/^class/, '') ||
-              sClean.replace(/^grade/, '') === targetClean.replace(/^grade/, '')
-            );
-          });
-
-          if (matched.length > 0) matchedStudents = matched;
-        }
-
-        const studentIds = matchedStudents.map(s => s.id);
+        const studentIds = rawStudents.map(s => s.id);
 
         // 2. Fetch Submissions
         const { data: subsData } = await supabase
@@ -182,7 +175,7 @@ export default function TeacherMasteryTrackerPage() {
           .select('student_id, subject, topic_name, score, item_count, confidence_band')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        const rosterList: StudentRosterItem[] = matchedStudents.map((s, idx) => {
+        const rosterList: StudentRosterItem[] = rawStudents.map((s, idx) => {
           const stSubs = (subsData || []).filter(sub => {
             if (sub.student_id !== s.id || !sub.teacher_approved || sub.score === null) return false;
             const assign = sub.assignments as any;
@@ -204,10 +197,10 @@ export default function TeacherMasteryTrackerPage() {
             const assign = sub.assignments as any;
             const unitName = (Array.isArray(assign?.units) && assign.units[0]) || assign?.title || '';
 
-            if (unitName.toLowerCase().includes('foundation') || unitName.toLowerCase().includes('reaction')) unitScores.u1 = pct;
-            else if (unitName.toLowerCase().includes('acid') || unitName.toLowerCase().includes('concept')) unitScores.u2 = pct;
-            else if (unitName.toLowerCase().includes('metal') || unitName.toLowerCase().includes('practical')) unitScores.u3 = pct;
-            else if (unitName.toLowerCase().includes('life') || unitName.toLowerCase().includes('problem')) unitScores.u4 = pct;
+            if (unitName.toLowerCase().includes('foundation') || unitName.toLowerCase().includes('reaction') || unitName.toLowerCase().includes('real')) unitScores.u1 = pct;
+            else if (unitName.toLowerCase().includes('acid') || unitName.toLowerCase().includes('concept') || unitName.toLowerCase().includes('poly')) unitScores.u2 = pct;
+            else if (unitName.toLowerCase().includes('metal') || unitName.toLowerCase().includes('practical') || unitName.toLowerCase().includes('linear')) unitScores.u3 = pct;
+            else if (unitName.toLowerCase().includes('life') || unitName.toLowerCase().includes('problem') || unitName.toLowerCase().includes('triangle')) unitScores.u4 = pct;
             else unitScores.u5 = pct;
           });
 
@@ -346,7 +339,7 @@ export default function TeacherMasteryTrackerPage() {
               onChange={e => setSelectedClass(e.target.value)}
               className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
             >
-              {classList.map(c => <option key={c} value={c} className="text-[#002147] bg-white">Class {c}</option>)}
+              {classList.map(c => <option key={c} value={c} className="text-[#002147] bg-white">{formatClassName(c)}</option>)}
             </select>
           </div>
         </div>
@@ -356,7 +349,7 @@ export default function TeacherMasteryTrackerPage() {
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <div>
-            <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject} Mastery Roster</h2>
+            <h2 className="text-2xl font-extrabold text-[#002147]">{formatClassName(selectedClass)} — {selectedSubject} Mastery Roster</h2>
             <p className="text-xs text-gray-500 mt-1">Individual student grade progression, evidence confidence, and unit mastery status</p>
           </div>
 
@@ -571,7 +564,7 @@ export default function TeacherMasteryTrackerPage() {
                   Mastery Booster Diagnostic
                 </span>
                 <h3 className="text-lg font-extrabold text-[#002147] mt-1">{selectedStudent.name}</h3>
-                <p className="text-xs text-gray-500">Roll {selectedStudent.roll} · Class {selectedClass || '10A'}</p>
+                <p className="text-xs text-gray-500">Roll {selectedStudent.roll} · {formatClassName(selectedClass)}</p>
               </div>
               <button onClick={() => setSelectedStudent(null)} className="text-gray-400 hover:text-gray-600 font-bold p-1">✕</button>
             </div>

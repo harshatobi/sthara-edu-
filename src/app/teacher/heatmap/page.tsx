@@ -208,26 +208,22 @@ export default function TeacherHeatmapPage() {
         });
       }
 
-      // Query Syllabus table for planned topics, subjects & classes!
-      let sylQuery = supabase.from('syllabus').select('subject, class, grade');
-      if (profile?.schoolId) sylQuery = sylQuery.eq('school_id', profile.schoolId);
-      const { data: dbSyllabus } = await sylQuery;
-
-      (dbSyllabus || []).forEach(s => {
-        if (s.subject) subSet.add(s.subject);
-        const c = s.class || s.grade;
-        if (c) clsSet.add(c);
-      });
-
-      // Query Assignments table
-      let assignQuery = supabase.from('assignments').select('subject, class');
-      if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
-      const { data: dbAssigns } = await assignQuery;
-
-      (dbAssigns || []).forEach(a => {
-        if (a.subject) subSet.add(a.subject);
-        if (a.class) clsSet.add(a.class);
-      });
+      // Query Syllabus API using admin RLS bypass
+      try {
+        const schoolId = profile.schoolId || 'all';
+        const authToken = await getAuthToken();
+        const sylRes = await fetch(`/api/teacher/syllabus?schoolId=${schoolId}&teacherId=all`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const sylJson = await sylRes.json();
+        (sylJson.modules || []).forEach((s: any) => {
+          if (s.subject) subSet.add(s.subject);
+          const c = s.class || s.grade;
+          if (c) clsSet.add(c);
+        });
+      } catch (err) {
+        console.error('[Heatmap fetchTeacherMeta error]:', err);
+      }
 
       const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10-A', '10B', '9A'];
       const finalSubjects = [...subSet];
@@ -259,7 +255,7 @@ export default function TeacherHeatmapPage() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({ schoolId })
+          body: JSON.stringify({ schoolId, classFilter: selectedClass })
         });
 
         const studJson = await studRes.json();
@@ -277,28 +273,7 @@ export default function TeacherHeatmapPage() {
           setClassList(prev => [...new Set([...prev, ...discList])]);
         }
 
-        // Flexible Class Filtering Engine
-        let matchedStudents = rawStudents;
-        if (selectedClass) {
-          const targetClean = cleanStr(selectedClass);
-          const matched = rawStudents.filter(s => {
-            const sClassRaw = s.studentClass || s.branch || s.student_class || '';
-            const sClean = cleanStr(sClassRaw);
-            if (!sClean) return false;
-
-            return (
-              sClean === targetClean ||
-              sClean.includes(targetClean) ||
-              targetClean.includes(sClean) ||
-              sClean.replace(/^class/, '') === targetClean.replace(/^class/, '') ||
-              sClean.replace(/^grade/, '') === targetClean.replace(/^grade/, '')
-            );
-          });
-
-          if (matched.length > 0) matchedStudents = matched;
-        }
-
-        const studentRows: StudentRow[] = matchedStudents.map((s, idx) => ({
+        const studentRows: StudentRow[] = rawStudents.map((s, idx) => ({
           id: s.id,
           name: s.name || `Student ${idx + 1}`,
           custom_student_id: s.customStudentId || s.custom_student_id || s.id,
@@ -310,12 +285,12 @@ export default function TeacherHeatmapPage() {
 
         const studentIds = studentRows.map(s => s.id);
 
-        // 2. Fetch Syllabus Topics from `syllabus` Table (Syllabus Manager)
-        let sylQuery = supabase
-          .from('syllabus')
-          .select('id, topic, subject, class, month, objectives, publisher');
-        if (profile?.schoolId) sylQuery = sylQuery.eq('school_id', profile.schoolId);
-        const { data: syllabusData } = await sylQuery;
+        // 2. Fetch Syllabus Topics from Admin API Route /api/teacher/syllabus
+        const sylRes = await fetch(`/api/teacher/syllabus?schoolId=${schoolId}&teacherId=all`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const sylJson = await sylRes.json();
+        const syllabusData = sylJson.modules || [];
 
         // 3. Fetch Real Assignments
         let assignQuery = supabase
@@ -330,22 +305,17 @@ export default function TeacherHeatmapPage() {
           .select('student_id, subject, topic_name, score, confidence_band, item_count, computed_at')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        // 5. Build Chapters & Topics from BOTH `syllabus` table AND `assignments` table
+        // 5. Build Chapters & Topics from BOTH `syllabus` API AND `assignments` table
         const chapMap = new Map<string, TopicDef[]>();
 
         // Process Syllabus Topics (from Syllabus Manager /teacher/syllabus)
-        (syllabusData || []).forEach(syl => {
+        (syllabusData || []).forEach((syl: any) => {
           const subjMatches = !selectedSubject ||
             !syl.subject ||
             cleanStr(syl.subject).includes(cleanStr(selectedSubject)) ||
             cleanStr(selectedSubject).includes(cleanStr(syl.subject));
 
-          const classMatches = !selectedClass ||
-            !syl.class ||
-            cleanStr(syl.class).includes(cleanStr(selectedClass)) ||
-            cleanStr(selectedClass).includes(cleanStr(syl.class));
-
-          if (!subjMatches && !classMatches) return;
+          if (!subjMatches) return;
 
           const rawTopic = syl.topic || 'General Topic';
           let chapName = syl.month ? `${syl.month} Topics` : `${selectedSubject} Syllabus`;

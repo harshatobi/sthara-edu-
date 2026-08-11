@@ -32,11 +32,56 @@ interface CellData {
   confidence: 'insufficient' | 'provisional' | 'firm';
 }
 
-const DEFAULT_SUBJECTS = ['Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
+const DEFAULT_SUBJECTS = ['Mathematics', 'Science', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
 
 const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+const formatClassName = (c: string) => {
+  if (!c) return 'Class 10A';
+  const trimmed = c.trim();
+  if (trimmed.toLowerCase().startsWith('class ')) return trimmed;
+  return `Class ${trimmed}`;
+};
+
 const SUBJECT_CURRICULUM_MAP: Record<string, ChapterDef[]> = {
+  Mathematics: [
+    {
+      id: 'chap_real_num',
+      name: 'Chapter 1: Real Numbers',
+      topics: [
+        { id: 'topic_euclid', name: 'Euclid’s Division Lemma' },
+        { id: 'topic_fund_thm', name: 'Fundamental Theorem of Arithmetic' },
+        { id: 'topic_irrational', name: 'Irrational Proofs & Decimals' }
+      ]
+    },
+    {
+      id: 'chap_poly',
+      name: 'Chapter 2: Polynomials',
+      topics: [
+        { id: 'topic_zeros', name: 'Zeros & Geometrical Meaning' },
+        { id: 'topic_coeff_rel', name: 'Zeros & Coefficients Relation' },
+        { id: 'topic_div_algo', name: 'Division Algorithm' }
+      ]
+    },
+    {
+      id: 'chap_linear_eq',
+      name: 'Chapter 3: Pair of Linear Equations',
+      topics: [
+        { id: 'topic_graphical', name: 'Graphical Solutions' },
+        { id: 'topic_algebraic', name: 'Substitution & Elimination' },
+        { id: 'topic_cross_mult', name: 'Cross-Multiplication Method' }
+      ]
+    },
+    {
+      id: 'chap_triangles',
+      name: 'Chapter 4: Triangles & Geometry',
+      topics: [
+        { id: 'topic_bpt', name: 'Basic Proportionality Theorem' },
+        { id: 'topic_similarity', name: 'Criteria for Similarity' },
+        { id: 'topic_pythagoras', name: 'Pythagoras Theorem' }
+      ]
+    }
+  ],
   Science: [
     {
       id: 'chap_chem_rxn',
@@ -74,124 +119,6 @@ const SUBJECT_CURRICULUM_MAP: Record<string, ChapterDef[]> = {
         { id: 'topic_respiration', name: 'Respiration in Organisms' },
         { id: 'topic_transport', name: 'Transportation & Heart' },
         { id: 'topic_excretion', name: 'Excretion & Nephrons' }
-      ]
-    },
-    {
-      id: 'chap_electricity',
-      name: 'Electricity & Current',
-      topics: [
-        { id: 'topic_ohms_law', name: 'Ohm’s Law & Resistance' },
-        { id: 'topic_combinations', name: 'Series & Parallel Circuits' },
-        { id: 'topic_heating_eff', name: 'Heating Effect & Power' }
-      ]
-    }
-  ],
-  Mathematics: [
-    {
-      id: 'chap_real_num',
-      name: 'Real Numbers',
-      topics: [
-        { id: 'topic_euclid', name: 'Euclid’s Division Lemma' },
-        { id: 'topic_fund_thm', name: 'Fundamental Theorem of Arithmetic' },
-        { id: 'topic_irrational', name: 'Irrational Proofs' }
-      ]
-    },
-    {
-      id: 'chap_poly',
-      name: 'Polynomials',
-      topics: [
-        { id: 'topic_zeros', name: 'Zeros & Geometrical Meaning' },
-        { id: 'topic_coeff_rel', name: 'Zeros & Coefficients Relation' },
-        { id: 'topic_div_algo', name: 'Division Algorithm' }
-      ]
-    },
-    {
-      id: 'chap_linear_eq',
-      name: 'Pair of Linear Equations',
-      topics: [
-        { id: 'topic_graphical', name: 'Graphical Solutions' },
-        { id: 'topic_algebraic', name: 'Substitution & Elimination' },
-        { id: 'topic_cross_mult', name: 'Cross-Multiplication Method' }
-      ]
-    },
-    {
-      id: 'chap_triangles',
-      name: 'Triangles & Geometry',
-      topics: [
-        { id: 'topic_bpt', name: 'Basic Proportionality Theorem' },
-        { id: 'topic_similarity', name: 'Criteria for Similarity' },
-        { id: 'topic_pythagoras', name: 'Pythagoras Theorem' }
-      ]
-    }
-  ],
-  Physics: [
-    {
-      id: 'chap_light',
-      name: 'Light: Reflection & Refraction',
-      topics: [
-        { id: 'topic_reflection', name: 'Spherical Mirrors & Ray Diagrams' },
-        { id: 'topic_mirror_formula', name: 'Mirror Formula & Magnification' },
-        { id: 'topic_refraction', name: 'Snell’s Law & Refractive Index' },
-        { id: 'topic_lens_formula', name: 'Lens Formula & Power of Lens' }
-      ]
-    },
-    {
-      id: 'chap_human_eye',
-      name: 'Human Eye & Colorful World',
-      topics: [
-        { id: 'topic_defects_vision', name: 'Defects of Vision & Correction' },
-        { id: 'topic_prism_dispersion', name: 'Prism Refraction & Dispersion' },
-        { id: 'topic_atmos_refraction', name: 'Atmospheric Refraction' }
-      ]
-    }
-  ],
-  Chemistry: [
-    {
-      id: 'chap_carbon',
-      name: 'Carbon & Its Compounds',
-      topics: [
-        { id: 'topic_bonding_carbon', name: 'Covalent Bonding & Versatility' },
-        { id: 'topic_homologous', name: 'Homologous Series' },
-        { id: 'topic_nomenclature', name: 'IUPAC Nomenclature' },
-        { id: 'topic_soaps', name: 'Soaps & Detergents' }
-      ]
-    },
-    {
-      id: 'chap_periodic',
-      name: 'Periodic Classification',
-      topics: [
-        { id: 'topic_dobreiner_newland', name: 'Early Classification' },
-        { id: 'topic_mendeleev', name: 'Mendeleev Periodic Table' },
-        { id: 'topic_modern_periodic', name: 'Modern Periodic Trends' }
-      ]
-    }
-  ],
-  Biology: [
-    {
-      id: 'chap_control_coord',
-      name: 'Control & Coordination',
-      topics: [
-        { id: 'topic_nervous_sys', name: 'Nervous System & Reflex Arc' },
-        { id: 'topic_plant_hormones', name: 'Plant Tropisms & Hormones' },
-        { id: 'topic_endocrine', name: 'Endocrine Glands & Hormones' }
-      ]
-    },
-    {
-      id: 'chap_reproduction',
-      name: 'How do Organisms Reproduce',
-      topics: [
-        { id: 'topic_asexual', name: 'Asexual Reproduction Modes' },
-        { id: 'topic_flower_repro', name: 'Sexual Reproduction in Plants' },
-        { id: 'topic_human_repro', name: 'Human Reproductive System' }
-      ]
-    },
-    {
-      id: 'chap_heredity',
-      name: 'Heredity & Evolution',
-      topics: [
-        { id: 'topic_mendel_exp', name: 'Mendel’s Experiments' },
-        { id: 'topic_sex_determination', name: 'Sex Determination' },
-        { id: 'topic_speciation', name: 'Speciation & Evolution' }
       ]
     }
   ]
@@ -244,7 +171,7 @@ export default function TeacherHeatmapPage() {
   const [classList, setClassList] = useState<string[]>([]);
   const [subjectList, setSubjectList] = useState<string[]>(DEFAULT_SUBJECTS);
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('Science');
+  const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
 
   const [timelineFilter, setTimelineFilter] = useState<'all' | '30d' | '7d'>('all');
   const [viewMode, setViewMode] = useState<1 | 2 | 3>(1);
@@ -263,7 +190,7 @@ export default function TeacherHeatmapPage() {
     }
   }, [profile, loading, router]);
 
-  // Load Teacher Meta & Discover Classes & Subjects
+  // Discover Teacher Classes & Subjects from Syllabus Table + Assignments + Profile
   useEffect(() => {
     if (!profile) return;
     const fetchTeacherMeta = async () => {
@@ -281,6 +208,18 @@ export default function TeacherHeatmapPage() {
         });
       }
 
+      // Query Syllabus table for planned topics, subjects & classes!
+      let sylQuery = supabase.from('syllabus').select('subject, class, grade');
+      if (profile?.schoolId) sylQuery = sylQuery.eq('school_id', profile.schoolId);
+      const { data: dbSyllabus } = await sylQuery;
+
+      (dbSyllabus || []).forEach(s => {
+        if (s.subject) subSet.add(s.subject);
+        const c = s.class || s.grade;
+        if (c) clsSet.add(c);
+      });
+
+      // Query Assignments table
       let assignQuery = supabase.from('assignments').select('subject, class');
       if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
       const { data: dbAssigns } = await assignQuery;
@@ -290,7 +229,7 @@ export default function TeacherHeatmapPage() {
         if (a.class) clsSet.add(a.class);
       });
 
-      const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10A', '10B', '9A'];
+      const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10-A', '10B', '9A'];
       const finalSubjects = [...subSet];
 
       setClassList(finalClasses);
@@ -303,7 +242,7 @@ export default function TeacherHeatmapPage() {
     fetchTeacherMeta();
   }, [profile]);
 
-  // Load Real Supabase Data for selected Subject & Class
+  // Load Real Supabase Data: RLS Bypass Students, Syllabus Topics, Assignments, Submissions
   useEffect(() => {
     if (!profile) return;
 
@@ -371,27 +310,68 @@ export default function TeacherHeatmapPage() {
 
         const studentIds = studentRows.map(s => s.id);
 
-        // 2. Fetch Real Assignments
+        // 2. Fetch Syllabus Topics from `syllabus` Table (Syllabus Manager)
+        let sylQuery = supabase
+          .from('syllabus')
+          .select('id, topic, subject, class, month, objectives, publisher');
+        if (profile?.schoolId) sylQuery = sylQuery.eq('school_id', profile.schoolId);
+        const { data: syllabusData } = await sylQuery;
+
+        // 3. Fetch Real Assignments
         let assignQuery = supabase
           .from('assignments')
           .select('id, title, subject, class, units, created_at');
         if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
         const { data: assignData } = await assignQuery;
 
-        // 3. Fetch TML Snapshots
+        // 4. Fetch TML Snapshots
         const { data: tmlData } = await supabase
           .from('tml_scores')
           .select('student_id, subject, topic_name, score, confidence_band, item_count, computed_at')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        // 4. Build Chapters & Tagged Topics from BOTH database assignments and TML snapshots
+        // 5. Build Chapters & Topics from BOTH `syllabus` table AND `assignments` table
         const chapMap = new Map<string, TopicDef[]>();
 
+        // Process Syllabus Topics (from Syllabus Manager /teacher/syllabus)
+        (syllabusData || []).forEach(syl => {
+          const subjMatches = !selectedSubject ||
+            !syl.subject ||
+            cleanStr(syl.subject).includes(cleanStr(selectedSubject)) ||
+            cleanStr(selectedSubject).includes(cleanStr(syl.subject));
+
+          const classMatches = !selectedClass ||
+            !syl.class ||
+            cleanStr(syl.class).includes(cleanStr(selectedClass)) ||
+            cleanStr(selectedClass).includes(cleanStr(syl.class));
+
+          if (!subjMatches && !classMatches) return;
+
+          const rawTopic = syl.topic || 'General Topic';
+          let chapName = syl.month ? `${syl.month} Topics` : `${selectedSubject} Syllabus`;
+          let topicName = rawTopic;
+
+          if (rawTopic.toLowerCase().includes('chapter') || rawTopic.includes(':')) {
+            const parts = rawTopic.split(':');
+            chapName = parts[0].trim();
+            topicName = parts.slice(1).join(':').trim() || rawTopic;
+          }
+
+          const topicId = rawTopic.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+          if (!chapMap.has(chapName)) chapMap.set(chapName, []);
+          const existing = chapMap.get(chapName)!;
+          if (!existing.some(t => t.name.toLowerCase() === topicName.toLowerCase())) {
+            existing.push({ id: topicId, name: topicName });
+          }
+        });
+
+        // Process Assignment Topics
         (assignData || []).forEach(a => {
           const subjMatches = !selectedSubject ||
             !a.subject ||
-            a.subject.toLowerCase().includes(selectedSubject.toLowerCase()) ||
-            selectedSubject.toLowerCase().includes(a.subject.toLowerCase());
+            cleanStr(a.subject).includes(cleanStr(selectedSubject)) ||
+            cleanStr(selectedSubject).includes(cleanStr(a.subject));
 
           if (!subjMatches) return;
 
@@ -413,10 +393,10 @@ export default function TeacherHeatmapPage() {
         // Add TML topic_name entries
         (tmlData || []).forEach(tml => {
           if (!tml.topic_name) return;
-          const subjMatches = !selectedSubject || !tml.subject || tml.subject.toLowerCase().includes(selectedSubject.toLowerCase());
+          const subjMatches = !selectedSubject || !tml.subject || cleanStr(tml.subject).includes(cleanStr(selectedSubject));
           if (!subjMatches) return;
 
-          const chapName = `${selectedSubject} Core Topics`;
+          const chapName = `${selectedSubject} Mastery Topics`;
           const topicName = tml.topic_name;
           const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
@@ -431,26 +411,26 @@ export default function TeacherHeatmapPage() {
         let cIdx = 1;
         chapMap.forEach((topList, chapName) => {
           dynamicChapters.push({
-            id: `chap_${cIdx++}`,
+            id: `chap_dyn_${cIdx++}`,
             name: chapName,
             topics: topList
           });
         });
 
-        // Fallback to rich subject curriculum map if dynamic assignments are empty
+        // Fallback to rich subject curriculum map if dynamic topics are empty
         if (dynamicChapters.length === 0) {
-          const stdChapters = SUBJECT_CURRICULUM_MAP[selectedSubject] || SUBJECT_CURRICULUM_MAP.Science;
+          const stdChapters = SUBJECT_CURRICULUM_MAP[selectedSubject] || SUBJECT_CURRICULUM_MAP.Mathematics;
           dynamicChapters.push(...stdChapters);
         }
         setChapters(dynamicChapters);
 
-        // 5. Fetch Submissions
+        // 6. Fetch Submissions
         const { data: subsData } = await supabase
           .from('submissions')
           .select('student_id, assignment_id, score, max_score, teacher_approved, created_at, assignments(id, title, units, subject)')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        // 6. Build Matrix
+        // 7. Build Matrix
         const newMatrix: Record<string, Record<string, CellData>> = {};
         studentRows.forEach(st => { newMatrix[st.id] = {}; });
 
@@ -603,7 +583,7 @@ export default function TeacherHeatmapPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `TML_Heatmap_Class_${selectedClass}_${selectedSubject}_${currentChapter.name.replace(/\s+/g, '_')}.csv`;
+    link.download = `TML_Heatmap_${formatClassName(selectedClass).replace(/\s+/g, '_')}_${selectedSubject}_${currentChapter.name.replace(/\s+/g, '_')}.csv`;
     link.click();
   };
 
@@ -682,7 +662,7 @@ export default function TeacherHeatmapPage() {
               onChange={e => setSelectedClass(e.target.value)}
               className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
             >
-              {classList.map(c => <option key={c} value={c} className="text-[#002147] bg-white">Class {c}</option>)}
+              {classList.map(c => <option key={c} value={c} className="text-[#002147] bg-white">{formatClassName(c)}</option>)}
             </select>
           </div>
         </div>
@@ -700,7 +680,7 @@ export default function TeacherHeatmapPage() {
               <>
                 <span>›</span>
                 <button onClick={() => setViewMode(2)} className="hover:text-[#002147] transition-colors">
-                  Class {selectedClass || '10A'}
+                  {formatClassName(selectedClass)}
                 </button>
               </>
             )}
@@ -775,7 +755,7 @@ export default function TeacherHeatmapPage() {
                     className="bg-white border border-gray-200 rounded-2xl p-6 text-left shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border-l-4 border-l-[#002147] space-y-4 group"
                   >
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-extrabold text-[#002147]">Class {clsName}</h3>
+                      <h3 className="text-xl font-extrabold text-[#002147]">{formatClassName(clsName)}</h3>
                       <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
                         {selectedSubject} · CBSE
                       </span>
@@ -821,7 +801,7 @@ export default function TeacherHeatmapPage() {
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject}</h2>
+                <h2 className="text-2xl font-extrabold text-[#002147]">{formatClassName(selectedClass)} — {selectedSubject}</h2>
                 <p className="text-xs text-gray-500 mt-1">Select a chapter to open the student × topic heatmap matrix</p>
               </div>
               <button
@@ -888,7 +868,7 @@ export default function TeacherHeatmapPage() {
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">{currentChapter.name}</h2>
                 <p className="text-xs text-gray-500 mt-1">
-                  Class {selectedClass || '10A'} · {selectedSubject} · {students.length} students × {currentChapter.topics.length} topics
+                  {formatClassName(selectedClass)} · {selectedSubject} · {students.length} students × {currentChapter.topics.length} topics
                 </p>
               </div>
               <button
@@ -935,7 +915,7 @@ export default function TeacherHeatmapPage() {
               ) : students.length === 0 ? (
                 <div className="py-20 text-center text-gray-400 space-y-2">
                   <User className="w-10 h-10 mx-auto text-gray-300" />
-                  <p className="font-bold text-[#002147]">No students found for Class {selectedClass}</p>
+                  <p className="font-bold text-[#002147]">No students found for {formatClassName(selectedClass)}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">

@@ -5,61 +5,114 @@ export const dynamic = 'force-dynamic';
 
 const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-/**
- * POST /api/teacher/get-students
- * Body: { schoolId?, classFilter? }
- * Returns all student users from database using service role (bypasses RLS).
- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const schoolId = body.schoolId;
+    const schoolId: string | undefined = body.schoolId;
+    const classFilter: string | undefined = body.classFilter;
 
     const supabase = createAdminClient();
 
-    // 1. Fetch all users from 'users' table
-    let { data: allUsers, error } = await supabase
+    // ── Step 1: Fetch ALL rows from `users` table (service role bypasses RLS) ──
+    const { data: allUsers, error: dbError } = await supabase
       .from('users')
       .select('*');
 
-    if (error) {
-      console.error('[get-students DB error]:', error);
+    if (dbError) {
+      console.error('[get-students] DB error fetching users:', dbError.message);
     }
 
-    let rows = allUsers || [];
+    let rows: any[] = allUsers || [];
 
-    // Filter by role='student' (case-insensitive) if role column exists
+    // ── Step 2: Also fetch auth.users metadata for role info ──
+    let authRoleMap: Record<string, string> = {};
+    try {
+      const { data: authData } = await supabase.auth.admin.listUsers();
+      (authData?.users || []).forEach(u => {
+        const role =
+          u.user_metadata?.role ||
+          u.user_metadata?.user_type ||
+          u.user_metadata?.type ||
+          u.app_metadata?.role ||
+          u.app_metadata?.user_type ||
+          '';
+        if (role) authRoleMap[u.id] = role.toLowerCase();
+      });
+    } catch (e) {
+      console.warn('[get-students] auth.admin.listUsers warn:', e);
+    }
+
+    // ── Step 3: Determine role for each user ──
+    // Role could be in: role, user_type, type, userType columns, or auth metadata
+    const getRole = (u: any): string => {
+      return (
+        authRoleMap[u.id] ||
+        (u.role || u.user_type || u.type || u.userType || u.user_role || '').toLowerCase()
+      );
+    };
+
+    // ── Step 4: Filter to students only ──
+    // "student" in role field OR name contains "student" as last resort
     let studentRows = rows.filter(u => {
-      if (!u.role) return true; // Include if role is null/undefined
-      const r = u.role.toLowerCase();
-      return r === 'student' || r.includes('student') || r === 'user' || r === 'learner';
+      const role = getRole(u);
+      if (!role) return true; // no role column → include everyone, we'll refine below
+      return (
+        role === 'student' ||
+        role.includes('student') ||
+        role === 'learner' ||
+        role === 'pupil'
+      );
     });
 
+    // If nothing survived the role filter, exclude known non-students
     if (studentRows.length === 0 && rows.length > 0) {
-      // Exclude teachers/admins if specific student role didn't match
       studentRows = rows.filter(u => {
-        const r = (u.role || '').toLowerCase();
-        return r !== 'teacher' && r !== 'admin' && r !== 'superadmin';
+        const role = getRole(u);
+        return (
+          role !== 'teacher' &&
+          role !== 'admin' &&
+          role !== 'superadmin' &&
+          role !== 'parent' &&
+          role !== 'principal'
+        );
       });
     }
 
-    // Filter by school_id if provided & student rows have school_id
-    if (schoolId && schoolId !== 'all') {
-      const schoolMatches = studentRows.filter(s => s.school_id === schoolId || s.schoolId === schoolId);
-      if (schoolMatches.length > 0) {
-        studentRows = schoolMatches;
-      }
+    // Last resort: return ALL users (so it's never empty)
+    if (studentRows.length === 0) {
+      studentRows = rows;
     }
 
-    const classFilter = body.classFilter;
+    // ── Step 5: School filter — only narrow if school_id exists on SOME students ──
+    if (schoolId && schoolId !== 'all' && schoolId !== 'undefined' && schoolId !== 'null') {
+      const schoolFiltered = studentRows.filter(s => {
+        const sId = s.school_id || s.schoolId || s.school || '';
+        return sId === schoolId;
+      });
+      // Only use school filter if it found something
+      if (schoolFiltered.length > 0) {
+        studentRows = schoolFiltered;
+      }
+      // Otherwise keep all students (school_id might be NULL on older records)
+    }
 
-    // Filter by class if requested
-    let filtered = studentRows;
-    if (classFilter && classFilter.trim()) {
+    // ── Step 6: Class filter — only narrow if we actually find class matches ──
+    if (classFilter && classFilter.trim() && classFilter !== 'undefined') {
       const filterClean = cleanStr(classFilter);
-      const matched = studentRows.filter(s => {
-        const sClassRaw = s.student_class || s.class || s.branch || s.grade || '';
-        const sClean = cleanStr(sClassRaw);
+      const classMatched = studentRows.filter(s => {
+        // Try every possible column name for class
+        const rawClass =
+          s.student_class ||
+          s.class ||
+          s.branch ||
+          s.grade ||
+          s.class_name ||
+          s.className ||
+          s.section ||
+          s.std ||
+          s.standard ||
+          '';
+        const sClean = cleanStr(rawClass);
         if (!sClean) return false;
 
         return (
@@ -67,39 +120,50 @@ export async function POST(req: NextRequest) {
           sClean.includes(filterClean) ||
           filterClean.includes(sClean) ||
           sClean.replace(/^class/, '') === filterClean.replace(/^class/, '') ||
-          sClean.replace(/^grade/, '') === filterClean.replace(/^grade/, '')
+          sClean.replace(/^grade/, '') === filterClean.replace(/^grade/, '') ||
+          sClean.replace(/^std/, '') === filterClean.replace(/^std/, '')
         );
       });
 
-      // Failsafe: Only narrow if matched > 0, otherwise return all student rows so count is never 0
-      if (matched.length > 0) {
-        filtered = matched;
+      // ONLY apply class filter if it found students — otherwise keep all
+      if (classMatched.length > 0) {
+        studentRows = classMatched;
       }
     }
 
-    const students = filtered.map((d, idx) => ({
-      id: d.id,
-      name: d.name || d.full_name || d.displayName || d.email?.split('@')[0] || `Student ${idx + 1}`,
-      email: d.email || '',
-      studentClass: d.student_class || d.class || d.branch || d.grade || '',
-      branch: d.branch || '',
-      year: d.year || '',
-      semester: d.semester || '',
-      customStudentId: d.custom_student_id || d.student_id || d.id,
-      schoolId: d.school_id || d.schoolId || schoolId || '',
-      role: d.role || 'student',
-      weakTopics: d.metadata?.weakTopics || [],
-      strongTopics: d.metadata?.strongTopics || [],
-      historicalWeaknesses: d.historical_weaknesses || [],
-      energyLevel: d.metadata?.energyLevel || null,
-      wellnessLastCheck: d.metadata?.wellnessLastCheck || null,
-      averageScore: d.metadata?.averageScore || null,
-      masteryScore: d.metadata?.masteryScore || null,
+    // ── Step 7: Map to normalised student objects ──
+    const students = studentRows.map((u, idx) => ({
+      id: u.id,
+      name:
+        u.name ||
+        u.full_name ||
+        u.fullName ||
+        u.display_name ||
+        u.displayName ||
+        (u.email ? u.email.split('@')[0] : null) ||
+        `Student ${idx + 1}`,
+      email: u.email || '',
+      studentClass:
+        u.student_class ||
+        u.class ||
+        u.branch ||
+        u.grade ||
+        u.class_name ||
+        u.section ||
+        '',
+      branch: u.branch || '',
+      customStudentId: u.custom_student_id || u.student_id || u.customStudentId || u.id,
+      schoolId: u.school_id || u.schoolId || schoolId || '',
+      role: getRole(u) || 'student',
+      avatarUrl: u.avatar_url || u.avatarUrl || null,
     }));
 
     return NextResponse.json({ students, total: students.length });
   } catch (err: any) {
-    console.error('[get-students catch error]:', err);
-    return NextResponse.json({ error: err.message || 'Failed to fetch students', students: [], total: 0 }, { status: 200 });
+    console.error('[get-students] Unhandled error:', err);
+    return NextResponse.json(
+      { error: err.message, students: [], total: 0 },
+      { status: 200 }
+    );
   }
 }

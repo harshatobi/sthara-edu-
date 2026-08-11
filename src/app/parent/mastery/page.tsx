@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { getAuthToken } from '@/lib/auth/getAuthToken';
 import {
   TrendingUp, AlertTriangle, CheckCircle2, Minus,
   Loader2, BookOpen, ChevronRight, Award, Target, Sparkles, BarChart2,
-  Calendar, FileSpreadsheet, Printer
+  Calendar, FileSpreadsheet, Printer, Heart, User
 } from 'lucide-react';
 
 interface UnitRow {
@@ -20,6 +22,13 @@ interface SubjectBlock {
   subject: string;
   overallScore: number | null;
   units: UnitRow[];
+}
+
+interface LinkedChild {
+  id: string;
+  name: string;
+  studentClass: string;
+  customStudentId: string;
 }
 
 type DateFilterOption = 'all' | '30days' | '7days';
@@ -75,24 +84,74 @@ function overallGrade(s: number | null): string {
   return 'D';
 }
 
-export default function StudentMasteryPage() {
-  const { profile } = useAuth();
+export default function ParentMasteryPage() {
+  const { profile, loading } = useAuth();
+  const router = useRouter();
   const supabase = createClient();
+
+  const [childrenList, setChildrenList] = useState<LinkedChild[]>([]);
+  const [selectedChildIdx, setSelectedChildIdx] = useState<number>(0);
   const [blocks, setBlocks] = useState<SubjectBlock[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
 
   useEffect(() => {
-    if (!profile?.uid) return;
+    if (!loading && (!profile || profile.role !== 'parent')) {
+      router.push('/login');
+    }
+  }, [profile, loading, router]);
+
+  // Fetch Parent's Linked Children
+  useEffect(() => {
+    if (!profile?.schoolId) return;
+
+    const fetchChildren = async () => {
+      try {
+        const token = await getAuthToken();
+        if (!token) return;
+
+        const res = await fetch('/api/parent/get-children', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken: token })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.children && data.children.length > 0) {
+            setChildrenList(data.children.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              studentClass: c.studentClass,
+              customStudentId: c.customStudentId
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('[Parent Mastery] Error fetching children:', err);
+      }
+    };
+
+    fetchChildren();
+  }, [profile?.schoolId, profile?.uid]);
+
+  const activeChild = childrenList[selectedChildIdx] || null;
+
+  // Build Heatmap Matrix for selected child
+  useEffect(() => {
+    if (!activeChild?.id) {
+      setLoadingData(false);
+      return;
+    }
 
     const buildHeatmap = async () => {
-      setLoading(true);
+      setLoadingData(true);
       try {
         let subsQuery = supabase
           .from('submissions')
           .select('assignment_id, score, max_score, teacher_approved, created_at')
-          .eq('student_id', profile.uid)
+          .eq('student_id', activeChild.id)
           .eq('teacher_approved', true);
 
         if (dateFilter === '30days') {
@@ -105,7 +164,7 @@ export default function StudentMasteryPage() {
 
         const { data: subs, error: subErr } = await subsQuery;
 
-        if (subErr) console.error('[MasteryPage] submissions error:', subErr);
+        if (subErr) console.error('[Parent Mastery] submissions error:', subErr);
         if (!subs || subs.length === 0) { setBlocks([]); return; }
 
         const allAssignIds = [...new Set(subs.map(s => s.assignment_id))];
@@ -114,7 +173,7 @@ export default function StudentMasteryPage() {
           .select('id, subject, units, title')
           .in('id', allAssignIds);
 
-        if (assignErr) console.error('[MasteryPage] assignments error:', assignErr);
+        if (assignErr) console.error('[Parent Mastery] assignments error:', assignErr);
         if (!assigns || assigns.length === 0) { setBlocks([]); return; }
 
         const assignMap: Record<string, any> = {};
@@ -165,16 +224,16 @@ export default function StudentMasteryPage() {
 
         result.sort((a, b) => b.units.length - a.units.length);
         setBlocks(result);
-        if (result.length > 0 && !selectedSubject) setSelectedSubject(result[0].subject);
+        if (result.length > 0) setSelectedSubject(result[0].subject);
       } catch (err) {
-        console.error('[MasteryPage]', err);
+        console.error('[Parent Mastery]', err);
       } finally {
-        setLoading(false);
+        setLoadingData(false);
       }
     };
 
     buildHeatmap();
-  }, [profile?.uid, dateFilter]);
+  }, [activeChild?.id, dateFilter]);
 
   const overallAll = useMemo(() => {
     if (!blocks.length) return null;
@@ -198,7 +257,7 @@ export default function StudentMasteryPage() {
 
   // Export CSV
   const handleExportCSV = () => {
-    if (!blocks.length) return;
+    if (!blocks.length || !activeChild) return;
 
     let csvContent = 'Subject,Topic / Unit,Mastery Score %,Evidence Count,Status Band\n';
 
@@ -213,7 +272,7 @@ export default function StudentMasteryPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `My_TML_Mastery_Heatmap_${profile?.name ? profile.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Student'}.csv`);
+    link.setAttribute('download', `TML_Mastery_Heatmap_${activeChild.name.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -223,6 +282,8 @@ export default function StudentMasteryPage() {
   const handlePrintReportCard = () => {
     window.print();
   };
+
+  if (loading) return <div className="p-10 text-[#002147] text-center font-medium">Loading Parent Mastery Portal...</div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16 animate-in fade-in duration-500 font-sans">
@@ -238,70 +299,87 @@ export default function StudentMasteryPage() {
         }
       `}</style>
 
-      {/* Printable Official Student Report Header */}
+      {/* Printable Official Child Report Header */}
       <div className="print-only mb-6 text-black space-y-3">
         <div className="flex justify-between items-center border-b-2 border-[#002147] pb-4">
           <div>
             <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Sthara School OS</h1>
-            <h2 className="text-lg font-bold text-gray-800">Student TML Mastery Heatmap — Individual Report Card</h2>
+            <h2 className="text-lg font-bold text-gray-800">Child TML Mastery Matrix — Official Parent Report Card</h2>
           </div>
           <div className="text-right text-xs font-semibold text-gray-600">
-            <p>Student Name: <strong>{profile?.name || 'Student'}</strong></p>
-            <p>Class: <strong>{profile?.studentClass || profile?.branch || '10A'}</strong></p>
-            <p>Overall TML: <strong>{overallAll !== null ? `${overallAll}%` : 'N/A'}</strong></p>
+            <p>Student: <strong>{activeChild?.name || 'Child'}</strong></p>
+            <p>Class: <strong>{activeChild?.studentClass || '10A'}</strong></p>
+            <p>Student ID: <strong>{activeChild?.customStudentId || 'N/A'}</strong></p>
             <p>Timeline: <strong>{dateFilter === 'all' ? 'All Time' : dateFilter === '30days' ? 'Last 30 Days' : 'Last 7 Days'}</strong></p>
             <p>Date Printed: <strong>{new Date().toLocaleDateString()}</strong></p>
           </div>
         </div>
       </div>
 
-      {/* Top Header Card */}
+      {/* Header Banner */}
       <div className="relative bg-gradient-to-br from-[#002147] via-[#003b80] to-[#001a33] rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl overflow-hidden border border-white/10 no-print">
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <span className="bg-white/15 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-blue-200 border border-white/15 flex items-center gap-1.5">
-                <BarChart2 className="w-3.5 h-3.5 text-blue-300" /> Oxford Navy TML Mastery Matrix
+                <BarChart2 className="w-3.5 h-3.5 text-blue-300" /> Parent Portal · TML Mastery Heatmap
               </span>
             </div>
             <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">
-              My Personal Mastery Heatmap
+              Child Mastery Matrix
             </h1>
             <p className="text-blue-100 text-sm md:text-base max-w-xl font-medium opacity-90 leading-relaxed">
-              Track your subject performance, topic strengths, and 4-band semantic growth (Red/Amber/Green/Void) powered by 100% real Supabase graded evidence.
+              Monitor your child's real-time academic progress across all subjects using Oxford Navy 4-band semantic color design (Red/Amber/Green/Void).
             </p>
           </div>
 
-          {/* Action Buttons & Overall Circle */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
-            {overallAll !== null && (
-              <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl flex items-center gap-5 shadow-xl">
-                <div className="relative w-16 h-16 flex items-center justify-center">
-                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
-                    <circle
-                      cx="18" cy="18" r="15.9" fill="none"
-                      stroke={overallAll >= 75 ? '#1b7a53' : overallAll >= 50 ? '#c98a00' : '#b8362a'}
-                      strokeWidth="3"
-                      strokeDasharray={`${overallAll} ${100 - overallAll}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="absolute font-black text-sm text-white">{overallAll}%</span>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-blue-200 uppercase tracking-wider">Overall Score</p>
-                  <p className="text-3xl font-black text-white mt-0.5">Grade {overallGrade(overallAll)}</p>
-                  <p className="text-[11px] text-blue-100 mt-0.5">{blocks.length} subject{blocks.length !== 1 ? 's' : ''} assessed</p>
-                </div>
+          {overallAll !== null && activeChild && (
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl flex items-center gap-5 shadow-xl shrink-0">
+              <div className="relative w-16 h-16 flex items-center justify-center">
+                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+                  <circle
+                    cx="18" cy="18" r="15.9" fill="none"
+                    stroke={overallAll >= 75 ? '#1b7a53' : overallAll >= 50 ? '#c98a00' : '#b8362a'}
+                    strokeWidth="3"
+                    strokeDasharray={`${overallAll} ${100 - overallAll}`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="absolute font-black text-sm text-white">{overallAll}%</span>
               </div>
-            )}
-          </div>
+              <div>
+                <p className="text-xs font-bold text-blue-200 uppercase tracking-wider">{activeChild.name}</p>
+                <p className="text-3xl font-black text-white mt-0.5">Grade {overallGrade(overallAll)}</p>
+                <p className="text-[11px] text-blue-100 mt-0.5">Class {activeChild.studentClass}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Control Bar: Timeline Filter, CSV Export, Print Report Card */}
+      {/* Child Selector Tabs (If Multiple Children Linked) */}
+      {childrenList.length > 1 && (
+        <div className="flex space-x-3 overflow-x-auto pb-2 no-print">
+          {childrenList.map((child, idx) => (
+            <button
+              key={child.id}
+              onClick={() => setSelectedChildIdx(idx)}
+              className={`px-6 py-3 rounded-2xl font-bold transition-all text-sm whitespace-nowrap flex items-center gap-2 ${
+                selectedChildIdx === idx
+                  ? 'bg-[#002147] text-white shadow-md'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              <span>{child.name} (Class {child.studentClass})</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Controls Bar: Timeline Filter, CSV Export, Print Report Card */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm no-print">
         <div className="flex items-center space-x-3 text-xs font-bold text-[#002147]">
           <Calendar className="w-4 h-4 text-[#002147]" />
@@ -359,29 +437,35 @@ export default function StudentMasteryPage() {
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-bold text-[#7a2119] text-sm">Recommended Focus Area</h4>
+            <h4 className="font-bold text-[#7a2119] text-sm">Targeted Support Opportunity</h4>
             <p className="text-xs text-[#7a2119] mt-1 leading-relaxed">
-              Your mastery in <strong className="font-extrabold text-[#7a2119]">{weakest.unitLabel}</strong> ({weakest.subject}) is currently at <strong className="font-black text-[#7a2119]">{weakest.score}%</strong>. Complete targeted practice to raise this score into the Green Band (≥75%).
+              {activeChild?.name}'s TML score in <strong className="font-extrabold text-[#7a2119]">{weakest.unitLabel}</strong> ({weakest.subject}) is currently at <strong className="font-black text-[#7a2119]">{weakest.score}%</strong>. Consider encouraging extra practice or sending a message to the class teacher.
             </p>
           </div>
         </div>
       )}
 
-      {/* Main Heatmap Section */}
+      {/* Main Heatmap Container */}
       <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-8 space-y-8">
-        {loading ? (
+        {loadingData ? (
           <div className="flex flex-col items-center justify-center py-24 text-gray-400">
             <Loader2 className="w-10 h-10 animate-spin text-[#002147] mb-3" />
-            <p className="font-bold text-sm text-[#002147]">Calculating personal TML heatmap slice...</p>
+            <p className="font-bold text-sm text-[#002147]">Calculating child TML heatmap matrix...</p>
+          </div>
+        ) : !activeChild ? (
+          <div className="py-20 text-center text-gray-400 space-y-2">
+            <Heart className="w-12 h-12 mx-auto text-purple-400" />
+            <p className="font-bold text-lg text-[#002147]">No Students Linked</p>
+            <p className="text-xs text-gray-500">Link your child using their Student ID on the Parent Dashboard.</p>
           </div>
         ) : blocks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
             <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-[#002147]">
               <BookOpen className="w-10 h-10" />
             </div>
-            <h3 className="text-xl font-black text-[#002147] mb-2">No Graded Submissions Recorded</h3>
+            <h3 className="text-xl font-black text-[#002147] mb-2">No Graded Submissions Found</h3>
             <p className="text-sm text-gray-500 leading-relaxed mb-6">
-              Complete your assignments and quizzes. Once teacher-approved, your personal Oxford Navy TML heatmap matrix will generate automatically.
+              When {activeChild.name} completes homework and tests, teacher-approved grades will automatically update this Oxford Navy TML heatmap matrix.
             </p>
           </div>
         ) : (
@@ -502,7 +586,7 @@ export default function StudentMasteryPage() {
               </div>
             )}
 
-            {/* Oxford Navy Color Legend */}
+            {/* Legend */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-gray-100 text-xs font-bold text-gray-600">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-1.5">
@@ -533,10 +617,10 @@ export default function StudentMasteryPage() {
       {/* Print Footer */}
       <div className="print-only mt-12 pt-6 border-t border-gray-400 flex justify-between text-xs text-gray-700">
         <div>
-          <p>Student Signature: _______________________</p>
+          <p>Parent / Guardian Signature: _______________________</p>
         </div>
         <div className="text-right">
-          <p>Parent / Guardian Signature: _______________________</p>
+          <p>Class Teacher Signature: _______________________</p>
         </div>
       </div>
     </div>

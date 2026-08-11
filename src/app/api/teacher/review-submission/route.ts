@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { computeStudentTml } from '@/lib/tml/engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,7 @@ export const dynamic = 'force-dynamic';
  * POST /api/teacher/review-submission
  * Body: { submissionId, schoolId, teacherApproved, grade, teacherNote, overrideScore?, overrideMax? }
  * Updates teacher_approved, grade, and teacher_note on a submission using the service role.
+ * Triggers TML re-computation to log snapshot rows in tml_scores table.
  * Requires: Valid JWT for a teacher/admin of the school.
  */
 export async function POST(request: NextRequest) {
@@ -34,6 +36,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Fetch existing submission record to get student_id and assignment details
+    const { data: existingSub } = await supabase
+      .from('submissions')
+      .select('student_id, assignment_id, assignments(subject)')
+      .eq('id', submissionId)
+      .maybeSingle();
+
     // Build the update payload — always update approval/grade fields
     const updatePayload: Record<string, any> = {
       teacher_approved: teacherApproved,
@@ -42,8 +51,6 @@ export async function POST(request: NextRequest) {
       final_grade: grade || null,
     };
 
-    // If teacher provided numeric score override, write those too so
-    // percentages, heatmaps, and mastery calculations stay accurate.
     if (overrideScore !== undefined && overrideScore !== null && overrideScore !== '') {
       updatePayload.score = parseFloat(String(overrideScore));
     }
@@ -59,10 +66,36 @@ export async function POST(request: NextRequest) {
 
     if (updateErr) throw updateErr;
 
-    return NextResponse.json({ success: true });
+    // Update teacher_confirmed on submission_items matching submission_id
+    if (teacherApproved !== undefined && teacherApproved !== null) {
+      await supabase
+        .from('submission_items')
+        .update({ teacher_confirmed: teacherApproved })
+        .eq('submission_id', submissionId);
+    }
+
+    // Trigger TML re-computation to log updated snapshot in tml_scores
+    let tmlResult: any = null;
+    if (existingSub?.student_id) {
+      const subject = (existingSub.assignments as any)?.subject;
+      try {
+        tmlResult = await computeStudentTml(supabase, existingSub.student_id, subject);
+      } catch (tmlErr) {
+        console.error('[review-submission] TML recomputation error:', tmlErr);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      submissionId,
+      teacherApproved,
+      tmlUpdated: !!tmlResult,
+      computedTopics: tmlResult?.computedTopicsCount || 0,
+    });
 
   } catch (err: any) {
     console.error('[review-submission]', err);
     return NextResponse.json({ error: err.message || 'Update failed' }, { status: 500 });
   }
 }
+

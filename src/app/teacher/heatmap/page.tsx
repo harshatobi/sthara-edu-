@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, RefreshCw, Zap, User, ChevronRight, Layers, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
+import {
+  ArrowLeft, RefreshCw, Zap, User, ChevronRight, Layers, AlertTriangle,
+  CheckCircle2, TrendingUp, Download, Printer, Calendar, FileSpreadsheet
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface StudentRow {
@@ -31,6 +34,8 @@ interface CellData {
   count: number;
   confidence: 'insufficient' | 'provisional' | 'firm';
 }
+
+type DateFilterOption = 'all' | '30days' | '7days';
 
 function getBoxStyle(score: number | null) {
   if (score === null) {
@@ -80,6 +85,7 @@ export default function TeacherHeatmapPage() {
   const [subjectList, setSubjectList] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('Science');
+  const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
 
   // Navigation flow views: 1 = My Classes, 2 = Chapters List, 3 = 2D Heatmap Matrix Table
   const [viewMode, setViewMode] = useState<1 | 2 | 3>(1);
@@ -197,7 +203,6 @@ export default function TeacherHeatmapPage() {
           });
         });
 
-        // If teacher hasn't posted assignments for this class yet, fallback to single assignment list or unit holder
         if (dynamicChapters.length === 0) {
           dynamicChapters.push({
             id: 'unit_general',
@@ -212,17 +217,37 @@ export default function TeacherHeatmapPage() {
         }
         setChapters(dynamicChapters);
 
-        // 4. Fetch Real Submissions
-        const { data: subsData } = await supabase
+        // 4. Fetch Real Submissions with date filtering
+        let subsQuery = supabase
           .from('submissions')
-          .select('student_id, assignment_id, score, max_score, teacher_approved, assignments(id, title, units, subject)')
+          .select('student_id, assignment_id, score, max_score, teacher_approved, created_at, assignments(id, title, units, subject)')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        // 5. Fetch Real TML snapshots
-        const { data: tmlData } = await supabase
+        if (dateFilter === '30days') {
+          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          subsQuery = subsQuery.gte('created_at', date30);
+        } else if (dateFilter === '7days') {
+          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          subsQuery = subsQuery.gte('created_at', date7);
+        }
+
+        const { data: subsData } = await subsQuery;
+
+        // 5. Fetch Real TML snapshots with date filtering
+        let tmlQuery = supabase
           .from('tml_scores')
-          .select('student_id, subject, topic_name, score, confidence_band, item_count')
+          .select('student_id, subject, topic_name, score, confidence_band, item_count, computed_at')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
+
+        if (dateFilter === '30days') {
+          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          tmlQuery = tmlQuery.gte('computed_at', date30);
+        } else if (dateFilter === '7days') {
+          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          tmlQuery = tmlQuery.gte('computed_at', date7);
+        }
+
+        const { data: tmlData } = await tmlQuery;
 
         // 6. Populate Score Matrix strictly from database rows
         const newMatrix: Record<string, Record<string, CellData>> = {};
@@ -270,9 +295,9 @@ export default function TeacherHeatmapPage() {
     };
 
     loadRealData();
-  }, [profile?.schoolId, selectedClass, selectedSubject]);
+  }, [profile?.schoolId, selectedClass, selectedSubject, dateFilter]);
 
-  // Compute Real Stats for selected chapter (No fake demo fallback numbers!)
+  // Compute Real Stats for selected chapter
   const currentChapter = chapters[selectedChapterIdx] || chapters[0] || { id: 'c1', name: 'Curriculum Unit', topics: [] };
 
   const heatmapStats = useMemo(() => {
@@ -350,6 +375,58 @@ export default function TeacherHeatmapPage() {
     return count > 0 ? Math.round(sum / count) : 0;
   }, [students, matrix]);
 
+  // Export 2D Matrix Table to CSV Spreadsheet
+  const handleExportCSV = () => {
+    if (!students.length || !currentChapter?.topics) return;
+
+    const topicHeaders = currentChapter.topics.map(t => `"${t.name.replace(/"/g, '""')}"`).join(',');
+    let csvContent = `Student Name,Roll No,Custom Student ID,${topicHeaders},Student Chapter TML\n`;
+
+    students.forEach(st => {
+      let stSum = 0;
+      let stCount = 0;
+
+      const topicScores = currentChapter.topics.map(tp => {
+        const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id];
+        if (cell?.score !== null && cell?.score !== undefined) {
+          stSum += cell.score;
+          stCount++;
+          return `"${cell.score}%"`;
+        }
+        return '"N/A"';
+      });
+
+      const stAvg = stCount > 0 ? `"${Math.round(stSum / stCount)}%"` : '"N/A"';
+      const rowStr = `"${st.name.replace(/"/g, '""')}","${st.roll}","${(st.custom_student_id || '').replace(/"/g, '""')}",${topicScores.join(',')},${stAvg}\n`;
+      csvContent += rowStr;
+    });
+
+    // Topic Averages Row
+    const footerTopicAvgs = currentChapter.topics.map(tp => {
+      const tStat = heatmapStats.topicAvgs.find(t => t.topic.id === tp.id);
+      return tStat?.avg !== null && tStat?.avg !== undefined ? `"${tStat.avg}%"` : '"N/A"';
+    });
+    const overallTml = heatmapStats.avg > 0 ? `"${heatmapStats.avg}%"` : '"N/A"';
+
+    csvContent += `"Topic Average","","",${footerTopicAvgs.join(',')},${overallTml}\n`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const cleanChapName = currentChapter.name.replace(/[^a-zA-Z0-9]/g, '_');
+    link.setAttribute('download', `TML_Heatmap_Class_${selectedClass || '10A'}_${selectedSubject}_${cleanChapName}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Print Printable Report Card
+  const handlePrintReportCard = () => {
+    window.print();
+  };
+
   const handleAssignPractice = async () => {
     if (!selectedCell || !profile?.schoolId) return;
     setIsAssigning(true);
@@ -391,8 +468,43 @@ export default function TeacherHeatmapPage() {
 
   return (
     <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans">
+      {/* Print CSS Styles */}
+      <style jsx global>{`
+        @media print {
+          body {
+            background-color: white !important;
+            color: black !important;
+          }
+          header, nav, .no-print {
+            display: none !important;
+          }
+          .print-only {
+            display: block !important;
+          }
+          .printable-card {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 9pt !important;
+          }
+          th, td {
+            border: 1px solid #999 !important;
+            padding: 6px !important;
+          }
+        }
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* Top Oxford Navy Brand Header */}
-      <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md">
+      <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md no-print">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-black text-white text-sm border border-white/20">
             S
@@ -421,30 +533,64 @@ export default function TeacherHeatmapPage() {
 
       {/* Main Container */}
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Breadcrumb Navigation Bar */}
-        <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500">
-          <button onClick={() => setViewMode(1)} className="hover:text-[#002147] transition-colors">
-            {selectedSubject} · My Classes
-          </button>
-          {viewMode >= 2 && (
-            <>
-              <span>›</span>
-              <button onClick={() => setViewMode(2)} className="hover:text-[#002147] transition-colors">
-                Class {selectedClass || '10A'}
-              </button>
-            </>
-          )}
-          {viewMode === 3 && (
-            <>
-              <span>›</span>
-              <span className="text-[#002147] font-bold">{currentChapter?.name}</span>
-            </>
-          )}
-        </nav>
+        {/* Printable Report Header for Official Export */}
+        <div className="print-only mb-6 text-black space-y-3">
+          <div className="flex justify-between items-center border-b-2 border-[#002147] pb-4">
+            <div>
+              <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Sthara School OS</h1>
+              <h2 className="text-lg font-bold text-gray-800">TML Mastery Matrix — Official Class Report Card</h2>
+            </div>
+            <div className="text-right text-xs font-semibold text-gray-600">
+              <p>Class: <strong>{selectedClass || '10A'}</strong></p>
+              <p>Subject: <strong>{selectedSubject}</strong></p>
+              <p>Chapter: <strong>{currentChapter.name}</strong></p>
+              <p>Timeline: <strong>{dateFilter === 'all' ? 'All Time' : dateFilter === '30days' ? 'Last 30 Days' : 'Last 7 Days'}</strong></p>
+              <p>Generated: <strong>{new Date().toLocaleDateString()}</strong></p>
+            </div>
+          </div>
+        </div>
+
+        {/* Breadcrumb & Global Filters Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
+          <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500">
+            <button onClick={() => setViewMode(1)} className="hover:text-[#002147] transition-colors">
+              {selectedSubject} · My Classes
+            </button>
+            {viewMode >= 2 && (
+              <>
+                <span>›</span>
+                <button onClick={() => setViewMode(2)} className="hover:text-[#002147] transition-colors">
+                  Class {selectedClass || '10A'}
+                </button>
+              </>
+            )}
+            {viewMode === 3 && (
+              <>
+                <span>›</span>
+                <span className="text-[#002147] font-bold">{currentChapter?.name}</span>
+              </>
+            )}
+          </nav>
+
+          {/* Timeline Date Filter */}
+          <div className="flex items-center space-x-2 bg-white px-3.5 py-1.5 rounded-xl border border-gray-200 shadow-sm text-xs font-bold self-start sm:self-auto">
+            <Calendar className="w-4 h-4 text-[#002147]" />
+            <span className="text-gray-400 uppercase text-[10px] tracking-wider">Timeline:</span>
+            <select
+              value={dateFilter}
+              onChange={e => setDateFilter(e.target.value as DateFilterOption)}
+              className="bg-transparent text-[#002147] font-extrabold focus:outline-none cursor-pointer"
+            >
+              <option value="all">All Time</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="7days">Last 7 Days</option>
+            </select>
+          </div>
+        </div>
 
         {/* ================= VIEW 1: MY CLASSES GRID ================= */}
         {viewMode === 1 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="space-y-6 animate-in fade-in duration-300 no-print">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">My Classes</h2>
@@ -468,7 +614,6 @@ export default function TeacherHeatmapPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {(classList.length > 0 ? classList : ['10A']).map((clsName) => {
                 const realAvg = classOverallAvg;
-                const boxStyle = getBoxStyle(realAvg > 0 ? realAvg : null);
 
                 return (
                   <button
@@ -520,7 +665,7 @@ export default function TeacherHeatmapPage() {
 
         {/* ================= VIEW 2: CHAPTERS LIST ================= */}
         {viewMode === 2 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="space-y-6 animate-in fade-in duration-300 no-print">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject}</h2>
@@ -594,23 +739,45 @@ export default function TeacherHeatmapPage() {
         {viewMode === 3 && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Header & Control Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm no-print">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">{currentChapter.name}</h2>
                 <p className="text-xs text-gray-500 mt-1">
                   Class {selectedClass || '10A'} · {selectedSubject} · {students.length} students × {currentChapter.topics.length} topics
                 </p>
               </div>
-              <button
-                onClick={() => setViewMode(2)}
-                className="px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all flex items-center gap-1.5 self-start sm:self-auto"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back to Chapters
-              </button>
+
+              {/* Action Buttons: Back, CSV Export, Print Report Card */}
+              <div className="flex items-center flex-wrap gap-2.5">
+                <button
+                  onClick={handleExportCSV}
+                  className="px-3.5 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                  title="Export 2D Heatmap Matrix as CSV Spreadsheet"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+                  <span>Export CSV</span>
+                </button>
+
+                <button
+                  onClick={handlePrintReportCard}
+                  className="px-3.5 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                  title="Print Class TML Mastery Report Card"
+                >
+                  <Printer className="w-4 h-4 text-indigo-700" />
+                  <span>Print Report Card</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode(2)}
+                  className="px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Chapters
+                </button>
+              </div>
             </div>
 
             {/* Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 no-print">
               <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Chapter TML</span>
                 <p className="text-2xl font-black text-[#002147] mt-1">{heatmapStats.avg > 0 ? `${heatmapStats.avg}%` : '—'}</p>
@@ -638,7 +805,7 @@ export default function TeacherHeatmapPage() {
             </div>
 
             {/* Color Legend Bar */}
-            <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-gray-600">
+            <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-gray-600 no-print">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-[#f7d8d3] border border-[#e0a89f]" />
@@ -663,7 +830,7 @@ export default function TeacherHeatmapPage() {
             </div>
 
             {/* Matrix Heatmap Table */}
-            <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden printable-card">
               {isLoading ? (
                 <div className="py-20 text-center text-gray-400 space-y-3">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#002147]" />
@@ -795,13 +962,25 @@ export default function TeacherHeatmapPage() {
                 </div>
               )}
             </div>
+
+            {/* Print Footer Verification Line */}
+            <div className="print-only mt-12 pt-6 border-t border-gray-400 flex justify-between text-xs text-gray-700">
+              <div>
+                <p>Teacher Signature: _______________________</p>
+                <p className="text-[10px] text-gray-500 mt-1">Class Teacher Verification</p>
+              </div>
+              <div className="text-right">
+                <p>Principal / HOD Signature: _______________________</p>
+                <p className="text-[10px] text-gray-500 mt-1">Institutional Seal & Authorization</p>
+              </div>
+            </div>
           </div>
         )}
       </main>
 
       {/* Practice Module Modal */}
       {selectedCell && (
-        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">
             <div className="flex justify-between items-start border-b border-gray-100 pb-3">
               <div>

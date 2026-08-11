@@ -102,6 +102,15 @@ export function computeItemWeight(item: TmlItemInput): number {
   return recency * assistance * attempt;
 }
 
+export function normalizeComponentType(type?: string): 'assessment' | 'quiz' | 'homework' | 'retention' | 'classwork' {
+  const t = (type || '').toLowerCase();
+  if (t.includes('assessment') || t.includes('test') || t.includes('midterm') || t.includes('exam')) return 'assessment';
+  if (t.includes('quiz')) return 'quiz';
+  if (t.includes('retention')) return 'retention';
+  if (t.includes('classwork')) return 'classwork';
+  return 'homework';
+}
+
 /**
  * Main TML Computation Engine function
  * Computes renormalized topic TML, evidence gate confidence band, and component breakdown.
@@ -109,7 +118,7 @@ export function computeItemWeight(item: TmlItemInput): number {
 export function calculateTopicTml(items: TmlItemInput[]): TmlCalculationResult {
   const totalItemCount = items.length;
 
-  // 1. Evidence Gate Display Rule
+  // 1. Evidence Gate Display Rule: strictly based on evidence item counts
   let confidenceBand: 'insufficient' | 'provisional' | 'firm' = 'insufficient';
   if (totalItemCount >= 8) {
     confidenceBand = 'firm';
@@ -132,14 +141,14 @@ export function calculateTopicTml(items: TmlItemInput[]): TmlCalculationResult {
 
   // 2. Accumulate items into their respective components
   items.forEach(item => {
-    const compKey = item.componentType || 'homework';
+    const compKey = normalizeComponentType(item.componentType);
     if (!components[compKey]) return;
 
     if (item.teacherConfirmed === false) {
       hasUnconfirmedOcr = true;
     }
 
-    const itemRatio = item.maxScore > 0 ? item.score / item.maxScore : 0;
+    const itemRatio = item.maxScore > 0 ? Math.min(1, Math.max(0, item.score / item.maxScore)) : 0;
     const itemWeight = computeItemWeight(item);
 
     components[compKey].itemCount += 1;
@@ -160,7 +169,7 @@ export function calculateTopicTml(items: TmlItemInput[]): TmlCalculationResult {
     }
   });
 
-  // 4. Renormalized Topic TML score
+  // 4. Renormalized Topic TML score (strictly null if confidence is insufficient)
   let topicTml: number | null = null;
   if (renormalizedWeightSum > 0 && confidenceBand !== 'insufficient') {
     const rawPct = (weightedComponentTotalSum / renormalizedWeightSum) * 100;
@@ -176,3 +185,185 @@ export function calculateTopicTml(items: TmlItemInput[]): TmlCalculationResult {
     isProvisionalByTeacherConfirmation: hasUnconfirmedOcr,
   };
 }
+
+/**
+ * Re-computes TML scores for a student from Supabase submissions & submission_items
+ * and persists snapshot rows into tml_scores table.
+ */
+export async function computeStudentTml(
+  supabase: any,
+  studentId: string,
+  subjectFilter?: string
+) {
+  const { data: studentUser } = await supabase
+    .from('users')
+    .select('id, school_id')
+    .eq('id', studentId)
+    .single();
+
+  if (!studentUser) {
+    throw new Error('Student not found');
+  }
+
+  // Fetch question-level submission items
+  const { data: itemsData, error: itemsErr } = await supabase
+    .from('submission_items')
+    .select(`
+      id,
+      score,
+      max_score,
+      component_type,
+      difficulty,
+      hints_used,
+      attempts_count,
+      teacher_confirmed,
+      outcome_code,
+      created_at,
+      submission_id,
+      assignments (
+        id,
+        subject,
+        title,
+        units,
+        type
+      )
+    `)
+    .eq('student_id', studentId);
+
+  if (itemsErr) throw itemsErr;
+
+  const coveredSubmissionIds = new Set<string>();
+  (itemsData || []).forEach((row: any) => {
+    if (row.submission_id) {
+      coveredSubmissionIds.add(row.submission_id);
+    }
+  });
+
+  // Fetch top-level submissions for submissions without per-question items
+  const { data: subsData, error: subsErr } = await supabase
+    .from('submissions')
+    .select(`
+      id,
+      score,
+      max_score,
+      teacher_approved,
+      submitted_at,
+      created_at,
+      assignments (
+        id,
+        subject,
+        title,
+        units,
+        type
+      )
+    `)
+    .eq('student_id', studentId)
+    .neq('teacher_approved', false);
+
+  if (subsErr) console.warn('[TML Engine] Warning fetching top-level submissions:', subsErr);
+
+  const topicGroups: Record<string, { items: TmlItemInput[]; subject: string }> = {};
+  const now = new Date();
+
+  // Process submission items
+  (itemsData || []).forEach((row: any) => {
+    const assign = row.assignments || {};
+    const sub = assign.subject || 'General';
+    if (subjectFilter && sub.toLowerCase() !== subjectFilter.toLowerCase()) return;
+
+    const rawUnits: string[] = Array.isArray(assign.units) && assign.units.length > 0
+      ? assign.units.filter((u: string) => u !== 'general' && u !== 'General')
+      : [];
+
+    const topicName = rawUnits.length > 0
+      ? rawUnits[0]
+      : (assign.title ? assign.title.trim() : 'Core Concepts');
+
+    const ageDays = (now.getTime() - new Date(row.created_at).getTime()) / (1000 * 60 * 60 * 24);
+
+    if (!topicGroups[topicName]) {
+      topicGroups[topicName] = { items: [], subject: sub };
+    }
+
+    topicGroups[topicName].items.push({
+      score: Number(row.score) || 0,
+      maxScore: Number(row.max_score) || 1,
+      componentType: normalizeComponentType(row.component_type || assign.type),
+      ageDays,
+      hintsUsed: row.hints_used || 0,
+      attemptNumber: row.attempts_count || 1,
+      teacherConfirmed: row.teacher_confirmed !== false,
+      outcomeCode: row.outcome_code,
+      topicName,
+    });
+  });
+
+  // Process top-level submissions without items
+  (subsData || []).forEach((row: any) => {
+    if (coveredSubmissionIds.has(row.id)) return;
+
+    const assign = row.assignments || {};
+    const sub = assign.subject || 'General';
+    if (subjectFilter && sub.toLowerCase() !== subjectFilter.toLowerCase()) return;
+
+    const rawUnits: string[] = Array.isArray(assign.units) && assign.units.length > 0
+      ? assign.units.filter((u: string) => u !== 'general' && u !== 'General')
+      : [];
+
+    const topicName = rawUnits.length > 0
+      ? rawUnits[0]
+      : (assign.title ? assign.title.trim() : 'Core Concepts');
+
+    const createdDate = row.submitted_at || row.created_at || new Date().toISOString();
+    const ageDays = (now.getTime() - new Date(createdDate).getTime()) / (1000 * 60 * 60 * 24);
+
+    if (!topicGroups[topicName]) {
+      topicGroups[topicName] = { items: [], subject: sub };
+    }
+
+    topicGroups[topicName].items.push({
+      score: Number(row.score) || 0,
+      maxScore: Number(row.max_score) || 10,
+      componentType: normalizeComponentType(assign.type),
+      ageDays,
+      hintsUsed: 0,
+      attemptNumber: 1,
+      teacherConfirmed: row.teacher_approved === true,
+      topicName,
+    });
+  });
+
+  const results: any[] = [];
+
+  for (const [topicName, group] of Object.entries(topicGroups)) {
+    const calculation = calculateTopicTml(group.items);
+    const scoreToPersist = calculation.topicTml !== null ? calculation.topicTml : 0;
+
+    const { error: insertErr } = await supabase.from('tml_scores').insert({
+      student_id: studentId,
+      school_id: studentUser.school_id,
+      subject: group.subject,
+      topic_name: topicName,
+      score: scoreToPersist,
+      confidence_band: calculation.confidenceBand,
+      item_count: calculation.totalItemCount,
+      components: calculation.components,
+      computed_at: new Date().toISOString(),
+    });
+
+    if (insertErr) console.error('[TML Engine] insert error:', insertErr);
+
+    results.push({
+      topicName,
+      subject: group.subject,
+      ...calculation,
+    });
+  }
+
+  return {
+    studentId,
+    computedTopicsCount: results.length,
+    topics: results,
+  };
+}
+

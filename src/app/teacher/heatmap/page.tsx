@@ -263,13 +263,20 @@ export default function TeacherHeatmapPage() {
         try { authToken = await getAuthToken(); } catch (e) {}
 
         // 1. Fetch Students via Admin RLS Bypass Route
+        // Pass teacherClasses so only students in this teacher's classes are returned
+        const teacherClasses = (profile.assignments || []).map((a: any) => a.class).filter(Boolean);
         const studRes = await fetch('/api/teacher/get-students', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
           },
-          body: JSON.stringify({ schoolId, classFilter: selectedClass })
+          body: JSON.stringify({
+            teacherId: profile.id || profile.uid,
+            teacherClasses,
+            schoolId,
+            classFilter: selectedClass
+          })
         });
 
         const studJson = await studRes.json();

@@ -3,100 +3,65 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowLeft, RefreshCw, Zap, User, ChevronRight, Layers, AlertTriangle,
-  CheckCircle2, TrendingUp, Download, Printer, Calendar, FileSpreadsheet
-} from 'lucide-react';
+import { Search, Filter, Zap, User, ArrowLeft, RefreshCw, Award, TrendingUp, AlertTriangle, CheckCircle2, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-interface StudentRow {
+interface StudentRosterItem {
   id: string;
   name: string;
   custom_student_id?: string;
   student_class?: string;
   avatar_url?: string;
   roll: string;
+  overallScore: number | null;
+  grade: string;
+  totalSubmissions: number;
+  confidence: 'firm' | 'provisional' | 'insufficient';
+  unitScores: Record<string, number | null>;
 }
 
-interface TopicDef {
-  id: string;
-  name: string;
+const DEFAULT_SUBJECTS = ['Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
+const STANDARD_UNITS = [
+  { id: 'u1', label: 'Unit I: Core Foundations' },
+  { id: 'u2', label: 'Unit II: Advanced Concepts' },
+  { id: 'u3', label: 'Unit III: Practical Applications' },
+  { id: 'u4', label: 'Unit IV: Problem Solving' },
+  { id: 'u5', label: 'Unit V: Revision & Synthesis' }
+];
+
+function getGradeLetter(s: number | null): string {
+  if (s === null) return '—';
+  if (s >= 90) return 'A+';
+  if (s >= 80) return 'A';
+  if (s >= 70) return 'B';
+  if (s >= 60) return 'C';
+  return 'D';
 }
 
-interface ChapterDef {
-  id: string;
-  name: string;
-  topics: TopicDef[];
+function getScoreBadge(score: number | null) {
+  if (score === null) return 'bg-[#eef3f8] text-[#a9b8c8] border-[#e2e9f1]';
+  if (score < 50) return 'bg-[#f7d8d3] text-[#7a2119] border-[#e0a89f] font-bold';
+  if (score < 75) return 'bg-[#f9e6bb] text-[#77510a] border-[#e6c87e] font-bold';
+  return 'bg-[#c8e7d7] text-[#0e5237] border-[#93cbb0] font-bold';
 }
 
-interface CellData {
-  score: number | null;
-  count: number;
-  confidence: 'insufficient' | 'provisional' | 'firm';
-}
-
-type DateFilterOption = 'all' | '30days' | '7days';
-
-function getBoxStyle(score: number | null) {
-  if (score === null) {
-    return {
-      css: 'bg-[#eef3f8] text-[#a9b8c8] border-[#e2e9f1]',
-      band: 'na',
-      label: '—'
-    };
-  }
-  if (score < 50) {
-    const isExtreme = score < 35;
-    return {
-      css: isExtreme
-        ? 'bg-[#b8362a] text-white border-[#b8362a] font-black'
-        : 'bg-[#f7d8d3] text-[#7a2119] border-[#e0a89f] font-bold',
-      band: 'red',
-      label: `${score}%`
-    };
-  }
-  if (score < 75) {
-    const isExtreme = score >= 70;
-    return {
-      css: isExtreme
-        ? 'bg-[#c98a00] text-white border-[#c98a00] font-black'
-        : 'bg-[#f9e6bb] text-[#77510a] border-[#e6c87e] font-bold',
-      band: 'amb',
-      label: `${score}%`
-    };
-  }
-  const isExtreme = score >= 90;
-  return {
-    css: isExtreme
-      ? 'bg-[#1b7a53] text-white border-[#1b7a53] font-black'
-      : 'bg-[#c8e7d7] text-[#0e5237] border-[#93cbb0] font-bold',
-    band: 'grn',
-    label: `${score}%`
-  };
-}
-
-export default function TeacherMasteryPage() {
+export default function TeacherMasteryTrackerPage() {
   const { profile, loading } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
-  const [students, setStudents] = useState<StudentRow[]>([]);
   const [classList, setClassList] = useState<string[]>([]);
-  const [subjectList, setSubjectList] = useState<string[]>([]);
+  const [subjectList, setSubjectList] = useState<string[]>(DEFAULT_SUBJECTS);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('Science');
-  const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
 
-  // Navigation flow views: 1 = My Classes, 2 = Chapters List, 3 = 2D Heatmap Matrix Table
-  const [viewMode, setViewMode] = useState<1 | 2 | 3>(1);
-  const [selectedChapterIdx, setSelectedChapterIdx] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'at_risk' | 'mastered'>('all');
 
+  const [roster, setRoster] = useState<StudentRosterItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [chapters, setChapters] = useState<ChapterDef[]>([]);
 
-  // Score matrix: studentId -> topicKey -> CellData
-  const [matrix, setMatrix] = useState<Record<string, Record<string, CellData>>>({});
-  const [selectedCell, setSelectedCell] = useState<{ student: StudentRow; topicName: string; data: CellData } | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
@@ -105,330 +70,180 @@ export default function TeacherMasteryPage() {
     }
   }, [profile, loading, router]);
 
-  // Extract assigned classes and subjects
-  useEffect(() => {
-    if (!profile?.assignments) return;
-    const assigns = profile.assignments as any[];
-    const clsSet = new Set<string>();
-    const subSet = new Set<string>();
-
-    assigns.forEach(a => {
-      if (a.class) clsSet.add(a.class);
-      if (a.subject) subSet.add(a.subject);
-    });
-
-    const clss = [...clsSet];
-    const subs = [...subSet];
-
-    setClassList(clss);
-    if (subs.length > 0) {
-      setSubjectList(subs);
-      setSelectedSubject(subs[0]);
-    }
-    if (clss.length > 0 && !selectedClass) setSelectedClass(clss[0]);
-  }, [profile?.assignments]);
-
-  // Load Real Supabase Data ONLY — No fake demo numbers!
+  // Discover teacher's assigned classes & subjects
   useEffect(() => {
     if (!profile?.schoolId) return;
 
-    const loadRealData = async () => {
+    const fetchMeta = async () => {
+      const subSet = new Set<string>(DEFAULT_SUBJECTS);
+      const clsSet = new Set<string>();
+
+      if (profile.subject) subSet.add(profile.subject);
+      if (Array.isArray((profile as any).subjects)) {
+        (profile as any).subjects.forEach((s: string) => subSet.add(s));
+      }
+      if (Array.isArray(profile.assignments)) {
+        profile.assignments.forEach((a: any) => {
+          if (a.class) clsSet.add(a.class);
+          if (a.subject) subSet.add(a.subject);
+        });
+      }
+
+      const { data: dbAssigns } = await supabase
+        .from('assignments')
+        .select('subject, class')
+        .eq('school_id', profile.schoolId);
+
+      (dbAssigns || []).forEach(a => {
+        if (a.subject) subSet.add(a.subject);
+        if (a.class) clsSet.add(a.class);
+      });
+
+      const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10A', '10B', '9A'];
+      const finalSubjects = [...subSet];
+
+      setClassList(finalClasses);
+      setSubjectList(finalSubjects);
+
+      if (!selectedClass && finalClasses.length > 0) setSelectedClass(finalClasses[0]);
+      if (!selectedSubject && finalSubjects.length > 0) setSelectedSubject(finalSubjects[0]);
+    };
+
+    fetchMeta();
+  }, [profile]);
+
+  // Load Real Supabase Roster & Mastery Progression
+  useEffect(() => {
+    if (!profile?.schoolId) return;
+
+    const loadMasteryData = async () => {
       setIsLoading(true);
       try {
-        // 1. Fetch Real Students
-        let studentQuery = supabase
+        // 1. Fetch Students
+        const { data: studentData } = await supabase
           .from('users')
           .select('id, name, custom_student_id, student_class, branch, avatar_url')
           .eq('school_id', profile.schoolId)
           .eq('role', 'student');
 
-        const { data: studentData, error: sErr } = await studentQuery;
-        if (sErr) console.warn('[Heatmap] student query error:', sErr);
-
-        let filteredStudents = studentData || [];
+        let filtered = studentData || [];
         if (selectedClass) {
-          filteredStudents = filteredStudents.filter(s =>
+          filtered = filtered.filter(s =>
             (s.student_class || s.branch || '').toLowerCase() === selectedClass.toLowerCase()
           );
         }
 
-        const studentRows: StudentRow[] = filteredStudents.map((s, idx) => ({
-          ...s,
-          roll: String(idx + 1).padStart(2, '0')
-        }));
-        setStudents(studentRows);
+        const studentIds = filtered.map(s => s.id);
 
-        const studentIds = studentRows.map(s => s.id);
-
-        // 2. Fetch Real Assignments for this school
-        const { data: assignData } = await supabase
-          .from('assignments')
-          .select('id, title, subject, class, units')
-          .eq('school_id', profile.schoolId);
-
-        // Filter assignments by selected subject & class
-        const currentAssignments = (assignData || []).filter(a => {
-          const matchesSubj = !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase());
-          const matchesClass = !selectedClass || (a.class || '').toLowerCase() === selectedClass.toLowerCase();
-          return matchesSubj && matchesClass;
-        });
-
-        // 3. Dynamically build chapters strictly from teacher's posted assignments
-        const chapMap = new Map<string, TopicDef[]>();
-        currentAssignments.forEach(a => {
-          const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
-            ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
-            : [a.title || 'General Unit'];
-
-          const chapName = rawUnits[0];
-          const topicName = a.title || rawUnits[0];
-          const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-
-          if (!chapMap.has(chapName)) {
-            chapMap.set(chapName, []);
-          }
-          const existing = chapMap.get(chapName)!;
-          if (!existing.some(t => t.id === topicId)) {
-            existing.push({ id: topicId, name: topicName });
-          }
-        });
-
-        const dynamicChapters: ChapterDef[] = [];
-        let cIdx = 1;
-        chapMap.forEach((topList, chapName) => {
-          dynamicChapters.push({
-            id: `chap_${cIdx++}`,
-            name: chapName,
-            topics: topList
-          });
-        });
-
-        if (dynamicChapters.length === 0) {
-          dynamicChapters.push({
-            id: 'unit_general',
-            name: `${selectedSubject || 'Curriculum'} Core Topics`,
-            topics: [
-              { id: 'core_1', name: 'Chemical Reactions' },
-              { id: 'core_2', name: 'Acids, Bases & Salts' },
-              { id: 'core_3', name: 'Metals & Non-Metals' },
-              { id: 'core_4', name: 'Life Processes' }
-            ]
-          });
-        }
-        setChapters(dynamicChapters);
-
-        // 4. Fetch Real Submissions with date filtering
-        let subsQuery = supabase
+        // 2. Fetch Submissions for these students
+        const { data: subsData } = await supabase
           .from('submissions')
-          .select('student_id, assignment_id, score, max_score, teacher_approved, created_at, assignments(id, title, units, subject)')
+          .select('student_id, score, max_score, teacher_approved, assignments(subject, units, title)')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        if (dateFilter === '30days') {
-          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date30);
-        } else if (dateFilter === '7days') {
-          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date7);
-        }
-
-        const { data: subsData } = await subsQuery;
-
-        // 5. Fetch Real TML snapshots with date filtering
-        let tmlQuery = supabase
+        // 3. Fetch TML Scores
+        const { data: tmlData } = await supabase
           .from('tml_scores')
-          .select('student_id, subject, topic_name, score, confidence_band, item_count, computed_at')
+          .select('student_id, subject, topic_name, score, item_count, confidence_band')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        if (dateFilter === '30days') {
-          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          tmlQuery = tmlQuery.gte('computed_at', date30);
-        } else if (dateFilter === '7days') {
-          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          tmlQuery = tmlQuery.gte('computed_at', date7);
-        }
+        // Build roster progression item for each student
+        const rosterList: StudentRosterItem[] = filtered.map((s, idx) => {
+          const stSubs = (subsData || []).filter(sub => {
+            if (sub.student_id !== s.id || !sub.teacher_approved || sub.score === null) return false;
+            const assign = sub.assignments as any;
+            return !selectedSubject || (assign?.subject || '').toLowerCase().includes(selectedSubject.toLowerCase());
+          });
 
-        const { data: tmlData } = await tmlQuery;
+          let scoreSum = 0;
+          let scoreCount = 0;
+          const unitScores: Record<string, number | null> = {
+            u1: null, u2: null, u3: null, u4: null, u5: null
+          };
 
-        // 6. Populate Score Matrix strictly from database rows
-        const newMatrix: Record<string, Record<string, CellData>> = {};
-        studentRows.forEach(st => { newMatrix[st.id] = {}; });
+          stSubs.forEach(sub => {
+            if (sub.max_score <= 0) return;
+            const pct = Math.round((sub.score / sub.max_score) * 100);
+            scoreSum += pct;
+            scoreCount++;
 
-        // Map live teacher-approved submissions
-        (subsData || []).forEach(sub => {
-          if (!newMatrix[sub.student_id] || sub.score === null || sub.max_score <= 0 || sub.teacher_approved === false) return;
-          const assign = sub.assignments as any;
-          const rawUnits = Array.isArray(assign?.units) && assign.units.length > 0 ? assign.units : [assign?.title || 'Core'];
-          const topicKey = rawUnits[0].toLowerCase().replace(/[^a-z0-9]/g, '_');
+            const assign = sub.assignments as any;
+            const unitName = (Array.isArray(assign?.units) && assign.units[0]) || assign?.title || '';
 
-          const current = newMatrix[sub.student_id][topicKey] || { score: null, count: 0, confidence: 'insufficient' };
-          const pct = (sub.score / sub.max_score) * 100;
-          const newCount = current.count + 1;
-          const newAvg = current.score === null ? pct : (current.score * current.count + pct) / newCount;
-          const conf = newCount >= 8 ? 'firm' : newCount >= 4 ? 'provisional' : 'insufficient';
+            if (unitName.toLowerCase().includes('foundation') || unitName.toLowerCase().includes('reaction')) unitScores.u1 = pct;
+            else if (unitName.toLowerCase().includes('acid') || unitName.toLowerCase().includes('concept')) unitScores.u2 = pct;
+            else if (unitName.toLowerCase().includes('metal') || unitName.toLowerCase().includes('practical')) unitScores.u3 = pct;
+            else if (unitName.toLowerCase().includes('life') || unitName.toLowerCase().includes('problem')) unitScores.u4 = pct;
+            else unitScores.u5 = pct;
+          });
 
-          newMatrix[sub.student_id][topicKey] = {
-            score: Math.round(newAvg),
-            count: newCount,
-            confidence: conf
+          // Merge TML snapshots
+          const stTmls = (tmlData || []).filter(t =>
+            t.student_id === s.id && (!selectedSubject || t.subject.toLowerCase().includes(selectedSubject.toLowerCase()))
+          );
+
+          stTmls.forEach(tml => {
+            if (tml.score === null) return;
+            scoreSum += Math.round(tml.score);
+            scoreCount++;
+          });
+
+          const overall = scoreCount > 0 ? Math.round(scoreSum / scoreCount) : null;
+          const conf = scoreCount >= 8 ? 'firm' : scoreCount >= 4 ? 'provisional' : 'insufficient';
+
+          return {
+            id: s.id,
+            name: s.name,
+            custom_student_id: s.custom_student_id,
+            student_class: s.student_class,
+            avatar_url: s.avatar_url,
+            roll: String(idx + 1).padStart(2, '0'),
+            overallScore: overall,
+            grade: getGradeLetter(overall),
+            totalSubmissions: scoreCount,
+            confidence: conf,
+            unitScores
           };
         });
 
-        // Merge TML score snapshots
-        (tmlData || []).forEach(tml => {
-          if (!newMatrix[tml.student_id] || tml.score === null) return;
-          const topicKey = tml.topic_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          if (!newMatrix[tml.student_id][topicKey] || newMatrix[tml.student_id][topicKey].score === null) {
-            newMatrix[tml.student_id][topicKey] = {
-              score: Math.round(tml.score),
-              count: tml.item_count || 1,
-              confidence: (tml.confidence_band as any) || 'provisional'
-            };
-          }
-        });
-
-        setMatrix(newMatrix);
+        setRoster(rosterList);
       } catch (err) {
-        console.error('[TML Heatmap loadRealData error]:', err);
+        console.error('[MasteryTracker error]:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadRealData();
-  }, [profile?.schoolId, selectedClass, selectedSubject, dateFilter]);
+    loadMasteryData();
+  }, [profile?.schoolId, selectedClass, selectedSubject]);
 
-  // Compute Real Stats for selected chapter
-  const currentChapter = chapters[selectedChapterIdx] || chapters[0] || { id: 'c1', name: 'Curriculum Unit', topics: [] };
+  // Filtered Roster
+  const filteredRoster = useMemo(() => {
+    return roster.filter(st => {
+      const matchesSearch = !searchQuery ||
+        st.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        st.roll.includes(searchQuery) ||
+        (st.custom_student_id && st.custom_student_id.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const heatmapStats = useMemo(() => {
-    if (students.length === 0 || !currentChapter?.topics) {
-      return { avg: 0, atRisk: 0, mastered: 0, gaps: 0, topicAvgs: [] };
-    }
-
-    let totalScoreSum = 0;
-    let totalCellsCount = 0;
-    let atRiskStudents = 0;
-    let masteredCount = 0;
-    let gapCount = 0;
-
-    const tAvgs: { topic: TopicDef; avg: number | null }[] = [];
-
-    currentChapter.topics.forEach(tp => {
-      const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      let tSum = 0;
-      let tCount = 0;
-
-      students.forEach(st => {
-        const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id];
-        const sc = cell?.score ?? null;
-        if (sc !== null) {
-          tSum += sc;
-          tCount++;
-          totalScoreSum += sc;
-          totalCellsCount++;
-          if (sc >= 75) masteredCount++;
-          if (sc < 50) gapCount++;
-        }
-      });
-
-      tAvgs.push({
-        topic: tp,
-        avg: tCount > 0 ? Math.round(tSum / tCount) : null
-      });
+      if (!matchesSearch) return false;
+      if (statusFilter === 'at_risk') return st.overallScore !== null && st.overallScore < 50;
+      if (statusFilter === 'mastered') return st.overallScore !== null && st.overallScore >= 75;
+      return true;
     });
+  }, [roster, searchQuery, statusFilter]);
 
-    students.forEach(st => {
-      let stSum = 0;
-      let stCnt = 0;
-      currentChapter.topics.forEach(tp => {
-        const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const sc = matrix[st.id]?.[topicKey]?.score ?? null;
-        if (sc !== null) { stSum += sc; stCnt++; }
-      });
-      if (stCnt > 0 && (stSum / stCnt) < 50) atRiskStudents++;
-    });
+  // Cohort Stats
+  const stats = useMemo(() => {
+    const scored = roster.filter(r => r.overallScore !== null);
+    const avg = scored.length > 0 ? Math.round(scored.reduce((s, r) => s + (r.overallScore || 0), 0) / scored.length) : 0;
+    const mastered = roster.filter(r => r.overallScore !== null && r.overallScore >= 75).length;
+    const atRisk = roster.filter(r => r.overallScore !== null && r.overallScore < 50).length;
 
-    const overallAvg = totalCellsCount > 0 ? Math.round(totalScoreSum / totalCellsCount) : 0;
-    return {
-      avg: overallAvg,
-      atRisk: atRiskStudents,
-      mastered: masteredCount,
-      gaps: gapCount,
-      topicAvgs: tAvgs
-    };
-  }, [students, matrix, currentChapter]);
+    return { avg, mastered, atRisk, total: roster.length };
+  }, [roster]);
 
-  // Real Class Overall Average
-  const classOverallAvg = useMemo(() => {
-    if (students.length === 0) return 0;
-    let sum = 0;
-    let count = 0;
-    students.forEach(st => {
-      const row = matrix[st.id] || {};
-      Object.values(row).forEach(c => {
-        if (c.score !== null) {
-          sum += c.score;
-          count++;
-        }
-      });
-    });
-    return count > 0 ? Math.round(sum / count) : 0;
-  }, [students, matrix]);
-
-  // Export 2D Matrix Table to CSV Spreadsheet
-  const handleExportCSV = () => {
-    if (!students.length || !currentChapter?.topics) return;
-
-    const topicHeaders = currentChapter.topics.map(t => `"${t.name.replace(/"/g, '""')}"`).join(',');
-    let csvContent = `Student Name,Roll No,Custom Student ID,${topicHeaders},Student Chapter TML\n`;
-
-    students.forEach(st => {
-      let stSum = 0;
-      let stCount = 0;
-
-      const topicScores = currentChapter.topics.map(tp => {
-        const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id];
-        if (cell?.score !== null && cell?.score !== undefined) {
-          stSum += cell.score;
-          stCount++;
-          return `"${cell.score}%"`;
-        }
-        return '"N/A"';
-      });
-
-      const stAvg = stCount > 0 ? `"${Math.round(stSum / stCount)}%"` : '"N/A"';
-      const rowStr = `"${st.name.replace(/"/g, '""')}","${st.roll}","${(st.custom_student_id || '').replace(/"/g, '""')}",${topicScores.join(',')},${stAvg}\n`;
-      csvContent += rowStr;
-    });
-
-    // Topic Averages Row
-    const footerTopicAvgs = currentChapter.topics.map(tp => {
-      const tStat = heatmapStats.topicAvgs.find(t => t.topic.id === tp.id);
-      return tStat?.avg !== null && tStat?.avg !== undefined ? `"${tStat.avg}%"` : '"N/A"';
-    });
-    const overallTml = heatmapStats.avg > 0 ? `"${heatmapStats.avg}%"` : '"N/A"';
-
-    csvContent += `"Topic Average","","",${footerTopicAvgs.join(',')},${overallTml}\n`;
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    const cleanChapName = currentChapter.name.replace(/[^a-zA-Z0-9]/g, '_');
-    link.setAttribute('download', `TML_Heatmap_Class_${selectedClass || '10A'}_${selectedSubject}_${cleanChapName}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Print Printable Report Card
-  const handlePrintReportCard = () => {
-    window.print();
-  };
-
-  const handleAssignPractice = async () => {
-    if (!selectedCell || !profile?.schoolId) return;
+  const handleAssignTargeted = async () => {
+    if (!selectedStudent || !profile?.schoolId) return;
     setIsAssigning(true);
     try {
       const dueDate = new Date();
@@ -438,16 +253,16 @@ export default function TeacherMasteryPage() {
         school_id: profile.schoolId,
         teacher_id: profile.id,
         teacher_name: profile.name || 'Teacher',
-        title: `Targeted AI Practice: ${selectedCell.topicName}`,
-        description: `Personalized practice module targeting ${selectedCell.topicName} for ${selectedCell.student.name}.`,
+        title: `Targeted Mastery Booster: ${selectedSubject}`,
+        description: `Personalized AI mastery booster module generated for ${selectedStudent.name}.`,
         type: 'quiz',
         subject: selectedSubject,
         class: selectedClass || '10A',
-        units: [selectedCell.topicName],
+        units: [`${selectedSubject} Revision`],
         due_date: dueDate.toISOString().split('T')[0],
         questions: [
           {
-            questionText: `Demonstrating mastery in ${selectedCell.topicName}`,
+            questionText: `Mastery synthesis questions for ${selectedStudent.name}`,
             options: ['Option A', 'Option B', 'Option C', 'Option D'],
             correctOptionId: 0,
           },
@@ -455,568 +270,314 @@ export default function TeacherMasteryPage() {
       });
 
       if (error) throw error;
-      alert(`✅ Targeted AI Practice assigned to ${selectedCell.student.name}!`);
-      setSelectedCell(null);
+      alert(`✅ Targeted AI Mastery Booster assigned to ${selectedStudent.name}!`);
+      setSelectedStudent(null);
     } catch (err: any) {
-      alert('Failed to assign practice: ' + err.message);
+      alert('Failed to assign mastery booster: ' + err.message);
     } finally {
       setIsAssigning(false);
     }
   };
 
-  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading TML Mastery Matrix...</div>;
+  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading Mastery Tracker...</div>;
 
   return (
     <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans">
-      {/* Print CSS Styles */}
-      <style jsx global>{`
-        @media print {
-          body {
-            background-color: white !important;
-            color: black !important;
-          }
-          header, nav, .no-print {
-            display: none !important;
-          }
-          .print-only {
-            display: block !important;
-          }
-          .printable-card {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            font-size: 9pt !important;
-          }
-          th, td {
-            border: 1px solid #999 !important;
-            padding: 6px !important;
-          }
-        }
-        @media screen {
-          .print-only {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      {/* Top Oxford Navy Brand Header */}
-      <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md no-print">
+      {/* Oxford Navy Header */}
+      <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-black text-white text-sm border border-white/20">
             S
           </div>
           <div className="font-extrabold text-base tracking-tight">
-            Sthara <span className="font-normal text-xs text-white/70 uppercase tracking-widest ml-2">School OS · TML Heatmap</span>
+            Sthara <span className="font-normal text-xs text-white/70 uppercase tracking-widest ml-2">School OS · Mastery Progression Tracker</span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-white/70">Signed in as:</span>
-            <span className="font-bold text-amber-300">{profile.name || 'Teacher'}</span>
+        <div className="flex items-center space-x-3">
+          {/* Subject Dropdown */}
+          <div className="flex items-center space-x-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+            <span className="text-xs text-white/70 font-semibold uppercase">Subject:</span>
+            <select
+              value={selectedSubject}
+              onChange={e => setSelectedSubject(e.target.value)}
+              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
+            >
+              {subjectList.map(s => <option key={s} value={s} className="text-[#002147] bg-white">{s}</option>)}
+            </select>
           </div>
-          {classList.length > 0 && (
+
+          {/* Class Dropdown */}
+          <div className="flex items-center space-x-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+            <span className="text-xs text-white/70 font-semibold uppercase">Class:</span>
             <select
               value={selectedClass}
               onChange={e => setSelectedClass(e.target.value)}
-              className="bg-white/10 text-white font-bold text-xs px-3 py-1.5 rounded-lg border border-white/30 focus:outline-none cursor-pointer"
+              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
             >
               {classList.map(c => <option key={c} value={c} className="text-[#002147] bg-white">Class {c}</option>)}
             </select>
-          )}
+          </div>
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Content Container */}
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Printable Report Header for Official Export */}
-        <div className="print-only mb-6 text-black space-y-3">
-          <div className="flex justify-between items-center border-b-2 border-[#002147] pb-4">
-            <div>
-              <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Sthara School OS</h1>
-              <h2 className="text-lg font-bold text-gray-800">TML Mastery Matrix — Official Class Report Card</h2>
-            </div>
-            <div className="text-right text-xs font-semibold text-gray-600">
-              <p>Class: <strong>{selectedClass || '10A'}</strong></p>
-              <p>Subject: <strong>{selectedSubject}</strong></p>
-              <p>Chapter: <strong>{currentChapter.name}</strong></p>
-              <p>Timeline: <strong>{dateFilter === 'all' ? 'All Time' : dateFilter === '30days' ? 'Last 30 Days' : 'Last 7 Days'}</strong></p>
-              <p>Generated: <strong>{new Date().toLocaleDateString()}</strong></p>
-            </div>
+        {/* Page Title & Search Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+          <div>
+            <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject} Mastery Roster</h2>
+            <p className="text-xs text-gray-500 mt-1">Individual student grade progression, evidence confidence, and unit mastery status</p>
           </div>
-        </div>
 
-        {/* Breadcrumb & Global Filters Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
-          <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500">
-            <button onClick={() => setViewMode(1)} className="hover:text-[#002147] transition-colors">
-              {selectedSubject} · My Classes
-            </button>
-            {viewMode >= 2 && (
-              <>
-                <span>›</span>
-                <button onClick={() => setViewMode(2)} className="hover:text-[#002147] transition-colors">
-                  Class {selectedClass || '10A'}
-                </button>
-              </>
-            )}
-            {viewMode === 3 && (
-              <>
-                <span>›</span>
-                <span className="text-[#002147] font-bold">{currentChapter?.name}</span>
-              </>
-            )}
-          </nav>
-
-          {/* Timeline Date Filter */}
-          <div className="flex items-center space-x-2 bg-white px-3.5 py-1.5 rounded-xl border border-gray-200 shadow-sm text-xs font-bold self-start sm:self-auto">
-            <Calendar className="w-4 h-4 text-[#002147]" />
-            <span className="text-gray-400 uppercase text-[10px] tracking-wider">Timeline:</span>
-            <select
-              value={dateFilter}
-              onChange={e => setDateFilter(e.target.value as DateFilterOption)}
-              className="bg-transparent text-[#002147] font-extrabold focus:outline-none cursor-pointer"
-            >
-              <option value="all">All Time</option>
-              <option value="30days">Last 30 Days</option>
-              <option value="7days">Last 7 Days</option>
-            </select>
-          </div>
-        </div>
-
-        {/* ================= VIEW 1: MY CLASSES GRID ================= */}
-        {viewMode === 1 && (
-          <div className="space-y-6 animate-in fade-in duration-300 no-print">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-extrabold text-[#002147]">My Classes</h2>
-                <p className="text-xs text-gray-500 mt-1">Real-time TML class sections and curriculum coverage</p>
-              </div>
-
-              {subjectList.length > 1 && (
-                <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm text-xs font-bold">
-                  <span className="text-gray-400 uppercase">Subject:</span>
-                  <select
-                    value={selectedSubject}
-                    onChange={e => setSelectedSubject(e.target.value)}
-                    className="bg-transparent text-[#002147] font-black focus:outline-none cursor-pointer"
-                  >
-                    {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              )}
+          {/* Search & Filter Controls */}
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search student name or roll..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#002147] w-64"
+              />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(classList.length > 0 ? classList : ['10A']).map((clsName) => {
-                const realAvg = classOverallAvg;
-
-                return (
-                  <button
-                    key={clsName}
-                    onClick={() => { setSelectedClass(clsName); setViewMode(2); }}
-                    className="bg-white border border-gray-200 rounded-2xl p-6 text-left shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border-l-4 border-l-[#002147] space-y-4 group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-extrabold text-[#002147]">Class {clsName}</h3>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        {selectedSubject} · CBSE
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-xs text-gray-500 uppercase tracking-wider border-y border-gray-100 py-3">
-                      <div>
-                        <span>Students</span>
-                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">{students.length}</p>
-                      </div>
-                      <div>
-                        <span>Chapters</span>
-                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">{chapters.length}</p>
-                      </div>
-                      <div>
-                        <span>Topics</span>
-                        <p className="font-extrabold text-sm text-[#002147] normal-case mt-0.5">
-                          {chapters.reduce((n, c) => n + c.topics.length, 0)} Tagged
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-gray-500 uppercase tracking-wider text-[10px]">Real Class TML Score</span>
-                        <span className={`font-black ${realAvg >= 75 ? 'text-emerald-700' : realAvg > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
-                          {realAvg > 0 ? `${realAvg}%` : '—'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-[#002147] h-full rounded-full transition-all duration-500" style={{ width: `${realAvg}%` }} />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ================= VIEW 2: CHAPTERS LIST ================= */}
-        {viewMode === 2 && (
-          <div className="space-y-6 animate-in fade-in duration-300 no-print">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject}</h2>
-                <p className="text-xs text-gray-500 mt-1">Select a chapter to open the real student × topic mastery map matrix</p>
-              </div>
+            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl p-1 text-xs font-bold">
               <button
-                onClick={() => setViewMode(1)}
-                className="px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-1.5"
+                onClick={() => setStatusFilter('all')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${statusFilter === 'all' ? 'bg-[#002147] text-white shadow' : 'text-gray-600'}`}
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Classes
+                All ({roster.length})
+              </button>
+              <button
+                onClick={() => setStatusFilter('mastered')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${statusFilter === 'mastered' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}
+              >
+                Mastered ({stats.mastered})
+              </button>
+              <button
+                onClick={() => setStatusFilter('at_risk')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${statusFilter === 'at_risk' ? 'bg-red-600 text-white shadow' : 'text-gray-600'}`}
+              >
+                At Risk ({stats.atRisk})
               </button>
             </div>
+          </div>
+        </div>
 
-            <div className="space-y-3">
-              {chapters.map((chap, idx) => {
-                let chapSum = 0;
-                let chapCnt = 0;
-
-                chap.topics.forEach(tp => {
-                  const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                  students.forEach(st => {
-                    const sc = matrix[st.id]?.[topicKey]?.score ?? null;
-                    if (sc !== null) { chapSum += sc; chapCnt++; }
-                  });
-                });
-
-                const chapAvg = chapCnt > 0 ? Math.round(chapSum / chapCnt) : null;
-                const boxStyle = getBoxStyle(chapAvg);
-
-                return (
-                  <div
-                    key={chap.id}
-                    onClick={() => { setSelectedChapterIdx(idx); setViewMode(3); }}
-                    className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-sm hover:shadow-md hover:border-[#002147] transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#002147] flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100">
-                        {String(idx + 1).padStart(2, '0')}
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-base text-[#002147] group-hover:text-indigo-600 transition-colors">
-                          {chap.name}
-                        </h4>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {chap.topics.length} tagged topic{chap.topics.length !== 1 ? 's' : ''}: {chap.topics.map(t => t.name).join(' · ')}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4 shrink-0">
-                      <div className="hidden sm:block w-36">
-                        <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100">
-                          <div className="bg-[#1b7a53] h-full" style={{ width: chapAvg ? `${Math.min(chapAvg, 70)}%` : '0%' }} />
-                          <div className="bg-[#c98a00] h-full" style={{ width: chapAvg ? `${Math.max(0, 100 - chapAvg - 10)}%` : '0%' }} />
-                          <div className="bg-[#b8362a] h-full" style={{ width: chapAvg ? '10%' : '0%' }} />
-                        </div>
-                      </div>
-                      <div className={`px-3 py-1.5 rounded-lg font-black text-sm ${boxStyle.css}`}>
-                        {boxStyle.label}
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#002147] transition-colors" />
-                    </div>
-                  </div>
-                );
-              })}
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#002147] flex items-center justify-center font-bold">
+              <User className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase text-gray-400">Total Enrolled</span>
+              <p className="text-xl font-black text-[#002147]">{stats.total} Students</p>
             </div>
           </div>
-        )}
 
-        {/* ================= VIEW 3: 2D HEATMAP MATRIX TABLE ================= */}
-        {viewMode === 3 && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Header & Control Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm no-print">
-              <div>
-                <h2 className="text-2xl font-extrabold text-[#002147]">{currentChapter.name}</h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Class {selectedClass || '10A'} · {selectedSubject} · {students.length} students × {currentChapter.topics.length} topics
-                </p>
-              </div>
-
-              {/* Action Buttons: Back, CSV Export, Print Report Card */}
-              <div className="flex items-center flex-wrap gap-2.5">
-                <button
-                  onClick={handleExportCSV}
-                  className="px-3.5 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-                  title="Export 2D Heatmap Matrix as CSV Spreadsheet"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
-                  <span>Export CSV</span>
-                </button>
-
-                <button
-                  onClick={handlePrintReportCard}
-                  className="px-3.5 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-                  title="Print Class TML Mastery Report Card"
-                >
-                  <Printer className="w-4 h-4 text-indigo-700" />
-                  <span>Print Report Card</span>
-                </button>
-
-                <button
-                  onClick={() => setViewMode(2)}
-                  className="px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all flex items-center gap-1.5"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Back to Chapters
-                </button>
-              </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+              <TrendingUp className="w-5 h-5" />
             </div>
-
-            {/* Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 no-print">
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Chapter TML</span>
-                <p className="text-2xl font-black text-[#002147] mt-1">{heatmapStats.avg > 0 ? `${heatmapStats.avg}%` : '—'}</p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Students At Risk</span>
-                <p className="text-2xl font-black text-[#b8362a] mt-1">{heatmapStats.atRisk} <span className="text-xs font-bold text-gray-400">/ {students.length}</span></p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Mastered Cells</span>
-                <p className="text-2xl font-black text-[#1b7a53] mt-1">{heatmapStats.mastered}</p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Gap Cells</span>
-                <p className="text-2xl font-black text-[#c98a00] mt-1">{heatmapStats.gaps}</p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm col-span-2 sm:col-span-1">
-                <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Weakest Topic</span>
-                <p className="text-xs font-bold text-[#002147] mt-1 truncate">
-                  {heatmapStats.topicAvgs.length > 0 && heatmapStats.topicAvgs.some(t => t.avg !== null)
-                    ? [...heatmapStats.topicAvgs].filter(t => t.avg !== null).sort((a, b) => (a.avg || 0) - (b.avg || 0))[0]?.topic.name
-                    : 'No Data'}
-                </p>
-              </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase text-gray-400">Subject TML Average</span>
+              <p className="text-xl font-black text-[#002147]">{stats.avg > 0 ? `${stats.avg}%` : '—'}</p>
             </div>
+          </div>
 
-            {/* Color Legend Bar */}
-            <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-gray-600 no-print">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f7d8d3] border border-[#e0a89f]" />
-                  <span>Needs support &lt;50%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f9e6bb] border border-[#e6c87e]" />
-                  <span>Approaching 50–74%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#c8e7d7] border border-[#93cbb0]" />
-                  <span>Mastered ≥75%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#eef3f8] border border-[#e2e9f1]" />
-                  <span>Not attempted</span>
-                </div>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
-                Solid fill = extreme band (&lt;35% / ≥90%)
-              </span>
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+              <CheckCircle2 className="w-5 h-5" />
             </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase text-gray-400">Mastered Students</span>
+              <p className="text-xl font-black text-emerald-700">{stats.mastered}</p>
+            </div>
+          </div>
 
-            {/* Matrix Heatmap Table */}
-            <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden printable-card">
-              {isLoading ? (
-                <div className="py-20 text-center text-gray-400 space-y-3">
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#002147]" />
-                  <p className="font-bold text-sm text-[#002147]">Calculating TML Matrix...</p>
-                </div>
-              ) : students.length === 0 ? (
-                <div className="py-20 text-center text-gray-400 space-y-2">
-                  <User className="w-10 h-10 mx-auto text-gray-300" />
-                  <p className="font-bold text-[#002147]">No students found for Class {selectedClass}</p>
-                  <p className="text-xs">Select another class or register students in school settings.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse border border-gray-300 text-xs">
-                    <thead>
-                      <tr className="bg-[#002147] text-white">
-                        <th className="p-3.5 pl-5 font-black uppercase text-[11px] tracking-wider w-60 sticky left-0 bg-[#002147] z-20 border-r border-white/20 shadow-md">
-                          Student
-                        </th>
-                        {currentChapter.topics.map(tp => (
-                          <th key={tp.id} className="p-3.5 font-bold text-center border-r border-white/20 min-w-[140px] align-top">
-                            <div className="leading-snug">{tp.name}</div>
-                            <span className="block text-[9px] text-white/60 font-normal uppercase tracking-widest mt-1">Topic</span>
-                          </th>
-                        ))}
-                        <th className="p-3.5 font-black text-center bg-[#0a2f5c] w-32 border-l-2 border-white/30">
-                          <div>Student TML</div>
-                          <span className="block text-[9px] text-white/60 font-normal uppercase tracking-widest mt-1">Chapter</span>
-                        </th>
-                      </tr>
-                    </thead>
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-red-50 text-red-700 flex items-center justify-center font-bold">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase text-gray-400">Students At Risk</span>
+              <p className="text-xl font-black text-red-700">{stats.atRisk}</p>
+            </div>
+          </div>
+        </div>
 
-                    <tbody className="divide-y divide-gray-200">
-                      {students.map((st, sIdx) => {
-                        let stSum = 0;
-                        let stCount = 0;
+        {/* Student Roster Progression Table */}
+        <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden">
+          {isLoading ? (
+            <div className="py-20 text-center text-gray-400 space-y-3">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#002147]" />
+              <p className="font-bold text-sm text-[#002147]">Loading Student Mastery Progression...</p>
+            </div>
+          ) : filteredRoster.length === 0 ? (
+            <div className="py-20 text-center text-gray-400 space-y-2">
+              <User className="w-10 h-10 mx-auto text-gray-300" />
+              <p className="font-bold text-[#002147]">No matching students found</p>
+              <p className="text-xs">Try adjusting your search query or status filter.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse border border-gray-200 text-xs">
+                <thead>
+                  <tr className="bg-[#002147] text-white">
+                    <th className="p-3.5 pl-5 font-black uppercase text-[11px] tracking-wider w-56">Student</th>
+                    <th className="p-3.5 font-bold text-center w-28">Subject Grade</th>
+                    <th className="p-3.5 font-bold text-center w-40">Overall TML Score</th>
+                    {STANDARD_UNITS.map(u => (
+                      <th key={u.id} className="p-3.5 font-bold text-center min-w-[120px]">
+                        <div>{u.label.split(':')[0]}</div>
+                        <span className="block text-[9px] text-white/60 font-normal uppercase tracking-widest mt-0.5">{u.label.split(':')[1]}</span>
+                      </th>
+                    ))}
+                    <th className="p-3.5 font-bold text-center w-36">Evidence Confidence</th>
+                    <th className="p-3.5 font-bold text-center w-32 pr-5">Action</th>
+                  </tr>
+                </thead>
 
-                        currentChapter.topics.forEach(tp => {
-                          const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                          const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id];
-                          if (cell?.score !== null && cell?.score !== undefined) {
-                            stSum += cell.score;
-                            stCount++;
-                          }
-                        });
+                <tbody className="divide-y divide-gray-200">
+                  {filteredRoster.map((st, idx) => {
+                    const bgColors = ['bg-[#002147]', 'bg-indigo-600', 'bg-blue-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600'];
+                    const avatarBg = bgColors[idx % bgColors.length];
 
-                        const stAvg = stCount > 0 ? Math.round(stSum / stCount) : null;
-                        const stBoxStyle = getBoxStyle(stAvg);
-
-                        const bgColors = ['bg-[#002147]', 'bg-indigo-600', 'bg-blue-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600'];
-                        const avatarBg = bgColors[sIdx % bgColors.length];
-
-                        return (
-                          <tr key={st.id} className="hover:bg-slate-50 transition-colors group">
-                            {/* Sticky Student Column */}
-                            <td className="p-3 pl-5 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-gray-300 shadow-md">
-                              <div className="flex items-center space-x-3">
-                                {st.avatar_url ? (
-                                  <img src={st.avatar_url} alt={st.name} className="w-7 h-7 rounded-full object-cover shrink-0 border border-gray-200" />
-                                ) : (
-                                  <div className={`w-7 h-7 rounded-full ${avatarBg} text-white flex items-center justify-center font-bold text-[10px] shrink-0`}>
-                                    {st.name ? st.name.split(' ').map(n => n[0]).join('') : 'S'}
-                                  </div>
-                                )}
-                                <div>
-                                  <p className="font-bold text-[#002147] text-xs leading-none truncate max-w-[130px]">{st.name}</p>
-                                  <span className="text-[10px] text-gray-400 font-medium">Roll {st.roll}</span>
-                                </div>
+                    return (
+                      <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                        {/* Student Name */}
+                        <td className="p-3 pl-5 border-r border-gray-200">
+                          <div className="flex items-center space-x-3">
+                            {st.avatar_url ? (
+                              <img src={st.avatar_url} alt={st.name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200" />
+                            ) : (
+                              <div className={`w-8 h-8 rounded-full ${avatarBg} text-white flex items-center justify-center font-bold text-xs shrink-0`}>
+                                {st.name ? st.name.split(' ').map(n => n[0]).join('') : 'S'}
                               </div>
-                            </td>
-
-                            {/* Topic Score Boxes */}
-                            {currentChapter.topics.map(tp => {
-                              const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                              const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id] || { score: null, count: 0, confidence: 'insufficient' };
-                              const boxStyle = getBoxStyle(cell.score);
-
-                              return (
-                                <td key={tp.id} className="p-1.5 text-center border-r border-gray-200 align-middle">
-                                  <button
-                                    onClick={() => setSelectedCell({ student: st, topicName: tp.name, data: cell })}
-                                    className={`w-full py-2.5 rounded-lg border text-xs text-center transition-all duration-150 cursor-pointer hover:scale-105 hover:shadow-md ${boxStyle.css}`}
-                                    title={`${st.name} · ${tp.name}\n${cell.score === null ? 'Not attempted' : `${cell.score}% mastery · ${cell.count} evidence points`}`}
-                                  >
-                                    {boxStyle.label}
-                                  </button>
-                                </td>
-                              );
-                            })}
-
-                            {/* Row Average (Student TML) */}
-                            <td className="p-1.5 text-center bg-[#f8fafc] border-l-2 border-gray-300 align-middle">
-                              <div className={`w-full py-2.5 rounded-lg border text-xs text-center font-black ${stBoxStyle.css}`}>
-                                {stBoxStyle.label}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-
-                    {/* Table Footer: Topic Average Row */}
-                    <tfoot>
-                      <tr className="bg-slate-100 border-t-2 border-gray-300 font-bold">
-                        <td className="p-3 pl-5 sticky left-0 bg-slate-100 z-20 border-r border-gray-300 text-gray-600 uppercase text-[10px] tracking-wider">
-                          Topic Average
+                            )}
+                            <div>
+                              <p className="font-bold text-[#002147] text-xs leading-none">{st.name}</p>
+                              <span className="text-[10px] text-gray-400 font-medium mt-1 block">Roll {st.roll}</span>
+                            </div>
+                          </div>
                         </td>
-                        {currentChapter.topics.map(tp => {
-                          const tStat = heatmapStats.topicAvgs.find(t => t.topic.id === tp.id);
-                          const avgVal = tStat?.avg ?? null;
-                          const boxStyle = getBoxStyle(avgVal);
+
+                        {/* Letter Grade */}
+                        <td className="p-3 text-center border-r border-gray-200">
+                          <span className={`inline-block px-3 py-1 rounded-lg font-black text-sm ${
+                            st.grade === 'A+' || st.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                            st.grade === 'B' || st.grade === 'C' ? 'bg-amber-100 text-amber-800' :
+                            st.grade === 'D' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {st.grade}
+                          </span>
+                        </td>
+
+                        {/* TML Bar */}
+                        <td className="p-3 border-r border-gray-200">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between font-bold text-[11px]">
+                              <span className="text-gray-500">TML Score</span>
+                              <span className={st.overallScore !== null && st.overallScore >= 75 ? 'text-emerald-700' : 'text-amber-700'}>
+                                {st.overallScore !== null ? `${st.overallScore}%` : '—'}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                              <div
+                                className="bg-[#002147] h-full rounded-full transition-all"
+                                style={{ width: `${st.overallScore || 0}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Unit Progression Chips */}
+                        {STANDARD_UNITS.map(u => {
+                          const sc = st.unitScores[u.id];
+                          const bStyle = getScoreBadge(sc);
 
                           return (
-                            <td key={tp.id} className="p-1.5 text-center border-r border-gray-300">
-                              <div className={`w-full py-2 rounded-lg text-xs font-black text-center ${boxStyle.css}`}>
-                                {boxStyle.label}
+                            <td key={u.id} className="p-2 text-center border-r border-gray-200 align-middle">
+                              <div className={`py-2 px-2.5 rounded-lg border text-xs text-center font-bold ${bStyle}`}>
+                                {sc !== null ? `${sc}%` : '—'}
                               </div>
                             </td>
                           );
                         })}
-                        <td className="p-1.5 text-center bg-[#0a2f5c] text-white">
-                          <div className="w-full py-2 rounded-lg text-xs font-black text-center bg-[#002147] text-amber-300 border border-white/20">
-                            {heatmapStats.avg > 0 ? `${heatmapStats.avg}%` : '—'}
-                          </div>
+
+                        {/* Confidence Band Tag */}
+                        <td className="p-3 text-center border-r border-gray-200">
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${
+                            st.confidence === 'firm' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            st.confidence === 'provisional' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                            'bg-gray-50 text-gray-400 border-gray-200'
+                          }`}>
+                            {st.confidence === 'firm' ? 'Firm TML (8+ items)' : st.confidence === 'provisional' ? 'Provisional' : 'Insufficient'}
+                          </span>
+                        </td>
+
+                        {/* Action CTA */}
+                        <td className="p-3 text-center pr-5">
+                          <button
+                            onClick={() => setSelectedStudent(st)}
+                            className="px-3 py-1.5 bg-[#002147] hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-1.5 mx-auto"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Target</span>
+                          </button>
                         </td>
                       </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-
-            {/* Print Footer Verification Line */}
-            <div className="print-only mt-12 pt-6 border-t border-gray-400 flex justify-between text-xs text-gray-700">
-              <div>
-                <p>Teacher Signature: _______________________</p>
-                <p className="text-[10px] text-gray-500 mt-1">Class Teacher Verification</p>
-              </div>
-              <div className="text-right">
-                <p>Principal / HOD Signature: _______________________</p>
-                <p className="text-[10px] text-gray-500 mt-1">Institutional Seal & Authorization</p>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
 
-      {/* Practice Module Modal */}
-      {selectedCell && (
-        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+      {/* Targeted Mastery Modal */}
+      {selectedStudent && (
+        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">
             <div className="flex justify-between items-start border-b border-gray-100 pb-3">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full">
-                  Topic Diagnostic
+                  Mastery Booster Diagnostic
                 </span>
-                <h3 className="text-lg font-extrabold text-[#002147] mt-1">{selectedCell.topicName}</h3>
-                <p className="text-xs text-gray-500">Student: {selectedCell.student.name}</p>
+                <h3 className="text-lg font-extrabold text-[#002147] mt-1">{selectedStudent.name}</h3>
+                <p className="text-xs text-gray-500">Roll {selectedStudent.roll} · Class {selectedClass || '10A'}</p>
               </div>
-              <button onClick={() => setSelectedCell(null)} className="text-gray-400 hover:text-gray-600 font-bold p-1">✕</button>
+              <button onClick={() => setSelectedStudent(null)} className="text-gray-400 hover:text-gray-600 font-bold p-1">✕</button>
             </div>
 
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 font-medium">True Mastery Level (TML):</span>
+                <span className="text-gray-500 font-medium">Subject Grade & TML:</span>
                 <span className="font-black text-base text-[#002147]">
-                  {selectedCell.data.score !== null ? `${selectedCell.data.score}%` : 'Not attempted'}
+                  {selectedStudent.grade} ({selectedStudent.overallScore !== null ? `${selectedStudent.overallScore}%` : 'No Data'})
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Evidence Submissions:</span>
-                <span className="font-bold text-gray-700">{selectedCell.data.count} item(s) recorded</span>
+                <span>Evidence Items Count:</span>
+                <span className="font-bold text-gray-700">{selectedStudent.totalSubmissions} graded item(s)</span>
               </div>
             </div>
 
             <div className="space-y-2 pt-1">
               <button
-                onClick={handleAssignPractice}
+                onClick={handleAssignTargeted}
                 disabled={isAssigning}
                 className="w-full py-3 bg-[#002147] hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 <Zap className="w-4 h-4 text-amber-300" />
-                <span>{isAssigning ? 'Creating Task...' : `Assign Targeted AI Practice on ${selectedCell.topicName}`}</span>
+                <span>{isAssigning ? 'Generating Practice...' : `Assign AI Mastery Booster for ${selectedSubject}`}</span>
               </button>
               <button
-                onClick={() => setSelectedCell(null)}
+                onClick={() => setSelectedStudent(null)}
                 className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors"
               >
                 Close

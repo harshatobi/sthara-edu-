@@ -3,10 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowLeft, RefreshCw, Zap, User, ChevronRight, Layers, AlertTriangle,
-  CheckCircle2, TrendingUp, Download, Printer, Calendar, FileSpreadsheet
-} from 'lucide-react';
+import { ArrowLeft, RefreshCw, Zap, User, ChevronRight, Download, Printer, Filter } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface StudentRow {
@@ -35,7 +32,7 @@ interface CellData {
   confidence: 'insufficient' | 'provisional' | 'firm';
 }
 
-type DateFilterOption = 'all' | '30days' | '7days';
+const DEFAULT_SUBJECTS = ['Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
 
 function getBoxStyle(score: number | null) {
   if (score === null) {
@@ -82,10 +79,12 @@ export default function TeacherHeatmapPage() {
 
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [classList, setClassList] = useState<string[]>([]);
-  const [subjectList, setSubjectList] = useState<string[]>([]);
+  const [subjectList, setSubjectList] = useState<string[]>(DEFAULT_SUBJECTS);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('Science');
-  const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
+
+  // Date Timeline Filter: 'all' | '30d' | '7d'
+  const [timelineFilter, setTimelineFilter] = useState<'all' | '30d' | '7d'>('all');
 
   // Navigation flow views: 1 = My Classes, 2 = Chapters List, 3 = 2D Heatmap Matrix Table
   const [viewMode, setViewMode] = useState<1 | 2 | 3>(1);
@@ -105,45 +104,63 @@ export default function TeacherHeatmapPage() {
     }
   }, [profile, loading, router]);
 
-  // Extract assigned classes and subjects
+  // Extract all assigned classes and subjects taught by the teacher
   useEffect(() => {
-    if (!profile?.assignments) return;
-    const assigns = profile.assignments as any[];
-    const clsSet = new Set<string>();
-    const subSet = new Set<string>();
+    if (!profile?.schoolId) return;
 
-    assigns.forEach(a => {
-      if (a.class) clsSet.add(a.class);
-      if (a.subject) subSet.add(a.subject);
-    });
+    const fetchTeacherMeta = async () => {
+      const subSet = new Set<string>(DEFAULT_SUBJECTS);
+      const clsSet = new Set<string>();
 
-    const clss = [...clsSet];
-    const subs = [...subSet];
+      // Check profile fields
+      if (profile.subject) subSet.add(profile.subject);
+      if (Array.isArray((profile as any).subjects)) {
+        (profile as any).subjects.forEach((s: string) => subSet.add(s));
+      }
+      if (Array.isArray(profile.assignments)) {
+        profile.assignments.forEach((a: any) => {
+          if (a.class) clsSet.add(a.class);
+          if (a.subject) subSet.add(a.subject);
+        });
+      }
 
-    setClassList(clss);
-    if (subs.length > 0) {
-      setSubjectList(subs);
-      setSelectedSubject(subs[0]);
-    }
-    if (clss.length > 0 && !selectedClass) setSelectedClass(clss[0]);
-  }, [profile?.assignments]);
+      // Query database assignments to discover any other subjects posted by this school/teacher
+      const { data: dbAssigns } = await supabase
+        .from('assignments')
+        .select('subject, class')
+        .eq('school_id', profile.schoolId);
 
-  // Load Real Supabase Data ONLY — No fake demo numbers!
+      (dbAssigns || []).forEach(a => {
+        if (a.subject) subSet.add(a.subject);
+        if (a.class) clsSet.add(a.class);
+      });
+
+      const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10A', '10B', '9A'];
+      const finalSubjects = [...subSet];
+
+      setClassList(finalClasses);
+      setSubjectList(finalSubjects);
+
+      if (!selectedClass && finalClasses.length > 0) setSelectedClass(finalClasses[0]);
+      if (!selectedSubject && finalSubjects.length > 0) setSelectedSubject(finalSubjects[0]);
+    };
+
+    fetchTeacherMeta();
+  }, [profile]);
+
+  // Load Real Supabase Data for selected Subject & Class
   useEffect(() => {
     if (!profile?.schoolId) return;
 
     const loadRealData = async () => {
       setIsLoading(true);
       try {
-        // 1. Fetch Real Students
-        let studentQuery = supabase
+        // 1. Fetch Real Students for this class section
+        const { data: studentData } = await supabase
           .from('users')
           .select('id, name, custom_student_id, student_class, branch, avatar_url')
           .eq('school_id', profile.schoolId)
           .eq('role', 'student');
-
-        const { data: studentData, error: sErr } = await studentQuery;
-        if (sErr) console.warn('[Heatmap] student query error:', sErr);
 
         let filteredStudents = studentData || [];
         if (selectedClass) {
@@ -160,37 +177,40 @@ export default function TeacherHeatmapPage() {
 
         const studentIds = studentRows.map(s => s.id);
 
-        // 2. Fetch Real Assignments for this school
+        // 2. Fetch Real Assignments for selected subject and class
         const { data: assignData } = await supabase
           .from('assignments')
-          .select('id, title, subject, class, units')
+          .select('id, title, subject, class, units, created_at')
           .eq('school_id', profile.schoolId);
 
-        // Filter assignments by selected subject & class
         const currentAssignments = (assignData || []).filter(a => {
           const matchesSubj = !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase());
           const matchesClass = !selectedClass || (a.class || '').toLowerCase() === selectedClass.toLowerCase();
+
+          if (timelineFilter === '30d') {
+            const ageDays = (Date.now() - new Date(a.created_at || Date.now()).getTime()) / (1000 * 3600 * 24);
+            if (ageDays > 30) return false;
+          } else if (timelineFilter === '7d') {
+            const ageDays = (Date.now() - new Date(a.created_at || Date.now()).getTime()) / (1000 * 3600 * 24);
+            if (ageDays > 7) return false;
+          }
           return matchesSubj && matchesClass;
         });
 
-        // 3. Dynamically build chapters strictly from teacher's posted assignments
+        // 3. Dynamically build chapters & topics from assignments
         const chapMap = new Map<string, TopicDef[]>();
         currentAssignments.forEach(a => {
           const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
             ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
-            : [a.title || 'General Unit'];
+            : [a.title || `${selectedSubject} Core`];
 
           const chapName = rawUnits[0];
           const topicName = a.title || rawUnits[0];
           const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
-          if (!chapMap.has(chapName)) {
-            chapMap.set(chapName, []);
-          }
+          if (!chapMap.has(chapName)) chapMap.set(chapName, []);
           const existing = chapMap.get(chapName)!;
-          if (!existing.some(t => t.id === topicId)) {
-            existing.push({ id: topicId, name: topicName });
-          }
+          if (!existing.some(t => t.id === topicId)) existing.push({ id: topicId, name: topicName });
         });
 
         const dynamicChapters: ChapterDef[] = [];
@@ -203,60 +223,42 @@ export default function TeacherHeatmapPage() {
           });
         });
 
+        // Default structure if teacher hasn't posted assignments for this subject yet
         if (dynamicChapters.length === 0) {
           dynamicChapters.push({
             id: 'unit_general',
-            name: `${selectedSubject || 'Curriculum'} Core Topics`,
+            name: `${selectedSubject} Curriculum Topics`,
             topics: [
-              { id: 'core_1', name: 'Chemical Reactions' },
-              { id: 'core_2', name: 'Acids, Bases & Salts' },
-              { id: 'core_3', name: 'Metals & Non-Metals' },
-              { id: 'core_4', name: 'Life Processes' }
+              { id: 'topic_1', name: `${selectedSubject} Core Principles` },
+              { id: 'topic_2', name: `${selectedSubject} Practical Applications` },
+              { id: 'topic_3', name: `${selectedSubject} Problem Solving` },
+              { id: 'topic_4', name: `${selectedSubject} Advanced Synthesis` }
             ]
           });
         }
         setChapters(dynamicChapters);
 
-        // 4. Fetch Real Submissions with date filtering
-        let subsQuery = supabase
+        // 4. Fetch Submissions
+        const { data: subsData } = await supabase
           .from('submissions')
           .select('student_id, assignment_id, score, max_score, teacher_approved, created_at, assignments(id, title, units, subject)')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        if (dateFilter === '30days') {
-          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date30);
-        } else if (dateFilter === '7days') {
-          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date7);
-        }
-
-        const { data: subsData } = await subsQuery;
-
-        // 5. Fetch Real TML snapshots with date filtering
-        let tmlQuery = supabase
+        // 5. Fetch TML Snapshots
+        const { data: tmlData } = await supabase
           .from('tml_scores')
           .select('student_id, subject, topic_name, score, confidence_band, item_count, computed_at')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        if (dateFilter === '30days') {
-          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          tmlQuery = tmlQuery.gte('computed_at', date30);
-        } else if (dateFilter === '7days') {
-          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          tmlQuery = tmlQuery.gte('computed_at', date7);
-        }
-
-        const { data: tmlData } = await tmlQuery;
-
-        // 6. Populate Score Matrix strictly from database rows
+        // 6. Build Matrix
         const newMatrix: Record<string, Record<string, CellData>> = {};
         studentRows.forEach(st => { newMatrix[st.id] = {}; });
 
-        // Map live teacher-approved submissions
         (subsData || []).forEach(sub => {
           if (!newMatrix[sub.student_id] || sub.score === null || sub.max_score <= 0 || sub.teacher_approved === false) return;
           const assign = sub.assignments as any;
+          if (selectedSubject && assign?.subject && !assign.subject.toLowerCase().includes(selectedSubject.toLowerCase())) return;
+
           const rawUnits = Array.isArray(assign?.units) && assign.units.length > 0 ? assign.units : [assign?.title || 'Core'];
           const topicKey = rawUnits[0].toLowerCase().replace(/[^a-z0-9]/g, '_');
 
@@ -273,9 +275,10 @@ export default function TeacherHeatmapPage() {
           };
         });
 
-        // Merge TML score snapshots
         (tmlData || []).forEach(tml => {
           if (!newMatrix[tml.student_id] || tml.score === null) return;
+          if (selectedSubject && tml.subject && !tml.subject.toLowerCase().includes(selectedSubject.toLowerCase())) return;
+
           const topicKey = tml.topic_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
           if (!newMatrix[tml.student_id][topicKey] || newMatrix[tml.student_id][topicKey].score === null) {
             newMatrix[tml.student_id][topicKey] = {
@@ -295,9 +298,8 @@ export default function TeacherHeatmapPage() {
     };
 
     loadRealData();
-  }, [profile?.schoolId, selectedClass, selectedSubject, dateFilter]);
+  }, [profile?.schoolId, selectedClass, selectedSubject, timelineFilter]);
 
-  // Compute Real Stats for selected chapter
   const currentChapter = chapters[selectedChapterIdx] || chapters[0] || { id: 'c1', name: 'Curriculum Unit', topics: [] };
 
   const heatmapStats = useMemo(() => {
@@ -358,7 +360,6 @@ export default function TeacherHeatmapPage() {
     };
   }, [students, matrix, currentChapter]);
 
-  // Real Class Overall Average
   const classOverallAvg = useMemo(() => {
     if (students.length === 0) return 0;
     let sum = 0;
@@ -375,55 +376,39 @@ export default function TeacherHeatmapPage() {
     return count > 0 ? Math.round(sum / count) : 0;
   }, [students, matrix]);
 
-  // Export 2D Matrix Table to CSV Spreadsheet
+  // Export CSV
   const handleExportCSV = () => {
-    if (!students.length || !currentChapter?.topics) return;
+    if (!students.length || !currentChapter.topics.length) return;
 
-    const topicHeaders = currentChapter.topics.map(t => `"${t.name.replace(/"/g, '""')}"`).join(',');
-    let csvContent = `Student Name,Roll No,Custom Student ID,${topicHeaders},Student Chapter TML\n`;
+    let csvContent = `Student Name,Roll,Student ID,`;
+    csvContent += currentChapter.topics.map(t => `"${t.name}"`).join(',') + `,Student TML Average\n`;
 
     students.forEach(st => {
+      let rowStr = `"${st.name}",${st.roll},"${st.custom_student_id || st.id}",`;
       let stSum = 0;
       let stCount = 0;
 
-      const topicScores = currentChapter.topics.map(tp => {
+      currentChapter.topics.forEach(tp => {
         const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id];
-        if (cell?.score !== null && cell?.score !== undefined) {
-          stSum += cell.score;
-          stCount++;
-          return `"${cell.score}%"`;
-        }
-        return '"N/A"';
+        const sc = matrix[st.id]?.[topicKey]?.score ?? null;
+        if (sc !== null) { stSum += sc; stCount++; }
+        rowStr += `${sc !== null ? sc + '%' : 'N/A'},`;
       });
 
-      const stAvg = stCount > 0 ? `"${Math.round(stSum / stCount)}%"` : '"N/A"';
-      const rowStr = `"${st.name.replace(/"/g, '""')}","${st.roll}","${(st.custom_student_id || '').replace(/"/g, '""')}",${topicScores.join(',')},${stAvg}\n`;
+      const avgVal = stCount > 0 ? Math.round(stSum / stCount) + '%' : 'N/A';
+      rowStr += `${avgVal}\n`;
       csvContent += rowStr;
     });
-
-    // Topic Averages Row
-    const footerTopicAvgs = currentChapter.topics.map(tp => {
-      const tStat = heatmapStats.topicAvgs.find(t => t.topic.id === tp.id);
-      return tStat?.avg !== null && tStat?.avg !== undefined ? `"${tStat.avg}%"` : '"N/A"';
-    });
-    const overallTml = heatmapStats.avg > 0 ? `"${heatmapStats.avg}%"` : '"N/A"';
-
-    csvContent += `"Topic Average","","",${footerTopicAvgs.join(',')},${overallTml}\n`;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', url);
-    const cleanChapName = currentChapter.name.replace(/[^a-zA-Z0-9]/g, '_');
-    link.setAttribute('download', `TML_Heatmap_Class_${selectedClass || '10A'}_${selectedSubject}_${cleanChapName}.csv`);
-    document.body.appendChild(link);
+    link.href = url;
+    link.download = `TML_Heatmap_Class_${selectedClass}_${selectedSubject}_${currentChapter.name.replace(/\s+/g, '_')}.csv`;
     link.click();
-    document.body.removeChild(link);
   };
 
-  // Print Printable Report Card
-  const handlePrintReportCard = () => {
+  const handlePrint = () => {
     window.print();
   };
 
@@ -464,94 +449,52 @@ export default function TeacherHeatmapPage() {
     }
   };
 
-  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading TML Mastery Matrix...</div>;
+  if (loading || !profile) return <div className="p-10 text-center text-[#002147] font-medium">Loading TML Heatmap...</div>;
 
   return (
-    <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans">
-      {/* Print CSS Styles */}
-      <style jsx global>{`
-        @media print {
-          body {
-            background-color: white !important;
-            color: black !important;
-          }
-          header, nav, .no-print {
-            display: none !important;
-          }
-          .print-only {
-            display: block !important;
-          }
-          .printable-card {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            font-size: 9pt !important;
-          }
-          th, td {
-            border: 1px solid #999 !important;
-            padding: 6px !important;
-          }
-        }
-        @media screen {
-          .print-only {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      {/* Top Oxford Navy Brand Header */}
-      <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md no-print">
+    <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans print:bg-white print:pb-0">
+      {/* Top Header */}
+      <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md print:hidden">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-black text-white text-sm border border-white/20">
             S
           </div>
           <div className="font-extrabold text-base tracking-tight">
-            Sthara <span className="font-normal text-xs text-white/70 uppercase tracking-widest ml-2">School OS · TML Heatmap</span>
+            Sthara <span className="font-normal text-xs text-white/70 uppercase tracking-widest ml-2">School OS · Class Heat Map</span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-white/70">Signed in as:</span>
-            <span className="font-bold text-amber-300">{profile.name || 'Teacher'}</span>
+        <div className="flex items-center space-x-3">
+          {/* Multi-Subject Dropdown */}
+          <div className="flex items-center space-x-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+            <span className="text-xs text-white/70 font-semibold uppercase">Subject:</span>
+            <select
+              value={selectedSubject}
+              onChange={e => setSelectedSubject(e.target.value)}
+              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
+            >
+              {subjectList.map(s => <option key={s} value={s} className="text-[#002147] bg-white">{s}</option>)}
+            </select>
           </div>
-          {classList.length > 0 && (
+
+          {/* Class Dropdown */}
+          <div className="flex items-center space-x-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+            <span className="text-xs text-white/70 font-semibold uppercase">Class:</span>
             <select
               value={selectedClass}
               onChange={e => setSelectedClass(e.target.value)}
-              className="bg-white/10 text-white font-bold text-xs px-3 py-1.5 rounded-lg border border-white/30 focus:outline-none cursor-pointer"
+              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
             >
               {classList.map(c => <option key={c} value={c} className="text-[#002147] bg-white">Class {c}</option>)}
             </select>
-          )}
+          </div>
         </div>
       </header>
 
       {/* Main Container */}
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Printable Report Header for Official Export */}
-        <div className="print-only mb-6 text-black space-y-3">
-          <div className="flex justify-between items-center border-b-2 border-[#002147] pb-4">
-            <div>
-              <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Sthara School OS</h1>
-              <h2 className="text-lg font-bold text-gray-800">TML Mastery Matrix — Official Class Report Card</h2>
-            </div>
-            <div className="text-right text-xs font-semibold text-gray-600">
-              <p>Class: <strong>{selectedClass || '10A'}</strong></p>
-              <p>Subject: <strong>{selectedSubject}</strong></p>
-              <p>Chapter: <strong>{currentChapter.name}</strong></p>
-              <p>Timeline: <strong>{dateFilter === 'all' ? 'All Time' : dateFilter === '30days' ? 'Last 30 Days' : 'Last 7 Days'}</strong></p>
-              <p>Generated: <strong>{new Date().toLocaleDateString()}</strong></p>
-            </div>
-          </div>
-        </div>
-
-        {/* Breadcrumb & Global Filters Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
+        {/* Navigation & Controls Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500">
             <button onClick={() => setViewMode(1)} className="hover:text-[#002147] transition-colors">
               {selectedSubject} · My Classes
@@ -572,47 +515,61 @@ export default function TeacherHeatmapPage() {
             )}
           </nav>
 
-          {/* Timeline Date Filter */}
-          <div className="flex items-center space-x-2 bg-white px-3.5 py-1.5 rounded-xl border border-gray-200 shadow-sm text-xs font-bold self-start sm:self-auto">
-            <Calendar className="w-4 h-4 text-[#002147]" />
-            <span className="text-gray-400 uppercase text-[10px] tracking-wider">Timeline:</span>
-            <select
-              value={dateFilter}
-              onChange={e => setDateFilter(e.target.value as DateFilterOption)}
-              className="bg-transparent text-[#002147] font-extrabold focus:outline-none cursor-pointer"
-            >
-              <option value="all">All Time</option>
-              <option value="30days">Last 30 Days</option>
-              <option value="7days">Last 7 Days</option>
-            </select>
+          {/* Timeline & Actions */}
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 text-xs font-bold shadow-sm">
+              <span className="text-gray-400 px-2 flex items-center gap-1 text-[10px] uppercase">
+                <Filter className="w-3 h-3" /> Timeline:
+              </span>
+              <button
+                onClick={() => setTimelineFilter('all')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${timelineFilter === 'all' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                All Time
+              </button>
+              <button
+                onClick={() => setTimelineFilter('30d')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${timelineFilter === '30d' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                Last 30D
+              </button>
+              <button
+                onClick={() => setTimelineFilter('7d')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${timelineFilter === '7d' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                Last 7D
+              </button>
+            </div>
+
+            {viewMode === 3 && (
+              <>
+                <button
+                  onClick={handleExportCSV}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" /> CSV
+                </button>
+                <button
+                  onClick={handlePrint}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Print
+                </button>
+              </>
+            )}
           </div>
         </div>
 
         {/* ================= VIEW 1: MY CLASSES GRID ================= */}
         {viewMode === 1 && (
-          <div className="space-y-6 animate-in fade-in duration-300 no-print">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-extrabold text-[#002147]">My Classes</h2>
-                <p className="text-xs text-gray-500 mt-1">Real-time TML class sections and curriculum coverage</p>
-              </div>
-
-              {subjectList.length > 1 && (
-                <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm text-xs font-bold">
-                  <span className="text-gray-400 uppercase">Subject:</span>
-                  <select
-                    value={selectedSubject}
-                    onChange={e => setSelectedSubject(e.target.value)}
-                    className="bg-transparent text-[#002147] font-black focus:outline-none cursor-pointer"
-                  >
-                    {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              )}
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-2xl font-extrabold text-[#002147]">My Classes — {selectedSubject}</h2>
+              <p className="text-xs text-gray-500 mt-1">Select a class section to view topic breakdown and cohort heatmaps</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(classList.length > 0 ? classList : ['10A']).map((clsName) => {
+              {classList.map((clsName) => {
                 const realAvg = classOverallAvg;
 
                 return (
@@ -665,11 +622,11 @@ export default function TeacherHeatmapPage() {
 
         {/* ================= VIEW 2: CHAPTERS LIST ================= */}
         {viewMode === 2 && (
-          <div className="space-y-6 animate-in fade-in duration-300 no-print">
+          <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject}</h2>
-                <p className="text-xs text-gray-500 mt-1">Select a chapter to open the real student × topic mastery map matrix</p>
+                <p className="text-xs text-gray-500 mt-1">Select a chapter to open the student × topic heatmap matrix</p>
               </div>
               <button
                 onClick={() => setViewMode(1)}
@@ -716,13 +673,6 @@ export default function TeacherHeatmapPage() {
                     </div>
 
                     <div className="flex items-center space-x-4 shrink-0">
-                      <div className="hidden sm:block w-36">
-                        <div className="flex h-2.5 rounded-full overflow-hidden bg-gray-100">
-                          <div className="bg-[#1b7a53] h-full" style={{ width: chapAvg ? `${Math.min(chapAvg, 70)}%` : '0%' }} />
-                          <div className="bg-[#c98a00] h-full" style={{ width: chapAvg ? `${Math.max(0, 100 - chapAvg - 10)}%` : '0%' }} />
-                          <div className="bg-[#b8362a] h-full" style={{ width: chapAvg ? '10%' : '0%' }} />
-                        </div>
-                      </div>
                       <div className={`px-3 py-1.5 rounded-lg font-black text-sm ${boxStyle.css}`}>
                         {boxStyle.label}
                       </div>
@@ -739,45 +689,23 @@ export default function TeacherHeatmapPage() {
         {viewMode === 3 && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Header & Control Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm no-print">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm print:shadow-none print:border-none">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">{currentChapter.name}</h2>
                 <p className="text-xs text-gray-500 mt-1">
                   Class {selectedClass || '10A'} · {selectedSubject} · {students.length} students × {currentChapter.topics.length} topics
                 </p>
               </div>
-
-              {/* Action Buttons: Back, CSV Export, Print Report Card */}
-              <div className="flex items-center flex-wrap gap-2.5">
-                <button
-                  onClick={handleExportCSV}
-                  className="px-3.5 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-                  title="Export 2D Heatmap Matrix as CSV Spreadsheet"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
-                  <span>Export CSV</span>
-                </button>
-
-                <button
-                  onClick={handlePrintReportCard}
-                  className="px-3.5 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-                  title="Print Class TML Mastery Report Card"
-                >
-                  <Printer className="w-4 h-4 text-indigo-700" />
-                  <span>Print Report Card</span>
-                </button>
-
-                <button
-                  onClick={() => setViewMode(2)}
-                  className="px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all flex items-center gap-1.5"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Back to Chapters
-                </button>
-              </div>
+              <button
+                onClick={() => setViewMode(2)}
+                className="px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all flex items-center gap-1.5 self-start sm:self-auto print:hidden"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Chapters
+              </button>
             </div>
 
             {/* Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 no-print">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 print:grid-cols-5">
               <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Chapter TML</span>
                 <p className="text-2xl font-black text-[#002147] mt-1">{heatmapStats.avg > 0 ? `${heatmapStats.avg}%` : '—'}</p>
@@ -804,43 +732,17 @@ export default function TeacherHeatmapPage() {
               </div>
             </div>
 
-            {/* Color Legend Bar */}
-            <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-gray-600 no-print">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f7d8d3] border border-[#e0a89f]" />
-                  <span>Needs support &lt;50%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f9e6bb] border border-[#e6c87e]" />
-                  <span>Approaching 50–74%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#c8e7d7] border border-[#93cbb0]" />
-                  <span>Mastered ≥75%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#eef3f8] border border-[#e2e9f1]" />
-                  <span>Not attempted</span>
-                </div>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
-                Solid fill = extreme band (&lt;35% / ≥90%)
-              </span>
-            </div>
-
             {/* Matrix Heatmap Table */}
-            <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden printable-card">
+            <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden print:border-gray-400">
               {isLoading ? (
                 <div className="py-20 text-center text-gray-400 space-y-3">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#002147]" />
-                  <p className="font-bold text-sm text-[#002147]">Calculating TML Matrix...</p>
+                  <p className="font-bold text-sm text-[#002147]">Calculating Heatmap Matrix...</p>
                 </div>
               ) : students.length === 0 ? (
                 <div className="py-20 text-center text-gray-400 space-y-2">
                   <User className="w-10 h-10 mx-auto text-gray-300" />
                   <p className="font-bold text-[#002147]">No students found for Class {selectedClass}</p>
-                  <p className="text-xs">Select another class or register students in school settings.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -913,7 +815,6 @@ export default function TeacherHeatmapPage() {
                                   <button
                                     onClick={() => setSelectedCell({ student: st, topicName: tp.name, data: cell })}
                                     className={`w-full py-2.5 rounded-lg border text-xs text-center transition-all duration-150 cursor-pointer hover:scale-105 hover:shadow-md ${boxStyle.css}`}
-                                    title={`${st.name} · ${tp.name}\n${cell.score === null ? 'Not attempted' : `${cell.score}% mastery · ${cell.count} evidence points`}`}
                                   >
                                     {boxStyle.label}
                                   </button>
@@ -921,7 +822,7 @@ export default function TeacherHeatmapPage() {
                               );
                             })}
 
-                            {/* Row Average (Student TML) */}
+                            {/* Row Average */}
                             <td className="p-1.5 text-center bg-[#f8fafc] border-l-2 border-gray-300 align-middle">
                               <div className={`w-full py-2.5 rounded-lg border text-xs text-center font-black ${stBoxStyle.css}`}>
                                 {stBoxStyle.label}
@@ -932,7 +833,7 @@ export default function TeacherHeatmapPage() {
                       })}
                     </tbody>
 
-                    {/* Table Footer: Topic Average Row */}
+                    {/* Table Footer */}
                     <tfoot>
                       <tr className="bg-slate-100 border-t-2 border-gray-300 font-bold">
                         <td className="p-3 pl-5 sticky left-0 bg-slate-100 z-20 border-r border-gray-300 text-gray-600 uppercase text-[10px] tracking-wider">
@@ -962,25 +863,13 @@ export default function TeacherHeatmapPage() {
                 </div>
               )}
             </div>
-
-            {/* Print Footer Verification Line */}
-            <div className="print-only mt-12 pt-6 border-t border-gray-400 flex justify-between text-xs text-gray-700">
-              <div>
-                <p>Teacher Signature: _______________________</p>
-                <p className="text-[10px] text-gray-500 mt-1">Class Teacher Verification</p>
-              </div>
-              <div className="text-right">
-                <p>Principal / HOD Signature: _______________________</p>
-                <p className="text-[10px] text-gray-500 mt-1">Institutional Seal & Authorization</p>
-              </div>
-            </div>
           </div>
         )}
       </main>
 
-      {/* Practice Module Modal */}
+      {/* Diagnostic Modal */}
       {selectedCell && (
-        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+        <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:hidden">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">
             <div className="flex justify-between items-start border-b border-gray-100 pb-3">
               <div>

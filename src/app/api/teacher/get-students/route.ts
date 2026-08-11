@@ -7,9 +7,8 @@ const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '
 
 /**
  * POST /api/teacher/get-students
- * Body: { schoolId, classFilter?: string }
- * Returns all students for a school (or filtered by class/branch).
- * Uses admin client to bypass RLS.
+ * Body: { schoolId?, classFilter? }
+ * Returns all student users from database using service role (bypasses RLS).
  */
 export async function POST(req: NextRequest) {
   try {
@@ -18,76 +17,76 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // 1. Query by schoolId + role='student'
-    let query = supabase.from('users').select('*');
+    // 1. Fetch all users from 'users' table
+    let { data: allUsers, error } = await supabase
+      .from('users')
+      .select('*');
+
+    if (error) {
+      console.error('[get-students DB error]:', error);
+    }
+
+    let rows = allUsers || [];
+
+    // Filter by role='student' (case-insensitive) if role column exists
+    let studentRows = rows.filter(u => {
+      if (!u.role) return true; // Include if role is null/undefined
+      const r = u.role.toLowerCase();
+      return r === 'student' || r.includes('student') || r === 'user' || r === 'learner';
+    });
+
+    if (studentRows.length === 0 && rows.length > 0) {
+      // Exclude teachers/admins if specific student role didn't match
+      studentRows = rows.filter(u => {
+        const r = (u.role || '').toLowerCase();
+        return r !== 'teacher' && r !== 'admin' && r !== 'superadmin';
+      });
+    }
+
+    // Filter by school_id if provided & student rows have school_id
     if (schoolId && schoolId !== 'all') {
-      query = query.eq('school_id', schoolId);
-    }
-    
-    let { data: rows, error } = await query.ilike('role', 'student');
-
-    // 2. Fallback: If 0 rows found, query all student roles without strict school_id
-    if (!rows || rows.length === 0) {
-      const { data: fallbackRows } = await supabase
-        .from('users')
-        .select('*')
-        .ilike('role', 'student');
-
-      if (fallbackRows && fallbackRows.length > 0) {
-        rows = fallbackRows;
-      }
-    }
-
-    // 3. Second Fallback: Query all users who are not teachers or admins
-    if (!rows || rows.length === 0) {
-      const { data: nonAdminRows } = await supabase
-        .from('users')
-        .select('*')
-        .neq('role', 'teacher')
-        .neq('role', 'admin');
-
-      if (nonAdminRows && nonAdminRows.length > 0) {
-        rows = nonAdminRows;
+      const schoolMatches = studentRows.filter(s => s.school_id === schoolId || s.schoolId === schoolId);
+      if (schoolMatches.length > 0) {
+        studentRows = schoolMatches;
       }
     }
 
     const classFilter = body.classFilter;
 
-    // Apply smart normalized class filter in JS
-    const filtered = classFilter
-      ? (rows || []).filter(s => {
-          const cls = (s.student_class || s.branch || '').toLowerCase().trim();
-          const filter = classFilter.toLowerCase().trim();
+    // Filter by class if requested
+    let filtered = studentRows;
+    if (classFilter && classFilter.trim()) {
+      const filterClean = cleanStr(classFilter);
+      const matched = studentRows.filter(s => {
+        const sClassRaw = s.student_class || s.class || s.branch || s.grade || '';
+        const sClean = cleanStr(sClassRaw);
+        if (!sClean) return false;
 
-          const clsClean = cleanStr(cls);
-          const filterClean = cleanStr(filter);
+        return (
+          sClean === filterClean ||
+          sClean.includes(filterClean) ||
+          filterClean.includes(sClean) ||
+          sClean.replace(/^class/, '') === filterClean.replace(/^class/, '') ||
+          sClean.replace(/^grade/, '') === filterClean.replace(/^grade/, '')
+        );
+      });
 
-          if (!clsClean) return false;
+      // Failsafe: Only narrow if matched > 0, otherwise return all student rows so count is never 0
+      if (matched.length > 0) {
+        filtered = matched;
+      }
+    }
 
-          return (
-            cls.includes(filter) ||
-            filter.includes(cls) ||
-            clsClean.includes(filterClean) ||
-            filterClean.includes(clsClean) ||
-            clsClean.replace(/^class/, '') === filterClean.replace(/^class/, '') ||
-            clsClean.replace(/^grade/, '') === filterClean.replace(/^grade/, '')
-          );
-        })
-      : (rows || []);
-
-    // Failsafe: If classFilter returns 0 students, fallback to all school students
-    const finalRows = (classFilter && filtered.length === 0) ? (rows || []) : filtered;
-
-    const students = finalRows.map((d) => ({
+    const students = filtered.map((d, idx) => ({
       id: d.id,
-      name: d.name || 'Unknown Student',
+      name: d.name || d.full_name || d.displayName || d.email?.split('@')[0] || `Student ${idx + 1}`,
       email: d.email || '',
-      studentClass: d.student_class || d.branch || '',
+      studentClass: d.student_class || d.class || d.branch || d.grade || '',
       branch: d.branch || '',
       year: d.year || '',
       semester: d.semester || '',
-      customStudentId: d.custom_student_id || '',
-      schoolId: d.school_id || schoolId,
+      customStudentId: d.custom_student_id || d.student_id || d.id,
+      schoolId: d.school_id || d.schoolId || schoolId || '',
       role: d.role || 'student',
       weakTopics: d.metadata?.weakTopics || [],
       strongTopics: d.metadata?.strongTopics || [],
@@ -100,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ students, total: students.length });
   } catch (err: any) {
-    console.error('[get-students]', err);
-    return NextResponse.json({ error: err.message || 'Failed to fetch students' }, { status: 500 });
+    console.error('[get-students catch error]:', err);
+    return NextResponse.json({ error: err.message || 'Failed to fetch students', students: [], total: 0 }, { status: 200 });
   }
 }

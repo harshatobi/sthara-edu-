@@ -208,7 +208,6 @@ export default function TeacherHeatmapPage() {
         });
       }
 
-      // Query database for teacher's own assignments & syllabus topics
       const tId = profile.id || profile.uid;
       if (tId) {
         const { data: tAssigns } = await supabase
@@ -222,9 +221,11 @@ export default function TeacherHeatmapPage() {
         });
 
         try {
-          const authToken = await getAuthToken();
-          const sylRes = await fetch(`/api/teacher/syllabus?schoolId=${profile.schoolId || 'all'}&teacherId=${tId}`, {
-            headers: { Authorization: `Bearer ${authToken}` }
+          let authToken = '';
+          try { authToken = await getAuthToken(); } catch (e) {}
+
+          const sylRes = await fetch(`/api/teacher/syllabus?schoolId=${profile.schoolId || 'all'}&teacherId=all`, {
+            headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
           });
           const sylJson = await sylRes.json();
           (sylJson.modules || []).forEach((s: any) => {
@@ -258,14 +259,15 @@ export default function TeacherHeatmapPage() {
       setIsLoading(true);
       try {
         const schoolId = profile.schoolId || 'sthara_demo_school';
-        const authToken = await getAuthToken();
+        let authToken = '';
+        try { authToken = await getAuthToken(); } catch (e) {}
 
         // 1. Fetch Students via Admin RLS Bypass Route
         const studRes = await fetch('/api/teacher/get-students', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
           },
           body: JSON.stringify({ schoolId, classFilter: selectedClass })
         });
@@ -285,7 +287,7 @@ export default function TeacherHeatmapPage() {
           setClassList(prev => [...new Set([...prev, ...discList])]);
         }
 
-        const studentRows: StudentRow[] = rawStudents.map((s, idx) => ({
+        let studentRows: StudentRow[] = rawStudents.map((s, idx) => ({
           id: s.id,
           name: s.name || `Student ${idx + 1}`,
           custom_student_id: s.customStudentId || s.custom_student_id || s.id,
@@ -293,13 +295,14 @@ export default function TeacherHeatmapPage() {
           avatar_url: s.avatar_url || s.avatarUrl,
           roll: String(idx + 1).padStart(2, '0')
         }));
+
         setStudents(studentRows);
 
         const studentIds = studentRows.map(s => s.id);
 
         // 2. Fetch Syllabus Topics from Admin API Route /api/teacher/syllabus
         const sylRes = await fetch(`/api/teacher/syllabus?schoolId=${schoolId}&teacherId=all`, {
-          headers: { Authorization: `Bearer ${authToken}` }
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
         });
         const sylJson = await sylRes.json();
         const syllabusData = sylJson.modules || [];

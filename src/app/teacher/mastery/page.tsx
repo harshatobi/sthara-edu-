@@ -29,6 +29,8 @@ const STANDARD_UNITS = [
   { id: 'u5', label: 'Unit V: Revision & Synthesis' }
 ];
 
+const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 function getGradeLetter(s: number | null): string {
   if (s === null) return '—';
   if (s >= 90) return 'A+';
@@ -70,33 +72,42 @@ export default function TeacherMasteryTrackerPage() {
     }
   }, [profile, loading, router]);
 
-  // Discover teacher's assigned classes & subjects
+  // Load Teacher Meta & Discover Real Database Classes & Subjects
   useEffect(() => {
-    if (!profile?.schoolId) return;
-
     const fetchMeta = async () => {
       const subSet = new Set<string>(DEFAULT_SUBJECTS);
       const clsSet = new Set<string>();
 
-      if (profile.subject) subSet.add(profile.subject);
-      if (Array.isArray((profile as any).subjects)) {
+      if (profile?.subject) subSet.add(profile.subject);
+      if (Array.isArray((profile as any)?.subjects)) {
         (profile as any).subjects.forEach((s: string) => subSet.add(s));
       }
-      if (Array.isArray(profile.assignments)) {
+      if (Array.isArray(profile?.assignments)) {
         profile.assignments.forEach((a: any) => {
           if (a.class) clsSet.add(a.class);
           if (a.subject) subSet.add(a.subject);
         });
       }
 
-      const { data: dbAssigns } = await supabase
-        .from('assignments')
-        .select('subject, class')
-        .eq('school_id', profile.schoolId);
+      let assignQuery = supabase.from('assignments').select('subject, class');
+      if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
+      const { data: dbAssigns } = await assignQuery;
 
       (dbAssigns || []).forEach(a => {
         if (a.subject) subSet.add(a.subject);
         if (a.class) clsSet.add(a.class);
+      });
+
+      let studentQuery = supabase
+        .from('users')
+        .select('student_class, branch, school_id')
+        .eq('role', 'student');
+      if (profile?.schoolId) studentQuery = studentQuery.eq('school_id', profile.schoolId);
+      const { data: dbStudents } = await studentQuery;
+
+      (dbStudents || []).forEach(s => {
+        const clsName = s.student_class || s.branch;
+        if (clsName && clsName.trim()) clsSet.add(clsName.trim());
       });
 
       const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10A', '10B', '9A'];
@@ -112,30 +123,48 @@ export default function TeacherMasteryTrackerPage() {
     fetchMeta();
   }, [profile]);
 
-  // Load Real Supabase Roster & Mastery Progression
+  // Load Real Supabase Roster & Mastery Progression with Smart Student Matching
   useEffect(() => {
-    if (!profile?.schoolId) return;
-
     const loadMasteryData = async () => {
       setIsLoading(true);
       try {
         // 1. Fetch Students
-        const { data: studentData } = await supabase
+        let studentQuery = supabase
           .from('users')
-          .select('id, name, custom_student_id, student_class, branch, avatar_url')
-          .eq('school_id', profile.schoolId)
+          .select('id, name, custom_student_id, student_class, branch, avatar_url, school_id')
           .eq('role', 'student');
 
-        let filtered = studentData || [];
-        if (selectedClass) {
-          filtered = filtered.filter(s =>
-            (s.student_class || s.branch || '').toLowerCase() === selectedClass.toLowerCase()
-          );
+        if (profile?.schoolId) {
+          studentQuery = studentQuery.eq('school_id', profile.schoolId);
         }
 
-        const studentIds = filtered.map(s => s.id);
+        const { data: rawStudents } = await studentQuery;
+        const allStudents = rawStudents || [];
 
-        // 2. Fetch Submissions for these students
+        // Flexible Class Matching Engine
+        let matchedStudents = allStudents;
+        if (selectedClass) {
+          const targetClean = cleanStr(selectedClass);
+          const matched = allStudents.filter(s => {
+            const sClassRaw = s.student_class || s.branch || '';
+            const sClean = cleanStr(sClassRaw);
+            if (!sClean) return false;
+
+            return (
+              sClean === targetClean ||
+              sClean.includes(targetClean) ||
+              targetClean.includes(sClean) ||
+              sClean.replace(/^class/, '') === targetClean.replace(/^class/, '') ||
+              sClean.replace(/^grade/, '') === targetClean.replace(/^grade/, '')
+            );
+          });
+
+          if (matched.length > 0) matchedStudents = matched;
+        }
+
+        const studentIds = matchedStudents.map(s => s.id);
+
+        // 2. Fetch Submissions
         const { data: subsData } = await supabase
           .from('submissions')
           .select('student_id, score, max_score, teacher_approved, assignments(subject, units, title)')
@@ -147,8 +176,7 @@ export default function TeacherMasteryTrackerPage() {
           .select('student_id, subject, topic_name, score, item_count, confidence_band')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-        // Build roster progression item for each student
-        const rosterList: StudentRosterItem[] = filtered.map((s, idx) => {
+        const rosterList: StudentRosterItem[] = matchedStudents.map((s, idx) => {
           const stSubs = (subsData || []).filter(sub => {
             if (sub.student_id !== s.id || !sub.teacher_approved || sub.score === null) return false;
             const assign = sub.assignments as any;
@@ -177,7 +205,6 @@ export default function TeacherMasteryTrackerPage() {
             else unitScores.u5 = pct;
           });
 
-          // Merge TML snapshots
           const stTmls = (tmlData || []).filter(t =>
             t.student_id === s.id && (!selectedSubject || t.subject.toLowerCase().includes(selectedSubject.toLowerCase()))
           );
@@ -193,9 +220,9 @@ export default function TeacherMasteryTrackerPage() {
 
           return {
             id: s.id,
-            name: s.name,
+            name: s.name || `Student ${idx + 1}`,
             custom_student_id: s.custom_student_id,
-            student_class: s.student_class,
+            student_class: s.student_class || s.branch || selectedClass,
             avatar_url: s.avatar_url,
             roll: String(idx + 1).padStart(2, '0'),
             overallScore: overall,
@@ -215,9 +242,8 @@ export default function TeacherMasteryTrackerPage() {
     };
 
     loadMasteryData();
-  }, [profile?.schoolId, selectedClass, selectedSubject]);
+  }, [profile, selectedClass, selectedSubject]);
 
-  // Filtered Roster
   const filteredRoster = useMemo(() => {
     return roster.filter(st => {
       const matchesSearch = !searchQuery ||
@@ -232,7 +258,6 @@ export default function TeacherMasteryTrackerPage() {
     });
   }, [roster, searchQuery, statusFilter]);
 
-  // Cohort Stats
   const stats = useMemo(() => {
     const scored = roster.filter(r => r.overallScore !== null);
     const avg = scored.length > 0 ? Math.round(scored.reduce((s, r) => s + (r.overallScore || 0), 0) / scored.length) : 0;
@@ -283,7 +308,7 @@ export default function TeacherMasteryTrackerPage() {
 
   return (
     <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans">
-      {/* Oxford Navy Header */}
+      {/* Header */}
       <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-black text-white text-sm border border-white/20">
@@ -323,14 +348,12 @@ export default function TeacherMasteryTrackerPage() {
 
       {/* Main Content Container */}
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Page Title & Search Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <div>
             <h2 className="text-2xl font-extrabold text-[#002147]">Class {selectedClass || '10A'} — {selectedSubject} Mastery Roster</h2>
             <p className="text-xs text-gray-500 mt-1">Individual student grade progression, evidence confidence, and unit mastery status</p>
           </div>
 
-          {/* Search & Filter Controls */}
           <div className="flex items-center space-x-2">
             <div className="relative">
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -448,7 +471,6 @@ export default function TeacherMasteryTrackerPage() {
 
                     return (
                       <tr key={st.id} className="hover:bg-slate-50 transition-colors">
-                        {/* Student Name */}
                         <td className="p-3 pl-5 border-r border-gray-200">
                           <div className="flex items-center space-x-3">
                             {st.avatar_url ? (
@@ -465,7 +487,6 @@ export default function TeacherMasteryTrackerPage() {
                           </div>
                         </td>
 
-                        {/* Letter Grade */}
                         <td className="p-3 text-center border-r border-gray-200">
                           <span className={`inline-block px-3 py-1 rounded-lg font-black text-sm ${
                             st.grade === 'A+' || st.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
@@ -476,7 +497,6 @@ export default function TeacherMasteryTrackerPage() {
                           </span>
                         </td>
 
-                        {/* TML Bar */}
                         <td className="p-3 border-r border-gray-200">
                           <div className="space-y-1">
                             <div className="flex items-center justify-between font-bold text-[11px]">
@@ -494,7 +514,6 @@ export default function TeacherMasteryTrackerPage() {
                           </div>
                         </td>
 
-                        {/* Unit Progression Chips */}
                         {STANDARD_UNITS.map(u => {
                           const sc = st.unitScores[u.id];
                           const bStyle = getScoreBadge(sc);
@@ -508,7 +527,6 @@ export default function TeacherMasteryTrackerPage() {
                           );
                         })}
 
-                        {/* Confidence Band Tag */}
                         <td className="p-3 text-center border-r border-gray-200">
                           <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${
                             st.confidence === 'firm' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
@@ -519,7 +537,6 @@ export default function TeacherMasteryTrackerPage() {
                           </span>
                         </td>
 
-                        {/* Action CTA */}
                         <td className="p-3 text-center pr-5">
                           <button
                             onClick={() => setSelectedStudent(st)}
@@ -539,7 +556,6 @@ export default function TeacherMasteryTrackerPage() {
         </div>
       </main>
 
-      {/* Targeted Mastery Modal */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">

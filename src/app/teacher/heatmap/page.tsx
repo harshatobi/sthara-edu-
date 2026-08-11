@@ -34,6 +34,8 @@ interface CellData {
 
 const DEFAULT_SUBJECTS = ['Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
 
+const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 function getBoxStyle(score: number | null) {
   if (score === null) {
     return {
@@ -83,17 +85,13 @@ export default function TeacherHeatmapPage() {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('Science');
 
-  // Date Timeline Filter: 'all' | '30d' | '7d'
   const [timelineFilter, setTimelineFilter] = useState<'all' | '30d' | '7d'>('all');
-
-  // Navigation flow views: 1 = My Classes, 2 = Chapters List, 3 = 2D Heatmap Matrix Table
   const [viewMode, setViewMode] = useState<1 | 2 | 3>(1);
   const [selectedChapterIdx, setSelectedChapterIdx] = useState<number>(0);
 
   const [isLoading, setIsLoading] = useState(true);
   const [chapters, setChapters] = useState<ChapterDef[]>([]);
 
-  // Score matrix: studentId -> topicKey -> CellData
   const [matrix, setMatrix] = useState<Record<string, Record<string, CellData>>>({});
   const [selectedCell, setSelectedCell] = useState<{ student: StudentRow; topicName: string; data: CellData } | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -104,35 +102,44 @@ export default function TeacherHeatmapPage() {
     }
   }, [profile, loading, router]);
 
-  // Extract all assigned classes and subjects taught by the teacher
+  // Load Teacher Meta & Discover Real Database Classes & Subjects
   useEffect(() => {
-    if (!profile?.schoolId) return;
-
     const fetchTeacherMeta = async () => {
       const subSet = new Set<string>(DEFAULT_SUBJECTS);
       const clsSet = new Set<string>();
 
-      // Check profile fields
-      if (profile.subject) subSet.add(profile.subject);
-      if (Array.isArray((profile as any).subjects)) {
+      if (profile?.subject) subSet.add(profile.subject);
+      if (Array.isArray((profile as any)?.subjects)) {
         (profile as any).subjects.forEach((s: string) => subSet.add(s));
       }
-      if (Array.isArray(profile.assignments)) {
+      if (Array.isArray(profile?.assignments)) {
         profile.assignments.forEach((a: any) => {
           if (a.class) clsSet.add(a.class);
           if (a.subject) subSet.add(a.subject);
         });
       }
 
-      // Query database assignments to discover any other subjects posted by this school/teacher
-      const { data: dbAssigns } = await supabase
-        .from('assignments')
-        .select('subject, class')
-        .eq('school_id', profile.schoolId);
+      // Query database assignments for additional subjects & classes
+      let assignQuery = supabase.from('assignments').select('subject, class');
+      if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
+      const { data: dbAssigns } = await assignQuery;
 
       (dbAssigns || []).forEach(a => {
         if (a.subject) subSet.add(a.subject);
         if (a.class) clsSet.add(a.class);
+      });
+
+      // Query database students to discover their exact class names!
+      let studentQuery = supabase
+        .from('users')
+        .select('student_class, branch, school_id')
+        .eq('role', 'student');
+      if (profile?.schoolId) studentQuery = studentQuery.eq('school_id', profile.schoolId);
+      const { data: dbStudents } = await studentQuery;
+
+      (dbStudents || []).forEach(s => {
+        const clsName = s.student_class || s.branch;
+        if (clsName && clsName.trim()) clsSet.add(clsName.trim());
       });
 
       const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10A', '10B', '9A'];
@@ -150,42 +157,68 @@ export default function TeacherHeatmapPage() {
 
   // Load Real Supabase Data for selected Subject & Class
   useEffect(() => {
-    if (!profile?.schoolId) return;
-
     const loadRealData = async () => {
       setIsLoading(true);
       try {
-        // 1. Fetch Real Students for this class section
-        const { data: studentData } = await supabase
+        // 1. Fetch Real Students with flexible school & class matching
+        let studentQuery = supabase
           .from('users')
-          .select('id, name, custom_student_id, student_class, branch, avatar_url')
-          .eq('school_id', profile.schoolId)
+          .select('id, name, custom_student_id, student_class, branch, avatar_url, school_id')
           .eq('role', 'student');
 
-        let filteredStudents = studentData || [];
-        if (selectedClass) {
-          filteredStudents = filteredStudents.filter(s =>
-            (s.student_class || s.branch || '').toLowerCase() === selectedClass.toLowerCase()
-          );
+        if (profile?.schoolId) {
+          studentQuery = studentQuery.eq('school_id', profile.schoolId);
         }
 
-        const studentRows: StudentRow[] = filteredStudents.map((s, idx) => ({
-          ...s,
+        const { data: rawStudents, error: sErr } = await studentQuery;
+        if (sErr) console.warn('[Heatmap] student query warning:', sErr);
+
+        const allStudents = rawStudents || [];
+
+        // Flexible Class Matching Engine
+        let matchedStudents = allStudents;
+        if (selectedClass) {
+          const targetClean = cleanStr(selectedClass);
+          const matched = allStudents.filter(s => {
+            const sClassRaw = s.student_class || s.branch || '';
+            const sClean = cleanStr(sClassRaw);
+            if (!sClean) return false;
+
+            return (
+              sClean === targetClean ||
+              sClean.includes(targetClean) ||
+              targetClean.includes(sClean) ||
+              sClean.replace(/^class/, '') === targetClean.replace(/^class/, '') ||
+              sClean.replace(/^grade/, '') === targetClean.replace(/^grade/, '')
+            );
+          });
+
+          // Use matched students if available, or fallback to all school students
+          if (matched.length > 0) matchedStudents = matched;
+        }
+
+        const studentRows: StudentRow[] = matchedStudents.map((s, idx) => ({
+          id: s.id,
+          name: s.name || `Student ${idx + 1}`,
+          custom_student_id: s.custom_student_id,
+          student_class: s.student_class || s.branch || selectedClass,
+          avatar_url: s.avatar_url,
           roll: String(idx + 1).padStart(2, '0')
         }));
         setStudents(studentRows);
 
         const studentIds = studentRows.map(s => s.id);
 
-        // 2. Fetch Real Assignments for selected subject and class
-        const { data: assignData } = await supabase
+        // 2. Fetch Real Assignments
+        let assignQuery = supabase
           .from('assignments')
-          .select('id, title, subject, class, units, created_at')
-          .eq('school_id', profile.schoolId);
+          .select('id, title, subject, class, units, created_at');
+        if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
+        const { data: assignData } = await assignQuery;
 
         const currentAssignments = (assignData || []).filter(a => {
           const matchesSubj = !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase());
-          const matchesClass = !selectedClass || (a.class || '').toLowerCase() === selectedClass.toLowerCase();
+          const matchesClass = !selectedClass || cleanStr(a.class) === cleanStr(selectedClass) || cleanStr(a.class).includes(cleanStr(selectedClass));
 
           if (timelineFilter === '30d') {
             const ageDays = (Date.now() - new Date(a.created_at || Date.now()).getTime()) / (1000 * 3600 * 24);
@@ -197,12 +230,12 @@ export default function TeacherHeatmapPage() {
           return matchesSubj && matchesClass;
         });
 
-        // 3. Dynamically build chapters & topics from assignments
+        // 3. Build Chapters & Topics from assignments
         const chapMap = new Map<string, TopicDef[]>();
         currentAssignments.forEach(a => {
           const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
             ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
-            : [a.title || `${selectedSubject} Core`];
+            : [a.title || `${selectedSubject} Unit`];
 
           const chapName = rawUnits[0];
           const topicName = a.title || rawUnits[0];
@@ -223,16 +256,15 @@ export default function TeacherHeatmapPage() {
           });
         });
 
-        // Default structure if teacher hasn't posted assignments for this subject yet
         if (dynamicChapters.length === 0) {
           dynamicChapters.push({
             id: 'unit_general',
-            name: `${selectedSubject} Curriculum Topics`,
+            name: `${selectedSubject} Core Topics`,
             topics: [
-              { id: 'topic_1', name: `${selectedSubject} Core Principles` },
-              { id: 'topic_2', name: `${selectedSubject} Practical Applications` },
+              { id: 'topic_1', name: `${selectedSubject} Foundations` },
+              { id: 'topic_2', name: `${selectedSubject} Practice & Concepts` },
               { id: 'topic_3', name: `${selectedSubject} Problem Solving` },
-              { id: 'topic_4', name: `${selectedSubject} Advanced Synthesis` }
+              { id: 'topic_4', name: `${selectedSubject} Synthesis` }
             ]
           });
         }
@@ -298,7 +330,7 @@ export default function TeacherHeatmapPage() {
     };
 
     loadRealData();
-  }, [profile?.schoolId, selectedClass, selectedSubject, timelineFilter]);
+  }, [profile, selectedClass, selectedSubject, timelineFilter]);
 
   const currentChapter = chapters[selectedChapterIdx] || chapters[0] || { id: 'c1', name: 'Curriculum Unit', topics: [] };
 
@@ -376,7 +408,6 @@ export default function TeacherHeatmapPage() {
     return count > 0 ? Math.round(sum / count) : 0;
   }, [students, matrix]);
 
-  // Export CSV
   const handleExportCSV = () => {
     if (!students.length || !currentChapter.topics.length) return;
 
@@ -408,9 +439,7 @@ export default function TeacherHeatmapPage() {
     link.click();
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => { window.print(); };
 
   const handleAssignPractice = async () => {
     if (!selectedCell || !profile?.schoolId) return;
@@ -453,7 +482,7 @@ export default function TeacherHeatmapPage() {
 
   return (
     <div className="min-h-screen bg-[#f2f6fa] text-[#0b1a2b] pb-24 font-sans print:bg-white print:pb-0">
-      {/* Top Header */}
+      {/* Header */}
       <header className="bg-[#002147] text-white px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-md print:hidden">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-black text-white text-sm border border-white/20">
@@ -465,7 +494,7 @@ export default function TeacherHeatmapPage() {
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* Multi-Subject Dropdown */}
+          {/* Subject Dropdown */}
           <div className="flex items-center space-x-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
             <span className="text-xs text-white/70 font-semibold uppercase">Subject:</span>
             <select
@@ -515,7 +544,6 @@ export default function TeacherHeatmapPage() {
             )}
           </nav>
 
-          {/* Timeline & Actions */}
           <div className="flex items-center space-x-2">
             <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 text-xs font-bold shadow-sm">
               <span className="text-gray-400 px-2 flex items-center gap-1 text-[10px] uppercase">
@@ -688,7 +716,6 @@ export default function TeacherHeatmapPage() {
         {/* ================= VIEW 3: 2D HEATMAP MATRIX TABLE ================= */}
         {viewMode === 3 && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Header & Control Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm print:shadow-none print:border-none">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#002147]">{currentChapter.name}</h2>
@@ -704,7 +731,6 @@ export default function TeacherHeatmapPage() {
               </button>
             </div>
 
-            {/* Stat Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 print:grid-cols-5">
               <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Chapter TML</span>
@@ -732,7 +758,6 @@ export default function TeacherHeatmapPage() {
               </div>
             </div>
 
-            {/* Matrix Heatmap Table */}
             <div className="bg-white rounded-2xl border border-gray-300 shadow-md overflow-hidden print:border-gray-400">
               {isLoading ? (
                 <div className="py-20 text-center text-gray-400 space-y-3">
@@ -787,7 +812,6 @@ export default function TeacherHeatmapPage() {
 
                         return (
                           <tr key={st.id} className="hover:bg-slate-50 transition-colors group">
-                            {/* Sticky Student Column */}
                             <td className="p-3 pl-5 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-gray-300 shadow-md">
                               <div className="flex items-center space-x-3">
                                 {st.avatar_url ? (
@@ -804,7 +828,6 @@ export default function TeacherHeatmapPage() {
                               </div>
                             </td>
 
-                            {/* Topic Score Boxes */}
                             {currentChapter.topics.map(tp => {
                               const topicKey = tp.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
                               const cell = matrix[st.id]?.[topicKey] || matrix[st.id]?.[tp.id] || { score: null, count: 0, confidence: 'insufficient' };
@@ -822,7 +845,6 @@ export default function TeacherHeatmapPage() {
                               );
                             })}
 
-                            {/* Row Average */}
                             <td className="p-1.5 text-center bg-[#f8fafc] border-l-2 border-gray-300 align-middle">
                               <div className={`w-full py-2.5 rounded-lg border text-xs text-center font-black ${stBoxStyle.css}`}>
                                 {stBoxStyle.label}
@@ -833,7 +855,6 @@ export default function TeacherHeatmapPage() {
                       })}
                     </tbody>
 
-                    {/* Table Footer */}
                     <tfoot>
                       <tr className="bg-slate-100 border-t-2 border-gray-300 font-bold">
                         <td className="p-3 pl-5 sticky left-0 bg-slate-100 z-20 border-r border-gray-300 text-gray-600 uppercase text-[10px] tracking-wider">
@@ -867,7 +888,6 @@ export default function TeacherHeatmapPage() {
         )}
       </main>
 
-      {/* Diagnostic Modal */}
       {selectedCell && (
         <div className="fixed inset-0 bg-[#002147]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:hidden">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">

@@ -75,7 +75,7 @@ function getBoxStyle(score: number | null) {
 }
 
 export default function TeacherHeatmapPage() {
-  const { profile, loading } = useAuth();
+  const { profile, loading, getAuthToken } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
@@ -102,8 +102,9 @@ export default function TeacherHeatmapPage() {
     }
   }, [profile, loading, router]);
 
-  // Load Teacher Meta & Discover Real Database Classes & Subjects
+  // Load Meta & Discover Classes & Subjects
   useEffect(() => {
+    if (!profile) return;
     const fetchTeacherMeta = async () => {
       const subSet = new Set<string>(DEFAULT_SUBJECTS);
       const clsSet = new Set<string>();
@@ -129,19 +130,6 @@ export default function TeacherHeatmapPage() {
         if (a.class) clsSet.add(a.class);
       });
 
-      // Query database students to discover their exact class names!
-      let studentQuery = supabase
-        .from('users')
-        .select('student_class, branch, school_id')
-        .eq('role', 'student');
-      if (profile?.schoolId) studentQuery = studentQuery.eq('school_id', profile.schoolId);
-      const { data: dbStudents } = await studentQuery;
-
-      (dbStudents || []).forEach(s => {
-        const clsName = s.student_class || s.branch;
-        if (clsName && clsName.trim()) clsSet.add(clsName.trim());
-      });
-
       const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10A', '10B', '9A'];
       const finalSubjects = [...subSet];
 
@@ -155,32 +143,47 @@ export default function TeacherHeatmapPage() {
     fetchTeacherMeta();
   }, [profile]);
 
-  // Load Real Supabase Data for selected Subject & Class
+  // Load Real Supabase Data using RLS-Bypassing /api/teacher/get-students
   useEffect(() => {
+    if (!profile) return;
+
     const loadRealData = async () => {
       setIsLoading(true);
       try {
-        // 1. Fetch Real Students with flexible school & class matching
-        let studentQuery = supabase
-          .from('users')
-          .select('id, name, custom_student_id, student_class, branch, avatar_url, school_id')
-          .eq('role', 'student');
+        const schoolId = profile.schoolId || 'sthara_demo_school';
+        const authToken = await getAuthToken();
 
-        if (profile?.schoolId) {
-          studentQuery = studentQuery.eq('school_id', profile.schoolId);
+        // 1. Fetch Students via Admin RLS Bypass Route
+        const studRes = await fetch('/api/teacher/get-students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ schoolId })
+        });
+
+        const studJson = await studRes.json();
+        let rawStudents: any[] = studJson.students || [];
+
+        // Also update class list directly from student database records if available!
+        const discoveredClss = new Set<string>();
+        rawStudents.forEach(s => {
+          const c = s.studentClass || s.branch;
+          if (c && c.trim()) discoveredClss.add(c.trim());
+        });
+
+        if (discoveredClss.size > 0) {
+          const discList = [...discoveredClss];
+          setClassList(prev => [...new Set([...prev, ...discList])]);
         }
 
-        const { data: rawStudents, error: sErr } = await studentQuery;
-        if (sErr) console.warn('[Heatmap] student query warning:', sErr);
-
-        const allStudents = rawStudents || [];
-
-        // Flexible Class Matching Engine
-        let matchedStudents = allStudents;
+        // Flexible Class Filtering Engine
+        let matchedStudents = rawStudents;
         if (selectedClass) {
           const targetClean = cleanStr(selectedClass);
-          const matched = allStudents.filter(s => {
-            const sClassRaw = s.student_class || s.branch || '';
+          const matched = rawStudents.filter(s => {
+            const sClassRaw = s.studentClass || s.branch || s.student_class || '';
             const sClean = cleanStr(sClassRaw);
             if (!sClean) return false;
 
@@ -193,16 +196,15 @@ export default function TeacherHeatmapPage() {
             );
           });
 
-          // Use matched students if available, or fallback to all school students
           if (matched.length > 0) matchedStudents = matched;
         }
 
         const studentRows: StudentRow[] = matchedStudents.map((s, idx) => ({
           id: s.id,
           name: s.name || `Student ${idx + 1}`,
-          custom_student_id: s.custom_student_id,
-          student_class: s.student_class || s.branch || selectedClass,
-          avatar_url: s.avatar_url,
+          custom_student_id: s.customStudentId || s.custom_student_id || s.id,
+          student_class: s.studentClass || s.branch || selectedClass,
+          avatar_url: s.avatar_url || s.avatarUrl,
           roll: String(idx + 1).padStart(2, '0')
         }));
         setStudents(studentRows);
@@ -522,7 +524,7 @@ export default function TeacherHeatmapPage() {
 
       {/* Main Container */}
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Navigation & Controls Bar */}
+        {/* Navigation Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <nav className="flex items-center space-x-2 text-xs font-semibold text-gray-500">
             <button onClick={() => setViewMode(1)} className="hover:text-[#002147] transition-colors">

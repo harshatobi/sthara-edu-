@@ -36,6 +36,167 @@ const DEFAULT_SUBJECTS = ['Science', 'Mathematics', 'Physics', 'Chemistry', 'Bio
 
 const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+const SUBJECT_CURRICULUM_MAP: Record<string, ChapterDef[]> = {
+  Science: [
+    {
+      id: 'chap_chem_rxn',
+      name: 'Chemical Reactions & Equations',
+      topics: [
+        { id: 'topic_chem_eq', name: 'Chemical Equations' },
+        { id: 'topic_comb_decomp', name: 'Combination & Decomposition' },
+        { id: 'topic_disp_redox', name: 'Displacement & Redox' },
+        { id: 'topic_corr_rancid', name: 'Corrosion & Rancidity' }
+      ]
+    },
+    {
+      id: 'chap_acids_bases',
+      name: 'Acids, Bases & Salts',
+      topics: [
+        { id: 'topic_ind_prop', name: 'Indicators & Properties' },
+        { id: 'topic_ph_scale', name: 'pH Scale & Applications' },
+        { id: 'topic_salts_prep', name: 'Salts & Preparation' }
+      ]
+    },
+    {
+      id: 'chap_metals',
+      name: 'Metals & Non-Metals',
+      topics: [
+        { id: 'topic_metal_prop', name: 'Physical & Chemical Properties' },
+        { id: 'topic_reactivity', name: 'Reactivity Series' },
+        { id: 'topic_extraction', name: 'Extraction & Refining' }
+      ]
+    },
+    {
+      id: 'chap_life_proc',
+      name: 'Life Processes',
+      topics: [
+        { id: 'topic_nutrition', name: 'Nutrition & Photosynthesis' },
+        { id: 'topic_respiration', name: 'Respiration in Organisms' },
+        { id: 'topic_transport', name: 'Transportation & Heart' },
+        { id: 'topic_excretion', name: 'Excretion & Nephrons' }
+      ]
+    },
+    {
+      id: 'chap_electricity',
+      name: 'Electricity & Current',
+      topics: [
+        { id: 'topic_ohms_law', name: 'Ohm’s Law & Resistance' },
+        { id: 'topic_combinations', name: 'Series & Parallel Circuits' },
+        { id: 'topic_heating_eff', name: 'Heating Effect & Power' }
+      ]
+    }
+  ],
+  Mathematics: [
+    {
+      id: 'chap_real_num',
+      name: 'Real Numbers',
+      topics: [
+        { id: 'topic_euclid', name: 'Euclid’s Division Lemma' },
+        { id: 'topic_fund_thm', name: 'Fundamental Theorem of Arithmetic' },
+        { id: 'topic_irrational', name: 'Irrational Proofs' }
+      ]
+    },
+    {
+      id: 'chap_poly',
+      name: 'Polynomials',
+      topics: [
+        { id: 'topic_zeros', name: 'Zeros & Geometrical Meaning' },
+        { id: 'topic_coeff_rel', name: 'Zeros & Coefficients Relation' },
+        { id: 'topic_div_algo', name: 'Division Algorithm' }
+      ]
+    },
+    {
+      id: 'chap_linear_eq',
+      name: 'Pair of Linear Equations',
+      topics: [
+        { id: 'topic_graphical', name: 'Graphical Solutions' },
+        { id: 'topic_algebraic', name: 'Substitution & Elimination' },
+        { id: 'topic_cross_mult', name: 'Cross-Multiplication Method' }
+      ]
+    },
+    {
+      id: 'chap_triangles',
+      name: 'Triangles & Geometry',
+      topics: [
+        { id: 'topic_bpt', name: 'Basic Proportionality Theorem' },
+        { id: 'topic_similarity', name: 'Criteria for Similarity' },
+        { id: 'topic_pythagoras', name: 'Pythagoras Theorem' }
+      ]
+    }
+  ],
+  Physics: [
+    {
+      id: 'chap_light',
+      name: 'Light: Reflection & Refraction',
+      topics: [
+        { id: 'topic_reflection', name: 'Spherical Mirrors & Ray Diagrams' },
+        { id: 'topic_mirror_formula', name: 'Mirror Formula & Magnification' },
+        { id: 'topic_refraction', name: 'Snell’s Law & Refractive Index' },
+        { id: 'topic_lens_formula', name: 'Lens Formula & Power of Lens' }
+      ]
+    },
+    {
+      id: 'chap_human_eye',
+      name: 'Human Eye & Colorful World',
+      topics: [
+        { id: 'topic_defects_vision', name: 'Defects of Vision & Correction' },
+        { id: 'topic_prism_dispersion', name: 'Prism Refraction & Dispersion' },
+        { id: 'topic_atmos_refraction', name: 'Atmospheric Refraction' }
+      ]
+    }
+  ],
+  Chemistry: [
+    {
+      id: 'chap_carbon',
+      name: 'Carbon & Its Compounds',
+      topics: [
+        { id: 'topic_bonding_carbon', name: 'Covalent Bonding & Versatility' },
+        { id: 'topic_homologous', name: 'Homologous Series' },
+        { id: 'topic_nomenclature', name: 'IUPAC Nomenclature' },
+        { id: 'topic_soaps', name: 'Soaps & Detergents' }
+      ]
+    },
+    {
+      id: 'chap_periodic',
+      name: 'Periodic Classification',
+      topics: [
+        { id: 'topic_dobreiner_newland', name: 'Early Classification' },
+        { id: 'topic_mendeleev', name: 'Mendeleev Periodic Table' },
+        { id: 'topic_modern_periodic', name: 'Modern Periodic Trends' }
+      ]
+    }
+  ],
+  Biology: [
+    {
+      id: 'chap_control_coord',
+      name: 'Control & Coordination',
+      topics: [
+        { id: 'topic_nervous_sys', name: 'Nervous System & Reflex Arc' },
+        { id: 'topic_plant_hormones', name: 'Plant Tropisms & Hormones' },
+        { id: 'topic_endocrine', name: 'Endocrine Glands & Hormones' }
+      ]
+    },
+    {
+      id: 'chap_reproduction',
+      name: 'How do Organisms Reproduce',
+      topics: [
+        { id: 'topic_asexual', name: 'Asexual Reproduction Modes' },
+        { id: 'topic_flower_repro', name: 'Sexual Reproduction in Plants' },
+        { id: 'topic_human_repro', name: 'Human Reproductive System' }
+      ]
+    },
+    {
+      id: 'chap_heredity',
+      name: 'Heredity & Evolution',
+      topics: [
+        { id: 'topic_mendel_exp', name: 'Mendel’s Experiments' },
+        { id: 'topic_sex_determination', name: 'Sex Determination' },
+        { id: 'topic_speciation', name: 'Speciation & Evolution' }
+      ]
+    }
+  ]
+};
+
 function getBoxStyle(score: number | null) {
   if (score === null) {
     return {
@@ -102,7 +263,7 @@ export default function TeacherHeatmapPage() {
     }
   }, [profile, loading, router]);
 
-  // Load Meta & Discover Classes & Subjects
+  // Load Teacher Meta & Discover Classes & Subjects
   useEffect(() => {
     if (!profile) return;
     const fetchTeacherMeta = async () => {
@@ -120,7 +281,6 @@ export default function TeacherHeatmapPage() {
         });
       }
 
-      // Query database assignments for additional subjects & classes
       let assignQuery = supabase.from('assignments').select('subject, class');
       if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
       const { data: dbAssigns } = await assignQuery;
@@ -143,7 +303,7 @@ export default function TeacherHeatmapPage() {
     fetchTeacherMeta();
   }, [profile]);
 
-  // Load Real Supabase Data using RLS-Bypassing /api/teacher/get-students
+  // Load Real Supabase Data for selected Subject & Class
   useEffect(() => {
     if (!profile) return;
 
@@ -166,7 +326,7 @@ export default function TeacherHeatmapPage() {
         const studJson = await studRes.json();
         let rawStudents: any[] = studJson.students || [];
 
-        // Also update class list directly from student database records if available!
+        // Discover student classes
         const discoveredClss = new Set<string>();
         rawStudents.forEach(s => {
           const c = s.studentClass || s.branch;
@@ -218,34 +378,53 @@ export default function TeacherHeatmapPage() {
         if (profile?.schoolId) assignQuery = assignQuery.eq('school_id', profile.schoolId);
         const { data: assignData } = await assignQuery;
 
-        const currentAssignments = (assignData || []).filter(a => {
-          const matchesSubj = !selectedSubject || (a.subject || '').toLowerCase().includes(selectedSubject.toLowerCase());
-          const matchesClass = !selectedClass || cleanStr(a.class) === cleanStr(selectedClass) || cleanStr(a.class).includes(cleanStr(selectedClass));
+        // 3. Fetch TML Snapshots
+        const { data: tmlData } = await supabase
+          .from('tml_scores')
+          .select('student_id, subject, topic_name, score, confidence_band, item_count, computed_at')
+          .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
-          if (timelineFilter === '30d') {
-            const ageDays = (Date.now() - new Date(a.created_at || Date.now()).getTime()) / (1000 * 3600 * 24);
-            if (ageDays > 30) return false;
-          } else if (timelineFilter === '7d') {
-            const ageDays = (Date.now() - new Date(a.created_at || Date.now()).getTime()) / (1000 * 3600 * 24);
-            if (ageDays > 7) return false;
-          }
-          return matchesSubj && matchesClass;
-        });
-
-        // 3. Build Chapters & Topics from assignments
+        // 4. Build Chapters & Tagged Topics from BOTH database assignments and TML snapshots
         const chapMap = new Map<string, TopicDef[]>();
-        currentAssignments.forEach(a => {
-          const rawUnits: string[] = Array.isArray(a.units) && a.units.length > 0
-            ? a.units.filter((u: string) => u !== 'general' && u !== 'General')
+
+        (assignData || []).forEach(a => {
+          const subjMatches = !selectedSubject ||
+            !a.subject ||
+            a.subject.toLowerCase().includes(selectedSubject.toLowerCase()) ||
+            selectedSubject.toLowerCase().includes(a.subject.toLowerCase());
+
+          if (!subjMatches) return;
+
+          const unitList: string[] = Array.isArray(a.units) && a.units.length > 0
+            ? a.units.filter((u: string) => u && u.trim().length > 0)
             : [a.title || `${selectedSubject} Unit`];
 
-          const chapName = rawUnits[0];
-          const topicName = a.title || rawUnits[0];
+          const chapName = unitList[0] || a.title || `${selectedSubject} Chapter`;
+          const topicName = a.title || unitList[0];
           const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
           if (!chapMap.has(chapName)) chapMap.set(chapName, []);
           const existing = chapMap.get(chapName)!;
-          if (!existing.some(t => t.id === topicId)) existing.push({ id: topicId, name: topicName });
+          if (!existing.some(t => t.name.toLowerCase() === topicName.toLowerCase())) {
+            existing.push({ id: topicId, name: topicName });
+          }
+        });
+
+        // Add TML topic_name entries
+        (tmlData || []).forEach(tml => {
+          if (!tml.topic_name) return;
+          const subjMatches = !selectedSubject || !tml.subject || tml.subject.toLowerCase().includes(selectedSubject.toLowerCase());
+          if (!subjMatches) return;
+
+          const chapName = `${selectedSubject} Core Topics`;
+          const topicName = tml.topic_name;
+          const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+          if (!chapMap.has(chapName)) chapMap.set(chapName, []);
+          const existing = chapMap.get(chapName)!;
+          if (!existing.some(t => t.name.toLowerCase() === topicName.toLowerCase())) {
+            existing.push({ id: topicId, name: topicName });
+          }
         });
 
         const dynamicChapters: ChapterDef[] = [];
@@ -258,30 +437,17 @@ export default function TeacherHeatmapPage() {
           });
         });
 
+        // Fallback to rich subject curriculum map if dynamic assignments are empty
         if (dynamicChapters.length === 0) {
-          dynamicChapters.push({
-            id: 'unit_general',
-            name: `${selectedSubject} Core Topics`,
-            topics: [
-              { id: 'topic_1', name: `${selectedSubject} Foundations` },
-              { id: 'topic_2', name: `${selectedSubject} Practice & Concepts` },
-              { id: 'topic_3', name: `${selectedSubject} Problem Solving` },
-              { id: 'topic_4', name: `${selectedSubject} Synthesis` }
-            ]
-          });
+          const stdChapters = SUBJECT_CURRICULUM_MAP[selectedSubject] || SUBJECT_CURRICULUM_MAP.Science;
+          dynamicChapters.push(...stdChapters);
         }
         setChapters(dynamicChapters);
 
-        // 4. Fetch Submissions
+        // 5. Fetch Submissions
         const { data: subsData } = await supabase
           .from('submissions')
           .select('student_id, assignment_id, score, max_score, teacher_approved, created_at, assignments(id, title, units, subject)')
-          .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
-
-        // 5. Fetch TML Snapshots
-        const { data: tmlData } = await supabase
-          .from('tml_scores')
-          .select('student_id, subject, topic_name, score, confidence_band, item_count, computed_at')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
         // 6. Build Matrix
@@ -868,7 +1034,7 @@ export default function TeacherHeatmapPage() {
                           const boxStyle = getBoxStyle(avgVal);
 
                           return (
-                            <td key={tp.id} className="p-1.5 text-center border-r border-gray-300">
+                            <td key={tp.id} className="p-1.5 text-center border-r border-gray-200">
                               <div className={`w-full py-2 rounded-lg text-xs font-black text-center ${boxStyle.css}`}>
                                 {boxStyle.label}
                               </div>

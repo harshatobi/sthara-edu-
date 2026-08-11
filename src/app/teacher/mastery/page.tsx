@@ -20,7 +20,6 @@ interface StudentRosterItem {
   unitScores: Record<string, number | null>;
 }
 
-const DEFAULT_SUBJECTS = ['Mathematics', 'Science', 'Physics', 'Chemistry', 'Biology', 'English', 'Social Science'];
 const STANDARD_UNITS = [
   { id: 'u1', label: 'Unit I: Core Foundations' },
   { id: 'u2', label: 'Unit II: Advanced Concepts' },
@@ -60,9 +59,9 @@ export default function TeacherMasteryTrackerPage() {
   const supabase = createClient();
 
   const [classList, setClassList] = useState<string[]>([]);
-  const [subjectList, setSubjectList] = useState<string[]>(DEFAULT_SUBJECTS);
+  const [subjectList, setSubjectList] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'at_risk' | 'mastered'>('all');
@@ -79,48 +78,59 @@ export default function TeacherMasteryTrackerPage() {
     }
   }, [profile, loading, router]);
 
-  // Load Teacher Meta & Discover Classes & Subjects
+  // Discover ONLY Teacher's Taught Subjects & Classes
   useEffect(() => {
     if (!profile) return;
     const fetchMeta = async () => {
-      const subSet = new Set<string>(DEFAULT_SUBJECTS);
+      const teacherSubSet = new Set<string>();
       const clsSet = new Set<string>();
 
-      if (profile?.subject) subSet.add(profile.subject);
+      if (profile?.subject) teacherSubSet.add(profile.subject.trim());
       if (Array.isArray((profile as any)?.subjects)) {
-        (profile as any).subjects.forEach((s: string) => subSet.add(s));
+        (profile as any).subjects.forEach((s: string) => {
+          if (s && s.trim()) teacherSubSet.add(s.trim());
+        });
       }
       if (Array.isArray(profile?.assignments)) {
         profile.assignments.forEach((a: any) => {
-          if (a.class) clsSet.add(a.class);
-          if (a.subject) subSet.add(a.subject);
+          if (a.class) clsSet.add(a.class.trim());
+          if (a.subject) teacherSubSet.add(a.subject.trim());
         });
       }
 
-      try {
-        const schoolId = profile.schoolId || 'all';
-        const authToken = await getAuthToken();
-        const sylRes = await fetch(`/api/teacher/syllabus?schoolId=${schoolId}&teacherId=all`, {
-          headers: { Authorization: `Bearer ${authToken}` }
+      // Query database for teacher's own assignments & syllabus topics
+      const tId = profile.id || profile.uid;
+      if (tId) {
+        const { data: tAssigns } = await supabase
+          .from('assignments')
+          .select('subject, class')
+          .eq('teacher_id', tId);
+
+        (tAssigns || []).forEach(a => {
+          if (a.subject) teacherSubSet.add(a.subject.trim());
+          if (a.class) clsSet.add(a.class.trim());
         });
-        const sylJson = await sylRes.json();
-        (sylJson.modules || []).forEach((s: any) => {
-          if (s.subject) subSet.add(s.subject);
+
+        const { data: tSyllabus } = await supabase
+          .from('syllabus')
+          .select('subject, class, grade')
+          .eq('teacher_id', tId);
+
+        (tSyllabus || []).forEach(s => {
+          if (s.subject) teacherSubSet.add(s.subject.trim());
           const c = s.class || s.grade;
-          if (c) clsSet.add(c);
+          if (c) clsSet.add(c.trim());
         });
-      } catch (err) {
-        console.error('[Mastery fetchMeta error]:', err);
       }
 
+      const finalSubjects = teacherSubSet.size > 0 ? [...teacherSubSet] : [profile?.subject || 'Mathematics'];
       const finalClasses = clsSet.size > 0 ? [...clsSet] : ['10-A', '10B', '9A'];
-      const finalSubjects = [...subSet];
 
-      setClassList(finalClasses);
       setSubjectList(finalSubjects);
+      setClassList(finalClasses);
 
-      if (!selectedClass && finalClasses.length > 0) setSelectedClass(finalClasses[0]);
       if (!selectedSubject && finalSubjects.length > 0) setSelectedSubject(finalSubjects[0]);
+      if (!selectedClass && finalClasses.length > 0) setSelectedClass(finalClasses[0]);
     };
 
     fetchMeta();

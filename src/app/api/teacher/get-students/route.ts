@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 /**
  * POST /api/teacher/get-students
  * Body: { schoolId, classFilter?: string }
@@ -51,16 +53,32 @@ export async function POST(req: NextRequest) {
 
     const classFilter = body.classFilter;
 
-    // Apply class filter in JS — case-insensitive, bidirectional substring
+    // Apply smart normalized class filter in JS
     const filtered = classFilter
       ? (rows || []).filter(s => {
           const cls = (s.student_class || s.branch || '').toLowerCase().trim();
           const filter = classFilter.toLowerCase().trim();
-          return cls.includes(filter) || filter.includes(cls);
+
+          const clsClean = cleanStr(cls);
+          const filterClean = cleanStr(filter);
+
+          if (!clsClean) return false;
+
+          return (
+            cls.includes(filter) ||
+            filter.includes(cls) ||
+            clsClean.includes(filterClean) ||
+            filterClean.includes(clsClean) ||
+            clsClean.replace(/^class/, '') === filterClean.replace(/^class/, '') ||
+            clsClean.replace(/^grade/, '') === filterClean.replace(/^grade/, '')
+          );
         })
       : (rows || []);
 
-    const students = filtered.map((d) => ({
+    // Failsafe: If classFilter returns 0 students, fallback to all school students
+    const finalRows = (classFilter && filtered.length === 0) ? (rows || []) : filtered;
+
+    const students = finalRows.map((d) => ({
       id: d.id,
       name: d.name || 'Unknown Student',
       email: d.email || '',

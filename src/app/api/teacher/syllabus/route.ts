@@ -12,49 +12,50 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const schoolId = searchParams.get('schoolId');
+  const schoolId  = searchParams.get('schoolId');
   const teacherId = searchParams.get('teacherId');
 
   try {
     const supabase = createAdminClient();
     let query = supabase.from('syllabus').select('*');
 
-    if (schoolId && schoolId !== 'all') {
+    // Only filter by school_id when a real value is given
+    if (schoolId && schoolId !== 'all' && schoolId !== 'null' && schoolId !== 'undefined') {
       query = query.eq('school_id', schoolId);
     }
-    if (teacherId && teacherId !== 'all') {
+
+    // Only filter by teacher_id when a specific teacher is requested (not 'all')
+    if (teacherId && teacherId !== 'all' && teacherId !== 'null' && teacherId !== 'undefined') {
       query = query.eq('teacher_id', teacherId);
     }
 
-    let { data, error } = await query.order('created_at', { ascending: true });
+    const { data, error } = await query.order('created_at', { ascending: true });
 
-    // Fallback: If 0 rows found when filtering by schoolId, query all syllabus rows
-    if (!data || data.length === 0) {
-      const { data: fallbackData } = await supabase
-        .from('syllabus')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (fallbackData && fallbackData.length > 0) {
-        data = fallbackData;
-      }
-    }
-
+    // NOTE: No fallback query here — the old fallback was returning ALL rows on
+    // top of the filtered rows, causing every topic to appear twice.
     if (error) throw error;
 
-    const modules = (data || []).map((d) => ({
-      id: d.id,
-      schoolId: d.school_id,
-      teacherId: d.teacher_id,
-      subject: d.subject,
-      class: d.class,
-      grade: d.grade || d.class,
-      topic: d.topic,
-      month: d.month,
+    // Deduplicate by ID in JS (belt-and-suspenders)
+    const seen = new Set<string>();
+    const unique = (data || []).filter((d: any) => {
+      if (seen.has(d.id)) return false;
+      seen.add(d.id);
+      return true;
+    });
+
+    const modules = unique.map((d: any) => ({
+      id:         d.id,
+      schoolId:   d.school_id,
+      teacherId:  d.teacher_id,
+      subject:    d.subject,
+      class:      d.class,
+      grade:      d.grade || d.class,
+      topic:      d.topic,
+      month:      d.month,
       objectives: d.objectives,
-      publisher: d.publisher || 'NCERT',
-      status: d.status,
-      createdAt: d.created_at,
+      publisher:  d.publisher || 'NCERT',
+      status:     d.status,
+      createdAt:  d.created_at,
     }));
 
     return NextResponse.json({ modules });

@@ -94,8 +94,17 @@ export default function SyllabusPlanner() {
             { headers: { Authorization: `Bearer ${authToken}` } }
           );
           const data = await res.json();
+
+          // Deduplicate by ID before setting state
+          const seen = new Set<string>();
+          const uniqueModules = (data.modules || []).filter((mod: any) => {
+            if (seen.has(mod.id)) return false;
+            seen.add(mod.id);
+            return true;
+          });
+
           const loaded: { [key: string]: any[] } = Object.fromEntries(MONTHS.map(m => [m, []]));
-          (data.modules || []).forEach((mod: any) => {
+          uniqueModules.forEach((mod: any) => {
             if (loaded[mod.month] !== undefined) loaded[mod.month].push(mod);
           });
           setSyllabus(loaded);

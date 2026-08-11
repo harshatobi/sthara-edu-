@@ -7,10 +7,13 @@ import { useRouter } from 'next/navigation';
 
 export interface UserProfile {
   uid: string;
+  id: string;           // alias for uid — used by heatmap/mastery pages
   email: string;
   role: 'student' | 'teacher' | 'admin' | 'parent' | 'superadmin';
   schoolId?: string;
   name?: string;
+  subject?: string;     // primary subject (alias for teacherSubject)
+  subjects?: string[];  // all subjects taught
   // School-specific
   studentClass?: string;
   teacherClass?: string;
@@ -43,6 +46,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  getAuthToken: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -51,6 +55,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  getAuthToken: async () => '',
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -95,6 +100,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  const getAuthToken = async (): Promise<string> => {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || '';
+  };
 
   const signOut = async () => {
     const supabase = createClient();
@@ -216,17 +227,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setCookie('__trial_ok', trialExpired ? 'expired' : 'ok', 3600);
 
+      // Build subjects list from assignments jsonb
+      const assignmentsArr: { class: string; subject: string }[] = userData.assignments || [];
+      const subjectsFromAssignments = [...new Set(
+        assignmentsArr.map(a => a.subject).filter(Boolean)
+      )];
+      const primarySubject = userData.teacher_subject || subjectsFromAssignments[0] || undefined;
+
       setProfile({
         uid,
+        id: uid,
         email: userData.email || '',
         role: userData.role as any,
         schoolId: userData.school_id || undefined,
         name: userData.name || undefined,
+        subject: primarySubject,
+        subjects: subjectsFromAssignments.length > 0 ? subjectsFromAssignments : (primarySubject ? [primarySubject] : []),
         studentClass: userData.student_class || undefined,
         teacherClass: userData.teacher_class || undefined,
-        teacherSubject: userData.teacher_subject || undefined,
+        teacherSubject: primarySubject,
         customStudentId: userData.custom_student_id || undefined,
-        assignments: userData.assignments || [],
+        assignments: assignmentsArr,
         linkedStudents: userData.metadata?.linkedStudents || [],
         teachingSubjects: userData.teaching_subjects || [],
         institutionType,
@@ -245,7 +266,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signOut, getAuthToken }}>
       {children}
     </AuthContext.Provider>
   );

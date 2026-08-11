@@ -5,165 +5,90 @@ export const dynamic = 'force-dynamic';
 
 const cleanStr = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+/**
+ * POST /api/teacher/get-students
+ * Returns all students visible to this teacher.
+ * Uses service-role to bypass RLS — safe because this is a server-only API route.
+ *
+ * Schema confirmed from Supabase:
+ *   users table columns: id, school_id, name, email, role, student_class, branch,
+ *                        year, semester, custom_student_id, teacher_class, teacher_subject,
+ *                        assignments (jsonb), teaching_subjects (jsonb), historical_weaknesses (jsonb)
+ *
+ *   role values: 'student' | 'teacher' | 'parent' | 'admin'
+ *   student_class values: 'Class 10-A', '10a', 'Class 9-B', NULL, etc.
+ *   NOTE: school_id is NULL for many student rows — DO NOT filter by school_id.
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const schoolId: string | undefined = body.schoolId;
     const classFilter: string | undefined = body.classFilter;
 
     const supabase = createAdminClient();
 
-    // ── Step 1: Fetch ALL rows from `users` table (service role bypasses RLS) ──
+    // ── 1. Fetch ALL users (service role bypasses RLS) ──────────────────────
     const { data: allUsers, error: dbError } = await supabase
       .from('users')
-      .select('*');
+      .select('id, school_id, name, email, role, student_class, branch, custom_student_id, avatar_url')
+      .eq('role', 'student'); // filter directly in DB — role column confirmed as 'student'
 
     if (dbError) {
-      console.error('[get-students] DB error fetching users:', dbError.message);
+      console.error('[get-students] DB error:', dbError.message);
+      // fallback: fetch everything and filter in JS
+      const { data: fallback } = await supabase.from('users').select('*');
+      const students = (fallback || [])
+        .filter(u => (u.role || '').toLowerCase() === 'student')
+        .map((u, i) => mapUser(u, i));
+      return NextResponse.json({ students, total: students.length });
     }
 
-    let rows: any[] = allUsers || [];
+    let studentRows: any[] = allUsers || [];
 
-    // ── Step 2: Also fetch auth.users metadata for role info ──
-    let authRoleMap: Record<string, string> = {};
-    try {
-      const { data: authData } = await supabase.auth.admin.listUsers();
-      (authData?.users || []).forEach(u => {
-        const role =
-          u.user_metadata?.role ||
-          u.user_metadata?.user_type ||
-          u.user_metadata?.type ||
-          u.app_metadata?.role ||
-          u.app_metadata?.user_type ||
-          '';
-        if (role) authRoleMap[u.id] = role.toLowerCase();
-      });
-    } catch (e) {
-      console.warn('[get-students] auth.admin.listUsers warn:', e);
-    }
-
-    // ── Step 3: Determine role for each user ──
-    // Role could be in: role, user_type, type, userType columns, or auth metadata
-    const getRole = (u: any): string => {
-      return (
-        authRoleMap[u.id] ||
-        (u.role || u.user_type || u.type || u.userType || u.user_role || '').toLowerCase()
-      );
-    };
-
-    // ── Step 4: Filter to students only ──
-    // "student" in role field OR name contains "student" as last resort
-    let studentRows = rows.filter(u => {
-      const role = getRole(u);
-      if (!role) return true; // no role column → include everyone, we'll refine below
-      return (
-        role === 'student' ||
-        role.includes('student') ||
-        role === 'learner' ||
-        role === 'pupil'
-      );
-    });
-
-    // If nothing survived the role filter, exclude known non-students
-    if (studentRows.length === 0 && rows.length > 0) {
-      studentRows = rows.filter(u => {
-        const role = getRole(u);
-        return (
-          role !== 'teacher' &&
-          role !== 'admin' &&
-          role !== 'superadmin' &&
-          role !== 'parent' &&
-          role !== 'principal'
-        );
-      });
-    }
-
-    // Last resort: return ALL users (so it's never empty)
-    if (studentRows.length === 0) {
-      studentRows = rows;
-    }
-
-    // ── Step 5: School filter — only narrow if school_id exists on SOME students ──
-    if (schoolId && schoolId !== 'all' && schoolId !== 'undefined' && schoolId !== 'null') {
-      const schoolFiltered = studentRows.filter(s => {
-        const sId = s.school_id || s.schoolId || s.school || '';
-        return sId === schoolId;
-      });
-      // Only use school filter if it found something
-      if (schoolFiltered.length > 0) {
-        studentRows = schoolFiltered;
-      }
-      // Otherwise keep all students (school_id might be NULL on older records)
-    }
-
-    // ── Step 6: Class filter — only narrow if we actually find class matches ──
-    if (classFilter && classFilter.trim() && classFilter !== 'undefined') {
+    // ── 2. Class filter — only narrow if class matches are found ─────────────
+    // NOTE: school_id NOT used — many students have school_id=NULL
+    if (classFilter && classFilter.trim() && classFilter !== 'undefined' && classFilter !== 'null') {
       const filterClean = cleanStr(classFilter);
-      const classMatched = studentRows.filter(s => {
-        // Try every possible column name for class
-        const rawClass =
-          s.student_class ||
-          s.class ||
-          s.branch ||
-          s.grade ||
-          s.class_name ||
-          s.className ||
-          s.section ||
-          s.std ||
-          s.standard ||
-          '';
+      const matched = studentRows.filter(s => {
+        const rawClass = s.student_class || s.branch || '';
         const sClean = cleanStr(rawClass);
         if (!sClean) return false;
 
+        // Normalize: strip "class"/"grade" prefix and compare core digits+letters
+        const sCore = sClean.replace(/^class/, '').replace(/^grade/, '').replace(/^std/, '');
+        const fCore = filterClean.replace(/^class/, '').replace(/^grade/, '').replace(/^std/, '');
+
         return (
-          sClean === filterClean ||
-          sClean.includes(filterClean) ||
-          filterClean.includes(sClean) ||
-          sClean.replace(/^class/, '') === filterClean.replace(/^class/, '') ||
-          sClean.replace(/^grade/, '') === filterClean.replace(/^grade/, '') ||
-          sClean.replace(/^std/, '') === filterClean.replace(/^std/, '')
+          sClean === filterClean ||         // exact: "class10a" === "class10a"
+          sCore === fCore ||                 // core match: "10a" === "10a"
+          sClean.includes(filterClean) ||   // supra
+          filterClean.includes(sClean)      // sub: "class10a" includes "10a"
         );
       });
 
-      // ONLY apply class filter if it found students — otherwise keep all
-      if (classMatched.length > 0) {
-        studentRows = classMatched;
+      if (matched.length > 0) {
+        studentRows = matched;
       }
+      // else: return ALL students (failsafe — never return empty)
     }
 
-    // ── Step 7: Map to normalised student objects ──
-    const students = studentRows.map((u, idx) => ({
-      id: u.id,
-      name:
-        u.name ||
-        u.full_name ||
-        u.fullName ||
-        u.display_name ||
-        u.displayName ||
-        (u.email ? u.email.split('@')[0] : null) ||
-        `Student ${idx + 1}`,
-      email: u.email || '',
-      studentClass:
-        u.student_class ||
-        u.class ||
-        u.branch ||
-        u.grade ||
-        u.class_name ||
-        u.section ||
-        '',
-      branch: u.branch || '',
-      customStudentId: u.custom_student_id || u.student_id || u.customStudentId || u.id,
-      schoolId: u.school_id || u.schoolId || schoolId || '',
-      role: getRole(u) || 'student',
-      avatarUrl: u.avatar_url || u.avatarUrl || null,
-    }));
-
+    const students = studentRows.map((u, i) => mapUser(u, i));
     return NextResponse.json({ students, total: students.length });
+
   } catch (err: any) {
     console.error('[get-students] Unhandled error:', err);
-    return NextResponse.json(
-      { error: err.message, students: [], total: 0 },
-      { status: 200 }
-    );
+    return NextResponse.json({ error: err.message, students: [], total: 0 }, { status: 200 });
   }
+}
+
+function mapUser(u: any, idx: number) {
+  return {
+    id: u.id,
+    name: u.name || u.full_name || u.email?.split('@')[0] || `Student ${idx + 1}`,
+    email: u.email || '',
+    studentClass: u.student_class || u.branch || '',
+    customStudentId: u.custom_student_id || u.id,
+    schoolId: u.school_id || '',
+    role: 'student',
+    avatarUrl: u.avatar_url || null,
+  };
 }

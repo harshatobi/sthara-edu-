@@ -11,13 +11,7 @@ const core = (s: string) =>
 
 /**
  * POST /api/teacher/get-students
- *
- * The CLASS DROPDOWN on the UI already shows only the teacher's classes
- * (populated from profile.assignments). So this API just needs to:
- *   1. Fetch all role='student' users
- *   2. If classFilter is provided, narrow to students in that class
- *
- * Note: school_id is NOT used for filtering — many students have school_id=NULL.
+ * Fetches all student users and optionally filters by class.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -26,58 +20,63 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // ── 1. Fetch all students (service role bypasses RLS) ────────────────────
-    const { data: allStudents, error: dbError } = await supabase
+    // ── 1. Fetch all rows from users table using select('*') ────────────────
+    // Using select('*') ensures we never fail on non-existent columns (like avatar_url)
+    const { data: allUsers, error: dbError } = await supabase
       .from('users')
-      .select('id, school_id, name, email, role, student_class, branch, custom_student_id, avatar_url')
-      .eq('role', 'student');
+      .select('*');
 
     if (dbError) {
       console.error('[get-students] DB error:', dbError.message);
       return NextResponse.json({ error: dbError.message, students: [], total: 0 }, { status: 200 });
     }
 
-    let studentRows: any[] = allStudents || [];
+    // Filter for users whose role is student (or pupil/learner/non-teacher/non-admin/non-parent)
+    let studentRows = (allUsers || []).filter(u => {
+      const r = (u.role || u.user_type || u.type || '').toString().toLowerCase().trim();
+      if (r === 'teacher' || r === 'admin' || r === 'superadmin' || r === 'parent') {
+        return false;
+      }
+      return true; // include role='student' or null/empty role
+    });
 
     // ── 2. Filter by selected class ──────────────────────────────────────────
-    // classFilter comes from the teacher's class dropdown (already scoped to their classes)
     const cf = (classFilter || '').trim();
     if (cf && cf !== 'undefined' && cf !== 'null' && cf !== 'all') {
       const cfClean = cleanStr(cf);
       const cfCore  = core(cf);
 
       const matched = studentRows.filter(s => {
-        const rawClass = (s.student_class || s.branch || '').trim();
+        const rawClass = (s.student_class || s.class || s.branch || '').trim();
         if (!rawClass) return false;
 
         const sc = cleanStr(rawClass);
-        const sc_core = core(rawClass);
+        const scCore = core(rawClass);
 
         return (
-          sc === cfClean ||        // exact clean match: "class10a" === "class10a"
-          sc_core === cfCore ||    // core match: "10a" === "10a"
-          cfClean.includes(sc_core) || // "class10a".includes("10a")
-          sc.includes(cfCore)          // "class10a".includes("10a")
+          sc === cfClean ||            // exact clean match
+          scCore === cfCore ||        // core match (e.g. 10a === 10a)
+          cfClean.includes(scCore) || // "class10a".includes("10a")
+          sc.includes(cfCore)         // "class10a".includes("10a")
         );
       });
 
-      // Only narrow if we found matches — never return empty when students exist
+      // If matches found for the class, use them
       if (matched.length > 0) {
         studentRows = matched;
       }
-      // If 0 matched (class name mismatch): return all students so UI is never blank
     }
 
     // ── 3. Map to normalised shape ───────────────────────────────────────────
     const students = studentRows.map((u, i) => ({
       id:              u.id,
-      name:            u.name || u.email?.split('@')[0] || `Student ${i + 1}`,
+      name:            u.name || u.full_name || u.email?.split('@')[0] || `Student ${i + 1}`,
       email:           u.email || '',
       studentClass:    u.student_class || u.branch || '',
       customStudentId: u.custom_student_id || u.id,
       schoolId:        u.school_id || '',
       role:            'student',
-      avatarUrl:       u.avatar_url || null,
+      avatarUrl:       u.avatar_url || u.avatarUrl || null,
     }));
 
     return NextResponse.json({ students, total: students.length });

@@ -254,6 +254,8 @@ export default function TeacherHeatmapPage() {
   // Load Real Supabase Data: RLS Bypass Students, Syllabus Topics, Assignments, Submissions
   useEffect(() => {
     if (!profile) return;
+    // Wait until selectedClass is populated by fetchTeacherMeta — avoids race condition
+    if (!selectedClass) return;
 
     const loadRealData = async () => {
       setIsLoading(true);
@@ -262,9 +264,7 @@ export default function TeacherHeatmapPage() {
         let authToken = '';
         try { authToken = await getAuthToken(); } catch (e) {}
 
-        // 1. Fetch Students via Admin RLS Bypass Route
-        // Pass teacherClasses so only students in this teacher's classes are returned
-        const teacherClasses = (profile.assignments || []).map((a: any) => a.class).filter(Boolean);
+        // 1. Fetch Students — classFilter scopes to the currently selected class
         const studRes = await fetch('/api/teacher/get-students', {
           method: 'POST',
           headers: {
@@ -272,12 +272,11 @@ export default function TeacherHeatmapPage() {
             ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
           },
           body: JSON.stringify({
-            teacherId: profile.id || profile.uid,
-            teacherClasses,
             schoolId,
             classFilter: selectedClass
           })
         });
+
 
         const studJson = await studRes.json();
         let rawStudents: any[] = studJson.students || [];

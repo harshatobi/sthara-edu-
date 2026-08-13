@@ -139,6 +139,8 @@ export default function TeacherMasteryTrackerPage() {
   // Load Real Supabase Roster & Mastery Progression using /api/teacher/get-students
   useEffect(() => {
     if (!profile) return;
+    // Wait until selectedClass is populated by fetchMeta — avoids race condition
+    if (!selectedClass) return;
 
     const loadMasteryData = async () => {
       setIsLoading(true);
@@ -146,9 +148,7 @@ export default function TeacherMasteryTrackerPage() {
         const schoolId = profile.schoolId || 'sthara_demo_school';
         const authToken = await getAuthToken();
 
-        // 1. Fetch Students via Admin RLS Bypass Route
-        // Pass teacherClasses so only students in this teacher's classes are returned
-        const teacherClasses = (profile.assignments || []).map((a: any) => a.class).filter(Boolean);
+        // 1. Fetch Students — classFilter scopes to the currently selected class
         const studRes = await fetch('/api/teacher/get-students', {
           method: 'POST',
           headers: {
@@ -156,8 +156,6 @@ export default function TeacherMasteryTrackerPage() {
             'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({
-            teacherId: profile.id || profile.uid,
-            teacherClasses,
             schoolId,
             classFilter: selectedClass
           })

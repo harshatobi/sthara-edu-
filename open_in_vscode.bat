@@ -1,0 +1,3 @@
+@echo off
+echo Opening Sthara School OS in VS Code...
+code "C:\Users\user\.gemini\antigravity\scratch\sthara_school_os"

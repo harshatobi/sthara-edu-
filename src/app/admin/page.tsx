@@ -1,704 +1,420 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  TrendingUp, Users, BookOpen, UserPlus, Trash2, Plus, 
-  Building2, GraduationCap, Sparkles, ChevronRight, Loader2
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
-import { getAuthToken } from '@/lib/auth/getAuthToken';
 
-interface TeacherAssignment {
-  class: string;
-  subject: string;
-}
+export default function AdminPortal() {
+  const [view, setView] = useState<'dash' | 'adm' | 'staff' | 'acad' | 'cbse' | 'dpdp'>('dash');
 
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  studentClass?: string;
-  customStudentId?: string;
-  assignments?: TeacherAssignment[];
-  linkedStudents?: string[];
-}
-
-export default function AdminDashboard() {
-  const { profile, loading: authLoading, signOut: handleSignOut } = useAuth();
-  const router = useRouter();
-  const supabase = createClient();
-  
-  const [schoolName, setSchoolName] = useState('Loading...');
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [totalAssignments, setTotalAssignments] = useState<number | string>('--');
-  const [statsLoading, setStatsLoading] = useState(true);
-  
-  // New User Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState<'student' | 'teacher' | 'admin' | 'parent'>('student');
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
-  // Extended Data Fields
-  const [studentClass, setStudentClass] = useState('');
-  const [classNum, setClassNum]         = useState('1');
-  const [section, setSection]           = useState('A');
-  const [branch, setBranch] = useState('');
-  const [semester, setSemester] = useState('');
-  const [year, setYear] = useState('');
-  const [institutionType, setInstitutionType] = useState<'school' | 'college'>('school');
-  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>([{ class: '', subject: '' }]);
-  const [selectedStudentsForParent, setSelectedStudentsForParent] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!authLoading && (!profile || profile.role !== 'admin')) {
-      router.push('/login');
-    }
-  }, [profile, authLoading, router]);
-
-  useEffect(() => {
-    if (!profile?.schoolId) return;
-    
-    const fetchSchoolData = async () => {
-      setStatsLoading(true);
-      try {
-        // Fetch school details
-        const { data: school } = await supabase
-          .from('schools')
-          .select('*')
-          .eq('id', profile.schoolId)
-          .single();
-
-        if (school) {
-          setSchoolName(school.name);
-          setInstitutionType(school.institution_type === 'college' ? 'college' : 'school');
-        } else {
-          setSchoolName('School Not Found');
-        }
-
-        // Fetch users via server-side API route (bypasses RLS)
-        const token = await getAuthToken();
-        const res = await fetch(`/api/admin/users?schoolId=${profile.schoolId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const { users: userRows } = await res.json();
-          const usersList: UserData[] = (userRows || []).map((u: any) => ({
-            id: u.id,
-            name: u.name || 'Unknown',
-            email: u.email || '',
-            role: u.role || 'student',
-            studentClass: u.student_class || u.branch || undefined,
-            customStudentId: u.custom_student_id || undefined,
-            assignments: u.assignments || [],
-            linkedStudents: u.metadata?.linkedStudents || [],
-          }));
-          setUsers(usersList);
-        } else {
-          console.warn('[admin] users API error');
-        }
-
-        // Fetch assignments count
-        const { count } = await supabase
-          .from('assignments')
-          .select('id', { count: 'exact', head: true })
-          .eq('school_id', profile.schoolId);
-
-        setTotalAssignments(count ?? 0);
-
-      } catch (err) {
-        console.error('[admin] fetchSchoolData error:', err);
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-    fetchSchoolData();
-  }, [profile?.schoolId]);
-
-  const handleAddAssignmentRow = () => setTeacherAssignments([...teacherAssignments, { class: '', subject: '' }]);
-  
-  const handleRemoveAssignmentRow = (index: number) => {
-    const newArr = [...teacherAssignments];
-    newArr.splice(index, 1);
-    setTeacherAssignments(newArr);
-  };
-
-  const handleAssignmentChange = (index: number, field: 'class' | 'subject', value: string) => {
-    const newArr = [...teacherAssignments];
-    newArr[index][field] = value;
-    setTeacherAssignments(newArr);
-  };
-
-  const toggleParentStudentSelection = (customStudentId: string) => {
-    if (selectedStudentsForParent.includes(customStudentId)) {
-      setSelectedStudentsForParent(selectedStudentsForParent.filter(id => id !== customStudentId));
-    } else {
-      setSelectedStudentsForParent([...selectedStudentsForParent, customStudentId]);
-    }
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile?.schoolId) return;
-    
-    setIsCreating(true);
-    setError('');
-    setSuccessMsg('');
-
-    try {
-      let customStudentId: string | undefined = undefined;
-      let parsedClass: string | undefined = undefined;
-
-      if (role === 'student') {
-        if (institutionType === 'college') {
-          const branchKey = branch.trim().replace(/\s+/g, '').slice(0, 6).toUpperCase();
-          const existingInBranch = users.filter(u => u.role === 'student' && (u as any).branch === branch.trim());
-          const seq = existingInBranch.length + 1;
-          customStudentId = `${profile.schoolId}-${branchKey}-${String(seq).padStart(3, '0')}`;
-        } else {
-          // Build class string from dropdowns: "Class 10-A" or "Class 10" if standalone
-          parsedClass = section === 'Standalone' ? `Class ${classNum}` : `Class ${classNum}-${section}`;
-          const existingStudentsInClass = users.filter(u => u.role === 'student' && u.studentClass === parsedClass);
-          const sequenceNumber = existingStudentsInClass.length + 1;
-          customStudentId = `${profile.schoolId}-${parsedClass.replace(/\s+/g, '')}-${String(sequenceNumber).padStart(3, '0')}`.toUpperCase();
-        }
-      }
-
-      const validTeacherAssignments = teacherAssignments.filter(a => a.class.trim() !== '' && a.subject.trim() !== '');
-
-      // Use server-side API route (service role) to bypass RLS on users table
-      const authToken = await getAuthToken();
-      const res = await fetch('/api/admin/create-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          name: name.trim(),
-          role,
-          schoolId: profile.schoolId,
-          studentClass: parsedClass || null,
-          branch: branch.trim() || null,
-          semester: semester.trim() || null,
-          year: year.trim() || null,
-          customStudentId: customStudentId || null,
-          assignments: validTeacherAssignments,
-          linkedStudents: selectedStudentsForParent,
-        }),
-      });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Failed to create user account');
-
-      const newUserObj: UserData = {
-        id: result.userId,
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role,
-        studentClass: parsedClass || branch.trim() || undefined,
-        customStudentId,
-        assignments: validTeacherAssignments,
-        linkedStudents: selectedStudentsForParent,
-      };
-
-      setSuccessMsg(`✅ Successfully created ${role} account for ${name}!`);
-      setUsers([...users, newUserObj]);
-      
-      setEmail('');
-      setPassword('');
-      setName('');
-      setStudentClass('');
-      setClassNum('1');
-      setSection('A');
-      setBranch('');
-      setSemester('');
-      setYear('');
-      setTeacherAssignments([{ class: '', subject: '' }]);
-      setSelectedStudentsForParent([]);
-
-    } catch (err: any) {
-      setError(err.message || 'Failed to create user account');
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!profile?.schoolId || !confirm('Are you sure you want to permanently delete this user?')) return;
-    try {
-      const authToken = await getAuthToken();
-      const res = await fetch('/api/admin/delete-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ userId, schoolId: profile.schoolId }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Delete failed');
-      setUsers(users.filter(u => u.id !== userId));
-    } catch (err: any) {
-      console.error('Error deleting user', err);
-      alert('Failed to delete user: ' + err.message);
-    }
-  };
-
-  const allStudents = useMemo(() => users.filter(u => u.role === 'student' && u.customStudentId), [users]);
-  const totalStudents = users.filter(u => u.role === 'student').length;
-  const totalTeachers = users.filter(u => u.role === 'teacher').length;
-
-  const getRoleBadgeStyle = (userRole: string) => {
-    switch (userRole) {
-      case 'admin': return 'bg-rose-100 text-rose-700 border-rose-200';
-      case 'teacher': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'student': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'parent': return 'bg-purple-100 text-purple-700 border-purple-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
-
-  if (authLoading || !profile) return (
-    <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-        <p className="text-[#002147] font-semibold tracking-wide">Loading Command Center...</p>
-      </div>
-    </div>
+  const hmColor = (v: number) => (v >= 75 ? '#10B981' : v >= 55 ? '#5FC79B' : v >= 40 ? '#F5B60B' : v >= 25 ? '#F98A4B' : '#E11D48');
+  const bar = (v: number, c?: string) => (
+    <div className="bar"><i style={{ width: `${v}%`, background: c || hmColor(v) }} /></div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 font-sans">
-      
-      {/* Premium Header Banner */}
-      <div className="bg-white border-b border-gray-200/60 shadow-sm sticky top-0 z-40 backdrop-blur-xl bg-white/80">
-        <div className="max-w-[1200px] mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-inner border border-indigo-400">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-1">
-                <Sparkles className="w-4 h-4" />
-                <span>Command Center</span>
-              </div>
-              <h1 className="text-2xl font-black tracking-tight text-[#002147]">Institutional Analytics</h1>
-              <p className="text-sm font-medium text-gray-500 mt-0.5">{schoolName}</p>
-            </div>
-          </div>
+    <div className="portal-shell">
+      <style jsx global>{`
+        :root {
+          --nav:#062347; --nav2:#0A2C57; --navActive:#14365E;
+          --ink:#002147; --body:#F7F9FB; --line:#E8EDF4;
+          --red:#E11D48; --blue:#2F6BFF; --sky:#4C8DFF;
+          --green:#10B981; --amber:#F59E0B; --purple:#7C5CFC;
+          --mut:#7A8699; --mut2:#9AA6B8; --pale:#EAF2FF;
+          --r:20px; --sh:0 1px 2px rgba(0,33,71,.05),0 10px 30px rgba(0,33,71,.05);
+        }
+        .portal-shell { display: flex; min-height: 100vh; background: var(--body); color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; }
+        aside { width: 264px; flex: 0 0 264px; background: var(--nav); min-height: 100vh; padding: 26px 18px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+        .brand { padding: 0 10px 26px; }
+        .brand b { display: block; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+        .brand i { display: block; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .14em; font-style: normal; margin-top: 2px; }
+        nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .nv { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border-radius: 12px; color: #93A7C4; font-size: 14.5px; font-weight: 500; text-align: left; position: relative; transition: .15s; background: none; border: none; cursor: pointer; width: 100%; }
+        .nv:hover { background: rgba(255,255,255,.05); color: #D5E1F2; }
+        .nv.on { background: var(--navActive); color: #fff; font-weight: 600; }
+        .nv.on:before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; background: var(--red); border-radius: 0 3px 3px 0; }
+        .nv-out { border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-top: 14px; }
+        main { flex: 1; min-width: 0; padding: 26px 34px 70px; max-width: 1560px; }
 
-          <button 
-            onClick={handleSignOut}
-            className="px-5 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl font-bold hover:bg-rose-50 hover:border-rose-300 transition-all shadow-sm"
-          >
-            Sign Out
-          </button>
+        .card { background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 26px; }
+        .pbar { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 20px 26px; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
+        .pbar .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--red); font-size: 12px; font-weight: 800; letter-spacing: .13em; }
+        .pbar h1 { font-size: 31px; font-weight: 800; margin-top: 5px; }
+        .pbar .sub { color: var(--mut); font-size: 13.5px; margin-top: 4px; }
+        .acts { display: flex; gap: 10px; align-items: center; }
+        .btn { padding: 11px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; transition: .15s; }
+        .btn:hover { border-color: #C9D6E8; }
+        .btn.pri { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .btn.red { background: var(--red); color: #fff; border-color: var(--red); }
+        .hero { border-radius: 24px; padding: 34px 36px; color: #fff; background: linear-gradient(103deg,#072044 0%,#123F84 52%,#0F5AB8 100%); margin-bottom: 22px; position: relative; overflow: hidden; }
+        .hero h1 { font-size: 40px; font-weight: 800; }
+        .hero .hsub { color: #A9C4E8; font-size: 14.5px; margin-top: 7px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .chip { display: inline-block; background: rgba(255,255,255,.14); border-radius: 8px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: #DCE9FA; }
+        .hgrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 16px; margin-top: 26px; }
+        .hstat { background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 20px 22px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .hstat .lb { font-size: 11.5px; font-weight: 800; letter-spacing: .11em; color: #9FBBE0; }
+        .hstat .vl { font-size: 34px; font-weight: 800; margin-top: 6px; line-height: 1; }
+        .hstat .nt { font-size: 12.5px; color: #8FAED6; margin-top: 6px; }
+        .hstat .ic { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.14); display: grid; place-items: center; font-size: 18px; }
+        .kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 18px; margin-bottom: 22px; }
+        .kpi { background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 24px 26px; position: relative; overflow: hidden; }
+        .kpi .lb { font-size: 11.5px; font-weight: 800; letter-spacing: .11em; color: var(--mut); }
+        .kpi .vl { font-size: 46px; font-weight: 800; line-height: 1; margin-top: 10px; }
+        .kpi .nt { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; margin-top: 10px; }
+        .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .ch { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 8px; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+        .ch.g{background:#DCFCE7;color:#0B7A54}.ch.a{background:#FEF3C7;color:#92600A}
+        .ch.r{background:#FFE4EA;color:#B4123C}.ch.b{background:#E6EEFF;color:#1E4FCC}
+        .ch.n{background:#F1F5F9;color:#556378}
+        .row { display: flex; align-items: center; gap: 14px; padding: 15px 0; border-bottom: 1px solid var(--line); }
+        .row:last-child { border-bottom: 0; }
+        .av { width: 40px; height: 40px; border-radius: 11px; background: var(--pale); color: var(--blue); display: grid; place-items: center; font-weight: 800; font-size: 15px; flex: 0 0 40px; }
+        .bar { height: 8px; background: #EDF1F7; border-radius: 99px; overflow: hidden; flex: 1; min-width: 60px; }
+        .bar>i { display: block; height: 100%; border-radius: 99px; }
+        .muted { color: var(--mut); font-size: 13px; }
+        .hm { border-collapse: separate; border-spacing: 4px; width: 100%; }
+        .hm th { font-size: 11px; font-weight: 800; color: var(--mut); text-align: left; padding: 0 4px 6px; letter-spacing: .04em; }
+        .hm td.nm { font-size: 13px; font-weight: 700; white-space: nowrap; padding-right: 10px; }
+        .hm .cell { border-radius: 8px; text-align: center; font-size: 12px; font-weight: 800; padding: 11px 4px; color: #fff; }
+        .note { background: #FFF8E7; border-left: 3px solid var(--amber); border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #7A5A08; line-height: 1.6; }
+
+        .role-sw { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 50; background: var(--ink); border-radius: 99px; padding: 7px; display: flex; gap: 4px; box-shadow: 0 14px 40px rgba(0,33,71,.35); }
+        .role-sw a { padding: 10px 20px; border-radius: 99px; color: #93A7C4; font-size: 13px; font-weight: 700; text-decoration: none; }
+        .role-sw a.on { background: var(--red); color: #fff; }
+      `}</style>
+
+      {/* Sidebar */}
+      <aside>
+        <div className="brand">
+          <b>Sthara</b>
+          <i>COMMAND CENTRE</i>
         </div>
-      </div>
-
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-8 space-y-8 animate-in fade-in duration-500">
-        
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          {/* Students */}
-          <Link href="/admin/directory" className="block">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-200 transition-all duration-200">
-              <div className="relative z-10">
-                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
-                  <Users className="w-6 h-6 text-emerald-600" />
-                </div>
-                {statsLoading ? (
-                  <div className="flex items-center gap-2 mb-1">
-                    <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
-                    <span className="text-lg font-bold text-gray-400">Loading...</span>
-                  </div>
-                ) : (
-                  <h3 className="text-4xl font-black text-[#002147] mb-1">{totalStudents}</h3>
-                )}
-                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Students</p>
-                <div className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>View Directory →</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          {/* Teachers */}
-          <Link href="/admin/directory" className="block">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 relative overflow-hidden group cursor-pointer hover:shadow-md hover:ring-2 hover:ring-blue-200 transition-all duration-200">
-              <div className="relative z-10">
-                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 border border-blue-100">
-                  <GraduationCap className="w-6 h-6 text-blue-600" />
-                </div>
-                {statsLoading ? (
-                  <div className="flex items-center gap-2 mb-1">
-                    <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
-                    <span className="text-lg font-bold text-gray-400">Loading...</span>
-                  </div>
-                ) : (
-                  <h3 className="text-4xl font-black text-[#002147] mb-1">{totalTeachers}</h3>
-                )}
-                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</p>
-                <div className="inline-flex items-center space-x-1 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
-                  <Users className="w-3 h-3" />
-                  <span>Manage Staff →</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          {/* Assignments */}
-          <Link href="/admin/results" className="block">
-            <div className="bg-gradient-to-br from-[#002147] to-indigo-900 rounded-2xl shadow-lg border border-indigo-800 p-6 relative overflow-hidden group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200">
-              <div className="relative z-10">
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-4 border border-white/20 backdrop-blur-sm">
-                  <BookOpen className="w-6 h-6 text-indigo-200" />
-                </div>
-                <h3 className="text-4xl font-black text-white mb-1">{totalAssignments}</h3>
-                <p className="text-sm font-bold text-indigo-200 uppercase tracking-wider mb-2">Active Assignments</p>
-                <div className="inline-flex items-center space-x-1 text-xs font-bold text-indigo-100 bg-indigo-950/50 px-2 py-1 rounded-md border border-indigo-800">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>View Results →</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-        </div>
-
-        {/* Admin AI Banner */}
-        <Link href="/admin/ai" className="block">
-          <div className="relative overflow-hidden bg-gradient-to-br from-violet-700 via-indigo-700 to-[#002147] rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-[1.01] transition-all duration-200 border border-indigo-800">
-            <div className="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -mr-10 -mt-10" />
-            <div className="absolute right-16 bottom-0 w-32 h-32 bg-white/5 rounded-full -mb-10" />
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 backdrop-blur-sm flex-shrink-0">
-                  <Sparkles className="w-7 h-7 text-violet-200" />
-                </div>
-                <div>
-                  <div className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">New Feature</div>
-                  <h2 className="text-2xl font-black text-white">Admin AI Intelligence</h2>
-                  <p className="text-indigo-200 text-sm mt-1">Ask questions about student performance, get at-risk reports, and track compliance — all with AI.</p>
-                </div>
-              </div>
-              <div className="flex-shrink-0">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {['Top performers', 'At-risk students', 'Class averages', 'Compliance report'].map(tag => (
-                    <span key={tag} className="text-xs font-bold text-indigo-100 bg-white/10 border border-white/20 px-3 py-1 rounded-full">{tag}</span>
-                  ))}
-                </div>
-                <div className="inline-flex items-center gap-2 bg-white text-indigo-700 font-black px-6 py-3 rounded-xl shadow-md hover:bg-indigo-50 transition-all">
-                  <Sparkles className="w-4 h-4" />
-                  Open Admin AI →
-                </div>
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        {/* Directory Management Table */}
-        <div id="directory-section" className="bg-white border border-gray-200/60 rounded-2xl shadow-sm overflow-hidden scroll-mt-24">
-          <div className="p-6 border-b border-gray-200/60 flex items-center justify-between bg-gray-50/50">
-            <div>
-              <h2 className="text-lg font-bold text-[#002147]">Directory Management</h2>
-              <p className="text-sm font-medium text-gray-500 mt-0.5">Manage school staff and administrators</p>
-            </div>
-            <div className="p-2 bg-indigo-50 rounded-xl">
-              <Users className="w-5 h-5 text-indigo-600" />
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50/80 border-b border-gray-200/60">
-                <tr>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Contact</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {users.filter(u => u.role !== 'student').map(u => (
-                  <tr key={u.id} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold border border-gray-300 shadow-inner">
-                          {u.name.charAt(0)}
-                        </div>
-                        <div className="font-bold text-[#002147]">{u.name}</div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${getRoleBadgeStyle(u.role)}`}>
-                        {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
-                      </span>
-                    </td>
-                    <td className="p-4 font-medium text-gray-500 text-sm">{u.email}</td>
-                    <td className="p-4 text-right">
-                      <button 
-                        onClick={() => handleDeleteUser(u.id)}
-                        className="p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors"
-                        title="Remove User"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {users.filter(u => u.role !== 'student').length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="p-8 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-3">
-                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
-                          <Users className="w-6 h-6 text-gray-400" />
-                        </div>
-                        <p className="text-gray-500 font-medium">No directory users found.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Add User Form */}
-        <div className="bg-white border border-gray-200/60 p-8 rounded-2xl shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-          
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl">
-              <UserPlus className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-[#002147]">Add New Account</h2>
-              <p className="text-sm font-medium text-gray-500 mt-0.5">Provision access for students, teachers, parents, or admins</p>
-            </div>
-          </div>
-
-          {error && <p className="mb-4 text-red-600 text-sm font-semibold bg-red-50 p-3 rounded-xl border border-red-200">{error}</p>}
-          {successMsg && <p className="mb-4 text-emerald-600 text-sm font-semibold bg-emerald-50 p-3 rounded-xl border border-emerald-200">{successMsg}</p>}
-
-          <form onSubmit={handleCreateUser} className="space-y-6 max-w-3xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-gray-600">Account Type</label>
-                <select 
-                  value={role} 
-                  onChange={(e) => setRole(e.target.value as any)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                >
-                  <option value="student">Student Account</option>
-                  <option value="teacher">Teacher Account</option>
-                  <option value="parent">Parent Account</option>
-                  <option value="admin">Administrator Account</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-gray-600">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g., John Doe"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-gray-600">Login Email</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="john.doe@school.edu"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-gray-600">Initial Password</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                />
-              </div>
-
-              {role === 'student' && institutionType !== 'college' && (
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-sm font-bold text-gray-600">Class &amp; Section</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Class Number Dropdown */}
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-gray-500">Class</label>
-                      <select
-                        value={classNum}
-                        onChange={e => setClassNum(e.target.value)}
-                        required
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                      >
-                        {['1','2','3','4','5','6','7','8','9','10','11','12'].map(c => (
-                          <option key={c} value={c}>Class {c}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {/* Section Dropdown */}
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-gray-500">Section</label>
-                      <select
-                        value={section}
-                        onChange={e => setSection(e.target.value)}
-                        required
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-[#002147] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                      >
-                        <option value="Standalone">Standalone (No Section)</option>
-                        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(s => (
-                          <option key={s} value={s}>Section {s}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Student will be assigned to: <strong className="text-indigo-600">
-                      {section === 'Standalone' ? `Class ${classNum}` : `Class ${classNum}-${section}`}
-                    </strong>
-                  </p>
-                </div>
-              )}
-
-              {/* ── Teacher Class/Subject Assignment ─────────────────── */}
-              {role === 'teacher' && (
-                <div className="md:col-span-2 space-y-3">
-                  <div>
-                    <label className="text-sm font-bold text-gray-600">Class &amp; Subject Assignments</label>
-                    <p className="text-xs text-gray-400 mt-0.5">Assign this teacher to one or more classes and subjects</p>
-                  </div>
-                  <div className="space-y-2">
-                    {teacherAssignments.map((assignment, idx) => (
-                      <div key={idx} className="flex gap-3 items-center">
-                        <select
-                          value={assignment.class}
-                          onChange={e => handleAssignmentChange(idx, 'class', e.target.value)}
-                          className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                        >
-                          <option value="">Select Class…</option>
-                          {['1','2','3','4','5','6','7','8','9','10','11','12'].map(c =>
-                            ['Standalone','A','B','C','D','E'].map(s => (
-                              <option key={`${c}-${s}`} value={s === 'Standalone' ? `Class ${c}` : `Class ${c}-${s}`}>
-                                {s === 'Standalone' ? `Class ${c}` : `Class ${c}-${s}`}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                        <input
-                          type="text"
-                          value={assignment.subject}
-                          onChange={e => handleAssignmentChange(idx, 'subject', e.target.value)}
-                          placeholder="Subject (e.g. Mathematics)"
-                          className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                        />
-                        {teacherAssignments.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAssignmentRow(idx)}
-                            className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddAssignmentRow}
-                    className="text-sm font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-                  >
-                    <Plus className="w-4 h-4" /> Add Another Class/Subject
-                  </button>
-                </div>
-              )}
-
-              {/* ── Parent → Student Linking ──────────────────────────── */}
-              {role === 'parent' && (
-                <div className="md:col-span-2 space-y-3">
-                  <div>
-                    <label className="text-sm font-bold text-gray-600">Link to Students</label>
-                    <p className="text-xs text-gray-400 mt-0.5">Select the student(s) this parent is linked to</p>
-                  </div>
-                  {allStudents.length === 0 ? (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium">
-                      ⚠️ No students registered yet. Create student accounts first, then add parent accounts.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2">
-                      {allStudents.map(s => (
-                        <label
-                          key={s.id}
-                          className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                            selectedStudentsForParent.includes(s.customStudentId!)
-                              ? 'bg-indigo-50 border-indigo-300'
-                              : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedStudentsForParent.includes(s.customStudentId!)}
-                            onChange={() => toggleParentStudentSelection(s.customStudentId!)}
-                            className="w-4 h-4 accent-indigo-600"
-                          />
-                          <div>
-                            <div className="text-sm font-bold text-[#002147]">{s.name}</div>
-                            <div className="text-xs text-gray-400">
-                              {s.customStudentId} • {s.studentClass || 'No class'}
-                            </div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                  {selectedStudentsForParent.length > 0 && (
-                    <p className="text-xs text-indigo-600 font-semibold">
-                      ✓ Linked to {selectedStudentsForParent.length} student(s): {selectedStudentsForParent.join(', ')}
-                    </p>
-                  )}
-                </div>
-              )}
-
-            </div>{/* end grid */}
-
+        <nav>
+          {[
+            ['dash', 'Dashboard', '📊'],
+            ['adm', 'Admissions & Fees', '₹'],
+            ['staff', 'Staff & Timetable', '📅'],
+            ['acad', 'Academic Health', '📈'],
+            ['cbse', 'CBSE Wellness Report', '💚'],
+            ['dpdp', 'DPDP & Compliance', '🛡'],
+          ].map(([k, n, ic]) => (
             <button
-              type="submit"
-              disabled={isCreating}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center justify-center space-x-2"
+              key={k}
+              className={`nv ${view === k ? 'on' : ''}`}
+              onClick={() => setView(k as any)}
             >
-              {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-              <span>{isCreating ? 'Creating Account...' : 'Create Account'}</span>
+              <span>{ic}</span>
+              <span>{n}</span>
             </button>
-          </form>
-        </div>
+          ))}
+          <div className="nv-out">
+            <Link href="/login" className="nv">
+              <span>🚪</span>
+              <span>Sign Out</span>
+            </Link>
+          </div>
+        </nav>
+      </aside>
 
+      {/* Main Content */}
+      <main>
+        {/* VIEW 1: DASHBOARD */}
+        {view === 'dash' && (
+          <div>
+            <div className="hero">
+              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+                <div>
+                  <h1>DPS Vasundhara</h1>
+                  <div className="hsub">
+                    Command Centre · AY 2026–27 <span className="chip mono">sch-vsn-2026</span> <span className="chip">Shikhara plan · 812 students</span>
+                  </div>
+                </div>
+                <button className="btn" style={{ background: '#fff', color: 'var(--ink)' }} onClick={() => alert('Board pack PDF export generated!')}>
+                  ⤓ Export board pack
+                </button>
+              </div>
+
+              <div className="hgrid">
+                <div className="hstat">
+                  <div>
+                    <div className="lb">SCHOOL-WIDE TML</div>
+                    <div className="vl">66%</div>
+                    <div className="nt">▲ 4 pts vs Term 1</div>
+                  </div>
+                  <div className="ic">📈</div>
+                </div>
+                <div className="hstat">
+                  <div>
+                    <div className="lb">FEE COLLECTION</div>
+                    <div className="vl">91%</div>
+                    <div className="nt">₹18.4L outstanding</div>
+                  </div>
+                  <div className="ic">₹</div>
+                </div>
+                <div className="hstat" style={{ background: 'rgba(245,182,11,.16)', borderColor: 'rgba(245,182,11,.3)' }}>
+                  <div>
+                    <div className="lb">CBSE WELLNESS FILING</div>
+                    <div className="vl" style={{ fontSize: 26 }}>Due 15 Sep</div>
+                    <div className="nt">Report 84% auto-populated</div>
+                  </div>
+                  <div className="ic" style={{ background: 'rgba(245,182,11,.28)' }}>♡</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="kpis">
+              <div className="kpi">
+                <div className="lb">ENROLMENT</div>
+                <div className="vl">812</div>
+                <div className="nt" style={{ color: 'var(--green)' }}>▲ 44 vs last year</div>
+              </div>
+              <div className="kpi">
+                <div className="lb">TEACHING STAFF</div>
+                <div className="vl">47</div>
+                <div className="nt" style={{ color: 'var(--mut)' }}>1:17 ratio</div>
+              </div>
+              <div className="kpi">
+                <div className="lb">ATTENDANCE TODAY</div>
+                <div className="vl">94%</div>
+                <div className="nt" style={{ color: 'var(--amber)' }}>49 absent</div>
+              </div>
+              <div className="kpi">
+                <div className="lb">STUDENTS AT RISK</div>
+                <div className="vl" style={{ color: 'var(--red)' }}>61</div>
+                <div className="nt" style={{ color: 'var(--red)' }}>TML below 40%</div>
+              </div>
+            </div>
+
+            <div className="g2">
+              <div className="card">
+                <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>TML by grade</h3>
+                <p className="muted" style={{ marginBottom: 20 }}>Where the school is structurally weak — visible before term-end results, not after.</p>
+                {[
+                  ['Grade 6', 74],
+                  ['Grade 7', 69],
+                  ['Grade 8', 66],
+                  ['Grade 9', 58],
+                  ['Grade 10', 63],
+                  ['Grade 11', 71],
+                  ['Grade 12', 68],
+                ].map(([g, v]) => (
+                  <div key={g as string} className="row">
+                    <b style={{ flex: '0 0 84px', fontSize: 14 }}>{g}</b>
+                    {bar(v as number)}
+                    <b style={{ width: 46, textAlign: 'right', color: hmColor(v as number) }}>{v}%</b>
+                  </div>
+                ))}
+              </div>
+
+              <div className="card">
+                <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 16 }}>Admin AI · what needs a decision</h3>
+                {[
+                  ['Grade 9 Maths underperformance across 3 sections', 'Reallocate senior staff or add remedial block', 'r', 'acad'],
+                  ['61 students below 40% TML school-wide', 'Auto-generate remedial cohorts', 'r', 'acad'],
+                  ['₹18.4L fees outstanding, 74 families', 'Stage WhatsApp reminders', 'a', 'adm'],
+                  ['CBSE wellness report due 15 Sep', '84% auto-populated, review and file', 'a', 'cbse'],
+                ].map(([t, s, c, targetView]) => (
+                  <div key={t} className="row">
+                    <div className="av" style={{ background: c === 'r' ? '#FFE4EA' : '#FEF3C7', color: c === 'r' ? 'var(--red)' : '#92600A' }}>✦</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div>
+                      <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>{s}</div>
+                    </div>
+                    <button className="btn" onClick={() => setView(targetView as any)}>Act</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: ADMISSIONS & FEES */}
+        {view === 'adm' && (
+          <div>
+            <div className="pbar">
+              <div>
+                <div className="eyebrow">₹ ADMISSIONS &amp; FEES</div>
+                <h1>Fee ledger</h1>
+                <div className="sub">AY 2026–27 · 812 students · Shikhara ₹3,500/student/yr platform cost</div>
+              </div>
+              <div className="acts">
+                <button className="btn red" onClick={() => alert('74 WhatsApp reminders staged and sent!')}>Stage 74 WhatsApp reminders</button>
+              </div>
+            </div>
+
+            <div className="kpis">
+              <div className="kpi">
+                <div className="lb">BILLED YTD</div>
+                <div className="vl" style={{ fontSize: 36 }}>₹2.04 Cr</div>
+              </div>
+              <div className="kpi">
+                <div className="lb">COLLECTED</div>
+                <div className="vl" style={{ fontSize: 36, color: 'var(--green)' }}>₹1.86 Cr</div>
+              </div>
+              <div className="kpi">
+                <div className="lb">OUTSTANDING</div>
+                <div className="vl" style={{ fontSize: 36, color: 'var(--red)' }}>₹18.4 L</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 3: STAFF & TIMETABLE */}
+        {view === 'staff' && (
+          <div>
+            <div className="pbar">
+              <div>
+                <div className="eyebrow">📅 STAFF &amp; TIMETABLE</div>
+                <h1>Workforce</h1>
+                <div className="sub">47 teaching · 18 non-teaching · 1:17 student-teacher ratio</div>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 16 }}>Teacher effectiveness · Mathematics department</h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      {['Teacher', 'Classes', 'Students', 'Class TML', 'Δ fortnight', 'Copilot use', 'Grading backlog'].map((h, idx) => (
+                        <th key={h} style={{ textAlign: idx > 1 ? 'center' : 'left', fontSize: 11, fontWeight: 800, color: 'var(--mut)', padding: '0 12px 12px' }}>
+                          {h.toUpperCase()}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Priya Menon', 4, 148, 64, '+3', 'High', 17, 'g'],
+                      ['Sanjay Bhatt', 4, 142, 58, '−1', 'Medium', 41, 'a'],
+                      ['Ritu Agarwal', 3, 109, 71, '+5', 'High', 6, 'g'],
+                      ['Mohan Das', 4, 151, 52, '−4', 'None', 88, 'r'],
+                    ].map(([n, c, s, t, d, u, b, col]) => (
+                      <tr key={n as string} style={{ borderTop: '1px solid var(--line)' }}>
+                        <td style={{ padding: '14px 12px', fontWeight: 700 }}>{n}</td>
+                        <td style={{ padding: '14px 12px' }}>{c}</td>
+                        <td style={{ padding: '14px 12px', textAlign: 'center' }}>{s}</td>
+                        <td style={{ padding: '14px 12px', textAlign: 'center', color: hmColor(t as number), fontWeight: 800 }}>{t}%</td>
+                        <td style={{ padding: '14px 12px', textAlign: 'center' }}>{d}</td>
+                        <td style={{ padding: '14px 12px', textAlign: 'center' }}><span className={`ch ${col}`}>{u}</span></td>
+                        <td style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 800 }}>{b}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 4: ACADEMIC HEALTH */}
+        {view === 'acad' && (
+          <div>
+            <div className="pbar">
+              <div>
+                <div className="eyebrow">📈 ACADEMIC HEALTH</div>
+                <h1>School-wide diagnostics</h1>
+                <div className="sub">Live TML across 812 students · updated continuously</div>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 16 }}>Grade × subject TML</h3>
+              <table className="hm">
+                <thead>
+                  <tr>
+                    <th />
+                    {['Maths', 'Science', 'Social', 'English', 'Hindi'].map(t => <th key={t} style={{ textAlign: 'center' }}>{t}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Grade 6', [78, 74, 71, 80, 68]],
+                    ['Grade 7', [70, 68, 64, 76, 66]],
+                    ['Grade 8', [64, 66, 62, 73, 64]],
+                    ['Grade 9', [48, 55, 58, 68, 61]],
+                    ['Grade 10', [61, 63, 60, 72, 59]],
+                  ].map(([g, v]) => (
+                    <tr key={g as string}>
+                      <td className="nm">{g}</td>
+                      {(v as number[]).map((x, idx) => (
+                        <td key={idx} className="cell" style={{ background: hmColor(x) }}>{x}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 5: CBSE WELLNESS REPORT */}
+        {view === 'cbse' && (
+          <div>
+            <div className="pbar">
+              <div>
+                <div className="eyebrow">💚 CBSE 2026 WELLNESS MANDATE</div>
+                <h1>Wellness Report — AY 2026–27</h1>
+                <div className="sub">Filing due 15 Sep 2026 · 84% auto-populated from live check-in data</div>
+              </div>
+              <div className="acts">
+                <button className="btn red" onClick={() => alert('CBSE Wellness PDF Report downloaded!')}>⤓ Generate CBSE PDF</button>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 16 }}>Filing checklist</h3>
+              {[
+                ['Student wellbeing measurement framework', 'Auto — TML energy check-ins', 'done'],
+                ['Participation and coverage evidence', 'Auto — 89% across 7 grades', 'done'],
+                ['At-risk identification protocol', 'Auto — threshold rules documented', 'done'],
+                ['Intervention log with outcomes', 'Auto — 147 entries, 118 resolved', 'done'],
+                ['Staff wellness training hours', 'Manual entry required', 'todo'],
+              ].map(([t, s, st]) => (
+                <div key={t} className="row">
+                  <div className="av" style={{ background: st === 'done' ? '#DCFCE7' : '#FEF3C7', color: st === 'done' ? 'var(--green)' : '#92600A' }}>
+                    {st === 'done' ? '✓' : '✎'}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div>
+                    <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>{s}</div>
+                  </div>
+                  <span className={`ch ${st === 'done' ? 'g' : 'a'}`}>{st === 'done' ? 'AUTO' : 'ACTION'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 6: DPDP & COMPLIANCE */}
+        {view === 'dpdp' && (
+          <div>
+            <div className="pbar">
+              <div>
+                <div className="eyebrow">🛡 DPDP ACT 2023</div>
+                <h1>Data Protection &amp; Compliance</h1>
+                <div className="sub">Indian data residency · Role-based access · Audit trail active</div>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 16 }}>Compliance Architecture</h3>
+              <p className="muted" style={{ marginBottom: 20 }}>
+                All student data hosted in India with enterprise multi-tenant isolation, encrypted storage, and parental consent logs.
+              </p>
+              <div className="ch g" style={{ fontSize: 14, padding: '10px 18px' }}>
+                100% DPDP Act 2023 Compliant
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Floating Global Role Switcher */}
+      <div className="role-sw">
+        <Link href="/student">Student</Link>
+        <Link href="/teacher">Teacher</Link>
+        <Link href="/admin" className="on">Admin</Link>
+        <Link href="/parent">Parent</Link>
       </div>
     </div>
   );

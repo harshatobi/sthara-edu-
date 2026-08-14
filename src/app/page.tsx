@@ -527,8 +527,58 @@ export default function LandingPage() {
             <span className="kick">About us</span>
             <h1 style={{ fontSize: 48, margin: '20px 0' }}>A child falling behind should never be <span className="grad-txt">a surprise.</span></h1>
             <p style={{ color: 'var(--dim)', fontSize: 18, maxWidth: 640 }}>
-              Sthara is a unified school operating system for Indian K-12 schools. One living record that student, teacher, office, and parent all read from.
+              Sthara is a unified school operating system for Indian K-12 schools. One living record that student, teacher, office, and parent all read from — so a slipping topic surfaces in the week it slips, not at the end of term.
             </p>
+
+            {/* Founder Card */}
+            <div style={{ marginTop: 50, background: 'var(--bg2)', border: '1px solid var(--stroke2)', borderRadius: 24, padding: 38 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 32, alignItems: 'start' }}>
+                <div style={{ width: 90, height: 90, borderRadius: 22, background: 'var(--grad)', color: '#fff', fontSize: 32, fontWeight: 800, display: 'grid', placeItems: 'center' }}>
+                  HP
+                </div>
+                <div>
+                  <h2 style={{ fontSize: 32, color: '#fff' }}>Harsha Payala</h2>
+                  <span className="mono" style={{ color: 'var(--gold)', fontSize: 12.5, letterSpacing: '.16em', textTransform: 'uppercase', display: 'block', margin: '6px 0 16px' }}>
+                    ★ FOUNDER & CREATOR OF STHARA · PRESIDENT & CEO
+                  </span>
+                  <div style={{ background: 'var(--card)', border: '1px solid var(--stroke)', padding: '10px 14px', borderRadius: 12, fontSize: 13.5, color: 'var(--dim)', marginBottom: 16 }}>
+                    🎓 <b>B.Tech, Computer Science</b>
+                  </div>
+                  <p style={{ color: 'var(--dim)', fontSize: 16, lineHeight: 1.6 }}>
+                    Harsha designed and built the Sthara platform — the AI tutor, the handwriting-grading pipeline and the True Mastery Level engine. He was the student who fell behind on a topic nobody caught in time, and he built Sthara so that it does not happen quietly to anyone else.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Co-Founders Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 24 }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--stroke)', borderRadius: 20, padding: 28 }}>
+                <div style={{ width: 64, height: 64, borderRadius: 16, background: '#1B3A64', border: '1px solid var(--stroke2)', color: 'var(--ice)', fontSize: 22, fontWeight: 800, display: 'grid', placeItems: 'center', marginBottom: 16 }}>
+                  MB
+                </div>
+                <h3 style={{ fontSize: 24, color: '#fff' }}>Moses Benhur</h3>
+                <span className="mono" style={{ color: 'var(--azure2)', fontSize: 11.5, letterSpacing: '.14em', textTransform: 'uppercase', display: 'block', margin: '4px 0 12px' }}>
+                  Co-founder · Managing Director & CFO
+                </span>
+                <p style={{ color: 'var(--dim)', fontSize: 14.5, lineHeight: 1.5 }}>
+                  An engineer in the finance seat. Moses sets how Sthara is priced and holds it to a single test: an ordinary school should get the same platform as a flagship one.
+                </p>
+              </div>
+
+              <div style={{ background: 'var(--card)', border: '1px solid var(--stroke)', borderRadius: 20, padding: 28 }}>
+                <div style={{ width: 64, height: 64, borderRadius: 16, background: '#1B3A64', border: '1px solid var(--stroke2)', color: 'var(--ice)', fontSize: 22, fontWeight: 800, display: 'grid', placeItems: 'center', marginBottom: 16 }}>
+                  JS
+                </div>
+                <h3 style={{ fontSize: 24, color: '#fff' }}>Joshua Stephen</h3>
+                <span className="mono" style={{ color: 'var(--azure2)', fontSize: 11.5, letterSpacing: '.14em', textTransform: 'uppercase', display: 'block', margin: '4px 0 12px' }}>
+                  Co-founder · Chief Operating Officer
+                </span>
+                <p style={{ color: 'var(--dim)', fontSize: 14.5, lineHeight: 1.5 }}>
+                  Joshua leads how Sthara is rolled out inside a school, and is the reason wellbeing is treated here as real, kept data a counsellor can act on.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

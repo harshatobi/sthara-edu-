@@ -3,12 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET  ?schoolId=X&teacherId=Y       → fetch syllabus modules for teacher
- * POST { schoolId, teacherId, ...fields }  → create module
- * PUT  { schoolId, id, ...fields }    → update module
- * DELETE { schoolId, id }             → delete module
- */
+function calculateWeightageScore(weight: number, toughness: string): number {
+  const toughnessBonus = toughness === 'hard' ? 3 : toughness === 'medium' ? 2 : 1;
+  return Math.round((weight * 0.7 + toughnessBonus) * 10) / 10;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -19,23 +17,16 @@ export async function GET(req: NextRequest) {
     const supabase = createAdminClient();
     let query = supabase.from('syllabus').select('*');
 
-    // Only filter by school_id when a real value is given
     if (schoolId && schoolId !== 'all' && schoolId !== 'null' && schoolId !== 'undefined') {
       query = query.eq('school_id', schoolId);
     }
-
-    // Only filter by teacher_id when a specific teacher is requested (not 'all')
     if (teacherId && teacherId !== 'all' && teacherId !== 'null' && teacherId !== 'undefined') {
       query = query.eq('teacher_id', teacherId);
     }
 
     const { data, error } = await query.order('created_at', { ascending: true });
-
-    // NOTE: No fallback query here — the old fallback was returning ALL rows on
-    // top of the filtered rows, causing every topic to appear twice.
     if (error) throw error;
 
-    // Deduplicate by ID in JS (belt-and-suspenders)
     const seen = new Set<string>();
     const unique = (data || []).filter((d: any) => {
       if (seen.has(d.id)) return false;
@@ -43,20 +34,32 @@ export async function GET(req: NextRequest) {
       return true;
     });
 
-    const modules = unique.map((d: any) => ({
-      id:         d.id,
-      schoolId:   d.school_id,
-      teacherId:  d.teacher_id,
-      subject:    d.subject,
-      class:      d.class,
-      grade:      d.grade || d.class,
-      topic:      d.topic,
-      month:      d.month,
-      objectives: d.objectives,
-      publisher:  d.publisher || 'NCERT',
-      status:     d.status,
-      createdAt:  d.created_at,
-    }));
+    const modules = unique.map((d: any) => {
+      const meta = d.metadata || {};
+      const examWeightage = d.exam_weightage ?? meta.examWeightage ?? 7;
+      const toughnessLevel = d.toughness_level ?? meta.toughnessLevel ?? 'medium';
+      const weightageScore = d.weightage_score ?? meta.weightageScore ?? calculateWeightageScore(examWeightage, toughnessLevel);
+      const tags = Array.isArray(d.tags) ? d.tags : (meta.tags || []);
+
+      return {
+        id:             d.id,
+        schoolId:       d.school_id,
+        teacherId:      d.teacher_id,
+        subject:        d.subject,
+        class:          d.class,
+        grade:          d.grade || d.class,
+        topic:          d.topic,
+        month:          d.month,
+        objectives:     d.objectives,
+        publisher:      d.publisher || 'NCERT',
+        status:         d.status,
+        tags,
+        examWeightage,
+        toughnessLevel,
+        weightageScore,
+        createdAt:      d.created_at,
+      };
+    });
 
     return NextResponse.json({ modules });
   } catch (err: any) {
@@ -67,12 +70,46 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { schoolId, teacherId, subject, class: cls, topic, month, status } = body;
+    const { schoolId, teacherId, subject, class: cls, topic, month, status, objectives, publisher, unitId } = body;
     if (!schoolId) return NextResponse.json({ error: 'Missing schoolId' }, { status: 400 });
+
+    let tags = body.tags;
+    let examWeightage = body.examWeightage;
+    let toughnessLevel = body.toughnessLevel;
+    let weightageScore = body.weightageScore;
+
+    // Auto-generate AI analysis if tags/weightage are missing
+    if (!tags || !examWeightage || !toughnessLevel || !weightageScore) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey && topic) {
+        try {
+          const { GoogleGenAI } = await import('@google/genai');
+          const ai = new GoogleGenAI({ apiKey });
+          const prompt = `Analyze topic "${topic}" (${cls || ''} ${subject || ''}):
+Extract JSON: {"tags":["keyword1","keyword2"],"examWeightage":8,"toughnessLevel":"medium","weightageScore":7.6}`;
+          const aiRes = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json', temperature: 0.1 }
+          });
+          const parsed = JSON.parse(aiRes.text || '{}');
+          tags = tags || parsed.tags || [topic.toLowerCase().replace(/[^a-z0-9]/g, '_')];
+          examWeightage = examWeightage || parsed.examWeightage || 7;
+          toughnessLevel = toughnessLevel || parsed.toughnessLevel || 'medium';
+          weightageScore = weightageScore || parsed.weightageScore || calculateWeightageScore(examWeightage, toughnessLevel);
+        } catch (e) {
+          console.warn('[syllabus POST] AI analysis fallback:', e);
+        }
+      }
+      tags = tags || [topic.toLowerCase().replace(/[^a-z0-9]/g, '_')];
+      examWeightage = examWeightage || 7;
+      toughnessLevel = toughnessLevel || 'medium';
+      weightageScore = weightageScore || calculateWeightageScore(examWeightage, toughnessLevel);
+    }
 
     const supabase = createAdminClient();
 
-    // ── Deduplication check ───────────────────────────────────────────────────
+    // Deduplication check
     if (teacherId && topic && month) {
       let dupQuery = supabase
         .from('syllabus')
@@ -90,27 +127,38 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const metadata = { tags, examWeightage, toughnessLevel, weightageScore };
+
     const { data, error } = await supabase
       .from('syllabus')
       .insert({
-        school_id:  schoolId,
-        teacher_id: teacherId || null,
-        subject:    subject || null,
-        class:      cls || null,
-        grade:      body.grade || cls || null,
-        topic:      topic || null,
-        month:      month || null,
-        objectives: body.objectives || null,
-        publisher:  body.publisher || 'NCERT',
-        unit_id:    body.unitId || null,
-        status:     status || 'pending',
+        school_id:       schoolId,
+        teacher_id:      teacherId || null,
+        subject:         subject || null,
+        class:           cls || null,
+        grade:           body.grade || cls || null,
+        topic:           topic || null,
+        month:           month || null,
+        objectives:      objectives || null,
+        publisher:       publisher || 'NCERT',
+        unit_id:         unitId || null,
+        status:          status || 'pending',
+        tags:            tags,
+        exam_weightage:  examWeightage,
+        toughness_level: toughnessLevel,
+        weightage_score: weightageScore,
+        metadata:        metadata,
       })
       .select('id')
       .single();
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, id: data.id });
+    return NextResponse.json({
+      success: true,
+      id: data.id,
+      analysis: { tags, examWeightage, toughnessLevel, weightageScore }
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -430,9 +430,30 @@ export default function SyllabusPlanner() {
                     <Library className="w-3 h-3 inline-block mr-1 -mt-px" />
                     {mod.publisher || 'NCERT'}
                   </span>
+                  <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md border ${
+                    mod.toughnessLevel === 'hard' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                    mod.toughnessLevel === 'easy' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
+                    {mod.toughnessLevel ? mod.toughnessLevel.toUpperCase() : 'MEDIUM'}
+                  </span>
+                  <span className="text-xs font-extrabold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 ml-auto">
+                    🔥 Exam Weight: {mod.examWeightage || 7}/10
+                  </span>
                 </div>
                 <h3 className="text-base font-bold text-[#002147]">{mod.topic}</h3>
                 {mod.objectives && <p className="text-xs text-gray-500 leading-relaxed">{mod.objectives}</p>}
+
+                {/* AI Concept Tags */}
+                {Array.isArray(mod.tags) && mod.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {mod.tags.map((tag: string) => (
+                      <span key={tag} className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center justify-between pt-1 text-xs text-gray-400">
                   <span>Class: {mod.grade || mod.class || 'All'}</span>
                   <div className="flex items-center gap-3">

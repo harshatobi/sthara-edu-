@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Sparkles, Loader2, Send, BookOpen, CheckCircle,
-  ChevronDown, Plus, Trash2, FileText
+  ChevronDown, Plus, Trash2, FileText, Tag, Flame
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -18,6 +18,20 @@ interface HomeworkQuestion {
   answer?: string;
 }
 
+interface SyllabusTopicNode {
+  id: string;
+  topic: string;
+  tags: string[];
+  examWeightage: number;
+  toughnessLevel: 'easy' | 'medium' | 'hard';
+  weightageScore: number;
+}
+
+interface SyllabusChapterNode {
+  chapterName: string;
+  topics: SyllabusTopicNode[];
+}
+
 export default function TeacherHomeworkPage() {
   const { profile, loading } = useAuth();
   const router = useRouter();
@@ -25,7 +39,15 @@ export default function TeacherHomeworkPage() {
 
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
+
+  // Dynamic Syllabus Dropdowns
+  const [chapters, setChapters] = useState<SyllabusChapterNode[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState('');
+  const [availableTopics, setAvailableTopics] = useState<SyllabusTopicNode[]>([]);
+
   const [topic, setTopic] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [weightageScore, setWeightageScore] = useState<number>(7.0);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [numQuestions, setNumQuestions] = useState(5);
   const [questionType, setQuestionType] = useState<'mixed' | 'short' | 'long' | 'mcq'>('mixed');
@@ -60,6 +82,68 @@ export default function TeacherHomeworkPage() {
     if (assignedSubjects.length === 1 && !selectedSubject) setSelectedSubject(assignedSubjects[0]);
   }, [profile?.assignments]);
 
+  // Fetch Syllabus Tree when Class or Subject changes
+  useEffect(() => {
+    if (!selectedClass || !selectedSubject) {
+      setChapters([]);
+      setSelectedChapter('');
+      setAvailableTopics([]);
+      return;
+    }
+
+    const fetchSyllabusTree = async () => {
+      try {
+        const token = await getAuthToken();
+        const res = await fetch(
+          `/api/teacher/syllabus-tree?schoolId=${profile?.schoolId || 'all'}&class=${encodeURIComponent(selectedClass)}&subject=${encodeURIComponent(selectedSubject)}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        );
+        const data = await res.json();
+        if (data.success && Array.isArray(data.chapters)) {
+          setChapters(data.chapters);
+          if (data.chapters.length > 0) {
+            setSelectedChapter(data.chapters[0].chapterName);
+            setAvailableTopics(data.chapters[0].topics || []);
+          }
+        }
+      } catch (err) {
+        console.error('[HomeworkGen] Syllabus tree load error:', err);
+      }
+    };
+
+    fetchSyllabusTree();
+  }, [selectedClass, selectedSubject, profile?.schoolId]);
+
+  // Update Available Topics when Chapter changes
+  useEffect(() => {
+    if (!selectedChapter) {
+      setAvailableTopics([]);
+      return;
+    }
+    const found = chapters.find(c => c.chapterName === selectedChapter);
+    if (found) {
+      setAvailableTopics(found.topics);
+      if (found.topics.length > 0) {
+        const tNode = found.topics[0];
+        setTopic(tNode.topic);
+        setSelectedTags(tNode.tags || []);
+        setDifficulty(tNode.toughnessLevel || 'medium');
+        setWeightageScore(tNode.weightageScore || 7.0);
+      }
+    }
+  }, [selectedChapter, chapters]);
+
+  // Handle Topic Selection from dropdown
+  const handleSelectTopicNode = (topicName: string) => {
+    setTopic(topicName);
+    const node = availableTopics.find(t => t.topic === topicName);
+    if (node) {
+      setSelectedTags(node.tags || []);
+      setDifficulty(node.toughnessLevel || 'medium');
+      setWeightageScore(node.weightageScore || 7.0);
+    }
+  };
+
   // Set default due date to 3 days from now
   useEffect(() => {
     const d = new Date();
@@ -68,7 +152,7 @@ export default function TeacherHomeworkPage() {
   }, []);
 
   const handleGenerate = async () => {
-    if (!topic.trim()) return alert('Please enter a topic');
+    if (!topic.trim()) return alert('Please enter or select a topic');
     if (!selectedClass) return alert('Please select a class');
     if (!selectedSubject) return alert('Please select a subject');
 
@@ -122,6 +206,10 @@ export default function TeacherHomeworkPage() {
           type: 'homework',
           subject: selectedSubject,
           class: selectedClass,
+          chapter: selectedChapter,
+          topic: topic,
+          tags: selectedTags,
+          weightageScore,
           dueDate,
           totalMarks,
           questions: questions.map((q, i) => ({
@@ -197,17 +285,67 @@ export default function TeacherHomeworkPage() {
             </select>
           </div>
 
-          {/* Topic */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-bold text-gray-700 mb-2">Topic / Chapter</label>
-            <input
-              type="text"
-              value={topic}
-              onChange={e => setTopic(e.target.value)}
-              placeholder="e.g. Quadratic Equations, Photosynthesis, French Revolution..."
+          {/* Dynamic Chapter Dropdown */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Chapter / Unit</label>
+            <select
+              value={selectedChapter}
+              onChange={e => setSelectedChapter(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-            />
+              disabled={!selectedSubject || chapters.length === 0}
+            >
+              {chapters.length === 0 ? (
+                <option value="">— No chapters found for this subject —</option>
+              ) : (
+                chapters.map(c => (
+                  <option key={c.chapterName} value={c.chapterName}>{c.chapterName}</option>
+                ))
+              )}
+            </select>
           </div>
+
+          {/* Dynamic Topic Dropdown */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Topic</label>
+            {availableTopics.length > 0 ? (
+              <select
+                value={topic}
+                onChange={e => handleSelectTopicNode(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              >
+                {availableTopics.map(t => (
+                  <option key={t.id || t.topic} value={t.topic}>
+                    {t.topic} ({t.toughnessLevel.toUpperCase()} · Weight: {t.weightageScore})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                placeholder="e.g. Quadratic Equations, Photosynthesis..."
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              />
+            )}
+          </div>
+
+          {/* Tags & Weightage Info Pill */}
+          {selectedTags.length > 0 && (
+            <div className="md:col-span-2 bg-indigo-50/70 border border-indigo-100 p-3 rounded-2xl flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                <Tag className="w-3.5 h-3.5 text-indigo-600" /> Topic Tags:
+              </span>
+              {selectedTags.map(tag => (
+                <span key={tag} className="px-2 py-0.5 bg-white text-indigo-700 border border-indigo-200 text-xs font-semibold rounded-lg shadow-2xs">
+                  #{tag}
+                </span>
+              ))}
+              <span className="ml-auto text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-amber-600" /> TML Weightage: {weightageScore}
+              </span>
+            </div>
+          )}
 
           {/* Question Type */}
           <div>
@@ -281,53 +419,55 @@ export default function TeacherHomeworkPage() {
         </button>
       </div>
 
-      {/* Generated Questions */}
+      {/* Generated Questions Section */}
       {questions.length > 0 && (
-        <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-[#002147]">Generated Homework ({questions.length} questions)</h2>
-              <p className="text-gray-500 text-xs mt-1">
-                {selectedSubject} • {selectedClass} • Due: {dueDate}
-              </p>
-            </div>
-            {posted ? (
-              <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                <CheckCircle className="w-5 h-5" />
-                Published! Redirecting...
-              </div>
-            ) : (
-              <button
-                onClick={handlePublish}
-                disabled={isPosting}
-                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center gap-2 disabled:opacity-60"
-              >
-                <Send className="w-4 h-4" />
-                {isPosting ? 'Publishing...' : 'Publish to Class'}
-              </button>
-            )}
+        <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-extrabold text-[#002147]">
+              Generated Questions ({questions.length})
+            </h2>
+            <span className="text-xs font-bold px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+              Total Marks: {questions.reduce((sum, q) => sum + (q.marks || 0), 0)}
+            </span>
           </div>
 
           <div className="space-y-4">
             {questions.map((q, idx) => (
               <div key={idx} className="p-5 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 capitalize shrink-0">
-                    {q.type === 'mcq' ? 'MCQ' : q.type === 'short' ? 'Short Answer' : 'Long Answer'} • {q.marks} marks
+                  <span className="font-extrabold text-sm text-[#002147]">Q{idx + 1}.</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-800">{q.question}</p>
+                    {q.answer && (
+                      <p className="text-xs text-gray-500 mt-2 bg-white p-3 rounded-xl border border-gray-200">
+                        <strong className="text-indigo-600">Model Answer:</strong> {q.answer}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-xs font-bold px-2.5 py-1 bg-white text-gray-600 border border-gray-200 rounded-lg">
+                    {q.marks} {q.marks === 1 ? 'Mark' : 'Marks'}
                   </span>
                 </div>
-                <p className="font-semibold text-[#002147] text-sm">Q{idx + 1}. {q.question}</p>
-                {q.answer && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-indigo-600 font-semibold cursor-pointer hover:text-indigo-700">
-                      View model answer
-                    </summary>
-                    <p className="mt-2 text-xs text-gray-600 bg-indigo-50 p-3 rounded-xl border border-indigo-100">{q.answer}</p>
-                  </details>
-                )}
               </div>
             ))}
           </div>
+
+          {posted ? (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl font-bold text-center flex items-center justify-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
+              <span>Homework Published Successfully! Redirecting...</span>
+            </div>
+          ) : (
+            <button
+              onClick={handlePublish}
+              disabled={isPosting}
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-60"
+            >
+              <Send className="w-5 h-5" />
+              <span>{isPosting ? 'Publishing Assignment...' : 'Publish to Class Roster'}</span>
+              {isPosting && <Loader2 className="w-4 h-4 animate-spin" />}
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/teacher/post-assignment
- * Body: { schoolId, title, type, dueDate, description, class, subject, teacherId, teacherName, tasks?, totalMarks?, questions? }
- * Inserts a new assignment row into the assignments table.
+ * Body: { schoolId, title, type, dueDate, description, class, subject, teacherId, teacherName, tasks?, totalMarks?, questions?, chapter?, topic?, tags?, weightageScore? }
+ * Inserts a new assignment row into the assignments table with syllabus tagging and weightage.
  */
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await verifyApiToken(req.headers.get('authorization'));
@@ -30,6 +30,10 @@ export async function POST(req: NextRequest) {
       assignedStudentIds,
       questionPaperUrl,
       units,
+      chapter,
+      topic,
+      tags,
+      weightageScore,
     } = body;
 
     if (!schoolId || !title || !teacherId) {
@@ -39,8 +43,10 @@ export async function POST(req: NextRequest) {
     // ── AI Topic & Curriculum Unit Analysis ──────────────────────────────────
     let finalUnits: string[] = Array.isArray(units) && units.length > 0 ? units : [];
 
+    if (chapter) finalUnits.push(chapter);
+    if (topic && !finalUnits.includes(topic)) finalUnits.push(topic);
+
     if (finalUnits.length === 0) {
-      // Try AI extraction of topic/unit from curriculum content
       const apiKey = process.env.GEMINI_API_KEY;
       if (apiKey) {
         try {
@@ -50,10 +56,9 @@ export async function POST(req: NextRequest) {
 Analyze this posted homework/assignment for ${assignmentClass || 'Class 10'} ${subject || 'Science'}:
 Title: "${title}"
 Description: "${description || ''}"
-Questions: ${JSON.stringify(questions || [])}
 
-Extract 1-2 concise, formal curriculum topic/unit names (e.g. "Chemical Reactions and Equations", "Acids, Bases and Salts", "Life Processes", "Quadratic Equations").
-Return ONLY a JSON array of strings, e.g.: ["Chemical Reactions and Equations"]`;
+Extract 1-2 concise, formal curriculum topic/unit names (e.g. ["Chemical Reactions and Equations"]).
+Return ONLY a JSON array of strings.`;
 
           const aiRes = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -66,39 +71,48 @@ Return ONLY a JSON array of strings, e.g.: ["Chemical Reactions and Equations"]`
             finalUnits = parsed.map((u: string) => String(u).trim()).filter(Boolean);
           }
         } catch (aiErr) {
-          console.warn('[post-assignment] AI topic extraction failed, using title fallback:', aiErr);
+          console.warn('[post-assignment] AI topic extraction failed:', aiErr);
         }
       }
 
-      // Fallback: Use formatted title if AI topic extraction was empty
       if (finalUnits.length === 0) {
-        const cleanTitle = title.trim().replace(/^homework:?\s*/i, '');
-        const formattedTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
-        finalUnits = [formattedTitle];
+        const cleanTitle = title.trim().replace(/^homework:?\s*/i, '').replace(/^quiz:?\s*/i, '');
+        finalUnits = [cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1)];
       }
     }
 
+    // Remove duplicates
+    finalUnits = [...new Set(finalUnits)];
+
     const supabase = createAdminClient();
+
+    const assignmentData: any = {
+      school_id: schoolId,
+      teacher_id: teacherId,
+      title,
+      type: type || 'homework',
+      due_date: dueDate || null,
+      description: description || '',
+      class: assignmentClass || null,
+      subject: subject || null,
+      tasks: tasks || [],
+      total_marks: totalMarks || null,
+      questions: questions || [],
+      question_paper_url: questionPaperUrl || null,
+      assigned_student_ids: assignedStudentIds || [],
+      units: finalUnits,
+      status: 'published',
+      metadata: {
+        chapter: chapter || null,
+        topic: topic || null,
+        tags: Array.isArray(tags) ? tags : [],
+        weightageScore: typeof weightageScore === 'number' ? weightageScore : 7.0,
+      },
+    };
 
     const { data, error } = await supabase
       .from('assignments')
-      .insert({
-        school_id: schoolId,
-        teacher_id: teacherId,
-        title,
-        type: type || 'homework',
-        due_date: dueDate || null,
-        description: description || '',
-        class: assignmentClass || null,
-        subject: subject || null,
-        tasks: tasks || [],
-        total_marks: totalMarks || null,
-        questions: questions || [],
-        question_paper_url: questionPaperUrl || null,
-        assigned_student_ids: assignedStudentIds || [],
-        units: finalUnits,
-        status: 'published',
-      })
+      .insert(assignmentData)
       .select('id')
       .single();
 

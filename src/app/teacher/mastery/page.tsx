@@ -178,10 +178,10 @@ export default function TeacherMasteryTrackerPage() {
 
         const studentIds = rawStudents.map(s => s.id);
 
-        // 2. Fetch Submissions
+        // 2. Fetch Submissions with metadata
         const { data: subsData } = await supabase
           .from('submissions')
-          .select('student_id, score, max_score, teacher_approved, assignments(subject, units, title)')
+          .select('student_id, score, max_score, teacher_approved, assignments(subject, units, title, metadata)')
           .in('student_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
 
         // 3. Fetch TML Scores
@@ -197,8 +197,9 @@ export default function TeacherMasteryTrackerPage() {
             return !selectedSubject || (assign?.subject || '').toLowerCase().includes(selectedSubject.toLowerCase());
           });
 
-          let scoreSum = 0;
-          let scoreCount = 0;
+          let weightedSum = 0;
+          let weightTotal = 0;
+          let submissionCount = 0;
           const unitScores: Record<string, number | null> = {
             u1: null, u2: null, u3: null, u4: null, u5: null
           };
@@ -206,10 +207,13 @@ export default function TeacherMasteryTrackerPage() {
           stSubs.forEach(sub => {
             if (sub.max_score <= 0) return;
             const pct = Math.round((sub.score / sub.max_score) * 100);
-            scoreSum += pct;
-            scoreCount++;
-
             const assign = sub.assignments as any;
+            const weight = (assign?.metadata?.weightageScore as number) || 7.0;
+
+            weightedSum += pct * weight;
+            weightTotal += weight;
+            submissionCount++;
+
             const unitName = (Array.isArray(assign?.units) && assign.units[0]) || assign?.title || '';
 
             if (unitName.toLowerCase().includes('foundation') || unitName.toLowerCase().includes('reaction') || unitName.toLowerCase().includes('real')) unitScores.u1 = pct;
@@ -225,12 +229,15 @@ export default function TeacherMasteryTrackerPage() {
 
           stTmls.forEach(tml => {
             if (tml.score === null) return;
-            scoreSum += Math.round(tml.score);
-            scoreCount++;
+            const scoreVal = Math.round(tml.score);
+            const weight = 7.0; // Standard TML weight
+            weightedSum += scoreVal * weight;
+            weightTotal += weight;
+            submissionCount++;
           });
 
-          const overall = scoreCount > 0 ? Math.round(scoreSum / scoreCount) : null;
-          const conf = scoreCount >= 8 ? 'firm' : scoreCount >= 4 ? 'provisional' : 'insufficient';
+          const overall = weightTotal > 0 ? Math.round(weightedSum / weightTotal) : null;
+          const conf = submissionCount >= 8 ? 'firm' : submissionCount >= 4 ? 'provisional' : 'insufficient';
 
           return {
             id: s.id,

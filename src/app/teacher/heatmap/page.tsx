@@ -119,6 +119,175 @@ const SUBJECT_CURRICULUM_MAP: Record<string, ChapterDef[]> = {
         { id: 'topic_excretion', name: 'Excretion & Nephrons' }
       ]
     }
+  ],
+  SocialStudies: [
+    {
+      id: 'chap_nat_europe',
+      name: 'Rise of Nationalism in Europe',
+      topics: [
+        { id: 'topic_french_rev', name: 'French Revolution & Nation Idea' },
+        { id: 'topic_making_nat', name: 'Making of Nationalism' },
+        { id: 'topic_rev_age', name: 'Age of Revolutions 1830-1848' }
+      ]
+    },
+    {
+      id: 'chap_nat_india',
+      name: 'Nationalism in India',
+      topics: [
+        { id: 'topic_ww1_satyagraha', name: 'First World War & Satyagraha' },
+        { id: 'topic_non_coop', name: 'Non-Cooperation Movement' },
+        { id: 'topic_civil_disob', name: 'Civil Disobedience & Salt March' }
+      ]
+    },
+    {
+      id: 'chap_res_dev',
+      name: 'Resources & Development',
+      topics: [
+        { id: 'topic_res_types', name: 'Types & Planning of Resources' },
+        { id: 'topic_soil_types', name: 'Soil Types & Conservation' }
+      ]
+    },
+    {
+      id: 'chap_power_share',
+      name: 'Power Sharing & Federalism',
+      topics: [
+        { id: 'topic_belgium_sri', name: 'Belgium & Sri Lanka Cases' },
+        { id: 'topic_fed_india', name: 'Federalism in India' }
+      ]
+    }
+  ],
+  Physics: [
+    {
+      id: 'chap_phy_world',
+      name: 'Physical World & Measurement',
+      topics: [
+        { id: 'topic_units_dim', name: 'Units, Dimensions & Errors' },
+        { id: 'topic_kinematics', name: 'Motion in a Straight Line & Vectors' }
+      ]
+    },
+    {
+      id: 'chap_laws_motion',
+      name: 'Laws of Motion & Work',
+      topics: [
+        { id: 'topic_newton_laws', name: 'Newton’s Laws & Friction' },
+        { id: 'topic_work_energy', name: 'Work, Energy & Power' }
+      ]
+    },
+    {
+      id: 'chap_optics_elec',
+      name: 'Electrostatics & Optics',
+      topics: [
+        { id: 'topic_coulomb_cap', name: 'Coulomb’s Law & Capacitance' },
+        { id: 'topic_ray_wave_optics', name: 'Ray & Wave Optics' }
+      ]
+    }
+  ],
+  Chemistry: [
+    {
+      id: 'chap_atom_struct',
+      name: 'Structure of Atom & Bonding',
+      topics: [
+        { id: 'topic_bohr_quantum', name: 'Bohr Model & Quantum Numbers' },
+        { id: 'topic_chem_bond', name: 'Chemical Bonding & VSEPR' }
+      ]
+    },
+    {
+      id: 'chap_thermo_equil',
+      name: 'Thermodynamics & Equilibrium',
+      topics: [
+        { id: 'topic_enthalpy_entropy', name: 'Enthalpy, Entropy & Free Energy' },
+        { id: 'topic_ionic_equil', name: 'Chemical & Ionic Equilibrium' }
+      ]
+    },
+    {
+      id: 'chap_organic',
+      name: 'Organic Chemistry Principles',
+      topics: [
+        { id: 'topic_iupac_isomer', name: 'IUPAC Naming & Isomerism' },
+        { id: 'topic_hydrocarbons', name: 'Alkanes, Alkenes & Alkynes' }
+      ]
+    }
+  ],
+  Biology: [
+    {
+      id: 'chap_cell_bio',
+      name: 'Cell Biology & Genetics',
+      topics: [
+        { id: 'topic_cell_cycle', name: 'Cell Division & Mitosis/Meiosis' },
+        { id: 'topic_mendel_gen', name: 'Mendelian Genetics & Inheritance' }
+      ]
+    },
+    {
+      id: 'chap_human_physio',
+      name: 'Human Physiology',
+      topics: [
+        { id: 'topic_dig_resp', name: 'Digestion & Respiration Systems' },
+        { id: 'topic_circ_excr', name: 'Circulation & Kidney Excretion' }
+      ]
+    }
+  ],
+  Accountancy: [
+    {
+      id: 'chap_acc_fund',
+      name: 'Partnership Fundamentals',
+      topics: [
+        { id: 'topic_part_deed', name: 'Partnership Deed & Capital Accounts' },
+        { id: 'topic_goodwill_reval', name: 'Goodwill Valuation & Revaluation' }
+      ]
+    },
+    {
+      id: 'chap_company_acc',
+      name: 'Company Accounts & Shares',
+      topics: [
+        { id: 'topic_share_issue', name: 'Issue & Forfeiture of Shares' },
+        { id: 'topic_debentures', name: 'Issue of Debentures' }
+      ]
+    },
+    {
+      id: 'chap_fin_analysis',
+      name: 'Financial Statement Analysis',
+      topics: [
+        { id: 'topic_acc_ratios', name: 'Accounting Ratios Analysis' },
+        { id: 'topic_cash_flow', name: 'Cash Flow Statement (AS-3)' }
+      ]
+    }
+  ],
+  BusinessStudies: [
+    {
+      id: 'chap_mgmt_princ',
+      name: 'Principles of Management',
+      topics: [
+        { id: 'topic_fayol_taylor', name: 'Fayol Principles & Taylor Scientific Mgmt' },
+        { id: 'topic_biz_env', name: 'Business Environment & PESTEL' }
+      ]
+    },
+    {
+      id: 'chap_mgmt_func',
+      name: 'Management Functions',
+      topics: [
+        { id: 'topic_plan_org', name: 'Planning & Organising Structures' },
+        { id: 'topic_staff_dir_ctrl', name: 'Staffing, Directing & Controlling' }
+      ]
+    }
+  ],
+  Economics: [
+    {
+      id: 'chap_micro_eco',
+      name: 'Microeconomics',
+      topics: [
+        { id: 'topic_consumer_eq', name: 'Consumer Equilibrium & Demand' },
+        { id: 'topic_producer_cost', name: 'Production, Cost & Supply' }
+      ]
+    },
+    {
+      id: 'chap_macro_eco',
+      name: 'Macroeconomics & National Income',
+      topics: [
+        { id: 'topic_nat_inc', name: 'National Income Aggregates & GDP' },
+        { id: 'topic_money_banking', name: 'Money, Banking & RBI Policies' },
+        { id: 'topic_govt_budget', name: 'Government Budget & BoP' }
+      ]
+    }
   ]
 };
 
@@ -410,7 +579,8 @@ export default function TeacherHeatmapPage() {
 
         // Fallback to rich subject curriculum map if dynamic topics are empty
         if (dynamicChapters.length === 0) {
-          const stdChapters = SUBJECT_CURRICULUM_MAP[selectedSubject] || SUBJECT_CURRICULUM_MAP.Mathematics;
+          const keyNoSpaces = (selectedSubject || '').replace(/\s+/g, '');
+          const stdChapters = SUBJECT_CURRICULUM_MAP[selectedSubject] || SUBJECT_CURRICULUM_MAP[keyNoSpaces] || SUBJECT_CURRICULUM_MAP.Mathematics;
           dynamicChapters.push(...stdChapters);
         }
         setChapters(dynamicChapters);

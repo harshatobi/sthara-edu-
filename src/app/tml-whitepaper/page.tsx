@@ -333,9 +333,9 @@ export default function TmlWhitepaperPage() {
           </div>
         </div>
 
-        <h3>2.4 Statistical Confidence Factor (&mathcal;C)</h3>
+        <h3>2.4 Statistical Confidence Factor (C)</h3>
         <p>
-          To prevent single-quiz anomalies from producing false high/low scores, TML evaluates a confidence factor based on data points ($N_{data}$):
+          To prevent single-quiz anomalies from producing false high/low scores, TML evaluates a confidence factor based on data points (N<sub>data</sub>):
         </p>
         <div className="formula-box">
           <div className="formula-title">EQUATION 3: CONFIDENCE EVALUATION</div>
@@ -401,7 +401,7 @@ export default function TmlWhitepaperPage() {
         {/* Subject Level Aggregation */}
         <h2>4. Subject &amp; Class Heat Map Aggregation</h2>
         <p>
-          Overall Subject TML ($TML_{s, \text{Subject}}$) aggregates micro-topics weighted by curriculum unit importance ($W_t$):
+          Overall Subject TML (TML<sub>s, Subject</sub>) aggregates micro-topics weighted by curriculum unit importance (W<sub>t</sub>):
         </p>
 
         <div className="formula-box">
@@ -413,7 +413,7 @@ export default function TmlWhitepaperPage() {
 
         <div className="callout">
           <b>Integrity &amp; Anti-Cheating Safeguard:</b><br />
-          During proctored assessments, tab-switching or focus loss applies a 15% confidence penalty ($\mathcal{C}_{penalty} = 0.85$), ensuring TML reflects genuine independent competence.
+          During proctored assessments, tab-switching or focus loss applies a 15% confidence penalty (C<sub>penalty</sub> = 0.85), ensuring TML reflects genuine independent competence.
         </div>
 
         {/* Document Footer */}

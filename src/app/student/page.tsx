@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { TrendingUp, Target, Award, ArrowRight, FileText, CheckCircle2, Clock, Play, MessageSquare, Heart, X, Zap, ChevronRight } from 'lucide-react';
+import { TrendingUp, Target, Award, ArrowRight, FileText, CheckCircle2, Clock, Play, MessageSquare, Heart, ChevronRight } from 'lucide-react';
 
 interface HomeworkItem {
   id: string;
@@ -19,17 +19,12 @@ interface HomeworkItem {
 
 export default function StudentPage() {
   const router = useRouter();
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   
   // Interactive Energy Mood Scale (0 to 10)
   const [energyValue, setEnergyValue] = useState<number>(8);
-  
-  // Modals for Hero Tracker Cards
-  const [showTmlModal, setShowTmlModal] = useState(false);
-  const [showPendingModal, setShowPendingModal] = useState(false);
-  const [showRecentScoreModal, setShowRecentScoreModal] = useState(false);
 
-  // Homework Modal State
+  // Homework Modal State for submitting work when clicking "Open Workspace"
   const [selectedHw, setSelectedHw] = useState<HomeworkItem | null>(null);
   const [submissionText, setSubmissionText] = useState('');
   const [submittedFile, setSubmittedFile] = useState<string | null>(null);
@@ -105,7 +100,7 @@ export default function StudentPage() {
 
   const pendingCount = homeworkList.filter(h => h.status === 'PENDING').length;
 
-  // Mood label helper
+  // Mood label helper for 0 to 10 scale
   const getEnergyLabel = (val: number) => {
     if (val <= 2) return { emoji: '😴', label: 'Low Energy', col: 'text-blue-300' };
     if (val <= 4) return { emoji: '🥱', label: 'Tired', col: 'text-amber-200' };
@@ -175,11 +170,11 @@ export default function StudentPage() {
           </div>
         </div>
 
-        {/* Dynamic Interactive Hero Tracker Cards */}
+        {/* Dynamic Hero Tracker Cards — Direct Navigation to Dedicated Feature Sections */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-          {/* 1. TML TRACKER CARD */}
+          {/* 1. TRUE MASTERY LEVEL CARD -> Direct Link to /student/mastery */}
           <div 
-            onClick={() => setShowTmlModal(true)}
+            onClick={() => router.push('/student/mastery')}
             className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 rounded-2xl p-5 flex justify-between items-start transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-2xl"
           >
             <div>
@@ -187,15 +182,15 @@ export default function StudentPage() {
               <p className="text-3xl font-extrabold mt-1">72%</p>
               <p className="text-xs text-blue-200/80 mt-1 flex items-center gap-1">
                 <span>▲ 6 pts this fortnight</span>
-                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all">View Map →</span>
+                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold">Open Heatmap →</span>
               </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all">📈</div>
           </div>
 
-          {/* 2. PENDING TASKS CARD */}
+          {/* 2. PENDING TASKS CARD -> Direct Link to /student/homework */}
           <div 
-            onClick={() => setShowPendingModal(true)}
+            onClick={() => router.push('/student/homework')}
             className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 rounded-2xl p-5 flex justify-between items-start transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-2xl"
           >
             <div>
@@ -203,15 +198,15 @@ export default function StudentPage() {
               <p className="text-3xl font-extrabold mt-1">{pendingCount}</p>
               <p className="text-xs text-blue-200/80 mt-1 flex items-center gap-1">
                 <span>{pendingCount > 0 ? '1 due tomorrow' : 'All caught up!'}</span>
-                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all">View All →</span>
+                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold">Open Homework →</span>
               </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all">🎯</div>
           </div>
 
-          {/* 3. RECENT SCORE CARD */}
+          {/* 3. RECENT SCORE CARD -> Direct Link to /student/tutor */}
           <div 
-            onClick={() => setShowRecentScoreModal(true)}
+            onClick={() => router.push('/student/tutor')}
             className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 rounded-2xl p-5 flex justify-between items-start transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-2xl"
           >
             <div>
@@ -219,7 +214,7 @@ export default function StudentPage() {
               <p className="text-3xl font-extrabold mt-1">18<span className="text-lg text-blue-200/70">/20</span></p>
               <p className="text-xs text-blue-200/80 mt-1 flex items-center gap-1">
                 <span>Trigonometry quiz</span>
-                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all">Breakdown →</span>
+                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold">Open AI Tutor →</span>
               </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all">🏅</div>
@@ -307,117 +302,7 @@ export default function StudentPage() {
         </div>
       </div>
 
-      {/* ── 1. DETAILED TML MASTERY MAP MODAL ────────────────────── */}
-      {showTmlModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowTmlModal(false)}>
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowTmlModal(false)} className="absolute top-6 right-6 w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50">✕</button>
-
-            <span className="text-xs font-extrabold tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">Diagnostic Map</span>
-            <h2 className="text-2xl font-extrabold text-[#002147] mt-3">Detailed TML Mastery Heatmap</h2>
-            <p className="text-xs text-slate-500 mt-1 mb-6">Real-time breakdown combining proctored homework, quizzes, and AI tutor depth.</p>
-
-            <div className="bg-slate-900 text-white rounded-2xl p-5 mb-6 flex justify-between items-center">
-              <div>
-                <p className="text-xs font-bold text-blue-300 uppercase tracking-wider">Overall True Mastery Level</p>
-                <p className="text-4xl font-extrabold mt-1 text-white">72% <span className="text-sm font-semibold text-emerald-400">▲ 6 pts</span></p>
-              </div>
-              <button 
-                onClick={() => { setShowTmlModal(false); router.push('/student/mastery'); }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5"
-              >
-                <span>Full Heatmap</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <h3 className="font-bold text-sm text-[#002147] mb-3">Topic-Wise Micro Diagnostic Breakdown</h3>
-            <div className="space-y-3">
-              {[
-                { topic: 'Quadratic Equations (Level 2)', score: 78, status: 'Proficient', col: 'text-emerald-600 bg-emerald-50' },
-                { topic: 'Chemical Reactions & Equations', score: 71, status: 'Developing', col: 'text-amber-600 bg-amber-50' },
-                { topic: 'Nationalism in India — Timeline', score: 64, status: 'Developing', col: 'text-amber-600 bg-amber-50' },
-                { topic: 'Circles & Tangents', score: 31, status: 'Critical Gap', col: 'text-rose-600 bg-rose-50' },
-                { topic: 'Trigonometry Ratios & Identities', score: 90, status: 'Exemplary', col: 'text-emerald-700 bg-emerald-100' },
-              ].map(item => (
-                <div key={item.topic} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50">
-                  <div>
-                    <p className="font-bold text-sm text-[#002147]">{item.topic}</p>
-                    <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded mt-1 inline-block ${item.col}`}>{item.status}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-extrabold text-base text-[#002147]">{item.score}%</span>
-                    <div className="w-20 h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
-                      <div className="h-full bg-blue-600 rounded-full" style={{ width: `${item.score}%` }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 2. PENDING TASKS MODAL ──────────────────────────────── */}
-      {showPendingModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowPendingModal(false)}>
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowPendingModal(false)} className="absolute top-6 right-6 w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50">✕</button>
-
-            <span className="text-xs font-extrabold tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-full uppercase">Action Items</span>
-            <h2 className="text-2xl font-extrabold text-[#002147] mt-3">Pending Tasks ({pendingCount})</h2>
-            <p className="text-xs text-slate-500 mt-1 mb-6">Proctored homework and active worksheets requiring submission.</p>
-
-            <div className="space-y-3">
-              {homeworkList.map(hw => (
-                <div key={hw.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">{hw.subject}</span>
-                    <h4 className="font-bold text-base text-[#002147]">{hw.title}</h4>
-                    <p className="text-xs text-rose-600 font-semibold mt-0.5">🗓 {hw.dueDate}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowPendingModal(false);
-                      handleOpenHwModal(hw);
-                    }}
-                    className="px-4 py-2 bg-[#002147] text-white font-bold text-xs rounded-xl hover:bg-blue-900 transition-all shrink-0"
-                  >
-                    Open Workspace →
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 3. RECENT SCORE BREAKDOWN MODAL ─────────────────────── */}
-      {showRecentScoreModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowRecentScoreModal(false)}>
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowRecentScoreModal(false)} className="absolute top-6 right-6 w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50">✕</button>
-
-            <span className="text-xs font-extrabold tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase">Evaluation Result</span>
-            <h2 className="text-2xl font-extrabold text-[#002147] mt-3">Recent Assessment Breakdown</h2>
-            <p className="text-xs text-slate-500 mt-1 mb-6">Trigonometry Quiz · Evaluated by AI Examiner</p>
-
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 mb-6 text-emerald-900 text-center">
-              <p className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">FINAL SCORE ACCURACY</p>
-              <h3 className="text-5xl font-black my-2">18 / 20</h3>
-              <p className="text-sm font-bold text-emerald-800">Grade: A (90% Accuracy)</p>
-            </div>
-
-            <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-slate-700">
-              <p><b>Topic:</b> Trigonometry Ratios &amp; Standard Identities</p>
-              <p><b>Time Spent:</b> 14 minutes</p>
-              <p><b>Teacher/AI Feedback:</b> "Exceptional accuracy on algebraic derivations. Clean step presentation on Question 4."</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Functional Homework Workspace Modal ───────────────── */}
+      {/* ── Functional Homework Submission Workspace Modal ───────────────── */}
       {selectedHw && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedHw(null)}>
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>

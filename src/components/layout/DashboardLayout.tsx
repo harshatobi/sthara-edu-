@@ -82,39 +82,42 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
         {navigation.map((item, i) => {
           const Icon = item.icon;
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={onLinkClick}
-              className={clsx(
-                'group relative flex items-center px-3 py-2.5 text-sm font-medium rounded-xl',
-                'transition-all duration-200 ease-out',
-                item.current
-                  ? 'bg-white/15 text-white shadow-md shadow-black/20'
-                  : 'text-white/65 hover:bg-white/10 hover:text-white'
-              )}
-            >
-              {/* Active indicator bar */}
-              {item.current && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#dc143c] rounded-r-full" />
-              )}
-
-              <Icon
+            <div key={item.name} className="flex flex-col">
+              <Link
+                href={item.href}
+                onClick={onLinkClick}
                 className={clsx(
-                  'flex-shrink-0 ml-1 mr-3 h-5 w-5 transition-all duration-200',
+                  'group relative flex items-center px-3 py-2.5 text-sm font-medium rounded-xl',
+                  'transition-all duration-200 ease-out',
                   item.current
-                    ? 'text-[#dc143c] scale-110'
-                    : 'text-white/45 group-hover:text-white/90 group-hover:scale-110'
+                    ? 'bg-white/15 text-white shadow-md shadow-black/20'
+                    : 'text-white/65 hover:bg-white/10 hover:text-white'
                 )}
-              />
+              >
+                {/* Active indicator bar */}
+                {item.current && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#dc143c] rounded-r-full" />
+                )}
 
-              <span className="transition-transform duration-150 group-hover:translate-x-0.5">
-                {item.name}
-              </span>
+                <Icon
+                  className={clsx(
+                    'flex-shrink-0 ml-1 mr-3 h-5 w-5 transition-all duration-200',
+                    item.current
+                      ? 'text-[#dc143c] scale-110'
+                      : 'text-white/45 group-hover:text-white/90 group-hover:scale-110'
+                  )}
+                />
 
-              {/* Hover shimmer overlay */}
-              <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-white/5 to-transparent pointer-events-none" />
-            </Link>
+                <span className="transition-transform duration-150 group-hover:translate-x-0.5">
+                  {item.name}
+                </span>
+
+                {/* Hover shimmer overlay */}
+                <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-white/5 to-transparent pointer-events-none" />
+              </Link>
+              {/* Divider line between all features */}
+              <div className="border-b border-white/10 my-1" />
+            </div>
           );
         })}
       </div>

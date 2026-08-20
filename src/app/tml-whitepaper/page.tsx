@@ -298,9 +298,9 @@ export default function TmlWhitepaperPage() {
           </div>
         </div>
 
-        <h3>2.1 Time-Decay Recency Weighting (Exponential Half-Life)</h3>
+        <h3>2.2 Time-Decay Recency Weighting for Homework (H<sub>s,t</sub>)</h3>
         <p>
-          A score earned 60 days ago does not accurately reflect a student's current mastery today. TML applies exponential decay to historical assessment submissions using a half-life of <b>t<sub>1/2</sub> = 14 days</b> ($\lambda = \frac{\ln 2}{14} \approx 0.0495$).
+          A homework score earned 60 days ago does not accurately reflect a student's current mastery today. TML applies exponential decay to historical assessment submissions using a half-life of <b>t<sub>1/2</sub> = 14 days</b> (&lambda; = &ln; 2 / 14 &approx; 0.0495).
         </p>
 
         <div className="formula-box">
@@ -315,7 +315,25 @@ export default function TmlWhitepaperPage() {
           </div>
         </div>
 
-        <h3>2.2 Statistical Confidence Factor ($\mathcal{C}$)</h3>
+        <h3>2.3 Proctored Quiz Accuracy Formula (Q<sub>s,t</sub>)</h3>
+        <p>
+          Unlike homework, timed proctored quizzes evaluate question-level Bloom difficulty weights (&theta;<sub>k</sub>), time-efficiency multipliers (&tau;<sub>k</sub>), and proctoring integrity penalties (&delta;<sub>proctor</sub>) for tab switching.
+        </p>
+
+        <div className="formula-box">
+          <div className="formula-title">EQUATION 3: PROCTORED QUIZ MASTERY FORMULA</div>
+          <div className="formula-math">
+            Q<sub>s,t</sub> = &delta;<sub>proctor</sub> &times; [ &sum; ( &theta;<sub>k</sub> &times; R<sub>s,k</sub> &times; &tau;<sub>k</sub> ) / &sum; &theta;<sub>k</sub> ] &times; 100%
+          </div>
+          <div className="formula-desc">
+            • <b>R<sub>s,k</sub> &isin; &#123;0, 1&#125;</b> = Binary correctness for question <i>k</i> on topic <i>t</i><br />
+            • <b>&theta;<sub>k</sub></b> = Question Difficulty Weight (Easy = 1.0, Medium = 1.5, HOTS/Olympiad = 2.5)<br />
+            • <b>&tau;<sub>k</sub></b> = Speed Efficiency Multiplier (1.05 for fast &amp; accurate; 0.90 for last-second guessing)<br />
+            • <b>&delta;<sub>proctor</sub></b> = Proctoring Integrity Factor: <code>max(0.50, 1.0 - 0.15 &times; V<sub>switches</sub>)</code> (Applies 15% penalty per tab switch)
+          </div>
+        </div>
+
+        <h3>2.4 Statistical Confidence Factor (&mathcal;C)</h3>
         <p>
           To prevent single-quiz anomalies from producing false high/low scores, TML evaluates a confidence factor based on data points ($N_{data}$):
         </p>

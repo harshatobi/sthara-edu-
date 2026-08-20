@@ -346,9 +346,9 @@ export default function StudentPage() {
             <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all">🎯</div>
           </div>
 
-          {/* 3. DYNAMIC RECENT SCORE CARD */}
+          {/* 3. DYNAMIC RECENT SCORE CARD -> Direct Link to Graded Tests & Homework */}
           <div 
-            onClick={() => router.push('/student/tutor')}
+            onClick={() => router.push('/student/homework')}
             className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 rounded-2xl p-5 flex justify-between items-start transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-2xl"
           >
             <div>
@@ -356,7 +356,7 @@ export default function StudentPage() {
               <p className="text-3xl font-extrabold mt-1">{recentScoreText}</p>
               <p className="text-xs text-blue-200/80 mt-1 flex items-center gap-1 truncate max-w-[170px]">
                 <span className="truncate">{recentTitleText}</span>
-                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold shrink-0">AI Tutor →</span>
+                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold shrink-0">View Test →</span>
               </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all shrink-0">🏅</div>

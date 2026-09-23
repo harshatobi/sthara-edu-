@@ -1,12 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { requireStaff } from '@/lib/teacher/serverAuth';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  const { user, error: authError } = await verifyApiToken(request.headers.get('authorization'));
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Each call spends model quota: teachers and admins only, rate-limited.
+  const auth = await requireStaff(request);
+  if ('res' in auth) return auth.res;
+  if (!checkRateLimit(`homework-gen:${auth.staff.id}`, 15, 10 * 60_000).allowed) {
+    return NextResponse.json({ error: 'Too many generations. Try again in a few minutes.' }, { status: 429 });
+  }
 
   try {
     const { topic, subject, studentClass, difficulty = 'medium', numQuestions = 5, questionType = 'mixed' } = await request.json();
@@ -29,7 +34,7 @@ Topic: "${topic}"
 Difficulty: ${difficulty}
 ${typeInstruction}
 
-Generate exactly ${numQuestions} homework questions.
+Generate exactly ${Math.min(Math.max(Number(numQuestions) || 5, 1), 15)} homework questions.
 Return ONLY a raw JSON object in this EXACT format (no markdown, no code blocks):
 {
   "questions": [

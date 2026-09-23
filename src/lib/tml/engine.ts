@@ -271,7 +271,10 @@ export async function computeStudentTml(
       id, score, max_score, component_type, created_at, submission_id,
       assignments ( id, subject, title, units, type, proctored )
     `)
-    .eq('student_id', studentId);
+    .eq('student_id', studentId)
+    // Only marks a teacher has confirmed (or instant MCQ marking) move TML;
+    // AI-suggested marks wait for review.
+    .eq('teacher_confirmed', true);
   if (itemsErr) throw itemsErr;
 
   const coveredSubmissionIds = new Set<string>((itemsData || []).map((r: any) => r.submission_id).filter(Boolean));

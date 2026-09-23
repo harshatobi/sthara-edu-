@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { computeStudentTml } from '@/lib/tml/engine';
+import { computeStudentTml, normalizeComponentType } from '@/lib/tml/engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const [{ data: me }, { data: a }] = await Promise.all([
     supabase.from('users').select('school_id').eq('id', user.id).maybeSingle(),
-    supabase.from('assignments').select('id, school_id, subject, questions, total_marks').eq('id', assignmentId).maybeSingle(),
+    supabase.from('assignments').select('id, school_id, subject, type, status, questions, total_marks').eq('id', assignmentId).maybeSingle(),
   ]);
-  if (!a) return NextResponse.json({ error: 'Assignment not found.' }, { status: 404 });
+  if (!a || a.status === 'draft') return NextResponse.json({ error: 'Assignment not found.' }, { status: 404 });
   if (!me?.school_id || me.school_id !== a.school_id) return NextResponse.json({ error: 'This assignment is not in your school.' }, { status: 403 });
 
   const { data: existing } = await supabase.from('submissions').select('id').eq('assignment_id', assignmentId).eq('student_id', user.id).maybeSingle();
@@ -68,10 +68,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: dup ? 'You have already submitted this assignment.' : 'Could not save your submission.' }, { status: dup ? 409 : 500 });
   }
 
-  if (mcq.length) {
+  // Instantly-marked work is evidence now; anything with written answers
+  // becomes evidence when the teacher confirms their marks (review-submission).
+  if (allMcq) {
     const { error: itemsErr } = await supabase.from('submission_items').insert(mcq.map(({ i }) => ({
       submission_id: sub.id, assignment_id: assignmentId, student_id: user.id, school_id: me.school_id,
-      question_index: i, component_type: 'homework', score: correct(i) ? 1 : 0, max_score: 1, teacher_confirmed: true,
+      question_index: i, component_type: normalizeComponentType(a.type) === 'quiz' ? 'quiz' : 'homework', score: correct(i) ? 1 : 0, max_score: 1, teacher_confirmed: true,
     })));
     if (itemsErr) console.error('[submit-typed] items insert failed:', itemsErr.message);
   }

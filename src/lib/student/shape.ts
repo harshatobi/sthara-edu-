@@ -55,7 +55,8 @@ function parseAiQuestions(sub: any): AiQuestionFeedback[] {
 }
 
 function feedbackText(sub: any): string | null {
-  const f = sub?.feedback ?? (typeof sub?.ai_feedback === 'string' ? sub.ai_feedback : null) ?? sub?.ai_result?.overallFeedback ?? null;
+  // The teacher's note wins over the AI's summary once the work is reviewed.
+  const f = sub?.teacher_note ?? sub?.feedback ?? (typeof sub?.ai_feedback === 'string' ? sub.ai_feedback : null) ?? sub?.ai_result?.overallFeedback ?? null;
   return typeof f === 'string' && f.trim() ? f.trim() : null;
 }
 

@@ -98,5 +98,26 @@ export function flattenChapters(sub: CurriculumSubject): FlatChapter[] {
   });
 }
 
+export interface CourseChapter extends FlatChapter {
+  /** Position in teaching order, 1…n — what the UI numbers chapters by. */
+  seq: number;
+}
+
+/**
+ * Chapters in teaching order. Curriculum documents list chapters by unit
+ * (theme), which can scramble the textbook order (Class 9 Science: 2, 3, 11,
+ * 12, 5 …). When every chapter carries a distinct NCERT number, that number is
+ * the teaching order; otherwise (unnumbered, or numbering restarting per book
+ * as in Social Science) the document order stands.
+ */
+export function courseChapters(sub: CurriculumSubject): CourseChapter[] {
+  const flat = flattenChapters(sub);
+  const nums = flat.map(c => c.number);
+  const ordered = nums.every((n): n is number => typeof n === 'number') && new Set(nums).size === nums.length
+    ? [...flat].sort((a, b) => a.number! - b.number!)
+    : flat;
+  return ordered.map((c, i) => ({ ...c, seq: i + 1 }));
+}
+
 /** Chapters that appear in the year-end board paper (for tutor, tests, TML focus). */
 export const summativeChapters = (sub: CurriculumSubject) => flattenChapters(sub).filter(ch => !ch.formativeOnly);

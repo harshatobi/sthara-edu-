@@ -19,6 +19,8 @@ interface SituationItem {
   type: string;
   message: string;
   studentName?: string;
+  student_name?: string;
+  student_id?: string;
   studentId?: string;
   acknowledged?: boolean;
   metadata?: any;
@@ -99,6 +101,7 @@ export default function TeacherFeedPage() {
   }, [profile?.schoolId]);
 
   const handleAcknowledge = async (sitId: string) => {
+    if (!profile?.schoolId) return;
     try {
       const authToken = await getAuthToken();
       const res = await fetch('/api/teacher/acknowledge-situation', {

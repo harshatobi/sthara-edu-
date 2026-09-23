@@ -1,0 +1,256 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Mathematics",
+  "codes": [
+    "041"
+  ],
+  "source": {
+    "title": "Mathematics, Subject Code 041, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Maths_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic Tests (best 2 of 3)",
+        "marks": 10
+      },
+      {
+        "component": "Mathematics Activities (record 5, year-end activity test 3, viva 2)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Mathematics Textbook for Class XI (NCERT)",
+    "Mathematics Exemplar Problems for Class XI (NCERT)",
+    "Mathematics Lab Manual, Class XI (NCERT)"
+  ],
+  "notes": [
+    "The document states there is no chapter-wise weightage; care is to be taken to cover all chapters. Only unit marks are fixed.",
+    "The document has no learning-outcomes column for Mathematics, so chapter outcomes are left empty."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Sets and Functions",
+      "marks": 23,
+      "chapters": [
+        {
+          "name": "Sets",
+          "topics": [
+            "Sets and their representations",
+            "Empty set; finite and infinite sets; equal sets",
+            "Subsets; subsets of the real numbers, especially intervals (with notation)",
+            "Universal set; Venn diagrams",
+            "Union and intersection of sets; difference of sets",
+            "Complement of a set; properties of complement"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): practical problems on union and intersection of two sets"
+          ]
+        },
+        {
+          "name": "Relations and Functions",
+          "topics": [
+            "Ordered pairs; Cartesian product of sets; number of elements in the Cartesian product of two finite sets",
+            "Cartesian product of the reals with itself (up to R x R x R)",
+            "Relation: definition, pictorial diagrams, domain, co-domain and range",
+            "Function as a special relation; pictorial representation; domain, co-domain and range",
+            "Real-valued functions: constant, identity, polynomial, rational, modulus, signum, exponential, logarithmic and greatest integer functions with graphs",
+            "Sum, difference, product and quotient of functions"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): composition of functions"
+          ]
+        },
+        {
+          "name": "Trigonometric Functions",
+          "topics": [
+            "Positive and negative angles; radians and degrees and conversion",
+            "Trigonometric functions via the unit circle",
+            "Identity sin²x + cos²x = 1; signs of trigonometric functions",
+            "Domain, range and graphs of trigonometric functions",
+            "sin(x ± y) and cos(x ± y) and simple applications",
+            "Identities for tan(x ± y), cot(x ± y), sum-to-product formulae",
+            "Identities for sin 2x, cos 2x, tan 2x, sin 3x, cos 3x, tan 3x"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): general solution of sin y = sin a, cos y = cos a, tan y = tan a"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Algebra",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Complex Numbers and Quadratic Equations",
+          "topics": [
+            "Need for complex numbers, motivated by quadratic equations with no real solution",
+            "Algebraic properties of complex numbers",
+            "Argand plane"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): polar representation; statement of the Fundamental Theorem of Algebra; quadratic equations with real coefficients in the complex number system"
+          ]
+        },
+        {
+          "name": "Linear Inequalities",
+          "topics": [
+            "Linear inequalities",
+            "Algebraic solution of linear inequalities in one variable and representation on the number line"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): graphical solution of linear inequalities and systems of linear inequalities in two variables"
+          ]
+        },
+        {
+          "name": "Permutations and Combinations",
+          "topics": [
+            "Fundamental principle of counting",
+            "Factorial n",
+            "Permutations and combinations; derivation of formulae for nPr and nCr and their connections",
+            "Simple applications"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Binomial Theorem",
+          "topics": [
+            "Historical perspective; statement and proof for positive integral indices",
+            "Pascal's triangle",
+            "Simple applications"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): general and middle term in binomial expansion"
+          ]
+        },
+        {
+          "name": "Sequence and Series",
+          "topics": [
+            "Sequence and series",
+            "Arithmetic mean",
+            "Geometric progression: general term, sum of n terms, infinite GP and its sum",
+            "Geometric mean; relation between AM and GM"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): formulae for the sums of k, k² and k³ for k = 1 to n"
+          ]
+        },
+        {
+          "name": "Principle of Mathematical Induction",
+          "topics": [
+            "Process of proof by induction",
+            "Natural numbers as the least inductive subset of the reals",
+            "The principle of mathematical induction and simple applications"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Coordinate Geometry",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Straight Lines",
+          "topics": [
+            "Recall of two-dimensional geometry",
+            "Slope of a line and angle between two lines",
+            "Forms of the equation of a line: parallel to axis, point-slope, slope-intercept, two-point, intercept",
+            "Distance of a point from a line"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): normal form; general equation of a line"
+          ]
+        },
+        {
+          "name": "Conic Sections",
+          "topics": [
+            "Sections of a cone: circle, ellipse, parabola, hyperbola; point, straight line and pair of intersecting lines as degenerate cases",
+            "Standard equations and simple properties of parabola, ellipse and hyperbola",
+            "Standard equation of a circle"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Introduction to Three-dimensional Geometry",
+          "topics": [
+            "Coordinate axes and coordinate planes in three dimensions",
+            "Coordinates of a point",
+            "Distance between two points"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): section formula"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Calculus",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Limits and Derivatives",
+          "topics": [
+            "Derivative as rate of change, of distance and geometrically",
+            "Intuitive idea of limit",
+            "Limits of polynomial, rational, trigonometric, exponential and logarithmic functions",
+            "Definition of derivative and its relation to the slope of a tangent",
+            "Derivatives of sum, difference, product and quotient of polynomial and trigonometric functions"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): derivatives of composite functions (chain rule)"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Statistics and Probability",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Statistics",
+          "topics": [
+            "Measures of dispersion: range, mean deviation, variance and standard deviation of ungrouped and grouped data"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Probability",
+          "topics": [
+            "Events: occurrence of events, 'not', 'and' and 'or' events",
+            "Exhaustive and mutually exclusive events",
+            "Axiomatic (set-theoretic) probability and connections with earlier theories",
+            "Probability of an event, and of 'not', 'and' and 'or' events"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Assessed formatively only (not in the year-end paper): random experiments; outcomes; sample space (set representation)"
+          ]
+        }
+      ]
+    }
+  ]
+}

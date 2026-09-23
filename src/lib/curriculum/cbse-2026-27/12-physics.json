@@ -1,0 +1,269 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Physics",
+  "codes": [
+    "042"
+  ],
+  "source": {
+    "title": "Physics, Code 042, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Physics_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Two experiments, one from each section (7+7)",
+        "marks": 14
+      },
+      {
+        "component": "Practical record (experiments and activities)",
+        "marks": 5
+      },
+      {
+        "component": "One activity from any section",
+        "marks": 3
+      },
+      {
+        "component": "Investigatory project",
+        "marks": 3
+      },
+      {
+        "component": "Viva on experiments, activities and project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Physics, Class XI, Part I and II (NCERT)",
+    "Physics, Class XII, Part I and II (NCERT)",
+    "Laboratory Manual of Physics for Class XII (NCERT)"
+  ],
+  "notes": [
+    "The document gives marks for groups of units; each group is recorded as one unit carrying the group's marks.",
+    "Content marked in the NCERT textbooks as excluded for 2026-27 is not to be tested.",
+    "The document has no learning-outcomes column for Physics, so chapter outcomes are left empty."
+  ],
+  "units": [
+    {
+      "code": "I-II",
+      "name": "Electrostatics; Current Electricity",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Electric Charges and Fields",
+          "number": 1,
+          "topics": [
+            "Electric charges; conservation of charge",
+            "Coulomb's law; forces between multiple charges; superposition principle and continuous charge distribution",
+            "Electric field due to a point charge; field lines",
+            "Electric dipole; field due to a dipole; torque on a dipole in a uniform field",
+            "Electric flux; Gauss's theorem and its applications (infinitely long straight wire, infinite plane sheet, thin spherical shell)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Electrostatic Potential and Capacitance",
+          "number": 2,
+          "topics": [
+            "Electric potential and potential difference; potential due to a point charge, a dipole and a system of charges",
+            "Equipotential surfaces; potential energy of a system of two point charges and of a dipole in an electrostatic field",
+            "Conductors and insulators; free and bound charges inside a conductor",
+            "Dielectrics and electric polarisation",
+            "Capacitors and capacitance; series and parallel combination",
+            "Parallel plate capacitor with and without dielectric; energy stored in a capacitor"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Energy stored in a capacitor: formulae only, no derivation"
+          ]
+        },
+        {
+          "name": "Current Electricity",
+          "number": 3,
+          "topics": [
+            "Electric current; drift velocity, mobility and their relation with current",
+            "Ohm's law; V-I characteristics (linear and non-linear)",
+            "Electrical energy and power; resistivity and conductivity; temperature dependence of resistance",
+            "Internal resistance, potential difference and emf of a cell",
+            "Combination of cells in series and parallel",
+            "Kirchhoff's rules; Wheatstone bridge"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III-IV",
+      "name": "Magnetic Effects of Current and Magnetism; Electromagnetic Induction and Alternating Currents",
+      "marks": 17,
+      "chapters": [
+        {
+          "name": "Moving Charges and Magnetism",
+          "number": 4,
+          "topics": [
+            "Magnetic field; Oersted's experiment",
+            "Biot-Savart law and its application to a circular loop",
+            "Ampere's law and its application to an infinitely long straight wire; straight solenoid (qualitative)",
+            "Force on a moving charge in uniform magnetic and electric fields",
+            "Force on a current-carrying conductor; force between two parallel conductors; definition of ampere",
+            "Torque on a current loop; current loop as a magnetic dipole and its dipole moment",
+            "Moving coil galvanometer: current sensitivity, conversion to ammeter and voltmeter"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Magnetism and Matter",
+          "number": 5,
+          "topics": [
+            "Bar magnet; bar magnet as an equivalent solenoid",
+            "Field of a magnetic dipole along and perpendicular to its axis",
+            "Torque on a magnetic dipole in a uniform field; field lines",
+            "Para-, dia- and ferromagnetic substances; magnetisation; effect of temperature"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Equivalent solenoid, dipole field and torque: qualitative treatment only"
+          ]
+        },
+        {
+          "name": "Electromagnetic Induction",
+          "number": 6,
+          "topics": [
+            "Electromagnetic induction; Faraday's laws; induced emf and current",
+            "Lenz's law",
+            "Self and mutual induction"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Alternating Current",
+          "number": 7,
+          "topics": [
+            "Peak and RMS value of alternating current/voltage",
+            "Reactance and impedance",
+            "LCR series circuit (phasors only); resonance",
+            "Power in AC circuits; power factor; wattless current",
+            "AC generator; transformer"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V-VI",
+      "name": "Electromagnetic Waves; Optics",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Electromagnetic Waves",
+          "number": 8,
+          "topics": [
+            "Displacement current (basic idea)",
+            "Electromagnetic waves, their characteristics and transverse nature",
+            "Electromagnetic spectrum and elementary uses of each band"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Transverse nature: qualitative idea only"
+          ]
+        },
+        {
+          "name": "Ray Optics and Optical Instruments",
+          "number": 9,
+          "topics": [
+            "Reflection; spherical mirrors; mirror formula",
+            "Refraction; total internal reflection and optical fibres",
+            "Refraction at spherical surfaces; lenses; thin lens formula; lens maker's formula",
+            "Magnification; power of a lens; combination of thin lenses in contact",
+            "Refraction through a prism",
+            "Microscopes and astronomical telescopes (reflecting and refracting) and their magnifying powers"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Wave Optics",
+          "number": 10,
+          "topics": [
+            "Wavefront and Huygens' principle; reflection and refraction of plane waves using wavefronts",
+            "Proof of the laws of reflection and refraction using Huygens' principle",
+            "Interference; Young's double slit experiment; fringe width",
+            "Coherent sources and sustained interference",
+            "Diffraction due to a single slit; width of central maximum"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Fringe width: final expression only, no derivation",
+            "Single-slit diffraction: qualitative treatment only"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "VII-VIII",
+      "name": "Dual Nature of Radiation and Matter; Atoms and Nuclei",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Dual Nature of Radiation and Matter",
+          "number": 11,
+          "topics": [
+            "Dual nature of radiation; photoelectric effect; Hertz and Lenard's observations",
+            "Einstein's photoelectric equation: particle nature of light",
+            "Experimental study of the photoelectric effect",
+            "Matter waves; de Broglie relation"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Atoms",
+          "number": 12,
+          "topics": [
+            "Alpha-particle scattering experiment; Rutherford's model",
+            "Bohr model of the hydrogen atom: radius, velocity and energy of the electron in the nth orbit",
+            "Hydrogen line spectra"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Hydrogen line spectra: qualitative treatment only"
+          ]
+        },
+        {
+          "name": "Nuclei",
+          "number": 13,
+          "topics": [
+            "Composition and size of the nucleus; nuclear force",
+            "Mass-energy relation, mass defect",
+            "Binding energy per nucleon and its variation with mass number",
+            "Nuclear fission and fusion"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IX",
+      "name": "Electronic Devices",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Semiconductor Electronics: Materials, Devices and Simple Circuits",
+          "number": 14,
+          "topics": [
+            "Energy bands in conductors, semiconductors and insulators",
+            "Intrinsic and extrinsic semiconductors: p and n type; p-n junction",
+            "Semiconductor diode: I-V characteristics in forward and reverse bias",
+            "Junction diode as a rectifier"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Energy bands: qualitative ideas only"
+          ]
+        }
+      ]
+    }
+  ]
+}

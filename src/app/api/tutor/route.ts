@@ -1,47 +1,15 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { containsFoulLanguage } from '@/lib/tutor/safety';
 
 export const dynamic = 'force-dynamic';
 
-/* ── Foul language word list ── */
-const FOUL_WORDS = [
-  'fuck', 'shit', 'damn', 'bitch', 'ass', 'bastard', 'crap', 'piss',
-  'cock', 'dick', 'pussy', 'cunt', 'asshole', 'motherfucker', 'wtf',
-  'hell', 'sex', 'nude', 'porn', 'bullshit', 'whore', 'slut',
-  'madarchod', 'bsdk', 'bhosdi', 'chutiya', 'randi', 'lund', 'gaand',
-  'harami', 'mc', 'bc', 'sala', 'saala', 'maryadaga',
-];
-
-function containsFoulLanguage(text: string): boolean {
-  // Normalize: lowercase, replace non-alphanumeric with spaces
-  const lower = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-  return FOUL_WORDS.some(word => {
-    // ONLY use word-boundary regex — never plain includes()
-    // because includes('ass') would false-positive on 'class', 'mass', 'surpass', etc.
-    const regex = new RegExp(`\\b${word}\\b`, 'i');
-    return regex.test(lower);
-  });
-}
-
 export async function POST(request: NextRequest) {
-  // Origin check
-  const origin  = request.headers.get('origin')  || '';
-  const referer = request.headers.get('referer') || '';
-  const authHeader = request.headers.get('authorization') || '';
-  const appOrigins = [
-    process.env.NEXT_PUBLIC_APP_URL || '',
-    'http://localhost:3000',
-    'https://stharaschoolos.vercel.app',
-    'https://sthara.in',
-    'https://www.sthara.in',
-  ].filter(Boolean);
-  const isInternalOrigin = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
-  const hasBearerToken   = authHeader.startsWith('Bearer ') && authHeader.length > 20;
-  const noOrigin         = !origin;
-  if (!isInternalOrigin && !hasBearerToken && !noOrigin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const {
@@ -57,6 +25,18 @@ export async function POST(request: NextRequest) {
       semester,
     } = await request.json();
 
+    if (studentId && user.id !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: can only chat as yourself' }, { status: 403 });
+    }
+
+    const rl = checkRateLimit(`tutor:${user.id}`, 30, 5 * 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please slow down and try again shortly.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } }
+      );
+    }
+
     // ── FOUL LANGUAGE CHECK ──────────────────────────────────────────────────
     const lastUserMessage = [...messages].reverse().find((m: any) => m.sender === 'user');
     if (lastUserMessage && containsFoulLanguage(lastUserMessage.text)) {
@@ -64,16 +44,16 @@ export async function POST(request: NextRequest) {
       if (newViolationCount === 1) {
         return NextResponse.json({
           text: institutionType === 'college'
-            ? `⚠️ **Inappropriate language detected.**\n\nThis platform maintains professional academic standards. Please keep the conversation respectful and focused on your academic work.\n\n**Consider this a formal warning.**`
-            : `⚠️ **Please watch your language.**\n\nThis is a school learning environment and I'm here to help you study. Using inappropriate or offensive language is not acceptable here.\n\n**This is your first warning.** Please keep our conversation respectful so I can help you learn better! 📚`,
+            ? `**Inappropriate language detected.**\n\nThis platform maintains professional academic standards. Please keep the conversation respectful and focused on your academic work.\n\n**Consider this a formal warning.**`
+            : `**Please watch your language.**\n\nThis is a school learning environment and I'm here to help you study. Using inappropriate or offensive language is not acceptable here.\n\n**This is your first warning.** Please keep our conversation respectful so I can help you learn better.`,
           isFoulWarning: true,
           newViolationCount,
         });
       }
       return NextResponse.json({
         text: institutionType === 'college'
-          ? `⛔ **Second violation — inappropriate language.**\n\nYour professor has been notified. Continued misuse will result in restricted access. Please maintain professional conduct.`
-          : `⛔ **This is your second warning for inappropriate language.**\n\nYour teacher has been notified of this behavior. Please remember that respectful communication is important in every learning space.\n\nIf you'd like to continue learning, please ask your academic question politely.`,
+          ? `**Second violation — inappropriate language.**\n\nYour professor has been notified. Continued misuse will result in restricted access. Please maintain professional conduct.`
+          : `**This is your second warning for inappropriate language.**\n\nYour teacher has been notified of this behavior. Please remember that respectful communication is important in every learning space.\n\nIf you'd like to continue learning, please ask your academic question politely.`,
         isFoulWarning: true,
         notifyTeacher: true,
         newViolationCount,
@@ -230,7 +210,7 @@ CORE RULES:
     if (aiText && containsFoulLanguage(aiText)) {
       console.warn('[tutor] Output safety filter triggered — replacing response');
       return NextResponse.json({
-        text: `I encountered an issue generating a response for that topic. Please rephrase your question or ask about a related academic concept, and I'll do my best to help! 📚`,
+        text: `I encountered an issue generating a response for that topic. Please rephrase your question or ask about a related academic concept, and I'll do my best to help.`,
       });
     }
 

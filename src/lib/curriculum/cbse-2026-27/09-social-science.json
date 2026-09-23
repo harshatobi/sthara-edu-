@@ -1,0 +1,214 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Social Science",
+  "codes": ["087"],
+  "source": {
+    "title": "Social Science, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/SocialScience_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      { "component": "Periodic Assessment (pen-paper test)", "marks": 5 },
+      { "component": "Multiple Assessment", "marks": 5 },
+      { "component": "Subject Enrichment Activity (interdisciplinary project)", "marks": 5 },
+      { "component": "Portfolio", "marks": 5 }
+    ]
+  },
+  "textbooks": ["Social Science - Part 1 (NCERT)", "Social Science - Part 2 (NCERT)"],
+  "notes": [
+    "The document states 'Course Structure will be provided shortly': theme-wise marks and the theory total are not yet published, so no marks are recorded here.",
+    "Content is organised as integrated themes (Geography, History, Political Science, Economics) across two textbooks rather than subject-wise books."
+  ],
+  "units": [
+    {
+      "code": "Part 1", "name": "Social Science - Part 1", "marks": null,
+      "chapters": [
+        {
+          "name": "Understanding Social Science", "hours": 4,
+          "topics": ["Meaning, scope and relevance of Social Science", "Understanding Social Science from an Indian perspective"],
+          "outcomes": [
+            "Explains the relevance of Social Science to society, environment, economy and governance",
+            "Explains the scope of Geography, History, Political Science and Economics and their interconnections"
+          ]
+        },
+        {
+          "name": "Shaping of the Earth's Surface", "hours": 8,
+          "topics": [
+            "Theory of plate tectonics", "Interior of the Earth",
+            "Weathering and erosion; agents of gradation: rivers, waves and currents, wind, glaciers, underground water",
+            "Landforms and disasters: earthquakes, landslides, avalanches, Glacial Lake Outburst Flood (GLOF), dust storms"
+          ],
+          "outcomes": [
+            "Describes plate tectonics and locates major plates on a world map", "Explains weathering and erosion",
+            "Explains landform formation", "Explains causes of natural disasters and proposes mitigation strategies"
+          ]
+        },
+        {
+          "name": "Atmosphere and Climate", "hours": 7,
+          "topics": [
+            "Structure and composition of the atmosphere; elements of weather and climate", "Seasons of India and monsoons",
+            "Climate change", "Floods", "Carbon footprint"
+          ],
+          "outcomes": [
+            "Explains atmospheric layers with diagrams", "Explains the impact of the Indian monsoon on life and livelihoods",
+            "Explains causes and effects of climate change", "Represents climatic data through graphs"
+          ]
+        },
+        {
+          "name": "Early Humans and Beginning of Civilisation", "hours": 9,
+          "topics": [
+            "Cultural development from 2 million years ago; archaeological ages", "Human ancestors",
+            "Palaeolithic hunter-gatherers and stone tools", "Mesolithic transition to food production",
+            "Neolithic revolution: domestication of plants and animals", "Harappan and contemporary cultures",
+            "Mesopotamian, Egyptian and Chinese civilisations"
+          ],
+          "outcomes": [
+            "Describes prehistoric periodisation", "Explains the beginning of settled life with agriculture",
+            "Describes the social, political and religious structures of Egypt and Mesopotamia"
+          ]
+        },
+        {
+          "name": "State and Society (up to 1000 CE)", "hours": 9,
+          "topics": [
+            "Vedic Age: geography, texts, rituals, political institutions and social order", "Administrative structure of early empires",
+            "Quest for knowledge: educational heritage, institutions, knowledge traditions and cultural practices",
+            "Traders and trade routes, guilds and merchants, crafts and industries"
+          ],
+          "outcomes": [
+            "Explains facets of Vedic society and polity", "Appreciates the achievements of Indian empires",
+            "Understands India's knowledge traditions and the foundations of its institutions"
+          ]
+        },
+        {
+          "name": "Democracy", "hours": 9,
+          "topics": ["Meaning, features and types of democracy", "Roots of democracy in India", "Challenges to democracy in India", "Democratic systems in the world"],
+          "outcomes": [
+            "Understands the features of democracy", "Differentiates parliamentary and presidential systems with examples"
+          ]
+        },
+        {
+          "name": "Elections", "hours": 9,
+          "topics": [
+            "Importance of elections", "Electoral systems", "Delimitation Commission", "Election Commission of India and its role",
+            "Constituency, electoral rolls, enumerators", "Party system in India"
+          ],
+          "outcomes": [
+            "Categorises three types of electoral systems", "Describes the Representation of the People Acts",
+            "Explains delimitation and the role of the ECI", "Explains coalition government and the Anti-Defection Law"
+          ]
+        },
+        {
+          "name": "Building Blocks in Economics", "hours": 7,
+          "topics": [
+            "Scarcity of resources, opportunity cost and the need for choice; what economists do",
+            "What to produce, how to produce and for whom", "Market, centrally planned and mixed economic systems", "Welfare economy"
+          ],
+          "outcomes": [
+            "Explains scarcity, choice and opportunity cost", "Describes the three central problems of an economy",
+            "Differentiates planned, free-market and mixed economies", "Explains a welfare economy and social safety nets"
+          ]
+        },
+        {
+          "name": "The Price Puzzle: What Drives the Market", "hours": 8,
+          "topics": [
+            "Laws of demand and supply", "Real-world deviations: necessities, luxury goods, perishables, expectations",
+            "Price ceilings and market failures (externalities, information asymmetry, public goods)"
+          ],
+          "outcomes": [
+            "Explains the laws of demand and supply", "Identifies equilibrium price and quantity",
+            "Explains price ceilings and types of market failure"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "Part 2", "name": "Social Science - Part 2", "marks": null,
+      "chapters": [
+        {
+          "name": "Oceans and Life", "hours": 7,
+          "topics": [
+            "Ocean relief; waves, tides and currents", "Marine resources: open seas, navigation, fishing and livelihood challenges",
+            "Cyclones and tsunamis: early warning systems", "International maritime rules and regulations"
+          ],
+          "outcomes": [
+            "Explains the movement of ocean waters", "Analyses links between ocean currents and climate",
+            "Explains the need for international cooperation on ocean resources"
+          ]
+        },
+        {
+          "name": "Life on Earth", "hours": 7,
+          "topics": [
+            "Biomes: distribution and characteristics; biosphere reserves in India", "Forests and ecotourism; forest dwellers and their livelihoods",
+            "Forest and wildlife conservation", "Government efforts to support forest dwellers"
+          ],
+          "outcomes": [
+            "Identifies major world biomes", "Locates biosphere reserves on a map of India",
+            "Analyses ecotourism's role in conservation", "Prepares a forest-fire mitigation plan for the local area"
+          ]
+        },
+        {
+          "name": "Resistance and Resilience (1000 CE - 1700 CE)", "hours": 9,
+          "topics": [
+            "Safeguarding sovereignty: resistance, alliances and confederacies", "Art and architecture, languages and literature",
+            "The Bhakti tradition", "Forts and fortifications", "Expansion of the Indian economy and state"
+          ],
+          "outcomes": [
+            "Explains the contributions of regional kingdoms", "Analyses the continuity of India's civilisational history up to the 18th century"
+          ]
+        },
+        {
+          "name": "India and the World - I (1900 BCE - 1200 CE)", "hours": 8,
+          "topics": [
+            "Trade with Mesopotamia, Greece, the Roman Empire, China and Southeast Asia",
+            "Cultural connections with Greece and Rome, Central Asia, China; influence on Southeast Asia",
+            "Indian Knowledge Systems: medicine, mathematics and astronomy, religion"
+          ],
+          "outcomes": [
+            "Explores India's relations with early civilisations", "Identifies major articles of trade and trading ports",
+            "Appreciates Indian cultural influence in Southeast Asia"
+          ]
+        },
+        {
+          "name": "Authority", "hours": 10,
+          "topics": [
+            "Roots of authority in Kautilya and Shukraniti: danda and its relationship with nyaya and bala",
+            "Constitutional status of justice and security", "The role of citizens in elections and democratic institutions",
+            "Types of authority: functional, sensitive and welfare-oriented"
+          ],
+          "outcomes": [
+            "Explains the roots of authority in Indian political thought", "Interprets the relationship between danda and nyaya",
+            "Illustrates types of authority and the role of citizens"
+          ]
+        },
+        {
+          "name": "From Ideas to Startups", "hours": 8,
+          "topics": [
+            "Entrepreneurship and the resources required to start a business", "Case studies of successful entrepreneurs",
+            "Creative destruction", "Start-up ecosystem in India", "Make in India; role of MSMEs and the unorganised sector",
+            "Stages of starting a business through a business plan", "Basic accounting concepts"
+          ],
+          "outcomes": [
+            "Defines entrepreneurship and its importance", "Describes India's start-up ecosystem and initiatives",
+            "Explains the stages from idea to business plan", "Understands simple profit and loss and the components of a balance sheet"
+          ]
+        },
+        {
+          "name": "Smart Ways to Manage Your Finances", "hours": 6,
+          "topics": [
+            "Relevance of personal financial management", "Inflation and purchasing power", "Simple vs compound interest",
+            "Budgeting", "Savings and investment options: fixed deposits, stocks, bonds, mutual funds", "Risk and insurance", "Personal income tax"
+          ],
+          "outcomes": [
+            "Explains simple and compound interest", "Prepares a personal or family budget",
+            "Relates risk and return across investments", "Explains why citizens pay income tax"
+          ]
+        }
+      ]
+    }
+  ]
+}

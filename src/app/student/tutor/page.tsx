@@ -1,580 +1,339 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
+import { CircleIcon as Circle } from '@phosphor-icons/react/dist/ssr/Circle';
+import { PaperPlaneRightIcon as PaperPlaneRight } from '@phosphor-icons/react/dist/ssr/PaperPlaneRight';
+import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
+import { TrendDownIcon as TrendDown } from '@phosphor-icons/react/dist/ssr/TrendDown';
+import { TrendUpIcon as TrendUp } from '@phosphor-icons/react/dist/ssr/TrendUp';
+import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { subjectIcon } from '@/components/canon/subjectIcon';
+import { subjectColor } from '@/lib/student/shape';
+import { Chip, Donut, PageBar, Skeleton, hmColor } from '@/components/canon/ui';
+import DemoNote from '@/components/canon/DemoNote';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { getAuthToken } from '@/lib/auth/getAuthToken';
-import { Sparkles, ArrowLeft, Send, User, AlertTriangle, PlayCircle, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import { useStudentDesk } from '@/lib/student/useStudentDesk';
+import { DEMO_TUTOR } from '@/lib/demo/student';
+import { getTutorDepthScore } from '@/lib/tml/engine';
+import { flattenChapters, getCurriculum, subjectsForClass } from '@/lib/curriculum';
 
-/* ─────────────────────────────────────────────────────────
-   🚨 SBI — Sthara Bureau of Investigation
-   EASTER EGG: Only shown to test accounts (uid starts with 'testst')
-───────────────────────────────────────────────────────── */
-function SBIArrestModal({ onClose, studentName }: { onClose: () => void; studentName: string }) {
-  const caseNo = `SBI-${Date.now().toString().slice(-6)}`;
-  const [countdown, setCountdown] = useState(10);
+type Line = { who: 'ai' | 'me' | 'done'; text: string; good?: boolean };
+interface Topic { subject: string; name: string; start: number | null }
+interface Result { depth: number; topicScore: number | null }
 
-  useEffect(() => {
-    const t = setInterval(() => setCountdown(c => c > 0 ? c - 1 : 0), 1000);
-    return () => clearInterval(t);
-  }, []);
+const MAX_HINTS_SHOWN = 3;
+const depthLabel = (hints: number, revealed: boolean) =>
+  revealed ? 'answer revealed' : hints === 0 ? 'unaided' : hints === 1 ? 'one hint' : `${hints} hints`;
+
+export default function TutorPage() {
+  return <Suspense fallback={<Skeleton h={600} style={{ borderRadius: 20 }} />}><Tutor /></Suspense>;
+}
+
+function Tutor() {
+  const { desk } = useStudentDesk();
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const fromUrl = params.get('topic');
+  const topic: Topic | null = useMemo(() => {
+    if (!fromUrl) return null;
+    const subject = params.get('subject') || 'General';
+    const s = Number(params.get('score'));
+    return { subject, name: fromUrl, start: Number.isFinite(s) && params.get('score') !== null ? s : null };
+  }, [fromUrl, params]);
+
+  const choose = (t: Topic) => {
+    const p = new URLSearchParams({ topic: t.name, subject: t.subject });
+    if (t.start !== null) p.set('score', String(t.start));
+    router.replace(`${pathname}?${p}`);
+  };
+  const reset = () => router.replace(pathname);
+
+  if (!desk) return <Skeleton h={600} style={{ borderRadius: 20 }} />;
+  const demo = desk.mode === 'demo';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-      <div className="relative w-full max-w-md animate-bounce-once">
-        <div className="absolute inset-0 rounded-3xl border-4 border-red-500 animate-pulse" />
+    <>
+      {demo && <DemoNote />}
+      {topic
+        ? <Session key={`${topic.subject}:${topic.name}`} topic={topic} demo={demo} onNew={reset} />
+        : <Picker desk={desk} onPick={choose} />}
+    </>
+  );
+}
 
-        <div className="relative bg-[#0a0a0a] rounded-3xl overflow-hidden shadow-2xl shadow-red-900/50">
-          <div className="bg-gradient-to-r from-red-900 via-red-700 to-red-900 px-6 py-4 flex items-center justify-between border-b border-red-500/50">
-            <div className="flex items-center gap-3">
-              <div className="text-4xl animate-pulse">🚨</div>
-              <div>
-                <p className="text-red-200 text-[10px] font-black uppercase tracking-[0.3em]">Official Notice</p>
-                <p className="text-white font-black text-lg leading-none">STHARA BUREAU OF INVESTIGATION</p>
-                <p className="text-red-300 text-[10px] font-bold">Dept. of Digital Misconduct & Grammar Crimes</p>
+// ── Topic picker: weakest micro-topics first, or any topic typed in ─────────
+function Picker({ desk, onPick }: { desk: NonNullable<ReturnType<typeof useStudentDesk>['desk']>; onPick: (t: Topic) => void }) {
+  const weakest = desk.subjects
+    .flatMap(s => s.topics.filter(t => t.score !== null).map(t => ({ subject: s.subject, name: t.name, start: t.score })))
+    .sort((a, b) => (a.start ?? 0) - (b.start ?? 0))
+    .slice(0, 5);
+  // Subjects offered: the official 2026-27 curriculum for the student's class
+  // first, then anything the student already has graded work in.
+  const official = subjectsForClass(desk.me.cls);
+  const subjectOptions = [...new Set([...official, ...desk.subjects.map(s => s.subject)])];
+  const [subject, setSubject] = useState(subjectOptions[0] || 'Mathematics');
+  const curriculum = getCurriculum(desk.me.cls, subject);
+  const chapters = curriculum ? flattenChapters(curriculum) : [];
+  const [chapter, setChapter] = useState('');
+  const [custom, setCustom] = useState('');
+  const OTHER = '__other__';
+  const topicName = chapter === OTHER || !curriculum ? custom.trim() : chapter;
+
+  return (
+    <>
+      <PageBar eyebrow="SOCRATIC AI TUTOR" title="Pick a micro-topic"
+        sub="We'll ask a question, then a hint, then the answer — never straight to the answer first." />
+      <div className="g2">
+        <div className="card">
+          <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>Where you&apos;ll gain the most</h3>
+          <p className="muted" style={{ marginBottom: 12 }}>Your lowest-scoring micro-topics right now. Getting there with fewer hints counts for more.</p>
+          {weakest.length === 0 ? <p className="muted">Nothing scored yet — pick a chapter on the right.</p> : weakest.map(t => (
+            <button key={`${t.subject}:${t.name}`} className="row" onClick={() => onPick(t)}>
+              <div className="av" style={{ background: `color-mix(in srgb, ${subjectColor(t.subject)} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(t.subject)} color={subjectColor(t.subject)} size={18} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{t.name}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{t.subject}</div>
               </div>
-            </div>
-            <div className="text-5xl">⚖️</div>
-          </div>
-
-          <div className="flex justify-center py-5">
-            <div className="relative">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-xl shadow-amber-900/50 border-4 border-amber-300 animate-pulse">
-                <div className="text-center">
-                  <div className="text-4xl">🔍</div>
-                  <p className="text-[8px] font-black text-amber-900 uppercase tracking-widest">SBI</p>
-                </div>
-              </div>
-              <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-red-400 animate-bounce">ACTIVE</div>
-            </div>
-          </div>
-
-          <div className="px-6 pb-2 space-y-3 text-center">
-            <div className="bg-red-950/60 border border-red-700/50 rounded-2xl p-4">
-              <p className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">🚨 ARREST WARRANT #{caseNo} 🚨</p>
-              <p className="text-white font-black text-xl mb-1">{studentName || 'SUSPECT'}</p>
-              <p className="text-red-300 text-sm font-bold">YOU HAVE BEEN CAUGHT RED-HANDED!</p>
-            </div>
-
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 text-left space-y-2">
-              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">📋 Charges Filed</p>
-              <div className="space-y-1">
-                {[
-                  '• Section 420-SBI: Criminal use of foul language',
-                  '• Section 69-STHR: Attempted corruption of AI Tutor',
-                  '• Section 1337: Digital misconduct in a school zone',
-                ].map((charge, i) => (
-                  <p key={i} className="text-red-300 text-xs font-mono">{charge}</p>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-amber-950/40 border border-amber-700/40 rounded-2xl p-4">
-              <p className="text-amber-400 text-xs font-black uppercase tracking-widest mb-1">⚖️ Sentence Declared</p>
-              <p className="text-white font-black text-2xl">100 YEARS</p>
-              <p className="text-amber-300 text-sm font-bold">in Sthara Maximum Security Jail 🏛️</p>
-              <p className="text-amber-500/70 text-[10px] mt-1">(WiFi not included. No YouTube allowed.)</p>
-            </div>
-
-            <div className="bg-red-950/40 border border-red-800/40 rounded-2xl p-3">
-              <p className="text-red-400 text-[10px] font-black uppercase tracking-widest mb-1">🔥 Additional Penalty</p>
-              <p className="text-white font-bold text-sm">FIRED as Sthara Tester</p>
-              <p className="text-red-400 text-[10px]">Badge confiscated. Access revoked. Reputation: destroyed.</p>
-            </div>
-          </div>
-
-          <div className="px-6 pb-6 pt-3 space-y-3">
-            <button
-              onClick={onClose}
-              className="w-full py-3 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-black rounded-2xl transition-all text-sm border border-red-500/50 shadow-lg"
-            >
-              {countdown > 0
-                ? `😭 I CONFESS! Release me in ${countdown}s...`
-                : '🙏 I PROMISE TO BEHAVE — Let me go!'}
+              <b style={{ color: hmColor(t.start ?? 0), fontSize: 15 }}>{t.start}%</b>
             </button>
-            <p className="text-center text-gray-600 text-[10px] font-mono">
-              This is a test environment prank. No actual jails or firings occurred. Probably. — SBI HQ
-            </p>
-          </div>
+          ))}
+        </div>
+        <div className="card">
+          <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>From your syllabus</h3>
+          <p className="muted" style={{ marginBottom: 18 }}>
+            {curriculum
+              ? <>Chapters from the CBSE {curriculum.session} curriculum for Class {curriculum.class} {curriculum.subject}. The tutor sticks to what the syllabus prescribes.</>
+              : 'Name a topic from class and the tutor will build a short three-step session around it.'}
+          </p>
+          <form onSubmit={e => { e.preventDefault(); if (topicName) onPick({ subject, name: topicName, start: null }); }}>
+            <label className="lbl" htmlFor="tp-subj">SUBJECT</label>
+            <select id="tp-subj" className="tin" style={{ width: '100%', marginBottom: 14 }} value={subject}
+              onChange={e => { setSubject(e.target.value); setChapter(''); }}>
+              {subjectOptions.map(s => <option key={s}>{s}</option>)}
+            </select>
+            {curriculum && (
+              <>
+                <label className="lbl" htmlFor="tp-ch">CHAPTER</label>
+                <select id="tp-ch" className="tin" style={{ width: '100%', marginBottom: 14 }} value={chapter} onChange={e => setChapter(e.target.value)}>
+                  <option value="" disabled>Choose a chapter</option>
+                  {curriculum.units.map(u => (
+                    <optgroup key={u.code} label={u.marks !== null ? `${u.name} (${u.marks} marks)` : u.name}>
+                      {chapters.filter(c => c.unitCode === u.code).map(c => (
+                        <option key={c.name} value={c.name}>{c.name}{c.formativeOnly ? ' (not in board exam)' : ''}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                  <option value={OTHER}>Something else…</option>
+                </select>
+              </>
+            )}
+            {(!curriculum || chapter === OTHER) && (
+              <>
+                <label className="lbl" htmlFor="tp-topic">MICRO-TOPIC</label>
+                <input id="tp-topic" className="tin" style={{ width: '100%' }} maxLength={120} placeholder="e.g. Circles — Tangents" value={custom} onChange={e => setCustom(e.target.value)} />
+              </>
+            )}
+            <button className="btn pri" style={{ marginTop: 16 }} disabled={!topicName}>Start session <ArrowRight size={15} weight="bold" /></button>
+          </form>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
-  createdAt?: any;
-}
+// ── One Socratic session ─────────────────────────────────────────────────────
+function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: () => void }) {
+  const { getAuthToken } = useAuth();
+  const scripted = demo; // no live session to call the model with
+  const title = scripted ? DEMO_TUTOR.topic : topic.name;
+  const start = scripted ? (topic.name === DEMO_TUTOR.topic ? topic.start ?? DEMO_TUTOR.start : DEMO_TUTOR.start) : topic.start;
 
-function YouTubeSearchWidget({ query }: { query: string }) {
-  const [videos, setVideos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-    getAuthToken().then(authToken => {
-      fetch(`/api/youtube?q=${encodeURIComponent(query)}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      })
-        .then(async res => {
-          if (!res.ok) { if (isMounted) setError(true); return null; }
-          return res.json();
-        })
-        .then(data => {
-          if (!data || !isMounted) return;
-          if (data.videos) setVideos(data.videos);
-          else setError(true);
-        })
-        .catch(() => { if (isMounted) setError(true); })
-        .finally(() => { if (isMounted) setLoading(false); });
-    });
-    return () => { isMounted = false; };
-  }, [query]);
-
-  if (loading) return <div className="flex space-x-2 my-4 items-center text-sm text-[#002147]/60"><Loader2 className="w-4 h-4 animate-spin" /><span>Searching for videos about "{query}"...</span></div>;
-  if (error || videos.length === 0) return <div className="flex space-x-2 my-4 items-center text-sm text-red-500"><AlertTriangle className="w-4 h-4" /><span>Could not load videos for "{query}".</span></div>;
-
-  return (
-    <div className="flex flex-col space-y-4 my-4">
-      <div className="text-sm font-semibold text-[#002147] flex items-center space-x-2">
-        <PlayCircle className="w-4 h-4 text-red-600" />
-        <span>Top Results for "{query}"</span>
-      </div>
-      <div className="grid grid-cols-1 gap-4">
-        {videos.map(v => (
-          <a key={v.videoId} href={v.url} target="_blank" rel="noopener noreferrer" className="block group relative overflow-hidden rounded-xl border border-[#002147]/10 sm:w-80 shadow-sm hover:shadow-md transition-all">
-            <img src={v.thumbnail} alt={v.title} className="w-full h-auto object-cover aspect-video group-hover:scale-105 transition-transform duration-500" />
-            <span className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-              <span className="w-14 h-14 bg-red-600/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              </span>
-            </span>
-            <span className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent block">
-              <span className="text-white text-sm font-bold line-clamp-2 leading-tight shadow-sm block">{v.title}</span>
-            </span>
-          </a>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export default function StudentAITutor() {
-  const { profile, loading } = useAuth();
-  const router = useRouter();
-  const supabase = createClient();
-  
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [log, setLog] = useState<Line[]>([]);
+  const [token, setToken] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
+  const [steps, setSteps] = useState(3);
+  const [hints, setHints] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [resolvedName, setResolvedName] = useState<string>('');  // ensures correct name even if profile.name is stale
-  const [isDBReady, setIsDBReady] = useState(false);
-  const [violationCount, setViolationCount] = useState(0);
-  const [showSBIArrest, setShowSBIArrest] = useState(false);
-  const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const [result, setResult] = useState<Result | null>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const started = useRef(false);
 
-  const isTestAccount =
-    profile?.email?.toLowerCase().startsWith('teststu') ||
-    profile?.email?.toLowerCase().startsWith('tstteach') ||
-    profile?.email?.toLowerCase().startsWith('testteach') ||
-    profile?.uid?.toLowerCase().startsWith('testst') ||
-    profile?.uid?.toLowerCase().startsWith('tstteach');
+  useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }); }, [log, busy]);
 
+  const call = async (payload: Record<string, unknown>) => {
+    const auth = await getAuthToken();
+    const res = await fetch('/api/tutor/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'The tutor had trouble answering. Try again.');
+    return data;
+  };
+
+  const finish = (h: number, rev: boolean, r: Result) => {
+    setDone(true); setResult(r);
+    const earned = !rev && h <= 1;
+    const moved = r.topicScore !== null && start !== null ? ` ${title.split(' — ')[0]} moved from ${start}% to ${Math.round(r.topicScore)}%.` : r.topicScore !== null ? ` ${title.split(' — ')[0]} is now ${Math.round(r.topicScore)}%.` : '';
+    setLog(l => [...l, {
+      who: 'done', good: earned,
+      text: earned
+        ? `You got there ${h === 0 ? 'without me giving the answer' : 'with just one nudge'} — that is worth more to your TML than a correct copy.${moved}`
+        : `Recorded — since you needed more help this time, it counts for less evidence, but it still moved the needle.${moved}`,
+    }]);
+  };
+
+  // Open with the first question.
   useEffect(() => {
-    if (!loading && (!profile || profile.role !== 'student')) {
-      router.push('/login');
-    }
-  }, [profile, loading, router]);
+    if (started.current) return;
+    started.current = true;
+    if (scripted) { setSteps(DEMO_TUTOR.steps.length); setLog([{ who: 'ai', text: DEMO_TUTOR.steps[0].prompt }]); return; }
+    setBusy(true);
+    call({ action: 'start', subject: topic.subject, topic: topic.name })
+      .then(d => { setLog([{ who: 'ai', text: d.text }]); setToken(d.token); setStep(d.step); setSteps(d.steps); })
+      .catch(e => setErr(e.message))
+      .finally(() => setBusy(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Resolve the student's real name from DB (fallback if profile.name is missing)
-  useEffect(() => {
-    if (!profile?.uid) return;
-    const name = profile.name || '';
-    if (name) {
-      setResolvedName(name);
+  const history = () => log.filter(l => l.who !== 'done').map(l => ({ who: l.who, text: l.text }));
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || done || busy) return;
+    setInput(''); setErr(null);
+    setLog(l => [...l, { who: 'me', text }]);
+
+    if (scripted) {
+      const s = DEMO_TUTOR.steps[step - 1];
+      if (s.accept.test(text)) {
+        if (step < DEMO_TUTOR.steps.length) { setStep(step + 1); setLog(l => [...l, { who: 'ai', text: DEMO_TUTOR.steps[step].prompt }]); }
+        else { setLog(l => [...l, { who: 'ai', text: `${DEMO_TUTOR.answer} is right.` }]); finish(hints, false, { depth: getTutorDepthScore(hints, false), topicScore: null }); }
+      } else {
+        const h = hints + 1; setHints(h);
+        setLog(l => [...l, { who: 'ai', text: `Hint ${Math.min(h, MAX_HINTS_SHOWN)} of ${MAX_HINTS_SHOWN}. ${s.hint}` }]);
+      }
       return;
     }
-    // If name is blank — fetch directly via API
-    getAuthToken().then(async token => {
-      try {
-        const res = await fetch(`/api/admin/users?schoolId=${profile.schoolId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const { users } = await res.json();
-        const me = (users || []).find((u: any) => u.id === profile.uid);
-        if (me?.name) setResolvedName(me.name);
-      } catch { /* ignore */ }
-    });
-  }, [profile?.uid, profile?.name]);
 
-  // Fetch initial messages & listen for realtime updates via Supabase Realtime
-  useEffect(() => {
-    if (!profile?.uid) return;
-
-    let isMounted = true;
-
-    // 1. Initial fetch from student_chats table
-    supabase
-      .from('student_chats')
-      .select('*')
-      .eq('student_id', profile.uid)
-      .order('created_at', { ascending: true })
-      .then(({ data, error }) => {
-        if (!isMounted) return;
-
-        if (error) {
-          console.warn('Supabase chat fetch error:', error);
-        }
-
-        const fetched = (data || []).map(row => ({
-          id: row.id,
-          role: row.role,
-          text: row.content,
-          createdAt: row.created_at,
-        })) as ChatMessage[];
-
-        if (fetched.length === 0) {
-          const firstName = (resolvedName || profile?.name || '').split(' ')[0] || 'there';
-          const defaultGreeting: ChatMessage = {
-            id: 'welcome',
-            role: 'model',
-            text: profile?.institutionType === 'college'
-              ? `Hello ${firstName}! I'm your AI Academic Assistant. What topic or concept would you like to work through today?`
-              : `Hi ${firstName}! I'm your Sthara AI Tutor. What subject are we studying today? I can help explain concepts, check your reasoning, or quiz you! 📚`,
-          };
-          setMessages([defaultGreeting]);
-
-          // Save default greeting
-          supabase
-            .from('student_chats')
-            .insert({
-              student_id: profile.uid,
-              role: 'model',
-              content: defaultGreeting.text,
-            })
-            .then(({ error: insertErr }) => {
-              if (insertErr) console.warn('Could not persist greeting:', insertErr);
-            });
-        } else {
-          setMessages(fetched);
-        }
-
-        setIsDBReady(true);
-      });
-
-    // 2. Realtime subscription to student_chats table
-    const channel = supabase
-      .channel(`student_chats_${profile.uid}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'student_chats',
-          filter: `student_id=eq.${profile.uid}`,
-        },
-        (payload) => {
-          const newRow = payload.new;
-          if (!newRow) return;
-
-          setMessages((prev) => {
-            // Avoid duplicate if message already exists locally
-            if (prev.some((m) => m.id === newRow.id || (m.text === newRow.content && m.role === newRow.role))) {
-              return prev;
-            }
-            return [
-              ...prev,
-              {
-                id: newRow.id,
-                role: newRow.role,
-                text: newRow.content,
-                createdAt: newRow.created_at,
-              },
-            ];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      isMounted = false;
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.uid]);
-
-  useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isTyping || !profile?.uid) return;
-
-    const userMsg = input.trim();
-    setInput('');
-    setErrorMsg('');
-    setIsTyping(true);
-
-    const tempUserMsg: ChatMessage = { id: `local-${Date.now()}`, role: 'user', text: userMsg };
-    setMessages(prev => [...prev, tempUserMsg]);
-
+    setBusy(true);
     try {
-      // 1. Save user message to Supabase DB (non-blocking)
-      supabase
-        .from('student_chats')
-        .insert({
-          student_id: profile.uid,
-          role: 'user',
-          content: userMsg,
-        })
-        .then(({ error: saveErr }) => {
-          if (saveErr) console.warn('Could not save user message to Supabase:', saveErr);
-        });
-
-      // 2. Build context payload (cap to last 30 messages)
-      const contextMessages = [...messages.slice(-30), { role: 'user', text: userMsg }];
-      
-      // 3. Call AI Backend
-      const authToken = await getAuthToken();
-      const res = await fetch('/api/tutor', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          messages: contextMessages.map(m => ({ sender: m.role, text: m.text })),
-          studentId: profile.uid,
-          studentName: resolvedName || profile.name || profile.email,
-          studentClass: profile.studentClass || profile.branch || 'General',
-          schoolId: profile.schoolId,
-          violationCount,
-          institutionType: profile.institutionType || 'school',
-          branch: profile.branch,
-          year: profile.year,
-          semester: profile.semester,
-        })
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok && data.text) {
-        if (data.isFoulWarning) {
-          setViolationCount(data.newViolationCount || violationCount + 1);
-
-          if (isTestAccount) {
-            setShowSBIArrest(true);
-            setIsTyping(false);
-            return;
-          }
-
-          const warnMsg: ChatMessage = { id: `warn-${Date.now()}`, role: 'model', text: data.text };
-          setMessages(prev => [...prev, warnMsg]);
-
-          supabase
-            .from('student_chats')
-            .insert({
-              student_id: profile.uid,
-              role: 'model',
-              content: data.text,
-            })
-            .then(({ error: warnErr }) => {
-              if (warnErr) console.warn('Could not save warning to Supabase:', warnErr);
-            });
-
-          if (data.notifyTeacher && profile.schoolId) {
-            supabase
-              .from('notifications')
-              .insert({
-                school_id: profile.schoolId,
-                student_id: null,
-                title: '⚠️ Student Misconduct Alert',
-                body: `${data.studentName || profile.name} (${data.studentClass || profile.studentClass}) used inappropriate language in the AI Tutor — 2nd offense.`,
-                read: false,
-              })
-              .then(({ error: notifErr }) => {
-                if (notifErr) console.warn('Could not send teacher notification:', notifErr);
-              });
-          }
-        } else {
-          const aiMsg: ChatMessage = { id: `ai-${Date.now()}`, role: 'model', text: data.text };
-          setMessages(prev => [...prev, aiMsg]);
-
-          supabase
-            .from('student_chats')
-            .insert({
-              student_id: profile.uid,
-              role: 'model',
-              content: data.text,
-            })
-            .then(({ error: aiErr }) => {
-              if (aiErr) console.warn('Could not save AI response to Supabase:', aiErr);
-            });
-        }
-      } else {
-        console.error('AI Error:', data.error);
-        setErrorMsg(data.error || 'Failed to connect to AI. Please try again.');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Could not reach the AI server. Please check your connection and try again.');
+      const d = await call({ action: 'answer', token, answer: text, history: history() });
+      setToken(d.token); setStep(d.step); setHints(d.hints);
+      setLog(l => [...l, { who: 'ai', text: d.verdict === 'hint' ? `Hint ${Math.min(d.hints, MAX_HINTS_SHOWN)} of ${MAX_HINTS_SHOWN}. ${d.text}` : d.text }]);
+      if (d.verdict === 'complete') finish(d.hints, false, d.result);
+    } catch (e: any) {
+      setErr(e.message); setInput(text); setLog(l => l.slice(0, -1));
     } finally {
-      setIsTyping(false);
+      setBusy(false); inputRef.current?.focus();
     }
   };
 
-  if (loading || !profile || !isDBReady) return <div className="p-10 text-[#002147] text-center font-medium">Loading Lifetime Chat History...</div>;
+  const reveal = async () => {
+    if (done || busy) return;
+    setErr(null); setRevealed(true);
+    setLog(l => [...l, { who: 'me', text: 'I’m stuck — just tell me.' }]);
+    if (scripted) {
+      const s = DEMO_TUTOR.steps[step - 1];
+      setLog(l => [...l, { who: 'ai', text: `No problem. ${s.hint} The answer is ${DEMO_TUTOR.answer}.` }]);
+      finish(hints, true, { depth: getTutorDepthScore(hints, true), topicScore: null });
+      return;
+    }
+    setBusy(true);
+    try {
+      const d = await call({ action: 'reveal', token, history: history() });
+      setToken(d.token);
+      setLog(l => [...l, { who: 'ai', text: d.text }]);
+      finish(d.hints, true, d.result);
+    } catch (e: any) {
+      setErr(e.message); setRevealed(false); setLog(l => l.slice(0, -1));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const after = result?.topicScore ?? null;
+  const impact = done ? (after ?? result?.depth ?? 0) : start ?? 0;
+  const impactColor = done ? hmColor(impact) : '#CBD5E1';
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto py-8 px-4 h-[calc(100vh-80px)] flex flex-col">
-
-      {/* 🚨 SBI Arrest Modal — test accounts only */}
-      {showSBIArrest && (
-        <SBIArrestModal
-          studentName={profile.name || profile.email || 'SUSPECT'}
-          onClose={() => setShowSBIArrest(false)}
-        />
-      )}
-
-      <div className="flex items-center justify-between shrink-0 mb-2">
-        <div className="flex items-center space-x-4">
-          <Link href="/student" className="p-2 bg-white rounded-full border border-[#002147]/10 hover:bg-[#f8fafc] transition-colors text-[#002147]">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-[#002147] flex items-center space-x-3">
-              <Sparkles className="w-8 h-8 text-blue-500" />
-              <span>Sthara Interactive Tutor</span>
-            </h1>
-            <p className="text-[#002147]/60 mt-1">
-              Powered by Google Gemini 2.5 Flash
-              {(resolvedName || profile.name) && (
-                <span className="ml-2 text-indigo-600 font-semibold">
-                  · Tutoring {resolvedName || profile.name}
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {errorMsg && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center space-x-3 border border-red-100 shrink-0">
-          <AlertTriangle className="w-5 h-5" />
-          <p className="font-medium text-sm">{errorMsg}</p>
+    <>
+      <PageBar eyebrow="SOCRATIC AI TUTOR" title={title}
+        sub="We'll ask a question, then a hint, then the answer — never straight to the answer first."
+        actions={<>
+          <Chip tone={done ? 'g' : 'p'}>{done ? 'ALL DONE' : `HINTS USED: ${Math.min(hints, MAX_HINTS_SHOWN)} OF ${MAX_HINTS_SHOWN}`}</Chip>
+          <button className="btn" onClick={onNew}>New session</button>
+        </>}
+      />
+      {scripted && topic.name !== DEMO_TUTOR.topic && (
+        <div className="note" style={{ marginBottom: 18 }}>
+          Routed here from <b>{topic.name}</b>. Without a live session the tutor runs its scripted Circles · Tangents example instead — sign in to get a real session on this topic.
         </div>
       )}
 
-      <div className="flex-1 bg-white border border-[#002147]/10 rounded-2xl shadow-sm flex flex-col overflow-hidden relative">
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f8fafc]">
-          {messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`flex max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-[#002147] ml-3' : 'bg-gradient-to-br from-blue-500 to-indigo-600 mr-3'}`}>
-                  {msg.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Sparkles className="w-4 h-4 text-white" />}
-                </div>
-                <div className={`p-5 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-[#002147] text-white rounded-br-sm' 
-                    : 'bg-white border border-[#002147]/10 text-[#002147] rounded-bl-sm prose prose-sm max-w-none prose-p:leading-relaxed prose-headings:text-[#002147] prose-a:text-blue-600'
-                }`}>
-                  {msg.role === 'user' ? (
-                    msg.text
-                  ) : (
-                    <ReactMarkdown 
-                      remarkPlugins={[remarkMath]} 
-                      rehypePlugins={[rehypeKatex]}
-                      components={{
-                        a: ({ node, ...props }) => {
-                          const href = props.href || '';
-                          
-                          if (href.startsWith('https://ytsearch.local/?q=')) {
-                            const query = decodeURIComponent(href.split('?q=')[1]);
-                            return <YouTubeSearchWidget query={query} />;
-                          }
-
-                          const match = href.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-                          const videoId = match ? match[1] : null;
-                          
-                          if (videoId) {
-                            return (
-                              <a href={href} target="_blank" rel="noopener noreferrer" className="block my-4 group relative overflow-hidden rounded-xl border border-[#002147]/10 sm:w-80 shadow-sm hover:shadow-md transition-all">
-                                <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} alt="YouTube Video Thumbnail" className="w-full h-auto object-cover aspect-video group-hover:scale-105 transition-transform duration-500" />
-                                <span className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                  <span className="w-14 h-14 bg-red-600/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                    <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                                  </span>
-                                </span>
-                                <span className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent block">
-                                  <span className="text-white text-sm font-bold line-clamp-2 leading-tight shadow-sm block">{props.children}</span>
-                                </span>
-                              </a>
-                            );
-                          }
-                          return <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium" />;
-                        }
-                      }}
-                    >
-                      {msg.text.replace(/\[YOUTUBE_SEARCH:\s*([^\]]+)\]/g, (match, p1) => `[YOUTUBE_SEARCH](https://ytsearch.local/?q=${encodeURIComponent(p1)})`)}
-                    </ReactMarkdown>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex max-w-[80%] flex-row items-end">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 mr-3">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div className="p-4 rounded-2xl bg-white border border-[#002147]/10 text-[#002147] rounded-bl-sm shadow-sm flex space-x-1 items-center h-12">
-                  <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={endOfMessagesRef} />
+      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 18 }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <b style={{ fontSize: 15 }}>Session · step {Math.min(step, steps)} of {steps}</b>
+          {!scripted && <span className="muted" style={{ fontSize: 12 }}>{topic.subject}</span>}
         </div>
-
-        {/* Input Area */}
-        <div className="p-4 bg-white border-t border-[#002147]/10 shrink-0">
-          <form onSubmit={handleSendMessage} className="relative flex items-center max-w-4xl mx-auto">
-            <input 
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me anything about your studies..."
-              className="w-full bg-[#f8fafc] border border-[#002147]/10 rounded-full pl-6 pr-14 py-4 text-[#002147] font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-inner"
-            />
-            <button 
-              type="submit"
-              disabled={!input.trim() || isTyping}
-              className="absolute right-2 top-2 bottom-2 w-10 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:hover:bg-blue-500 shadow-sm"
-            >
-              <Send className="w-4 h-4 ml-1" />
-            </button>
+        <div className="tlog" ref={logRef} aria-live="polite">
+          {log.map((l, i) => l.who === 'me'
+            ? <div key={i} className="bub-me">{l.text}</div>
+            : l.who === 'done'
+              ? <div key={i} className={`bub-ai bub-done ${l.good ? 'good' : 'meh'}`}>
+                  <div className="av">{l.good ? <Check size={17} weight="bold" /> : <Circle size={13} weight="fill" />}</div>
+                  <div>{l.text}</div>
+                </div>
+              : <div key={i} className="bub-ai"><div className="av"><Sparkle size={17} weight="fill" /></div><div>{l.text}</div></div>)}
+          {busy && <div className="bub-ai"><div className="av"><Sparkle size={17} weight="fill" /></div><div><span className="typing" aria-label="Tutor is thinking"><i /><i /><i /></span></div></div>}
+        </div>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {err && <div className="note err" role="alert">{err}</div>}
+          <form style={{ display: 'flex', gap: 10 }} onSubmit={e => { e.preventDefault(); void send(); }}>
+            <input ref={inputRef} className="tin" value={input} onChange={e => setInput(e.target.value)} maxLength={1500}
+              aria-label="Your answer" placeholder={done ? 'Session finished — start a new one to keep going' : 'Type your answer…'} disabled={done || (busy && !log.length)} />
+            <button className="btn red" disabled={done || busy || !input.trim()}><PaperPlaneRight size={15} weight="fill" /> Send</button>
           </form>
-          <div className="text-center mt-3 text-xs text-[#002147]/40 font-medium">
-            AI can make mistakes. Please verify important information with your teacher.
+          {!done && (
+            <button className="btn sm" style={{ alignSelf: 'flex-start' }} onClick={reveal} disabled={busy || !log.length}>
+              I&apos;m stuck — just tell me
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Session impact</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <Donut value={impact} color={impactColor} />
+          <div>
+            <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em' }}>{title.split(' — ')[0].toUpperCase()} — MICRO-TOPIC</div>
+            <div style={{ fontSize: 38, fontWeight: 800, lineHeight: 1, margin: '8px 0', color: done ? undefined : 'var(--mut2)' }}>
+              {done ? `${Math.round(impact)}%` : start !== null ? `${start}%` : '—'}
+            </div>
+            {done ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {after !== null && start !== null && (
+                  <Chip tone={after >= start ? 'g' : 'a'}>{after >= start ? <TrendUp size={13} weight="bold" /> : <TrendDown size={13} weight="bold" />} {Math.abs(Math.round(after - start))} pts this session</Chip>
+                )}
+                <Chip tone="p">Tutor depth {result?.depth} · {depthLabel(hints, revealed)}</Chip>
+                {after === null && <span className="muted" style={{ fontSize: 12 }}>{scripted ? 'Demo sessions aren’t written to your TML.' : 'Saved — your TML updates on the next recompute.'}</span>}
+              </div>
+            ) : <div className="muted" style={{ fontSize: 12 }}>{start !== null ? 'Where this topic stands now · updates once you finish' : 'Updates once you finish'}</div>}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,109 +1,53 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { operatorFromRequest } from '@/lib/ops/auth';
+import { createPeople } from '@/lib/ops/accounts';
+import { PERSON_ROLES, type PersonRole } from '@/lib/ops/people';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/admin/create-user
- * Creates a new user (student/teacher/parent/admin) for a school.
- * Requires: Valid JWT token in Authorization header
+ * { role, name, email, schoolId, studentClass?, customStudentId?, assignments?, linkedStudents? }
+ *
+ * Creates one account in a school. Allowed for a platform operator, or an
+ * admin of that same school. Never creates superadmins and never modifies an
+ * existing login (it used to reset the password and role of any email it was
+ * given). Returns a one-time temporary password.
  */
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  try {
-    const {
-      email,
-      password,
-      name,
-      role,
-      schoolId,
-      studentClass,
-      branch,
-      semester,
-      year,
-      customStudentId,
-      assignments,
-      linkedStudents,
-    } = await request.json();
 
-    if (!email || !password || !name || !role || !schoolId) {
-      return NextResponse.json(
-        { error: 'email, password, name, role, and schoolId are required' },
-        { status: 400 }
-      );
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const supabase = createAdminClient(); // Service role — bypasses RLS
-
-    // ── 1. Check if user already exists by looking up the users table first.
-    //    This avoids the expensive listUsers() full-scan (O(n)) and stays in the
-    //    application DB layer which is fast and correctly indexed on email.
-    let userId = '';
-    const { data: existingDbUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', cleanEmail)
-      .maybeSingle();
-
-    if (existingDbUser?.id) {
-      // User already in DB — update their auth password & metadata
-      userId = existingDbUser.id;
-      await supabase.auth.admin.updateUserById(userId, {
-        password,
-        email_confirm: true,
-        user_metadata: { name: name.trim(), role, schoolId },
-      });
-    } else {
-      // Create new auth user
-      const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
-        email: cleanEmail,
-        password,
-        email_confirm: true,
-        user_metadata: { name: name.trim(), role, schoolId },
-      });
-
-      if (authErr || !authData?.user) {
-        return NextResponse.json(
-          { error: authErr?.message || 'Failed to create auth account' },
-          { status: 400 }
-        );
-      }
-      userId = authData.user.id;
-    }
-
-
-    // ── 2. Upsert user into users table (service role bypasses RLS) ───────────
-    const { error: dbErr } = await supabase.from('users').upsert({
-      id: userId,
-      school_id: schoolId,
-      name: name.trim(),
-      email: cleanEmail,
-      role,
-      student_class: role === 'student' ? (studentClass || null) : null,
-      branch: role === 'student' ? (branch || null) : null,
-      semester: role === 'student' ? (semester || null) : null,
-      year: role === 'student' ? (year || null) : null,
-      custom_student_id: customStudentId || null,
-      assignments: assignments || [],
-      metadata: { linkedStudents: linkedStudents || [] },
-    });
-
-    if (dbErr) {
-      console.error('[create-user] DB upsert error:', dbErr);
-      return NextResponse.json({ error: dbErr.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      userId,
-      message: `${role} account created for ${cleanEmail}`,
-    });
-
-  } catch (err: any) {
-    console.error('[create-user] Unexpected error:', err);
-    return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });
+  const b = await request.json().catch(() => ({}));
+  const role = b.role as PersonRole;
+  const schoolId = typeof b.schoolId === 'string' ? b.schoolId : '';
+  if (!PERSON_ROLES.includes(role) || !schoolId) {
+    return NextResponse.json({ error: 'role (admin, teacher, student or parent) and schoolId are required' }, { status: 400 });
   }
+
+  const admin = createAdminClient();
+  const operator = await operatorFromRequest(request);
+  if (!operator) {
+    const { data: caller } = await admin.from('users').select('role, school_id').eq('id', user.id).maybeSingle();
+    if (caller?.role !== 'admin' || caller.school_id !== schoolId) {
+      return NextResponse.json({ error: 'Forbidden: only an admin of this school can add accounts' }, { status: 403 });
+    }
+  }
+
+  const { issues, results } = await createPeople(admin, schoolId, user.id, [{
+    role,
+    name: b.name,
+    email: b.email,
+    className: b.studentClass,
+    rollNo: b.customStudentId,
+    subjects: Array.isArray(b.assignments) ? b.assignments : [],
+    classTeacherOf: b.teacherClass,
+    children: Array.isArray(b.linkedStudents) ? b.linkedStudents : [],
+  }]);
+  if (issues.length) return NextResponse.json({ error: issues.map(i => i.message).join('; '), issues }, { status: 422 });
+  const r = results[0];
+  if (r.status !== 'created') return NextResponse.json({ error: r.message }, { status: 400 });
+  return NextResponse.json({ success: true, userId: r.userId, tempPassword: r.tempPassword, message: `${role} account created for ${r.email}` });
 }

@@ -1,9 +1,25 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   images: { unoptimized: true },
   serverExternalPackages: ['firebase-admin', '@google/generative-ai'],
+  experimental: {
+    // Reuse a visited page's server payload for 30s on client navigation
+    // (Next 15+ default is 0: every tab switch refetches). Page data is loaded
+    // client-side by shared providers, so this can't serve stale records.
+    staleTimes: { dynamic: 30 },
+  },
 };
 
-export default nextConfig;
+// Safe no-op wrapper: only uploads source maps / release info to Sentry when
+// SENTRY_AUTH_TOKEN is actually configured (e.g. in Vercel env vars). Without
+// it, this just skips the upload step — builds are unaffected either way.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  widenClientFileUpload: true,
+});

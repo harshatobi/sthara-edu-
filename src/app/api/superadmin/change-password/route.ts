@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (user.role !== 'superadmin') return NextResponse.json({ error: 'Forbidden: superadmin only' }, { status: 403 });
 
   try {
     const { userId, newPassword } = await request.json();

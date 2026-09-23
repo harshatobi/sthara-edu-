@@ -1,0 +1,179 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Mathematics",
+  "codes": ["041", "241"],
+  "source": {
+    "title": "Mathematics, Subject Code 041 & 241, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Maths_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      { "component": "Pen Paper Test and Multiple Assessment (5+5)", "marks": 10 },
+      { "component": "Portfolio", "marks": 5 },
+      { "component": "Lab Practical (activities from the prescribed books)", "marks": 5 }
+    ]
+  },
+  "textbooks": [
+    "Mathematics - Textbook for class X (NCERT)",
+    "Guidelines for Mathematics Laboratory in Schools, class X (CBSE)",
+    "Laboratory Manual - Mathematics, secondary stage (NCERT)",
+    "Mathematics exemplar problems for class X (NCERT)"
+  ],
+  "units": [
+    {
+      "code": "I", "name": "Number Systems", "marks": 6,
+      "chapters": [
+        {
+          "name": "Real Numbers",
+          "topics": [
+            "Fundamental Theorem of Arithmetic: statements after reviewing earlier work and motivating through examples",
+            "Proofs of irrationality of √2, √3, √5"
+          ],
+          "outcomes": [
+            "Describes the Fundamental Theorem of Arithmetic with examples",
+            "Proves algebraically the irrationality of numbers like √2, √3, √5, 3 + 2√5"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "II", "name": "Algebra", "marks": 20,
+      "chapters": [
+        {
+          "name": "Polynomials",
+          "topics": ["Zeros of a polynomial", "Relationship between zeros and coefficients of quadratic polynomials"],
+          "outcomes": ["Finds the zeros of a polynomial graphically and algebraically, and verifies the relation between zeros and coefficients of quadratic polynomials"]
+        },
+        {
+          "name": "Pair of Linear Equations in Two Variables",
+          "topics": [
+            "Pair of linear equations in two variables and graphical method of their solution; consistency/inconsistency",
+            "Algebraic conditions for number of solutions",
+            "Algebraic solution by substitution and by elimination; simple situational problems"
+          ],
+          "outcomes": ["Finds the solution of a pair of linear equations in two variables graphically and algebraically (substitution and elimination)"]
+        },
+        {
+          "name": "Quadratic Equations",
+          "topics": [
+            "Standard form of a quadratic equation ax² + bx + c = 0 (a ≠ 0)",
+            "Solutions (only real roots) by factorisation and by the quadratic formula",
+            "Relationship between discriminant and nature of roots",
+            "Situational problems based on day-to-day activities"
+          ],
+          "outcomes": [
+            "Solves quadratic equations using factorisation and the quadratic formula",
+            "Determines the nature of roots using the discriminant",
+            "Formulates and solves problems based on real-life contexts"
+          ]
+        },
+        {
+          "name": "Arithmetic Progressions",
+          "topics": ["Motivation for studying Arithmetic Progression", "Derivation of the nth term and sum of the first n terms of an AP; application to daily-life problems"],
+          "outcomes": ["Applies AP concepts to find the nth term and the sum of n terms", "Applies AP to real-life problems"]
+        }
+      ]
+    },
+    {
+      "code": "III", "name": "Coordinate Geometry", "marks": 6,
+      "chapters": [
+        {
+          "name": "Coordinate Geometry",
+          "topics": ["Review of coordinate geometry concepts", "Distance formula", "Section formula (internal division)"],
+          "outcomes": ["Solves problems using the distance formula and section formula"]
+        }
+      ]
+    },
+    {
+      "code": "IV", "name": "Geometry", "marks": 15,
+      "chapters": [
+        {
+          "name": "Triangles",
+          "topics": [
+            "Definitions, examples and counter-examples of similar triangles",
+            "(Prove) A line parallel to one side of a triangle divides the other two sides in the same ratio",
+            "(State) A line dividing two sides of a triangle in the same ratio is parallel to the third side",
+            "(State) AAA similarity: equal corresponding angles imply proportional sides",
+            "(State) SSS similarity: proportional corresponding sides imply equal angles",
+            "(State) SAS similarity: one equal angle with proportional including sides"
+          ],
+          "outcomes": ["Proves the Basic Proportionality Theorem and applies it and its converse", "Proves similarity of triangles using the similarity criteria"]
+        },
+        {
+          "name": "Circles",
+          "topics": [
+            "Tangent to a circle at the point of contact",
+            "(Prove) The tangent at any point of a circle is perpendicular to the radius through the point of contact",
+            "(Prove) Lengths of tangents drawn from an external point to a circle are equal"
+          ],
+          "outcomes": ["Proves the theorems on tangents to a circle", "Applies tangent properties to solve problems"]
+        }
+      ]
+    },
+    {
+      "code": "V", "name": "Trigonometry", "marks": 12,
+      "chapters": [
+        {
+          "name": "Introduction to Trigonometry",
+          "topics": [
+            "Trigonometric ratios of an acute angle of a right-angled triangle; proof that they are well defined",
+            "Ratios defined at 0° and 90°; values at 30°, 45° and 60°",
+            "Relationships between the ratios"
+          ],
+          "outcomes": ["Evaluates trigonometric ratios", "Uses ratios of standard angles to solve related expressions"]
+        },
+        {
+          "name": "Trigonometric Identities",
+          "topics": ["Proof and applications of sin²A + cos²A = 1", "Only simple identities"],
+          "outcomes": ["Proves trigonometric identities using sin²A + cos²A = 1 and other identities"]
+        },
+        {
+          "name": "Heights and Distances",
+          "topics": ["Angle of elevation and angle of depression", "Simple problems on heights and distances"],
+          "outcomes": ["Finds heights and distances in real-life word problems using trigonometric ratios"],
+          "notes": ["Problems should not involve more than two right triangles", "Angles of elevation/depression only 30°, 45° and 60°"]
+        }
+      ]
+    },
+    {
+      "code": "VI", "name": "Mensuration", "marks": 10,
+      "chapters": [
+        {
+          "name": "Areas Related to Circles",
+          "topics": ["Area of sectors and segments of a circle", "Problems on areas and perimeter/circumference of these figures"],
+          "outcomes": ["Visualises and evaluates areas of sectors and segments of a circle"],
+          "notes": ["Area of a segment restricted to central angles of 60°, 90° and 120°"]
+        },
+        {
+          "name": "Surface Areas and Volumes",
+          "topics": ["Surface areas and volumes of combinations of any two of: cubes, cuboids, spheres, hemispheres, right circular cylinders/cones"],
+          "outcomes": ["Evaluates surface areas and volumes of combinations of solids by visualisation"]
+        }
+      ]
+    },
+    {
+      "code": "VII", "name": "Statistics and Probability", "marks": 11,
+      "chapters": [
+        {
+          "name": "Statistics",
+          "topics": ["Mean, median and mode of grouped data"],
+          "outcomes": [
+            "Computes the mean of a grouped frequency distribution by direct, assumed-mean and step-deviation methods",
+            "Computes the median and mode of a grouped frequency distribution algebraically"
+          ],
+          "notes": ["Bimodal situations to be avoided"]
+        },
+        {
+          "name": "Probability",
+          "topics": ["Classical definition of probability", "Simple problems on finding the probability of an event"],
+          "outcomes": ["Determines probabilities in simple real-life problems"]
+        }
+      ]
+    }
+  ]
+}

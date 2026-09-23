@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:login": "npx -y supabase@2.117.0 login",
+    "db:link": "npx -y supabase@2.117.0 link --project-ref nqwvsuyiwswnsqbyhghb",
+    "db:status": "npx -y supabase@2.117.0 migration list",
+    "db:push:dry": "npx -y supabase@2.117.0 db push --dry-run",
+    "db:push": "npx -y supabase@2.117.0 db push",
+    "vercel:login": "npx -y vercel@59 login",
+    "vercel:link": "npx -y vercel@59 link"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.0",
@@ -15,6 +22,8 @@
     "@ai-sdk/openai": "^4.0.0",
     "@google/genai": "^2.2.0",
     "@google/generative-ai": "^0.24.1",
+    "@phosphor-icons/react": "^2.1.10",
+    "@sentry/nextjs": "^10.75.1",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "ai": "^7.0.2",

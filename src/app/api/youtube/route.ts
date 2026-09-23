@@ -23,8 +23,8 @@ function evictExpired() {
 }
 
 export async function GET(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authErr } = await verifyApiToken(request);
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q');

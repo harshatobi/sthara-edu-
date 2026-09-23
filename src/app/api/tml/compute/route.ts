@@ -23,6 +23,22 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
+
+    // A student may only recompute their own TML; staff may recompute for a
+    // student in their own school.
+    if (user.id !== studentId) {
+      if (!user.role || !['teacher', 'admin', 'superadmin'].includes(user.role)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      const [{ data: caller }, { data: target }] = await Promise.all([
+        supabase.from('users').select('school_id').eq('id', user.id).maybeSingle(),
+        supabase.from('users').select('school_id').eq('id', studentId).maybeSingle(),
+      ]);
+      if (!caller?.school_id || caller.school_id !== target?.school_id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const result = await computeStudentTml(supabase, studentId, subject);
 
     return NextResponse.json({

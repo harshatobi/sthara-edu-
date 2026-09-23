@@ -4,8 +4,8 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
-  const token = await verifyApiToken(req);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authErr } = await verifyApiToken(req);
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const rl = checkRateLimit(`assistant:${getClientIp(req)}`, 15, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limit exceeded.' }, { status: 429 });
   try {

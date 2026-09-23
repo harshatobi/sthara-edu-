@@ -1,544 +1,213 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { ArrowsClockwiseIcon as ArrowsClockwise } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
+import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
+import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
+import { Bar, Chip, Empty, PageBar, Skeleton, hmColor, type Tone } from '@/components/canon/ui';
+import DemoNote from '@/components/canon/DemoNote';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
-import {
-  TrendingUp, AlertTriangle, CheckCircle2, Minus,
-  Loader2, BookOpen, ChevronRight, Award, Target, Sparkles, BarChart2,
-  Calendar, FileSpreadsheet, Printer
-} from 'lucide-react';
+import { useStudentDesk } from '@/lib/student/useStudentDesk';
+import { dmy, subjectColor } from '@/lib/student/shape';
+import type { EvidenceKind, SubjectMastery } from '@/lib/student/types';
+import MasteryTree, { GATE_LABEL } from './MasteryTree';
+import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { subjectIcon } from '@/components/canon/subjectIcon';
 
-interface UnitRow {
-  unitId: string;
-  unitLabel: string;
-  score: number | null;
-  submissionCount: number;
+const KIND_TONE: Record<EvidenceKind, Tone> = { Homework: 'n', Quiz: 'b', Classwork: 'n', Tutor: 'p' };
+
+export default function MasteryPage() {
+  return <Suspense fallback={<MasterySkeleton />}><Mastery /></Suspense>;
 }
 
-interface SubjectBlock {
-  subject: string;
-  overallScore: number | null;
-  units: UnitRow[];
-}
+function Mastery() {
+  const { desk, error, reload } = useStudentDesk();
+  const { profile, getAuthToken } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
-type DateFilterOption = 'all' | '30days' | '7days';
+  if (error) return <div className="note err" role="alert">{error}</div>;
+  if (!desk) return <MasterySkeleton />;
 
-function getOxfordNavyBand(score: number | null) {
-  if (score === null) {
-    return {
-      css: 'bg-[#eef3f8] text-[#a9b8c8] border-[#e2e9f1]',
-      badge: 'bg-[#eef3f8] text-[#7a8b9e] border-[#d3dfed]',
-      label: '—',
-      bandName: 'Void / No Data'
-    };
+  if (desk.subjects.length === 0) {
+    return (
+      <>
+        <PageBar eyebrow="MASTERY TRACKER" title="Your TML Breakdown" sub="Every score that feeds your True Mastery Level, and how much it counts." />
+        <div className="card">
+          <Empty icon={<InteractiveIcon icon={ChartLineUp} color="#3B82F6" size={32} active />} title="No evidence yet">
+            Your TML starts building as soon as your first assignment or quiz is graded.
+          </Empty>
+        </div>
+      </>
+    );
   }
-  if (score < 50) {
-    const isExtreme = score < 35;
-    return {
-      css: isExtreme
-        ? 'bg-[#b8362a] text-white border-[#b8362a] font-black'
-        : 'bg-[#f7d8d3] text-[#7a2119] border-[#e0a89f] font-bold',
-      badge: 'bg-[#f7d8d3] text-[#7a2119] border-[#e0a89f]',
-      label: `${score}%`,
-      bandName: 'Needs Support (<50%)'
-    };
-  }
-  if (score < 75) {
-    const isExtreme = score >= 70;
-    return {
-      css: isExtreme
-        ? 'bg-[#c98a00] text-white border-[#c98a00] font-black'
-        : 'bg-[#f9e6bb] text-[#77510a] border-[#e6c87e] font-bold',
-      badge: 'bg-[#f9e6bb] text-[#77510a] border-[#e6c87e]',
-      label: `${score}%`,
-      bandName: 'Developing (50–74%)'
-    };
-  }
-  const isExtreme = score >= 90;
-  return {
-    css: isExtreme
-      ? 'bg-[#1b7a53] text-white border-[#1b7a53] font-black'
-      : 'bg-[#c8e7d7] text-[#0e5237] border-[#93cbb0] font-bold',
-    badge: 'bg-[#c8e7d7] text-[#0e5237] border-[#93cbb0]',
-    label: `${score}%`,
-    bandName: 'Mastered (≥75%)'
-  };
-}
 
-function overallGrade(s: number | null): string {
-  if (s === null) return '—';
-  if (s >= 90) return 'A+';
-  if (s >= 80) return 'A';
-  if (s >= 70) return 'B';
-  if (s >= 60) return 'C';
-  return 'D';
-}
+  const wanted = params.get('subject');
+  const m: SubjectMastery = desk.subjects.find(s => s.subject.toLowerCase() === wanted?.toLowerCase()) 
+    // Canon opens on Mathematics (mockup MSUBJ default) when there's no explicit pick.
+    ?? desk.subjects.find(s => s.subject === 'Mathematics') ?? desk.subjects[0];
+  const pick = (s: string) => router.replace(`${pathname}?subject=${encodeURIComponent(s)}`, { scroll: false });
 
-export default function StudentMasteryPage() {
-  const { profile } = useAuth();
-  const supabase = createClient();
-  const [blocks, setBlocks] = useState<SubjectBlock[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
+  const items = m.topics.flatMap(t => t.items);
+  const graded = items.filter(i => i.pct !== null);
+  const firm = m.topics.filter(t => t.gate === 'firm').length;
+  const chrono = [...items].sort((a, b) => (b.at ? new Date(b.at).getTime() : 0) - (a.at ? new Date(a.at).getTime() : 0));
 
-  useEffect(() => {
-    if (!profile?.uid) return;
-
-    const buildHeatmap = async () => {
-      setLoading(true);
-      try {
-        let subsQuery = supabase
-          .from('submissions')
-          .select('assignment_id, score, max_score, teacher_approved, created_at')
-          .eq('student_id', profile.uid)
-          .eq('teacher_approved', true);
-
-        if (dateFilter === '30days') {
-          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date30);
-        } else if (dateFilter === '7days') {
-          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date7);
-        }
-
-        const { data: subs, error: subErr } = await subsQuery;
-
-        if (subErr) console.error('[MasteryPage] submissions error:', subErr);
-        if (!subs || subs.length === 0) { setBlocks([]); return; }
-
-        const allAssignIds = [...new Set(subs.map(s => s.assignment_id))];
-        const { data: assigns, error: assignErr } = await supabase
-          .from('assignments')
-          .select('id, subject, units, title')
-          .in('id', allAssignIds);
-
-        if (assignErr) console.error('[MasteryPage] assignments error:', assignErr);
-        if (!assigns || assigns.length === 0) { setBlocks([]); return; }
-
-        const assignMap: Record<string, any> = {};
-        assigns.forEach(a => { assignMap[a.id] = a; });
-
-        const grouped: Record<string, Record<string, number[]>> = {};
-
-        subs.forEach(sub => {
-          const assign = assignMap[sub.assignment_id];
-          if (!assign) return;
-          const subject = assign.subject || 'General';
-          if (sub.score === null || sub.max_score === null || sub.max_score === 0) return;
-
-          const pct = Math.round((sub.score / sub.max_score) * 100);
-          if (!grouped[subject]) grouped[subject] = {};
-
-          const rawUnits: string[] = Array.isArray(assign.units) && assign.units.length > 0
-            ? assign.units.filter(u => u !== 'general' && u !== 'General')
-            : [];
-          
-          const fallbackTopic = assign.title
-            ? assign.title.trim().charAt(0).toUpperCase() + assign.title.trim().slice(1)
-            : 'Core Concepts';
-
-          const units: string[] = rawUnits.length > 0 ? rawUnits : [fallbackTopic];
-
-          units.forEach(uid => {
-            if (!grouped[subject][uid]) grouped[subject][uid] = [];
-            grouped[subject][uid].push(Math.min(100, Math.max(0, pct)));
-          });
-        });
-
-        const result: SubjectBlock[] = Object.entries(grouped).map(([subject, unitMap]) => {
-          const units: UnitRow[] = Object.keys(unitMap).map(u => {
-            const scores = unitMap[u];
-            const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-            const label = u.charAt(0).toUpperCase() + u.slice(1);
-            return { unitId: u, unitLabel: label, score: avg, submissionCount: scores.length };
-          });
-
-          const allScores = units.map(t => t.score).filter(Boolean) as number[];
-          const overall = allScores.length
-            ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-            : null;
-
-          return { subject, overallScore: overall, units };
-        });
-
-        result.sort((a, b) => b.units.length - a.units.length);
-        setBlocks(result);
-        if (result.length > 0 && !selectedSubject) setSelectedSubject(result[0].subject);
-      } catch (err) {
-        console.error('[MasteryPage]', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    buildHeatmap();
-  }, [profile?.uid, dateFilter]);
-
-  const overallAll = useMemo(() => {
-    if (!blocks.length) return null;
-    const all = blocks.map(b => b.overallScore).filter(Boolean) as number[];
-    return all.length ? Math.round(all.reduce((a, b) => a + b, 0) / all.length) : null;
-  }, [blocks]);
-
-  const weakest = useMemo(() => {
-    let min: { subject: string; unitLabel: string; score: number } | null = null;
-    blocks.forEach(b => {
-      b.units.forEach(u => {
-        if (u.score !== null && (min === null || u.score < min.score)) {
-          min = { subject: b.subject, unitLabel: u.unitLabel, score: u.score };
-        }
+  // Recompute through /api/tml/compute (the same engine teachers' views read), then reload.
+  const refresh = async () => {
+    if (!profile) return;
+    setRefreshing(true); setRefreshMsg(null);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch('/api/tml/compute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ studentId: profile.uid }),
       });
-    });
-    return min;
-  }, [blocks]);
-
-  const activeBlock = blocks.find(b => b.subject === selectedSubject) ?? blocks[0] ?? null;
-
-  // Export CSV
-  const handleExportCSV = () => {
-    if (!blocks.length) return;
-
-    let csvContent = 'Subject,Topic / Unit,Mastery Score %,Evidence Count,Status Band\n';
-
-    blocks.forEach(b => {
-      b.units.forEach(u => {
-        const band = getOxfordNavyBand(u.score);
-        csvContent += `"${b.subject.replace(/"/g, '""')}","${u.unitLabel.replace(/"/g, '""')}",${u.score !== null ? u.score : 'N/A'},${u.submissionCount},"${band.bandName}"\n`;
-      });
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `My_TML_Mastery_Heatmap_${profile?.name ? profile.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Student'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (!res.ok) throw new Error();
+      reload();
+      setRefreshMsg('Recomputed from your latest graded work.');
+    } catch {
+      setRefreshMsg('Could not recompute right now. Your last computed TML is still shown.');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  // Print Report Card
-  const handlePrintReportCard = () => {
-    window.print();
-  };
+  const COMPONENTS: [string, string, number | null][] = [
+    ['Homework & classwork, from your photos + your teacher', '40% of the academic score', m.components.homework],
+    ['Quizzes & tests, timed', '40% of the academic score', m.components.quiz],
+    ['AI Tutor depth — how independently you got there', '20% of the academic score', m.components.tutor],
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-16 animate-in fade-in duration-500 font-sans">
-      {/* Print CSS */}
-      <style jsx global>{`
-        @media print {
-          body { background-color: white !important; color: black !important; }
-          .no-print { display: none !important; }
-          .print-only { display: block !important; }
-        }
-        @media screen {
-          .print-only { display: none !important; }
-        }
-      `}</style>
-
-      {/* Printable Official Student Report Header */}
-      <div className="print-only mb-6 text-black space-y-3">
-        <div className="flex justify-between items-center border-b-2 border-[#002147] pb-4">
-          <div>
-            <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Sthara School OS</h1>
-            <h2 className="text-lg font-bold text-gray-800">Student TML Mastery Heatmap — Individual Report Card</h2>
-          </div>
-          <div className="text-right text-xs font-semibold text-gray-600">
-            <p>Student Name: <strong>{profile?.name || 'Student'}</strong></p>
-            <p>Class: <strong>{profile?.studentClass || profile?.branch || '10A'}</strong></p>
-            <p>Overall TML: <strong>{overallAll !== null ? `${overallAll}%` : 'N/A'}</strong></p>
-            <p>Timeline: <strong>{dateFilter === 'all' ? 'All Time' : dateFilter === '30days' ? 'Last 30 Days' : 'Last 7 Days'}</strong></p>
-            <p>Date Printed: <strong>{new Date().toLocaleDateString()}</strong></p>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Header Card */}
-      <div className="relative bg-gradient-to-br from-[#002147] via-[#003b80] to-[#001a33] rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl overflow-hidden border border-white/10 no-print">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="bg-white/15 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-blue-200 border border-white/15 flex items-center gap-1.5">
-                <BarChart2 className="w-3.5 h-3.5 text-blue-300" /> Oxford Navy TML Mastery Matrix
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">
-              My Personal Mastery Heatmap
-            </h1>
-            <p className="text-blue-100 text-sm md:text-base max-w-xl font-medium opacity-90 leading-relaxed">
-              Track your subject performance, topic strengths, and 4-band semantic growth (Red/Amber/Green/Void) powered by 100% real Supabase graded evidence.
-            </p>
-          </div>
-
-          {/* Action Buttons & Overall Circle */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
-            {overallAll !== null && (
-              <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl flex items-center gap-5 shadow-xl">
-                <div className="relative w-16 h-16 flex items-center justify-center">
-                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
-                    <circle
-                      cx="18" cy="18" r="15.9" fill="none"
-                      stroke={overallAll >= 75 ? '#1b7a53' : overallAll >= 50 ? '#c98a00' : '#b8362a'}
-                      strokeWidth="3"
-                      strokeDasharray={`${overallAll} ${100 - overallAll}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="absolute font-black text-sm text-white">{overallAll}%</span>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-blue-200 uppercase tracking-wider">Overall Score</p>
-                  <p className="text-3xl font-black text-white mt-0.5">Grade {overallGrade(overallAll)}</p>
-                  <p className="text-[11px] text-blue-100 mt-0.5">{blocks.length} subject{blocks.length !== 1 ? 's' : ''} assessed</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Control Bar: Timeline Filter, CSV Export, Print Report Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm no-print">
-        <div className="flex items-center space-x-3 text-xs font-bold text-[#002147]">
-          <Calendar className="w-4 h-4 text-[#002147]" />
-          <span className="text-gray-400 uppercase text-[10px] tracking-wider">Timeline Filter:</span>
-          <div className="flex items-center bg-gray-100 p-1 rounded-xl">
-            <button
-              onClick={() => setDateFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-                dateFilter === 'all' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:text-[#002147]'
-              }`}
-            >
-              All Time
+    <>
+      {desk.mode === 'demo' && <DemoNote />}
+      <PageBar
+        eyebrow="MASTERY TRACKER"
+        title="Your TML Breakdown"
+        sub="Every score that feeds your True Mastery Level, and how much it counts."
+        actions={<>
+          <Chip tone={desk.mode === 'live' ? 'g' : 'n'} title="Computed by the same TML engine your teachers' views read — not a separate estimate">
+            <CheckCircle size={13} weight="fill" /> {desk.mode === 'live' ? 'Live' : 'Demo'} · TML engine
+          </Chip>
+          {desk.mode === 'live' && (
+            <button className="btn" onClick={refresh} disabled={refreshing}>
+              <ArrowsClockwise size={15} weight="bold" /> {refreshing ? 'Recomputing…' : 'Recompute'}
             </button>
-            <button
-              onClick={() => setDateFilter('30days')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-                dateFilter === '30days' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:text-[#002147]'
-              }`}
-            >
-              Last 30 Days
-            </button>
-            <button
-              onClick={() => setDateFilter('7days')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-                dateFilter === '7days' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:text-[#002147]'
-              }`}
-            >
-              Last 7 Days
-            </button>
-          </div>
-        </div>
+          )}
+        </>}
+      />
+      {refreshMsg && <div className="note info" style={{ marginBottom: 18 }} role="status">{refreshMsg}</div>}
 
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={handleExportCSV}
-            className="px-4 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
-            <span>Export CSV</span>
+      <div className="tabs" role="tablist" aria-label="Subject">
+        {desk.subjects.map(s => (
+          <button key={s.subject} role="tab" aria-selected={s === m} className={`tab${s === m ? ' on blue' : ''}`} onClick={() => pick(s.subject)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <InteractiveIcon icon={subjectIcon(s.subject)} color={s === m ? '#fff' : subjectColor(s.subject)} size={16} active={s === m} />
+            {s.subject}
           </button>
-          <button
-            onClick={handlePrintReportCard}
-            className="px-4 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-          >
-            <Printer className="w-4 h-4 text-indigo-700" />
-            <span>Print Report Card</span>
-          </button>
+        ))}
+      </div>
+
+      <div className="kpis">
+        <div className="kpi">
+          <div className="lb">{m.subject.toUpperCase()} TML</div>
+          <div className="vl" style={{ color: m.tml !== null ? hmColor(m.tml) : 'var(--mut2)' }}>{m.tml !== null ? `${m.tml}%` : '—'}</div>
+          <div className="nt" style={{ color: 'var(--mut)' }}>{m.note}</div>
+        </div>
+        <div className="kpi">
+          <div className="lb">WEAKEST TOPIC</div>
+          <div className="vl" style={{ fontSize: 24 }}>{m.weakest?.name ?? '—'}</div>
+          <div className="nt" style={{ color: m.weakest?.score != null ? hmColor(m.weakest.score) : 'var(--mut)' }}>
+            {m.weakest ? `${m.weakest.score}% · ${GATE_LABEL[m.weakest.gate]}` : 'Nothing scored yet'}
+          </div>
+        </div>
+        <div className="kpi">
+          <div className="lb">EVIDENCE ITEMS</div>
+          <div className="vl">{graded.length}</div>
+          <div className="nt" style={{ color: 'var(--mut)' }}>
+            Across {m.topics.length} topic{m.topics.length === 1 ? '' : 's'}{items.length > graded.length ? ` · ${items.length - graded.length} still pending` : ''}
+          </div>
+        </div>
+        <div className="kpi">
+          <div className="lb">CONFIDENCE</div>
+          <div className="vl" style={{ fontSize: 30 }}>{firm} of {m.topics.length}</div>
+          <div className="nt" style={{ color: 'var(--mut)' }}>Topics confirmed — five or more graded pieces each</div>
         </div>
       </div>
 
-      {/* Weakest Unit Focus Alert */}
-      {weakest && weakest.score < 75 && (
-        <div className="bg-[#f7d8d3]/70 border-2 border-[#e0a89f] rounded-2xl p-5 flex items-start gap-4 shadow-sm no-print">
-          <div className="w-10 h-10 bg-[#b8362a] text-white rounded-xl flex items-center justify-center shrink-0 font-bold mt-0.5 shadow-md">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="font-bold text-[#7a2119] text-sm">Recommended Focus Area</h4>
-            <p className="text-xs text-[#7a2119] mt-1 leading-relaxed">
-              Your mastery in <strong className="font-extrabold text-[#7a2119]">{weakest.unitLabel}</strong> ({weakest.subject}) is currently at <strong className="font-black text-[#7a2119]">{weakest.score}%</strong>. Complete targeted practice to raise this score into the Green Band (≥75%).
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Main Heatmap Section */}
-      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-8 space-y-8">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
-            <Loader2 className="w-10 h-10 animate-spin text-[#002147] mb-3" />
-            <p className="font-bold text-sm text-[#002147]">Calculating personal TML heatmap slice...</p>
-          </div>
-        ) : blocks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
-            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-[#002147]">
-              <BookOpen className="w-10 h-10" />
-            </div>
-            <h3 className="text-xl font-black text-[#002147] mb-2">No Graded Submissions Recorded</h3>
-            <p className="text-sm text-gray-500 leading-relaxed mb-6">
-              Complete your assignments and quizzes. Once teacher-approved, your personal Oxford Navy TML heatmap matrix will generate automatically.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Subject Tabs */}
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide border-b border-gray-100 no-print">
-              {blocks.map(b => {
-                const band = getOxfordNavyBand(b.overallScore);
-                const isActive = b.subject === selectedSubject;
-                return (
-                  <button
-                    key={b.subject}
-                    onClick={() => setSelectedSubject(b.subject)}
-                    className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all whitespace-nowrap border ${
-                      isActive
-                        ? 'bg-[#002147] text-white border-[#002147] shadow-lg scale-[1.02]'
-                        : `${band.css} hover:border-indigo-300`
-                    }`}
-                  >
-                    <span>{b.subject}</span>
-                    {b.overallScore !== null && (
-                      <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : band.badge}`}>
-                        {b.overallScore}%
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Active Subject Breakdown */}
-            {activeBlock && (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-slate-50 to-blue-50/40 rounded-2xl border border-gray-200 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-2xl font-extrabold text-[#002147]">{activeBlock.subject}</h3>
-                    <p className="text-xs text-gray-500 font-medium mt-1">
-                      {activeBlock.units.length} topic/unit{activeBlock.units.length !== 1 ? 's' : ''} assessed across {activeBlock.units.reduce((s, u) => s + u.submissionCount, 0)} submission{activeBlock.units.reduce((s, u) => s + u.submissionCount, 0) !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  {activeBlock.overallScore !== null && (
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Subject TML</span>
-                        <span className="text-2xl font-black text-[#002147]">{activeBlock.overallScore}%</span>
-                      </div>
-                      <div className={`text-xl font-black px-4 py-2 rounded-2xl ${getOxfordNavyBand(activeBlock.overallScore).badge}`}>
-                        {getOxfordNavyBand(activeBlock.overallScore).bandName}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Oxford Navy 4-Band Topic Matrix Grid */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider px-1">
-                    Oxford Navy 4-Band Semantic TML Breakdown
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {activeBlock.units.map(unit => {
-                      const band = getOxfordNavyBand(unit.score);
-                      return (
-                        <div
-                          key={unit.unitId}
-                          className={`p-5 rounded-2xl border ${band.css} flex items-center gap-4 shadow-sm hover:shadow-md transition-all`}
-                        >
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border ${
-                            unit.score === null
-                              ? 'bg-gray-200 text-gray-500'
-                              : unit.score >= 75
-                              ? 'bg-[#1b7a53] text-white'
-                              : unit.score >= 50
-                              ? 'bg-[#c98a00] text-white'
-                              : 'bg-[#b8362a] text-white'
-                          }`}>
-                            {unit.score === null ? (
-                              <Minus className="w-6 h-6" />
-                            ) : unit.score >= 75 ? (
-                              <CheckCircle2 className="w-6 h-6" />
-                            ) : unit.score >= 50 ? (
-                              <TrendingUp className="w-6 h-6" />
-                            ) : (
-                              <AlertTriangle className="w-6 h-6" />
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <h5 className="font-black text-base truncate">{unit.unitLabel}</h5>
-                              <span className="text-base font-black shrink-0">
-                                {band.label}
-                              </span>
-                            </div>
-                            <div className="w-full bg-white/70 rounded-full h-2.5 mt-2 overflow-hidden border border-black/5">
-                              <div
-                                className={`h-2.5 rounded-full transition-all duration-700 ${
-                                  unit.score === null
-                                    ? 'bg-gray-300'
-                                    : unit.score >= 75
-                                    ? 'bg-[#1b7a53]'
-                                    : unit.score >= 50
-                                    ? 'bg-[#c98a00]'
-                                    : 'bg-[#b8362a]'
-                                }`}
-                                style={{ width: `${unit.score ?? 0}%` }}
-                              />
-                            </div>
-                            <div className="flex justify-between items-center mt-1.5 text-xs opacity-90 font-medium">
-                              <span>{unit.submissionCount} evidence point(s)</span>
-                              <span className="font-bold text-[11px] uppercase tracking-wider">{band.bandName}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+      <div className="g2">
+        <div className="card">
+          <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>What goes into this</h3>
+          <p className="muted" style={{ marginBottom: 18 }}>
+            Your {m.subject} TML blends these together, and leans more on whichever ones you actually have evidence for.
+          </p>
+          {COMPONENTS.map(([name, weight, v]) => (
+            <div key={name} className="row">
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{name}</div>
+                <div className="muted" style={{ fontSize: 11.5 }}>{weight}</div>
               </div>
-            )}
-
-            {/* Oxford Navy Color Legend */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-gray-100 text-xs font-bold text-gray-600">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f7d8d3] border border-[#e0a89f]" />
-                  <span>Red Band: Needs Support &lt;50%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f9e6bb] border border-[#e6c87e]" />
-                  <span>Amber Band: Developing 50–74%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#c8e7d7] border border-[#93cbb0]" />
-                  <span>Green Band: Mastered ≥75%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#eef3f8] border border-[#e2e9f1]" />
-                  <span>Void: Not Attempted</span>
-                </div>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-[#002147] text-white text-[10px] font-black uppercase tracking-wider">
-                100% Real Supabase Submissions
-              </span>
+              {v !== null ? <Bar value={v} /> : <div className="bar" />}
+              <b style={{ width: 50, textAlign: 'right', fontSize: 14, color: v !== null ? hmColor(v) : 'var(--mut2)' }}>{v !== null ? `${v}%` : '—'}</b>
             </div>
-          </>
-        )}
+          ))}
+          <div className="note" style={{ marginTop: 16 }}>
+            Those three make up 70% of your TML. The other 30% is attendance (10%), how you engage in class (10%), app use (5%) and
+            how often you practise with the AI Tutor (5%). Older work counts for a little less — a score&apos;s weight halves every two weeks —
+            and so does needing hints to get there.
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>What fed this score</h3>
+          <p className="muted" style={{ marginBottom: 18 }}>Every {m.subject.toLowerCase()} assignment, quiz, test and tutor session behind your TML.</p>
+          {chrono.map((e, i) => (
+            <div key={i} className="row">
+              <Chip tone={KIND_TONE[e.kind]}><span style={{ minWidth: 64, textAlign: 'center' }}>{e.kind}</span></Chip>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{e.title}</div>
+                <div className="muted" style={{ fontSize: 11.5 }}>{e.pct === null && e.label === 'Not started' ? `Due ${dmy(e.at)}` : dmy(e.at)}</div>
+              </div>
+              <b style={{ fontSize: 14, color: e.pct === null ? 'var(--mut2)' : undefined }}>{e.label}</b>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Print Footer */}
-      <div className="print-only mt-12 pt-6 border-t border-gray-400 flex justify-between text-xs text-gray-700">
-        <div>
-          <p>Student Signature: _______________________</p>
+      <h3 className="sec"><span className="dot" style={{ background: 'var(--pale)', color: 'var(--blue)' }}><ArrowRight size={14} weight="bold" /></span>How your {m.subject} TML was built</h3>
+      <div className="card">
+        <p className="muted">Each assignment, quiz and tutor session merges into the topic it belongs to. Every topic then merges into your {m.subject} True Mastery Level.</p>
+        <div className="tlegend" style={{ marginTop: 16 }}>
+          <span><i style={{ background: hmColor(90) }} />Assignment, quiz or tutor score</span>
+          <span><i style={{ background: hmColor(60), width: 15, height: 15 }} />Topic score</span>
+          <span><i style={{ background: '#fff', border: '2px dashed var(--line)' }} />Not graded yet</span>
+          <span><i className="sq" style={{ background: 'var(--ink)' }} />Subject TML</span>
         </div>
-        <div className="text-right">
-          <p>Parent / Guardian Signature: _______________________</p>
+        <div className="tree-wrap"><MasteryTree m={m} /></div>
+        <div className="note" style={{ marginTop: 12 }}>
+          Items on the same topic merge into one topic score — that&apos;s why a strong quiz can offset a weaker homework before either reaches your TML.
+          {m.topics.some(t => t.gate !== 'firm') && <> Topics marked <b>Still building</b> have fewer than five graded pieces, so expect them to move.</>}
         </div>
+        {m.computedAt && <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>Last computed {dmy(m.computedAt)}.</p>}
       </div>
+    </>
+  );
+}
+
+function MasterySkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading mastery">
+      <Skeleton h={104} style={{ borderRadius: 20, marginBottom: 22 }} />
+      <Skeleton h={54} w={520} style={{ borderRadius: 14, marginBottom: 20 }} />
+      <div className="kpis">{[0, 1, 2, 3].map(i => <Skeleton key={i} h={140} style={{ borderRadius: 20 }} />)}</div>
+      <div className="g2"><Skeleton h={380} style={{ borderRadius: 20 }} /><Skeleton h={380} style={{ borderRadius: 20 }} /></div>
     </div>
   );
 }

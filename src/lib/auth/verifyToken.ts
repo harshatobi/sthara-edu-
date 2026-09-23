@@ -50,7 +50,10 @@ export async function verifyApiToken(
         .select('role')
         .eq('id', user.id)
         .maybeSingle();
-      role = userRow?.role || user.user_metadata?.role;
+      // Role comes from the users table only. user_metadata is editable by the
+      // user themselves (auth.updateUser), so trusting it would let anyone
+      // grant themselves any role.
+      role = userRow?.role || undefined;
     } catch (_) { /* ignore */ }
 
     return {

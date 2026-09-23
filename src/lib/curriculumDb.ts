@@ -7,16 +7,24 @@
  * Unit IDs (unit_1 … unit_5) map directly to the assignment unit tagging system.
  */
 
+import { flattenChapters, getCurriculum } from '@/lib/curriculum';
+
 export interface CurriculumChapter {
-  unitId: string;        // "unit_1" … "unit_5"
+  unitId: string;        // "unit_1" … "unit_n"
   topic: string;         // Full chapter/topic name
   month: string;         // Suggested month to teach
   objectives: string;    // Brief learning objective
+  /** Planning weight from the official unit marks (see FlatChapter.approxMarks); absent for hand-typed entries. */
+  examWeightage?: number;
+  /** Taught but not in the year-end board paper. */
+  formativeOnly?: boolean;
 }
 
 export interface CurriculumEntry {
   description: string;
   chapters: CurriculumChapter[];
+  /** Official document this entry was transcribed from, when it's an ingested board curriculum. */
+  source?: { title: string; url: string };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -364,11 +372,46 @@ const CURRICULUM_DB: Record<string, Record<string, Record<string, CurriculumEntr
 // LOOKUP FUNCTION
 // Matches publisher + subject + class case-insensitively with fuzzy fallback.
 // ─────────────────────────────────────────────────────────────────────────────
+// Teaching months June → January; board exams follow in Feb/March.
+const TEACHING_MONTHS = ['June', 'July', 'August', 'September', 'October', 'November', 'December', 'January'];
+
+/**
+ * NCERT / CBSE lookups resolve to the ingested official 2026-27 curriculum
+ * first (src/lib/curriculum), falling back to the hand-typed table below for
+ * subjects not yet ingested. Months are Sthara's even spread of chapters over
+ * the teaching year: a suggestion, not part of the CBSE document.
+ */
+function officialEntry(publisher: string, subject: string, cls: string): CurriculumEntry | null {
+  const pub = publisher.toLowerCase();
+  if (!pub.includes('ncert') && !pub.includes('cbse')) return null;
+  const sub = getCurriculum(cls, subject);
+  if (!sub) return null;
+  const flat = flattenChapters(sub);
+  const unitIndex = new Map(sub.units.map((u, i) => [u.code, i + 1]));
+  const chapters: CurriculumChapter[] = flat.map((ch, i) => ({
+    unitId: `unit_${unitIndex.get(ch.unitCode)}`,
+    topic: ch.number ? `Chapter ${ch.number}: ${ch.name}` : ch.name,
+    month: TEACHING_MONTHS[Math.min(TEACHING_MONTHS.length - 1, Math.floor((i * TEACHING_MONTHS.length) / flat.length))],
+    objectives: [...ch.topics, ...(ch.notes ?? []).map(n => `Note: ${n}`)].join('; '),
+    examWeightage: ch.approxMarks ?? undefined,
+    formativeOnly: ch.formativeOnly || undefined,
+  }));
+  return {
+    description: `CBSE ${sub.session} official curriculum, Class ${sub.class} ${sub.subject}`
+      + (sub.assessment.theory !== null ? ` (theory ${sub.assessment.theory} + internal ${sub.assessment.internal})` : ' (unit marks not yet published by CBSE)'),
+    chapters,
+    source: { title: sub.source.title, url: sub.source.url },
+  };
+}
+
 export function lookupCurriculum(
   publisher: string,
   subject: string,
   cls: string,
 ): CurriculumEntry | null {
+  const official = officialEntry(publisher, subject, cls);
+  if (official) return official;
+
   const normalize = (s: string) => s.toLowerCase().replace(/[-_\s]+/g, ' ').trim();
 
   const pubKey = normalize(publisher);

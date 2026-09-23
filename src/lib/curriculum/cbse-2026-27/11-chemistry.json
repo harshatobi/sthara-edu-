@@ -1,0 +1,266 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Chemistry",
+  "codes": [
+    "043"
+  ],
+  "source": {
+    "title": "Chemistry, Subject Code 043, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Chemistry_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Volumetric analysis",
+        "marks": 8
+      },
+      {
+        "component": "Salt analysis",
+        "marks": 8
+      },
+      {
+        "component": "Content-based experiment",
+        "marks": 6
+      },
+      {
+        "component": "Project work",
+        "marks": 4
+      },
+      {
+        "component": "Class record and viva",
+        "marks": 4
+      }
+    ]
+  },
+  "textbooks": [
+    "Chemistry Part I, Class XI (NCERT)",
+    "Chemistry Part II, Class XI (NCERT)",
+    "Manual of Microscale Chemistry Laboratory Kit (NCERT)"
+  ],
+  "notes": [
+    "Each unit corresponds to one NCERT textbook chapter.",
+    "The document has no learning-outcomes column for Chemistry, so chapter outcomes are left empty.",
+    "s- and p-block elements, and the gaseous state, are included but assessed only formatively."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Some Basic Concepts of Chemistry",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Some Basic Concepts of Chemistry",
+          "topics": [
+            "Importance of chemistry",
+            "Nature of matter",
+            "Properties of matter and their measurement",
+            "Uncertainty in measurement",
+            "Laws of chemical combination",
+            "Dalton's atomic theory",
+            "Atomic and molecular masses",
+            "Mole concept and molar masses",
+            "Percentage composition",
+            "Stoichiometry and stoichiometric calculations"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Structure of Atom",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Structure of Atom",
+          "topics": [
+            "Discovery of subatomic particles",
+            "Atomic models",
+            "Developments leading to Bohr's model",
+            "Bohr's model for the hydrogen atom",
+            "Towards the quantum mechanical model",
+            "Quantum mechanical model of the atom"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Classification of Elements and Periodicity in Properties",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Classification of Elements and Periodicity in Properties",
+          "topics": [
+            "Why we need to classify elements",
+            "Genesis of periodic classification",
+            "Modern periodic law and the present form of the periodic table",
+            "Nomenclature of elements with atomic number > 100",
+            "Electronic configuration and the periodic table",
+            "Types of elements: s-, p-, d-, f-blocks",
+            "Periodic trends in properties of elements"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Chemical Bonding and Molecular Structure",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Chemical Bonding and Molecular Structure",
+          "topics": [
+            "Kossel-Lewis approach to chemical bonding",
+            "Ionic or electrovalent bond",
+            "Bond parameters",
+            "VSEPR theory",
+            "Valence bond theory",
+            "Hybridisation",
+            "Molecular orbital theory",
+            "Bonding in some homonuclear diatomic molecules",
+            "Hydrogen bonding"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Chemical Thermodynamics",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Chemical Thermodynamics",
+          "topics": [
+            "Thermodynamic terms",
+            "Applications",
+            "Measurement of ∆U and ∆H: calorimetry",
+            "Enthalpy change, ∆H of a reaction (reaction enthalpy)",
+            "Enthalpies for different types of reactions",
+            "Spontaneity",
+            "Gibbs energy change and equilibrium"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Equilibrium",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Equilibrium",
+          "topics": [
+            "Equilibrium in physical processes",
+            "Equilibrium in chemical processes: dynamic equilibrium",
+            "Law of chemical equilibrium and equilibrium constant",
+            "Homogeneous and heterogeneous equilibria",
+            "Applications of equilibrium constants",
+            "Relationship between K, reaction quotient Q and Gibbs energy G",
+            "Factors affecting equilibria",
+            "Ionic equilibrium in solution; acids, bases and salts",
+            "Ionisation of acids and bases",
+            "Buffer solutions",
+            "Solubility equilibria of sparingly soluble salts"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Redox Reactions",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Redox Reactions",
+          "topics": [
+            "Classical idea of redox reactions: oxidation and reduction",
+            "Redox reactions as electron transfer reactions",
+            "Oxidation number",
+            "Redox reactions and electrode processes"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Organic Chemistry: Some Basic Principles and Techniques",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "Organic Chemistry: Some Basic Principles and Techniques",
+          "topics": [
+            "General introduction",
+            "Tetravalence of carbon: shapes of organic compounds",
+            "Structural representations of organic compounds",
+            "Classification of organic compounds",
+            "Nomenclature of organic compounds",
+            "Isomerism",
+            "Fundamental concepts in organic reaction mechanism",
+            "Methods of purification of organic compounds",
+            "Qualitative analysis of organic compounds",
+            "Quantitative analysis"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "9",
+      "name": "Hydrocarbons",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Hydrocarbons",
+          "topics": [
+            "Classification",
+            "Alkanes",
+            "Alkenes",
+            "Alkynes",
+            "Aromatic hydrocarbons",
+            "Carcinogenicity and toxicity"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "Formative",
+      "name": "Assessed formatively only",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "s- and p-Block Elements",
+          "formativeOnly": true,
+          "topics": [
+            "Electronic configuration, atomic and ionic radii",
+            "Ionisation enthalpy, hydration enthalpy",
+            "General trends in physical and chemical properties across periods and down groups",
+            "Unique behaviour of the first element in each group"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Gaseous State",
+          "formativeOnly": true,
+          "topics": [
+            "Qualitative treatment of gas laws",
+            "Ideal gas equation and deviations from it"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -2,12 +2,23 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Strict limit — this loops a Gemini call per student in the class, so one
+  // request already fans out to many calls.
+  const rl = checkRateLimit(`homework-generate:${user.id}`, 5, 10 * 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Please wait before generating homework for another class.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } }
+    );
+  }
 
   try {
     const { class: className, subject, topic, teacherId, schoolId } = await request.json();

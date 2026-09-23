@@ -7,8 +7,9 @@ export const maxDuration = 60;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(request: NextRequest) {
-  const token = await verifyApiToken(request);
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authErr } = await verifyApiToken(request);
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (user.role !== 'superadmin') return NextResponse.json({ error: 'Forbidden: superadmin only' }, { status: 403 });
 
   const ip = getClientIp(request);
   const rl = checkRateLimit(`analyze_course:${ip}`, 5, 60_000);

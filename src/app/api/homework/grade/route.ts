@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { computeStudentTml } from '@/lib/tml/engine';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +16,37 @@ export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const rl = checkRateLimit(`homework-grade:${user.id}`, 10, 5 * 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Please wait before grading again.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } }
+    );
+  }
+
   try {
-    const { assignmentId, studentId, imageBase64, mimeType, questions, schoolId } = await request.json();
+    const { assignmentId, studentId, imageBase64, mimeType, images, imageUrls, questions, schoolId } = await request.json();
+
+    if (studentId && user.id !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: can only submit your own grading request' }, { status: 403 });
+    }
+
+    // Accept either a single page (imageBase64/mimeType, legacy) or multiple pages
+    // (images: [{ data, mimeType }], for multi-page handwritten submissions) — graded
+    // together in one Gemini call so a page break never splits a question's evidence.
+    const rawPages: any[] = Array.isArray(images) && images.length > 0
+      ? images
+      : imageBase64
+        ? [{ data: imageBase64, mimeType: mimeType || 'image/jpeg' }]
+        : [];
+
+    const pages = rawPages.filter(
+      (p): p is { data: string; mimeType: string } => !!p && typeof p.data === 'string' && p.data.length > 0
+    ).map(p => ({ data: p.data, mimeType: typeof p.mimeType === 'string' && p.mimeType ? p.mimeType : 'image/jpeg' }));
+
+    if (pages.length === 0) {
+      return NextResponse.json({ error: 'Missing imageBase64 or images' }, { status: 400 });
+    }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -91,8 +122,8 @@ Output your response ONLY as a single valid JSON object matching this exact sche
         {
           role: 'user',
           parts: [
-            { text: prompt },
-            { inlineData: { data: imageBase64, mimeType } },
+            { text: pages.length > 1 ? `${prompt}\n\nThe answer sheet spans ${pages.length} photographed pages, attached in order.` : prompt },
+            ...pages.map(p => ({ inlineData: { data: p.data, mimeType: p.mimeType } })),
           ],
         },
       ],
@@ -123,6 +154,9 @@ Output your response ONLY as a single valid JSON object matching this exact sche
             score: numericScore,
             max_score: totalMarks,
             ai_result: parsed, // Save full rich diagnostic JSON
+            ai_graded: true,
+            image_urls: Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls : undefined,
+            type: 'handwritten',
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingSub.id);
@@ -136,6 +170,9 @@ Output your response ONLY as a single valid JSON object matching this exact sche
           score: numericScore,
           max_score: totalMarks,
           ai_result: parsed,
+          ai_graded: true,
+          image_urls: Array.isArray(imageUrls) ? imageUrls : [],
+          type: 'handwritten',
           teacher_approved: null, // pending teacher approval before updating heatmaps
         }).select('id').single();
 
@@ -183,6 +220,14 @@ Output your response ONLY as a single valid JSON object matching this exact sche
             },
           })
           .eq('id', studentId);
+      }
+
+      // Refresh True Mastery Level for this subject now that new evidence
+      // exists — best-effort, never fails the grading response.
+      try {
+        await computeStudentTml(supabase, studentId, assignmentSubject);
+      } catch (tmlErr) {
+        console.error('[homework/grade] TML recomputation error:', tmlErr);
       }
     }
 

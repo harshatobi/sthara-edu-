@@ -46,8 +46,13 @@ export function proxy(request: NextRequest) {
   if (!isProtected) return NextResponse.next();
 
   // 1. Auth check — must have session cookie
+  // DEV BYPASS: no backend/Supabase wired up yet locally, so allow the
+  // __role cookie (set by the login page's demo fallback) to stand in
+  // for a real session while building. Remove before shipping.
+  const isDev = process.env.NODE_ENV !== 'production';
   const sessionCookie = request.cookies.get('__session')?.value;
-  if (!sessionCookie) {
+  const roleCookie = request.cookies.get('__role')?.value;
+  if (!sessionCookie && !(isDev && roleCookie)) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);

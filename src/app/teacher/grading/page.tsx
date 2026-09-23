@@ -252,7 +252,7 @@ export default function GradingGalleryPage() {
 
               {/* AI Evaluation View or Text / Image Content */}
               {active.ai_result ? (
-                <AiEvaluationView aiResult={active.ai_result} />
+                <AiEvaluationView scanResult={active.ai_result} />
               ) : active.submission_text ? (
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-800 whitespace-pre-wrap">
                   {active.submission_text}

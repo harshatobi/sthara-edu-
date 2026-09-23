@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import {
+  SquaresFour, CalendarBlank, ChartLineUp, Heart, ShieldCheck, SignOut,
+  DownloadSimple, Sparkle, Check, NotePencil, CurrencyInr,
+} from '@phosphor-icons/react/dist/ssr';
+import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { ICON_COLORS, colorForIcon } from '@/lib/iconColors';
 
 export default function AdminPortal() {
   const [view, setView] = useState<'dash' | 'adm' | 'staff' | 'acad' | 'cbse' | 'dpdp'>('dash');
@@ -89,26 +95,26 @@ export default function AdminPortal() {
           <i>COMMAND CENTRE</i>
         </div>
         <nav>
-          {[
-            ['dash', 'Dashboard', '📊'],
-            ['adm', 'Admissions & Fees', '₹'],
-            ['staff', 'Staff & Timetable', '📅'],
-            ['acad', 'Academic Health', '📈'],
-            ['cbse', 'CBSE Wellness Report', '💚'],
-            ['dpdp', 'DPDP & Compliance', '🛡'],
-          ].map(([k, n, ic]) => (
+          {([
+            ['dash', 'Dashboard', SquaresFour],
+            ['adm', 'Admissions & Fees', CurrencyInr],
+            ['staff', 'Staff & Timetable', CalendarBlank],
+            ['acad', 'Academic Health', ChartLineUp],
+            ['cbse', 'CBSE Wellness Report', Heart],
+            ['dpdp', 'DPDP & Compliance', ShieldCheck],
+          ] as [string, string, typeof SquaresFour][]).map(([k, n, Icon]) => (
             <button
               key={k}
               className={`nv ${view === k ? 'on' : ''}`}
               onClick={() => setView(k as any)}
             >
-              <span>{ic}</span>
+              <InteractiveIcon icon={Icon} color={colorForIcon(Icon)} active={view === k} size={19} />
               <span>{n}</span>
             </button>
           ))}
           <div className="nv-out">
             <Link href="/login" className="nv">
-              <span>🚪</span>
+              <InteractiveIcon icon={SignOut} color={ICON_COLORS.SignOut} size={19} />
               <span>Sign Out</span>
             </Link>
           </div>
@@ -129,7 +135,7 @@ export default function AdminPortal() {
                   </div>
                 </div>
                 <button className="btn" style={{ background: '#fff', color: 'var(--ink)' }} onClick={() => alert('Board pack PDF export generated!')}>
-                  ⤓ Export board pack
+                  <DownloadSimple size={15} weight="duotone" /> Export board pack
                 </button>
               </div>
 
@@ -140,7 +146,7 @@ export default function AdminPortal() {
                     <div className="vl">66%</div>
                     <div className="nt">▲ 4 pts vs Term 1</div>
                   </div>
-                  <div className="ic">📈</div>
+                  <div className="ic"><ChartLineUp size={20} weight="duotone" /></div>
                 </div>
                 <div className="hstat">
                   <div>
@@ -148,7 +154,7 @@ export default function AdminPortal() {
                     <div className="vl">91%</div>
                     <div className="nt">₹18.4L outstanding</div>
                   </div>
-                  <div className="ic">₹</div>
+                  <div className="ic" style={{ fontWeight: 800 }}>₹</div>
                 </div>
                 <div className="hstat" style={{ background: 'rgba(245,182,11,.16)', borderColor: 'rgba(245,182,11,.3)' }}>
                   <div>
@@ -156,7 +162,7 @@ export default function AdminPortal() {
                     <div className="vl" style={{ fontSize: 26 }}>Due 15 Sep</div>
                     <div className="nt">Report 84% auto-populated</div>
                   </div>
-                  <div className="ic" style={{ background: 'rgba(245,182,11,.28)' }}>♡</div>
+                  <div className="ic" style={{ background: 'rgba(245,182,11,.28)' }}><Heart size={20} weight="duotone" /></div>
                 </div>
               </div>
             </div>
@@ -214,7 +220,7 @@ export default function AdminPortal() {
                   ['CBSE wellness report due 15 Sep', '84% auto-populated, review and file', 'a', 'cbse'],
                 ].map(([t, s, c, targetView]) => (
                   <div key={t} className="row">
-                    <div className="av" style={{ background: c === 'r' ? '#FFE4EA' : '#FEF3C7', color: c === 'r' ? 'var(--red)' : '#92600A' }}>✦</div>
+                    <div className="av" style={{ background: c === 'r' ? '#FFE4EA' : '#FEF3C7', color: c === 'r' ? 'var(--red)' : '#92600A' }}><Sparkle size={16} weight="duotone" /></div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div>
                       <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>{s}</div>
@@ -263,7 +269,7 @@ export default function AdminPortal() {
           <div>
             <div className="pbar">
               <div>
-                <div className="eyebrow">📅 STAFF &amp; TIMETABLE</div>
+                <div className="eyebrow"><CalendarBlank size={14} weight="duotone" /> STAFF &amp; TIMETABLE</div>
                 <h1>Workforce</h1>
                 <div className="sub">47 teaching · 18 non-teaching · 1:17 student-teacher ratio</div>
               </div>
@@ -311,7 +317,7 @@ export default function AdminPortal() {
           <div>
             <div className="pbar">
               <div>
-                <div className="eyebrow">📈 ACADEMIC HEALTH</div>
+                <div className="eyebrow"><ChartLineUp size={14} weight="duotone" /> ACADEMIC HEALTH</div>
                 <h1>School-wide diagnostics</h1>
                 <div className="sub">Live TML across 812 students · updated continuously</div>
               </div>
@@ -352,7 +358,7 @@ export default function AdminPortal() {
           <div>
             <div className="pbar">
               <div>
-                <div className="eyebrow">💚 CBSE 2026 WELLNESS MANDATE</div>
+                <div className="eyebrow"><Heart size={14} weight="duotone" /> CBSE 2026 WELLNESS MANDATE</div>
                 <h1>Wellness Report — AY 2026–27</h1>
                 <div className="sub">Filing due 15 Sep 2026 · 84% auto-populated from live check-in data</div>
               </div>
@@ -372,7 +378,7 @@ export default function AdminPortal() {
               ].map(([t, s, st]) => (
                 <div key={t} className="row">
                   <div className="av" style={{ background: st === 'done' ? '#DCFCE7' : '#FEF3C7', color: st === 'done' ? 'var(--green)' : '#92600A' }}>
-                    {st === 'done' ? '✓' : '✎'}
+                    {st === 'done' ? <Check size={16} weight="bold" /> : <NotePencil size={16} weight="duotone" />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div>
@@ -390,7 +396,7 @@ export default function AdminPortal() {
           <div>
             <div className="pbar">
               <div>
-                <div className="eyebrow">🛡 DPDP ACT 2023</div>
+                <div className="eyebrow"><ShieldCheck size={14} weight="duotone" /> DPDP ACT 2023</div>
                 <h1>Data Protection &amp; Compliance</h1>
                 <div className="sub">Indian data residency · Role-based access · Audit trail active</div>
               </div>

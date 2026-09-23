@@ -1,58 +1,140 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useRef, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { isRole, withTimeout } from '@/lib/auth/roles';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { BookOpen, ChalkboardTeacher, ShieldCheck, UsersThree } from '@phosphor-icons/react/dist/ssr';
+import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { colorForIcon } from '@/lib/iconColors';
+
+type Role = 'student' | 'teacher' | 'admin' | 'parent';
+type Step = 'code' | 'role' | 'creds';
+
+// Demo school registry — in a real build this is a lookup against the schools table.
+const SCHOOLS: Record<string, string> = { 'SCH-VSN-2026': 'DPS Vasundhara' };
+const DEFAULT_CODE = 'SCH-VSN-2026';
+
+const ROLE_INFO: Record<Role, { label: string; sub: string; email: string }> = {
+  student: { label: 'Student', sub: 'Honest Desk', email: 'ananya.iyer@student.sthara.in' },
+  teacher: { label: 'Teacher', sub: 'Teaching Copilot', email: 'priya.menon@dpsvasundhara.edu.in' },
+  admin: { label: 'Admin', sub: 'Command Centre', email: 'admin@dpsvasundhara.edu.in' },
+  parent: { label: 'Parent', sub: 'Growth Feed', email: 'parent.iyer@sthara.in' },
+};
+const ROLE_ORDER: Role[] = ['student', 'teacher', 'admin', 'parent'];
+
+// Exact measured brand mark — cropped from the real supplied logo artwork
+// (see assets/MARK_GEOMETRY.md in the launch-site design system), recolored
+// solid white for the dark login background via the same feColorMatrix the
+// marketing site uses (filter id="brand-white").
+function BrandMark({ size = 52 }: { size?: number }) {
+  return (
+    <svg viewBox="350 146 196 316" width={size} height={size} aria-hidden="true" style={{ filter: 'url(#lg-brand-white)' }}>
+      <image href="/brand/sthara-logo-presentation.png" width={895} height={813} />
+    </svg>
+  );
+}
+
+const ROLE_ICONS: Record<Role, typeof BookOpen> = {
+  student: BookOpen,
+  teacher: ChalkboardTeacher,
+  admin: ShieldCheck,
+  parent: UsersThree,
+};
+
+function RoleIcon({ role }: { role: Role }) {
+  const Icon = ROLE_ICONS[role];
+  return <InteractiveIcon icon={Icon} color={colorForIcon(Icon)} size={30} />;
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [role, setRole] = useState<'student' | 'teacher' | 'admin' | 'parent'>('teacher');
-  const [email, setEmail] = useState('priya.menon@dpsvasundhara.edu.in');
-  const [password, setPassword] = useState('••••••••••');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { startDemo } = useAuth();
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  const [step, setStep] = useState<Step>('code');
 
+  const [schoolCode, setSchoolCode] = useState('');
+  const [schoolName, setSchoolName] = useState('');
+  const [codeChecking, setCodeChecking] = useState(false);
+  const [codeError, setCodeError] = useState('');
+
+  const [role, setRole] = useState<Role>('teacher');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [credsError, setCredsError] = useState('');
+  const [signingIn, setSigningIn] = useState(false);
+
+  const passRef = useRef<HTMLInputElement>(null);
+
+  const checkCode = () => {
+    const code = (schoolCode.trim() || DEFAULT_CODE).toUpperCase();
+    setCodeError('');
+    setCodeChecking(true);
+    setTimeout(() => {
+      setCodeChecking(false);
+      const name = SCHOOLS[code];
+      if (!name) {
+        setCodeError(`School code not found. For this demo, try ${DEFAULT_CODE}.`);
+        return;
+      }
+      setSchoolCode(code);
+      setSchoolName(name);
+      setStep('role');
+    }, 400);
+  };
+
+  const backToCode = () => setStep('code');
+  const backToRoles = () => setStep('role');
+
+  const pickRole = (r: Role) => {
+    setRole(r);
+    setEmail(ROLE_INFO[r].email);
+    setPassword('');
+    setCredsError('');
+    setStep('creds');
+  };
+
+  const signIn = async () => {
+    if (!email.trim() || !password) {
+      setCredsError('Enter your ID and password.');
+      return;
+    }
+    setCredsError('');
+    setSigningIn(true);
     try {
       const supabase = createClient();
-      // Sign in or demo bypass
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      }).catch(() => ({ data: null, error: null }));
-
-      // Set role cookie
-      document.cookie = `__role=${role}; path=/; max-age=86400; SameSite=Lax`;
-      if (data?.session?.access_token) {
-        document.cookie = `__session=${data.session.access_token}; path=/; max-age=86400; SameSite=Lax`;
-      }
-
-      router.push(`/${role}`);
-    } catch (err: any) {
-      // Fallback redirect for demo environment
-      document.cookie = `__role=${role}; path=/; max-age=86400; SameSite=Lax`;
-      router.push(`/${role}`);
+      const { data, error } = await withTimeout(supabase.auth.signInWithPassword({ email: email.trim(), password }));
+      if (error || !data.session) throw new Error(error?.message || 'Sign-in failed.');
+      const { data: account, error: profileError } = await withTimeout(supabase.from('users').select('role').eq('id', data.user.id).single());
+      if (profileError || !isRole(account?.role)) throw new Error('Your school account profile is unavailable. Contact your administrator.');
+      document.cookie = `__role=${account.role}; path=/; max-age=3600; SameSite=Lax`;
+      document.cookie = `__session=${data.session.access_token}; path=/; max-age=3600; SameSite=Lax`;
+      router.replace(`/${account.role}`);
+    } catch (err) {
+      setCredsError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
     } finally {
-      setLoading(false);
+      setSigningIn(false);
     }
   };
 
   return (
     <div className="login-container">
+      {/* Hidden filter defs — recolors the raster brand mark to solid white,
+          matching the exact matrix used on sthara.in's dark theme. */}
+      <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+        <filter id="lg-brand-white" colorInterpolationFilters="sRGB">
+          <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -.243 -.817 -.083 0 1.143" />
+          <feComposite in2="SourceGraphic" operator="in" />
+        </filter>
+      </svg>
+
       <style jsx global>{`
         :root {
           --nav: #062347;
-          --nav2: #0A2C57;
           --red: #E11D48;
           --ink: #002147;
-          --body: #F7F9FB;
-          --line: #E8EDF4;
-          --mut: #7A8699;
-          --mut2: #9AA6B8;
         }
         .login-container {
           position: fixed;
@@ -67,141 +149,64 @@ export default function LoginPage() {
           flex-wrap: wrap;
           font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
         }
-        .lg-left {
-          max-width: 460px;
-          color: #fff;
-        }
-        .lg-mark {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 28px;
-        }
-        .lg-mark svg {
-          width: 52px;
-          height: 52px;
-        }
-        .lg-mark span {
-          font-size: 44px;
-          font-weight: 800;
-          letter-spacing: -.03em;
-        }
-        .lg-left h1 {
-          font-size: 42px;
-          font-weight: 800;
-          margin-bottom: 16px;
-          line-height: 1.1;
-        }
-        .lg-left p {
-          color: #9DB4D4;
-          font-size: 17px;
-          line-height: 1.6;
-        }
+        .lg-left { max-width: 460px; color: #fff; }
+        .lg-mark { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+        .lg-mark span { font-size: 44px; font-weight: 800; letter-spacing: -.03em; }
+        .lg-left h1 { font-size: 42px; font-weight: 800; margin-bottom: 16px; line-height: 1.1; }
+        .lg-left p { color: #9DB4D4; font-size: 17px; line-height: 1.6; }
         .lg-tag {
-          display: inline-block;
-          margin-top: 26px;
-          padding: 8px 16px;
-          border: 1px solid rgba(225, 29, 72, .5);
-          border-radius: 99px;
-          color: #FF8FA8;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: .16em;
+          display: inline-block; margin-top: 26px; padding: 8px 16px;
+          border: 1px solid rgba(225,29,72,.5); border-radius: 99px;
+          color: #FF8FA8; font-size: 12px; font-weight: 700; letter-spacing: .16em;
         }
         .lg-card {
-          background: rgba(255, 255, 255, .05);
-          border: 1px solid rgba(255, 255, 255, .1);
-          border-radius: 24px;
-          padding: 36px;
-          width: 380px;
-          backdrop-filter: blur(12px);
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+          border-radius: 24px; padding: 36px; width: 380px; backdrop-filter: blur(12px);
+          box-shadow: 0 20px 60px rgba(0,0,0,.3);
         }
-        .lg-card h2 {
-          color: #fff;
-          font-size: 26px;
-          font-weight: 800;
-          margin-bottom: 6px;
-        }
-        .lg-card .sub {
-          color: #8FA5C4;
-          font-size: 13px;
-          margin-bottom: 24px;
-        }
+        .lg-card h2 { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+        .lg-card .sub { color: #8FA5C4; font-size: 13px; margin-bottom: 24px; }
         .lg-in {
-          width: 100%;
-          background: rgba(255, 255, 255, .07);
-          border: 1px solid rgba(255, 255, 255, .12);
-          border-radius: 12px;
-          padding: 14px 16px;
-          color: #fff;
-          font-size: 14px;
-          font-family: inherit;
-          margin-bottom: 12px;
-          outline: none;
-          transition: border-color 0.2s;
+          width: 100%; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+          border-radius: 12px; padding: 14px 16px; color: #fff; font-size: 14px;
+          font-family: inherit; margin-bottom: 12px; outline: none; transition: border-color .2s;
         }
-        .lg-in:focus {
-          border-color: var(--red);
-        }
-        .lg-roles {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          margin: 6px 0 18px;
-        }
-        .lg-role {
-          padding: 12px 8px;
-          border: 1px solid rgba(255, 255, 255, .14);
-          border-radius: 12px;
-          color: #B9CAE2;
-          font-size: 13px;
-          font-weight: 600;
-          text-align: center;
-          transition: .15s;
-          cursor: pointer;
-          background: none;
-        }
-        .lg-role:hover {
-          background: rgba(255, 255, 255, .07);
-        }
-        .lg-role.on {
-          background: var(--red);
-          border-color: var(--red);
-          color: #fff;
-        }
+        .lg-in:focus { border-color: var(--red); }
+        .lg-in::placeholder { color: #6E86A6; }
         .lg-go {
-          width: 100%;
-          background: var(--red);
-          color: #fff;
-          border-radius: 12px;
-          padding: 15px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          border: none;
-          transition: transform 0.15s, background 0.15s;
+          width: 100%; background: var(--red); color: #fff; border-radius: 12px; padding: 15px;
+          font-size: 15px; font-weight: 700; cursor: pointer; border: none;
+          transition: transform .15s, background .15s;
         }
-        .lg-go:hover {
-          background: #c8102e;
-          transform: translateY(-1px);
+        .lg-go:hover:not(:disabled) { background: #c8102e; transform: translateY(-1px); }
+        .lg-go:disabled { opacity: .6; cursor: default; }
+        .lg-err {
+          background: rgba(225,29,72,.14); border: 1px solid rgba(225,29,72,.4); color: #FF9DB2;
+          border-radius: 10px; padding: 10px 13px; font-size: 12.5px; font-weight: 600;
+          margin: -2px 0 12px; line-height: 1.5;
         }
-        .lg-foot {
-          text-align: center;
-          color: #6E86A6;
-          font-size: 12px;
-          margin-top: 18px;
-          line-height: 1.6;
+        .lg-foot { text-align: center; color: #6E86A6; font-size: 12px; margin-top: 18px; line-height: 1.6; }
+        .lg-back {
+          width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+          color: #B9CAE2; font-size: 18px; border-radius: 10px; margin-bottom: 18px;
+          background: none; border: none; cursor: pointer;
         }
+        .lg-back:hover { background: rgba(255,255,255,.07); }
+        .lg-role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+        .lg-role-card {
+          background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+          border-radius: 16px; padding: 26px 14px; text-align: center; transition: .15s;
+          color: #fff; cursor: pointer;
+        }
+        .lg-role-card:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.2); }
+        .lg-role-card svg { width: 30px; height: 30px; margin: 0 auto 14px; display: block; }
+        .lg-role-card .t { font-weight: 800; font-size: 15px; }
+        .lg-role-card .s { font-size: 12px; color: #8FA5C4; margin-top: 4px; }
       `}</style>
 
       <div className="lg-left">
         <div className="lg-mark">
-          <svg viewBox="0 0 100 120">
-            <path d="M50 8 L86 26 v40 c0 26-16 42-36 48-20-6-36-22-36-48V26Z" fill="none" stroke="#E11D48" strokeWidth="7" />
-            <path d="M50 34 v52" stroke="#fff" strokeWidth="7" strokeLinecap="round" />
-            <path d="M64 44c-10-8-28-4-28 8s28 6 28 18-18 16-28 8" fill="none" stroke="#fff" strokeWidth="7" strokeLinecap="round" />
-          </svg>
+          <BrandMark />
           <span>Sthara</span>
         </div>
         <h1>The Unified School OS</h1>
@@ -210,55 +215,85 @@ export default function LoginPage() {
       </div>
 
       <div className="lg-card">
-        <h2>Sign In</h2>
-        <div className="sub">Demo environment · DPS Vasundhara · sch-vsn-2026</div>
-
-        <form onSubmit={handleSignIn}>
-          <input
-            className="lg-in"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Email address"
-            required
-          />
-          <input
-            className="lg-in"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-          />
-
-          <div className="lg-roles">
-            {(['student', 'teacher', 'admin', 'parent'] as const).map(r => (
-              <button
-                key={r}
-                type="button"
-                className={`lg-role ${role === r ? 'on' : ''}`}
-                onClick={() => {
-                  setRole(r);
-                  if (r === 'student') setEmail('ananya.iyer@student.sthara.in');
-                  else if (r === 'teacher') setEmail('priya.menon@dpsvasundhara.edu.in');
-                  else if (r === 'admin') setEmail('admin@dpsvasundhara.edu.in');
-                  else setEmail('parent.iyer@sthara.in');
-                }}
-              >
-                {r.charAt(0).toUpperCase() + r.slice(1)}
-              </button>
-            ))}
+        {step === 'code' && (
+          <div>
+            <h2>Welcome</h2>
+            <div className="sub">Enter your school code to continue.</div>
+            <input
+              className="lg-in"
+              placeholder={`E.G. ${DEFAULT_CODE}`}
+              autoComplete="off"
+              autoFocus
+              value={schoolCode}
+              onChange={e => setSchoolCode(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') checkCode(); }}
+            />
+            {codeError && <div className="lg-err">{codeError}</div>}
+            <button className="lg-go" onClick={checkCode} disabled={codeChecking}>
+              {codeChecking ? 'Checking…' : 'Continue →'}
+            </button>
+            <div className="lg-foot">
+              New school? <b style={{ color: '#B9CAE2', cursor: 'pointer' }}>
+                <Link href="/#pricing" style={{ color: 'inherit' }}>Book a paid pilot →</Link>
+              </b>
+              <br />
+              <span style={{ opacity: .6 }}>Privacy Policy</span> <span style={{ opacity: .6 }}>·</span>{' '}
+              <span style={{ opacity: .6 }}>Terms of Service</span>
+            </div>
           </div>
+        )}
 
-          <button type="submit" className="lg-go" disabled={loading}>
-            {loading ? 'Signing In...' : 'Sign In →'}
-          </button>
-        </form>
+        {step === 'role' && (
+          <div>
+            <button className="lg-back" onClick={backToCode} aria-label="Back to school code">←</button>
+            <h2 style={{ textAlign: 'center' }}>Select your role</h2>
+            <div className="sub" style={{ textAlign: 'center' }}>School: {schoolName} ({schoolCode})</div>
+            <div className="lg-role-grid">
+              {ROLE_ORDER.map(r => (
+                <button key={r} className="lg-role-card" onClick={() => pickRole(r)}>
+                  <RoleIcon role={r} />
+                  <div className="t">{ROLE_INFO[r].label}</div>
+                  <div className="s">{ROLE_INFO[r].sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <div className="lg-foot">
-          New school? <a href="/#pricing" style={{ color: '#B9CAE2', fontWeight: 700 }}>Book a paid pilot →</a><br />
-          <span style={{ opacity: 0.6 }}>Privacy Policy · Terms of Service</span>
-        </div>
+        {step === 'creds' && (
+          <div>
+            <button className="lg-back" onClick={backToRoles} aria-label="Back to role selection">←</button>
+            <h2 style={{ textAlign: 'center' }}>Sign in as {ROLE_INFO[role].label}</h2>
+            <div className="sub" style={{ textAlign: 'center' }}>{schoolName} · {ROLE_INFO[role].sub}</div>
+            <input
+              className="lg-in"
+              placeholder="ID"
+              autoComplete="off"
+              autoFocus
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') passRef.current?.focus(); }}
+            />
+            <input
+              ref={passRef}
+              className="lg-in"
+              type="password"
+              placeholder="Password"
+              autoComplete="off"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') signIn(); }}
+            />
+            {credsError && <div className="lg-err">{credsError}</div>}
+            <button className="lg-go" onClick={signIn} disabled={signingIn}>
+              {signingIn ? 'Signing in…' : 'Sign in →'}
+            </button>
+            {process.env.NODE_ENV === 'development' && <button className="lg-go" disabled={signingIn} onClick={() => startDemo(role)}>Open local demo</button>}
+            <div className="lg-foot">
+              <span style={{ opacity: .6, cursor: 'pointer' }}>Forgot password?</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

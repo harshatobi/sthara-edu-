@@ -1,193 +1,143 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { mapMasteryBand, MasteryBand } from '@/lib/tml/engine';
 import {
-  TrendingUp, AlertTriangle, CheckCircle2, Minus,
-  Loader2, BookOpen, ChevronRight, Award, Target, Sparkles, BarChart2,
-  Calendar, FileSpreadsheet, Printer
+  TrendingUp, AlertTriangle, CheckCircle2, Minus, RefreshCw,
+  Loader2, BookOpen, BarChart2, Calendar, FileSpreadsheet, Printer
 } from 'lucide-react';
 
-interface UnitRow {
-  unitId: string;
-  unitLabel: string;
+interface TopicRow {
+  topicName: string;
   score: number | null;
-  submissionCount: number;
+  confidenceBand: 'insufficient' | 'provisional' | 'firm';
+  itemCount: number;
+  computedAt: string;
 }
 
 interface SubjectBlock {
   subject: string;
   overallScore: number | null;
-  units: UnitRow[];
+  topics: TopicRow[];
 }
 
 type DateFilterOption = 'all' | '30days' | '7days';
 
-function getOxfordNavyBand(score: number | null) {
-  if (score === null) {
-    return {
-      css: 'bg-[#eef3f8] text-[#a9b8c8] border-[#e2e9f1]',
-      badge: 'bg-[#eef3f8] text-[#7a8b9e] border-[#d3dfed]',
-      label: '—',
-      bandName: 'Void / No Data'
-    };
-  }
-  if (score < 50) {
-    const isExtreme = score < 35;
-    return {
-      css: isExtreme
-        ? 'bg-[#b8362a] text-white border-[#b8362a] font-black'
-        : 'bg-[#f7d8d3] text-[#7a2119] border-[#e0a89f] font-bold',
-      badge: 'bg-[#f7d8d3] text-[#7a2119] border-[#e0a89f]',
-      label: `${score}%`,
-      bandName: 'Needs Support (<50%)'
-    };
-  }
-  if (score < 75) {
-    const isExtreme = score >= 70;
-    return {
-      css: isExtreme
-        ? 'bg-[#c98a00] text-white border-[#c98a00] font-black'
-        : 'bg-[#f9e6bb] text-[#77510a] border-[#e6c87e] font-bold',
-      badge: 'bg-[#f9e6bb] text-[#77510a] border-[#e6c87e]',
-      label: `${score}%`,
-      bandName: 'Developing (50–74%)'
-    };
-  }
-  const isExtreme = score >= 90;
-  return {
-    css: isExtreme
-      ? 'bg-[#1b7a53] text-white border-[#1b7a53] font-black'
-      : 'bg-[#c8e7d7] text-[#0e5237] border-[#93cbb0] font-bold',
-    badge: 'bg-[#c8e7d7] text-[#0e5237] border-[#93cbb0]',
-    label: `${score}%`,
-    bandName: 'Mastered (≥75%)'
-  };
-}
-
-function overallGrade(s: number | null): string {
-  if (s === null) return '—';
-  if (s >= 90) return 'A+';
-  if (s >= 80) return 'A';
-  if (s >= 70) return 'B';
-  if (s >= 60) return 'C';
-  return 'D';
+// Inline styles keyed off the exact spec hex values (Tailwind can't take dynamic hex classes).
+function bandVisuals(score: number | null) {
+  const band = mapMasteryBand(score);
+  if (!band) return { color: '#a9b8c8', bg: '#eef3f8', border: '#e2e9f1', name: 'No Data', action: 'Complete graded work to generate a score.' };
+  return { color: band.color, bg: `${band.color}1A`, border: `${band.color}55`, name: band.band, action: band.action };
 }
 
 export default function StudentMasteryPage() {
-  const { profile } = useAuth();
+  const { profile, getAuthToken } = useAuth();
   const supabase = createClient();
   const [blocks, setBlocks] = useState<SubjectBlock[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recomputing, setRecomputing] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
 
-  useEffect(() => {
+  const loadFromTmlScores = useCallback(async () => {
     if (!profile?.uid) return;
+    setLoading(true);
+    try {
+      let asOf: string | null = null;
+      if (dateFilter === '30days') asOf = new Date(Date.now() - 30 * 86400000).toISOString();
+      else if (dateFilter === '7days') asOf = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    const buildHeatmap = async () => {
-      setLoading(true);
-      try {
-        let subsQuery = supabase
-          .from('submissions')
-          .select('assignment_id, score, max_score, teacher_approved, created_at')
-          .eq('student_id', profile.uid)
-          .eq('teacher_approved', true);
+      let query = supabase
+        .from('tml_scores')
+        .select('subject, topic_name, score, confidence_band, item_count, computed_at')
+        .eq('student_id', profile.uid)
+        .order('computed_at', { ascending: false });
+      if (asOf) query = query.lte('computed_at', asOf);
 
-        if (dateFilter === '30days') {
-          const date30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date30);
-        } else if (dateFilter === '7days') {
-          const date7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          subsQuery = subsQuery.gte('created_at', date7);
-        }
+      const { data, error } = await query;
+      if (error) { console.error('[MasteryPage] tml_scores error:', error); setBlocks([]); return; }
 
-        const { data: subs, error: subErr } = await subsQuery;
+      // Latest snapshot per (subject, topic_name) at or before the selected point in time.
+      const latestPerTopic = new Map<string, any>();
+      (data || []).forEach(row => {
+        const key = `${row.subject}::${row.topic_name}`;
+        if (!latestPerTopic.has(key)) latestPerTopic.set(key, row);
+      });
 
-        if (subErr) console.error('[MasteryPage] submissions error:', subErr);
-        if (!subs || subs.length === 0) { setBlocks([]); return; }
-
-        const allAssignIds = [...new Set(subs.map(s => s.assignment_id))];
-        const { data: assigns, error: assignErr } = await supabase
-          .from('assignments')
-          .select('id, subject, units, title')
-          .in('id', allAssignIds);
-
-        if (assignErr) console.error('[MasteryPage] assignments error:', assignErr);
-        if (!assigns || assigns.length === 0) { setBlocks([]); return; }
-
-        const assignMap: Record<string, any> = {};
-        assigns.forEach(a => { assignMap[a.id] = a; });
-
-        const grouped: Record<string, Record<string, number[]>> = {};
-
-        subs.forEach(sub => {
-          const assign = assignMap[sub.assignment_id];
-          if (!assign) return;
-          const subject = assign.subject || 'General';
-          if (sub.score === null || sub.max_score === null || sub.max_score === 0) return;
-
-          const pct = Math.round((sub.score / sub.max_score) * 100);
-          if (!grouped[subject]) grouped[subject] = {};
-
-          const rawUnits: string[] = Array.isArray(assign.units) && assign.units.length > 0
-            ? assign.units.filter(u => u !== 'general' && u !== 'General')
-            : [];
-          
-          const fallbackTopic = assign.title
-            ? assign.title.trim().charAt(0).toUpperCase() + assign.title.trim().slice(1)
-            : 'Core Concepts';
-
-          const units: string[] = rawUnits.length > 0 ? rawUnits : [fallbackTopic];
-
-          units.forEach(uid => {
-            if (!grouped[subject][uid]) grouped[subject][uid] = [];
-            grouped[subject][uid].push(Math.min(100, Math.max(0, pct)));
-          });
+      const grouped: Record<string, TopicRow[]> = {};
+      latestPerTopic.forEach(row => {
+        const subject = row.subject || 'General';
+        if (!grouped[subject]) grouped[subject] = [];
+        grouped[subject].push({
+          topicName: row.topic_name,
+          score: row.score,
+          confidenceBand: row.confidence_band,
+          itemCount: row.item_count,
+          computedAt: row.computed_at,
         });
+      });
 
-        const result: SubjectBlock[] = Object.entries(grouped).map(([subject, unitMap]) => {
-          const units: UnitRow[] = Object.keys(unitMap).map(u => {
-            const scores = unitMap[u];
-            const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-            const label = u.charAt(0).toUpperCase() + u.slice(1);
-            return { unitId: u, unitLabel: label, score: avg, submissionCount: scores.length };
-          });
+      const result: SubjectBlock[] = Object.entries(grouped).map(([subject, topics]) => {
+        const scored = topics.filter(t => t.score !== null && t.confidenceBand !== 'insufficient');
+        const overall = scored.length
+          ? Math.round(scored.reduce((a, t) => a + (t.score as number), 0) / scored.length)
+          : null;
+        return { subject, overallScore: overall, topics };
+      });
 
-          const allScores = units.map(t => t.score).filter(Boolean) as number[];
-          const overall = allScores.length
-            ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-            : null;
-
-          return { subject, overallScore: overall, units };
-        });
-
-        result.sort((a, b) => b.units.length - a.units.length);
-        setBlocks(result);
-        if (result.length > 0 && !selectedSubject) setSelectedSubject(result[0].subject);
-      } catch (err) {
-        console.error('[MasteryPage]', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    buildHeatmap();
+      result.sort((a, b) => b.topics.length - a.topics.length);
+      setBlocks(result);
+      setSelectedSubject(prev => prev && result.some(r => r.subject === prev) ? prev : (result[0]?.subject ?? null));
+    } finally {
+      setLoading(false);
+    }
   }, [profile?.uid, dateFilter]);
+
+  const recompute = useCallback(async () => {
+    if (!profile?.uid) return;
+    setRecomputing(true);
+    try {
+      const token = await getAuthToken();
+      if (token) {
+        await fetch('/api/tml/compute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ studentId: profile.uid }),
+        });
+      }
+    } catch (e) {
+      console.error('[MasteryPage] recompute error:', e);
+    } finally {
+      setRecomputing(false);
+      loadFromTmlScores();
+    }
+  }, [profile?.uid, getAuthToken, loadFromTmlScores]);
+
+  useEffect(() => { loadFromTmlScores(); }, [loadFromTmlScores]);
+
+  // First visit with no snapshots yet — compute once automatically.
+  const [autoComputed, setAutoComputed] = useState(false);
+  useEffect(() => {
+    if (!loading && blocks.length === 0 && !autoComputed && profile?.uid) {
+      setAutoComputed(true);
+      recompute();
+    }
+  }, [loading, blocks.length, autoComputed, profile?.uid, recompute]);
 
   const overallAll = useMemo(() => {
     if (!blocks.length) return null;
-    const all = blocks.map(b => b.overallScore).filter(Boolean) as number[];
+    const all = blocks.map(b => b.overallScore).filter((s): s is number => s !== null);
     return all.length ? Math.round(all.reduce((a, b) => a + b, 0) / all.length) : null;
   }, [blocks]);
 
-  const weakest = useMemo(() => {
-    let min: { subject: string; unitLabel: string; score: number } | null = null;
+  const weakest = useMemo<{ subject: string; topicName: string; score: number } | null>(() => {
+    let min: { subject: string; topicName: string; score: number } | null = null;
     blocks.forEach(b => {
-      b.units.forEach(u => {
-        if (u.score !== null && (min === null || u.score < min.score)) {
-          min = { subject: b.subject, unitLabel: u.unitLabel, score: u.score };
+      b.topics.forEach(t => {
+        if (t.score !== null && (min === null || t.score < min.score)) {
+          min = { subject: b.subject, topicName: t.topicName, score: t.score };
         }
       });
     });
@@ -196,103 +146,81 @@ export default function StudentMasteryPage() {
 
   const activeBlock = blocks.find(b => b.subject === selectedSubject) ?? blocks[0] ?? null;
 
-  // Export CSV
   const handleExportCSV = () => {
     if (!blocks.length) return;
-
-    let csvContent = 'Subject,Topic / Unit,Mastery Score %,Evidence Count,Status Band\n';
-
+    let csv = 'Subject,Topic,TML Score %,Confidence,Evidence Count,Mastery Band\n';
     blocks.forEach(b => {
-      b.units.forEach(u => {
-        const band = getOxfordNavyBand(u.score);
-        csvContent += `"${b.subject.replace(/"/g, '""')}","${u.unitLabel.replace(/"/g, '""')}",${u.score !== null ? u.score : 'N/A'},${u.submissionCount},"${band.bandName}"\n`;
+      b.topics.forEach(t => {
+        const band = bandVisuals(t.score);
+        csv += `"${b.subject.replace(/"/g, '""')}","${t.topicName.replace(/"/g, '""')}",${t.score ?? 'N/A'},${t.confidenceBand},${t.itemCount},"${band.name}"\n`;
       });
     });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `My_TML_Mastery_Heatmap_${profile?.name ? profile.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Student'}.csv`);
+    link.href = url;
+    link.download = `TML_Mastery_${profile?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Student'}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Print Report Card
-  const handlePrintReportCard = () => {
-    window.print();
-  };
-
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16 animate-in fade-in duration-500 font-sans">
-      {/* Print CSS */}
       <style jsx global>{`
         @media print {
           body { background-color: white !important; color: black !important; }
           .no-print { display: none !important; }
           .print-only { display: block !important; }
         }
-        @media screen {
-          .print-only { display: none !important; }
-        }
+        @media screen { .print-only { display: none !important; } }
       `}</style>
 
-      {/* Printable Official Student Report Header */}
       <div className="print-only mb-6 text-black space-y-3">
         <div className="flex justify-between items-center border-b-2 border-[#002147] pb-4">
           <div>
             <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Sthara School OS</h1>
-            <h2 className="text-lg font-bold text-gray-800">Student TML Mastery Heatmap — Individual Report Card</h2>
+            <h2 className="text-lg font-bold text-gray-800">True Mastery Level — Individual Report Card</h2>
           </div>
           <div className="text-right text-xs font-semibold text-gray-600">
             <p>Student Name: <strong>{profile?.name || 'Student'}</strong></p>
             <p>Class: <strong>{profile?.studentClass || profile?.branch || '10A'}</strong></p>
             <p>Overall TML: <strong>{overallAll !== null ? `${overallAll}%` : 'N/A'}</strong></p>
-            <p>Timeline: <strong>{dateFilter === 'all' ? 'All Time' : dateFilter === '30days' ? 'Last 30 Days' : 'Last 7 Days'}</strong></p>
             <p>Date Printed: <strong>{new Date().toLocaleDateString()}</strong></p>
           </div>
         </div>
       </div>
 
-      {/* Top Header Card */}
       <div className="relative bg-gradient-to-br from-[#002147] via-[#003b80] to-[#001a33] rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl overflow-hidden border border-white/10 no-print">
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <span className="bg-white/15 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-blue-200 border border-white/15 flex items-center gap-1.5">
-                <BarChart2 className="w-3.5 h-3.5 text-blue-300" /> Oxford Navy TML Mastery Matrix
+                <BarChart2 className="w-3.5 h-3.5 text-blue-300" /> True Mastery Level Engine
               </span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">
-              My Personal Mastery Heatmap
-            </h1>
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">My Personal Mastery Heatmap</h1>
             <p className="text-blue-100 text-sm md:text-base max-w-xl font-medium opacity-90 leading-relaxed">
-              Track your subject performance, topic strengths, and 4-band semantic growth (Red/Amber/Green/Void) powered by 100% real Supabase graded evidence.
+              TML = 0.40×Homework + 0.40×Quiz + 0.20×AI Tutor Depth, time-decayed (14-day half-life),
+              blended with your attendance and engagement signals — computed by the same engine your
+              teachers see.
             </p>
           </div>
-
-          {/* Action Buttons & Overall Circle */}
           <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
             {overallAll !== null && (
               <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl flex items-center gap-5 shadow-xl">
                 <div className="relative w-16 h-16 flex items-center justify-center">
                   <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
                     <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
-                    <circle
-                      cx="18" cy="18" r="15.9" fill="none"
-                      stroke={overallAll >= 75 ? '#1b7a53' : overallAll >= 50 ? '#c98a00' : '#b8362a'}
-                      strokeWidth="3"
-                      strokeDasharray={`${overallAll} ${100 - overallAll}`}
-                      strokeLinecap="round"
-                    />
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke={bandVisuals(overallAll).color} strokeWidth="3"
+                      strokeDasharray={`${overallAll} ${100 - overallAll}`} strokeLinecap="round" />
                   </svg>
                   <span className="absolute font-black text-sm text-white">{overallAll}%</span>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-blue-200 uppercase tracking-wider">Overall Score</p>
-                  <p className="text-3xl font-black text-white mt-0.5">Grade {overallGrade(overallAll)}</p>
+                  <p className="text-xs font-bold text-blue-200 uppercase tracking-wider">{bandVisuals(overallAll).name}</p>
+                  <p className="text-3xl font-black text-white mt-0.5">{overallAll}%</p>
                   <p className="text-[11px] text-blue-100 mt-0.5">{blocks.length} subject{blocks.length !== 1 ? 's' : ''} assessed</p>
                 </div>
               </div>
@@ -301,109 +229,82 @@ export default function StudentMasteryPage() {
         </div>
       </div>
 
-      {/* Control Bar: Timeline Filter, CSV Export, Print Report Card */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm no-print">
         <div className="flex items-center space-x-3 text-xs font-bold text-[#002147]">
           <Calendar className="w-4 h-4 text-[#002147]" />
-          <span className="text-gray-400 uppercase text-[10px] tracking-wider">Timeline Filter:</span>
+          <span className="text-gray-400 uppercase text-[10px] tracking-wider">As Of:</span>
           <div className="flex items-center bg-gray-100 p-1 rounded-xl">
-            <button
-              onClick={() => setDateFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-                dateFilter === 'all' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:text-[#002147]'
-              }`}
-            >
-              All Time
-            </button>
-            <button
-              onClick={() => setDateFilter('30days')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-                dateFilter === '30days' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:text-[#002147]'
-              }`}
-            >
-              Last 30 Days
-            </button>
-            <button
-              onClick={() => setDateFilter('7days')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-                dateFilter === '7days' ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:text-[#002147]'
-              }`}
-            >
-              Last 7 Days
-            </button>
+            {(['all', '30days', '7days'] as DateFilterOption[]).map(f => (
+              <button key={f} onClick={() => setDateFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${dateFilter === f ? 'bg-[#002147] text-white shadow' : 'text-gray-600 hover:text-[#002147]'}`}>
+                {f === 'all' ? 'Latest' : f === '30days' ? '30 Days Ago' : '7 Days Ago'}
+              </button>
+            ))}
           </div>
         </div>
-
         <div className="flex items-center space-x-3">
-          <button
-            onClick={handleExportCSV}
-            className="px-4 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-          >
+          <button onClick={recompute} disabled={recomputing}
+            className="px-4 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 text-blue-700 ${recomputing ? 'animate-spin' : ''}`} />
+            <span>{recomputing ? 'Recalculating…' : 'Refresh TML'}</span>
+          </button>
+          <button onClick={handleExportCSV}
+            className="px-4 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
             <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
             <span>Export CSV</span>
           </button>
-          <button
-            onClick={handlePrintReportCard}
-            className="px-4 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-          >
+          <button onClick={() => window.print()}
+            className="px-4 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
             <Printer className="w-4 h-4 text-indigo-700" />
             <span>Print Report Card</span>
           </button>
         </div>
       </div>
 
-      {/* Weakest Unit Focus Alert */}
       {weakest && weakest.score < 75 && (
-        <div className="bg-[#f7d8d3]/70 border-2 border-[#e0a89f] rounded-2xl p-5 flex items-start gap-4 shadow-sm no-print">
-          <div className="w-10 h-10 bg-[#b8362a] text-white rounded-xl flex items-center justify-center shrink-0 font-bold mt-0.5 shadow-md">
+        <div className="rounded-2xl p-5 flex items-start gap-4 shadow-sm no-print border-2" style={{ background: bandVisuals(weakest.score).bg, borderColor: bandVisuals(weakest.score).border }}>
+          <div className="w-10 h-10 text-white rounded-xl flex items-center justify-center shrink-0 font-bold mt-0.5 shadow-md" style={{ background: bandVisuals(weakest.score).color }}>
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-bold text-[#7a2119] text-sm">Recommended Focus Area</h4>
-            <p className="text-xs text-[#7a2119] mt-1 leading-relaxed">
-              Your mastery in <strong className="font-extrabold text-[#7a2119]">{weakest.unitLabel}</strong> ({weakest.subject}) is currently at <strong className="font-black text-[#7a2119]">{weakest.score}%</strong>. Complete targeted practice to raise this score into the Green Band (≥75%).
+            <h4 className="font-bold text-sm" style={{ color: bandVisuals(weakest.score).color }}>Recommended Focus Area — {bandVisuals(weakest.score).name}</h4>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: bandVisuals(weakest.score).color }}>
+              Your mastery in <strong>{weakest.topicName}</strong> ({weakest.subject}) is at <strong>{weakest.score}%</strong>. {bandVisuals(weakest.score).action}
             </p>
           </div>
         </div>
       )}
 
-      {/* Main Heatmap Section */}
       <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-8 space-y-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 text-gray-400">
             <Loader2 className="w-10 h-10 animate-spin text-[#002147] mb-3" />
-            <p className="font-bold text-sm text-[#002147]">Calculating personal TML heatmap slice...</p>
+            <p className="font-bold text-sm text-[#002147]">Loading your True Mastery Level…</p>
           </div>
         ) : blocks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
             <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-[#002147]">
               <BookOpen className="w-10 h-10" />
             </div>
-            <h3 className="text-xl font-black text-[#002147] mb-2">No Graded Submissions Recorded</h3>
+            <h3 className="text-xl font-black text-[#002147] mb-2">No TML Data Yet</h3>
             <p className="text-sm text-gray-500 leading-relaxed mb-6">
-              Complete your assignments and quizzes. Once teacher-approved, your personal Oxford Navy TML heatmap matrix will generate automatically.
+              Complete homework, quizzes, or an AI Tutor session, then hit Refresh TML — your True
+              Mastery Level generates automatically once there's graded evidence.
             </p>
           </div>
         ) : (
           <>
-            {/* Subject Tabs */}
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide border-b border-gray-100 no-print">
               {blocks.map(b => {
-                const band = getOxfordNavyBand(b.overallScore);
+                const v = bandVisuals(b.overallScore);
                 const isActive = b.subject === selectedSubject;
                 return (
-                  <button
-                    key={b.subject}
-                    onClick={() => setSelectedSubject(b.subject)}
-                    className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all whitespace-nowrap border ${
-                      isActive
-                        ? 'bg-[#002147] text-white border-[#002147] shadow-lg scale-[1.02]'
-                        : `${band.css} hover:border-indigo-300`
-                    }`}
-                  >
+                  <button key={b.subject} onClick={() => setSelectedSubject(b.subject)}
+                    className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all whitespace-nowrap border-2 ${isActive ? 'bg-[#002147] text-white border-[#002147] shadow-lg scale-[1.02]' : ''}`}
+                    style={!isActive ? { background: v.bg, borderColor: v.border, color: v.color } : undefined}>
                     <span>{b.subject}</span>
                     {b.overallScore !== null && (
-                      <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : band.badge}`}>
+                      <span className="text-xs font-black px-2.5 py-0.5 rounded-full" style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)', color: isActive ? '#fff' : v.color }}>
                         {b.overallScore}%
                       </span>
                     )}
@@ -412,14 +313,13 @@ export default function StudentMasteryPage() {
               })}
             </div>
 
-            {/* Active Subject Breakdown */}
             {activeBlock && (
               <div className="space-y-6">
                 <div className="bg-gradient-to-br from-slate-50 to-blue-50/40 rounded-2xl border border-gray-200 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div>
                     <h3 className="text-2xl font-extrabold text-[#002147]">{activeBlock.subject}</h3>
                     <p className="text-xs text-gray-500 font-medium mt-1">
-                      {activeBlock.units.length} topic/unit{activeBlock.units.length !== 1 ? 's' : ''} assessed across {activeBlock.units.reduce((s, u) => s + u.submissionCount, 0)} submission{activeBlock.units.reduce((s, u) => s + u.submissionCount, 0) !== 1 ? 's' : ''}
+                      {activeBlock.topics.length} topic{activeBlock.topics.length !== 1 ? 's' : ''} tracked · {activeBlock.topics.reduce((s, t) => s + t.itemCount, 0)} evidence point{activeBlock.topics.reduce((s, t) => s + t.itemCount, 0) !== 1 ? 's' : ''}
                     </p>
                   </div>
                   {activeBlock.overallScore !== null && (
@@ -428,70 +328,34 @@ export default function StudentMasteryPage() {
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Subject TML</span>
                         <span className="text-2xl font-black text-[#002147]">{activeBlock.overallScore}%</span>
                       </div>
-                      <div className={`text-xl font-black px-4 py-2 rounded-2xl ${getOxfordNavyBand(activeBlock.overallScore).badge}`}>
-                        {getOxfordNavyBand(activeBlock.overallScore).bandName}
+                      <div className="text-lg font-black px-4 py-2 rounded-2xl" style={{ background: bandVisuals(activeBlock.overallScore).bg, color: bandVisuals(activeBlock.overallScore).color }}>
+                        {bandVisuals(activeBlock.overallScore).name}
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Oxford Navy 4-Band Topic Matrix Grid */}
                 <div className="space-y-3">
-                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider px-1">
-                    Oxford Navy 4-Band Semantic TML Breakdown
-                  </h4>
+                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider px-1">True Mastery Level Breakdown</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {activeBlock.units.map(unit => {
-                      const band = getOxfordNavyBand(unit.score);
+                    {activeBlock.topics.map(topic => {
+                      const v = bandVisuals(topic.score);
                       return (
-                        <div
-                          key={unit.unitId}
-                          className={`p-5 rounded-2xl border ${band.css} flex items-center gap-4 shadow-sm hover:shadow-md transition-all`}
-                        >
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border ${
-                            unit.score === null
-                              ? 'bg-gray-200 text-gray-500'
-                              : unit.score >= 75
-                              ? 'bg-[#1b7a53] text-white'
-                              : unit.score >= 50
-                              ? 'bg-[#c98a00] text-white'
-                              : 'bg-[#b8362a] text-white'
-                          }`}>
-                            {unit.score === null ? (
-                              <Minus className="w-6 h-6" />
-                            ) : unit.score >= 75 ? (
-                              <CheckCircle2 className="w-6 h-6" />
-                            ) : unit.score >= 50 ? (
-                              <TrendingUp className="w-6 h-6" />
-                            ) : (
-                              <AlertTriangle className="w-6 h-6" />
-                            )}
+                        <div key={topic.topicName} className="p-5 rounded-2xl border-2 flex items-center gap-4 shadow-sm hover:shadow-md transition-all" style={{ background: v.bg, borderColor: v.border }}>
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm text-white" style={{ background: v.color }}>
+                            {topic.score === null ? <Minus className="w-6 h-6" /> : topic.score >= 75 ? <CheckCircle2 className="w-6 h-6" /> : topic.score >= 50 ? <TrendingUp className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
                           </div>
-
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <h5 className="font-black text-base truncate">{unit.unitLabel}</h5>
-                              <span className="text-base font-black shrink-0">
-                                {band.label}
-                              </span>
+                              <h5 className="font-black text-base truncate" style={{ color: v.color }}>{topic.topicName}</h5>
+                              <span className="text-base font-black shrink-0" style={{ color: v.color }}>{topic.score !== null ? `${topic.score}%` : '—'}</span>
                             </div>
                             <div className="w-full bg-white/70 rounded-full h-2.5 mt-2 overflow-hidden border border-black/5">
-                              <div
-                                className={`h-2.5 rounded-full transition-all duration-700 ${
-                                  unit.score === null
-                                    ? 'bg-gray-300'
-                                    : unit.score >= 75
-                                    ? 'bg-[#1b7a53]'
-                                    : unit.score >= 50
-                                    ? 'bg-[#c98a00]'
-                                    : 'bg-[#b8362a]'
-                                }`}
-                                style={{ width: `${unit.score ?? 0}%` }}
-                              />
+                              <div className="h-2.5 rounded-full transition-all duration-700" style={{ width: `${topic.score ?? 0}%`, background: v.color }} />
                             </div>
-                            <div className="flex justify-between items-center mt-1.5 text-xs opacity-90 font-medium">
-                              <span>{unit.submissionCount} evidence point(s)</span>
-                              <span className="font-bold text-[11px] uppercase tracking-wider">{band.bandName}</span>
+                            <div className="flex justify-between items-center mt-1.5 text-xs opacity-90 font-medium" style={{ color: v.color }}>
+                              <span>{topic.itemCount} evidence point(s) · {topic.confidenceBand}</span>
+                              <span className="font-bold text-[11px] uppercase tracking-wider">{v.name}</span>
                             </div>
                           </div>
                         </div>
@@ -502,42 +366,30 @@ export default function StudentMasteryPage() {
               </div>
             )}
 
-            {/* Oxford Navy Color Legend */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-gray-100 text-xs font-bold text-gray-600">
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f7d8d3] border border-[#e0a89f]" />
-                  <span>Red Band: Needs Support &lt;50%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#f9e6bb] border border-[#e6c87e]" />
-                  <span>Amber Band: Developing 50–74%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#c8e7d7] border border-[#93cbb0]" />
-                  <span>Green Band: Mastered ≥75%</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 rounded bg-[#eef3f8] border border-[#e2e9f1]" />
-                  <span>Void: Not Attempted</span>
-                </div>
+                {(['Exemplary', 'Proficient', 'Developing', 'Critical Gap', 'Severe Need'] as MasteryBand[]).map(band => {
+                  const sample = band === 'Exemplary' ? 95 : band === 'Proficient' ? 80 : band === 'Developing' ? 60 : band === 'Critical Gap' ? 40 : 20;
+                  const v = bandVisuals(sample);
+                  return (
+                    <div key={band} className="flex items-center gap-1.5">
+                      <span className="w-3.5 h-3.5 rounded" style={{ background: v.bg, border: `1px solid ${v.border}` }} />
+                      <span>{band}</span>
+                    </div>
+                  );
+                })}
               </div>
               <span className="px-3 py-1 rounded-full bg-[#002147] text-white text-[10px] font-black uppercase tracking-wider">
-                100% Real Supabase Submissions
+                Powered by the TML Engine
               </span>
             </div>
           </>
         )}
       </div>
 
-      {/* Print Footer */}
       <div className="print-only mt-12 pt-6 border-t border-gray-400 flex justify-between text-xs text-gray-700">
-        <div>
-          <p>Student Signature: _______________________</p>
-        </div>
-        <div className="text-right">
-          <p>Parent / Guardian Signature: _______________________</p>
-        </div>
+        <div><p>Student Signature: _______________________</p></div>
+        <div className="text-right"><p>Parent / Guardian Signature: _______________________</p></div>
       </div>
     </div>
   );

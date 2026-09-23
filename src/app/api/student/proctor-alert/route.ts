@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,12 +10,19 @@ export const dynamic = 'force-dynamic';
  * Stores the alert and optionally sends a real-time notification to the teacher.
  */
 export async function POST(req: NextRequest) {
+  const { user, error: authErr } = await verifyApiToken(req.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const body = await req.json();
     const { schoolId, studentId, studentName, taskId, taskTitle, switchCount, timestamp } = body;
 
     if (!schoolId || !studentId || !taskId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (user.id !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: can only report your own proctoring alerts' }, { status: 403 });
     }
 
     const supabase = createAdminClient();

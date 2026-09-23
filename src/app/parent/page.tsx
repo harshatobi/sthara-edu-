@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { House, ChartLineUp, ChatCircleDots, SignOut, Check, Hourglass, CurrencyInr } from '@phosphor-icons/react/dist/ssr';
+import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { ICON_COLORS, colorForIcon } from '@/lib/iconColors';
 
 export default function ParentPortal() {
   const [view, setView] = useState<'dash' | 'tml' | 'msg' | 'fees'>('dash');
@@ -108,24 +111,24 @@ export default function ParentPortal() {
           <i>FAMILY LINE</i>
         </div>
         <nav>
-          {[
-            ['dash', 'My Children', '🏠'],
-            ['tml', 'Mastery & Reports', '📈'],
-            ['msg', 'School Messages', '💬'],
-            ['fees', 'Fees & Payments', '₹'],
-          ].map(([k, n, ic]) => (
+          {([
+            ['dash', 'My Children', House],
+            ['tml', 'Mastery & Reports', ChartLineUp],
+            ['msg', 'School Messages', ChatCircleDots],
+            ['fees', 'Fees & Payments', CurrencyInr],
+          ] as [string, string, typeof House][]).map(([k, n, Icon]) => (
             <button
               key={k}
               className={`nv ${view === k ? 'on' : ''}`}
               onClick={() => setView(k as any)}
             >
-              <span>{ic}</span>
+              <InteractiveIcon icon={Icon} color={colorForIcon(Icon)} active={view === k} size={19} />
               <span>{n}</span>
             </button>
           ))}
           <div className="nv-out">
             <Link href="/login" className="nv">
-              <span>🚪</span>
+              <InteractiveIcon icon={SignOut} color={ICON_COLORS.SignOut} size={19} />
               <span>Sign Out</span>
             </Link>
           </div>
@@ -139,7 +142,7 @@ export default function ParentPortal() {
           <div>
             <div className="pbar">
               <div>
-                <div className="eyebrow">🏠 FAMILY LINE</div>
+                <div className="eyebrow"><House size={14} weight="duotone" /> FAMILY LINE</div>
                 <h1>Good evening, Mrs. Iyer</h1>
                 <div className="sub">DPS Vasundhara · two children enrolled · Shikhara plan</div>
               </div>
@@ -224,7 +227,7 @@ export default function ParentPortal() {
           <div>
             <div className="pbar">
               <div>
-                <div className="eyebrow">📈 MASTERY &amp; REPORTS</div>
+                <div className="eyebrow"><ChartLineUp size={14} weight="duotone" /> MASTERY &amp; REPORTS</div>
                 <h1>Ananya Iyer · Class 10A</h1>
                 <div className="sub">True Mastery Level — a live composite, not a term-end mark.</div>
               </div>
@@ -276,7 +279,7 @@ export default function ParentPortal() {
           <div>
             <div className="pbar">
               <div>
-                <div className="eyebrow">💬 SCHOOL MESSAGES</div>
+                <div className="eyebrow"><ChatCircleDots size={14} weight="duotone" /> SCHOOL MESSAGES</div>
                 <h1>Message Center</h1>
                 <div className="sub">Direct communication with Class 10A &amp; 7B teachers.</div>
               </div>
@@ -330,7 +333,7 @@ export default function ParentPortal() {
                 ['01 Oct 2026', 'Term 3 — Ananya + Rohan', '₹71,000', '—', 'a'],
               ].map(([d, t, a, m, c]) => (
                 <div key={d + t} className="row">
-                  <div className="av">{c === 'g' ? '✓' : '⏳'}</div>
+                  <div className="av">{c === 'g' ? <Check size={16} weight="bold" /> : <Hourglass size={16} weight="duotone" />}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 14.5 }}>{t}</div>
                     <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>{d} · {m}</div>

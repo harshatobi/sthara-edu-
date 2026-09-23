@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowRight, Loader2 } from 'lucide-react';
+import {
+  BatteryLow, BatteryMedium, BatteryHigh, BatteryFull, Rocket,
+  ChartLineUp, Target, Trophy, FileText, Check, Brain,
+} from '@phosphor-icons/react/dist/ssr';
 
 interface HomeworkItem {
   id: string;
@@ -43,11 +47,6 @@ export default function StudentPage() {
   const [recentTitleText, setRecentTitleText] = useState<string>('Complete a task to see score');
   const [lowestTopic, setLowestTopic] = useState<{ topic: string; score: number }>({ topic: 'General Concepts', score: 50 });
 
-  // Homework Modal Submission State
-  const [selectedHw, setSelectedHw] = useState<HomeworkItem | null>(null);
-  const [submissionText, setSubmissionText] = useState('');
-  const [submittedFile, setSubmittedFile] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load Energy from LocalStorage
   useEffect(() => {
@@ -194,36 +193,6 @@ export default function StudentPage() {
     fetchStudentData();
   }, [profile?.uid, profile?.schoolId, profile?.studentClass]);
 
-  const handleOpenHwModal = (hw: HomeworkItem) => {
-    setSelectedHw(hw);
-    setSubmissionText('');
-    setSubmittedFile(null);
-  };
-
-  const handleSubmitHw = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedHw) return;
-    setIsSubmitting(true);
-
-    setTimeout(() => {
-      setHomeworkList(prev => prev.map(h => h.id === selectedHw.id ? {
-        ...h,
-        status: 'SUBMITTED',
-        col: 'g',
-        score: '18/20',
-        feedback: 'AI Evaluated: High accuracy on working. Submission recorded successfully!'
-      } : h));
-      setIsSubmitting(false);
-      setSelectedHw(prev => prev ? {
-        ...prev,
-        status: 'SUBMITTED',
-        col: 'g',
-        score: '18/20',
-        feedback: 'AI Evaluated: High accuracy on working. Submission recorded successfully!'
-      } : null);
-    }, 600);
-  };
-
   const hmColor = (v: number) => (v >= 75 ? '#10B981' : v >= 55 ? '#5FC79B' : v >= 40 ? '#F5B60B' : v >= 25 ? '#F98A4B' : '#E11D48');
   const bar = (v: number, c?: string) => (
     <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex-1 min-w-[60px]">
@@ -235,11 +204,11 @@ export default function StudentPage() {
 
   // Mood label helper for 0 to 10 scale
   const getEnergyLabel = (val: number) => {
-    if (val <= 2) return { emoji: '😴', label: 'Low Energy', col: 'text-blue-300' };
-    if (val <= 4) return { emoji: '🥱', label: 'Tired', col: 'text-amber-200' };
-    if (val <= 6) return { emoji: '😐', label: 'Steady', col: 'text-amber-300' };
-    if (val <= 8) return { emoji: '⚡', label: 'Energized', col: 'text-emerald-300' };
-    return { emoji: '🚀', label: 'Max Power', col: 'text-amber-400 font-extrabold' };
+    if (val <= 2) return { Icon: BatteryLow, label: 'Low Energy', col: 'text-blue-300' };
+    if (val <= 4) return { Icon: BatteryMedium, label: 'Tired', col: 'text-amber-200' };
+    if (val <= 6) return { Icon: BatteryHigh, label: 'Steady', col: 'text-amber-300' };
+    if (val <= 8) return { Icon: BatteryFull, label: 'Energized', col: 'text-emerald-300' };
+    return { Icon: Rocket, label: 'Max Power', col: 'text-amber-400 font-extrabold' };
   };
 
   const currentEnergy = getEnergyLabel(energyValue);
@@ -267,7 +236,7 @@ export default function StudentPage() {
                 Class: {profile?.studentClass || '10A'}
               </span>
               <span className="bg-white/15 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-semibold">
-                {profile?.schoolName || profile?.branch || 'DPS Vasundhara'}
+                {profile?.branch || 'DPS Vasundhara'}
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
@@ -285,7 +254,7 @@ export default function StudentPage() {
                 <span>ENERGY MOOD SCALE</span>
               </span>
               <span className={`flex items-center gap-1 text-sm ${currentEnergy.col}`}>
-                <span>{currentEnergy.emoji}</span>
+                <currentEnergy.Icon size={16} weight="duotone" />
                 <span>{energyValue}/10</span>
               </span>
             </div>
@@ -327,7 +296,7 @@ export default function StudentPage() {
                 <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold">Open Heatmap →</span>
               </p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all">📈</div>
+            <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all"><ChartLineUp size={20} weight="duotone" /></div>
           </div>
 
           {/* 2. DYNAMIC PENDING TASKS CARD */}
@@ -343,7 +312,7 @@ export default function StudentPage() {
                 <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold">Open Homework →</span>
               </p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all">🎯</div>
+            <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all"><Target size={20} weight="duotone" /></div>
           </div>
 
           {/* 3. DYNAMIC RECENT SCORE CARD -> Direct Link to Graded Tests & Homework */}
@@ -359,7 +328,7 @@ export default function StudentPage() {
                 <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white group-hover:bg-amber-400 group-hover:text-black transition-all font-bold shrink-0">View Test →</span>
               </p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all shrink-0">🏅</div>
+            <div className="w-10 h-10 rounded-full bg-white/15 group-hover:bg-amber-400 group-hover:text-black flex items-center justify-center text-xl transition-all shrink-0"><Trophy size={20} weight="duotone" /></div>
           </div>
         </div>
       </div>
@@ -402,18 +371,18 @@ export default function StudentPage() {
                 homeworkList.map(hw => (
                   <div
                     key={hw.id}
-                    onClick={() => handleOpenHwModal(hw)}
+                    onClick={() => router.push(`/student/homework/${hw.id}`)}
                     className="flex items-center gap-4 p-3.5 rounded-2xl border border-slate-100 hover:bg-slate-50 transition-all cursor-pointer group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0">📄</div>
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0"><FileText size={18} weight="duotone" /></div>
                     <div className="flex-1 min-w-0">
                       <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">{hw.subject}</span>
                       <p className="font-bold text-sm text-[#002147] group-hover:text-blue-600 transition-colors truncate">{hw.title}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-bold shrink-0 ${
+                    <span className={`px-3 py-1 rounded-lg text-xs font-bold shrink-0 inline-flex items-center gap-1 ${
                       hw.status === 'SUBMITTED' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
                     }`}>
-                      {hw.status === 'SUBMITTED' ? '✓ SUBMITTED' : hw.dueDate}
+                      {hw.status === 'SUBMITTED' ? <><Check size={12} weight="bold" /> SUBMITTED</> : hw.dueDate}
                     </span>
                   </div>
                 ))
@@ -424,7 +393,7 @@ export default function StudentPage() {
           {/* AI Learning Path Card */}
           <div className="bg-gradient-to-r from-[#123F84] to-[#0F5AB8] rounded-3xl p-6 text-white shadow-md">
             <div className="flex gap-4 items-start">
-              <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center text-2xl shrink-0">🧠</div>
+              <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center text-2xl shrink-0"><Brain size={22} weight="duotone" /></div>
               <div>
                 <h3 className="text-lg font-bold">Your AI Learning Path</h3>
                 <p className="text-xs text-blue-100 leading-relaxed mt-2">
@@ -442,68 +411,6 @@ export default function StudentPage() {
         </div>
       </div>
 
-      {/* ── Functional Homework Submission Workspace Modal ───────────────── */}
-      {selectedHw && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedHw(null)}>
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setSelectedHw(null)} className="absolute top-6 right-6 w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50">✕</button>
-
-            <span className="text-xs font-extrabold tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">{selectedHw.subject}</span>
-            <h2 className="text-2xl font-extrabold text-[#002147] mt-3">{selectedHw.title}</h2>
-            <p className="text-xs text-slate-500 mt-1 mb-5">Deadline: {selectedHw.dueDate} · Status: <b>{selectedHw.status}</b></p>
-
-            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6">
-              <p className="text-xs font-extrabold text-[#002147] uppercase">TEACHER INSTRUCTIONS</p>
-              <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">{selectedHw.instructions}</p>
-            </div>
-
-            {selectedHw.status === 'SUBMITTED' ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-emerald-900">
-                <p className="font-bold text-base">✓ Homework Submitted &amp; Evaluated</p>
-                <p className="text-3xl font-extrabold my-2">Score: {selectedHw.score}</p>
-                <p className="text-xs text-emerald-700">{selectedHw.feedback}</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitHw} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Write your response / step-by-step working:</label>
-                  <textarea
-                    value={submissionText}
-                    onChange={e => setSubmissionText(e.target.value)}
-                    placeholder="Type your final equations, reasoning, or answers here..."
-                    rows={4}
-                    required
-                    className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all ${
-                  submittedFile ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-300 hover:bg-blue-50/50'
-                }`}>
-                  {submittedFile ? (
-                    <span className="text-xs font-bold text-emerald-700">📎 {submittedFile} uploaded successfully!</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setSubmittedFile('Handwritten_Solution_NCERT.pdf')}
-                      className="text-xs font-bold text-blue-600 hover:underline"
-                    >
-                      📷 Upload Handwritten Solution Photo / PDF
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex gap-3 justify-end pt-2">
-                  <button type="button" onClick={() => setSelectedHw(null)} className="px-5 py-2.5 rounded-xl border border-slate-200 font-bold text-xs text-slate-600">Cancel</button>
-                  <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition-all shadow-md">
-                    {isSubmitting ? 'Evaluating with AI...' : 'Submit Homework →'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

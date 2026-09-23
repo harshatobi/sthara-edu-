@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import { isRole, withTimeout, type Role } from '@/lib/auth/roles';
 
 export interface UserProfile {
   uid: string;
@@ -45,6 +46,8 @@ interface AuthContextType {
   session: Session | null;
   profile: UserProfile | null;
   loading: boolean;
+  error: string | null;
+  startDemo: (role: Role) => void;
   signOut: () => Promise<void>;
   getAuthToken: () => Promise<string>;
 }
@@ -54,6 +57,8 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   profile: null,
   loading: true,
+  error: null,
+  startDemo: () => {},
   signOut: async () => {},
   getAuthToken: async () => '',
 });
@@ -67,207 +72,185 @@ function setCookie(name: string, value: string, maxAge: number) {
 function clearCookie(name: string) {
   document.cookie = `${name}=; path=/; max-age=0; SameSite=Strict`;
 }
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  try { return match ? decodeURIComponent(match[1]) : null; } catch { return null; }
+}
 
-// ── Trial status checker (Supabase) ──────────────────────────────────────────
-async function checkTrialStatus(schoolId: string): Promise<{ expired: boolean; daysLeft: number }> {
-  try {
-    const supabase = createClient();
-    const { data: school } = await supabase
-      .from('schools')
-      .select('trial_expires_at, settings')
-      .eq('id', schoolId)
-      .single();
+// ── Dev-only demo profile ────────────────────────────────────────────────────
+// When there's no real Supabase session (no backend wired up yet), fall back
+// to a mock profile built from the __role cookie the login page sets, so the
+// app is usable for local development without live auth.
+function buildDemoProfile(role: Role): UserProfile {
+  return {
+    uid: 'demo-user',
+    id: 'demo-user',
+    email: 'priya.menon@dpsvasundhara.edu.in',
+    role: role as UserProfile['role'],
+    schoolId: 'demo-school',
+    name: 'Priya Menon',
+    studentClass: 'Class 10-A',
+    teacherClass: 'Class 10-A',
+    subject: 'Mathematics',
+    subjects: ['Mathematics'],
+    trialExpired: false,
+    daysLeftInTrial: 999,
+  };
+}
 
-    if (!school) return { expired: false, daysLeft: 30 };
-
-    const plan = school.settings?.plan || 'trial';
-    if (plan !== 'trial') return { expired: false, daysLeft: 999 };
-
-    if (!school.trial_expires_at) return { expired: false, daysLeft: 30 };
-
-    const trialEndsAt = new Date(school.trial_expires_at);
-    const now = new Date();
-    const daysLeft = Math.ceil((trialEndsAt.getTime() - now.getTime()) / 86400_000);
-    return { expired: daysLeft <= 0, daysLeft: Math.max(0, daysLeft) };
-  } catch {
-    return { expired: false, daysLeft: 30 };
+// Profile reads run outside the auth notification callback (which holds an SDK lock).
+async function fetchProfile(session: Session): Promise<UserProfile> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+  if (error || !row || !isRole(row.role)) {
+    throw new Error('Your account profile is unavailable. Ask your school administrator to check your account.');
   }
+  let trialExpired = false;
+  let daysLeftInTrial = 999;
+  let institutionType: 'school' | 'college' = 'school';
+  if (row.school_id) {
+    const { data: school, error: schoolError } = await supabase.from('schools')
+      .select('trial_expires_at, settings, institution_type').eq('id', row.school_id).single();
+    if (schoolError || !school) throw new Error('Your school could not be loaded. Please try again.');
+    institutionType = school.institution_type === 'college' ? 'college' : 'school';
+    if ((!school.settings?.plan || school.settings.plan === 'trial') && school.trial_expires_at) {
+      daysLeftInTrial = Math.max(0, Math.ceil((new Date(school.trial_expires_at).getTime() - Date.now()) / 86400000));
+      trialExpired = daysLeftInTrial <= 0;
+    }
+  }
+  const assignments = (Array.isArray(row.assignments) ? row.assignments : []).filter(
+    (a: unknown): a is { class: string; subject: string } => !!a && typeof a === 'object'
+      && 'class' in a && typeof a.class === 'string' && 'subject' in a && typeof a.subject === 'string'
+  );
+  const subjects = [...new Set<string>(assignments.map((a: { subject: string }) => a.subject).filter(Boolean))];
+  const subject = row.teacher_subject || subjects[0];
+  return {
+    uid: row.id, id: row.id, email: row.email || session.user.email || '', role: row.role,
+    schoolId: row.school_id || undefined, name: row.name || undefined,
+    subject, subjects: subjects.length ? subjects : subject ? [subject] : [],
+    studentClass: row.student_class, teacherClass: row.teacher_class, teacherSubject: subject,
+    customStudentId: row.custom_student_id, assignments,
+    linkedStudents: Array.isArray(row.metadata?.linkedStudents) ? row.metadata.linkedStudents : [],
+    teachingSubjects: Array.isArray(row.teaching_subjects) ? row.teaching_subjects : [],
+    institutionType, branch: row.branch, year: row.year, semester: row.semester,
+    trialExpired, daysLeftInTrial,
+  };
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user,    setUser]    = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const revision = useRef(0);
+  const demoActive = useRef(false);
   const router = useRouter();
 
-  const getAuthToken = async (): Promise<string> => {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || '';
+  const getAuthToken = async () => {
+    const { data, error } = await withTimeout(createClient().auth.getSession());
+    if (error) throw error;
+    return data.session?.access_token || '';
+  };
+
+  const startDemo = (role: Role) => {
+    if (process.env.NODE_ENV !== 'development' || !isRole(role) || role === 'superadmin' || user) return;
+    revision.current++;
+    demoActive.current = true;
+    clearCookie('__session');
+    clearCookie('__trial_ok');
+    setCookie('__role', role, 86400);
+    setProfile(buildDemoProfile(role));
+    setError(null);
+    setLoading(false);
+    router.replace(`/${role}`);
   };
 
   const signOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    revision.current++;
+    demoActive.current = false;
     clearCookie('__session');
     clearCookie('__trial_ok');
     clearCookie('__role');
     setProfile(null);
     setUser(null);
     setSession(null);
-    router.push('/login');
-  };
-
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id, session.access_token);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          setCookie('__session', session.access_token, 3600);
-          await loadProfile(session.user.id, session.access_token);
-        } else {
-          clearCookie('__session');
-          clearCookie('__trial_ok');
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadProfile = async (uid: string, token: string) => {
-    const supabase = createClient();
+    setLoading(false);
+    setError(null);
     try {
-      // Set session cookie for middleware
-      setCookie('__session', token, 3600);
-
-      // 1. Fetch user profile from users table
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', uid)
-        .single();
-
-      if (error || !userData) {
-        // Profile row not in users table yet — try falling back to auth metadata
-        const metaRole = (await supabase.auth.getUser()).data.user?.user_metadata?.role;
-        if (metaRole) {
-          console.warn('User DB row missing, using metadata role:', metaRole);
-          setCookie('__trial_ok', 'ok', 3600);
-          setProfile({
-            uid,
-            email: (await supabase.auth.getUser()).data.user?.email || '',
-            role: metaRole as any,
-            name: (await supabase.auth.getUser()).data.user?.user_metadata?.name,
-            trialExpired: false,
-            daysLeftInTrial: 999,
-          });
-          setLoading(false);
-          return;
-        }
-        console.warn('User profile not found yet:', uid);
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      // 2. Check superadmin
-      if (userData.role === 'superadmin') {
-        setCookie('__trial_ok', 'ok', 3600);
-        setProfile({
-          uid,
-          email: userData.email || '',
-          role: 'superadmin',
-          name: userData.name,
-          trialExpired: false,
-          daysLeftInTrial: 999,
-        });
-        setLoading(false);
-        return;
-      }
-
-      // 3. Check trial status
-      let trialExpired = false;
-      let daysLeftInTrial = 30;
-      let institutionType: 'school' | 'college' = 'school';
-
-      if (userData.school_id) {
-        const trialStatus = await checkTrialStatus(userData.school_id);
-        trialExpired = trialStatus.expired;
-        daysLeftInTrial = trialStatus.daysLeft;
-
-        // Fetch institution type from school
-        const { data: school } = await supabase
-          .from('schools')
-          .select('institution_type')
-          .eq('id', userData.school_id)
-          .single();
-
-        if (school?.institution_type === 'college') institutionType = 'college';
-      }
-
-      setCookie('__trial_ok', trialExpired ? 'expired' : 'ok', 3600);
-
-      // Build subjects list from assignments jsonb
-      const assignmentsArr: { class: string; subject: string }[] = userData.assignments || [];
-      const subjectsFromAssignments = [...new Set(
-        assignmentsArr.map(a => a.subject).filter(Boolean)
-      )];
-      const primarySubject = userData.teacher_subject || subjectsFromAssignments[0] || undefined;
-
-      setProfile({
-        uid,
-        id: uid,
-        email: userData.email || '',
-        role: userData.role as any,
-        schoolId: userData.school_id || undefined,
-        name: userData.name || undefined,
-        subject: primarySubject,
-        subjects: subjectsFromAssignments.length > 0 ? subjectsFromAssignments : (primarySubject ? [primarySubject] : []),
-        studentClass: userData.student_class || undefined,
-        teacherClass: userData.teacher_class || undefined,
-        teacherSubject: primarySubject,
-        customStudentId: userData.custom_student_id || undefined,
-        assignments: assignmentsArr,
-        linkedStudents: userData.metadata?.linkedStudents || [],
-        teachingSubjects: userData.teaching_subjects || [],
-        institutionType,
-        branch: userData.branch || undefined,
-        year: userData.year || undefined,
-        semester: userData.semester || undefined,
-        trialExpired,
-        daysLeftInTrial,
-      });
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setProfile(null);
-    } finally {
-      setLoading(false);
+      if (!user) { router.replace('/login'); router.refresh(); return; }
+      const { error } = await withTimeout(createClient().auth.signOut({ scope: 'local' }), 5000);
+      if (error) throw error;
+      router.replace('/login');
+      router.refresh();
+    } catch {
+      setError('Sign-out could not complete. Check your connection and try again.');
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut, getAuthToken }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  useEffect(() => {
+    let disposed = false;
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const supabase = createClient();
+    // This also covers SDK initialization that never emits INITIAL_SESSION.
+    const watchdog = setTimeout(() => {
+      if (!disposed && !demoActive.current) {
+        revision.current++;
+        setLoading(false);
+        setError('Sign-in is taking too long. Check your connection and retry.');
+      }
+    }, 12000);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (disposed) return;
+      clearTimeout(watchdog);
+      clearTimeout(pending);
+      const request = ++revision.current;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setError(null);
+      if (!nextSession) {
+        clearCookie('__session');
+        clearCookie('__trial_ok');
+        if (event === 'SIGNED_OUT') {
+          clearCookie('__role');
+          demoActive.current = false;
+        }
+        const demoRole = getCookie('__role');
+        const demo = process.env.NODE_ENV === 'development' && isRole(demoRole) && demoRole !== 'superadmin';
+        demoActive.current = demo;
+        setProfile(demo ? buildDemoProfile(demoRole) : null);
+        setLoading(false);
+        return;
+      }
+      demoActive.current = false;
+      setLoading(true);
+      // Never return a promise to Supabase's notification handler.
+      pending = setTimeout(() => {
+        void withTimeout(fetchProfile(nextSession)).then(nextProfile => {
+          if (disposed || request !== revision.current) return;
+          setCookie('__session', nextSession.access_token, Math.max(1, (nextSession.expires_at ?? 0) - Math.floor(Date.now() / 1000)));
+          setCookie('__role', nextProfile.role, 3600);
+          setCookie('__trial_ok', nextProfile.trialExpired ? 'expired' : 'ok', 3600);
+          setProfile(nextProfile);
+        }).catch(() => {
+          if (disposed || request !== revision.current) return;
+          setProfile(null);
+          setError('We could not load your account. Check your connection or ask your school administrator to check your profile.');
+        }).finally(() => {
+          if (!disposed && request === revision.current) setLoading(false);
+        });
+      }, 0);
+    });
+    return () => {
+      disposed = true;
+      clearTimeout(watchdog);
+      clearTimeout(pending);
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return <AuthContext.Provider value={{ user, session, profile, loading, error, startDemo, signOut, getAuthToken }}>
+    {children}
+  </AuthContext.Provider>;
 };

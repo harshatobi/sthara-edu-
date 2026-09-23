@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,23 +27,8 @@ function containsFoulLanguage(text: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  // Origin check
-  const origin  = request.headers.get('origin')  || '';
-  const referer = request.headers.get('referer') || '';
-  const authHeader = request.headers.get('authorization') || '';
-  const appOrigins = [
-    process.env.NEXT_PUBLIC_APP_URL || '',
-    'http://localhost:3000',
-    'https://stharaschoolos.vercel.app',
-    'https://sthara.in',
-    'https://www.sthara.in',
-  ].filter(Boolean);
-  const isInternalOrigin = appOrigins.some(o => origin.startsWith(o) || referer.startsWith(o));
-  const hasBearerToken   = authHeader.startsWith('Bearer ') && authHeader.length > 20;
-  const noOrigin         = !origin;
-  if (!isInternalOrigin && !hasBearerToken && !noOrigin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
+  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const {
@@ -56,6 +43,18 @@ export async function POST(request: NextRequest) {
       year,
       semester,
     } = await request.json();
+
+    if (studentId && user.id !== studentId) {
+      return NextResponse.json({ error: 'Forbidden: can only chat as yourself' }, { status: 403 });
+    }
+
+    const rl = checkRateLimit(`tutor:${user.id}`, 30, 5 * 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please slow down and try again shortly.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } }
+      );
+    }
 
     // ── FOUL LANGUAGE CHECK ──────────────────────────────────────────────────
     const lastUserMessage = [...messages].reverse().find((m: any) => m.sender === 'user');

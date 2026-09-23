@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { LucideIcon, LogOut, Menu, X, Loader2 } from 'lucide-react';
+import { useRoleGuard } from '@/lib/auth/useRoleGuard';
+import AuthStatus from '@/components/ui/AuthStatus';
+import { LucideIcon, LogOut, Menu, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/contexts/AuthContext';
 import TrialBanner from '@/components/ui/TrialBanner';
@@ -22,54 +23,9 @@ interface DashboardLayoutProps {
   navigation: NavItem[];
 }
 
-export default function DashboardLayout({ children, role, subtitle, navigation }: DashboardLayoutProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { profile, loading, signOut } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return; // Still loading — don't redirect yet
-
-    const expectedRole = role.toLowerCase().replace(/\s+/g, '');
-
-    if (!profile) {
-      // No profile at all — redirect to login
-      router.push('/login');
-      return;
-    }
-
-    const actualRole = profile.role?.toLowerCase().replace(/\s+/g, '') || '';
-    if (actualRole && actualRole !== expectedRole) {
-      // Wrong role — redirect to their correct dashboard
-      if (actualRole === 'superadmin') router.push('/superadmin');
-      else if (actualRole === 'admin') router.push('/admin');
-      else if (actualRole === 'teacher') router.push('/teacher');
-      else if (actualRole === 'parent') router.push('/parent');
-      else if (actualRole === 'student') router.push('/student');
-      else router.push('/login');
-    }
-  }, [profile, loading, role, router]);
-
-  // Show spinner while loading
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#002147]" />
-      </div>
-    );
-  }
-
-  // Profile loaded but null — also show spinner briefly (redirect happening via useEffect)
-  if (!profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#002147]" />
-      </div>
-    );
-  }
-
-  /* ── Shared sidebar nav content ─────────────────────────────── */
-  const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => (
+function SidebarContent({ onLinkClick, navigation, subtitle, signOut }: {
+  onLinkClick?: () => void; navigation: NavItem[]; subtitle: string; signOut: () => Promise<void>;
+}) { return (
     <>
       {/* Logo */}
       <div className="h-20 flex flex-col justify-center px-6 border-b border-white/10 shrink-0">
@@ -79,7 +35,7 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
 
       {/* Scrollable nav links */}
       <div className="flex-1 overflow-y-auto py-5 px-3 space-y-1">
-        {navigation.map((item, i) => {
+        {navigation.map((item) => {
           const Icon = item.icon;
           return (
             <div key={item.name} className="flex flex-col">
@@ -134,13 +90,22 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
       </div>
     </>
   );
+}
+
+
+export default function DashboardLayout({ children, role, subtitle, navigation }: DashboardLayoutProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { signOut } = useAuth();
+  const { profile, authorized } = useRoleGuard(role);
+  if (!authorized || !profile) return <AuthStatus />;
+
 
   return (
     <div className="min-h-screen bg-[#f8fafc] print:block">
 
       {/* ── FIXED Desktop Sidebar — never scrolls ─────────────── */}
       <aside className="fixed inset-y-0 left-0 w-64 bg-[#002147] text-white flex flex-col shadow-2xl z-30 hidden md:flex print:hidden">
-        <SidebarContent />
+        <SidebarContent navigation={navigation} subtitle={subtitle} signOut={signOut} />
       </aside>
 
       {/* ── Mobile Slide-over Sidebar ─────────────────────────── */}
@@ -156,11 +121,12 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
             <button
               type="button"
               className="absolute -right-12 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/30 text-white focus:outline-none"
+              aria-label="Close navigation"
               onClick={() => setMobileMenuOpen(false)}
             >
               <X className="h-5 w-5" />
             </button>
-            <SidebarContent onLinkClick={() => setMobileMenuOpen(false)} />
+            <SidebarContent navigation={navigation} subtitle={subtitle} signOut={signOut} onLinkClick={() => setMobileMenuOpen(false)} />
           </div>
         </div>
       )}
@@ -175,6 +141,7 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
             <p className="text-[#dc143c] text-[10px] font-semibold uppercase tracking-wider">{subtitle}</p>
           </div>
           <button
+            aria-label="Open navigation"
             onClick={() => setMobileMenuOpen(true)}
             className="text-white p-2 rounded-lg hover:bg-white/10 focus:outline-none"
           >

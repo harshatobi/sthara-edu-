@@ -1,87 +1,95 @@
+// NOTE: no test runner (jest/vitest) is installed in this project — these
+// assertions are kept in sync with the pure functions for documentation, but
+// `run-test.ts` (plain Node assertions, runnable via `npx tsx`) is the one
+// that actually executes today. Wire up a real runner before trusting this
+// file to gate anything.
 import {
   calculateTopicTml,
-  getAssistanceModifier,
-  getAttemptModifier,
-  getRecencyModifier,
-  computeItemWeight,
+  getRecencyWeight,
   normalizeComponentType,
-  TmlItemInput,
+  getTutorDepthScore,
+  blendFinalTml,
+  normalizeTutorVolume,
+  mapMasteryBand,
+  TmlEvidenceItem,
 } from './engine';
 
-describe('TML Engine Unit Tests', () => {
-  test('Assistance Modifier values match specification', () => {
-    expect(getAssistanceModifier(0, false)).toBe(1.00); // unaided
-    expect(getAssistanceModifier(1, false)).toBe(0.95); // 1 hint
-    expect(getAssistanceModifier(2, false)).toBe(0.85); // multi hints
-    expect(getAssistanceModifier(0, true)).toBe(0.70);  // answer revealed
+describe('TML Engine Unit Tests (2026-09-21 spec)', () => {
+  test('Recency weight applies a 14-day half-life', () => {
+    expect(getRecencyWeight(0)).toBeCloseTo(1.0, 4);
+    expect(getRecencyWeight(14)).toBeCloseTo(0.5, 4);
+    expect(getRecencyWeight(28)).toBeCloseTo(0.25, 4);
   });
 
-  test('Attempt Modifier values match specification', () => {
-    expect(getAttemptModifier(1)).toBe(1.00); // 1st attempt
-    expect(getAttemptModifier(2)).toBe(0.95); // 2nd attempt
-    expect(getAttemptModifier(3)).toBe(0.90); // 3rd+ attempt
-  });
-
-  test('Recency Modifier computes 60-day half-life decay', () => {
-    expect(getRecencyModifier(0)).toBeCloseTo(1.0, 4);
-    expect(getRecencyModifier(60)).toBeCloseTo(0.5, 4);
-    expect(getRecencyModifier(120)).toBeCloseTo(0.25, 4);
-  });
-
-  test('Evidence Gate Confidence Bands are set strictly based on item count', () => {
-    const makeItems = (count: number): TmlItemInput[] =>
-      Array.from({ length: count }, (_, i) => ({
-        score: 8,
-        maxScore: 10,
-        componentType: 'homework',
-        ageDays: 5,
-        topicName: 'Chemical Reactions',
-      }));
-
-    // 0-3 items -> 'insufficient' (topicTml is null)
-    const res3 = calculateTopicTml(makeItems(3));
-    expect(res3.confidenceBand).toBe('insufficient');
-    expect(res3.topicTml).toBeNull();
-    expect(res3.totalItemCount).toBe(3);
-
-    // 4-7 items -> 'provisional' (score shown)
-    const res5 = calculateTopicTml(makeItems(5));
-    expect(res5.confidenceBand).toBe('provisional');
-    expect(res5.topicTml).toBe(80.0);
-    expect(res5.totalItemCount).toBe(5);
-
-    // 8+ items -> 'firm'
-    const res8 = calculateTopicTml(makeItems(8));
-    expect(res8.confidenceBand).toBe('firm');
-    expect(res8.topicTml).toBe(80.0);
-    expect(res8.totalItemCount).toBe(8);
-  });
-
-  test('Normalizes component type names accurately', () => {
-    expect(normalizeComponentType('assessment')).toBe('assessment');
-    expect(normalizeComponentType('midterm test')).toBe('assessment');
+  test('Component types normalize into homework/quiz/tutor', () => {
     expect(normalizeComponentType('quiz')).toBe('quiz');
+    expect(normalizeComponentType('assessment')).toBe('quiz');
+    expect(normalizeComponentType('midterm test')).toBe('quiz');
+    expect(normalizeComponentType('retention check')).toBe('quiz');
     expect(normalizeComponentType('homework')).toBe('homework');
-    expect(normalizeComponentType('retention check')).toBe('retention');
-    expect(normalizeComponentType('classwork')).toBe('classwork');
+    expect(normalizeComponentType('classwork')).toBe('homework');
+    expect(normalizeComponentType('tutor')).toBe('tutor');
   });
 
-  test('Calculates deterministic renormalized component weights without mock data', () => {
-    const items: TmlItemInput[] = [
-      { score: 9, maxScore: 10, componentType: 'assessment', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-      { score: 8, maxScore: 10, componentType: 'quiz', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-      { score: 10, maxScore: 10, componentType: 'homework', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-      { score: 7, maxScore: 10, componentType: 'homework', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-      { score: 9, maxScore: 10, componentType: 'retention', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-      { score: 8, maxScore: 10, componentType: 'classwork', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-      { score: 9, maxScore: 10, componentType: 'classwork', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-      { score: 10, maxScore: 10, componentType: 'assessment', ageDays: 0, hintsUsed: 0, attemptNumber: 1 },
-    ];
+  test('Tutor depth score is the inverse of hints needed', () => {
+    expect(getTutorDepthScore(0, false)).toBe(100);
+    expect(getTutorDepthScore(1, false)).toBe(60);
+    expect(getTutorDepthScore(2, false)).toBe(30);
+    expect(getTutorDepthScore(0, true)).toBe(10);
+  });
 
-    const result = calculateTopicTml(items);
-    expect(result.totalItemCount).toBe(8);
-    expect(result.confidenceBand).toBe('firm');
-    expect(result.topicTml).toBeGreaterThan(0);
-    expect(result.renormalizedWeightsSum).toBe(100); // 45 + 20 + 15 + 15 + 5
+  test('Confidence factor follows N/5, capped at 1.0', () => {
+    const makeItems = (count: number): TmlEvidenceItem[] =>
+      Array.from({ length: count }, () => ({ score: 8, maxScore: 10, componentType: 'homework', ageDays: 0 }));
+
+    expect(calculateTopicTml(makeItems(1)).confidenceBand).toBe('insufficient');
+    expect(calculateTopicTml(makeItems(3)).confidenceBand).toBe('provisional');
+    const firm = calculateTopicTml(makeItems(5));
+    expect(firm.confidenceBand).toBe('firm');
+    expect(firm.confidence).toBe(1.0);
+    expect(calculateTopicTml(makeItems(10)).confidence).toBe(1.0);
+  });
+
+  test('Integrity violation applies a 0.85x confidence penalty and can demote the band', () => {
+    const makeItems = (count: number): TmlEvidenceItem[] =>
+      Array.from({ length: count }, () => ({ score: 8, maxScore: 10, componentType: 'homework', ageDays: 0 }));
+    const penalized = calculateTopicTml(makeItems(5), { hadIntegrityViolation: true });
+    expect(penalized.confidence).toBeCloseTo(0.85, 4);
+    expect(penalized.confidenceBand).toBe('provisional');
+  });
+
+  test('Academic composite blends 0.40 homework + 0.40 quiz + 0.20 tutor, renormalized when sparse', () => {
+    const allThree: TmlEvidenceItem[] = [
+      { score: 80, maxScore: 100, componentType: 'homework', ageDays: 0 },
+      { score: 90, maxScore: 100, componentType: 'quiz', ageDays: 0 },
+      { score: 100, maxScore: 100, componentType: 'tutor', ageDays: 0 },
+    ];
+    const full = calculateTopicTml(allThree);
+    expect(full.academicTml).toBeCloseTo(0.40 * 80 + 0.40 * 90 + 0.20 * 100, 1);
+
+    const homeworkOnly = calculateTopicTml([{ score: 80, maxScore: 100, componentType: 'homework', ageDays: 0 }]);
+    expect(homeworkOnly.academicTml).toBe(80);
+  });
+
+  test('Final blend combines academic score with student-level engagement signals', () => {
+    const blended = blendFinalTml(80, { teacherEngagement: 90, attendance: 95, appEngagement: 70, tutorVolume: 50 });
+    const expected = 0.70 * 80 + 0.10 * 90 + 0.10 * 95 + 0.05 * 70 + 0.05 * 50;
+    expect(blended).toBeCloseTo(Math.round(expected * 10) / 10, 1);
+    expect(blendFinalTml(null, {})).toBeNull();
+  });
+
+  test('Tutor volume normalizes session count against a 10-session ceiling', () => {
+    expect(normalizeTutorVolume(0)).toBe(0);
+    expect(normalizeTutorVolume(5)).toBe(50);
+    expect(normalizeTutorVolume(20)).toBe(100);
+  });
+
+  test('Mastery bands map to the exact spec thresholds and colors', () => {
+    expect(mapMasteryBand(95)).toEqual(expect.objectContaining({ band: 'Exemplary', color: '#10B981' }));
+    expect(mapMasteryBand(80)).toEqual(expect.objectContaining({ band: 'Proficient', color: '#34D399' }));
+    expect(mapMasteryBand(60)).toEqual(expect.objectContaining({ band: 'Developing', color: '#F5B60B' }));
+    expect(mapMasteryBand(40)).toEqual(expect.objectContaining({ band: 'Critical Gap', color: '#F98A4B' }));
+    expect(mapMasteryBand(20)).toEqual(expect.objectContaining({ band: 'Severe Need', color: '#E11D48' }));
+    expect(mapMasteryBand(null)).toBeNull();
   });
 });

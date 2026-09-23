@@ -24,3 +24,99 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Soft duotone icons. Parent controls own hover, focus and press feedback. */
+.icon-interactive {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: 0 0 auto;
+  vertical-align: middle;
+  color: color-mix(in srgb, var(--icon-color) 72%, #a5b3c7);
+  isolation: isolate;
+  transition: color .24s ease, transform .28s cubic-bezier(.2,.8,.2,1);
+}
+.icon-interactive::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 38%;
+  background: color-mix(in srgb, var(--icon-color) 9%, transparent);
+  box-shadow: inset 0 1px 0 #ffffff12;
+  z-index: -1;
+  transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+.icon-glyph { display: inline-flex; transform-origin: 50% 75%; }
+.icon-glyph svg { overflow: visible; }
+.icon-glyph svg [opacity="0.2"] { opacity: .34; transition: opacity .25s ease; }
+.icon-interactive:is([data-active="true"], :hover),
+:where(button, a):is(:hover, :focus-visible) .icon-interactive {
+  color: var(--icon-color);
+  transform: translateY(-1px) scale(1.06);
+}
+.icon-interactive[data-active="true"]::before,
+:where(button, a):is(:hover, :focus-visible) .icon-interactive::before {
+  background: color-mix(in srgb, var(--icon-color) 17%, transparent);
+  box-shadow: inset 0 1px 0 #ffffff26, 0 3px 10px var(--icon-glow);
+}
+.icon-interactive[data-active="true"] .icon-glyph svg [opacity="0.2"],
+:where(button, a):is(:hover, :focus-visible) .icon-glyph svg [opacity="0.2"] { opacity: .58; }
+:where(button, a):active .icon-interactive { transform: scale(.9); }
+.icon-glyph { animation-duration: 3s; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+.icon-ambient-flicker { --icon-motion: icon-flicker; animation-duration: 1.4s; }
+.icon-ambient-heartbeat { --icon-motion: icon-heartbeat; animation-duration: 2.2s; }
+.icon-ambient-wiggle { --icon-motion: icon-wiggle; animation-duration: 3.5s; }
+.icon-ambient-bob { --icon-motion: icon-bob; }
+.icon-ambient-twinkle { --icon-motion: icon-twinkle; }
+.icon-ambient-glow { --icon-motion: icon-glow; }
+.icon-ambient-breathe { --icon-motion: icon-breathe; }
+.icon-interactive[data-active="true"] .icon-glyph,
+.icon-interactive:hover .icon-glyph,
+:where(button, a):is(:hover, :focus-visible) .icon-glyph { animation-name: var(--icon-motion); }
+@keyframes icon-flicker {
+  0%,100% { transform: scale(1, 1); color: #f38a45; }
+  22% { transform: scale(.94, 1.12) rotate(-3deg); color: #ffb65e; }
+  47% { transform: scale(1.06, .96) rotate(2deg); color: #ef7749; }
+  73% { transform: scale(.98, 1.08) rotate(-1deg); color: #ffa54f; }
+}
+@keyframes icon-heartbeat {
+  0%,40%,100% { transform: scale(1); }
+  12%,28% { transform: scale(1.13); }
+  20% { transform: scale(1.02); }
+}
+@keyframes icon-wiggle {
+  0%,70%,100% { transform: rotate(0); }
+  76% { transform: rotate(-12deg); }
+  82% { transform: rotate(10deg); }
+  88% { transform: rotate(-5deg); }
+  94% { transform: rotate(3deg); }
+}
+@keyframes icon-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes icon-twinkle { 0%,100% { transform: rotate(-4deg) scale(1); } 50% { transform: rotate(5deg) scale(1.12); } }
+@keyframes icon-glow {
+  0%,100% { transform: scale(1); filter: drop-shadow(0 0 0 var(--icon-glow)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 4px var(--icon-color)); }
+}
+@keyframes icon-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+.icon-embers { position: absolute; inset: 0; pointer-events: none; }
+.icon-embers i { position: absolute; width: 2px; height: 3px; border-radius: 50%; background: #ffc477; left: 40%; top: 20%; opacity: 0; }
+.icon-embers i:nth-child(2) { left: 65%; animation-delay: -.6s; }
+.icon-embers i:nth-child(3) { left: 25%; animation-delay: -1.2s; }
+.icon-interactive[data-active="true"] .icon-embers i,
+:where(button, a):is(:hover, :focus-visible) .icon-embers i { animation-name: icon-ember; animation-duration: 1.8s; animation-timing-function: ease-out; animation-iteration-count: infinite; }
+@keyframes icon-ember {
+  0% { opacity: 0; transform: translate(0, 0) scale(.5); }
+  25% { opacity: .85; }
+  100% { opacity: 0; transform: translate(2px, -11px) scale(.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-interactive, .icon-interactive::before, .icon-glyph, .icon-glyph svg [opacity="0.2"], .icon-embers i {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

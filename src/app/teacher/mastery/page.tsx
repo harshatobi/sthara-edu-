@@ -248,7 +248,7 @@ export default function TeacherMasteryTrackerPage() {
             roll: String(idx + 1).padStart(2, '0'),
             overallScore: overall,
             grade: getGradeLetter(overall),
-            totalSubmissions: scoreCount,
+            totalSubmissions: submissionCount,
             confidence: conf,
             unitScores
           };

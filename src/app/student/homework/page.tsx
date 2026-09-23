@@ -210,10 +210,9 @@ export default function StudentHomework() {
       {/* Assignment cards */}
       <div className="space-y-3">
         {filtered.map(a => (
-          <Link
+          <div
             key={a.id}
-            href={`/student?task=${a.id}`}
-            className="block bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+            className="block bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group"
           >
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex-1 min-w-0">
@@ -251,7 +250,7 @@ export default function StudentHomework() {
                       </p>
                     )}
                     <Link
-                      href={`/student?task=${a.id}`}
+                      href={`/student/homework/${a.id}`}
                       className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#002147] text-white text-xs font-bold rounded-xl hover:bg-blue-900 transition-all shadow-sm mt-1"
                     >
                       View AI Analysis ↗
@@ -259,7 +258,7 @@ export default function StudentHomework() {
                   </div>
                 ) : (
                   <Link
-                    href={`/student?task=${a.id}`}
+                    href={`/student/homework/${a.id}`}
                     className="flex items-center gap-1 px-4 py-2 bg-[#002147] text-white text-xs font-bold rounded-xl hover:bg-blue-900 transition-all"
                   >
                     Open <ChevronRight className="w-3.5 h-3.5" />
@@ -267,7 +266,7 @@ export default function StudentHomework() {
                 )}
               </div>
             </div>
-          </Link>
+          </div>
         ))}
 
         {filtered.length === 0 && (

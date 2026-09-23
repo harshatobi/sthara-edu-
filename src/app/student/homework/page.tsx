@@ -1,283 +1,161 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, CheckCircle, Clock, ChevronRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Suspense, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
+import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
+import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
+import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { colorForIcon } from '@/lib/iconColors';
+import { subjectIcon } from '@/components/canon/subjectIcon';
+import { Chip, Empty, PageBar, Skeleton, scoreTone } from '@/components/canon/ui';
+import DemoNote from '@/components/canon/DemoNote';
+import { useStudentDesk } from '@/lib/student/useStudentDesk';
+import { dmy, dueIn, openAssignments } from '@/lib/student/shape';
+import type { DeskAssignment, QuestionType } from '@/lib/student/types';
+import ReportOverlay from './ReportOverlay';
 
-interface Assignment {
-  id: string;
-  topic: string;
-  subject: string;
-  dueDate: string;
-  type: string;
-  status: 'pending' | 'completed';
-  grade?: string;
-  score?: number;
-  maxScore?: number;
-  teacherApproved?: boolean;
-  questions?: any[];
-  [key: string]: unknown;
+const Q_LABEL: Record<QuestionType, string> = { short: 'short answer', mcq: 'multiple choice', upload: 'upload' };
+function qTypeSummary(types: QuestionType[]) {
+  const n: Partial<Record<QuestionType, number>> = {};
+  types.forEach(t => { n[t] = (n[t] || 0) + 1; });
+  return (Object.entries(n) as [QuestionType, number][]).map(([t, c]) => `${c} ${Q_LABEL[t]}`).join(' · ');
+}
+const ts = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : 0);
+
+export default function HomeworkPage() {
+  return <Suspense fallback={<HomeworkSkeleton />}><Homework /></Suspense>;
 }
 
-const isOverdue = (dateStr: string) => {
-  if (!dateStr || dateStr === 'No Date') return false;
-  const due = new Date(dateStr);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return due < today;
-};
+function Homework() {
+  const { desk, error } = useStudentDesk();
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const tab = params.get('tab') === 'done' ? 'done' : 'todo';
+  const reportId = params.get('report');
 
-const TYPE_COLORS: Record<string, string> = {
-  homework: 'bg-blue-50 text-blue-700 border-blue-200',
-  quiz: 'bg-purple-50 text-purple-700 border-purple-200',
-  announcement: 'bg-amber-50 text-amber-700 border-amber-200',
-  video: 'bg-teal-50 text-teal-700 border-teal-200',
-};
+  // Tab + open report live in the URL, so the dashboard can deep-link and Back works.
+  const setParams = useCallback((next: Record<string, string | null>) => {
+    const p = new URLSearchParams(params.toString());
+    Object.entries(next).forEach(([k, v]) => (v === null ? p.delete(k) : p.set(k, v)));
+    router.replace(`${pathname}${p.size ? `?${p}` : ''}`, { scroll: false });
+  }, [params, pathname, router]);
+  const closeReport = useCallback(() => setParams({ report: null }), [setParams]);
 
-export default function StudentHomework() {
-  const { profile, loading } = useAuth();
-  const supabase = createClient();
+  if (error) return <div className="note err" role="alert">{error}</div>;
+  if (!desk) return <HomeworkSkeleton />;
 
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [fetching, setFetching] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
-
-  useEffect(() => {
-    if (!profile?.schoolId || !profile?.uid) {
-      setFetching(false);
-      return;
-    }
-
-    const fetchAssignments = async () => {
-      try {
-        const studentClass = (profile.studentClass || '').toLowerCase().trim();
-
-        // ── Step 1: Find teachers who teach this student's class ──────────────
-        const { data: teacherRows } = await supabase
-          .from('users')
-          .select('uid, assignments')
-          .eq('school_id', profile.schoolId)
-          .eq('role', 'teacher');
-
-        const relevantTeacherIds = new Set<string>();
-        (teacherRows || []).forEach((t: any) => {
-          const tas: any[] = t.assignments || [];
-          const teachesClass = tas.some((a: any) => {
-            const tc = (a.class || '').toLowerCase().trim();
-            return !studentClass || !tc || tc.includes(studentClass) || studentClass.includes(tc);
-          });
-          if (teachesClass && t.uid) relevantTeacherIds.add(t.uid);
-        });
-
-        // ── Step 2: Fetch only from those teachers ────────────────────────────
-        let assignQuery = supabase
-          .from('assignments')
-          .select('*')
-          .eq('school_id', profile.schoolId);
-
-        if (relevantTeacherIds.size > 0) {
-          assignQuery = assignQuery.in('teacher_id', [...relevantTeacherIds]);
-        }
-
-        const { data: assignRows, error } = await assignQuery;
-        if (error) throw error;
-
-        const { data: subRows } = await supabase
-          .from('submissions')
-          .select('*')
-          .eq('student_id', profile.uid);
-
-        const subMap = new Map((subRows || []).map(s => [s.assignment_id, s]));
-        const studentCustomId = profile.customStudentId || '';
-
-        const list: Assignment[] = (assignRows || [])
-          .filter(a => {
-            // Class-level filter
-            const aClass = (a.class || '').toLowerCase().trim();
-            if (aClass && studentClass && !aClass.includes(studentClass) && !studentClass.includes(aClass)) {
-              return false;
-            }
-            // Student-specific filter
-            const assignedIds: string[] = a.assigned_student_ids || [];
-            if (assignedIds.length === 0) return true;
-            return (
-              (studentCustomId && assignedIds.includes(studentCustomId)) ||
-              assignedIds.includes(profile.uid)
-            );
-          })
-          .map(a => {
-            const sub = subMap.get(a.id);
-            const isSubmitted = !!sub;
-            return {
-              id: a.id,
-              topic: a.title || 'Assignment',
-              subject: a.subject || 'General',
-              type: a.type || 'homework',
-              dueDate: a.due_date || 'No Date',
-              status: isSubmitted ? 'completed' : 'pending',
-              score: sub?.score ?? undefined,
-              maxScore: sub?.max_score ?? undefined,
-              grade: sub?.grade || (sub?.score != null && sub?.max_score ? `${sub.score}/${sub.max_score}` : undefined),
-              teacherApproved: sub?.teacher_approved ?? true,
-              questions: a.questions || [],
-            };
-          });
-
-        // Sort: pending first, then by due date
-        list.sort((a, b) => {
-          if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
-          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        });
-
-        setAssignments(list);
-      } catch (e) {
-        console.error('Error loading homework:', e);
-      } finally {
-        setFetching(false);
-      }
-    };
-
-    fetchAssignments();
-  }, [profile?.schoolId, profile?.uid]);
-
-  if (loading || fetching) {
-    return (
-      <div className="p-10 text-[#002147] text-center font-medium">
-        <div className="w-8 h-8 border-4 border-[#002147]/20 border-t-[#002147] rounded-full animate-spin mx-auto mb-3" />
-        Loading Homework Portal...
-      </div>
-    );
-  }
-
-  const filtered = assignments.filter(a => {
-    if (filter === 'pending') return a.status === 'pending';
-    if (filter === 'completed') return a.status === 'completed';
-    return true;
-  });
-
-  const pendingCount = assignments.filter(a => a.status === 'pending').length;
-  const completedCount = assignments.filter(a => a.status === 'completed').length;
-  const overdueCount = assignments.filter(a => a.status === 'pending' && isOverdue(a.dueDate)).length;
+  const open = openAssignments(desk.assignments);
+  const done = desk.assignments
+    .filter(a => a.status !== 'open')
+    .sort((a, b) => ts(b.submission?.submittedAt) - ts(a.submission?.submittedAt));
+  const report = reportId ? desk.assignments.find(a => a.id === reportId && a.status === 'graded') : undefined;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
-      {/* Header */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <Link href="/student" className="p-2 bg-white rounded-full border border-gray-200 hover:bg-gray-50 text-[#002147] shadow-sm">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-extrabold text-[#002147]">Your Assignments</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {profile?.studentClass ? `Class ${profile.studentClass} ·` : ''} {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+    <>
+      {desk.mode === 'demo' && <DemoNote />}
+      <PageBar
+        eyebrow="HOMEWORK"
+        title="Assignments"
+        sub="Posted by your teachers. We keep a light camera check running during timed submissions, just to keep things fair."
+        actions={<Chip tone="g"><ShieldCheck size={13} weight="fill" /> Fair-play checks on timed work</Chip>}
+      />
+
+      <div className="tabs" role="tablist" aria-label="Homework">
+        <button role="tab" aria-selected={tab === 'todo'} className={`tab${tab === 'todo' ? ' on blue' : ''}`} onClick={() => setParams({ tab: null })}>
+          To-Do ({open.length})
+        </button>
+        <button role="tab" aria-selected={tab === 'done'} className={`tab${tab === 'done' ? ' on blue' : ''}`} onClick={() => setParams({ tab: 'done' })}>
+          Completed ({done.length})
+        </button>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 text-center shadow-sm">
-          <div className="text-3xl font-black text-[#002147]">{pendingCount}</div>
-          <div className="text-xs font-bold text-gray-500 uppercase mt-1">Pending</div>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 text-center shadow-sm">
-          <div className="text-3xl font-black text-emerald-600">{completedCount}</div>
-          <div className="text-xs font-bold text-gray-500 uppercase mt-1">Submitted</div>
-        </div>
-        <div className={`rounded-2xl border p-5 text-center shadow-sm ${overdueCount > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
-          <div className={`text-3xl font-black ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{overdueCount}</div>
-          <div className="text-xs font-bold text-gray-500 uppercase mt-1">Overdue</div>
-        </div>
-      </div>
-
-      {/* Filter tabs */}
-      <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-start w-fit">
-        {(['all', 'pending', 'completed'] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-5 py-2 text-xs font-bold capitalize rounded-xl transition-all ${
-              filter === f ? 'bg-[#002147] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            {f} {f === 'all' ? `(${assignments.length})` : f === 'pending' ? `(${pendingCount})` : `(${completedCount})`}
-          </button>
-        ))}
-      </div>
-
-      {/* Assignment cards */}
-      <div className="space-y-3">
-        {filtered.map(a => (
-          <div
-            key={a.id}
-            className="block bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-2">
-                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase tracking-wider border border-blue-100">
-                    {a.subject}
-                  </span>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-md capitalize border ${TYPE_COLORS[a.type] || TYPE_COLORS.homework}`}>
-                    {a.type}
-                  </span>
-                  {isOverdue(a.dueDate) && a.status === 'pending' && (
-                    <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
-                      <AlertCircle className="w-3 h-3" /> Overdue
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-base font-bold text-[#002147] mb-1">{a.topic}</h3>
-                <p className="text-xs text-gray-400 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  Due: {a.dueDate}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                {a.status === 'completed' ? (
-                  <div className="flex flex-col items-end gap-1.5">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                      <CheckCircle className="w-3.5 h-3.5" /> Submitted
-                    </span>
-                    {a.grade && (
-                      <p className="text-xs font-mono font-bold text-gray-700">
-                        {a.score != null && a.maxScore != null
-                          ? `${a.score}/${a.maxScore} (${Math.round((a.score / a.maxScore) * 100)}%)`
-                          : `Grade: ${a.grade}`}
-                      </p>
-                    )}
-                    <Link
-                      href={`/student/homework/${a.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#002147] text-white text-xs font-bold rounded-xl hover:bg-blue-900 transition-all shadow-sm mt-1"
-                    >
-                      View AI Analysis ↗
-                    </Link>
-                  </div>
-                ) : (
-                  <Link
-                    href={`/student/homework/${a.id}`}
-                    className="flex items-center gap-1 px-4 py-2 bg-[#002147] text-white text-xs font-bold rounded-xl hover:bg-blue-900 transition-all"
-                  >
-                    Open <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                )}
-              </div>
-            </div>
+      {tab === 'todo' ? (
+        open.length ? (
+          <div className="g3">{open.map(a => <TodoCard key={a.id} a={a} />)}</div>
+        ) : (
+          <div className="card">
+            <Empty icon={<InteractiveIcon icon={CheckCircle} color={colorForIcon(CheckCircle)} size={32} active />} title="Nothing outstanding">
+              Every assignment posted to {desk.me.cls ? `Class ${desk.me.cls}` : 'your class'} has been submitted.
+            </Empty>
           </div>
-        ))}
+        )
+      ) : done.length ? (
+        <div className="card" style={{ padding: '10px 26px' }}>
+          {done.map(a => <DoneRow key={a.id} a={a} onOpen={() => setParams({ report: a.id })} />)}
+        </div>
+      ) : (
+        <div className="card">
+          <Empty icon={<InteractiveIcon icon={FileText} color={colorForIcon(FileText)} size={32} active />} title="Nothing submitted yet">
+            Work you hand in shows up here, with your grade and feedback once it&apos;s reviewed.
+          </Empty>
+        </div>
+      )}
 
-        {filtered.length === 0 && (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200">
-            <BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400 font-medium">
-              {filter === 'all' ? "No assignments yet. Check back later." : `No ${filter} assignments.`}
-            </p>
-          </div>
-        )}
+      {report && <ReportOverlay a={report} live={desk.mode === 'live'} onClose={closeReport} />}
+    </>
+  );
+}
+
+function TodoCard({ a }: { a: DeskAssignment }) {
+  const due = dueIn(a.dueAt);
+  const overdue = due.text.startsWith('Overdue');
+  return (
+    <div className="card" style={{ borderTop: `4px solid ${a.color}`, paddingTop: 22, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <div className="av" style={{ background: `color-mix(in srgb, ${a.color} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(a.subject)} color={a.color} size={19} /></div>
+        <Chip tone={due.tone}>{due.text.toUpperCase()}</Chip>
       </div>
+      <div><Chip tone="n" className="xs">{a.subject}</Chip></div>
+      <h3 style={{ fontSize: 19, fontWeight: 800, margin: '9px 0 6px' }}>{a.title}</h3>
+      {a.desc && <p className="muted">{a.desc}</p>}
+      {a.questionTypes.length > 0 && (
+        <div className="muted" style={{ fontSize: 11.5, marginTop: 10 }}>
+          {a.questionTypes.length} question{a.questionTypes.length === 1 ? '' : 's'} · {qTypeSummary(a.questionTypes)}
+          {a.proctored ? ' · proctored' : ''}
+        </div>
+      )}
+      <div style={{ flex: 1 }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', marginTop: 18, paddingTop: 16 }}>
+        <div>
+          <div className="muted" style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em' }}>DUE</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: overdue ? 'var(--red)' : undefined }}>{a.dueAt ? dmy(a.dueAt) : 'No date'}</div>
+        </div>
+        <Link className="btn pri" href={`/student/homework/${a.id}`}>Open <ArrowRight size={15} weight="bold" /></Link>
+      </div>
+    </div>
+  );
+}
+
+function DoneRow({ a, onOpen }: { a: DeskAssignment; onOpen: () => void }) {
+  const s = a.submission!;
+  const graded = a.status === 'graded';
+  return (
+    <div className="row">
+      <div className="av" style={{ background: `color-mix(in srgb, ${a.color} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(a.subject)} color={a.color} size={18} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 14.5 }}>{a.title}</div>
+        <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{a.subject} · {graded ? 'Graded' : 'Submitted'} {dmy(s.submittedAt)}</div>
+      </div>
+      <Chip tone={graded ? scoreTone(s.score ?? 0, s.total ?? 0) : 'b'} title={graded ? undefined : 'Your teacher reviews the AI grade before it counts'}>
+        <span style={{ minWidth: 52, textAlign: 'center' }}>{graded ? `${s.score}/${s.total}` : 'AWAITING'}</span>
+      </Chip>
+      {graded
+        ? <button className="btn" onClick={onOpen}>View report</button>
+        : <button className="btn" disabled>Teacher review pending</button>}
+    </div>
+  );
+}
+
+function HomeworkSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading homework">
+      <Skeleton h={104} style={{ borderRadius: 20, marginBottom: 22 }} />
+      <Skeleton h={54} w={300} style={{ borderRadius: 14, marginBottom: 20 }} />
+      <div className="g3"><Skeleton h={300} style={{ borderRadius: 20 }} /><Skeleton h={300} style={{ borderRadius: 20 }} /><Skeleton h={300} style={{ borderRadius: 20 }} /></div>
     </div>
   );
 }

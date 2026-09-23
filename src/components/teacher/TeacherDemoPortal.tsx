@@ -1,7 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { SquaresFour, Lightning, ClipboardText, Brain, Fire, ChartLineUp, Bell, Heart, SignOut, CheckSquare } from '@phosphor-icons/react/dist/ssr';
+import { SquaresFourIcon as SquaresFour } from '@phosphor-icons/react/dist/ssr/SquaresFour';
+import { LightningIcon as Lightning } from '@phosphor-icons/react/dist/ssr/Lightning';
+import { ClipboardTextIcon as ClipboardText } from '@phosphor-icons/react/dist/ssr/ClipboardText';
+import { BrainIcon as Brain } from '@phosphor-icons/react/dist/ssr/Brain';
+import { FireIcon as Fire } from '@phosphor-icons/react/dist/ssr/Fire';
+import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
+import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
+import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
+import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
+import { CheckSquareIcon as CheckSquare } from '@phosphor-icons/react/dist/ssr/CheckSquare';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { colorForIcon } from '@/lib/iconColors';
 import { useAuth } from '@/contexts/AuthContext';

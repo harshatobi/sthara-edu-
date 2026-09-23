@@ -1,0 +1,270 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Biology",
+  "codes": [
+    "044"
+  ],
+  "source": {
+    "title": "Biology, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Biology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "One major experiment",
+        "marks": 5
+      },
+      {
+        "component": "One minor experiment",
+        "marks": 4
+      },
+      {
+        "component": "Slide preparation",
+        "marks": 5
+      },
+      {
+        "component": "Spotting",
+        "marks": 7
+      },
+      {
+        "component": "Practical record and viva voce",
+        "marks": 4
+      },
+      {
+        "component": "Investigatory project, record and viva voce",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Biology, Class XII (NCERT)",
+    "Biology Supplementary Material (Revised) (CBSE)"
+  ],
+  "notes": [
+    "The document has no learning-outcomes column for Biology, so chapter outcomes are left empty.",
+    "Environmental Issues is included but assessed only formatively (see CBSE Reading Material)."
+  ],
+  "units": [
+    {
+      "code": "VI",
+      "name": "Reproduction",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Sexual Reproduction in Flowering Plants",
+          "number": 1,
+          "topics": [
+            "Flower structure",
+            "development of male and female gametophytes",
+            "pollination: types, agencies and examples",
+            "outbreeding devices",
+            "pollen-pistil interaction",
+            "double fertilisation",
+            "post-fertilisation events: endosperm and embryo, seed and fruit",
+            "special modes: apomixis, parthenocarpy, polyembryony",
+            "significance of seed dispersal and fruit formation"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Human Reproduction",
+          "number": 2,
+          "topics": [
+            "Male and female reproductive systems",
+            "microscopic anatomy of testis and ovary",
+            "gametogenesis: spermatogenesis and oogenesis",
+            "menstrual cycle",
+            "fertilisation, embryo development up to blastocyst, implantation",
+            "pregnancy and placenta formation (elementary idea)",
+            "parturition (elementary idea)",
+            "lactation (elementary idea)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Reproductive Health",
+          "number": 3,
+          "topics": [
+            "Need for reproductive health and prevention of STDs",
+            "birth control: need and methods, contraception and MTP",
+            "amniocentesis",
+            "infertility and assisted reproductive technologies: IVF, ZIFT, GIFT (elementary idea)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VII",
+      "name": "Genetics and Evolution",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Principles of Inheritance and Variation",
+          "number": 4,
+          "topics": [
+            "Heredity and variation: Mendelian inheritance",
+            "deviations from Mendelism: incomplete dominance, co-dominance, multiple alleles and blood groups, pleiotropy",
+            "polygenic inheritance (elementary idea)",
+            "chromosome theory of inheritance",
+            "chromosomes and genes",
+            "sex determination in humans, birds and honey bee",
+            "linkage and crossing over",
+            "sex-linked inheritance: haemophilia, colour blindness",
+            "Mendelian disorders: thalassemia",
+            "chromosomal disorders: Down's, Turner's and Klinefelter's syndromes"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Molecular Basis of Inheritance",
+          "number": 5,
+          "topics": [
+            "Search for genetic material and DNA as genetic material",
+            "structure of DNA and RNA",
+            "DNA packaging",
+            "DNA replication",
+            "central dogma",
+            "transcription, genetic code, translation",
+            "gene expression and regulation: lac operon",
+            "genome, human and rice genome projects",
+            "DNA fingerprinting"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Evolution",
+          "number": 6,
+          "topics": [
+            "Origin of life",
+            "biological evolution and evidences (palaeontology, comparative anatomy, embryology, molecular)",
+            "Darwin's contribution, modern synthetic theory",
+            "mechanism of evolution: variation (mutation, recombination) and natural selection, types of natural selection",
+            "gene flow and genetic drift",
+            "Hardy-Weinberg principle",
+            "adaptive radiation",
+            "human evolution"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VIII",
+      "name": "Biology and Human Welfare",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Human Health and Disease",
+          "number": 7,
+          "topics": [
+            "Pathogens and parasites causing human diseases (malaria, dengue, chikungunya, filariasis, ascariasis, typhoid, pneumonia, common cold, amoebiasis, ringworm) and their control",
+            "basic concepts of immunology: vaccines",
+            "cancer, HIV and AIDS",
+            "adolescence: drug and alcohol abuse"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Microbes in Human Welfare",
+          "number": 8,
+          "topics": [
+            "Microbes in food processing, industrial production, sewage treatment and energy generation",
+            "microbes as biocontrol agents and biofertilisers",
+            "antibiotics: production and judicious use"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IX",
+      "name": "Biotechnology and its Applications",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Biotechnology: Principles and Processes",
+          "number": 9,
+          "topics": [
+            "Genetic engineering (recombinant DNA technology)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Biotechnology and its Applications",
+          "number": 10,
+          "topics": [
+            "Applications in health and agriculture: human insulin and vaccine production, stem cell technology, gene therapy",
+            "genetically modified organisms: Bt crops",
+            "transgenic animals",
+            "biosafety issues, biopiracy and patents"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "X",
+      "name": "Ecology and Environment",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Organisms and Populations",
+          "number": 11,
+          "topics": [
+            "Population interactions: mutualism, competition, predation, parasitism",
+            "population attributes: growth, birth rate and death rate, age distribution"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ecosystem",
+          "number": 12,
+          "topics": [
+            "Patterns and components",
+            "productivity and decomposition",
+            "energy flow",
+            "pyramids of number, biomass and energy"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Biodiversity and its Conservation",
+          "number": 13,
+          "topics": [
+            "Concept, patterns and importance of biodiversity",
+            "loss of biodiversity",
+            "conservation",
+            "hotspots, endangered organisms, extinction, Red Data Book",
+            "sacred groves, biosphere reserves, national parks, wildlife sanctuaries and Ramsar sites"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Environmental Issues",
+          "formativeOnly": true,
+          "topics": [
+            "Air pollution and its control",
+            "Water pollution and its control",
+            "Solid wastes",
+            "Agro-chemicals and their effects",
+            "Radioactive wastes",
+            "Greenhouse effect and global warming",
+            "Ozone depletion in the stratosphere",
+            "Degradation by improper resource utilisation and maintenance",
+            "Deforestation"
+          ],
+          "outcomes": [],
+          "notes": [
+            "See CBSE Reading Material"
+          ]
+        }
+      ]
+    }
+  ]
+}

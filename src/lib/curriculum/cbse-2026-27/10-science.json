@@ -1,0 +1,197 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Science",
+  "codes": ["086"],
+  "source": {
+    "title": "Science, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Science_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      { "component": "Periodic Assessment", "marks": 5 },
+      { "component": "Multiple Assessment", "marks": 5 },
+      { "component": "Portfolio", "marks": 5 },
+      { "component": "Subject Enrichment (Practical Work)", "marks": 5 }
+    ]
+  },
+  "textbooks": [
+    "Science - Textbook for class X (NCERT)",
+    "Assessment of Practical Skills in Science, Class X (CBSE)",
+    "Laboratory Manual - Science, Class X (NCERT)",
+    "Exemplar Problems, Class X (NCERT)",
+    "Reading Material - Science - Class X (2026-27) (CBSE)"
+  ],
+  "notes": [
+    "Periodic Classification of Elements, Evolution, and Motor / Electromagnetic Induction / Electric Generator are taught but assessed only formatively; they are not in the year-end examination.",
+    "The document's note for teachers also lists 'Heredity and Evolution' as not assessed in the year-end examination, while Unit II's summative content still lists Heredity. Confirm with the school's exam coordinator before excluding Heredity.",
+    "Information in the NCERT textbook boxes is not assessed in the year-end examination."
+  ],
+  "units": [
+    {
+      "code": "I", "name": "Chemical Substances - Nature and Behaviour", "marks": 25,
+      "chapters": [
+        {
+          "name": "Chemical Reactions and Equations",
+          "topics": [
+            "Chemical reactions and chemical equations", "Balanced chemical equations",
+            "Types of reactions: combination, decomposition, displacement, double displacement, precipitation",
+            "Endothermic and exothermic reactions", "Oxidation and reduction"
+          ],
+          "outcomes": ["Writes and balances chemical equations", "Classifies reactions by type"]
+        },
+        {
+          "name": "Acids, Bases and Salts",
+          "topics": [
+            "Acids and bases in terms of furnishing H⁺ and OH⁻ ions", "Identification using indicators", "Chemical properties, examples and uses",
+            "Neutralisation", "pH scale and the importance of pH in everyday life",
+            "Preparation and uses of sodium hydroxide, bleaching powder, baking soda, washing soda and Plaster of Paris"
+          ],
+          "outcomes": ["Identifies acids and bases using indicators", "Relates pH to everyday phenomena"],
+          "notes": ["Definition of pH relating to logarithm not required"]
+        },
+        {
+          "name": "Metals and Non-metals",
+          "topics": [
+            "Properties of metals and non-metals", "Reactivity series", "Formation and properties of ionic compounds",
+            "Basic metallurgical processes", "Corrosion and its prevention"
+          ],
+          "outcomes": ["Arranges metals by reactivity", "Explains formation of ionic compounds and corrosion prevention"]
+        },
+        {
+          "name": "Carbon and its Compounds",
+          "topics": [
+            "Covalent bonds: formation and properties of covalent compounds", "Versatile nature of carbon",
+            "Hydrocarbons: saturated and unsaturated; homologous series",
+            "Nomenclature of alkanes, alkenes, alkynes and compounds with functional groups (halogens, alcohol, ketones, aldehydes)",
+            "Chemical properties: combustion, oxidation, addition and substitution reactions",
+            "Ethanol and ethanoic acid (properties and uses only)", "Soaps and detergents"
+          ],
+          "outcomes": ["Names carbon compounds by functional group", "Describes the chemical properties of carbon compounds"]
+        },
+        {
+          "name": "Periodic Classification of Elements",
+          "formativeOnly": true,
+          "topics": [
+            "Döbereiner's Triads", "Newlands' Law of Octaves", "Mendeléev's Periodic Table",
+            "Modern Periodic Table", "Metallic and non-metallic properties"
+          ],
+          "outcomes": ["Traces the development of the periodic table"]
+        }
+      ]
+    },
+    {
+      "code": "II", "name": "World of Living", "marks": 25,
+      "chapters": [
+        {
+          "name": "Life Processes",
+          "topics": ["'Living being'", "Basic concept of nutrition, respiration, transport and excretion in plants and animals"],
+          "outcomes": ["Explains nutrition, respiration, transport and excretion in plants and animals"]
+        },
+        {
+          "name": "Control and Coordination",
+          "topics": [
+            "Tropic movements in plants", "Introduction to plant hormones", "Nervous system in animals",
+            "Voluntary, involuntary and reflex action", "Chemical coordination: animal hormones"
+          ],
+          "outcomes": ["Distinguishes voluntary, involuntary and reflex actions", "Explains hormonal coordination in plants and animals"]
+        },
+        {
+          "name": "How do Organisms Reproduce?",
+          "topics": [
+            "Reproduction in animals and plants (asexual and sexual)", "Reproductive health: need and methods of family planning",
+            "Safe sex vs HIV/AIDS", "Child bearing and women's health"
+          ],
+          "outcomes": ["Compares asexual and sexual reproduction", "Explains the need for reproductive health"]
+        },
+        {
+          "name": "Heredity",
+          "topics": ["Heredity", "Mendel's contribution: laws for inheritance of traits", "Sex determination: brief introduction"],
+          "outcomes": ["Applies Mendel's laws to simple crosses", "Explains sex determination"],
+          "notes": ["See subject note: the teacher note lists Heredity as not assessed in the year-end examination"]
+        },
+        {
+          "name": "Evolution",
+          "formativeOnly": true,
+          "topics": [
+            "Acquired and inherited traits", "Speciation", "Evolution and classification", "Tracing evolutionary relationships",
+            "Fossils", "Evolution by stages", "Human evolution"
+          ],
+          "outcomes": ["Distinguishes acquired and inherited traits"]
+        }
+      ]
+    },
+    {
+      "code": "III", "name": "Natural Phenomena", "marks": 12,
+      "chapters": [
+        {
+          "name": "Light - Reflection and Refraction",
+          "topics": [
+            "Reflection of light by curved surfaces; images formed by spherical mirrors",
+            "Centre of curvature, principal axis, principal focus, focal length",
+            "Mirror formula and magnification", "Refraction; laws of refraction; refractive index",
+            "Refraction by spherical lenses; images formed by lenses", "Lens formula; magnification; power of a lens"
+          ],
+          "outcomes": ["Uses the mirror and lens formulae", "Applies the laws of refraction"],
+          "notes": ["Derivations of the mirror formula and lens formula not required"]
+        },
+        {
+          "name": "The Human Eye and the Colourful World",
+          "topics": [
+            "Functioning of a lens in the human eye", "Defects of vision and their corrections",
+            "Applications of spherical mirrors and lenses", "Refraction of light through a prism",
+            "Dispersion of light", "Scattering of light and applications in daily life"
+          ],
+          "outcomes": ["Explains defects of vision and their correction", "Explains dispersion and scattering of light"],
+          "notes": ["Excludes the colour of the sun at sunrise and sunset"]
+        }
+      ]
+    },
+    {
+      "code": "IV", "name": "Effects of Current", "marks": 13,
+      "chapters": [
+        {
+          "name": "Electricity",
+          "topics": [
+            "Electric current and potential difference", "Ohm's law", "Resistance, resistivity and factors affecting resistance",
+            "Series and parallel combination of resistors and daily-life applications",
+            "Heating effect of electric current and its applications", "Electric power; interrelation between P, V, I and R"
+          ],
+          "outcomes": ["Applies Ohm's law", "Computes equivalent resistance of series and parallel combinations", "Relates P, V, I and R"]
+        },
+        {
+          "name": "Magnetic Effects of Electric Current",
+          "topics": [
+            "Magnetic field and field lines", "Field due to a current-carrying conductor, coil or solenoid",
+            "Force on a current-carrying conductor; Fleming's Left Hand Rule", "Direct current", "Alternating current: frequency of AC",
+            "Advantage of AC over DC", "Domestic electric circuits"
+          ],
+          "outcomes": ["Applies Fleming's Left Hand Rule", "Explains domestic electric circuits"]
+        },
+        {
+          "name": "Motor, Electromagnetic Induction and Electric Generator",
+          "formativeOnly": true,
+          "topics": ["Electric motor", "Electromagnetic induction", "Electric generator"],
+          "outcomes": ["Explains the working of a motor and a generator"]
+        }
+      ]
+    },
+    {
+      "code": "V", "name": "Natural Resources", "marks": 5,
+      "chapters": [
+        {
+          "name": "Our Environment",
+          "topics": [
+            "Ecosystem", "Environmental problems", "Ozone depletion", "Waste production and solutions",
+            "Biodegradable and non-biodegradable substances"
+          ],
+          "outcomes": ["Explains ecosystems and environmental problems", "Distinguishes biodegradable and non-biodegradable substances"]
+        }
+      ]
+    }
+  ]
+}

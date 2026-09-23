@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
           user_id: assignment.teacher_id,
           school_id: schoolId,
           type: 'proctor_alert',
-          title: `🚨 Tab Switch Alert — ${studentName || 'Student'}`,
+          title: `Tab switch alert: ${studentName || 'Student'}`,
           body: `${studentName || 'A student'} switched tabs ${switchCount} time(s) during "${taskTitle}". ${switchCount >= 3 ? 'Quiz has been auto-submitted.' : `${3 - switchCount} warning(s) remaining.`}`,
           metadata: { studentId, taskId, switchCount },
           created_at: new Date().toISOString(),

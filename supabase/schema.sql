@@ -1,4 +1,11 @@
 -- ============================================================================
+-- NOTE (2026-09-23): this file is a historical reference and had drifted from
+-- the live database. The source of truth for schema changes is now
+-- supabase/migrations/ (applied with `supabase db push`). Sections 9-11 below
+-- are superseded by migrations/20260923120000_harden_schema.sql.
+-- ============================================================================
+
+-- ============================================================================
 -- Sthara OS - Postgres & Supabase Production Schema & Security Migration
 -- Date: 2026-08-09
 -- Specification: TML Metric Model & Schema Review (2026-07-23)
@@ -583,6 +590,9 @@ CREATE POLICY guardians_read_involved ON public.guardians
 -- ---- 10.5 DPDP consent record + wellness constraint ------------------------
 -- Data-model side of the open DPDP compliance flag (energy/wellness check-ins
 -- for minors need recorded parental consent before public-facing copy ships).
+-- energy (1–5) is written by the student Wellness Center check-in; make sure
+-- the column exists before constraining it.
+ALTER TABLE public.wellness_logs ADD COLUMN IF NOT EXISTS energy SMALLINT;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'wellness_energy_range') THEN
     ALTER TABLE public.wellness_logs
@@ -653,3 +663,44 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_classes_school_name
 --      production — it replaces existing policies (by name) rather than only
 --      adding new ones.
 -- ============================================================================
+
+-- ============================================================================
+-- 11. STUDENT WELLNESS JOURNAL (2026-09-22)
+-- Backs the canon student Wellness Center: one daily energy check-in row
+-- (note IS NULL) plus optional journal rows (note IS NOT NULL) that stay
+-- private unless the student taps Share. Depends on the app.* helpers from
+-- section 10.1. Idempotent. NOT YET APPLIED — until it is, check-ins and
+-- private journal entries work; sharing with the class teacher is switched off.
+-- ============================================================================
+-- Live table already has energy and note (verified 2026-09-23: id, student_id,
+-- school_id, created_at, energy, mood, note). Only `shared` is new; the
+-- IF NOT EXISTS lines are kept so the section is safe on a fresh database.
+ALTER TABLE public.wellness_logs ADD COLUMN IF NOT EXISTS energy SMALLINT;
+ALTER TABLE public.wellness_logs ADD COLUMN IF NOT EXISTS note   TEXT;
+ALTER TABLE public.wellness_logs ADD COLUMN IF NOT EXISTS shared BOOLEAN NOT NULL DEFAULT false;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'wellness_note_length') THEN
+    ALTER TABLE public.wellness_logs
+      ADD CONSTRAINT wellness_note_length CHECK (note IS NULL OR char_length(note) <= 4000);
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_wellness_student_created
+  ON public.wellness_logs (student_id, created_at DESC);
+
+-- The student's own class teacher may read journal rows the student shared —
+-- nothing private, and no other teacher in the school (DPDP: purpose-limited).
+DROP POLICY IF EXISTS wellness_read_shared_class_teacher ON public.wellness_logs;
+CREATE POLICY wellness_read_shared_class_teacher ON public.wellness_logs
+  FOR SELECT TO authenticated
+  USING (shared = true
+         AND school_id = app.current_school_id()
+         AND app.user_role() = 'teacher'
+         AND EXISTS (SELECT 1
+                     FROM public.users s
+                     JOIN public.users t ON t.id = (SELECT auth.uid())
+                     WHERE s.id = wellness_logs.student_id
+                       AND t.teacher_class IS NOT NULL
+                       AND t.teacher_class = s.student_class));
+

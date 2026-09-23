@@ -11,10 +11,17 @@ import { getAuthToken } from '@/lib/auth/getAuthToken';
 interface WellnessLog {
   id: string;
   student_id: string;
+  /** 0-100, derived from the stored 1-5 energy check-in. */
   mood_value: number;
   resolved?: boolean;
   created_at: string;
+  student_class?: string;
+  shared_note?: string | null;
 }
+
+// Same 5-step scale the student check-in uses (src/lib/student/useWellness.ts).
+const ENERGY_PERCENT = [18, 38, 58, 76, 94];
+const normClass = (c?: string | null) => (c || '').toLowerCase().replace(/class|[^a-z0-9]/g, '');
 
 interface StudentData {
   id: string;
@@ -87,14 +94,18 @@ export default function TeacherWellnessDashboard() {
       setLoading(true);
 
       try {
-        const { data: logsData, error: logsErr } = await supabase
-          .from('wellness_logs')
-          .select('*')
-          .eq('school_id', profile.schoolId)
-          .order('created_at', { ascending: false });
-
-        if (logsErr) throw logsErr;
-        setLogs(logsData || []);
+        // Purpose-limited feed: only students in classes this teacher teaches,
+        // energy + at-risk flag, and a note only when the student shared it.
+        // Raw wellness_logs rows are not readable by staff (DPDP).
+        const { data: feed, error: feedErr } = await supabase.rpc('teacher_wellness_feed', { p_days: 30 });
+        if (feedErr) throw feedErr;
+        setLogs((feed || [])
+          .filter((r: any) => r.energy != null && normClass(r.student_class) === normClass(selectedClass))
+          .map((r: any) => ({
+            id: r.log_id, student_id: r.student_id, created_at: r.created_at, resolved: r.resolved,
+            mood_value: ENERGY_PERCENT[Math.min(4, Math.max(0, r.energy - 1))],
+            student_class: r.student_class, shared_note: r.shared_note,
+          })));
       } catch (e) {
         console.error('[wellness] fetch data error:', e);
       } finally {

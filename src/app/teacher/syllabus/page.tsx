@@ -58,6 +58,7 @@ export default function SyllabusPlanner() {
   // ── Auto-syllabus state ───────────────────────────────────────────────────
   const [autoPreview, setAutoPreview]   = useState<CurriculumChapter[] | null>(null);
   const [autoDesc, setAutoDesc]         = useState('');
+  const [autoSource, setAutoSource]     = useState<{ title: string; url: string } | null>(null);
   const [isAutoLoading, setIsAutoLoading] = useState(false);
   const [autoLoadDone, setAutoLoadDone] = useState(false);
 
@@ -126,12 +127,14 @@ export default function SyllabusPlanner() {
   useEffect(() => {
     setAutoPreview(null);
     setAutoDesc('');
+    setAutoSource(null);
     setAutoLoadDone(false);
     if (!newPublisher || !newSubject || !newClass) return;
     const entry = lookupCurriculum(newPublisher, newSubject, newClass);
     if (entry) {
       setAutoPreview(entry.chapters);
       setAutoDesc(entry.description);
+      setAutoSource(entry.source ?? null);
     }
   }, [newPublisher, newSubject, newClass]);
 
@@ -156,6 +159,10 @@ export default function SyllabusPlanner() {
             grade:      newClass,
             publisher:  newPublisher,
             unitId:     ch.unitId,
+            // Official unit-marks weight when the chapter comes from the ingested
+            // CBSE curriculum; otherwise the server estimates it.
+            ...(ch.examWeightage !== undefined ? { examWeightage: ch.examWeightage } : {}),
+            ...(ch.formativeOnly ? { tags: ['formative-only'] } : {}),
           }),
         });
         const data = await res.json();
@@ -677,8 +684,13 @@ export default function SyllabusPlanner() {
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-indigo-600" />
                       <div>
-                        <p className="font-black text-indigo-800 text-sm">✅ Curriculum Found!</p>
+                        <p className="font-black text-indigo-800 text-sm flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Curriculum found</p>
                         <p className="text-xs text-indigo-600 mt-0.5">{autoDesc}</p>
+                        {autoSource && (
+                          <a href={autoSource.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-indigo-700 underline underline-offset-2 mt-0.5 inline-block">
+                            Source: {autoSource.title}
+                          </a>
+                        )}
                       </div>
                     </div>
                     <span className="text-xs font-bold bg-indigo-200 text-indigo-800 px-2.5 py-1 rounded-full">
@@ -694,7 +706,11 @@ export default function SyllabusPlanner() {
                           {ch.unitId.replace('unit_', 'U')} · {ch.month.slice(0,3)}
                         </span>
                         <div>
-                          <p className="text-xs font-bold text-[#002147]">{ch.topic}</p>
+                          <p className="text-xs font-bold text-[#002147]">
+                            {ch.topic}
+                            {ch.formativeOnly && <span className="ml-2 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Formative only</span>}
+                            {ch.examWeightage !== undefined && !ch.formativeOnly && <span className="ml-2 text-[10px] font-bold text-indigo-500">~{ch.examWeightage} marks</span>}
+                          </p>
                           <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed line-clamp-1">{ch.objectives}</p>
                         </div>
                       </div>

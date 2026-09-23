@@ -1,0 +1,296 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Chemistry",
+  "codes": [
+    "043"
+  ],
+  "source": {
+    "title": "Chemistry, Subject Code 043, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Chemistry_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Volumetric analysis",
+        "marks": 8
+      },
+      {
+        "component": "Salt analysis",
+        "marks": 8
+      },
+      {
+        "component": "Content-based experiment",
+        "marks": 6
+      },
+      {
+        "component": "Project work",
+        "marks": 4
+      },
+      {
+        "component": "Class record and viva",
+        "marks": 4
+      }
+    ]
+  },
+  "textbooks": [
+    "Chemistry Part I, Class XII (NCERT)",
+    "Chemistry Part II, Class XII (NCERT)",
+    "Manual of Microscale Chemistry Laboratory Kit (NCERT)"
+  ],
+  "notes": [
+    "Each unit corresponds to one NCERT textbook chapter.",
+    "The document has no learning-outcomes column for Chemistry, so chapter outcomes are left empty.",
+    "Surface chemistry, isolation of elements, polymers, and chemistry in everyday life are included but assessed only formatively."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Solutions",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Solutions",
+          "topics": [
+            "Types of solutions",
+            "Expressing concentration of solutions",
+            "Solubility",
+            "Vapour pressure of liquid solutions",
+            "Ideal and non-ideal solutions",
+            "Colligative properties and determination of molar mass",
+            "Abnormal molecular masses"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Electrochemistry",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Electrochemistry",
+          "topics": [
+            "Electrochemical cells",
+            "Galvanic cells",
+            "Nernst equation",
+            "Conductance of electrolytic solutions",
+            "Electrolytic cells and electrolysis",
+            "Batteries",
+            "Fuel cells",
+            "Corrosion"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Chemical Kinetics",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Chemical Kinetics",
+          "topics": [
+            "Rate of a chemical reaction",
+            "Factors influencing the rate of reaction",
+            "Integrated rate equations",
+            "Temperature dependence of the rate of a reaction",
+            "Collision theory of chemical reactions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "d- and f-Block Elements",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "d- and f-Block Elements",
+          "topics": [
+            "Position in the periodic table",
+            "Electronic configuration of d-block elements",
+            "General properties of the transition elements",
+            "Some important compounds of transition elements",
+            "The lanthanoids",
+            "The actinoids",
+            "Some applications of d- and f-block elements"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Coordination Compounds",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Coordination Compounds",
+          "topics": [
+            "Werner's theory of coordination compounds",
+            "Definitions of important terms",
+            "Nomenclature of coordination compounds",
+            "Isomerism in coordination compounds",
+            "Bonding in coordination compounds",
+            "Bonding in metal carbonyls",
+            "Importance and applications of coordination compounds"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Haloalkanes and Haloarenes",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Haloalkanes and Haloarenes",
+          "topics": [
+            "Classification",
+            "Nomenclature",
+            "Nature of the C-X bond",
+            "Methods of preparation of haloalkanes",
+            "Preparation of haloarenes",
+            "Physical properties",
+            "Chemical reactions",
+            "Polyhalogen compounds"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Alcohols, Phenols and Ethers",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Alcohols, Phenols and Ethers",
+          "topics": [
+            "Classification",
+            "Nomenclature",
+            "Structures of functional groups",
+            "Alcohols and phenols",
+            "Some commercially important alcohols",
+            "Ethers"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Aldehydes, Ketones and Carboxylic Acids",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Aldehydes, Ketones and Carboxylic Acids",
+          "topics": [
+            "Nomenclature and structure of the carbonyl group",
+            "Preparation of aldehydes and ketones",
+            "Physical properties and chemical reactions of aldehydes and ketones",
+            "Uses of aldehydes and ketones",
+            "Nomenclature and structure of the carboxyl group",
+            "Methods of preparation of carboxylic acids",
+            "Physical properties and chemical reactions of carboxylic acids",
+            "Uses of carboxylic acids"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "9",
+      "name": "Amines",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Amines",
+          "topics": [
+            "Structure, classification and nomenclature of amines",
+            "Preparation of amines",
+            "Physical properties and chemical reactions of amines",
+            "Methods of preparation of diazonium salts",
+            "Physical properties and chemical reactions of diazonium salts",
+            "Importance of diazonium salts in synthesis of aromatic compounds"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "10",
+      "name": "Biomolecules",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Biomolecules",
+          "topics": [
+            "Carbohydrates",
+            "Proteins",
+            "Enzymes",
+            "Vitamins",
+            "Nucleic acids",
+            "Hormones"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "Formative",
+      "name": "Assessed formatively only",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Surface Chemistry",
+          "formativeOnly": true,
+          "topics": [
+            "Adsorption: physisorption and chemisorption; factors affecting adsorption of gases on solids",
+            "Colloidal state: distinction between true solutions, colloids and suspensions",
+            "Lyophilic and lyophobic colloids",
+            "Coagulation",
+            "Emulsions and their types"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "General Principles and Processes of Isolation of Elements",
+          "formativeOnly": true,
+          "topics": [
+            "Principles and methods of extraction: concentration, oxidation, reduction",
+            "Electrolytic method and refining"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Polymers",
+          "formativeOnly": true,
+          "topics": [
+            "Polymerisation",
+            "Homopolymers and copolymers with examples"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chemistry in Everyday Life",
+          "formativeOnly": true,
+          "topics": [
+            "Chemicals in medicines: analgesics, tranquilisers, antiseptics, disinfectants, antimicrobials, antifertility drugs, antibiotics, antacids, antihistamines",
+            "Chemicals in food: preservatives, artificial sweetening agents, antioxidants"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,325 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Biology",
+  "codes": [
+    "044"
+  ],
+  "source": {
+    "title": "Biology, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Biology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "One major experiment",
+        "marks": 5
+      },
+      {
+        "component": "One minor experiment",
+        "marks": 4
+      },
+      {
+        "component": "Slide preparation",
+        "marks": 5
+      },
+      {
+        "component": "Spotting",
+        "marks": 7
+      },
+      {
+        "component": "Practical record and viva voce",
+        "marks": 4
+      },
+      {
+        "component": "Project record and viva voce",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Biology, Class XI (NCERT)"
+  ],
+  "notes": [
+    "The document has no learning-outcomes column for Biology, so chapter outcomes are left empty.",
+    "Digestion and Absorption is included but assessed only formatively (see CBSE Reading Material)."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Diversity of Living Organisms",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "The Living World",
+          "number": 1,
+          "topics": [
+            "Biodiversity",
+            "need for classification",
+            "three domains of life",
+            "taxonomy and systematics",
+            "concept of species and taxonomical hierarchy",
+            "binomial nomenclature"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Biological Classification",
+          "number": 2,
+          "topics": [
+            "Five kingdom classification",
+            "salient features and classification of Monera, Protista and Fungi into major groups",
+            "lichens, viruses and viroids"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Plant Kingdom",
+          "number": 3,
+          "topics": [
+            "Classification of plants into major groups",
+            "salient and distinguishing features and examples of Algae, Bryophyta, Pteridophyta, Gymnospermae and Angiosperms"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Animal Kingdom",
+          "number": 4,
+          "topics": [
+            "Salient features and classification of animals",
+            "non-chordates up to phyla level and chordates up to class level, with examples"
+          ],
+          "outcomes": [],
+          "notes": [
+            "No live animals or specimens should be displayed"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Structural Organization in Plants and Animals",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Morphology of Flowering Plants",
+          "number": 5,
+          "topics": [
+            "Morphology of root, stem, leaf, inflorescence, flower, fruit and seed",
+            "description of family Solanaceae"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Anatomy of Flowering Plants",
+          "number": 6,
+          "topics": [
+            "Anatomy and functions of tissue systems in dicots and monocots"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Structural Organisation in Animals",
+          "number": 7,
+          "topics": [
+            "Morphology, anatomy and functions of the digestive, circulatory, respiratory, nervous and reproductive systems of the frog"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Cell: Structure and Function",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Cell: The Unit of Life",
+          "number": 8,
+          "topics": [
+            "Cell theory and cell as the basic unit of life",
+            "structure of prokaryotic and eukaryotic cells",
+            "plant cell and animal cell",
+            "cell envelope, cell membrane, cell wall",
+            "cell organelles: structure and function",
+            "endomembrane system: endoplasmic reticulum, golgi bodies, lysosomes, vacuoles",
+            "mitochondria, ribosomes, plastids, microbodies",
+            "cytoskeleton, cilia, flagella, centrioles (ultrastructure and function)",
+            "nucleus"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Biomolecules",
+          "number": 9,
+          "topics": [
+            "Chemical constituents of living cells",
+            "structure and function of proteins, carbohydrates, lipids and nucleic acids",
+            "enzymes: types, properties, enzyme action"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Excluded: nature of bond linking monomers in a polymer, dynamic state of body constituents, concept of metabolism, metabolic basis of living, the living state"
+          ]
+        },
+        {
+          "name": "Cell Cycle and Cell Division",
+          "number": 10,
+          "topics": [
+            "Cell cycle",
+            "mitosis, meiosis and their significance"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Plant Physiology",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Photosynthesis in Higher Plants",
+          "number": 11,
+          "topics": [
+            "Photosynthesis as autotrophic nutrition",
+            "site of photosynthesis",
+            "pigments involved (elementary idea)",
+            "photochemical and biosynthetic phases",
+            "cyclic and non-cyclic photophosphorylation",
+            "chemiosmotic hypothesis",
+            "photorespiration",
+            "C3 and C4 pathways",
+            "factors affecting photosynthesis"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Respiration in Plants",
+          "number": 12,
+          "topics": [
+            "Exchange of gases",
+            "cellular respiration: glycolysis, fermentation (anaerobic), TCA cycle and electron transport system (aerobic)",
+            "energy relations: number of ATP molecules generated",
+            "amphibolic pathways",
+            "respiratory quotient"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Plant Growth and Development",
+          "number": 13,
+          "topics": [
+            "Seed germination",
+            "phases of plant growth and plant growth rate",
+            "conditions of growth",
+            "differentiation, dedifferentiation and redifferentiation",
+            "sequence of developmental processes in a plant cell",
+            "plant growth regulators: auxin, gibberellin, cytokinin, ethylene, ABA"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Human Physiology",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Breathing and Exchange of Gases",
+          "number": 14,
+          "topics": [
+            "Respiratory organs in animals (recall only)",
+            "respiratory system in humans",
+            "mechanism of breathing and its regulation: exchange and transport of gases, regulation of respiration, respiratory volume",
+            "disorders: asthma, emphysema, occupational respiratory disorders"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Body Fluids and Circulation",
+          "number": 15,
+          "topics": [
+            "Composition of blood, blood groups, coagulation",
+            "composition and function of lymph",
+            "human circulatory system: structure of heart and blood vessels",
+            "cardiac cycle, cardiac output, ECG",
+            "double circulation",
+            "regulation of cardiac activity",
+            "disorders: hypertension, coronary artery disease, angina pectoris, heart failure"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Excretory Products and their Elimination",
+          "number": 16,
+          "topics": [
+            "Modes of excretion: ammonotelism, ureotelism, uricotelism",
+            "human excretory system: structure and function",
+            "urine formation, osmoregulation",
+            "regulation of kidney function: renin-angiotensin, atrial natriuretic factor, ADH and diabetes insipidus",
+            "role of other organs in excretion",
+            "disorders: uremia, renal failure, renal calculi, nephritis",
+            "dialysis, artificial kidney, kidney transplant"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Locomotion and Movement",
+          "number": 17,
+          "topics": [
+            "Types of movement: ciliary, flagellar, muscular",
+            "skeletal muscle, contractile proteins and muscle contraction",
+            "skeletal system and its functions",
+            "joints",
+            "disorders: myasthenia gravis, tetany, muscular dystrophy, arthritis, osteoporosis, gout"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Neural Control and Coordination",
+          "number": 18,
+          "topics": [
+            "Neuron and nerves",
+            "central, peripheral and visceral nervous systems in humans",
+            "generation and conduction of nerve impulse"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chemical Coordination and Integration",
+          "number": 19,
+          "topics": [
+            "Endocrine glands and hormones",
+            "human endocrine system: hypothalamus, pituitary, pineal, thyroid, parathyroid, adrenal, pancreas, gonads",
+            "mechanism of hormone action (elementary idea)",
+            "hormones as messengers and regulators",
+            "hypo- and hyperactivity and related disorders: dwarfism, acromegaly, cretinism, goitre, exophthalmic goitre, diabetes, Addison's disease"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Digestion and Absorption",
+          "formativeOnly": true,
+          "topics": [
+            "Alimentary canal and digestive glands",
+            "role of digestive enzymes and gastrointestinal hormones",
+            "peristalsis, digestion, absorption and assimilation of proteins, carbohydrates and fats",
+            "calorific values",
+            "egestion",
+            "nutritional and digestive disorders: PEM, indigestion, constipation, vomiting, jaundice, diarrhoea"
+          ],
+          "outcomes": [],
+          "notes": [
+            "See CBSE Reading Material"
+          ]
+        }
+      ]
+    }
+  ]
+}

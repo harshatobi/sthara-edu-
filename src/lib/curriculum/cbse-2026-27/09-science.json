@@ -1,0 +1,277 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Science",
+  "codes": [
+    "086"
+  ],
+  "source": {
+    "title": "Science, Subject Code 086, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/ScienceSt_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic Assessment",
+        "marks": 5
+      },
+      {
+        "component": "Multiple Assessment",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject Enrichment (Practical Work)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Science - Textbook for class IX (NCERT)",
+    "Assessment of Practical Skills in Science, Class IX (CBSE)",
+    "Laboratory Manual - Science, Class IX (NCERT)",
+    "Exemplar Problems, Class IX (NCERT)"
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "World of Living",
+      "marks": 27,
+      "chapters": [
+        {
+          "name": "Cell",
+          "number": 2,
+          "topics": [
+            "Discovery of cell",
+            "Plant and animal cells",
+            "Prokaryotic and eukaryotic cells",
+            "Cell as the structural and functional unit of life; key organelles (nucleus, mitochondria, chloroplast, endoplasmic reticulum, vacuoles, plasma membrane, cell wall)",
+            "Permeability of cell membranes",
+            "Cellular division and cancer",
+            "Recent advancement in cell biology"
+          ],
+          "outcomes": [
+            "Differentiates plant and animal cells, prokaryotes and eukaryotes",
+            "Differentiates diffusion and osmosis and demonstrates osmosis",
+            "Explains the role of mitosis and meiosis in similarities and variations",
+            "Prepares slides to observe cell structure"
+          ]
+        },
+        {
+          "name": "Tissues",
+          "number": 3,
+          "topics": [
+            "Tissues: introduction and importance; levels of organisation",
+            "Plant tissues: meristematic (types, function) and permanent (types, structure, function)",
+            "Animal tissues: epithelial, connective, muscular and nervous",
+            "Elementary idea of the musculoskeletal system",
+            "Care of the musculoskeletal system: injuries, postural care, nutrition and exercise"
+          ],
+          "outcomes": [
+            "Differentiates plant and animal tissues, meristematic and permanent, simple and complex tissues",
+            "Relates tissue structure to function",
+            "Correlates muscles, cartilage and bones in movement"
+          ]
+        },
+        {
+          "name": "Reproduction",
+          "number": 11,
+          "topics": [
+            "Forms of reproduction: sexual and asexual; types of asexual reproduction",
+            "Sexual reproduction in flowering plants: flower and its parts, pollination, fertilisation, seed dispersal",
+            "Sexual reproduction in humans: reproductive systems, gametes, fertilisation, pregnancy and embryo development, menstrual cycle",
+            "Reproductive health and hygiene",
+            "Introduction to birth control methods and their importance"
+          ],
+          "outcomes": [
+            "Compares asexual and sexual reproduction",
+            "Explains pollination and fertilisation",
+            "Differentiates ovule and seed, ovary and fruit",
+            "Explains how sexual reproduction introduces variation"
+          ]
+        },
+        {
+          "name": "Diversity",
+          "number": 12,
+          "topics": [
+            "Importance of classification",
+            "Five kingdoms and their key features with examples",
+            "Major divisions of animals and plants",
+            "Binomial nomenclature",
+            "Acellular entities: viruses"
+          ],
+          "outcomes": [
+            "Classifies organisms into five kingdoms by cellular organisation and ecological role",
+            "Applies binomial nomenclature",
+            "Recognises the three domains of classification"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Matter - Its Nature and Behaviour",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Exploring Mixtures and their Separation",
+          "number": 5,
+          "topics": [
+            "Homogeneous and heterogeneous mixtures",
+            "Solutions, suspensions, colloids and their properties",
+            "Concentration of solutions: mass by mass, mass by volume and volume by volume percentage",
+            "Separation techniques: crystallisation, distillation, paper chromatography, sublimation, centrifugation, coagulation"
+          ],
+          "outcomes": [
+            "Classifies mixtures as solutions, suspensions or colloids",
+            "Calculates the concentration of solutions",
+            "Explains the principles behind separation techniques",
+            "Analyses solubility graphs"
+          ]
+        },
+        {
+          "name": "Structure of an Atom",
+          "number": 8,
+          "topics": [
+            "Atoms as the basic units of elements; subatomic particles",
+            "Atomic models: Thomson, Rutherford and Bohr",
+            "Distribution of electrons (first 18 elements)",
+            "Symbols",
+            "Valency as combining capacity",
+            "Atomic number, mass number, isotopes and isobars"
+          ],
+          "outcomes": [
+            "Differentiates electrons, protons and neutrons",
+            "Distributes electrons in K, L, M, N shells",
+            "Calculates subatomic particles from atomic and mass numbers",
+            "Applies IUPAC symbols for the first eighteen elements"
+          ]
+        },
+        {
+          "name": "Atoms and Molecules",
+          "number": 9,
+          "topics": [
+            "Law of conservation of mass",
+            "Law of constant proportions",
+            "Dalton's atomic theory",
+            "Molecules of elements and covalent compounds and their properties",
+            "Ions, ionic compounds and their properties",
+            "Writing chemical formulae",
+            "Molecular mass and formula unit mass"
+          ],
+          "outcomes": [
+            "Explains the laws of chemical combination and Dalton's theory",
+            "Calculates ionic charge, valency, molecular and formula unit mass",
+            "Writes chemical formulae of simple compounds"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Motion, Force, Work and Sound",
+      "marks": 23,
+      "chapters": [
+        {
+          "name": "Motion",
+          "number": 4,
+          "topics": [
+            "Displacement, velocity, acceleration",
+            "Graphical representation of straight-line motion (constant velocity and constant acceleration)",
+            "Kinematic equations for constant acceleration by graphical method",
+            "Elementary idea of uniform circular motion"
+          ],
+          "outcomes": [
+            "Plots and interprets position-time and velocity-time graphs",
+            "Derives kinematic equations graphically",
+            "Calculates unknown quantities using kinematic equations",
+            "Derives the speed of uniform circular motion"
+          ]
+        },
+        {
+          "name": "Force and Laws of Motion",
+          "number": 6,
+          "topics": [
+            "Force; balanced and unbalanced forces",
+            "Force of friction",
+            "Newton's first, second and third laws of motion"
+          ],
+          "outcomes": [
+            "States and explains Newton's three laws",
+            "Calculates force using F = ma",
+            "Applies the laws to everyday events"
+          ]
+        },
+        {
+          "name": "Work, Energy and Simple Machines",
+          "number": 7,
+          "topics": [
+            "Work done by a constant force",
+            "Work-energy theorem",
+            "Kinetic and potential energy and their interconversion",
+            "Conservation of energy",
+            "Power",
+            "Simple machines and mechanical advantage (pulley, inclined plane, lever)"
+          ],
+          "outcomes": [
+            "Calculates work, kinetic energy, potential energy and power",
+            "States the law of conservation of energy",
+            "Calculates the mechanical advantage of simple machines"
+          ]
+        },
+        {
+          "name": "Sound",
+          "number": 10,
+          "topics": [
+            "Production of sound",
+            "Propagation as a longitudinal wave through a medium",
+            "Graphical representation of sound waves",
+            "Characteristics: wavelength, frequency, time period, amplitude, intensity, speed",
+            "Human perception of sound: pitch, loudness",
+            "Propagation in different media",
+            "Reflection of sound: echo, reverberation, echolocation"
+          ],
+          "outcomes": [
+            "Relates time period and frequency",
+            "Derives and calculates the speed of sound",
+            "Applies reflection of sound to echo and reverberation"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Earth as a System",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Earth as a System: Energy, Matter & Life",
+          "number": 13,
+          "topics": [
+            "Earth as an interconnected system",
+            "Solar radiation, the electromagnetic spectrum and the speed of light",
+            "Solar energy interaction with the Earth's surface and differential heating",
+            "Differential warming causes winds",
+            "Biogeochemical cycles: water, carbon, nitrogen, oxygen",
+            "Human impact on the Earth's system"
+          ],
+          "outcomes": [
+            "Explains interconnections between the Earth's spheres",
+            "Relates differential heating to breezes and weather",
+            "Explains biogeochemical cycles and their role in environmental balance"
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "The course structure maps textbook chapters 2-13 to units; chapter 1 is not listed under any assessed unit."
+  ]
+}

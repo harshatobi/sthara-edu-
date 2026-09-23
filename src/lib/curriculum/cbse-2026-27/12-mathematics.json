@@ -1,0 +1,210 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Mathematics",
+  "codes": [
+    "041"
+  ],
+  "source": {
+    "title": "Mathematics, Subject Code 041, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Maths_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic Tests (best 2 of 3)",
+        "marks": 10
+      },
+      {
+        "component": "Mathematics Activities (record 5, year-end activity test 3, viva 2)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Mathematics Part I - Textbook for Class XII (NCERT)",
+    "Mathematics Part II - Textbook for Class XII (NCERT)",
+    "Mathematics Exemplar Problems for Class XII (NCERT)",
+    "Mathematics Lab Manual, Class XII (NCERT)"
+  ],
+  "notes": [
+    "The document states there is no chapter-wise weightage; care is to be taken to cover all chapters. Only unit marks are fixed.",
+    "The document has no learning-outcomes column for Mathematics, so chapter outcomes are left empty."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Relations and Functions",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Relations and Functions",
+          "topics": [
+            "Types of relations: reflexive, symmetric, transitive and equivalence",
+            "One-to-one and onto functions"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Inverse Trigonometric Functions",
+          "topics": [
+            "Definition, range, domain, principal value branch",
+            "Graphs of inverse trigonometric functions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Algebra",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Matrices",
+          "topics": [
+            "Concept, notation, order, equality; types of matrices; zero and identity matrix",
+            "Transpose; symmetric and skew-symmetric matrices",
+            "Addition, multiplication and scalar multiplication and their simple properties",
+            "Non-commutativity of multiplication; non-zero matrices whose product is zero (order 2)",
+            "Invertible matrices and uniqueness of inverse (real entries)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Determinants",
+          "topics": [
+            "Determinant of a square matrix (up to 3 x 3); minors, cofactors",
+            "Area of a triangle using determinants",
+            "Adjoint and inverse of a square matrix",
+            "Consistency, inconsistency and number of solutions of linear systems by examples",
+            "Solving systems in two or three variables (unique solution) using the inverse of a matrix"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Calculus",
+      "marks": 35,
+      "chapters": [
+        {
+          "name": "Continuity and Differentiability",
+          "topics": [
+            "Continuity and differentiability; chain rule; derivative of composite functions",
+            "Derivatives of inverse trigonometric functions (sin⁻¹x, cos⁻¹x, tan⁻¹x)",
+            "Derivative of implicit functions",
+            "Exponential and logarithmic functions and their derivatives",
+            "Logarithmic differentiation; derivatives of functions in parametric form",
+            "Second-order derivatives"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Applications of Derivatives",
+          "topics": [
+            "Rate of change of quantities",
+            "Increasing and decreasing functions",
+            "Maxima and minima: first derivative test (geometric) and second derivative test",
+            "Simple real-life problems"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Integrals",
+          "topics": [
+            "Integration as the inverse of differentiation",
+            "Integration by substitution, partial fractions and by parts",
+            "Simple integrals of standard forms, e.g. ∫dx/(x² ± a²), ∫dx/√(x² ± a²), ∫dx/√(a² - x²), ∫dx/(ax² + bx + c), ∫(px + q)/(ax² + bx + c) dx, ∫√(a² ± x²) dx, ∫√(ax² + bx + c) dx",
+            "Fundamental Theorem of Calculus (without proof)",
+            "Basic properties and evaluation of definite integrals"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Application of the Integrals",
+          "topics": [
+            "Area under simple curves: lines, circles, parabolas, ellipses (standard form only)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Differential Equations",
+          "topics": [
+            "Definition, order and degree; general and particular solutions",
+            "Separation of variables",
+            "Homogeneous differential equations of first order and first degree",
+            "Linear equations dy/dx + py = q and dx/dy + px = q"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Vectors and Three-Dimensional Geometry",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Vectors",
+          "topics": [
+            "Vectors and scalars; magnitude and direction; direction cosines and ratios",
+            "Types of vectors: equal, unit, zero, parallel, collinear; position vector; negative of a vector; components",
+            "Addition of vectors; scalar multiplication; section formula in vector form",
+            "Scalar (dot) product and vector (cross) product: definition, geometric interpretation, properties, applications"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Three-dimensional Geometry",
+          "topics": [
+            "Direction cosines and ratios of a line through two points",
+            "Cartesian and vector equations of a line",
+            "Skew lines; shortest distance between two lines",
+            "Angle between two lines"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Linear Programming",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Linear Programming",
+          "topics": [
+            "Terminology: constraints, objective function, optimisation",
+            "Graphical method for two variables",
+            "Feasible and infeasible regions (bounded or unbounded); feasible and optimal solutions (up to three non-trivial constraints)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Probability",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Probability",
+          "topics": [
+            "Conditional probability",
+            "Multiplication theorem",
+            "Independent events",
+            "Total probability",
+            "Bayes' theorem"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

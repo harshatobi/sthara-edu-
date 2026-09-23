@@ -1,0 +1,259 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Physics",
+  "codes": [
+    "042"
+  ],
+  "source": {
+    "title": "Physics, Code 042, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Physics_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Two experiments, one from each section (7+7)",
+        "marks": 14
+      },
+      {
+        "component": "Practical record (experiments and activities)",
+        "marks": 5
+      },
+      {
+        "component": "One activity from any section",
+        "marks": 3
+      },
+      {
+        "component": "Investigatory project",
+        "marks": 3
+      },
+      {
+        "component": "Viva on experiments, activities and project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Physics Part-I, Textbook for Class XI (NCERT)",
+    "Physics Part-II, Textbook for Class XI (NCERT)",
+    "Laboratory Manual of Physics, Class XI (NCERT)"
+  ],
+  "notes": [
+    "The document gives marks for groups of units; each group is recorded as one unit carrying the group's marks.",
+    "Content marked in the NCERT textbooks as excluded for 2026-27 is not to be tested.",
+    "The document has no learning-outcomes column for Physics, so chapter outcomes are left empty."
+  ],
+  "units": [
+    {
+      "code": "I-III",
+      "name": "Physical World and Measurement; Kinematics; Laws of Motion",
+      "marks": 23,
+      "chapters": [
+        {
+          "name": "Units and Measurements",
+          "number": 1,
+          "topics": [
+            "Need for measurement: units of measurement, systems of units",
+            "SI units, fundamental and derived units",
+            "Significant figures",
+            "Determining the uncertainty in a result",
+            "Dimensions of physical quantities, dimensional analysis and its applications"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Motion in a Straight Line",
+          "number": 2,
+          "topics": [
+            "Frame of reference, motion in a straight line",
+            "Elementary concepts of differentiation and integration for describing motion",
+            "Uniform and non-uniform motion; average speed, average velocity and instantaneous velocity",
+            "Uniformly accelerated motion; velocity-time and position-time graphs",
+            "Relations for uniformly accelerated motion (graphical and calculus treatment)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Motion in a Plane",
+          "number": 3,
+          "topics": [
+            "Scalar and vector quantities; position and displacement vectors; general vectors and notation",
+            "Equality of vectors; multiplication of vectors by a real number; addition and subtraction of vectors",
+            "Unit vector; resolution of a vector in a plane, rectangular components",
+            "Scalar and vector product of vectors",
+            "Motion in a plane with uniform velocity and uniform acceleration: projectile motion",
+            "Uniform circular motion"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Laws of Motion",
+          "number": 4,
+          "topics": [
+            "Intuitive concept of force; inertia; Newton's first law",
+            "Momentum and Newton's second law; impulse; Newton's third law",
+            "Law of conservation of linear momentum and its applications",
+            "Equilibrium of concurrent forces",
+            "Static and kinetic friction, laws of friction, rolling friction, lubrication",
+            "Dynamics of uniform circular motion: centripetal force; vehicle on a level and on a banked circular road"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV-VI",
+      "name": "Work, Energy and Power; Motion of System of Particles and Rigid Body; Gravitation",
+      "marks": 17,
+      "chapters": [
+        {
+          "name": "Work, Energy and Power",
+          "number": 5,
+          "topics": [
+            "Work done by a constant force and a variable force",
+            "Kinetic energy, work-energy theorem, power",
+            "Potential energy; potential energy of a spring",
+            "Conservative and non-conservative forces",
+            "Motion in a vertical circle",
+            "Elastic and inelastic collisions in one and two dimensions"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "System of Particles and Rotational Motion",
+          "number": 6,
+          "topics": [
+            "Centre of mass of a two-particle system; momentum conservation and centre-of-mass motion",
+            "Centre of mass of a rigid body; of a uniform rod",
+            "Moment of a force, torque, angular momentum; conservation of angular momentum and applications",
+            "Equilibrium of rigid bodies; rigid body rotation and equations of rotational motion; comparison with linear motion",
+            "Moment of inertia, radius of gyration; values for simple geometrical objects"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Values of moments of inertia: no derivation"
+          ]
+        },
+        {
+          "name": "Gravitation",
+          "number": 7,
+          "topics": [
+            "Kepler's laws of planetary motion; universal law of gravitation",
+            "Acceleration due to gravity and its variation with altitude and depth",
+            "Gravitational potential energy and gravitational potential",
+            "Escape speed, orbital velocity of a satellite, energy of an orbiting satellite"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VII-IX",
+      "name": "Properties of Bulk Matter; Thermodynamics; Behaviour of Perfect Gases and Kinetic Theory of Gases",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Mechanical Properties of Solids",
+          "number": 8,
+          "topics": [
+            "Elasticity, stress-strain relationship, Hooke's law",
+            "Young's modulus, bulk modulus, shear modulus of rigidity, Poisson's ratio",
+            "Elastic energy",
+            "Applications of elastic behaviour of materials"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Shear modulus and applications of elastic behaviour: qualitative idea only"
+          ]
+        },
+        {
+          "name": "Mechanical Properties of Fluids",
+          "number": 9,
+          "topics": [
+            "Pressure due to a fluid column; Pascal's law and applications (hydraulic lift, hydraulic brakes); effect of gravity on fluid pressure",
+            "Viscosity, Stokes' law, terminal velocity",
+            "Streamline and turbulent flow, critical velocity",
+            "Bernoulli's theorem and simple applications (Torricelli's law, dynamic lift)",
+            "Surface energy and surface tension, angle of contact, excess pressure across a curved surface",
+            "Surface tension applied to drops, bubbles and capillary rise"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thermal Properties of Matter",
+          "number": 10,
+          "topics": [
+            "Heat, temperature; thermal expansion of solids, liquids and gases; anomalous expansion of water",
+            "Specific heat capacity; Cp, Cv; calorimetry",
+            "Change of state: latent heat capacity",
+            "Heat transfer: conduction, convection and radiation; thermal conductivity",
+            "Blackbody radiation, Wien's displacement law, Stefan's law (qualitative ideas)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thermodynamics",
+          "number": 11,
+          "topics": [
+            "Thermal equilibrium and definition of temperature; zeroth law",
+            "Heat, work and internal energy",
+            "First and second laws of thermodynamics",
+            "Thermodynamic state variables and equation of state",
+            "Isothermal, adiabatic, reversible, irreversible and cyclic processes"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kinetic Theory",
+          "number": 12,
+          "topics": [
+            "Equation of state of a perfect gas; work done in compressing a gas",
+            "Kinetic theory of gases: assumptions, concept of pressure",
+            "Kinetic interpretation of temperature; rms speed of gas molecules",
+            "Degrees of freedom; law of equipartition of energy and application to specific heat capacities of gases",
+            "Mean free path; Avogadro's number"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Law of equipartition of energy: statement only"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "X",
+      "name": "Oscillations and Waves",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Oscillations",
+          "number": 13,
+          "topics": [
+            "Periodic motion: time period, frequency, displacement as a function of time; periodic functions",
+            "Simple harmonic motion and its equations of motion; phase",
+            "Oscillations of a loaded spring: restoring force and force constant",
+            "Energy in SHM: kinetic and potential energies",
+            "Simple pendulum: derivation of the time period"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Waves",
+          "number": 14,
+          "topics": [
+            "Transverse and longitudinal waves; speed of a travelling wave",
+            "Displacement relation for a progressive wave",
+            "Principle of superposition; reflection of waves",
+            "Standing waves in strings and organ pipes; fundamental mode and harmonics",
+            "Beats"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

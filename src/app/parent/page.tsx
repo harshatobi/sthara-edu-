@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { House, ChartLineUp, ChatCircleDots, SignOut, Check, Hourglass, CurrencyInr } from '@phosphor-icons/react/dist/ssr';
+import { HouseIcon as House } from '@phosphor-icons/react/dist/ssr/House';
+import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
+import { ChatCircleDotsIcon as ChatCircleDots } from '@phosphor-icons/react/dist/ssr/ChatCircleDots';
+import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
+import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
+import { HourglassIcon as Hourglass } from '@phosphor-icons/react/dist/ssr/Hourglass';
+import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { ICON_COLORS, colorForIcon } from '@/lib/iconColors';
 

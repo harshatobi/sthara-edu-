@@ -3,28 +3,9 @@ import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { containsFoulLanguage } from '@/lib/tutor/safety';
 
 export const dynamic = 'force-dynamic';
-
-/* ── Foul language word list ── */
-const FOUL_WORDS = [
-  'fuck', 'shit', 'damn', 'bitch', 'ass', 'bastard', 'crap', 'piss',
-  'cock', 'dick', 'pussy', 'cunt', 'asshole', 'motherfucker', 'wtf',
-  'hell', 'sex', 'nude', 'porn', 'bullshit', 'whore', 'slut',
-  'madarchod', 'bsdk', 'bhosdi', 'chutiya', 'randi', 'lund', 'gaand',
-  'harami', 'mc', 'bc', 'sala', 'saala', 'maryadaga',
-];
-
-function containsFoulLanguage(text: string): boolean {
-  // Normalize: lowercase, replace non-alphanumeric with spaces
-  const lower = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-  return FOUL_WORDS.some(word => {
-    // ONLY use word-boundary regex — never plain includes()
-    // because includes('ass') would false-positive on 'class', 'mass', 'surpass', etc.
-    const regex = new RegExp(`\\b${word}\\b`, 'i');
-    return regex.test(lower);
-  });
-}
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
@@ -63,16 +44,16 @@ export async function POST(request: NextRequest) {
       if (newViolationCount === 1) {
         return NextResponse.json({
           text: institutionType === 'college'
-            ? `⚠️ **Inappropriate language detected.**\n\nThis platform maintains professional academic standards. Please keep the conversation respectful and focused on your academic work.\n\n**Consider this a formal warning.**`
-            : `⚠️ **Please watch your language.**\n\nThis is a school learning environment and I'm here to help you study. Using inappropriate or offensive language is not acceptable here.\n\n**This is your first warning.** Please keep our conversation respectful so I can help you learn better! 📚`,
+            ? `**Inappropriate language detected.**\n\nThis platform maintains professional academic standards. Please keep the conversation respectful and focused on your academic work.\n\n**Consider this a formal warning.**`
+            : `**Please watch your language.**\n\nThis is a school learning environment and I'm here to help you study. Using inappropriate or offensive language is not acceptable here.\n\n**This is your first warning.** Please keep our conversation respectful so I can help you learn better.`,
           isFoulWarning: true,
           newViolationCount,
         });
       }
       return NextResponse.json({
         text: institutionType === 'college'
-          ? `⛔ **Second violation — inappropriate language.**\n\nYour professor has been notified. Continued misuse will result in restricted access. Please maintain professional conduct.`
-          : `⛔ **This is your second warning for inappropriate language.**\n\nYour teacher has been notified of this behavior. Please remember that respectful communication is important in every learning space.\n\nIf you'd like to continue learning, please ask your academic question politely.`,
+          ? `**Second violation — inappropriate language.**\n\nYour professor has been notified. Continued misuse will result in restricted access. Please maintain professional conduct.`
+          : `**This is your second warning for inappropriate language.**\n\nYour teacher has been notified of this behavior. Please remember that respectful communication is important in every learning space.\n\nIf you'd like to continue learning, please ask your academic question politely.`,
         isFoulWarning: true,
         notifyTeacher: true,
         newViolationCount,
@@ -229,7 +210,7 @@ CORE RULES:
     if (aiText && containsFoulLanguage(aiText)) {
       console.warn('[tutor] Output safety filter triggered — replacing response');
       return NextResponse.json({
-        text: `I encountered an issue generating a response for that topic. Please rephrase your question or ask about a related academic concept, and I'll do my best to help! 📚`,
+        text: `I encountered an issue generating a response for that topic. Please rephrase your question or ask about a related academic concept, and I'll do my best to help.`,
       });
     }
 

@@ -230,6 +230,18 @@ export function mapMasteryBand(tml: number | null): { band: MasteryBand; color: 
 }
 
 // ---------------------------------------------------------------------------
+// Which topic bucket an assignment's evidence lands in: its first real unit,
+// else its title. Exported so views that group evidence by topic (the student
+// Mastery Tracker) bucket exactly the way the engine scored it.
+// ---------------------------------------------------------------------------
+export function evidenceTopicName(assign: { units?: unknown; title?: string | null } | null | undefined): string {
+  const rawUnits: string[] = Array.isArray(assign?.units)
+    ? (assign!.units as unknown[]).filter((u): u is string => typeof u === 'string' && !!u && u.toLowerCase() !== 'general')
+    : [];
+  return rawUnits.length > 0 ? rawUnits[0] : (assign?.title?.trim() || 'Core Concepts');
+}
+
+// ---------------------------------------------------------------------------
 // Re-computes TML for a student from Supabase evidence and persists an
 // append-only snapshot per topic into tml_scores.
 // ---------------------------------------------------------------------------
@@ -309,12 +321,7 @@ export async function computeStudentTml(
   // ---- 5. Group everything into per-topic evidence buckets ----
   const topicGroups: Record<string, { items: TmlEvidenceItem[]; subject: string; assignmentIds: Set<string> }> = {};
 
-  const topicNameFor = (assign: any) => {
-    const rawUnits: string[] = Array.isArray(assign?.units)
-      ? assign.units.filter((u: string) => u && u.toLowerCase() !== 'general')
-      : [];
-    return rawUnits.length > 0 ? rawUnits[0] : (assign?.title?.trim() || 'Core Concepts');
-  };
+  const topicNameFor = evidenceTopicName;
 
   const addItem = (subject: string, topicName: string, item: TmlEvidenceItem, assignmentId?: string) => {
     if (subjectFilter && subject.toLowerCase() !== subjectFilter.toLowerCase()) return;

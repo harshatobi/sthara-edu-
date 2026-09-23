@@ -6,7 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isRole, withTimeout } from '@/lib/auth/roles';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { BookOpen, ChalkboardTeacher, ShieldCheck, UsersThree } from '@phosphor-icons/react/dist/ssr';
+import { BookOpenIcon as BookOpen } from '@phosphor-icons/react/dist/ssr/BookOpen';
+import { ChalkboardTeacherIcon as ChalkboardTeacher } from '@phosphor-icons/react/dist/ssr/ChalkboardTeacher';
+import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
+import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { colorForIcon } from '@/lib/iconColors';
 

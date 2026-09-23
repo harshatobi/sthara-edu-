@@ -1,0 +1,200 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Social Science",
+  "codes": ["087"],
+  "source": {
+    "title": "Social Science, Subject Code 087, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/SocialScience_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      { "component": "Periodic Assessment (pen-paper test)", "marks": 5 },
+      { "component": "Multiple Assessment (interdisciplinary project)", "marks": 5 },
+      { "component": "Subject Enrichment Activity (project on Consumer Rights / Social Issues / Sustainable Development)", "marks": 5 },
+      { "component": "Portfolio", "marks": 5 }
+    ]
+  },
+  "textbooks": [
+    "India and the Contemporary World - II (NCERT, History)",
+    "Contemporary India - II (NCERT, Geography)",
+    "Democratic Politics - II (NCERT, Political Science)",
+    "Understanding Economic Development (NCERT, Economics)",
+    "Together, towards a safer India - Part III (CBSE, Disaster Management)"
+  ],
+  "notes": [
+    "Map work carries 5 marks of the 80 (History 2, Geography 3), counted inside the History and Geography unit marks.",
+    "An interdisciplinary project links History ch. 3, Geography ch. 7 and Economics ch. 4; it is internally assessed for 5 marks."
+  ],
+  "units": [
+    {
+      "code": "History", "name": "History: India and the Contemporary World - II", "marks": 20,
+      "notes": ["18 marks plus 2 marks map pointing"],
+      "chapters": [
+        {
+          "name": "The Rise of Nationalism in Europe", "number": 1,
+          "topics": ["The French Revolution and the making of nation states", "Social movements of the time", "Evolution of nationalism in Europe", "Causes of the First World War"],
+          "outcomes": [
+            "Infers the impact of the French Revolution on European nation-making", "Analyses the evolution of nationalism",
+            "Evaluates the reasons that led to the First World War"
+          ]
+        },
+        {
+          "name": "Nationalism in India", "number": 2,
+          "topics": ["Sense of collective belonging", "Khilafat and Non-Cooperation Movements", "Gandhiji's strategies and movements"],
+          "outcomes": [
+            "Illustrates facets of nationalist movements", "Evaluates the strategies of Gandhiji and other leaders",
+            "Summarises the effects of the First World War on Indian movements"
+          ],
+          "notes": ["Map: Congress sessions 1920 Calcutta, 1920 Nagpur, 1927 Madras; satyagrahas at Kheda, Champaran, Ahmedabad mill workers; Jallianwala Bagh; Dandi March"]
+        },
+        {
+          "name": "The Making of a Global World", "number": 3,
+          "topics": [
+            "The pre-modern world (board examination: subtopics 1 to 1.3, pre-modern world to conquest, disease and trade)",
+            "The nineteenth century 1815-1914 (internal project)", "The inter-war economy (internal project)",
+            "Rebuilding the world economy: the post-war era (internal project)"
+          ],
+          "outcomes": [
+            "Summarises changes that transformed the world", "Depicts global interconnectedness from pre-modern times to the present",
+            "Enumerates the impact of colonialism on the livelihoods of colonised people"
+          ],
+          "notes": ["Only subtopics 1 to 1.3 are evaluated in the board examination; subtopics 2 to 4.4 are assessed through the interdisciplinary project"]
+        },
+        {
+          "name": "The Age of Industrialisation", "number": 4, "formativeOnly": true,
+          "topics": ["Pre- and post-industrialisation", "Industrialisation in the colonies, with focus on India"],
+          "outcomes": ["Enumerates economic, political and social features of pre- and post-industrialisation", "Analyses the impact of industrialisation on colonies"],
+          "notes": ["Assessed as part of Periodic Assessment only"]
+        },
+        {
+          "name": "Print Culture and the Modern World", "number": 5,
+          "topics": ["Print from East Asia to Europe and India", "Manuscripts versus print", "The print revolution and its impact"],
+          "outcomes": ["Traces the development of print", "Compares manuscript and print traditions", "Summarises the impact of the print revolution"]
+        }
+      ]
+    },
+    {
+      "code": "Geography", "name": "Geography: Contemporary India - II", "marks": 20,
+      "notes": ["17 marks plus 3 marks map pointing"],
+      "chapters": [
+        {
+          "name": "Resources and Development", "number": 1,
+          "topics": ["Interdependence of resources", "Resource planning and development in India", "Land utilisation", "Major soil types (map)"],
+          "outcomes": ["Justifies resource planning", "Analyses data on non-optimal land use", "Suggests measures for optimal use of under-utilised resources"],
+          "notes": ["Map: identify major soil types"]
+        },
+        {
+          "name": "Forest and Wildlife Resources", "number": 2,
+          "topics": ["Conservation of forests and wildlife", "Impact of grazing, wood cutting and developmental works", "Biodiversity conservation and sustainable development"],
+          "outcomes": ["Examines the importance of conserving forests and wildlife", "Summarises reasons for biodiversity conservation"]
+        },
+        {
+          "name": "Water Resources", "number": 3,
+          "topics": ["Conservation of water resources", "Multipurpose river projects"],
+          "outcomes": ["Examines reasons for water conservation", "Analyses how multipurpose projects meet water needs"],
+          "notes": ["Map: Salal, Bhakra Nangal, Tehri, Rana Pratap Sagar, Sardar Sarovar, Hirakud, Nagarjuna Sagar, Tungabhadra"]
+        },
+        {
+          "name": "Agriculture", "number": 4,
+          "topics": ["Role of agriculture in the economy and society", "Types of farming and crop production", "Challenges faced by farmers"],
+          "outcomes": ["Examines the role of agriculture", "Analyses challenges faced by the farming community"],
+          "notes": ["Map: major rice and wheat areas; largest producer states of sugarcane, tea, coffee, rubber, cotton and jute"]
+        },
+        {
+          "name": "Minerals and Energy Resources", "number": 5,
+          "topics": ["Iron ore mines, coal mines and oil fields (map)", "Thermal and nuclear power plants (map)"],
+          "outcomes": [],
+          "notes": [
+            "The document repeats the Manufacturing Industries learning outcomes for this chapter, so no chapter-specific outcomes are recorded",
+            "Map: iron ore, coal and oil fields; thermal and nuclear power plants"
+          ]
+        },
+        {
+          "name": "Manufacturing Industries", "number": 6,
+          "topics": ["Types of manufacturing industries", "Industrial location and raw materials", "Environmental impact and sustainable manufacturing"],
+          "outcomes": [
+            "Differentiates types of manufacturing industries and their significance", "Analyses the relation between raw materials and industrial location",
+            "Develops strategies for sustainable manufacturing"
+          ],
+          "notes": ["Map: cotton textile industries, iron and steel plants, software technology parks (locating and labelling only)"]
+        },
+        {
+          "name": "Lifelines of National Economy", "number": 7,
+          "topics": ["Interdisciplinary project with History ch. 3 and Economics ch. 4", "Major sea ports and international airports (map)"],
+          "outcomes": ["See Annexure III-B of the source document"],
+          "notes": ["Only map pointing is evaluated in the board examination; the chapter is otherwise part of the interdisciplinary project"]
+        }
+      ]
+    },
+    {
+      "code": "Political Science", "name": "Political Science: Democratic Politics - II", "marks": 20,
+      "chapters": [
+        {
+          "name": "Power-sharing", "number": 1,
+          "topics": ["Need for power sharing in democracy", "Power sharing in Belgium and Sri Lanka", "Power sharing in preserving unity and stability"],
+          "outcomes": ["Enumerates the need for power sharing", "Compares power sharing in India, Sri Lanka and Belgium"]
+        },
+        {
+          "name": "Federalism", "number": 2,
+          "topics": ["Federalism in practice in India", "Policies and politics that strengthened federalism"],
+          "outcomes": ["Infers how federalism is practised in India", "Analyses what has strengthened federalism"]
+        },
+        {
+          "name": "Gender, Religion and Caste", "number": 3,
+          "topics": ["Gender, religion and caste in the practice of democracy"],
+          "outcomes": ["Examines the role of gender, religion and caste in democracy", "Analyses whether expressions of difference are healthy for democracy"]
+        },
+        {
+          "name": "Political Parties", "number": 4,
+          "topics": ["How parties get elected", "Role, purpose and number of political parties", "Right to vote and citizens' duties"],
+          "outcomes": ["Understands the electoral process for parties", "Examines the role of political parties in democracy"]
+        },
+        {
+          "name": "Outcomes of Democracy", "number": 5,
+          "topics": ["Quality of government, economic well-being, inequality, social differences, conflict, freedom and dignity"],
+          "outcomes": ["Enumerates what the success of democracy depends on"]
+        }
+      ]
+    },
+    {
+      "code": "Economics", "name": "Economics: Understanding Economic Development", "marks": 20,
+      "chapters": [
+        {
+          "name": "Development", "number": 1,
+          "topics": ["Developmental goals", "Per capita income", "Comparing development across countries"],
+          "outcomes": ["Examines processes in setting developmental goals", "Analyses what per capita income shows", "Compares per capita incomes of countries"]
+        },
+        {
+          "name": "Sectors of the Indian Economy", "number": 2,
+          "topics": ["Economic activities in different sectors and their contribution to growth", "Organised and unorganised sectors and employment", "Public and private sectors"],
+          "outcomes": ["Analyses how sectors contribute to growth", "Summarises employment in organised and unorganised sectors", "Explains the roles of public and private sectors"]
+        },
+        {
+          "name": "Money and Credit", "number": 3,
+          "topics": ["Money as a medium of exchange", "Sources of credit", "Self-help groups"],
+          "outcomes": ["Explains money as a medium of exchange", "Analyses sources of credit", "Summarises the role of self-help groups"]
+        },
+        {
+          "name": "Globalisation and the Indian Economy", "number": 4,
+          "topics": [
+            "What is globalisation? (board examination)", "Factors that have enabled globalisation (board examination)",
+            "Production across countries (internal project)", "World Trade Organisation (internal project)", "The struggle for a fair globalisation (internal project)"
+          ],
+          "outcomes": ["Explains the concept and impact of globalisation", "Evaluates the drivers of globalisation", "Explains the role of the G20 and India's place in it"],
+          "notes": ["Only 'What is globalisation?' and 'Factors that have enabled globalisation' are evaluated in the board examination"]
+        },
+        {
+          "name": "Consumer Rights", "number": 5, "formativeOnly": true,
+          "topics": ["Project work: Consumer Rights OR Social Issues OR Sustainable Development"],
+          "outcomes": ["See Annexure III of the source document"],
+          "notes": ["Project work, assessed internally as the Subject Enrichment Activity"]
+        }
+      ]
+    }
+  ]
+}

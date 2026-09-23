@@ -131,18 +131,20 @@ export async function POST(req: NextRequest) {
         createdAt: n.created_at,
       }));
 
-      // Wellness logs
+      // Wellness: parents get the fortnightly check-in trend only — never the
+      // student's journal text (the Wellness Center promises this; DPDP).
       const { data: wellRows } = await supabase
         .from('wellness_logs')
-        .select('*')
+        .select('id, energy, created_at')
         .eq('student_id', student.id)
+        .is('note', null)
+        .not('energy', 'is', null)
+        .gte('created_at', new Date(Date.now() - 14 * 86_400_000).toISOString())
         .order('created_at', { ascending: false });
 
       const wellnessLogs = (wellRows || []).map((w) => ({
         id: w.id,
-        mood: w.mood,
         energy: w.energy,
-        note: w.note,
         createdAt: w.created_at,
       }));
 

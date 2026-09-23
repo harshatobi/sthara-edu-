@@ -2,24 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import {
   School, CheckCircle, ArrowRight, ArrowLeft, Loader2,
   BookOpen, Users, Shield, Sparkles, Building2, Mail,
   Phone, Globe, Lock, Eye, EyeOff, Zap
 } from 'lucide-react';
 import Link from 'next/link';
-
-// ─── Generate a unique 6-character school code ──────────────────────────────
-function generateSchoolCode(name: string): string {
-  const prefix = name
-    .toUpperCase()
-    .replace(/[^A-Z]/g, '')
-    .slice(0, 3)
-    .padEnd(3, 'X');
-  const suffix = Math.floor(100 + Math.random() * 900).toString();
-  return `${prefix}${suffix}`;
-}
 
 type Step = 'SCHOOL_INFO' | 'ADMIN_SETUP' | 'REVIEW' | 'DONE';
 
@@ -31,7 +19,6 @@ const BOARD_OPTIONS = [
 
 export default function OnboardPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   // Step tracking
   const [step, setStep] = useState<Step>('SCHOOL_INFO');
@@ -82,99 +69,16 @@ export default function OnboardPage() {
     setError('');
 
     try {
-      // 1. Check if email is already registered
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', adminEmail.toLowerCase().trim())
-        .maybeSingle();
-
-      if (existingUser) {
-        setError('This email is already registered. Please use a different email.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 2. Generate unique school code
-      let code = generateSchoolCode(schoolName);
-      let codeExists = true;
-      let attempts = 0;
-
-      while (codeExists && attempts < 10) {
-        const { data: codeCheck } = await supabase
-          .from('schools')
-          .select('id')
-          .eq('settings->>code', code)
-          .maybeSingle();
-
-        if (!codeCheck) {
-          codeExists = false;
-        } else {
-          code = generateSchoolCode(schoolName);
-          attempts++;
-        }
-      }
-
-      // 3. Create admin Supabase Auth account
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
-        email: adminEmail.toLowerCase().trim(),
-        password: adminPassword,
-        options: {
-          data: {
-            name: adminName.trim(),
-            role: 'admin',
-          },
-        },
+      // Registration runs on the server: the database doesn't let a browser
+      // create schools or user rows, and trial terms are set server-side.
+      const res = await fetch('/api/onboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolName, curriculum, board, city, phone, website, adminName, adminEmail, adminPassword }),
       });
-
-      if (authErr || !authData.user) {
-        throw new Error(authErr?.message || 'Failed to create admin user account');
-      }
-
-      const adminUid = authData.user.id;
-      const trialExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      // 4. Create school record in SQL DB
-      const { data: schoolRow, error: schoolErr } = await supabase
-        .from('schools')
-        .insert({
-          name: schoolName.trim(),
-          institution_type: 'school',
-          trial_expires_at: trialExpiresAt,
-          settings: {
-            code,
-            curriculum,
-            board: board || null,
-            city: city.trim(),
-            phone: phone.trim() || null,
-            website: website.trim() || null,
-            adminEmail: adminEmail.toLowerCase().trim(),
-            adminUid,
-            plan: 'trial',
-            active: true,
-          },
-        })
-        .select('id')
-        .single();
-
-      if (schoolErr || !schoolRow) {
-        throw new Error(schoolErr?.message || 'Failed to create school record');
-      }
-
-      // 5. Create user profile doc in SQL DB
-      const { error: userErr } = await supabase.from('users').insert({
-        id: adminUid,
-        school_id: schoolRow.id,
-        name: adminName.trim(),
-        email: adminEmail.toLowerCase().trim(),
-        role: 'admin',
-      });
-
-      if (userErr) {
-        throw new Error(userErr.message || 'Failed to create admin profile record');
-      }
-
-      setSchoolCode(code);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Registration failed. Please try again.');
+      setSchoolCode(data.schoolCode);
       setStep('DONE');
     } catch (err: any) {
       console.error(err);
@@ -196,7 +100,7 @@ export default function OnboardPage() {
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-emerald-200">
             <CheckCircle className="w-10 h-10 text-emerald-600" />
           </div>
-          <h1 className="text-3xl font-black text-[#002147] mb-2">Welcome to Sthara! 🎉</h1>
+          <h1 className="text-3xl font-black text-[#002147] mb-2">Welcome to Sthara!</h1>
           <p className="text-gray-500 font-medium mb-8">Your school is registered and ready to go.</p>
 
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8 text-left space-y-3">

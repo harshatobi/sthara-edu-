@@ -1,0 +1,262 @@
+/*
+ * Sthara canon design layer — ported from the "Sthara 007" mockup
+ * (~/Downloads/Sthara 007 (2).html), the design source of truth.
+ *
+ * Everything is scoped under `.canon` so it can't leak into the Tailwind
+ * pages elsewhere in the app once this stylesheet is loaded (App Router keeps
+ * global CSS resident across client navigations). Class names match the
+ * mockup 1:1 (.pbar, .kpi, .ch.g, .row, …) so views can be ported by reading
+ * the mockup's template strings directly.
+ */
+
+.canon {
+  --nav:#062347; --nav2:#0A2C57; --navActive:#14365E;
+  --ink:#002147; --body:#F7F9FB; --line:#E8EDF4;
+  --red:#E11D48; --blue:#2F6BFF; --sky:#4C8DFF;
+  --green:#10B981; --amber:#F59E0B; --purple:#7C5CFC; --coral:#F45E77;
+  --mut:#7A8699; --mut2:#9AA6B8; --pale:#EAF2FF;
+  --r:20px; --sh:0 1px 2px rgba(0,33,71,.05),0 10px 30px rgba(0,33,71,.05);
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+  background:var(--body); color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh; display:flex; width:100%;
+}
+.canon *, .canon *::before, .canon *::after { box-sizing:border-box; }
+.canon h1, .canon h2, .canon h3, .canon h4 { letter-spacing:-.025em; line-height:1.15; margin:0; }
+.canon p { margin:0; }
+.canon button { font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; }
+.canon button:disabled { cursor:default; opacity:.6; }
+.canon a { color:inherit; text-decoration:none; }
+.canon .mono { font-family:'IBM Plex Mono',ui-monospace,monospace; }
+
+/* ---------- SHELL ---------- */
+.canon > aside { width:264px; flex:0 0 264px; background:var(--nav); min-height:100vh; padding:26px 18px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; }
+.canon .brand { padding:0 10px 26px; }
+.canon .brand b { display:block; color:#fff; font-size:26px; font-weight:800; letter-spacing:-.02em; }
+.canon .brand i { display:block; color:var(--red); font-size:11px; font-weight:800; letter-spacing:.14em; font-style:normal; margin-top:2px; }
+.canon > aside nav { display:flex; flex-direction:column; gap:2px; flex:1; }
+.canon .nv { display:flex; align-items:center; gap:13px; padding:12px 14px; border-radius:12px; color:#93A7C4; font-size:14.5px; font-weight:500; text-align:left; position:relative; transition:.15s; width:100%; }
+.canon .nv:hover { background:rgba(255,255,255,.05); color:#D5E1F2; }
+.canon .nv.on { background:var(--navActive); color:#fff; font-weight:600; }
+.canon .nv.on::before { content:""; position:absolute; left:0; top:9px; bottom:9px; width:3px; background:var(--red); border-radius:0 3px 3px 0; }
+.canon .nv-out { border-top:1px solid rgba(255,255,255,.08); padding-top:14px; margin-top:14px; }
+.canon > main { flex:1; min-width:0; padding:26px 34px 70px; max-width:1560px; }
+
+/* ---------- PRIMITIVES ---------- */
+.canon .card { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:26px; }
+.canon .pbar { display:flex; align-items:center; justify-content:space-between; background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:20px 26px; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
+.canon .pbar .eyebrow { display:flex; align-items:center; gap:8px; color:var(--red); font-size:12px; font-weight:800; letter-spacing:.13em; }
+.canon .pbar h1 { font-size:31px; font-weight:800; margin-top:5px; }
+.canon .pbar .sub { color:var(--mut); font-size:13.5px; margin-top:4px; }
+.canon .acts { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.canon .btn { padding:11px 18px; border-radius:12px; font-size:13.5px; font-weight:700; display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:#fff; transition:.15s; color:var(--ink); }
+.canon .btn:hover:not(:disabled) { border-color:#C9D6E8; }
+.canon .btn.pri { background:var(--ink); color:#fff; border-color:var(--ink); }
+.canon .btn.red { background:var(--red); color:#fff; border-color:var(--red); }
+.canon .btn.sm { padding:6px 12px; font-size:11.5px; }
+.canon .hero { border-radius:24px; padding:34px 36px; color:#fff; background:linear-gradient(103deg,#072044 0%,#123F84 52%,#0F5AB8 100%); margin-bottom:22px; position:relative; overflow:hidden; }
+.canon .hero h1 { font-size:40px; font-weight:800; }
+.canon .hero .hsub { color:#A9C4E8; font-size:14.5px; margin-top:7px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.canon .chip { display:inline-block; background:rgba(255,255,255,.14); border-radius:8px; padding:4px 11px; font-size:12px; font-weight:600; color:#DCE9FA; }
+.canon .chip.mono { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11.5px; }
+.canon .hgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; margin-top:26px; }
+.canon .hstat { background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:20px 22px; display:flex; justify-content:space-between; align-items:flex-start; width:100%; text-align:left; color:#fff; transition:background .15s, transform .15s; }
+.canon button.hstat:hover:not(:disabled) { background:rgba(255,255,255,.14); transform:translateY(-1px); }
+.canon .hstat .lb { font-size:11.5px; font-weight:800; letter-spacing:.11em; color:#9FBBE0; }
+.canon .hstat .vl { font-size:34px; font-weight:800; margin-top:6px; line-height:1; }
+.canon .hstat .nt { font-size:12.5px; color:#8FAED6; margin-top:6px; }
+.canon .hstat .ic { width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.14); display:grid; place-items:center; flex:0 0 44px; }
+.canon .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; margin-bottom:22px; }
+.canon .kpi { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:24px 26px; position:relative; overflow:hidden; }
+.canon .kpi .lb { font-size:11.5px; font-weight:800; letter-spacing:.11em; color:var(--mut); }
+.canon .kpi .vl { font-size:46px; font-weight:800; line-height:1; margin-top:10px; }
+.canon .kpi .nt { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; margin-top:10px; }
+.canon .sec { display:flex; align-items:center; gap:11px; font-size:20px; font-weight:800; margin:30px 0 16px; }
+.canon .sec .dot { width:26px; height:26px; border-radius:8px; display:grid; place-items:center; font-size:14px; }
+.canon .g2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.canon .g3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; }
+@media (max-width:1100px) { .canon .g2 { grid-template-columns:1fr; } }
+.canon .ch { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:8px; font-size:11px; font-weight:800; letter-spacing:.04em; white-space:nowrap; }
+.canon .ch.g { background:#DCFCE7; color:#0B7A54; } .canon .ch.a { background:#FEF3C7; color:#92600A; }
+.canon .ch.r { background:#FFE4EA; color:#B4123C; } .canon .ch.b { background:#E6EEFF; color:#1E4FCC; }
+.canon .ch.p { background:#EFE9FF; color:#5B3DD1; } .canon .ch.n { background:#F1F5F9; color:#556378; }
+.canon .ch.xs { font-size:10px; }
+.canon .row { display:flex; align-items:center; gap:14px; padding:15px 0; border-bottom:1px solid var(--line); }
+.canon .row:last-child { border-bottom:0; }
+.canon button.row, .canon a.row { width:100%; text-align:left; border-radius:0; transition:background .15s; }
+.canon button.row:hover, .canon a.row:hover { background:linear-gradient(90deg,transparent,#F7F9FB 12%,#F7F9FB 88%,transparent); }
+.canon .av { width:40px; height:40px; border-radius:11px; background:var(--pale); color:var(--blue); display:grid; place-items:center; font-weight:800; font-size:15px; flex:0 0 40px; }
+.canon .bar { height:8px; background:#EDF1F7; border-radius:99px; overflow:hidden; flex:1; min-width:60px; }
+.canon .bar > i { display:block; height:100%; border-radius:99px; transition:width .4s ease; }
+.canon .muted { color:var(--mut); font-size:13px; }
+.canon .empty { text-align:center; padding:60px 20px; }
+.canon .empty .eic { width:74px; height:74px; border-radius:50%; background:var(--pale); color:var(--blue); display:grid; place-items:center; margin:0 auto 18px; }
+.canon .empty h3 { font-size:18px; font-weight:800; }
+.canon .empty p { color:var(--mut); font-size:14px; margin-top:6px; }
+.canon .tabs { display:inline-flex; flex-wrap:wrap; background:#fff; border-radius:14px; padding:6px; box-shadow:var(--sh); gap:4px; margin-bottom:20px; }
+.canon .tab { padding:11px 22px; border-radius:10px; font-size:14px; font-weight:700; color:var(--mut); }
+.canon .tab.on { background:var(--green); color:#fff; }
+.canon .tab.on.blue { background:var(--ink); }
+.canon .note { background:#FFF8E7; border-left:3px solid var(--amber); border-radius:10px; padding:14px 16px; font-size:13px; color:#7A5A08; line-height:1.6; }
+.canon .note.info { background:#EFF6FF; border-left-color:var(--sky); color:#1E3A6B; }
+.canon .note.err { background:#FFF1F4; border-left-color:var(--red); color:#8A1030; }
+.canon .mono-blk { background:var(--ink); color:#CFE0F5; border-radius:16px; padding:22px 24px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12.5px; line-height:2; white-space:pre-wrap; }
+.canon .mono-blk .hd { color:var(--sky); font-weight:600; letter-spacing:.1em; font-size:11px; margin-bottom:12px; font-family:'Plus Jakarta Sans',sans-serif; }
+.canon .qta { width:100%; min-height:140px; border:1.5px solid var(--line); border-radius:14px; padding:16px; font-family:inherit; font-size:14.5px; line-height:1.7; resize:vertical; color:var(--ink); background:#fff; }
+.canon .qta:focus-visible { outline:2px solid var(--blue); outline-offset:1px; border-color:var(--blue); }
+.canon .lbl { display:block; font-size:11.5px; font-weight:800; letter-spacing:.1em; color:var(--mut); margin-bottom:10px; }
+.canon .skel { background:linear-gradient(90deg,#EEF2F7 25%,#F6F8FB 50%,#EEF2F7 75%); background-size:200% 100%; animation:canon-shimmer 1.3s linear infinite; border-radius:12px; }
+@keyframes canon-shimmer { to { background-position:-200% 0; } }
+
+/* energy check-in (hero pill + wellness cards) */
+.canon .energy { display:flex; gap:8px; background:rgba(255,255,255,.12); border-radius:14px; padding:9px 14px; align-items:center; }
+.canon .energy b { font-size:11px; letter-spacing:.11em; color:#A9C4E8; font-weight:800; margin-right:2px; }
+.canon .energy button { width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.1); display:grid; place-items:center; transition:.15s; color:#DCE9FA; }
+.canon .energy button:hover { background:rgba(255,255,255,.18); }
+.canon .energy button.on { background:var(--amber); color:#fff; box-shadow:0 0 0 3px rgba(245,182,11,.35); }
+.canon .en-card { flex:1; text-align:center; border:2px solid var(--line); background:#fff; border-radius:16px; padding:18px 6px; transition:.15s; }
+.canon .en-card:hover { border-color:#C9D6E8; }
+.canon .en-card.on { border-color:var(--amber); background:#FFFBEB; }
+.canon .en-card .l { font-size:11.5px; font-weight:800; margin-top:7px; color:var(--mut); }
+.canon .en-card.on .l { color:#92600A; }
+
+/* mastery branch tree — evidence merges into topic, topic merges into subject TML */
+.canon .tlegend { display:flex; gap:20px; flex-wrap:wrap; font-size:11.5px; font-weight:700; color:var(--mut); }
+.canon .tlegend i { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; vertical-align:-1px; }
+.canon .tlegend i.sq { border-radius:4px; width:16px; height:9px; }
+.canon .tree-wrap { overflow-x:auto; margin-top:18px; padding-bottom:6px; }
+.canon svg.tree { display:block; }
+.canon svg.tree text { stroke:none; }
+.canon .tr-branch { stroke:#C9D6E8; stroke-width:2.5; fill:none; stroke-linecap:round; }
+.canon .tr-trunk { stroke-width:5; fill:none; stroke-linecap:round; }
+.canon .tr-node { cursor:pointer; }
+.canon .tr-node circle { transition:r .15s ease; }
+.canon .tr-node:hover circle.ev, .canon .tr-node:focus-visible circle.ev { r:27; }
+.canon .tr-node:focus-visible { outline:none; }
+.canon .tr-node:focus-visible circle.ev { stroke:var(--ink); stroke-width:3; }
+.canon .tr-ev-txt { font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; font-size:13px; fill:#fff; text-anchor:middle; dominant-baseline:central; pointer-events:none; }
+.canon .tr-ev-txt.pend { fill:var(--mut2); }
+.canon .tr-title { font-size:10.5px; font-weight:700; fill:var(--ink); text-anchor:middle; }
+.canon .tr-sub { font-size:9.5px; font-weight:600; fill:var(--mut2); text-anchor:middle; }
+.canon .tr-topic-txt { font-size:11.5px; font-weight:800; fill:#fff; text-anchor:middle; dominant-baseline:central; }
+.canon .tr-topic-lbl { font-size:11px; font-weight:800; fill:var(--ink); text-anchor:middle; }
+.canon .tr-join { fill:#fff; stroke:#C9D6E8; stroke-width:2.5; }
+.canon .tr-best { animation:canon-trpulse 2.4s ease-in-out infinite; transform-origin:center; transform-box:fill-box; }
+@keyframes canon-trpulse { 0%,100% { opacity:.32; r:30; } 50% { opacity:.1; r:35; } }
+
+/* tutor chat */
+.canon .tlog { padding:24px; display:flex; flex-direction:column; gap:16px; max-height:640px; min-height:420px; overflow-y:auto; }
+.canon .bub-me { align-self:flex-end; max-width:74%; background:var(--ink); color:#fff; border-radius:16px 16px 4px 16px; padding:13px 17px; font-size:14px; line-height:1.6; white-space:pre-wrap; }
+.canon .bub-ai { align-self:flex-start; max-width:80%; display:flex; gap:11px; }
+.canon .bub-ai > div:last-child { background:#F4F7FC; border-radius:16px 16px 16px 4px; padding:13px 17px; font-size:14px; line-height:1.6; white-space:pre-wrap; }
+.canon .bub-ai .av { border-radius:50%; background:#EFE9FF; color:var(--purple); }
+.canon .bub-done > div:last-child { border-radius:16px; }
+.canon .bub-done.good .av { background:#DCFCE7; color:var(--green); }
+.canon .bub-done.good > div:last-child { background:#F0FDF7; border:1px solid #BBF7D0; }
+.canon .bub-done.meh .av { background:#FEF3C7; color:#92600A; }
+.canon .bub-done.meh > div:last-child { background:#FFFBEB; border:1px solid #FDE68A; }
+.canon .tin { flex:1; border:1.5px solid var(--line); border-radius:14px; padding:11px 16px; font-family:inherit; font-size:14.5px; color:var(--ink); min-width:0; }
+.canon .tin:focus-visible { outline:2px solid var(--blue); outline-offset:1px; border-color:var(--blue); }
+.canon .typing { display:inline-flex; gap:4px; }
+.canon .typing i { width:6px; height:6px; border-radius:50%; background:var(--mut2); animation:canon-typing 1.1s infinite ease-in-out; }
+.canon .typing i:nth-child(2) { animation-delay:.15s; } .canon .typing i:nth-child(3) { animation-delay:.3s; }
+@keyframes canon-typing { 0%,80%,100% { opacity:.3; transform:translateY(0); } 40% { opacity:1; transform:translateY(-3px); } }
+
+/* full-screen report overlay (mockup #workspace) */
+.canon .ws { position:fixed; inset:0; z-index:70; background:var(--body); display:flex; flex-direction:column; overflow-y:auto; }
+.canon .ws-body { flex:1; display:flex; gap:26px; padding:40px 30px 100px; max-width:1180px; margin:0 auto; width:100%; flex-wrap:wrap; }
+.canon .ws-main { flex:1; min-width:320px; }
+.canon .ws-back { display:inline-flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:var(--mut); border-radius:10px; padding:8px 12px; }
+.canon .ws-back:hover { background:#fff; color:var(--ink); }
+.canon .fb-head { text-align:center; color:var(--mut2); font-size:11.5px; font-weight:800; letter-spacing:.14em; margin:26px 0 16px; display:flex; align-items:center; justify-content:center; gap:6px; }
+
+/* ---------- MOTION & TACTILE FEEDBACK ----------
+ * Every animation here marks a state change: content arriving after its
+ * skeleton, a score bar filling to its value, a control being pressed.
+ * All of it collapses to instant under prefers-reduced-motion (see A11Y). */
+.canon .btn:active:not(:disabled), .canon .tab:active, .canon .en-card:active,
+.canon a.row:active, .canon button.row:active { transform:scale(.98); }
+.canon button.hstat:active:not(:disabled) { transform:translateY(0) scale(.985); }
+.canon .btn, .canon .tab, .canon .en-card { transition:background .15s, border-color .15s, color .15s, transform .12s ease; }
+.canon .tab:hover:not(.on) { background:var(--body); color:var(--ink); }
+.canon .btn.pri:hover:not(:disabled) { background:#0B2E5C; }
+.canon .btn.red:hover:not(:disabled) { background:#C8163F; }
+
+/* Content eases in on route mount. Kept short (no stagger) so a tab switch
+   reads as instant: data is already loaded, this only softens the swap. */
+@keyframes canon-rise { from { opacity:.4; transform:translateY(3px); } to { opacity:1; transform:none; } }
+.canon > main > * { animation:canon-rise .16s ease-out both; }
+.canon > main > .skel-page, .canon > main > [aria-busy="true"] { animation:none; }
+
+/* Score bars fill from zero to their value. */
+@keyframes canon-fill { from { transform:scaleX(0); } }
+.canon .bar > i { transform-origin:left center; animation:canon-fill .45s cubic-bezier(.16,1,.3,1) both; }
+.canon svg circle[stroke-dasharray] { transition:stroke-dasharray .6s cubic-bezier(.16,1,.3,1); }
+
+/* Energy pill: each level carries its own colour when chosen. */
+.canon .energy button.on { background:#fff; color:var(--lvl, var(--amber)); box-shadow:0 0 0 3px color-mix(in srgb, var(--lvl, #F5B60B) 45%, transparent); }
+.canon .energy button:active { transform:scale(.9); }
+.canon .en-card.on { border-color:var(--lvl, var(--amber)); background:color-mix(in srgb, var(--lvl, #F59E0B) 8%, #fff); }
+.canon .en-card.on .l { color:color-mix(in srgb, var(--lvl, #92600A) 70%, #002147); }
+
+/* Selected (navy) tab: a light halo instead of the icon's tinted one. */
+.canon .tab.on .icon-interactive::before { background:rgba(255,255,255,.16); box-shadow:none; }
+/* Hero stat icon wells: the interactive icon supplies its own halo. */
+.canon .hstat .ic .icon-interactive::before { display:none; }
+
+/* Toast (mockup #sw pill): transient confirmation of a save. */
+.canon .toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:80; background:var(--ink); color:#fff; border-radius:99px;
+  padding:11px 18px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:9px; box-shadow:0 14px 40px rgba(0,33,71,.3);
+  animation:canon-toast .28s cubic-bezier(.16,1,.3,1) both; }
+@keyframes canon-toast { from { opacity:0; transform:translate(-50%, 10px); } }
+
+/* Keyboard users skip the sidebar. */
+.canon .skip { position:fixed; left:12px; top:-60px; z-index:90; background:#fff; color:var(--ink); padding:10px 14px; border-radius:10px; font-weight:800; font-size:13px; box-shadow:var(--sh); }
+.canon .skip:focus { top:12px; }
+
+/* Phone: bottom tab bar replaces the sidebar (mockup .tabbar). */
+.canon .tabbar { display:none; }
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:1240px) { .canon > main { padding:22px 22px 80px; } }
+@media (max-width:900px) {
+  .canon > aside { width:78px; flex:0 0 78px; padding:22px 12px; }
+  .canon .brand { padding:0 0 22px; text-align:center; }
+  .canon .brand b { font-size:17px; }
+  .canon .brand i { font-size:0; height:3px; background:var(--red); border-radius:2px; width:22px; margin:6px auto 0; }
+  .canon .nv { justify-content:center; padding:13px 0; }
+  .canon .nv span.lbl-t { display:none; }
+  .canon .nv.on::before { display:none; }
+  .canon .nv.on { background:var(--red); }
+  .canon .hero h1 { font-size:30px; } .canon .pbar h1 { font-size:25px; }
+  .canon .kpi .vl { font-size:38px; }
+}
+@media (max-width:680px) {
+  .canon > aside { display:none; }
+  .canon .tabbar { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:60; background:#fff; border-top:1px solid var(--line);
+    justify-content:space-around; padding:8px 4px calc(10px + env(safe-area-inset-bottom)); box-shadow:0 -6px 24px rgba(0,33,71,.06); }
+  .canon .tabbar a { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; font-weight:700; color:var(--mut2); padding:4px 0; border-radius:10px; }
+  .canon .tabbar a.on { color:var(--ink); }
+  .canon .tabbar a.on span.t { color:var(--red); }
+  .canon .toast { bottom:calc(84px + env(safe-area-inset-bottom)); }
+  .canon > main { padding:16px 14px 110px; }
+  .canon .pbar, .canon .card { padding:18px; }
+  .canon .hero { padding:24px 20px; border-radius:18px; }
+  .canon .hero h1 { font-size:25px; }
+  .canon .g2, .canon .g3, .canon .kpis, .canon .hgrid { grid-template-columns:1fr !important; }
+  .canon .en-row { flex-wrap:wrap; }
+  .canon .tabs { display:flex; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; max-width:100%; }
+  .canon .tabs::-webkit-scrollbar { display:none; }
+  .canon .tab { flex:0 0 auto; white-space:nowrap; padding:10px 16px; }
+}
+
+/* ---------- FOCUS / A11Y ---------- */
+.canon button, .canon a, .canon input, .canon textarea { touch-action:manipulation; }
+.canon :focus-visible { outline:2px solid var(--blue); outline-offset:2px; border-radius:8px; }
+@media (prefers-reduced-motion:reduce) {
+  .canon *, .canon *::before, .canon *::after { animation-duration:.001ms !important; animation-delay:0s !important; transition-duration:.001ms !important; }
+}
+@media print {
+  .canon > aside, .canon .no-print { display:none !important; }
+  .canon > main { padding:0 !important; }
+}

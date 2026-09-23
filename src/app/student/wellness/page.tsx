@@ -1,218 +1,184 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
-import { Heart, Wind, Activity, CheckCircle2, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { BatteryLowIcon as BatteryLow } from '@phosphor-icons/react/dist/ssr/BatteryLow';
+import { BatteryMediumIcon as BatteryMedium } from '@phosphor-icons/react/dist/ssr/BatteryMedium';
+import { BatteryHighIcon as BatteryHigh } from '@phosphor-icons/react/dist/ssr/BatteryHigh';
+import { BatteryFullIcon as BatteryFull } from '@phosphor-icons/react/dist/ssr/BatteryFull';
+import { RocketIcon as Rocket } from '@phosphor-icons/react/dist/ssr/Rocket';
+import { NotePencilIcon as NotePencil } from '@phosphor-icons/react/dist/ssr/NotePencil';
+import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
+import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
+import { Chip, Empty, PageBar, Skeleton, hmColor, type Tone } from '@/components/canon/ui';
+import { dmy } from '@/lib/student/shape';
+import { useToast } from '@/components/canon/useToast';
+import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { ENERGY_LEVELS, useWellness } from '@/lib/student/useWellness';
 
-const MOODS = [
-  { label: 'Great', icon: '🤩', color: 'bg-green-100 text-green-600 border-green-200', hover: 'hover:bg-green-50', value: 100 },
-  { label: 'Good', icon: '😌', color: 'bg-blue-100 text-blue-600 border-blue-200', hover: 'hover:bg-blue-50', value: 80 },
-  { label: 'Okay', icon: '😐', color: 'bg-yellow-100 text-yellow-600 border-yellow-200', hover: 'hover:bg-yellow-50', value: 60 },
-  { label: 'Low', icon: '😔', color: 'bg-orange-100 text-orange-600 border-orange-200', hover: 'hover:bg-orange-50', value: 40 },
-  { label: 'Exhausted', icon: '😫', color: 'bg-red-100 text-red-600 border-red-200', hover: 'hover:bg-red-50', value: 20 },
+const ENERGY_ICONS = [BatteryLow, BatteryMedium, BatteryHigh, BatteryFull, Rocket];
+
+/** Mockup "Who can see what" — the DPDP visibility contract shown to the student. */
+const VISIBILITY: [string, string, Tone, string][] = [
+  ['You', 'Everything — check-ins, journals, TML', 'g', 'FULL'],
+  ['Class teacher', 'Energy trend + at-risk flag, and only journal entries you share', 'b', 'LIMITED'],
+  ['Parent', 'Fortnightly wellness summary', 'b', 'LIMITED'],
+  ['School admin', 'Anonymised class aggregates for CBSE', 'n', 'AGGREGATE'],
 ];
 
 export default function WellnessPage() {
-  const { profile } = useAuth();
-  const supabase = createClient();
-  const [loading, setLoading] = useState(true);
-  const [todaysMood, setTodaysMood] = useState<number | null>(null);
-  const [history, setHistory] = useState<{ date: string; value: number }[]>([]);
+  const { state, error, demo, setEnergy, addEntry, toggleShare } = useWellness();
+  const [draft, setDraft] = useState('');
+  const [saved, setSaved] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [toast, toastEl] = useToast();
 
-  // Breathing state
-  const [isBreathing, setIsBreathing] = useState(false);
-  const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale' | 'Hold2' | 'Idle'>('Idle');
+  if (!state && !error) {
+    return (
+      <div aria-busy="true" aria-label="Loading wellness">
+        <Skeleton h={104} style={{ borderRadius: 20, marginBottom: 22 }} />
+        <div className="g2"><Skeleton h={480} style={{ borderRadius: 20 }} /><Skeleton h={480} style={{ borderRadius: 20 }} /></div>
+      </div>
+    );
+  }
+  if (!state) return <div className="note err" role="alert">{error}</div>;
 
-  // Load initial data
-  useEffect(() => {
-    if (!profile?.uid) return;
+  const today = state.today;
+  const todayVal = today !== null ? ENERGY_LEVELS[today].value : null;
+  const hist = state.fortnight.filter(d => d.value !== null).map(d => d.value!) as number[];
+  const avg = hist.length ? Math.round(hist.reduce((a, b) => a + b, 0) / hist.length) : null;
 
-    async function loadWellness() {
-      try {
-        const { data, error } = await supabase
-          .from('wellness_logs')
-          .select('*')
-          .eq('student_id', profile.uid)
-          .order('created_at', { ascending: false })
-          .limit(7);
-
-        if (error) throw error;
-
-        const todayString = new Date().toDateString();
-        const loadedHistory: { date: string; value: number }[] = [];
-        let foundToday = false;
-
-        (data || []).forEach(log => {
-          const dateObj = new Date(log.created_at);
-          loadedHistory.push({
-            date: dateObj.toISOString(),
-            value: log.mood_value,
-          });
-          if (dateObj.toDateString() === todayString && !foundToday) {
-            foundToday = true;
-            setTodaysMood(log.mood_value);
-          }
-        });
-
-        setHistory(loadedHistory.reverse());
-      } catch (err) {
-        console.error('[Wellness Load Error]:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadWellness();
-  }, [profile?.uid]);
-
-  const logMood = async (value: number) => {
-    if (!profile?.uid) return;
-    setTodaysMood(value);
-
-    try {
-      const { error } = await supabase.from('wellness_logs').insert({
-        student_id: profile.uid,
-        school_id: profile.schoolId || 'global',
-        mood_value: value,
-        resolved: value >= 60,
-      });
-
-      if (error) throw error;
-
-      setHistory(prev => [...prev.slice(-6), { date: new Date().toISOString(), value }]);
-    } catch (err) {
-      console.error('[Log Mood Error]:', err);
-    }
-  };
-
-  const startBreathing = () => {
-    if (isBreathing) return;
-    setIsBreathing(true);
-    setBreathPhase('Inhale');
-  };
-
-  useEffect(() => {
-    if (!isBreathing) return;
-
-    let timer: NodeJS.Timeout;
-
-    if (breathPhase === 'Inhale') {
-      timer = setTimeout(() => setBreathPhase('Hold'), 4000);
-    } else if (breathPhase === 'Hold') {
-      timer = setTimeout(() => setBreathPhase('Exhale'), 4000);
-    } else if (breathPhase === 'Exhale') {
-      timer = setTimeout(() => setBreathPhase('Hold2'), 4000);
-    } else if (breathPhase === 'Hold2') {
-      timer = setTimeout(() => setBreathPhase('Inhale'), 4000);
-    }
-
-    return () => clearTimeout(timer);
-  }, [breathPhase, isBreathing]);
-
-  const stopBreathing = () => {
-    setIsBreathing(false);
-    setBreathPhase('Idle');
+  const save = async (shared: boolean) => {
+    const t = draft.trim();
+    if (!t) { setSaved('Write something first — your journal is still empty.'); return; }
+    setSaving(true);
+    const msg = await addEntry(t, shared);
+    setSaving(false);
+    setSaved(msg);
+    if (!/could not|switched off/i.test(msg)) setDraft('');
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
-      <div>
-        <h1 className="text-3xl font-extrabold text-[#002147]">Wellness & Mindset Center</h1>
-        <p className="text-gray-500 text-sm mt-1">Track your daily energy, de-stress, and keep your mind balanced.</p>
-      </div>
+    <>
+      <PageBar
+        eyebrow="WELLNESS CENTER"
+        title="How are you doing today?"
+        sub="Private by default. Your teacher sees trends, not your words, unless you tap Share."
+        actions={state.consent === 'on-file'
+          ? <Chip tone="g"><ShieldCheck size={13} weight="fill" /> Parent consent on file · DPDP</Chip>
+          : state.consent === 'pending'
+            ? <Chip tone="a" title="Your school needs a parent or guardian's consent on record for wellness check-ins"><Warning size={13} weight="fill" /> Parent consent pending · DPDP</Chip>
+            : <Chip tone="n"><ShieldCheck size={13} weight="fill" /> DPDP · private by default</Chip>}
+      />
+      {demo && <div className="note info no-print" style={{ marginBottom: 18 }}><b>Demo records.</b> Check-ins and journal entries here are saved in this browser only.</div>}
+      {error && <div className="note err" style={{ marginBottom: 18 }} role="alert">{error}</div>}
 
-      {/* Mood Check-In (Feature Flagged) */}
-      {process.env.NEXT_PUBLIC_FEATURE_WELLNESS_CHECKIN_ENABLED === 'true' ? (
-        <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
-              <Heart className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-[#002147]">Daily Mood Check-In</h2>
-              <p className="text-xs text-gray-500">How are you feeling about your studies today?</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {MOODS.map(m => {
-              const isSelected = todaysMood === m.value;
+      <div className="g2">
+        <div className="card">
+          <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>Daily energy check-in</h3>
+          <p className="muted" style={{ marginBottom: 22 }}>One tap. Takes three seconds. Builds your fortnightly wellness curve.</p>
+          <div className="en-row" style={{ display: 'flex', gap: 12, justifyContent: 'space-between', marginBottom: 12 }} role="group" aria-label="Today's energy">
+            {ENERGY_LEVELS.map((lvl, i) => {
+              const Icon = ENERGY_ICONS[i];
+              const on = today === i;
               return (
-                <button
-                  key={m.label}
-                  onClick={() => logMood(m.value)}
-                  className={`p-4 rounded-2xl border text-center transition-all ${m.hover} ${
-                    isSelected ? `${m.color} ring-2 ring-indigo-600 shadow-sm scale-105` : 'border-gray-200 bg-gray-50/50'
-                  }`}
-                >
-                  <div className="text-3xl mb-1">{m.icon}</div>
-                  <div className="font-bold text-xs text-gray-700">{m.label}</div>
+                <button key={lvl.label} className={`en-card${on ? ' on' : ''}`} aria-pressed={on} aria-label={lvl.label}
+                  style={{ '--lvl': hmColor(lvl.value) } as React.CSSProperties}
+                  onClick={async () => { setSaved(''); await setEnergy(i); toast(`Energy logged as ${lvl.label}`); }}>
+                  <InteractiveIcon icon={Icon} color={hmColor(lvl.value)} size={30} active={on} />
+                  <div className="l">{lvl.label}</div>
                 </button>
               );
             })}
           </div>
+          <p className="muted" style={{ fontSize: 12.5, marginBottom: 24 }} aria-live="polite">
+            {today !== null
+              ? <>Today logged as <b style={{ color: hmColor(todayVal!) }}>{ENERGY_LEVELS[today].label}</b> — that&apos;s the last bar on your fortnight chart.</>
+              : 'No check-in yet today.'}
+          </p>
 
-          {todaysMood && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center space-x-3 text-emerald-800 text-xs font-semibold">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <span>Check-in recorded for today! Your wellbeing helps personalize your study workload.</span>
-            </div>
+          <label htmlFor="jrnl" className="lbl">JOURNAL — OPTIONAL</label>
+          <textarea id="jrnl" className="qta" style={{ minHeight: 110 }} maxLength={4000} placeholder="What's on your mind today?…"
+            value={draft} onChange={e => setDraft(e.target.value)} disabled={!state.journalSupported} />
+          <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+            <button className="btn pri" onClick={() => save(false)} disabled={saving || !state.journalSupported}>Save privately</button>
+            <button className="btn" onClick={() => save(true)} disabled={saving || !state.journalSupported || (!demo && !state.sharingSupported)}
+              title={!demo && !state.sharingSupported ? 'Available once your school finishes a pending database update' : undefined}>Share with class teacher</button>
+          </div>
+          {!demo && !state.sharingSupported && (
+            <div className="note" style={{ marginTop: 14 }}>Entries save privately. Sharing with your class teacher switches on once your school finishes a pending database update.</div>
           )}
-        </div>
-      ) : (
-        <div className="bg-amber-50/80 border-2 border-amber-200/80 rounded-3xl p-6 flex items-center gap-4 text-amber-900 text-xs font-semibold shadow-sm">
-          <div className="w-10 h-10 bg-amber-400 text-white rounded-2xl flex items-center justify-center shrink-0 font-bold">
-            <Heart className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="font-bold text-sm text-amber-950">Wellness Logging Pending DPDP Consent Verification</p>
-            <p className="text-amber-800 mt-0.5">Daily energy & mood logging is currently paused until student consent verification lands. Mindset & breathing exercises remain fully available below.</p>
-          </div>
-        </div>
-      )}
-
-      {/* 4-7-8 Breathing Exercise */}
-      <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="p-3 bg-sky-50 text-sky-600 rounded-2xl">
-            <Wind className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-[#002147]">Box Breathing Exercise</h2>
-            <p className="text-xs text-gray-500">Take a 2-minute reset to enhance focus and clear mental fatigue.</p>
-          </div>
+          {saved && <div className="note" style={{ marginTop: 14 }} aria-live="polite">{saved}</div>}
         </div>
 
-        <div className="flex flex-col items-center justify-center py-8 space-y-6">
-          <div
-            className={`w-36 h-36 rounded-full border-4 flex items-center justify-center transition-all duration-1000 ${
-              breathPhase === 'Inhale'
-                ? 'scale-125 border-sky-500 bg-sky-50 shadow-xl'
-                : breathPhase === 'Hold' || breathPhase === 'Hold2'
-                ? 'scale-125 border-amber-500 bg-amber-50 shadow-lg'
-                : breathPhase === 'Exhale'
-                ? 'scale-90 border-emerald-500 bg-emerald-50'
-                : 'border-gray-200 bg-gray-50'
-            }`}
-          >
-            <span className="font-extrabold text-sm text-[#002147] capitalize">
-              {isBreathing ? breathPhase : 'Ready'}
-            </span>
+        <div>
+          <div className="card" style={{ marginBottom: 18 }}>
+            <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 4 }}>Your fortnight</h3>
+            <p className="muted" style={{ fontSize: 12.5, marginBottom: 18 }}>The last bar is today — it moves when you change your check-in.</p>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, height: 150 }} role="img"
+              aria-label={`Fortnightly energy chart. Today is ${today !== null ? ENERGY_LEVELS[today].label : 'not logged'}.`}>
+              {state.fortnight.map((d, i) => d.value !== null
+                ? <div key={i} title={`${d.day}: ${d.value}%`} style={{ flex: 1, height: `${d.value}%`, background: hmColor(d.value), borderRadius: '6px 6px 0 0', opacity: 0.55 }} />
+                : <div key={i} title={`${d.day}: no check-in`} style={{ flex: 1, height: '6%', background: '#EDF1F7', borderRadius: '6px 6px 0 0' }} />)}
+              {todayVal !== null
+                ? <div style={{ flex: 1, height: `${todayVal}%`, background: hmColor(todayVal), borderRadius: '6px 6px 0 0', boxShadow: `0 0 0 2px #fff,0 0 0 4px ${hmColor(todayVal)}55`, transition: 'height .3s ease' }} />
+                : <div style={{ flex: 1, height: '14%', border: '2px dashed var(--line)', borderRadius: '6px 6px 0 0' }} />}
+            </div>
+            <div style={{ display: 'flex', gap: 9, marginTop: 7 }}>
+              {state.fortnight.map((d, i) => <span key={i} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: 'var(--mut2)', fontWeight: 700 }}>{d.day}</span>)}
+              <span style={{ flex: 1, textAlign: 'center', fontSize: 9, color: 'var(--ink)', fontWeight: 800 }}>Today</span>
+            </div>
+            <div className="note" style={{ marginTop: 20 }}>{fortnightNote(todayVal, hist, avg)}</div>
           </div>
 
-          <button
-            onClick={isBreathing ? stopBreathing : startBreathing}
-            className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-md ${
-              isBreathing
-                ? 'bg-rose-500 hover:bg-rose-600 text-white'
-                : 'bg-[#002147] hover:bg-blue-900 text-white'
-            }`}
-          >
-            {isBreathing ? 'Stop Exercise' : 'Start 4-4-4 Breathing'}
-          </button>
+          <div className="card">
+            <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 14 }}>Who can see what</h3>
+            {VISIBILITY.map(([who, what, tone, label]) => (
+              <div key={who} className="row">
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{who}</div>
+                  <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>{what}</div>
+                </div>
+                <Chip tone={tone}>{label}</Chip>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      <h3 className="sec"><span className="dot" style={{ background: 'var(--pale)', color: 'var(--blue)' }}><NotePencil size={15} weight="bold" /></span>Your journal</h3>
+      <div className="card">
+        {state.entries.length === 0 ? (
+          <Empty icon={<InteractiveIcon icon={NotePencil} color="#7C3AED" size={30} active />} title="No journal entries yet">
+            Anything you save above will show up here for you to read later.
+          </Empty>
+        ) : state.entries.map(e => (
+          <div key={e.id} className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
+            <div style={{ minWidth: 96 }}>
+              <div style={{ fontWeight: 800, fontSize: 13.5 }}>{isToday(e.at) ? 'Today' : dmy(e.at)}</div>
+              <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>Felt {e.mood}</div>
+            </div>
+            <p style={{ flex: 1, fontSize: 14, lineHeight: 1.7, color: '#33465F', whiteSpace: 'pre-wrap' }}>{e.text}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              <Chip tone={e.shared ? 'b' : 'n'}>{e.shared ? 'SHARED' : 'PRIVATE'}</Chip>
+              {(demo || state.sharingSupported) && <button className="btn sm" onClick={async () => setSaved(await toggleShare(e.id))}>{e.shared ? 'Make private' : 'Share'}</button>}
+            </div>
+          </div>
+        ))}
+        <div className="note" style={{ marginTop: 16 }}>Private entries are never shown to your teacher or parents — only the energy number feeds your wellness trend.</div>
+      </div>
+      {toastEl}
+    </>
   );
+}
+
+const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
+
+function fortnightNote(t: number | null, hist: number[], avg: number | null): string {
+  if (avg === null) return t === null ? 'Check in above and today’s bar fills in. Your curve builds from here.' : `Today is ${t}% — your first check-in this fortnight.`;
+  if (t === null) return `Check in above and today's bar fills in. Your fortnight average so far is ${avg}%.`;
+  const lo = Math.min(...hist), hi = Math.max(...hist);
+  const vsAvg = t >= avg ? `${t - avg} points above` : `${avg - t} points below`;
+  const tail = t < lo ? 'That is your lowest day this fortnight — worth telling someone if it keeps up.'
+    : t > hi ? 'That is your best day this fortnight.' : `${t - lo} above your lowest day.`;
+  return `Today is ${t}% — ${vsAvg} your fortnight average of ${avg}%. ${tail}`;
 }

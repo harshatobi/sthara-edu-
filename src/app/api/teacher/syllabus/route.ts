@@ -79,7 +79,8 @@ export async function POST(req: NextRequest) {
     let weightageScore = body.weightageScore;
 
     // Auto-generate AI analysis if tags/weightage are missing
-    if (!tags || !examWeightage || !toughnessLevel || !weightageScore) {
+    // examWeightage 0 is valid (formative-only chapters), so test for absence, not falsiness.
+    if (!tags || examWeightage == null || !toughnessLevel || !weightageScore) {
       const apiKey = process.env.GEMINI_API_KEY;
       if (apiKey && topic) {
         try {
@@ -94,7 +95,7 @@ Extract JSON: {"tags":["keyword1","keyword2"],"examWeightage":8,"toughnessLevel"
           });
           const parsed = JSON.parse(aiRes.text || '{}');
           tags = tags || parsed.tags || [topic.toLowerCase().replace(/[^a-z0-9]/g, '_')];
-          examWeightage = examWeightage || parsed.examWeightage || 7;
+          examWeightage = examWeightage ?? parsed.examWeightage ?? 7;
           toughnessLevel = toughnessLevel || parsed.toughnessLevel || 'medium';
           weightageScore = weightageScore || parsed.weightageScore || calculateWeightageScore(examWeightage, toughnessLevel);
         } catch (e) {
@@ -102,7 +103,7 @@ Extract JSON: {"tags":["keyword1","keyword2"],"examWeightage":8,"toughnessLevel"
         }
       }
       tags = tags || [topic.toLowerCase().replace(/[^a-z0-9]/g, '_')];
-      examWeightage = examWeightage || 7;
+      examWeightage = examWeightage ?? 7;
       toughnessLevel = toughnessLevel || 'medium';
       weightageScore = weightageScore || calculateWeightageScore(examWeightage, toughnessLevel);
     }

@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   images: { unoptimized: true },
   serverExternalPackages: ['firebase-admin', '@google/generative-ai'],
+  experimental: {
+    // Reuse a visited page's server payload for 30s on client navigation
+    // (Next 15+ default is 0: every tab switch refetches). Page data is loaded
+    // client-side by shared providers, so this can't serve stale records.
+    staleTimes: { dynamic: 30 },
+  },
 };
 
 // Safe no-op wrapper: only uploads source maps / release info to Sentry when

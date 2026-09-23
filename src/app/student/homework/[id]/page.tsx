@@ -4,7 +4,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { demoRows } from '@/lib/demo/student';
 import { Camera, X, Check, Loader2 } from 'lucide-react';
+import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
+import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { PaperclipIcon as Paperclip } from '@phosphor-icons/react/dist/ssr/Paperclip';
+import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 
 interface Question {
   questionText?: string;
@@ -50,7 +55,7 @@ const scoreChip = (score: number, total: number): 'g' | 'a' | 'r' => {
 export default function HomeworkWorkspace() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { profile, loading: authLoading, getAuthToken } = useAuth();
+  const { profile, user, loading: authLoading, getAuthToken } = useAuth();
   const supabase = createClient();
 
   const [assignment, setAssignment] = useState<any>(null);
@@ -88,6 +93,18 @@ export default function HomeworkWorkspace() {
     (async () => {
       setLoading(true);
       setLoadError(null);
+      // No live session (local demo bypass): open the sample assignment read-only-ish —
+      // it can be worked through, but submitting needs a real account (see handleSubmit).
+      if (!user) {
+        const d = demoRows();
+        const a = d.assignments.find(x => x.id === id);
+        if (!cancelled) {
+          if (a) { setAssignment(a); setSubmission(d.submissions.find(x => x.assignment_id === id) || null); }
+          else setLoadError('This assignment could not be found.');
+          setLoading(false);
+        }
+        return;
+      }
       try {
         const { data: a, error: aErr } = await supabase.from('assignments').select('*').eq('id', id).maybeSingle();
         if (aErr) throw aErr;
@@ -106,7 +123,7 @@ export default function HomeworkWorkspace() {
     })();
 
     return () => { cancelled = true; };
-  }, [id, profile?.uid]);
+  }, [id, profile?.uid, user]);
 
   const questions: Question[] = assignment?.questions || [];
   const isTyped = assignment?.submission_mode === 'typed';
@@ -183,49 +200,17 @@ export default function HomeworkWorkspace() {
 
   // ── Submit: typed mode (auto-grade MCQ instantly; rest -> teacher review) ─
   const submitTyped = async () => {
-    const mcqQuestions = questions.filter(q => q.type === 'mcq');
-    const allMcq = mcqQuestions.length === questions.length && questions.length > 0;
-    const mcqCorrect = mcqQuestions.reduce((n, q) => n + (answers[questions.indexOf(q)] === q.answer ? 1 : 0), 0);
-
-    const row = {
-      assignment_id: id,
-      student_id: profile!.uid,
-      school_id: profile!.schoolId || null,
-      answers,
-      submission_text: Object.values(answers).filter(a => typeof a === 'string').join('\n\n') || null,
-      score: allMcq ? mcqCorrect : null,
-      max_score: allMcq ? mcqQuestions.length : (assignment?.total_marks ?? questions.length),
-      grade: allMcq ? `${mcqCorrect}/${mcqQuestions.length}` : null,
-      ai_graded: false,
-      teacher_approved: allMcq ? true : null,
-      type: 'typed',
-    };
-
-    const { data, error } = await supabase.from('submissions').insert(row).select('*').single();
-    if (error) throw error;
-
-    for (let i = 0; i < questions.length; i++) {
-      if (questions[i].type !== 'mcq') continue;
-      await supabase.from('submission_items').insert({
-        submission_id: data.id, assignment_id: id, student_id: profile!.uid, school_id: profile!.schoolId || null,
-        question_index: i, component_type: 'homework',
-        score: answers[i] === questions[i].answer ? 1 : 0, max_score: 1, teacher_confirmed: true,
-      });
-    }
-
-    // Refresh True Mastery Level now that new evidence exists — best-effort,
-    // never blocks the submission on failure (e.g. no live session token yet).
-    try {
-      const token = await getAuthToken();
-      if (token) {
-        await fetch('/api/tml/compute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ studentId: profile!.uid, subject: assignment?.subject }),
-        });
-      }
-    } catch { /* best-effort */ }
-
+    // Graded on the server against the answer key: the database does not let
+    // a browser write scores (grade integrity).
+    const token = await getAuthToken();
+    if (!token) throw new Error('Your session has expired. Sign in again to submit.');
+    const res = await fetch('/api/student/submit-typed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ assignmentId: id, answers }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Submission failed. Please try again.');
     return data;
   };
 
@@ -270,6 +255,11 @@ export default function HomeworkWorkspace() {
 
   const handleSubmit = useCallback(async (auto = false) => {
     if (submitting || alreadySubmitted) return;
+    if (!user) {
+      setSubmitError('This is a demo assignment — sign in with a school account to submit real work.');
+      setConfirmOpen(false);
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -282,7 +272,7 @@ export default function HomeworkWorkspace() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, alreadySubmitted, isTyped, answers, pages, assignment, questions, profile]);
+  }, [submitting, alreadySubmitted, isTyped, answers, pages, assignment, questions, profile, user]);
 
   useEffect(() => { submitRef.current = handleSubmit; }, [handleSubmit]);
 
@@ -303,7 +293,7 @@ export default function HomeworkWorkspace() {
       <div className="fixed inset-0 z-[70] bg-[#F7F9FB] flex flex-col items-center justify-center gap-4">
         <p className="text-[#7A8699] font-semibold">{loadError || 'Assignment not found.'}</p>
         <button onClick={close} className="inline-flex items-center gap-2 rounded-xl border border-[#E8EDF4] bg-white px-4 py-2 text-[13.5px] font-bold text-[#7A8699] hover:border-[#C9D6E8]">
-          ← Back
+          <ArrowLeft size={15} weight="bold" /> Back
         </button>
       </div>
     );
@@ -322,7 +312,7 @@ export default function HomeworkWorkspace() {
         <div className="flex-1 flex justify-center px-8 py-10">
           <div className="w-full max-w-[640px]">
             <button onClick={close} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13.5px] font-bold text-[#7A8699] hover:bg-[#F7F9FB] hover:text-[#002147]">
-              ← Back
+              <ArrowLeft size={15} weight="bold" /> Back
             </button>
 
             <div className={`bg-white rounded-[20px] ${SH} p-10 mt-4 text-center`}>
@@ -346,7 +336,7 @@ export default function HomeworkWorkspace() {
 
             {Array.isArray(aiResult?.questions) && (
               <div className={`bg-white rounded-[20px] ${SH} p-8 mt-5`}>
-                <div className="text-center text-[#9AA6B8] text-[11.5px] font-extrabold tracking-[.14em] mb-5">✦ AI FEEDBACK</div>
+                <div className="text-center text-[#9AA6B8] text-[11.5px] font-extrabold tracking-[.14em] mb-5"><span className="inline-flex items-center gap-1.5"><Sparkle size={13} weight="fill" /> AI FEEDBACK</span></div>
                 <div className="space-y-6">
                   {aiResult.questions.map((q: any, i: number) => (
                     <div key={i} className="border-t border-[#E8EDF4] first:border-t-0 first:pt-0 pt-6">
@@ -358,7 +348,7 @@ export default function HomeworkWorkspace() {
                       {q.lostMarksReason && <p className="text-[14px] leading-[1.7] text-[#33465F] mt-2"><b>Where marks were lost:</b> {q.lostMarksReason}</p>}
                       {q.howToFix && (
                         <div className="bg-[#002147] text-[#CFE0F5] rounded-2xl p-5 mt-3 font-mono text-[12.5px] leading-[1.8]">
-                          <div className="text-[#4C8DFF] font-sans font-semibold tracking-[.1em] text-[11px] mb-2">✦ HOW TO FIX IT</div>
+                          <div className="text-[#4C8DFF] font-sans font-semibold tracking-[.1em] text-[11px] mb-2"><span className="inline-flex items-center gap-1.5"><Sparkle size={12} weight="fill" /> HOW TO FIX IT</span></div>
                           {q.howToFix}
                         </div>
                       )}
@@ -381,7 +371,7 @@ export default function HomeworkWorkspace() {
       {/* ws-head */}
       <div className="sticky top-0 z-[2] bg-white border-b border-[#E8EDF4] px-[30px] py-4 flex items-center gap-[18px] flex-wrap">
         <button onClick={close} className="inline-flex items-center gap-2 text-[13.5px] font-bold text-[#7A8699] hover:bg-[#F7F9FB] hover:text-[#002147] rounded-xl px-3 py-2">
-          ← Back
+          <ArrowLeft size={15} weight="bold" /> Back
         </button>
         <div>
           <h1 className="text-[19px] font-extrabold text-[#002147] leading-[1.25]">{assignment.title}</h1>
@@ -467,7 +457,7 @@ export default function HomeworkWorkspace() {
                   ) : q.type === 'upload' ? (
                     questionFiles[qi] ? (
                       <div className="flex items-center justify-between gap-3 bg-[#EAF2FF] rounded-xl px-4 py-3 text-[13.5px] font-bold text-[#002147]">
-                        <span>📎 {questionFiles[qi]!.name}</span>
+                        <span className="inline-flex items-center gap-2"><Paperclip size={16} weight="bold" /> {questionFiles[qi]!.name}</span>
                         <button onClick={() => setQuestionFiles(f => ({ ...f, [qi]: null }))} className="text-[#7A8699] text-xs font-bold">Remove</button>
                       </div>
                     ) : (
@@ -515,7 +505,7 @@ export default function HomeworkWorkspace() {
             <div className={`bg-white rounded-[20px] ${SH} p-[30px]`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="text-[11.5px] font-extrabold tracking-[.08em] text-[#7A8699]">PHOTOGRAPH YOUR ANSWER SHEET</div>
-                <Chip tone="b">✦ Graded by AI in seconds</Chip>
+                <Chip tone="b"><Sparkle size={12} weight="fill" /> Graded by AI in seconds</Chip>
               </div>
 
               {pages.length > 0 && (
@@ -571,9 +561,9 @@ export default function HomeworkWorkspace() {
             <button
               disabled={!isTyped && pages.length === 0}
               onClick={() => setConfirmOpen(true)}
-              className="px-[18px] py-[11px] rounded-xl bg-[#E11D48] text-white text-[13.5px] font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-[18px] py-[11px] rounded-xl bg-[#E11D48] text-white text-[13.5px] font-bold disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isTyped ? 'Review & submit' : 'Submit for AI grading →'}
+              {isTyped ? 'Review & submit' : <>Submit for AI grading <ArrowRight size={15} weight="bold" /></>}
             </button>
           )}
         </div>

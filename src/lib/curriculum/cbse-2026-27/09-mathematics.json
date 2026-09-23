@@ -1,0 +1,232 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Mathematics",
+  "codes": ["041"],
+  "source": {
+    "title": "Mathematics, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Maths_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-23"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      { "component": "Pen Paper Test and Multiple Assessment (5+5)", "marks": 10 },
+      { "component": "Portfolio", "marks": 5 },
+      { "component": "Lab Practical (activities from the prescribed books)", "marks": 5 }
+    ]
+  },
+  "textbooks": [
+    "Mathematics - Textbook for class IX (NCERT)",
+    "Guidelines for Mathematics Laboratory in Schools, class IX (CBSE)",
+    "Laboratory Manual - Mathematics, secondary stage (NCERT)",
+    "Mathematics exemplar problems for class IX (NCERT)"
+  ],
+  "units": [
+    {
+      "code": "I", "name": "Number System", "marks": 7,
+      "chapters": [
+        {
+          "name": "Number System",
+          "topics": [
+            "Introduction to rational numbers", "Representation of rational numbers on the number line",
+            "Density of rational numbers and its proof", "Finding rational numbers between any two rational numbers",
+            "Decimal representation of rational numbers", "Introduction to irrational numbers",
+            "Proof of irrationality of √2 and √3", "The square root spiral"
+          ],
+          "outcomes": [
+            "Represents rational numbers on the number line", "Explains the density of rational numbers",
+            "Computes decimal representations of rational numbers", "Proves irrationality", "Constructs the square root spiral"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "II", "name": "Algebra", "marks": 20,
+      "chapters": [
+        {
+          "name": "Introduction to Polynomials",
+          "topics": [
+            "Algebraic expressions", "Definition and degree of a polynomial", "Linear polynomials and applications",
+            "Exploring linear patterns", "Modelling linear growth and linear decay", "Linear relationships and visualising them",
+            "Slope and y-intercept of a line y = ax + b"
+          ],
+          "outcomes": [
+            "Identifies the degree, terms and coefficients of a polynomial", "Models linear growth and decay using linear polynomials",
+            "Identifies the slope and y-intercept of a linear equation in two variables", "Graphs a linear equation in two variables"
+          ]
+        },
+        {
+          "name": "Sequences and Progressions",
+          "topics": [
+            "Introduction to sequences", "Explicit (general) and recursive rules of a sequence",
+            "Arithmetic Progressions: nth term, visualising an AP, practical contexts", "Sum of the first n natural numbers",
+            "Geometric Progressions: nth term, visualising a GP, practical contexts", "Applications of GP in fractals", "Tower of Hanoi puzzle"
+          ],
+          "outcomes": [
+            "Determines recursive and explicit rules for sequences", "Determines the nth term of an AP and of a GP",
+            "Visualises APs and GPs graphically", "Analyses attributes of fractals using GP", "Solves the Tower of Hanoi puzzle"
+          ]
+        },
+        {
+          "name": "Exploring Algebraic Identities",
+          "topics": [
+            "Revisiting algebraic identities", "Visualising identities using geometrical models", "Factorisation of algebraic expressions using identities",
+            "More identities and their applications", "Visualising factorisation of quadratic expressions with and without algebra tiles",
+            "Finding new identities", "Simplifying rational expressions"
+          ],
+          "outcomes": [
+            "Visualises algebraic identities using geometric models", "Factors algebraic expressions using identities",
+            "Interprets factors of quadratic expressions through geometric models", "Simplifies rational expressions"
+          ]
+        },
+        {
+          "name": "Linear Equations in Two Variables",
+          "topics": [
+            "Linear equations in two variables through practical examples", "Graphical representation of solutions",
+            "Slope-intercept form", "Graphs when x and y assume only certain values", "Pair of linear equations in two variables",
+            "Graphical method for solving a pair of linear equations", "Nature of solutions: consistency and inconsistency",
+            "Algebraic methods: substitution and elimination"
+          ],
+          "outcomes": [
+            "Solves a pair of linear equations graphically and by substitution and elimination",
+            "Determines the nature of solutions of a pair of linear equations",
+            "Models and solves contextualised problems using a pair of linear equations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "III", "name": "Coordinate Geometry", "marks": 4,
+      "chapters": [
+        {
+          "name": "Coordinate Geometry",
+          "topics": [
+            "Brief history of coordinate geometry", "The 2-D Cartesian coordinate system",
+            "Distance between two points in the 2-D plane", "Midpoint of the line segment between two points"
+          ],
+          "outcomes": [
+            "Specifies locations and relative positions using coordinates", "Computes the distance between two points",
+            "Determines whether three points are collinear", "Computes the midpoint of a line segment", "Checks whether a triangle is right-angled using coordinates"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "IV", "name": "Geometry", "marks": 25,
+      "chapters": [
+        {
+          "name": "Introduction to Euclid's Geometry: Axioms and Postulates",
+          "topics": [
+            "History of geometry", "Constructing a square with a given side as in Baudhayana's Sulbasutras",
+            "Discovering Euclid's definitions", "Axioms of measurement and rules for geometric objects"
+          ],
+          "outcomes": [
+            "Describes contributions of India, Egypt and Greece to geometry", "Explains the role of definitions, axioms and postulates",
+            "States the five postulates of Euclidean geometry", "Justifies simple constructions using the axioms"
+          ]
+        },
+        {
+          "name": "Lines and Angles",
+          "topics": [
+            "Rays and angles", "Measures of angles", "Intersecting lines and angles", "Pairs of angles",
+            "Theorems and examples on intersecting lines", "Theorems and examples on parallel lines"
+          ],
+          "outcomes": [
+            "Classifies angles as acute, right, obtuse or reflex", "States and applies the linear pair theorem and its converse",
+            "Proves that vertically opposite angles are equal", "Identifies corresponding, alternate and interior angles",
+            "Follows proof by contradiction in geometry"
+          ]
+        },
+        {
+          "name": "Triangles: Congruence Theorems",
+          "topics": [
+            "Practical applications of triangles", "Proofs of conditions of congruence of triangles", "Theorems on triangles",
+            "Propositions and their converse", "Problems based on applications of theorems on triangles"
+          ],
+          "outcomes": [
+            "Uses the SAS, SSS, ASA, RHS and AAS congruence conditions", "Proves basic properties of isosceles triangles",
+            "Identifies the converse of a proposition and uses counter-examples", "Explains why SSA is not in general a congruence condition"
+          ]
+        },
+        {
+          "name": "4-gons (Quadrilaterals)",
+          "topics": [
+            "Properties of parallelograms", "Theorems related to parallelograms and their proof",
+            "Midpoint theorem and its applications", "Central symmetry in the context of parallelograms"
+          ],
+          "outcomes": [
+            "Proves characterisations of a parallelogram", "Proves the midpoint theorem and a converse",
+            "Proves that the medians of a triangle are concurrent and divided in the ratio 2:1",
+            "Understands reflection and rotation symmetries of 4-gons"
+          ]
+        },
+        {
+          "name": "Circles",
+          "topics": [
+            "Practical applications and uses of circles", "Definitions: centre, diameter, radius", "Chords and the angles they subtend",
+            "Midpoints and perpendicular bisectors of chords", "Distance of chords from the centre", "Angles subtended by an arc", "Cyclicity of points"
+          ],
+          "outcomes": [
+            "Constructs the circumcircle and circumcentre of a triangle", "Explains why equal chords subtend equal angles at the centre",
+            "Relates chord length to its distance from the centre", "Explains that the angle at the centre is double the angle at the circumference",
+            "Determines when four points are concyclic", "Explains that a quadrilateral with supplementary opposite angles is cyclic, and conversely"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "V", "name": "Mensuration", "marks": 14,
+      "chapters": [
+        {
+          "name": "Area and Perimeter",
+          "topics": [
+            "Perimeter of shapes", "Perimeter of a circle: introduction to π and its irrationality", "Length of an arc",
+            "Area of rectangles, parallelograms and triangles", "Heron's formula", "Squaring a rectangle: proof from Baudhayana's Sulbasutras",
+            "Area of a circle: derivation", "Area of the sector of a circle", "Brahmagupta's formula for the area of a cyclic 4-gon",
+            "Heron's formula as a special case of Brahmagupta's formula"
+          ],
+          "outcomes": [
+            "Computes the circumference of a circle and the length of an arc", "Uses Heron's formula to compute the area of a triangle",
+            "Solves problems on areas of sectors and segments of circles", "States Brahmagupta's formula and explains Heron's formula as a special case"
+          ]
+        },
+        {
+          "name": "Surface Area and Volume",
+          "topics": ["Surface areas and volumes of spheres (including hemispheres) and right circular cones"],
+          "outcomes": [
+            "Computes surface area and volume of cuboids, cubes, cylinders, cones, pyramids and spheres",
+            "Compares surface areas and volumes by varying dimensions"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "VI", "name": "Statistics and Probability", "marks": 10,
+      "chapters": [
+        {
+          "name": "Statistics",
+          "topics": ["Graphical representation of data", "Measures of central tendency"],
+          "outcomes": [
+            "Collects, organises, visualises and interprets data to answer a statistical question", "Computes and applies weighted averages",
+            "Reads and interprets stacked and 100% stacked bar graphs"
+          ]
+        },
+        {
+          "name": "Introduction to Probability",
+          "topics": [
+            "Concept of probability and randomness", "The probability scale",
+            "Empirical probability: analysing data and performing experiments", "Theoretical probability: sample space and events",
+            "Representing probability through tree diagrams and tables"
+          ],
+          "outcomes": [
+            "Describes the likelihood of an event on the probability scale", "Estimates empirical probability from data",
+            "Computes theoretical probability, including with tree diagrams and tables"
+          ]
+        }
+      ]
+    }
+  ]
+}

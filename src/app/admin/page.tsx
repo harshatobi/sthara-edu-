@@ -2,10 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import {
-  SquaresFour, CalendarBlank, ChartLineUp, Heart, ShieldCheck, SignOut,
-  DownloadSimple, Sparkle, Check, NotePencil, CurrencyInr,
-} from '@phosphor-icons/react/dist/ssr';
+import { SquaresFourIcon as SquaresFour } from '@phosphor-icons/react/dist/ssr/SquaresFour';
+import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
+import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
+import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
+import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
+import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
+import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
+import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
+import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
+import { NotePencilIcon as NotePencil } from '@phosphor-icons/react/dist/ssr/NotePencil';
+import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { ICON_COLORS, colorForIcon } from '@/lib/iconColors';
 

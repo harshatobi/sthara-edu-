@@ -1,42 +1,54 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { SquaresFourIcon as SquaresFour } from '@phosphor-icons/react/dist/ssr/SquaresFour';
+import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
+import { ClipboardTextIcon as ClipboardText } from '@phosphor-icons/react/dist/ssr/ClipboardText';
+import { LightningIcon as Lightning } from '@phosphor-icons/react/dist/ssr/Lightning';
+import { BrainIcon as Brain } from '@phosphor-icons/react/dist/ssr/Brain';
+import { FireIcon as Fire } from '@phosphor-icons/react/dist/ssr/Fire';
+import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
+import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
+import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
+import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import TeacherDemoPortal from '@/components/teacher/TeacherDemoPortal';
-import { useAuth } from '@/contexts/AuthContext';
-import type { TeacherView } from '@/lib/demo/teacher';
 import AuthStatus from '@/components/ui/AuthStatus';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRoleGuard } from '@/lib/auth/useRoleGuard';
-import { LayoutDashboard, Users, Activity, CheckSquare, Heart, ClipboardList, BookMarked, PenLine, BarChart2, Rss } from 'lucide-react';
+import type { TeacherView } from '@/lib/demo/teacher';
+import { TeacherDeskProvider } from '@/lib/teacher/useTeacherDesk';
+
+// Canon teacher nav (mockup ROLES.teacher). Attendance and leave aren't built yet, so they aren't listed.
+const NAV: CanonNavItem[] = [
+  { href: '/teacher', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true },
+  { href: '/teacher/homework', label: 'Homework', icon: FileText },
+  { href: '/teacher/quiz', label: 'Quiz Creator', short: 'Quiz', icon: ClipboardText },
+  { href: '/teacher/syllabus', label: 'Syllabus', icon: Lightning },
+  { href: '/teacher/ai-assistant', label: 'AI Assistant', short: 'AI', icon: Brain },
+  { href: '/teacher/heatmap', label: 'Class Heat Map', short: 'Heat map', icon: Fire },
+  { href: '/teacher/mastery', label: 'Mastery Tracker', short: 'Mastery', icon: ChartLineUp },
+  { href: '/teacher/feed', label: 'Situational Feed', short: 'Feed', icon: Bell },
+  { href: '/teacher/wellness', label: 'Student Wellness', short: 'Wellness', icon: Heart },
+];
+
+const DEMO_VIEWS: Record<string, TeacherView> = {
+  syllabus: 'syl', homework: 'syl', quiz: 'quiz', 'ai-assistant': 'ai', heatmap: 'heat', mastery: 'mast', feed: 'feed', wellness: 'well',
+};
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { authorized } = useRoleGuard('Teacher');
+  const { profile, authorized } = useRoleGuard('Teacher');
 
-  const navigation = [
-    { name: 'Dashboard',         href: '/teacher',              icon: LayoutDashboard, current: pathname === '/teacher' },
-    { name: 'Syllabus Manager',  href: '/teacher/syllabus',     icon: BookMarked,      current: pathname === '/teacher/syllabus' },
-    { name: 'Homework Generator',href: '/teacher/homework',     icon: PenLine,         current: pathname.startsWith('/teacher/homework') },
-    { name: 'Assignment Manager',href: '/teacher/assignments',  icon: CheckSquare,     current: pathname === '/teacher/assignments' },
-    { name: 'Quiz Creator',      href: '/teacher/quiz',         icon: ClipboardList,   current: pathname.startsWith('/teacher/quiz') },
-    { name: 'AI Assistant',      href: '/teacher/ai-assistant', icon: Users,           current: pathname === '/teacher/ai-assistant' },
-    { name: 'Class Heat Map',    href: '/teacher/heatmap',      icon: BarChart2,       current: pathname === '/teacher/heatmap' },
-    { name: 'Mastery Tracker',   href: '/teacher/mastery',      icon: Activity,        current: pathname === '/teacher/mastery' },
-    { name: 'Situational Feed',  href: '/teacher/feed',         icon: Rss,             current: pathname === '/teacher/feed' },
-    { name: 'Student Wellness',  href: '/teacher/wellness',     icon: Heart,           current: pathname === '/teacher/wellness' },
-  ];
-
-  if (!authorized) return <AuthStatus />;
-  if (process.env.NODE_ENV === 'development' && !user && pathname !== '/teacher') {
-    const views: Record<string, TeacherView> = { syllabus: 'syl', homework: 'syl', assignments: 'syl', quiz: 'quiz', 'ai-assistant': 'ai', heatmap: 'heat', mastery: 'mast', feed: 'feed', wellness: 'well', grading: 'review' };
-    return <TeacherDemoPortal key={pathname} initialView={views[pathname.split('/')[2]] || 'dash'} />;
+  if (!authorized || !profile) return <AuthStatus />;
+  // Local no-backend dev bypass only (no Supabase session): the sample desk.
+  // A signed-in teacher always gets their own school's real data.
+  if (process.env.NODE_ENV === 'development' && !user) {
+    return <TeacherDemoPortal key={pathname} initialView={DEMO_VIEWS[pathname.split('/')[2]] || 'dash'} />;
   }
-  if (pathname === '/teacher') return <>{children}</>;
-
   return (
-    <DashboardLayout role="Teacher" subtitle="Diagnostic Engine" navigation={navigation}>
-      {children}
-    </DashboardLayout>
+    <TeacherDeskProvider>
+      <CanonShell subtitle="TEACHING COPILOT" nav={NAV} label="Teacher navigation">{children}</CanonShell>
+    </TeacherDeskProvider>
   );
 }

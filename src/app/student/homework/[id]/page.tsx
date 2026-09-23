@@ -204,10 +204,23 @@ export default function HomeworkWorkspace() {
     // a browser write scores (grade integrity).
     const token = await getAuthToken();
     if (!token) throw new Error('Your session has expired. Sign in again to submit.');
+    // Photo answers go up first; the answer stored for that question is the file's URL.
+    const uploaded: Record<number, { file: string }> = {};
+    for (const [key, file] of Object.entries(questionFiles)) {
+      if (!file) continue;
+      const form = new FormData();
+      form.append('file', file);
+      form.append('studentId', profile!.uid);
+      form.append('assignmentId', String(id));
+      form.append('pageIndex', key);
+      const up = await fetch('/api/student/upload-submission', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+      if (!up.ok) throw new Error((await up.json().catch(() => null))?.error || `Photo for question ${Number(key) + 1} didn't upload.`);
+      uploaded[Number(key)] = { file: (await up.json()).url };
+    }
     const res = await fetch('/api/student/submit-typed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ assignmentId: id, answers }),
+      body: JSON.stringify({ assignmentId: id, answers: { ...answers, ...uploaded } }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Submission failed. Please try again.');
@@ -272,7 +285,7 @@ export default function HomeworkWorkspace() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, alreadySubmitted, isTyped, answers, pages, assignment, questions, profile, user]);
+  }, [submitting, alreadySubmitted, isTyped, answers, questionFiles, pages, assignment, questions, profile, user]);
 
   useEffect(() => { submitRef.current = handleSubmit; }, [handleSubmit]);
 

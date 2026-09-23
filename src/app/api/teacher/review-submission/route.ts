@@ -1,101 +1,100 @@
-import { NextResponse, NextRequest } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
-import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { computeStudentTml } from '@/lib/tml/engine';
+import { NextResponse, type NextRequest } from 'next/server';
+import { requireStaff } from '@/lib/teacher/serverAuth';
+import { inScope } from '@/lib/teacher/scope';
+import { marksOf, sanitizeQuestions } from '@/lib/teacher/questions';
+import { normalizeComponentType, computeStudentTml } from '@/lib/tml/engine';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/teacher/review-submission
- * Body: { submissionId, schoolId, teacherApproved, grade, teacherNote, overrideScore?, overrideMax? }
- * Updates teacher_approved, grade, and teacher_note on a submission using the service role.
- * Triggers TML re-computation to log snapshot rows in tml_scores table.
- * Requires: Valid JWT for a teacher/admin of the school.
+ * { submissionId, questionScores?: (number)[], score?: number, note?: string }
+ *
+ * The teacher's confirmed grade. Typed work is marked per question
+ * (questionScores, one entry per question, each 0..marks); handwritten work
+ * gets one overall score (0..max). Either way the submission becomes
+ * teacher-approved, its evidence rows (submission_items) are rewritten to
+ * match what the teacher confirmed, TML is recomputed, and the student is
+ * notified. Re-reviewing an approved submission is an amendment (audited by
+ * the database trigger on submissions).
  */
-export async function POST(request: NextRequest) {
-  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
-  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function POST(req: NextRequest) {
+  const auth = await requireStaff(req);
+  if ('res' in auth) return auth.res;
+  const { staff, db } = auth;
 
-  try {
-    const { submissionId, schoolId, teacherApproved, grade, teacherNote, overrideScore, overrideMax } = await request.json();
+  const body = await req.json().catch(() => null);
+  const submissionId = typeof body?.submissionId === 'string' ? body.submissionId : '';
+  if (!submissionId) return NextResponse.json({ error: 'submissionId is required' }, { status: 400 });
 
-    if (!submissionId || !schoolId) {
-      return NextResponse.json({ error: 'submissionId and schoolId are required' }, { status: 400 });
-    }
-
-    const supabase = createAdminClient();
-
-    // Verify requesting user is teacher/admin in this school
-    const { data: reqUser } = await supabase
-      .from('users')
-      .select('role, school_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!reqUser || reqUser.school_id !== schoolId || !['teacher', 'admin', 'superadmin'].includes(reqUser.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Fetch existing submission record to get student_id and assignment details
-    const { data: existingSub } = await supabase
-      .from('submissions')
-      .select('student_id, assignment_id, assignments(subject)')
-      .eq('id', submissionId)
-      .maybeSingle();
-
-    // Build the update payload — always update approval/grade fields
-    const updatePayload: Record<string, any> = {
-      teacher_approved: teacherApproved,
-      grade: grade || null,
-      teacher_note: teacherNote || null,
-      final_grade: grade || null,
-    };
-
-    if (overrideScore !== undefined && overrideScore !== null && overrideScore !== '') {
-      updatePayload.score = parseFloat(String(overrideScore));
-    }
-    if (overrideMax !== undefined && overrideMax !== null && overrideMax !== '') {
-      updatePayload.max_score = parseFloat(String(overrideMax));
-    }
-
-    const { error: updateErr } = await supabase
-      .from('submissions')
-      .update(updatePayload)
-      .eq('id', submissionId)
-      .eq('school_id', schoolId);
-
-    if (updateErr) throw updateErr;
-
-    // Update teacher_confirmed on submission_items matching submission_id
-    if (teacherApproved !== undefined && teacherApproved !== null) {
-      await supabase
-        .from('submission_items')
-        .update({ teacher_confirmed: teacherApproved })
-        .eq('submission_id', submissionId);
-    }
-
-    // Trigger TML re-computation to log updated snapshot in tml_scores
-    let tmlResult: any = null;
-    if (existingSub?.student_id) {
-      const subject = (existingSub.assignments as any)?.subject;
-      try {
-        tmlResult = await computeStudentTml(supabase, existingSub.student_id, subject);
-      } catch (tmlErr) {
-        console.error('[review-submission] TML recomputation error:', tmlErr);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      submissionId,
-      teacherApproved,
-      tmlUpdated: !!tmlResult,
-      computedTopics: tmlResult?.computedTopicsCount || 0,
-    });
-
-  } catch (err: any) {
-    console.error('[review-submission]', err);
-    return NextResponse.json({ error: err.message || 'Update failed' }, { status: 500 });
+  const { data: sub } = await db.from('submissions')
+    .select('id, student_id, school_id, assignment_id, max_score, teacher_approved')
+    .eq('id', submissionId).eq('school_id', staff.schoolId).maybeSingle();
+  if (!sub) return NextResponse.json({ error: 'Submission not found.' }, { status: 404 });
+  const { data: a } = await db.from('assignments')
+    .select('id, title, type, class, subject, teacher_id, questions, total_marks, submission_mode')
+    .eq('id', sub.assignment_id).maybeSingle();
+  if (!a) return NextResponse.json({ error: 'Assignment not found.' }, { status: 404 });
+  if (staff.role === 'teacher' && a.teacher_id !== staff.id && !inScope(staff.scope, a.class, a.subject)) {
+    return NextResponse.json({ error: 'You can only review work for classes you teach.' }, { status: 403 });
   }
-}
 
+  const { questions } = sanitizeQuestions(a.questions);
+  const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 4000) : '';
+  const component = normalizeComponentType(a.type) === 'quiz' ? 'quiz' : 'homework';
+
+  let score: number;
+  let max: number;
+  let items: { question_index: number; score: number; max_score: number }[] = [];
+
+  if (Array.isArray(body?.questionScores)) {
+    if (!questions.length || body.questionScores.length !== questions.length) {
+      return NextResponse.json({ error: 'Give a mark for every question.' }, { status: 400 });
+    }
+    for (const [i, q] of questions.entries()) {
+      const v = Number(body.questionScores[i]);
+      const m = marksOf(q);
+      if (!Number.isFinite(v) || v < 0 || v > m) return NextResponse.json({ error: `Question ${i + 1}: mark must be between 0 and ${m}.` }, { status: 400 });
+      items.push({ question_index: i, score: v, max_score: m });
+    }
+    score = items.reduce((n, x) => n + x.score, 0);
+    max = items.reduce((n, x) => n + x.max_score, 0);
+  } else {
+    max = Number(sub.max_score ?? a.total_marks) || (questions.length ? questions.reduce((n, q) => n + marksOf(q), 0) : 10);
+    score = Number(body?.score);
+    if (!Number.isFinite(score) || score < 0 || score > max) return NextResponse.json({ error: `Score must be between 0 and ${max}.` }, { status: 400 });
+    // One overall mark: a single evidence row stands for the whole submission.
+    items = [{ question_index: 0, score, max_score: max }];
+  }
+
+  const { error: upErr } = await db.from('submissions').update({
+    score, max_score: max, grade: `${score}/${max}`, final_grade: `${score}/${max}`,
+    teacher_approved: true, teacher_note: note || null,
+  }).eq('id', sub.id);
+  if (upErr) {
+    console.error('[review-submission] update failed:', upErr.message);
+    return NextResponse.json({ error: 'Could not save the grade.' }, { status: 500 });
+  }
+
+  // Evidence the TML engine reads: replace whatever the auto-grader wrote.
+  await db.from('submission_items').delete().eq('submission_id', sub.id);
+  const { error: itemsErr } = await db.from('submission_items').insert(items.map(x => ({
+    ...x, submission_id: sub.id, assignment_id: a.id, student_id: sub.student_id, school_id: sub.school_id,
+    component_type: component, teacher_confirmed: true,
+  })));
+  if (itemsErr) console.error('[review-submission] items insert failed:', itemsErr.message);
+
+  const amended = sub.teacher_approved === true;
+  await db.from('notifications').insert({
+    school_id: sub.school_id, student_id: sub.student_id, user_id: sub.student_id, type: 'grade',
+    title: amended ? `Grade updated: ${a.title}` : `Graded: ${a.title}`,
+    body: `${staff.name} ${amended ? 'updated' : 'confirmed'} your mark: ${score}/${max}.${note ? ` "${note.slice(0, 140)}"` : ''}`,
+    metadata: { assignmentId: a.id, submissionId: sub.id },
+  }).then(({ error }) => { if (error) console.warn('[review-submission] notification failed:', error.message); });
+
+  let tmlUpdated = false;
+  try { tmlUpdated = !!(await computeStudentTml(db, sub.student_id, a.subject || undefined)); }
+  catch (e: any) { console.error('[review-submission] TML recompute failed:', e?.message); }
+
+  return NextResponse.json({ success: true, score, max, amended, tmlUpdated });
+}

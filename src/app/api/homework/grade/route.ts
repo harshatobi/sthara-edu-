@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { assignmentId, studentId, imageBase64, mimeType, images, imageUrls, questions, schoolId } = await request.json();
+    const { assignmentId, studentId, imageBase64, mimeType, images, imageUrls } = await request.json();
 
     if (studentId && user.id !== studentId) {
       return NextResponse.json({ error: 'Forbidden: can only submit your own grading request' }, { status: 403 });
@@ -58,16 +58,24 @@ export async function POST(request: NextRequest) {
     let assignmentTitle = 'Homework Task';
     let assignmentSubject = 'General';
 
-    if (assignmentId) {
-      const { data: assignRow } = await supabase
-        .from('assignments')
-        .select('total_marks, title, subject, units')
-        .eq('id', assignmentId)
-        .maybeSingle();
-      if (assignRow?.total_marks) totalMarks = assignRow.total_marks;
-      if (assignRow?.title) assignmentTitle = assignRow.title;
-      if (assignRow?.subject) assignmentSubject = assignRow.subject;
-    }
+    // Who's submitting and for what comes from the database, not the request:
+    // a student, in the assignment's school, for posted work, exactly once.
+    if (!assignmentId) return NextResponse.json({ error: 'assignmentId is required' }, { status: 400 });
+    const [{ data: me }, { data: assignRow }] = await Promise.all([
+      supabase.from('users').select('role, school_id').eq('id', user.id).maybeSingle(),
+      supabase.from('assignments').select('total_marks, title, subject, units, school_id, status, questions').eq('id', assignmentId).maybeSingle(),
+    ]);
+    if (me?.role !== 'student') return NextResponse.json({ error: 'Only students submit homework.' }, { status: 403 });
+    if (!assignRow || assignRow.status === 'draft') return NextResponse.json({ error: 'Assignment not found.' }, { status: 404 });
+    if (!me.school_id || me.school_id !== assignRow.school_id) return NextResponse.json({ error: 'This assignment is not in your school.' }, { status: 403 });
+    const { data: already } = await supabase.from('submissions').select('id').eq('assignment_id', assignmentId).eq('student_id', user.id).maybeSingle();
+    if (already) return NextResponse.json({ error: 'You have already submitted this assignment.' }, { status: 409 });
+    const ownSchoolId: string = me.school_id;
+    // Grade against the questions the teacher set, not whatever the client sends.
+    const questions: any[] = Array.isArray(assignRow.questions) ? assignRow.questions : [];
+    if (assignRow.total_marks) totalMarks = assignRow.total_marks;
+    if (assignRow.title) assignmentTitle = assignRow.title;
+    if (assignRow.subject) assignmentSubject = assignRow.subject;
 
     const ai = new GoogleGenAI({ apiKey });
 
@@ -135,7 +143,8 @@ Output your response ONLY as a single valid JSON object matching this exact sche
     const gradeString = parsed.grade || (numericScore !== null ? `${numericScore}/${totalMarks}` : 'N/A');
 
     // Save or Update submission record in Supabase
-    if (assignmentId && studentId) {
+    if (assignmentId) {
+      const studentId = user.id;
       const { data: existingSub } = await supabase
         .from('submissions')
         .select('id')
@@ -164,7 +173,7 @@ Output your response ONLY as a single valid JSON object matching this exact sche
         const { data: newSub } = await supabase.from('submissions').insert({
           assignment_id: assignmentId,
           student_id: studentId,
-          school_id: schoolId || null,
+          school_id: ownSchoolId,
           ai_feedback: parsed.feedback || parsed.summary || 'AI grading complete.',
           ai_grade: gradeString,
           score: numericScore,
@@ -187,7 +196,7 @@ Output your response ONLY as a single valid JSON object matching this exact sche
             submission_id: subId,
             assignment_id: assignmentId,
             student_id: studentId,
-            school_id: schoolId || null,
+            school_id: ownSchoolId,
             question_index: i + 1,
             component_type: 'homework',
             score: q.awardedScore || 0,

@@ -37,7 +37,7 @@ async function loadLive(profile: UserProfile): Promise<Rows> {
 
   const submissions = s.data || [];
   const submittedIds = new Set(submissions.map(x => x.assignment_id));
-  const assignments = (a.data || []).filter(x =>
+  const assignments = (a.data || []).filter(x => x.status !== 'draft').filter(x =>
     // Always keep anything the student already submitted, even if it's since been re-targeted.
     submittedIds.has(x.id) || isAssignedTo(x, profile.studentClass || '', profile.uid, profile.customStudentId || ''));
 

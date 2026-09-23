@@ -21,13 +21,16 @@
   -webkit-font-smoothing:antialiased;
   min-height:100vh; display:flex; width:100%;
 }
-.canon *, .canon *::before, .canon *::after { box-sizing:border-box; }
-.canon h1, .canon h2, .canon h3, .canon h4 { letter-spacing:-.025em; line-height:1.15; margin:0; }
-.canon p { margin:0; }
-.canon button { font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; }
-.canon button:disabled { cursor:default; opacity:.6; }
-.canon a { color:inherit; text-decoration:none; }
+:where(.canon) *, :where(.canon) *::before, :where(.canon) *::after { box-sizing:border-box; }
+:where(.canon) :where(h1, h2, h3, h4) { letter-spacing:-.025em; line-height:1.15; margin:0; }
+:where(.canon) p { margin:0; }
+:where(.canon) button { font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; }
+:where(.canon) button:disabled { cursor:default; opacity:.6; }
+:where(.canon) a { color:inherit; text-decoration:none; }
 .canon .mono { font-family:'IBM Plex Mono',ui-monospace,monospace; }
+
+/* Element resets above use :where(.canon) — zero specificity — so Tailwind
+   utilities on legacy pages rendered inside the canon shell still win. */
 
 /* ---------- SHELL ---------- */
 .canon > aside { width:264px; flex:0 0 264px; background:var(--nav); min-height:100vh; padding:26px 18px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; }
@@ -202,7 +205,7 @@
 /* Selected (navy) tab: a light halo instead of the icon's tinted one. */
 .canon .tab.on .icon-interactive::before { background:rgba(255,255,255,.16); box-shadow:none; }
 /* Hero stat icon wells: the interactive icon supplies its own halo. */
-.canon .hstat .ic .icon-interactive::before { display:none; }
+.canon .hstat .ic .icon-interactive::before, .canon .hstat .ic .icon-interactive::after { display:none; }
 
 /* Toast (mockup #sw pill): transient confirmation of a save. */
 .canon .toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:80; background:var(--ink); color:#fff; border-radius:99px;
@@ -260,3 +263,204 @@
   .canon > aside, .canon .no-print { display:none !important; }
   .canon > main { padding:0 !important; }
 }
+
+/* ---------- COMPOSER / GRADING (mockup .cmp-*, workspace header) ---------- */
+.canon .ws-head { position:sticky; top:0; z-index:2; background:#fff; border-bottom:1px solid var(--line); padding:16px 30px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.canon .ws-head h1 { font-size:19px; font-weight:800; line-height:1.25; }
+.canon .ws-head .sub { font-size:12px; color:var(--mut); margin-top:2px; }
+.canon .cmp { max-width:880px; margin:0 auto; width:100%; }
+.canon .cmp-fld { margin-bottom:16px; }
+.canon .cmp-fld label { display:block; font-size:11.5px; font-weight:800; letter-spacing:.08em; color:var(--mut); margin-bottom:7px; }
+.canon .cmp-in, .canon .cmp-sel { width:100%; border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14.5px; color:var(--ink); background:#fff; }
+.canon textarea.cmp-in { resize:vertical; min-height:74px; line-height:1.5; }
+.canon .cmp-in:focus, .canon .cmp-sel:focus { outline:2px solid var(--blue); outline-offset:1px; border-color:var(--blue); }
+.canon .cmp-sel:disabled { background:var(--body); color:var(--mut2); }
+.canon .cmp-q { border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:12px; background:#FCFDFE; }
+.canon .cmp-q .hd { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; }
+.canon .cmp-q .hd b { font-size:12px; font-weight:800; letter-spacing:.08em; color:var(--mut); }
+.canon .cmp-opts { display:grid; gap:8px; margin-top:10px; }
+.canon .cmp-opt { display:flex; gap:10px; align-items:center; font-size:13.5px; }
+.canon .cmp-opt b { flex:0 0 22px; width:22px; height:22px; border-radius:50%; border:1.5px solid #CBD5E1; display:grid; place-items:center; font-size:10px; color:var(--mut); }
+.canon .cmp-opt.ok b { background:var(--green); border-color:var(--green); color:#fff; }
+.canon .cmp-marks { width:74px; flex:0 0 74px; text-align:center; }
+.canon .seg { display:inline-flex; background:var(--body); border:1px solid var(--line); border-radius:12px; padding:3px; gap:3px; }
+.canon .seg button { padding:8px 14px; border-radius:9px; font-size:13px; font-weight:700; color:var(--mut); }
+.canon .seg button.on { background:#fff; color:var(--ink); box-shadow:var(--sh); }
+.canon .err { background:#FFF1F4; border-left:3px solid var(--red); border-radius:10px; padding:12px 14px; font-size:13px; color:#9F1239; line-height:1.5; }
+.canon .ans { background:var(--body); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13.5px; line-height:1.55; white-space:pre-wrap; margin-top:8px; }
+.canon .stepper { display:flex; align-items:center; gap:8px; }
+.canon .stepper input { width:64px; text-align:center; }
+.canon .stepper .of { color:var(--mut); font-size:13px; font-weight:700; }
+.canon .sub-pick { display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%; text-align:left; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:#fff; }
+.canon .sub-pick.on { border:2px solid var(--ink); }
+@media (max-width:680px) { .canon .ws-head { padding:12px 14px; } }
+
+/* ---------- HEAT MAP / MASTERY (mockup .kpi .gh, .track, .hm, .heat-av, .cell) ---------- */
+.canon .kpi .gh { position:absolute; right:14px; top:50%; transform:translateY(-50%); opacity:.07; }
+.canon .track { height:9px; background:#EDF1F7; border-radius:99px; overflow:hidden; display:flex; flex:1; min-width:100px; }
+.canon .track i { height:100%; }
+.canon .heat-av { width:30px; height:30px; border-radius:9px; display:grid; place-items:center; color:#fff; font-weight:800; font-size:11px; flex:0 0 30px; }
+.canon .hm { border-collapse:separate; border-spacing:4px; width:100%; }
+.canon .hm th { font-size:11px; font-weight:800; color:var(--mut); text-align:left; padding:0 4px 6px; letter-spacing:.04em; }
+.canon .hm td.nm { font-size:13px; font-weight:700; white-space:nowrap; padding-right:10px; }
+.canon .hm .cell { border-radius:8px; text-align:center; font-size:12px; font-weight:800; padding:11px 4px; color:#fff; min-width:64px; }
+.canon .hm .cell.na { background:#F1F5F9 !important; color:var(--mut2) !important; font-weight:700; }
+.canon .chap-row { display:flex; align-items:center; gap:16px; width:100%; text-align:left; padding:14px 12px; border-top:1px solid var(--line); background:#fff; }
+.canon .chap-row:hover { background:#FAFCFF; }
+.canon .chap-row .num { width:36px; height:36px; border-radius:10px; background:var(--pale); color:var(--blue); display:grid; place-items:center; font-weight:800; font-size:12.5px; flex:0 0 36px; }
+.canon .legend { display:flex; gap:14px; font-size:11px; font-weight:700; color:var(--mut); flex-wrap:wrap; }
+.canon .legend i { display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+@media (max-width:680px) { .canon .hm { font-size:11px; } .canon .chap-row .track { display:none; } }
+
+/* ---------- SYLLABUS / PACING / LESSON PLANNER ---------- */
+.canon .syl-ch { border:1px solid var(--line); border-radius:16px; padding:20px 22px; margin-bottom:12px; background:#fff; }
+.canon .syl-ch.open { box-shadow:var(--sh); }
+.canon .syl-ch .top { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
+.canon .syl-ch .hd { display:flex; align-items:center; gap:14px; min-width:0; flex:1 1 320px; text-align:left; }
+.canon .syl-tp { display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); font-size:14px; flex-wrap:wrap; }
+.canon .syl-tp .nm { flex:1 1 260px; font-weight:600; line-height:1.45; min-width:0; }
+.canon .syl-tp .meta { font-size:11.5px; color:var(--mut); font-weight:600; }
+.canon .st-pick { appearance:none; border:0; border-radius:8px; padding:5px 26px 5px 10px; font:inherit; font-size:10.5px; font-weight:800; letter-spacing:.04em; cursor:pointer; min-width:112px;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%); background-size:4px 4px; background-position:calc(100% - 13px) 55%,calc(100% - 9px) 55%; background-repeat:no-repeat; }
+.canon .st-pick.n { background-color:#F1F5F9; color:#556378; } .canon .st-pick.b { background-color:#E6EEFF; color:#1E4FCC; }
+.canon .st-pick.g { background-color:#DCFCE7; color:#0B7A54; } .canon .st-pick.a { background-color:#FEF3C7; color:#92600A; }
+.canon .filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+.canon .fchip { border:1px solid var(--line); background:#fff; border-radius:99px; padding:7px 14px; font-size:12.5px; font-weight:700; color:var(--mut); }
+.canon .fchip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+.canon .search { flex:1 1 220px; max-width:320px; border:1.5px solid var(--line); border-radius:99px; padding:8px 14px; font:inherit; font-size:13px; background:#fff; color:var(--ink); }
+.canon .outc { margin-top:12px; background:#F8FAFD; border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:13px; line-height:1.6; }
+.canon .outc ul { margin:6px 0 0; padding-left:18px; }
+/* Pacing timeline */
+.canon .gantt { position:relative; }
+.canon .g-row { display:grid; grid-template-columns:minmax(160px,260px) 1fr 92px; gap:14px; align-items:center; padding:9px 0; border-top:1px solid var(--line); }
+.canon .g-row.head { border-top:0; padding-top:0; }
+.canon .g-lane { position:relative; height:26px; background:#F4F7FC; border-radius:8px; }
+.canon .g-bar { position:absolute; top:3px; bottom:3px; border-radius:6px; overflow:hidden; background:#DCE6F8; min-width:6px; }
+.canon .g-bar i { position:absolute; left:0; top:0; bottom:0; background:var(--blue); opacity:.85; }
+.canon .g-today { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--red); border-radius:2px; z-index:1; }
+.canon .g-months { position:relative; height:18px; font-size:10.5px; font-weight:800; color:var(--mut2); letter-spacing:.04em; }
+.canon .g-months span { position:absolute; top:0; transform:translateX(-50%); white-space:nowrap; }
+.canon .g-edit { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 0 4px; }
+.canon .g-edit input { width:auto; padding:7px 10px; font-size:13px; }
+/* Week planner */
+.canon .week { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
+.canon .day { background:#fff; border-radius:16px; box-shadow:var(--sh); padding:12px; min-height:180px; display:flex; flex-direction:column; gap:8px; }
+.canon .day.today { outline:2px solid var(--blue); outline-offset:-2px; }
+.canon .day .dh { display:flex; justify-content:space-between; align-items:baseline; padding:2px 4px 6px; }
+.canon .day .dh b { font-size:13px; } .canon .day .dh span { font-size:11.5px; color:var(--mut); font-weight:700; }
+.canon .lcard { text-align:left; width:100%; border:1px solid var(--line); border-left:4px solid var(--blue); border-radius:10px; padding:9px 10px; background:#FCFDFE; font-size:12.5px; }
+.canon .lcard:hover { border-color:#C9D6E8; }
+.canon .lcard.taught { border-left-color:var(--green); } .canon .lcard.draft { border-left-color:#CBD5E1; }
+.canon .lcard b { display:block; font-size:13px; line-height:1.3; margin:2px 0; }
+.canon .day .add { margin-top:auto; border:1.5px dashed var(--line); border-radius:10px; padding:8px; font-size:12px; font-weight:700; color:var(--mut); }
+.canon .day .add:hover { border-color:var(--blue); color:var(--blue); }
+/* Lesson editor */
+.canon .lp-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; align-items:start; }
+.canon .lp-side { position:sticky; top:84px; }
+.canon .stage { border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px; background:#FCFDFE; }
+.canon .stage .hd { display:flex; gap:10px; align-items:center; margin-bottom:10px; }
+.canon .stage .hd input.nm { flex:1; font-weight:700; }
+.canon .timebar { display:flex; height:10px; border-radius:99px; overflow:hidden; background:#EDF1F7; margin:8px 0 4px; }
+.canon .timebar i { height:100%; }
+.canon .li-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.canon .li-row .cmp-in { padding:9px 12px; font-size:13.5px; }
+.canon .tp-pick { display:flex; gap:8px; align-items:flex-start; font-size:13px; line-height:1.45; padding:6px 0; cursor:pointer; }
+.canon .tp-pick input { margin-top:3px; }
+@media (max-width:1100px) { .canon .week { grid-template-columns:repeat(3,minmax(0,1fr)); } .canon .lp-grid { grid-template-columns:1fr; } .canon .lp-side { position:static; } }
+@media (max-width:680px) { .canon .week { grid-template-columns:1fr; } .canon .g-row { grid-template-columns:1fr; } .canon .g-row .g-lane { order:2; } }
+@media print {
+  .canon .ws { position:static; overflow:visible; }
+  .canon .ws-head, .canon .lp-side, .canon .no-print { display:none !important; }
+}
+.canon .cmp-fld label.tp-pick { display:flex; font-size:13px; font-weight:500; letter-spacing:0; color:var(--ink); margin:0; text-transform:none; }
+.canon .cmp-fld label.stepper { display:flex; margin:0; }
+
+/* ---------- TEACHER COPILOT ---------- */
+.canon .cp-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; align-items:start; }
+.canon .cp-rail { position:sticky; top:18px; display:flex; flex-direction:column; gap:16px; }
+.canon .cp-studio button.kind { display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; text-align:left; padding:10px 12px; border-radius:11px; margin-bottom:4px; }
+.canon .cp-studio button.kind b { font-size:13.5px; font-weight:700; color:var(--mut); }
+.canon .cp-studio button.kind span { font-size:11.5px; color:var(--mut2); }
+.canon .cp-studio button.kind:hover { background:var(--body); }
+.canon .cp-studio button.kind.on { background:var(--pale); }
+.canon .cp-studio button.kind.on b { color:var(--blue); }
+.canon .cp-chat { display:flex; flex-direction:column; min-height:420px; }
+.canon .cp-stream { flex:1; display:flex; flex-direction:column; gap:16px; padding:22px; }
+.canon .cp-ctx { display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:12px 18px; border-bottom:1px solid var(--line); font-size:12px; color:var(--mut); }
+.canon .cp-input { border-top:1px solid var(--line); padding:14px 16px; display:flex; gap:10px; align-items:flex-end; position:sticky; bottom:0; background:#fff; border-radius:0 0 var(--r) var(--r); }
+.canon .cp-input textarea { flex:1; resize:none; border:1.5px solid var(--line); border-radius:14px; padding:12px 14px; font:inherit; font-size:14.5px; line-height:1.5; max-height:180px; color:var(--ink); background:#fff; }
+.canon .cp-input textarea:focus { outline:2px solid var(--blue); outline-offset:1px; border-color:var(--blue); }
+.canon .cp-me { align-self:flex-end; max-width:78%; background:var(--ink); color:#fff; border-radius:16px 16px 4px 16px; padding:12px 16px; font-size:14px; line-height:1.6; white-space:pre-wrap; }
+.canon .cp-ai { align-self:stretch; display:flex; gap:12px; }
+.canon .cp-ai .cp-av { width:34px; height:34px; flex:0 0 34px; border-radius:11px; display:grid; place-items:center; color:#fff; background:linear-gradient(140deg,#7C5CFC,#2F6BFF); box-shadow:0 4px 12px rgba(79,70,229,.25); }
+.canon .cp-ai .cp-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:12px; }
+.canon .cp-say { background:#F4F7FC; border-radius:4px 16px 16px 16px; padding:13px 17px; font-size:14px; line-height:1.65; }
+.canon .md p { margin:0 0 8px; } .canon .md p:last-child { margin-bottom:0; }
+.canon .md ul, .canon .md ol { margin:4px 0 8px; padding-left:20px; } .canon .md li { margin:2px 0; }
+.canon .md h1, .canon .md h2, .canon .md h3 { font-size:15px; margin:12px 0 6px; }
+.canon .md table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13px; }
+.canon .md th, .canon .md td { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+.canon .cp-ask { border:1.5px solid #D8CCFF; background:#FBFAFF; border-radius:16px; padding:14px 16px; }
+.canon .cp-ask .q { font-weight:700; font-size:13.5px; margin:10px 0 8px; }
+.canon .cp-ask .q:first-child { margin-top:0; }
+.canon .opt { border:1.5px solid var(--line); background:#fff; border-radius:99px; padding:7px 13px; font-size:12.5px; font-weight:700; color:var(--ink); margin:0 6px 6px 0; }
+.canon .opt:hover { border-color:#B9A6FF; }
+.canon .opt.on { background:var(--purple); border-color:var(--purple); color:#fff; }
+.canon .sugg { display:flex; gap:6px; flex-wrap:wrap; }
+.canon .sugg button { border:1px dashed #C9D6E8; background:#fff; border-radius:99px; padding:6px 12px; font-size:12px; font-weight:700; color:var(--blue); }
+.canon .sugg button:hover { border-style:solid; background:var(--pale); }
+.canon .art { border:1px solid var(--line); border-radius:16px; background:#fff; box-shadow:var(--sh); overflow:hidden; }
+.canon .art-hd { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px 18px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#FBFCFE,#fff); flex-wrap:wrap; }
+.canon .art-bd { padding:16px 18px; font-size:13.5px; line-height:1.6; }
+.canon .art-ft { display:flex; gap:8px; flex-wrap:wrap; padding:12px 18px; border-top:1px solid var(--line); background:#FBFCFE; }
+.canon .art-q { padding:10px 0; border-top:1px solid var(--line); } .canon .art-q:first-child { border-top:0; padding-top:0; }
+.canon .art-q .opts { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:4px 14px; margin-top:6px; font-size:13px; color:var(--mut); }
+.canon .art-q .opts span { display:inline-flex; align-items:center; gap:4px; }
+.canon .art-q .opts .ok { color:var(--green); font-weight:700; }
+.canon .art-q .why { font-size:12.5px; color:#5B3DD1; background:#F6F3FF; border-radius:8px; padding:6px 10px; margin-top:6px; }
+.canon .rub { width:100%; border-collapse:collapse; font-size:12.5px; }
+.canon .rub th, .canon .rub td { border:1px solid var(--line); padding:8px; vertical-align:top; text-align:left; }
+.canon .rub th { background:var(--body); font-size:11.5px; letter-spacing:.04em; }
+.canon .ins { border:1px solid var(--line); border-left:4px solid var(--mut2); border-radius:12px; padding:12px 14px; margin-bottom:10px; background:#fff; }
+.canon .ins.r { border-left-color:var(--red); } .canon .ins.a { border-left-color:var(--amber); } .canon .ins.b { border-left-color:var(--blue); } .canon .ins.g { border-left-color:var(--green); }
+.canon .ins b { display:block; font-size:13px; line-height:1.4; } .canon .ins p { font-size:12px; color:var(--mut); margin:4px 0 8px; line-height:1.5; }
+.canon .ins .acts { gap:6px; }
+.canon .thread { display:block; width:100%; text-align:left; padding:8px 10px; border-radius:10px; font-size:12.5px; }
+.canon .thread:hover, .canon .thread.on { background:var(--body); }
+.canon .thread span { display:block; font-size:11px; color:var(--mut2); }
+@media (max-width:1180px) { .canon .cp-grid { grid-template-columns:1fr; } .canon .cp-rail { position:static; } }
+@media (max-width:900px) { .canon .cp-grid { grid-template-columns:1fr; } .canon .cp-rail { position:static; } }
+
+/* Print just one artifact (Copilot "Print"). */
+@media print {
+  body.print-one * { visibility:hidden !important; }
+  body.print-one .print-me, body.print-one .print-me * { visibility:visible !important; }
+  body.print-one .print-me { position:absolute; left:0; top:0; width:100%; box-shadow:none; border:0; }
+  body.print-one .print-me .art-ft { display:none; }
+}
+
+/* Copilot studio: tiles -> panel (settings | free example) -> create */
+.canon .st-tiles { display:flex; gap:18px; flex-wrap:wrap; }
+.canon .st-group { display:flex; flex-direction:column; gap:8px; }
+.canon .st-glabel { font-size:10.5px; font-weight:800; letter-spacing:.1em; color:var(--mut2); }
+.canon .st-row { display:flex; gap:8px; flex-wrap:wrap; }
+.canon .st-tile { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:#fff; border-radius:12px; padding:9px 14px 9px 11px; font-size:13.5px; font-weight:700; color:var(--ink); transition:border-color .2s, background .2s, box-shadow .2s; }
+.canon .st-tile:hover { border-color:#C9D6E8; box-shadow:0 2px 8px rgba(0,33,71,.06); }
+.canon .st-tile.on { border-color:var(--ink); background:#F8FAFD; }
+.canon .st-tile .icon-interactive { margin:0 4px 0 3px; }
+.canon .st-tiles.compact .st-tile { padding:7px 12px 7px 10px; font-size:12.5px; }
+.canon .st-panel { margin-top:16px; border:1px solid var(--line); border-radius:16px; background:#FCFDFE; overflow:hidden; animation:canon-rise .2s ease-out both; }
+.canon .st-panel-hd { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); background:#fff; }
+.canon .st-panel-hd .icon-interactive { margin:0 6px 0 6px; }
+.canon .st-body { display:grid; grid-template-columns:minmax(260px,340px) minmax(0,1fr); gap:0; }
+.canon .st-settings { padding:16px 18px; border-right:1px solid var(--line); background:#fff; }
+.canon .st-preview { padding:16px 18px; min-width:0; }
+.canon .st-step { font-size:11px; font-weight:800; letter-spacing:.1em; color:var(--red); margin-bottom:12px; }
+.canon .st-spec { display:flex; flex-direction:column; gap:3px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:12px; }
+.canon .st-spec b { font-size:14px; } .canon .st-spec span { font-size:11.5px; color:var(--mut); }
+.canon .st-sample { max-height:430px; overflow:auto; border-radius:16px; }
+.canon .art.sample { box-shadow:none; border-style:dashed; }
+.canon .st-pick { max-height:180px; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:4px 12px; margin:-6px 0 14px; }
+.canon .st-ft { display:flex; gap:10px; align-items:center; padding:12px 18px; border-top:1px solid var(--line); background:#fff; flex-wrap:wrap; }
+.canon .st-settings .seg { flex-wrap:wrap; }
+@media (max-width:900px) { .canon .st-body { grid-template-columns:1fr; } .canon .st-settings { border-right:0; border-bottom:1px solid var(--line); } }

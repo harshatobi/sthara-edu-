@@ -1,9 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { requireStaff } from '@/lib/teacher/serverAuth';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  // Each call spends model quota: teachers and admins only, rate-limited.
+  const auth = await requireStaff(request);
+  if ('res' in auth) return auth.res;
+  if (!checkRateLimit(`quiz-gen:${auth.staff.id}`, 15, 10 * 60_000).allowed) {
+    return NextResponse.json({ error: 'Too many generations. Try again in a few minutes.' }, { status: 429 });
+  }
   try {
     const body = await request.json();
     const {
@@ -34,7 +42,7 @@ export async function POST(request: NextRequest) {
       mixed:  'a mix of easy (30%), medium (50%), and hard (20%) questions',
     };
 
-    const n = numQuestions || 10;
+    const n = Math.min(Math.max(Number(numQuestions) || 10, 1), 20);
     const subj = subject || 'school';
     const cls = className || 'students';
     const diff = difficultyGuide[difficulty || 'mixed'] || difficultyGuide.mixed;

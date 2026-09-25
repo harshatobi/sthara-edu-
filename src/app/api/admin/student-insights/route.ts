@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { accessOf } from '@/lib/admin/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,11 @@ export async function GET(request: NextRequest) {
 
     if (!requestingUser || requestingUser.school_id !== schoolId || !['admin', 'superadmin'].includes(requestingUser.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (requestingUser.role === 'admin') {
+      const access = await accessOf(supabase, user.id, requestingUser.school_id);
+      if (!access.can('academics.read')) return NextResponse.json({ error: "Your role doesn't include this." }, { status: 403 });
     }
 
     // Fetch students

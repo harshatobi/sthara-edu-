@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { accessOf } from '@/lib/admin/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,13 @@ export async function POST(request: NextRequest) {
 
     if (!targetUser) {
       return NextResponse.json({ error: 'User not found in this school' }, { status: 404 });
+    }
+
+    if (requestingUser.role === 'admin') {
+      const access = await accessOf(supabase, user.id, schoolId);
+      if (!access.can(targetUser.role === 'admin' ? 'access.manage' : 'people.manage')) {
+        return NextResponse.json({ error: targetUser.role === 'admin' ? 'Only a school admin can remove office accounts.' : 'Your role doesn\'t allow removing accounts.' }, { status: 403 });
+      }
     }
 
     // Delete from users table first

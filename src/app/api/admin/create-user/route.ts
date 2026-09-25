@@ -4,6 +4,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { operatorFromRequest } from '@/lib/ops/auth';
 import { createPeople } from '@/lib/ops/accounts';
 import { PERSON_ROLES, type PersonRole } from '@/lib/ops/people';
+import { accessOf } from '@/lib/admin/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest) {
     const { data: caller } = await admin.from('users').select('role, school_id').eq('id', user.id).maybeSingle();
     if (caller?.role !== 'admin' || caller.school_id !== schoolId) {
       return NextResponse.json({ error: 'Forbidden: only an admin of this school can add accounts' }, { status: 403 });
+    }
+    // Office accounts carry access to money and records, so adding one is an access decision.
+    const access = await accessOf(admin, user.id, schoolId);
+    if (!access.can(role === 'admin' ? 'access.manage' : 'people.manage')) {
+      return NextResponse.json({ error: role === 'admin' ? 'Only a school admin can add office accounts.' : 'Your role doesn\'t allow adding accounts.' }, { status: 403 });
     }
   }
 

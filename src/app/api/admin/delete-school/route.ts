@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { operatorFromRequest } from '@/lib/ops/auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -10,12 +10,11 @@ export const maxDuration = 60;
  * Body: { schoolId }
  * Permanently deletes a school. Foreign key CASCADE constraints automatically delete
  * all associated users, assignments, submissions, situations, notifications, materials, classes, etc.
+ * Platform operators only (checked against the database). It used to accept any signed-in user.
  */
 export async function DELETE(req: NextRequest) {
-  const { user, error: authError } = await verifyApiToken(req.headers.get('authorization'));
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized — superadmin token required' }, { status: 401 });
-  }
+  const operator = await operatorFromRequest(req);
+  if (!operator) return NextResponse.json({ error: 'Only a platform operator can delete a school.' }, { status: 403 });
 
   try {
     const { schoolId } = await req.json();

@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
+import { DotsThreeCircleIcon as DotsThreeCircle } from '@phosphor-icons/react/dist/ssr/DotsThreeCircle';
+import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import TrialBanner from '@/components/ui/TrialBanner';
+import PlatformNotice from '@/components/ui/PlatformNotice';
 import { colorForIcon } from '@/lib/iconColors';
 import { useAuth } from '@/contexts/AuthContext';
 import '@/styles/canon.css';
@@ -22,6 +25,9 @@ export interface CanonNavItem {
   /** Other routes this entry owns (e.g. a nav item whose page has sibling tabs). */
   also?: string[];
 }
+
+/** Tabs that fit the phone bar; the rest (and sign-out) live behind "More". */
+const PHONE_TABS = 4;
 
 /**
  * The mockup's app shell (fixed navy sidebar + #main), as a route-driven
@@ -39,6 +45,19 @@ export default function CanonShell({ subtitle, nav, label, children }: {
   const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const isOn = (item: CanonNavItem) =>
     item.exact ? pathname === item.href : under(item.href) || !!item.also?.some(under);
+
+  const primary = nav.slice(0, PHONE_TABS);
+  const overflow = nav.slice(PHONE_TABS);
+  const overflowOn = overflow.some(isOn);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!moreOpen) return;
+    sheetRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMoreOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [moreOpen]);
 
   return (
     <div className="canon">
@@ -70,12 +89,14 @@ export default function CanonShell({ subtitle, nav, label, children }: {
         </div>
       </aside>
       <main id="canon-main" tabIndex={-1}>
+        <PlatformNotice />
         <TrialBanner />
         {children}
       </main>
-      {/* Phone (≤680px): the sidebar gives way to a bottom tab bar, as in the mockup's phone frames. */}
+      {/* Phone (≤680px): the sidebar gives way to a bottom tab bar, as in the mockup's phone frames.
+          The first four entries get tabs; everything else, plus sign-out, sits behind "More". */}
       <nav className="tabbar" aria-label={`${label} (compact)`}>
-        {nav.map(item => {
+        {primary.map(item => {
           const on = isOn(item);
           return (
             <Link key={item.href} href={item.href} className={on ? 'on' : undefined} aria-current={on ? 'page' : undefined}>
@@ -84,7 +105,38 @@ export default function CanonShell({ subtitle, nav, label, children }: {
             </Link>
           );
         })}
+        <button type="button" className={overflowOn ? 'on' : undefined} aria-haspopup="dialog" aria-expanded={moreOpen}
+          onClick={() => setMoreOpen(o => !o)}>
+          <InteractiveIcon icon={DotsThreeCircle} color={colorForIcon(DotsThreeCircle)} active={overflowOn || moreOpen} size={20} />
+          <span className="t">More</span>
+        </button>
       </nav>
+      {moreOpen && (
+        <>
+          <div className="more-scrim" onClick={() => setMoreOpen(false)} aria-hidden="true" />
+          <div className="more-sheet" role="dialog" aria-modal="true" aria-label={`${label}: more`} tabIndex={-1} ref={sheetRef}>
+            <div className="grab" aria-hidden="true" />
+            <div className="hd">
+              <b>{subtitle.charAt(0) + subtitle.slice(1).toLowerCase()}</b>
+              <button type="button" onClick={() => setMoreOpen(false)} aria-label="Close menu"><X size={18} weight="bold" /></button>
+            </div>
+            {overflow.map(item => {
+              const on = isOn(item);
+              return (
+                <Link key={item.href} href={item.href} className={on ? 'on' : undefined} aria-current={on ? 'page' : undefined}
+                  onClick={() => setMoreOpen(false)}>
+                  <InteractiveIcon icon={item.icon} color={colorForIcon(item.icon)} active={on} size={20} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+            <button type="button" className="out" onClick={() => signOut()}>
+              <InteractiveIcon icon={SignOut} color={colorForIcon(SignOut)} size={20} />
+              <span>Sign out</span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

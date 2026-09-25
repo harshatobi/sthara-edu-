@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { BuildingsIcon as Buildings } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
+import { GearSixIcon as GearSix } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { dmy } from '@/lib/student/shape';
 import { useOpsApi } from './useOpsApi';
@@ -35,6 +36,12 @@ export default function SchoolsConsole({ devPreview }: { devPreview: boolean }) 
     api<SchoolRow[]>('/schools').then(setSchools).catch(e => { setErr(e.message); setSchools([]); });
   }, [api]);
   useEffect(() => { load(); }, [load]);
+  // Start the trial field at the platform default (Settings > Platform controls).
+  useEffect(() => {
+    fetch('/api/platform/public').then(r => r.json())
+      .then(d => { if (Number(d.trialDays)) setForm(f => ({ ...f, trialDays: Number(d.trialDays) })); })
+      .catch(() => {});
+  }, []);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +58,7 @@ export default function SchoolsConsole({ devPreview }: { devPreview: boolean }) 
         sub="Onboard a school: set up classes and subjects, then add its admins, teachers, students and parents."
         actions={<>
           <Link className="btn" href="/ops/enquiries">Website enquiries</Link>
+          <Link className="btn" href="/ops/settings"><GearSix size={15} weight="bold" /> Settings</Link>
           <button className="btn pri" onClick={() => setCreating(c => !c)}><Plus size={15} weight="bold" /> New school</button>
         </>} />
 

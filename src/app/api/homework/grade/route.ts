@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { computeStudentTml } from '@/lib/tml/engine';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +18,7 @@ export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const rl = checkRateLimit(`homework-grade:${user.id}`, 10, 5 * 60_000);
+  const rl = checkRateLimit(`homework-grade:${user.id}`, ...limitOf('homeworkGrade'));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please wait before grading again.' },
@@ -48,6 +50,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing imageBase64 or images' }, { status: 400 });
     }
 
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
@@ -125,7 +129,7 @@ Output your response ONLY as a single valid JSON object matching this exact sche
 }`;
 
     const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: AI_MODELS.standard,
       contents: [
         {
           role: 'user',

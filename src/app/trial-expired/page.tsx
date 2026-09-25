@@ -1,11 +1,34 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, Mail, ArrowRight, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Mail, ArrowRight, CheckCircle, ShieldCheck, PauseCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function TrialExpiredPage() {
   const { profile, signOut } = useAuth();
+
+  // Suspended by Sthara (operator console): nothing to buy here, the school office talks to us.
+  if (profile?.schoolSuspended) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#001233] via-[#002147] to-[#003580] flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 sm:p-10 text-center">
+          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-slate-200">
+            <PauseCircle className="w-10 h-10 text-slate-500" />
+          </div>
+          <h1 className="text-3xl font-black text-[#002147] mb-2">Account paused</h1>
+          <p className="text-gray-500 font-medium mb-8">
+            {profile?.name && <>Hi <strong>{profile.name}</strong>. </>}
+            Your school&apos;s Sthara account is suspended, so sign-in is paused for everyone at your school. Your school office can tell you more.
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-8 text-left">
+            <p className="text-sm font-bold text-[#002147] mb-2 flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Your data is safe</p>
+            <p className="text-sm text-gray-600 font-medium">Records, grades and submissions are kept as they are. Nothing is deleted while an account is paused.</p>
+          </div>
+          <button onClick={signOut} className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline">Sign out</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#001233] via-[#002147] to-[#003580] flex items-center justify-center p-6">
@@ -18,14 +41,14 @@ export default function TrialExpiredPage() {
 
         <h1 className="text-3xl font-black text-[#002147] mb-2">Trial Period Ended</h1>
         <p className="text-gray-500 font-medium mb-8">
-          Your 30-day free trial has expired.
+          Your free trial has ended.
           {profile?.name && <> Hi <strong>{profile.name}</strong>,</>} to continue using Sthara,
           please upgrade to a paid plan.
         </p>
 
         {/* What you keep */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-8 text-left space-y-2">
-          <p className="text-sm font-bold text-[#002147] mb-3">✅ Your data is safe</p>
+          <p className="text-sm font-bold text-[#002147] mb-3 flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Your data is safe</p>
           {[
             'All student records and grades preserved',
             'All assignments and submissions intact',

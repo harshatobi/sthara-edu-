@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { limitOf } from '@/lib/settings/limits';
 import { CURRENT_SESSION } from '@/lib/curriculum';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export async function PUT(req: NextRequest) {
   const auth = await requireStaff(req);
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
-  if (!checkRateLimit(`course:${staff.id}`, 120, 10 * 60_000).allowed) {
+  if (!checkRateLimit(`course:${staff.id}`, ...limitOf('course')).allowed) {
     return NextResponse.json({ error: 'Too many changes at once. Try again in a minute.' }, { status: 429 });
   }
   const body = await req.json().catch(() => null);

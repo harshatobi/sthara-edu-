@@ -3,9 +3,11 @@ import { GoogleGenAI } from '@google/genai';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope, normClass, normSubject } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { courseChapters, getCurriculum, CURRENT_SESSION } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/desk';
 import { parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
+import { aiGate } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireStaff(req);
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
-  if (!checkRateLimit(`copilot:${staff.id}`, 40, 10 * 60_000).allowed) {
+  if (!checkRateLimit(`copilot:${staff.id}`, ...limitOf('copilot')).allowed) {
     return NextResponse.json({ error: 'The Copilot needs a short break. Try again in a few minutes.' }, { status: 429 });
   }
   const b = await req.json().catch(() => null);
@@ -38,6 +40,8 @@ export async function POST(req: NextRequest) {
   if (!messages.length || messages[messages.length - 1].role !== 'user') return NextResponse.json({ error: 'Ask the Copilot something.' }, { status: 400 });
   const studioKind = STUDIO.some(x => x.kind === b?.studio?.kind) ? (b.studio.kind as StudioKind) : null;
 
+  const aiBlocked = await aiGate(staff.id);
+  if (aiBlocked) return aiBlocked;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
 
@@ -140,7 +144,7 @@ ${brief.join('\n\n')}`;
   try {
     const ai = new GoogleGenAI({ apiKey });
     const res = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: AI_MODELS.standard,
       contents: messages.map((m: any) => ({ role: m.role, parts: [{ text: m.text }] })),
       config: { systemInstruction: system, responseMimeType: 'application/json', temperature: 0.5 },
     });

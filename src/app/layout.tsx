@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,6 +15,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "Sthara", template: "%s · Sthara" },
   description: "Sthara School OS",
+  // Home-screen install on iOS (Android reads app/manifest.ts).
+  appleWebApp: { capable: true, title: "Sthara", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
+};
+
+// Phones: fill the screen edge to edge (safe-area insets are padded in the shells)
+// and tint the browser chrome navy. Pinch-zoom stays enabled for accessibility.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#062347",
 };
 
 import { AuthProvider } from '@/contexts/AuthContext';

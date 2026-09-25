@@ -9,10 +9,14 @@ import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { HourglassIcon as Hourglass } from '@phosphor-icons/react/dist/ssr/Hourglass';
 import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
+import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import { useAuth } from '@/contexts/AuthContext';
+import PlatformNotice from '@/components/ui/PlatformNotice';
 import { ICON_COLORS, colorForIcon } from '@/lib/iconColors';
 
 export default function ParentPortal() {
+  const { signOut } = useAuth();
   const [view, setView] = useState<'dash' | 'tml' | 'msg' | 'fees'>('dash');
   const [waReply, setWaReply] = useState('');
   const [waMessages, setWaMessages] = useState([
@@ -55,17 +59,17 @@ export default function ParentPortal() {
           --r:20px; --sh:0 1px 2px rgba(0,33,71,.05),0 10px 30px rgba(0,33,71,.05);
         }
         .portal-shell { display: flex; min-height: 100vh; background: var(--body); color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; }
-        aside { width: 264px; flex: 0 0 264px; background: var(--nav); min-height: 100vh; padding: 26px 18px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+        .portal-shell > aside { width: 264px; flex: 0 0 264px; background: var(--nav); min-height: 100vh; padding: 26px 18px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
         .brand { padding: 0 10px 26px; }
         .brand b { display: block; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
         .brand i { display: block; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .14em; font-style: normal; margin-top: 2px; }
-        nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .portal-shell > aside nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
         .nv { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border-radius: 12px; color: #93A7C4; font-size: 14.5px; font-weight: 500; text-align: left; position: relative; transition: .15s; background: none; border: none; cursor: pointer; width: 100%; }
         .nv:hover { background: rgba(255,255,255,.05); color: #D5E1F2; }
         .nv.on { background: var(--navActive); color: #fff; font-weight: 600; }
         .nv.on:before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; background: var(--red); border-radius: 0 3px 3px 0; }
         .nv-out { border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-top: 14px; }
-        main { flex: 1; min-width: 0; padding: 26px 34px 70px; max-width: 1560px; }
+        .portal-shell > main { flex: 1; min-width: 0; padding: 26px 34px 70px; max-width: 1560px; }
 
         .card { background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 26px; }
         .pbar { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 20px 26px; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
@@ -108,6 +112,25 @@ export default function ParentPortal() {
         .role-sw { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 50; background: var(--ink); border-radius: 99px; padding: 7px; display: flex; gap: 4px; box-shadow: 0 14px 40px rgba(0,33,71,.35); }
         .role-sw a { padding: 10px 20px; border-radius: 99px; color: #93A7C4; font-size: 13px; font-weight: 700; text-decoration: none; }
         .role-sw a.on { background: var(--red); color: #fff; }
+
+        /* Phone: bottom tab bar replaces the sidebar; the WhatsApp preview frame and role switcher drop out. */
+        .p-tabbar { display: none; }
+        @media (max-width: 760px) {
+          .portal-shell > aside, .role-sw, .phone { display: none; }
+          .portal-shell > main { padding: 16px 14px calc(96px + env(safe-area-inset-bottom)); }
+          .frames > div { min-width: 0 !important; flex-basis: 100% !important; }
+          .g2, .kpis { grid-template-columns: 1fr; }
+          .pbar, .card { padding: 18px; }
+          .pbar h1 { font-size: 23px; }
+          .kpi .vl { font-size: 34px !important; }
+          .row { flex-wrap: wrap; }
+          .p-tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: #fff; border-top: 1px solid var(--line);
+            justify-content: space-around; padding: 8px 4px calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 24px rgba(0,33,71,.06); }
+          .p-tabbar > * { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--mut2);
+            padding: 4px 0; background: none; border: 0; cursor: pointer; font-family: inherit; }
+          .p-tabbar .on { color: var(--ink); }
+          .p-tabbar .on span { color: var(--red); }
+        }
       `}</style>
 
       {/* Sidebar */}
@@ -133,16 +156,17 @@ export default function ParentPortal() {
             </button>
           ))}
           <div className="nv-out">
-            <Link href="/login" className="nv">
+            <button type="button" className="nv" onClick={() => signOut()}>
               <InteractiveIcon icon={SignOut} color={ICON_COLORS.SignOut} size={19} />
               <span>Sign Out</span>
-            </Link>
+            </button>
           </div>
         </nav>
       </aside>
 
       {/* Main Content */}
       <main>
+        <PlatformNotice />
         {/* VIEW 1: MY CHILDREN DASHBOARD */}
         {view === 'dash' && (
           <div>
@@ -352,6 +376,24 @@ export default function ParentPortal() {
           </div>
         )}
       </main>
+
+      <nav className="p-tabbar" aria-label="Parent navigation (compact)">
+        {([
+          ['dash', 'Children', House],
+          ['tml', 'Reports', ChartLineUp],
+          ['msg', 'Messages', ChatCircleDots],
+          ['fees', 'Fees', CurrencyInr],
+        ] as [typeof view, string, typeof House][]).map(([k, n, Icon]) => (
+          <button key={k} type="button" className={view === k ? 'on' : undefined} aria-current={view === k ? 'page' : undefined} onClick={() => setView(k)}>
+            <InteractiveIcon icon={Icon} color={colorForIcon(Icon)} active={view === k} size={20} />
+            <span>{n}</span>
+          </button>
+        ))}
+        <Link href="/parent/consent">
+          <InteractiveIcon icon={ShieldCheck} color={colorForIcon(ShieldCheck)} size={20} />
+          <span>Consent</span>
+        </Link>
+      </nav>
 
       {/* Floating Global Role Switcher */}
       <div className="role-sw">

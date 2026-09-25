@@ -4,6 +4,7 @@ import { requireStaff, type Staff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { sanitizeQuestions, totalMarks } from '@/lib/teacher/questions';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { limitOf } from '@/lib/settings/limits';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireStaff(req);
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
-  if (!checkRateLimit(`assignments:${staff.id}`, 60, 10 * 60_000).allowed) {
+  if (!checkRateLimit(`assignments:${staff.id}`, ...limitOf('assignments')).allowed) {
     return NextResponse.json({ error: 'Too many changes at once. Try again in a few minutes.' }, { status: 429 });
   }
   const body = await req.json().catch(() => null);

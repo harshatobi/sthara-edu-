@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
 
 export const maxDuration = 60;
 
@@ -12,7 +14,7 @@ export async function POST(request: NextRequest) {
   if (user.role !== 'superadmin') return NextResponse.json({ error: 'Forbidden: superadmin only' }, { status: 403 });
 
   const ip = getClientIp(request);
-  const rl = checkRateLimit(`analyze_course:${ip}`, 5, 60_000);
+  const rl = checkRateLimit(`analyze_course:${ip}`, ...limitOf('analyzeCourse'));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please wait before submitting again.' },
@@ -21,6 +23,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     if (!GEMINI_API_KEY) {
       return NextResponse.json({ error: 'Gemini API Key is not configured on server.' }, { status: 500 });
     }
@@ -61,7 +65,7 @@ Return ONLY valid JSON with no markdown wrapper, no preamble, and strictly match
   ]
 }`;
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODELS.deep}:generateContent?key=${GEMINI_API_KEY}`;
     const geminiPayload = {
       contents: [
         {

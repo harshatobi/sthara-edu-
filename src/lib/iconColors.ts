@@ -44,6 +44,8 @@ export const ICON_COLORS: Record<string, string> = {
   Rocket: '#F59E0B',
   CurrencyInr: '#16A34A',        // green — money / fees
   Key: '#CA8A04',                // amber (dark) — roles & access
+  DotsThreeCircle: '#64748B',    // slate — "More" overflow menu
+  GearSix: '#64748B',            // slate — settings
 };
 
 export function iconColor(name: keyof typeof ICON_COLORS | string, fallback = '#93A7C4'): string {

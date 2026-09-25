@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { getPlatformSettings } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,9 +37,10 @@ export async function POST(req: NextRequest) {
   const code = str(b.code, 12).toUpperCase().replace(/[^A-Z0-9-]/g, '');
   if (!name || code.length < 3) return NextResponse.json({ error: 'School name and a code of at least 3 letters/digits are required.' }, { status: 400 });
   const plan = PLANS.includes(b.plan) ? b.plan : 'trial';
-  const trialDays = Math.min(365, Math.max(1, Number(b.trialDays) || 30));
-
   const admin = createAdminClient();
+  const platform = await getPlatformSettings(admin);
+  const trialDays = Math.min(365, Math.max(1, Number(b.trialDays) || platform['trial.default_days']));
+
   const { data: clash } = await admin.from('schools').select('id').eq('settings->>code', code).maybeSingle();
   if (clash) return NextResponse.json({ error: `School code ${code} is already in use.` }, { status: 409 });
 
@@ -54,6 +56,7 @@ export async function POST(req: NextRequest) {
       onboardedBy: op.id,
     },
   }).select('id').single();
+  if (error?.code === '23505') return NextResponse.json({ error: `School code ${code} is already in use.` }, { status: 409 });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ id: data.id });
 }

@@ -61,7 +61,7 @@ export function proxy(request: NextRequest) {
   // 2. Trial check
   const trialOk = request.cookies.get('__trial_ok')?.value;
   const isSuperadminPath = pathname.startsWith('/superadmin');
-  if (!isSuperadminPath && trialOk === 'expired') {
+  if (!isSuperadminPath && (trialOk === 'expired' || trialOk === 'suspended')) {
     return NextResponse.redirect(new URL('/trial-expired', request.url));
   }
 

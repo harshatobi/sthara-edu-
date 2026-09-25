@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { AI_MODELS } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
 
 export async function POST(request: NextRequest) {
   const { user, error: authError } = await verifyApiToken(request.headers.get('authorization'));
@@ -8,6 +10,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const { weaknesses, subject, studentClass, numQuestions = 5 } = await request.json();
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
 
@@ -37,7 +41,7 @@ Rules:
 - Return exactly ${numQuestions} questions`;
 
     const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.5 },
     });

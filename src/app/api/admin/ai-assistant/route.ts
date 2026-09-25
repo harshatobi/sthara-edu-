@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { requireAdmin } from '@/lib/admin/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,13 +11,15 @@ export async function POST(request: NextRequest) {
   // Office accounts only (it used to answer any signed-in user), and metered: every call costs a model request.
   const auth = await requireAdmin(request, 'dashboard.view');
   if ('res' in auth) return auth.res;
-  if (!checkRateLimit(`admin-ai:${auth.admin.id}`, 30, 10 * 60_000).allowed) {
+  if (!checkRateLimit(`admin-ai:${auth.admin.id}`, ...limitOf('adminAi')).allowed) {
     return NextResponse.json({ error: 'Too many questions at once. Wait a few minutes.' }, { status: 429 });
   }
 
   try {
     const { message, context, history } = await request.json();
 
+    const aiBlocked = await aiGate(auth.admin.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
@@ -24,7 +28,7 @@ export async function POST(request: NextRequest) {
     const ai = new GoogleGenAI({ apiKey });
 
     const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
+      model: AI_MODELS.standard,
       config: {
         systemInstruction: `You are an intelligent Admin AI Assistant for a school management platform called Sthara School OS.
 You have access to real-time school data provided in each message as context.

@@ -156,7 +156,7 @@ function Wellness({ desk }: { desk: AdminDesk }) {
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
-                  {W.weeks.map(w => <span key={w.week} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: 'var(--mut2)', fontWeight: 700 }}>{fmtDate(w.week, true).replace(' ', ' ')}</span>)}
+                  {W.weeks.map(w => <span key={w.week} className="spark-lbl" style={{ flex: 1, minWidth: 0, textAlign: 'center', fontSize: 9, color: 'var(--mut2)', fontWeight: 700, whiteSpace: 'nowrap' }}>{fmtDate(w.week, true).replace(' ', ' ')}</span>)}
                 </div>
               </>
             ) : <Empty icon={<Heart size={26} weight="duotone" />} title="No check-ins yet">Students check in from their wellness page; the trend builds week by week.</Empty>}

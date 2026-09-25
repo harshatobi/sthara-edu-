@@ -3,10 +3,12 @@ import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { computeStudentTml, getTutorDepthScore } from '@/lib/tml/engine';
 import { containsFoulLanguage } from '@/lib/tutor/safety';
 import { flattenChapters, getCurriculum } from '@/lib/curriculum';
 import { signSession, verifySession, type TutorSessionState } from '@/lib/tutor/sessionToken';
+import { aiGate } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +26,7 @@ export const dynamic = 'force-dynamic';
  */
 
 const STEPS = 3;
-const MODEL = 'gemini-2.5-flash';
+const MODEL = AI_MODELS.standard;
 
 interface Turn { who: 'ai' | 'me'; text: string }
 
@@ -85,11 +87,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Tutor sessions are recorded against a student’s mastery, so only students can run them.' }, { status: 403 });
   }
 
-  const rl = checkRateLimit(`tutor-session:${user.id}`, 40, 5 * 60_000);
+  const rl = checkRateLimit(`tutor-session:${user.id}`, ...limitOf('tutorSession'));
   if (!rl.allowed) {
     return NextResponse.json({ error: 'Slow down a little — try again in a moment.' },
       { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } });
   }
+  const aiBlocked = await aiGate(user.id);
+  if (aiBlocked) return aiBlocked;
 
   let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }

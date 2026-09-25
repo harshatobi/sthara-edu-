@@ -20,6 +20,9 @@
   background:var(--body); color:var(--ink);
   -webkit-font-smoothing:antialiased;
   min-height:100vh; display:flex; width:100%;
+  /* Landscape phones with a notch (viewport-fit=cover): keep content clear of the cut-outs. */
+  padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
+  min-height:100dvh;
 }
 :where(.canon) *, :where(.canon) *::before, :where(.canon) *::after { box-sizing:border-box; }
 :where(.canon) :where(h1, h2, h3, h4) { letter-spacing:-.025em; line-height:1.15; margin:0; }
@@ -78,6 +81,10 @@
 .canon .sec .dot { width:26px; height:26px; border-radius:8px; display:grid; place-items:center; font-size:14px; }
 .canon .g2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .canon .g3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; }
+/* Fieldsets default to min-width:min-content, which stops forms shrinking on phones. */
+.canon fieldset { min-width:0; }
+/* Grid tracks may shrink below their content (wide tables scroll inside .tbl-wrap instead of widening the page). */
+.canon .g2 > *, .canon .g3 > *, .canon .kpis > *, .canon .hgrid > * { min-width:0; }
 @media (max-width:1100px) { .canon .g2 { grid-template-columns:1fr; } }
 .canon .ch { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:8px; font-size:11px; font-weight:800; letter-spacing:.04em; white-space:nowrap; }
 .canon .ch.g { background:#DCFCE7; color:#0B7A54; } .canon .ch.a { background:#FEF3C7; color:#92600A; }
@@ -251,7 +258,43 @@
   .canon .tabs { display:flex; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; max-width:100%; }
   .canon .tabs::-webkit-scrollbar { display:none; }
   .canon .tab { flex:0 0 auto; white-space:nowrap; padding:10px 16px; }
+  /* Segmented filters scroll sideways instead of widening the page. */
+  .canon .seg { display:flex; max-width:100%; overflow-x:auto; scrollbar-width:none; flex-wrap:nowrap !important; }
+  .canon .seg::-webkit-scrollbar { display:none; }
+  .canon .seg button { flex:0 0 auto; white-space:nowrap; }
+  /* iOS zooms the page when a focused field's text is under 16px. */
+  .canon input:not([type=checkbox]):not([type=radio]):not([type=range]), .canon select, .canon textarea { font-size:16px !important; }
+  .canon .pbar h1 { font-size:23px; }
+  .canon .kpi .vl { font-size:34px; }
+  .canon .sec { font-size:18px; margin:24px 0 12px; }
+  .canon .btn { min-height:42px; }
+  .canon .btn.sm { min-height:34px; }
+  .canon .tbl { font-size:13px; }
+  .canon .tbl td { padding:11px 10px; }
+  .canon .tbl th { padding:0 10px 10px; }
+  /* List rows: text columns shrink and wrap rather than push chips off screen. */
+  .canon .row > * { min-width:0; }
+  .canon .row { overflow-wrap:anywhere; }
+  /* Twelve week labels don't fit a phone: label every other week. */
+  .canon .spark-lbl:nth-child(even) { visibility:hidden; }
 }
+
+/* Phone "More" sheet: overflow nav entries and sign-out. */
+.canon .more-scrim { position:fixed; inset:0; z-index:75; background:rgba(0,20,45,.42); animation:canon-fade .18s ease-out both; }
+.canon .more-sheet { position:fixed; left:0; right:0; bottom:0; z-index:76; background:#fff; border-radius:22px 22px 0 0; box-shadow:0 -18px 50px rgba(0,33,71,.2);
+  padding:10px 16px calc(18px + env(safe-area-inset-bottom)); max-height:78vh; overflow-y:auto; animation:canon-sheet .24s cubic-bezier(.16,1,.3,1) both; }
+.canon .more-sheet .grab { width:40px; height:4px; border-radius:4px; background:var(--line); margin:2px auto 12px; }
+.canon .more-sheet .hd { display:flex; align-items:center; justify-content:space-between; padding:0 4px 8px; }
+.canon .more-sheet .hd b { font-size:16px; font-weight:800; }
+.canon .more-sheet .hd button { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--mut); }
+.canon .more-sheet a, .canon .more-sheet .out { display:flex; align-items:center; gap:13px; padding:12px 10px; border-radius:14px; font-size:15px; font-weight:600; width:100%; text-align:left; }
+.canon .more-sheet a.on { background:var(--pale); }
+.canon .more-sheet .out { border-top:1px solid var(--line); border-radius:0; margin-top:8px; padding-top:16px; color:var(--red); }
+.canon .tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; font-weight:700; color:var(--mut2); padding:4px 0; border-radius:10px; }
+.canon .tabbar button.on { color:var(--ink); }
+.canon .tabbar button.on span.t { color:var(--red); }
+@keyframes canon-sheet { from { transform:translateY(100%); } }
+@keyframes canon-fade { from { opacity:0; } }
 
 /* ---------- FOCUS / A11Y ---------- */
 .canon button, .canon a, .canon input, .canon textarea { touch-action:manipulation; }
@@ -586,3 +629,71 @@
 .canon .fc-x { font-size:10.5px; color:var(--mut2); font-weight:700; margin-top:6px; white-space:nowrap; }
 .canon .fc-v { font-size:10px; color:var(--mut); font-variant-numeric:tabular-nums; min-height:13px; }
 .canon .fc-key { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+
+/* ---------- OPS SETTINGS (/ops/settings) ---------- */
+.canon .os-sum { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+.canon .os-sum button { background:#fff; border-radius:16px; box-shadow:var(--sh); padding:14px 16px; text-align:left; border:1.5px solid transparent; transition:border-color .15s; }
+.canon .os-sum button.on { border-color:var(--ink); }
+.canon .os-sum .n { font-size:28px; font-weight:800; line-height:1; margin-top:6px; }
+.canon .os-sum .t { font-size:11px; font-weight:800; letter-spacing:.1em; color:var(--mut); display:flex; align-items:center; gap:6px; }
+.canon .os-dot { width:9px; height:9px; border-radius:50%; flex:0 0 9px; }
+.canon .os-grp { margin-bottom:16px; padding:6px 22px; }
+.canon .os-grp > h3 { font-size:15px; font-weight:800; padding:14px 0 6px; display:flex; align-items:center; gap:8px; }
+.canon .os-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 16px; padding:14px 0; border-top:1px solid var(--line); }
+.canon .os-item:first-of-type { border-top:0; }
+.canon .os-item .lb { font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; min-width:0; }
+.canon .os-item .vl { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12.5px; font-weight:600; text-align:right; color:var(--ink); align-self:center; overflow-wrap:anywhere; }
+.canon .os-item .dt { grid-column:1 / -1; color:var(--mut); font-size:12.8px; line-height:1.55; }
+.canon .os-item .src { font-size:10px; font-weight:800; letter-spacing:.08em; color:var(--mut2); text-transform:uppercase; }
+.canon .os-list { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px; }
+.canon .os-list span { background:var(--body); border:1px solid var(--line); border-radius:8px; padding:3px 8px; font-size:11.5px; font-weight:600; font-family:'IBM Plex Mono',ui-monospace,monospace; }
+.canon .os-enf { grid-column:1 / -1; font-size:11.5px; color:var(--mut2); }
+.canon .os-enf summary { cursor:pointer; font-weight:700; width:max-content; list-style:none; display:flex; align-items:center; gap:4px; }
+.canon .os-enf summary::-webkit-details-marker { display:none; }
+.canon .os-enf code { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; display:block; margin-top:3px; color:var(--mut); overflow-wrap:anywhere; }
+
+.canon .os-set { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,300px); gap:10px 22px; padding:18px 0; border-top:1px solid var(--line); align-items:start; }
+.canon .os-set:first-of-type { border-top:0; }
+.canon .os-set h4 { font-size:14.5px; font-weight:800; margin:0 0 4px; }
+.canon .os-set p { font-size:12.8px; color:var(--mut); line-height:1.55; }
+.canon .os-review { grid-column:1 / -1; background:var(--body); border:1px solid var(--line); border-radius:14px; padding:14px; display:grid; gap:10px; }
+.canon .os-diff { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; font-weight:700; }
+.canon .os-diff s { color:var(--mut); font-weight:600; }
+
+/* On/off switch. */
+.canon .swt { position:relative; width:46px; height:26px; border-radius:99px; background:#CBD5E1; flex:0 0 46px; transition:background .15s; }
+.canon .swt::after { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .18s cubic-bezier(.16,1,.3,1); }
+.canon .swt[aria-checked="true"] { background:var(--green); }
+.canon .swt[aria-checked="true"]::after { transform:translateX(20px); }
+.canon .swt:disabled { opacity:.5; }
+.canon .os-toggle { display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:700; }
+
+.canon .os-school { display:flex; align-items:center; gap:14px; padding:14px 0; border-top:1px solid var(--line); width:100%; text-align:left; }
+.canon .os-school:first-child { border-top:0; }
+.canon .os-school .chips { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.canon .os-edit { border:1.5px solid var(--ink); border-radius:18px; padding:18px; margin:4px 0 14px; background:#fff; }
+.canon .os-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.canon .os-fields .full { grid-column:1 / -1; }
+.canon .os-danger { border:1.5px solid #FDB4C4; background:#FFF6F8; border-radius:14px; padding:14px; display:flex; gap:12px; align-items:flex-start; }
+
+.canon .os-log { display:grid; grid-template-columns:150px minmax(0,1fr); gap:4px 16px; padding:14px 0; border-top:1px solid var(--line); font-size:13px; }
+.canon .os-log:first-child { border-top:0; }
+.canon .os-log .when { color:var(--mut); font-size:12px; font-weight:600; }
+.canon .os-log .what { font-weight:700; }
+.canon .os-log .why { color:var(--mut); font-size:12.5px; grid-column:2; }
+
+@media (max-width:900px) {
+  .canon .os-set { grid-template-columns:1fr; }
+}
+@media (max-width:680px) {
+  .canon .os-sum { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .canon .os-sum .n { font-size:24px; }
+  .canon .os-grp { padding:4px 16px; }
+  .canon .os-item { grid-template-columns:1fr; }
+  .canon .os-item .vl { text-align:left; }
+  .canon .os-fields { grid-template-columns:1fr; }
+  .canon .os-school { flex-wrap:wrap; }
+  .canon .os-school .chips { justify-content:flex-start; width:100%; padding-left:54px; }
+  .canon .os-log { grid-template-columns:1fr; }
+  .canon .os-log .why { grid-column:1; }
+}

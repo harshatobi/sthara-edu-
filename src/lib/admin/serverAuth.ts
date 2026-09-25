@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { limitOf } from '@/lib/settings/limits';
 import { Access, activeGrants, PERMS, type Perm } from './rbac';
 import { isoDay } from './format';
 
@@ -16,10 +17,11 @@ export interface SchoolAdmin { id: string; name: string; schoolId: string; schoo
  * on their own school and only within their grants.
  */
 export async function requireAdmin(req: NextRequest, need?: Perm | Perm[]): Promise<{ admin: SchoolAdmin; db: SupabaseClient } | { res: NextResponse }> {
-  const { user, error } = await verifyApiToken(req.headers.get('authorization'));
+  const { user, error, blocked } = await verifyApiToken(req.headers.get('authorization'));
+  if (blocked) return { res: NextResponse.json({ error, code: blocked }, { status: 403 }) };
   if (!user || error) return { res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  if (!checkRateLimit(`admin:${user.id}:${ip}`, 120, 60_000).allowed) {
+  if (!checkRateLimit(`admin:${user.id}:${ip}`, ...limitOf('admin')).allowed) {
     return { res: NextResponse.json({ error: 'Too many requests. Wait a minute and try again.' }, { status: 429 }) };
   }
   const db = createAdminClient();

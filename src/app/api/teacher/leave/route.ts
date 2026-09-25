@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { limitOf } from '@/lib/settings/limits';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
 import { daysBetween, isoDay, sessionOf } from '@/lib/admin/format';
 import { leaveDays, overBalance } from '@/lib/admin/leave';
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireStaff(req);
   if ('res' in auth) return auth.res;
   const { db, staff } = auth;
-  if (!checkRateLimit(`leave:${staff.id}`, 20, 10 * 60_000).allowed) return NextResponse.json({ error: 'Too many requests at once.' }, { status: 429 });
+  if (!checkRateLimit(`leave:${staff.id}`, ...limitOf('leave')).allowed) return NextResponse.json({ error: 'Too many requests at once.' }, { status: 429 });
   const b = await req.json().catch(() => null);
   if (!b) return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
   if (!(b.type in LEAVE_TYPES)) return NextResponse.json({ error: 'Pick a leave type.' }, { status: 400 });

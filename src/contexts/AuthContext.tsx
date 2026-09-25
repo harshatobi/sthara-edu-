@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { isRole, withTimeout, type Role } from '@/lib/auth/roles';
+import { schoolPolicy } from '@/lib/settings/registry';
 
 export interface UserProfile {
   uid: string;
@@ -39,6 +40,8 @@ export interface UserProfile {
   // Trial/plan info
   trialExpired?: boolean;
   daysLeftInTrial?: number;
+  /** The school's account is suspended by Sthara (operator console). */
+  schoolSuspended?: boolean;
 }
 
 interface AuthContextType {
@@ -107,16 +110,20 @@ async function fetchProfile(session: Session): Promise<UserProfile> {
   }
   let trialExpired = false;
   let daysLeftInTrial = 999;
+  let schoolSuspended = false;
   let institutionType: 'school' | 'college' = 'school';
   if (row.school_id) {
     const { data: school, error: schoolError } = await supabase.from('schools')
-      .select('trial_expires_at, settings, institution_type').eq('id', row.school_id).single();
+      .select('id, name, trial_expires_at, settings, institution_type').eq('id', row.school_id).single();
     if (schoolError || !school) throw new Error('Your school could not be loaded. Please try again.');
-    institutionType = school.institution_type === 'college' ? 'college' : 'school';
-    if ((!school.settings?.plan || school.settings.plan === 'trial') && school.trial_expires_at) {
-      daysLeftInTrial = Math.max(0, Math.ceil((new Date(school.trial_expires_at).getTime() - Date.now()) / 86400000));
-      trialExpired = daysLeftInTrial <= 0;
+    // Same rules the API enforces (src/lib/settings/registry.ts).
+    const policy = schoolPolicy(school);
+    institutionType = policy.institutionType;
+    if (policy.trialDaysLeft !== null) {
+      daysLeftInTrial = policy.trialDaysLeft;
+      trialExpired = policy.trialExpired;
     }
+    schoolSuspended = row.role !== 'superadmin' && !policy.active;
   }
   const assignments = (Array.isArray(row.assignments) ? row.assignments : []).filter(
     (a: unknown): a is { class: string; subject: string } => !!a && typeof a === 'object'
@@ -133,7 +140,7 @@ async function fetchProfile(session: Session): Promise<UserProfile> {
     linkedStudents: Array.isArray(row.metadata?.linkedStudents) ? row.metadata.linkedStudents : [],
     teachingSubjects: Array.isArray(row.teaching_subjects) ? row.teaching_subjects : [],
     institutionType, branch: row.branch, year: row.year, semester: row.semester,
-    trialExpired, daysLeftInTrial,
+    trialExpired, daysLeftInTrial, schoolSuspended,
   };
 }
 
@@ -231,7 +238,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (disposed || request !== revision.current) return;
           setCookie('__session', nextSession.access_token, Math.max(1, (nextSession.expires_at ?? 0) - Math.floor(Date.now() / 1000)));
           setCookie('__role', nextProfile.role, 3600);
-          setCookie('__trial_ok', nextProfile.trialExpired ? 'expired' : 'ok', 3600);
+          setCookie('__trial_ok', nextProfile.schoolSuspended ? 'suspended' : nextProfile.trialExpired ? 'expired' : 'ok', 3600);
           setProfile(nextProfile);
         }).catch(() => {
           if (disposed || request !== revision.current) return;

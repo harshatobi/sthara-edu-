@@ -39,6 +39,8 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   images: { unoptimized: true },
   serverExternalPackages: ['firebase-admin', '@google/generative-ai'],
+  // The ops Settings module compares the repo's migrations with the ones applied live.
+  outputFileTracingIncludes: { '/api/ops/settings': ['./supabase/migrations/*.sql'] },
   experimental: {
     // Reuse a visited page's server payload for 30s on client navigation
     // (Next 15+ default is 0: every tab switch refetches). Page data is loaded

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/server';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { limitOf } from '@/lib/settings/limits';
+import { getPlatformSettings } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +16,6 @@ export const dynamic = 'force-dynamic';
  * created with a normal sign-up so the project's email-confirmation setting
  * still applies; if any later step fails, that login is removed again.
  */
-const TRIAL_DAYS = 30;
 const CURRICULA = ['CBSE', 'ICSE', 'State Board', 'IB', 'Cambridge IGCSE', 'Other'];
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -25,7 +26,12 @@ function schoolCode(name: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const rl = checkRateLimit(`onboard:${getClientIp(req)}`, 5, 60 * 60_000);
+  // Operators can close self-serve sign-up from the console (platform setting onboarding.self_serve).
+  const platform = await getPlatformSettings();
+  if (!platform['onboarding.self_serve']) {
+    return NextResponse.json({ error: 'New school sign-up is by invitation right now. Write to us from www.sthara.in/contact and we will set your school up.' }, { status: 403 });
+  }
+  const rl = checkRateLimit(`onboard:${getClientIp(req)}`, ...limitOf('onboard'));
   if (!rl.allowed) return NextResponse.json({ error: 'Too many registrations from this network. Try again later.' }, { status: 429 });
 
   let b: any;
@@ -69,7 +75,7 @@ export async function POST(req: NextRequest) {
   const { data: school, error: schoolErr } = await admin.from('schools').insert({
     name: schoolName,
     institution_type: 'school',
-    trial_expires_at: new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString(),
+    trial_expires_at: new Date(Date.now() + platform['trial.default_days'] * 86_400_000).toISOString(),
     settings: {
       code, curriculum,
       board: str(b?.board, 60) || null,

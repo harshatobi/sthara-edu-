@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { AI_MODELS } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +38,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required field: topic' }, { status: 400 });
     }
 
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       // Rule-based fallback if no Gemini key
@@ -68,7 +72,7 @@ Return ONLY a JSON object matching this schema:
 }`;
 
     const res = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.1 },
     });

@@ -138,6 +138,18 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
     detail: 'Enquiries are always saved to the database and worked in Enquiries. RESEND_API_KEY adds an email alert, TURNSTILE_SECRET_KEY adds a bot check on the form.',
     enforcedAt: ['/api/contact', 'site/api/contact.mjs'],
   });
+  const waLive = x.secrets.WHATSAPP_ACCESS_TOKEN && x.secrets.WHATSAPP_PHONE_NUMBER_ID;
+  const waHook = x.secrets.WHATSAPP_APP_SECRET && x.secrets.WHATSAPP_VERIFY_TOKEN;
+  add({
+    id: 'env.whatsapp', group: G1, label: 'WhatsApp Business (parents)', source: 'environment',
+    value: waLive ? (waHook ? 'Live' : 'Sending only') : 'Simulated',
+    status: waLive ? (waHook ? 'ok' : 'warn') : prod ? 'warn' : 'info',
+    detail: waLive
+      ? waHook ? `Parents get grades, alerts, fee reminders and teacher replies on WhatsApp, and can Ask the School OS there${x.env.WHATSAPP_BUSINESS_NUMBER ? ` (${x.env.WHATSAPP_BUSINESS_NUMBER})` : ''}.`
+        : 'Messages send, but inbound questions fail: set WHATSAPP_APP_SECRET and WHATSAPP_VERIFY_TOKEN and point the Meta webhook at /api/whatsapp/webhook.'
+      : 'Placeholder key: every WhatsApp message is written to whatsapp_log as "simulated" and nothing reaches a phone; link codes are shown on screen. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID at deploy, then parents re-verify their numbers.',
+    enforcedAt: ['src/lib/whatsapp/config.ts', '/api/whatsapp/webhook', '/api/parent/whatsapp'],
+  });
   const stray = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'MISTRAL_API_KEY', 'FIREBASE_ADMIN_PRIVATE_KEY'].filter(k => x.secrets[k]);
   if (stray.length) {
     add({

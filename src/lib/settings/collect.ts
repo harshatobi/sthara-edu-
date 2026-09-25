@@ -13,9 +13,10 @@ const SECRET_ENV = [
   'GEMINI_API_KEY', 'GOOGLE_GENERATIVE_AI_API_KEY', 'TUTOR_SESSION_SECRET',
   'SENTRY_DSN', 'NEXT_PUBLIC_SENTRY_DSN', 'YOUTUBE_API_KEY',
   'RESEND_API_KEY', 'TURNSTILE_SECRET_KEY',
+  'WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_APP_SECRET', 'WHATSAPP_VERIFY_TOKEN',
   'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'MISTRAL_API_KEY', 'FIREBASE_ADMIN_PRIVATE_KEY',
 ] as const;
-const PLAIN_ENV = ['VERCEL_ENV', 'VERCEL_REGION', 'NODE_ENV', 'POLICIES_APPROVED'] as const;
+const PLAIN_ENV = ['VERCEL_ENV', 'VERCEL_REGION', 'NODE_ENV', 'POLICIES_APPROVED', 'WHATSAPP_BUSINESS_NUMBER'] as const;
 
 async function repoMigrations(): Promise<string[] | null> {
   try {
@@ -62,7 +63,8 @@ export async function collectInventory(db: SupabaseClient) {
     loadSchoolFacts(db),
   ]);
   const { __stored, ...values } = platform;
-  const secrets = Object.fromEntries(SECRET_ENV.map(k => [k, !!process.env[k]?.trim()]));
+  // A "dummy…" placeholder counts as not set (see src/lib/whatsapp/config.ts).
+  const secrets = Object.fromEntries(SECRET_ENV.map(k => [k, !!process.env[k]?.trim() && !(k.startsWith('WHATSAPP_') && /^dummy/i.test(process.env[k]!.trim()))]));
   const env = Object.fromEntries(PLAIN_ENV.map(k => [k, process.env[k]]));
   const inputs: InventoryInputs = {
     secrets, env,

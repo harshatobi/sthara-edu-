@@ -46,6 +46,11 @@ export const ICON_COLORS: Record<string, string> = {
   Key: '#CA8A04',                // amber (dark) — roles & access
   DotsThreeCircle: '#64748B',    // slate — "More" overflow menu
   GearSix: '#64748B',            // slate — settings
+  WhatsappLogo: '#25D366',       // WhatsApp green — the parent WhatsApp channel
+  ChatsCircle: '#7C5CFC',        // violet — Ask the School OS
+  EnvelopeSimple: '#0EA5E9',     // sky — messages with the school
+  ListChecks: '#3B82F6',         // blue — schoolwork
+  Receipt: '#16A34A',            // green — fee receipts
 };
 
 export function iconColor(name: keyof typeof ICON_COLORS | string, fallback = '#93A7C4'): string {

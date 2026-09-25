@@ -9,6 +9,7 @@ import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/S
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { KeyIcon as Key } from '@phosphor-icons/react/dist/ssr/Key';
+import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -25,6 +26,7 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/probe', label: 'Probe', icon: Sparkle, need: ['probe.view'] },
   { href: '/admin/fees', label: 'Admissions & Fees', short: 'Fees', icon: CurrencyInr, also: ['/admin/admissions'], need: ['fees.read'] },
   { href: '/admin/admissions', label: 'Admissions', icon: CurrencyInr, need: ['admissions.read'] },
+  { href: '/admin/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple, need: ['messages.office'] },
   { href: '/admin/staff', label: 'Staff & Leave', short: 'Staff', icon: CalendarBlank, need: ['workforce.read'] },
   { href: '/admin/academic', label: 'Academic Health', short: 'Academic', icon: ChartLineUp, need: ['academics.read'] },
   { href: '/admin/wellness', label: 'CBSE Wellness Report', short: 'Wellness', icon: Heart, need: ['wellness.read'] },

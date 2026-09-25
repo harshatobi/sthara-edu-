@@ -134,8 +134,8 @@ export default function LoginPage() {
         await supabase.auth.signOut();
         throw new Error(`This account isn’t registered at ${schoolName}. Check the school code.`);
       }
-      document.cookie = `__role=${account.role}; path=/; max-age=3600; SameSite=Lax`;
-      document.cookie = `__session=${data.session.access_token}; path=/; max-age=3600; SameSite=Lax`;
+      document.cookie = `__role=${account.role}; path=/; max-age=43200; SameSite=Lax`;
+      document.cookie = `__session=${data.session.access_token}; path=/; max-age=43200; SameSite=Lax`;
       router.replace(`/${account.role}`);
     } catch (err) {
       setCredsError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');

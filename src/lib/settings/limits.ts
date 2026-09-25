@@ -42,6 +42,11 @@ export const RATE_LIMITS = {
   lessons:         { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons',         label: 'Lesson plan writes' },
   lessonDraft:     { limit: 12,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons/draft',   label: 'Lesson plan drafting' },
   leave:           { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/leave',           label: 'Leave requests' },
+  parentDesk:      { limit: 60,  windowMs: 5 * MIN,  per: 'user',    route: '/api/parent/desk',             label: 'Parent portal data' },
+  parentAsk:       { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/ask',              label: 'Ask the School OS (web)' },
+  schoolMessages:  { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/messages, /api/staff/messages', label: 'Parent and staff messages' },
+  whatsappLink:    { limit: 5,   windowMs: 15 * MIN, per: 'user',    route: '/api/parent/whatsapp',         label: 'WhatsApp number linking' },
+  whatsappInbound: { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/whatsapp/webhook',        label: 'Ask the School OS (WhatsApp), per number' },
 } as const satisfies Record<string, RateLimit>;
 
 export type RateLimitKey = keyof typeof RATE_LIMITS;

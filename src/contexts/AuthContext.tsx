@@ -75,6 +75,19 @@ function setCookie(name: string, value: string, maxAge: number) {
 function clearCookie(name: string) {
   document.cookie = `${name}=; path=/; max-age=0; SameSite=Strict`;
 }
+/**
+ * __session/__role only tell the proxy "someone is signed in here" (APIs and RLS verify the
+ * real token). They outlive the 1h access token so a tab that slept past its refresh isn't
+ * bounced to /login on its next navigation; sign-out and SIGNED_OUT clear them.
+ */
+const PRESENCE_MAX_AGE = 12 * 3600;
+function markSignedIn(p: UserProfile, s: Session) {
+  // The value is the access token: the server-rendered /ops pages verify it (src/lib/ops/auth.ts).
+  setCookie('__session', s.access_token, PRESENCE_MAX_AGE);
+  setCookie('__role', p.role, PRESENCE_MAX_AGE);
+  setCookie('__trial_ok', p.schoolSuspended ? 'suspended' : p.trialExpired ? 'expired' : 'ok', 3600);
+}
+
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   try { return match ? decodeURIComponent(match[1]) : null; } catch { return null; }
@@ -151,6 +164,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const revision = useRef(0);
+  const profileRef = useRef<UserProfile | null>(null);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
   const demoActive = useRef(false);
   const router = useRouter();
 
@@ -212,9 +227,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (disposed) return;
       clearTimeout(watchdog);
       clearTimeout(pending);
+      // Token refreshes and tab-refocus SIGNED_IN events repeat for the same
+      // account. Treat them as a silent refresh: keep the loaded profile and
+      // the user object identity, so portals don't unmount and reload their
+      // whole desk (the "slow / have to refresh" teacher bug).
+      const sameAccount = !!nextSession && profileRef.current?.uid === nextSession.user.id;
       const request = ++revision.current;
       setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+      setUser(prev => (prev && nextSession && prev.id === nextSession.user.id ? prev : nextSession?.user ?? null));
       setError(null);
       if (!nextSession) {
         clearCookie('__session');
@@ -231,14 +251,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       demoActive.current = false;
+      if (sameAccount) {
+        if (profileRef.current) markSignedIn(profileRef.current, nextSession);
+        // Pick up role/school changes quietly; a failed refresh keeps the current profile.
+        if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
+          pending = setTimeout(() => {
+            void withTimeout(fetchProfile(nextSession)).then(nextProfile => {
+              if (disposed || request !== revision.current) return;
+              markSignedIn(nextProfile, nextSession);
+              setProfile(prev => (prev && JSON.stringify(prev) === JSON.stringify(nextProfile) ? prev : nextProfile));
+            }).catch(() => { /* keep the profile already on screen */ });
+          }, 0);
+        }
+        return;
+      }
       setLoading(true);
       // Never return a promise to Supabase's notification handler.
       pending = setTimeout(() => {
         void withTimeout(fetchProfile(nextSession)).then(nextProfile => {
           if (disposed || request !== revision.current) return;
-          setCookie('__session', nextSession.access_token, Math.max(1, (nextSession.expires_at ?? 0) - Math.floor(Date.now() / 1000)));
-          setCookie('__role', nextProfile.role, 3600);
-          setCookie('__trial_ok', nextProfile.schoolSuspended ? 'suspended' : nextProfile.trialExpired ? 'expired' : 'ok', 3600);
+          markSignedIn(nextProfile, nextSession);
           setProfile(nextProfile);
         }).catch(() => {
           if (disposed || request !== revision.current) return;

@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { marksOf, sanitizeQuestions } from '@/lib/teacher/questions';
-import { normalizeComponentType, computeStudentTml } from '@/lib/tml/engine';
+import { normalizeComponentType, computeStudentTml, evidenceTopicName } from '@/lib/tml/engine';
+import { notifyGuardians } from '@/lib/parent/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     .eq('id', submissionId).eq('school_id', staff.schoolId).maybeSingle();
   if (!sub) return NextResponse.json({ error: 'Submission not found.' }, { status: 404 });
   const { data: a } = await db.from('assignments')
-    .select('id, title, type, class, subject, teacher_id, questions, total_marks, submission_mode')
+    .select('id, title, type, class, subject, teacher_id, questions, total_marks, submission_mode, units')
     .eq('id', sub.assignment_id).maybeSingle();
   if (!a) return NextResponse.json({ error: 'Assignment not found.' }, { status: 404 });
   if (staff.role === 'teacher' && a.teacher_id !== staff.id && !inScope(staff.scope, a.class, a.subject)) {
@@ -95,6 +96,34 @@ export async function POST(req: NextRequest) {
   let tmlUpdated = false;
   try { tmlUpdated = !!(await computeStudentTml(db, sub.student_id, a.subject || undefined)); }
   catch (e: any) { console.error('[review-submission] TML recompute failed:', e?.message); }
+
+  // Parents: the grade (in-app + WhatsApp if they opted in), and the TML spec's
+  // Severe Need rule — a topic newly under 35% is logged to the parent's WhatsApp.
+  const { data: kid } = await db.from('users').select('name').eq('id', sub.student_id).maybeSingle();
+  const first = kid?.name?.split(' ')[0] || 'Your child';
+  const kind = a.type === 'quiz' ? 'quiz' : a.type === 'classwork' ? 'classwork' : 'homework';
+  await notifyGuardians(db, {
+    schoolId: sub.school_id, studentId: sub.student_id, pref: 'grades', type: 'grade',
+    title: `${first}'s ${a.subject || ''} ${kind} ${amended ? 're-graded' : 'graded'}: ${score}/${max}`.replace(/\s+/g, ' '),
+    body: `"${a.title}", marked by ${staff.name}.${note ? ` Teacher's note: "${note.slice(0, 200)}"` : ''}`,
+    metadata: { assignmentId: a.id, submissionId: sub.id },
+    whatsapp: `*${first}*'s ${a.subject || ''} ${kind} "${a.title}" was ${amended ? 're-graded' : 'graded'} by ${staff.name}: *${score}/${max}*.${note ? `\nTeacher's note: "${note.slice(0, 300)}"` : ''}\n\nReply to ask what this means or how to help at home.`,
+  });
+  if (tmlUpdated) {
+    const topic = evidenceTopicName(a);
+    const { data: snaps } = await db.from('tml_scores').select('score, confidence_band').eq('student_id', sub.student_id)
+      .eq('topic_name', topic).ilike('subject', a.subject || '%').order('computed_at', { ascending: false }).limit(2);
+    const [now, before] = snaps || [];
+    if (now && Number(now.score) < 35 && now.confidence_band !== 'insufficient' && (!before || Number(before.score) >= 35)) {
+      await notifyGuardians(db, {
+        schoolId: sub.school_id, studentId: sub.student_id, pref: 'alerts', type: 'tml_alert',
+        title: `${first} needs support in ${topic}`,
+        body: `Mastery of ${topic} (${a.subject}) is ${Math.round(Number(now.score))}%. The school is setting a remediation plan.`,
+        metadata: { topic, subject: a.subject, score: Number(now.score) },
+        whatsapp: `*${first}* needs support in *${topic}* (${a.subject}): mastery is ${Math.round(Number(now.score))}%, in the "severe need" band. The school is setting a remediation plan with ${staff.name}.\n\nReply "how can I help at home?" for 15-minute ideas, or "message the teacher".`,
+      });
+    }
+  }
 
   return NextResponse.json({ success: true, score, max, amended, tmlUpdated });
 }

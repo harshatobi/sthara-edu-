@@ -113,6 +113,7 @@ const inputs = (over: Partial<InventoryInputs> = {}): InventoryInputs => ({
   secrets: {
     SUPABASE_SERVICE_ROLE_KEY: true, NEXT_PUBLIC_SUPABASE_URL: true, NEXT_PUBLIC_SUPABASE_ANON_KEY: true,
     GEMINI_API_KEY: true, TUTOR_SESSION_SECRET: true, SENTRY_DSN: true, YOUTUBE_API_KEY: true,
+    WHATSAPP_ACCESS_TOKEN: true, WHATSAPP_PHONE_NUMBER_ID: true, WHATSAPP_APP_SECRET: true, WHATSAPP_VERIFY_TOKEN: true,
   },
   env: { VERCEL_ENV: 'production', VERCEL_REGION: 'bom1', NODE_ENV: 'production', POLICIES_APPROVED: 'true' },
   platform: { ...PLATFORM_DEFAULTS, 'onboarding.self_serve': false },

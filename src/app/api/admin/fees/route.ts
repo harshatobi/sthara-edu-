@@ -1,3 +1,4 @@
+import { notifyGuardians } from '@/lib/parent/notify';
 import { NextResponse, type NextRequest } from 'next/server';
 import { bad, deny, ISO_DAY, isUuid, money, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { assembleLedger, reminderMessage, validateSchedule, PAY_MODES, type ScheduleItem } from '@/lib/admin/fees';
@@ -227,9 +228,14 @@ async function remind(db: any, admin: { id: string; schoolId: string; schoolName
       metadata: { outstanding: f.outstanding, tone: f.tone, invoiceIds: f.invoices.filter(i => i.balance > 0).map(i => i.id) },
     })));
     if (error) { skipped.push({ studentId: f.studentId, why: 'notification failed' }); continue; }
+    // WhatsApp copy for parents who opted in to fee updates (in-app row written above).
+    const wa = await notifyGuardians(db, {
+      schoolId: admin.schoolId, studentId: f.studentId, pref: 'fees', type: 'fee_reminder', title: msg.title, body: msg.body,
+      skipInApp: true, whatsapp: `${msg.title}\n\n${msg.body}\n\nReply to ask about the fee schedule or to message the school office.`,
+    });
     await db.from('fee_reminders').insert({
       school_id: admin.schoolId, student_id: f.studentId, invoice_ids: f.invoices.filter(i => i.balance > 0).map(i => i.id),
-      outstanding: f.outstanding, tone: f.tone, channel: 'in_app', recipients: to.length, sent_by: admin.id,
+      outstanding: f.outstanding, tone: f.tone, channel: wa.whatsapp ? 'whatsapp' : 'in_app', recipients: to.length, sent_by: admin.id,
     });
     sent.push(f.studentId);
   }

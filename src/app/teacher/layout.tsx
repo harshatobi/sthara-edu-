@@ -11,6 +11,7 @@ import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/C
 import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
 import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
 import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
+import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import TeacherDemoPortal from '@/components/teacher/TeacherDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -24,6 +25,7 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true },
   { href: '/teacher/homework', label: 'Homework', icon: FileText },
   { href: '/teacher/quiz', label: 'Quiz Creator', short: 'Quiz', icon: ClipboardText },
+  { href: '/teacher/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple },
   { href: '/teacher/syllabus', label: 'Syllabus', icon: Lightning },
   { href: '/teacher/ai-assistant', label: 'AI Assistant', short: 'AI', icon: Brain },
   { href: '/teacher/heatmap', label: 'Class Heat Map', short: 'Heat map', icon: Fire },

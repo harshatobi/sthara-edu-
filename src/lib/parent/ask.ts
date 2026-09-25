@@ -75,7 +75,7 @@ export function parseAskReply(raw: unknown, book: NameBook): AskReply {
     id: s(q?.id, 30) || `q${i + 1}`, question: s(q?.question, 240), options: list(q?.options, 5, 100),
   })).filter((q: AskQuestion) => q.question && q.options.length >= 2);
   const facts = (Array.isArray(r.facts) ? r.facts : []).slice(0, 4).map((f: any) => ({
-    label: s(f?.label, 40), value: s(f?.value, 40), tone: ['g', 'a', 'r', 'b', 'n'].includes(f?.tone) ? f.tone : 'n',
+    label: s(f?.label, 70), value: s(f?.value, 40), tone: ['g', 'a', 'r', 'b', 'n'].includes(f?.tone) ? f.tone : 'n',
   })).filter((f: AskFact) => f.label && f.value);
   const tok = (v: unknown) => s(v, 20).replace(/^\[\[|\]\]$/g, '');
   const actions: AskAction[] = [];

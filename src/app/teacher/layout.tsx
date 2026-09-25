@@ -10,6 +10,7 @@ import { FireIcon as Fire } from '@phosphor-icons/react/dist/ssr/Fire';
 import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
 import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
 import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
+import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import TeacherDemoPortal from '@/components/teacher/TeacherDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -18,7 +19,7 @@ import { useRoleGuard } from '@/lib/auth/useRoleGuard';
 import type { TeacherView } from '@/lib/demo/teacher';
 import { TeacherDeskProvider } from '@/lib/teacher/useTeacherDesk';
 
-// Canon teacher nav (mockup ROLES.teacher). Attendance and leave aren't built yet, so they aren't listed.
+// Canon teacher nav (mockup ROLES.teacher). Attendance isn't built yet, so it isn't listed.
 const NAV: CanonNavItem[] = [
   { href: '/teacher', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true },
   { href: '/teacher/homework', label: 'Homework', icon: FileText },
@@ -29,6 +30,7 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher/mastery', label: 'Mastery Tracker', short: 'Mastery', icon: ChartLineUp },
   { href: '/teacher/feed', label: 'Situational Feed', short: 'Feed', icon: Bell },
   { href: '/teacher/wellness', label: 'Student Wellness', short: 'Wellness', icon: Heart },
+  { href: '/teacher/leave', label: 'Apply Leave', short: 'Leave', icon: CalendarBlank },
 ];
 
 const DEMO_VIEWS: Record<string, TeacherView> = {

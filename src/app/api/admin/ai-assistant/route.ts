@@ -1,12 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { requireAdmin } from '@/lib/admin/serverAuth';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
-  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Office accounts only (it used to answer any signed-in user), and metered: every call costs a model request.
+  const auth = await requireAdmin(request, 'dashboard.view');
+  if ('res' in auth) return auth.res;
+  if (!checkRateLimit(`admin-ai:${auth.admin.id}`, 30, 10 * 60_000).allowed) {
+    return NextResponse.json({ error: 'Too many questions at once. Wait a few minutes.' }, { status: 429 });
+  }
 
   try {
     const { message, context, history } = await request.json();

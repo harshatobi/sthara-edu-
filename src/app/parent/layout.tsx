@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import AuthStatus from '@/components/ui/AuthStatus';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useRoleGuard } from '@/lib/auth/useRoleGuard';
-import { Clock, HeartHandshake, Activity, Target, TrendingUp } from 'lucide-react';
+import { Clock, HeartHandshake, Activity, Target, TrendingUp, ShieldCheck } from 'lucide-react';
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,6 +16,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
     { name: 'Wellness Monitor', href: '/parent/wellness', icon: HeartHandshake, current: pathname === '/parent/wellness' },
     { name: 'Milestone Timeline', href: '/parent/milestones', icon: Target, current: pathname === '/parent/milestones' },
     { name: 'Parent Sensitization', href: '/parent/sensitization', icon: Clock, current: pathname === '/parent/sensitization' },
+    { name: 'Consent & Privacy', href: '/parent/consent', icon: ShieldCheck, current: pathname === '/parent/consent' },
   ];
 
   if (!authorized) return <AuthStatus />;

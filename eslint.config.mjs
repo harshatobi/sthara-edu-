@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The marketing site is plain browser JS with its own tests (site/tests).
+    "site/**",
+    "public/site/**",
   ]),
 ]);
 

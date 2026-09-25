@@ -19,6 +19,8 @@ export interface CanonNavItem {
   exact?: boolean;
   /** Label for the phone tab bar, where full labels don't fit. */
   short?: string;
+  /** Other routes this entry owns (e.g. a nav item whose page has sibling tabs). */
+  also?: string[];
 }
 
 /**
@@ -34,8 +36,9 @@ export default function CanonShell({ subtitle, nav, label, children }: {
 }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
+  const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const isOn = (item: CanonNavItem) =>
-    item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
+    item.exact ? pathname === item.href : under(item.href) || !!item.also?.some(under);
 
   return (
     <div className="canon">

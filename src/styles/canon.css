@@ -464,3 +464,125 @@
 .canon .st-ft { display:flex; gap:10px; align-items:center; padding:12px 18px; border-top:1px solid var(--line); background:#fff; flex-wrap:wrap; }
 .canon .st-settings .seg { flex-wrap:wrap; }
 @media (max-width:900px) { .canon .st-body { grid-template-columns:1fr; } .canon .st-settings { border-right:0; border-bottom:1px solid var(--line); } }
+
+/* ---------- ADMIN (command centre) ---------- */
+.canon .kpi-link { display:block; text-align:left; width:100%; color:inherit; text-decoration:none; border:0; font:inherit; cursor:pointer; transition:box-shadow .15s, transform .15s; }
+.canon .kpi-link:hover { box-shadow:0 1px 2px rgba(0,33,71,.06),0 14px 34px rgba(0,33,71,.09); }
+.canon .kpi-link:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.canon .tbl-wrap { overflow-x:auto; margin:0 -4px; }
+.canon .tbl { width:100%; border-collapse:collapse; font-size:14px; }
+.canon .tbl th { text-align:left; font-size:11px; font-weight:800; color:var(--mut); letter-spacing:.06em; padding:0 12px 12px; white-space:nowrap; text-transform:uppercase; }
+.canon .tbl td { padding:13px 12px; border-top:1px solid var(--line); vertical-align:middle; }
+.canon .tbl th.c, .canon .tbl td.c { text-align:center; }
+.canon .tbl th.r, .canon .tbl td.r { text-align:right; font-variant-numeric:tabular-nums; }
+.canon .tbl tr.sel td { background:var(--pale); }
+.canon .tbl tbody tr.click { cursor:pointer; }
+.canon .tbl tbody tr.click:hover td { background:#F8FAFD; }
+.canon .num { font-variant-numeric:tabular-nums; }
+.canon .who { display:flex; align-items:center; gap:11px; }
+.canon .who .ic { width:34px; height:34px; flex:0 0 34px; border-radius:50%; background:var(--pale); color:var(--blue); display:grid; place-items:center; }
+.canon .row-btn { display:flex; width:100%; text-align:left; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line); background:none; }
+.canon .row-btn:first-of-type { border-top:0; }
+.canon .row-btn:hover .muted { color:var(--ink); }
+.canon .spark { display:flex; align-items:flex-end; gap:6px; height:170px; }
+.canon .spark > div { flex:1; border-radius:5px 5px 0 0; min-height:4px; }
+.canon .spark > div.na { background:repeating-linear-gradient(45deg,#EEF2F7,#EEF2F7 4px,#F7F9FB 4px,#F7F9FB 8px); }
+@media print {
+  .canon aside, .canon .tabbar, .canon .acts, .canon .no-print { display:none !important; }
+  .canon main { padding:0 !important; max-width:none !important; }
+  .canon .card, .canon .kpi, .canon .pbar { box-shadow:none !important; border:1px solid #E2E8F0; break-inside:avoid; }
+}
+
+/* ---------- BOARD PACK (A4 document, printed to PDF) ---------- */
+.canon .bp { --bp-ink:#002147; --bp-mut:#64748B; --bp-line:#E6EBF2; display:flex; flex-direction:column; align-items:center; gap:22px; padding-bottom:30px; }
+.canon .bp-bar-top { position:sticky; top:0; z-index:5; display:flex; gap:10px; align-items:center; width:100%; max-width:210mm; background:var(--body); padding:4px 0 10px; font-size:13px; flex-wrap:wrap; }
+.canon .bp-page { position:relative; width:210mm; min-height:297mm; background:#fff; color:var(--bp-ink); box-shadow:0 1px 2px rgba(0,33,71,.06),0 18px 40px rgba(0,33,71,.10); padding:18mm 16mm 26mm; overflow:hidden; font-size:10.5pt; line-height:1.45; }
+.canon .bp-cover { padding:0 0 26mm; }
+.canon .bp-hero { background:linear-gradient(115deg,#062347 0%,#123F84 58%,#0F5AB8 100%); color:#fff; padding:14mm 16mm 16mm; min-height:96mm; display:flex; flex-direction:column; justify-content:space-between; }
+.canon .bp-brand { font-size:17pt; font-weight:800; letter-spacing:-.01em; }
+.canon .bp-brand i { display:block; font-style:normal; color:#FF5A7A; font-size:7pt; font-weight:800; letter-spacing:.16em; margin-top:1mm; }
+.canon .bp-hero h1 { font-size:30pt; font-weight:800; line-height:1.08; letter-spacing:-.02em; margin:3mm 0 3mm; }
+.canon .bp-hero p { color:#BBD3F2; font-size:10pt; max-width:140mm; }
+.canon .bp-body { padding:10mm 16mm 0; }
+.canon .bp-kicker { color:var(--red); font-size:7.5pt; font-weight:800; letter-spacing:.16em; }
+.canon .bp-kicker.light { color:#9FBBE0; }
+.canon .bp-head { border-bottom:2px solid var(--bp-ink); padding-bottom:4mm; margin-bottom:6mm; }
+.canon .bp-head h2 { font-size:20pt; font-weight:800; letter-spacing:-.015em; margin-top:1.5mm; }
+.canon .bp-head p { color:var(--bp-mut); font-size:9.5pt; margin-top:1.5mm; max-width:160mm; }
+.canon .bp-h3 { font-size:10pt; font-weight:800; margin:6mm 0 2.5mm; letter-spacing:.01em; }
+.canon .bp-grid2, .canon .bp-grid3, .canon .bp-grid4 { display:grid; gap:3.5mm; }
+.canon .bp-grid2 { grid-template-columns:repeat(2,1fr); }
+.canon .bp-grid3 { grid-template-columns:repeat(3,1fr); }
+.canon .bp-grid4 { grid-template-columns:repeat(4,1fr); }
+.canon .bp-cols { display:grid; grid-template-columns:1fr 1fr; gap:8mm; }
+.canon .bp-stat { border:1px solid var(--bp-line); border-radius:3mm; padding:3.5mm 4mm; background:#FBFCFE; }
+.canon .bp-lb { font-size:6.8pt; font-weight:800; letter-spacing:.12em; color:var(--bp-mut); }
+.canon .bp-vl { font-size:19pt; font-weight:800; line-height:1.1; margin-top:1.5mm; font-variant-numeric:tabular-nums; }
+.canon .bp-nt { font-size:8pt; color:var(--bp-mut); margin-top:1mm; }
+.canon .bp-row { display:flex; align-items:center; gap:3mm; padding:1.8mm 0; border-bottom:1px solid var(--bp-line); font-size:9.5pt; }
+.canon .bp-row .w44 { width:12mm; flex:0 0 12mm; } .canon .bp-row .w50 { width:13mm; flex:0 0 13mm; }
+.canon .bp-row .w80 { width:20mm; flex:0 0 20mm; } .canon .bp-row .w150 { width:38mm; flex:0 0 38mm; }
+.canon .bp .r { text-align:right; } .canon .bp .mut { color:var(--bp-mut); font-size:8.5pt; }
+.canon .bp-bar { flex:1; height:2.2mm; border-radius:2mm; background:#EDF1F7; overflow:hidden; }
+.canon .bp-bar > i { display:block; height:100%; border-radius:2mm; }
+.canon .bp-stack { display:flex; height:5mm; border-radius:2mm; overflow:hidden; margin-bottom:3mm; background:#EDF1F7; }
+.canon .bp-stack > i { display:block; height:100%; }
+.canon .bp-key { display:flex; align-items:center; gap:2.5mm; font-size:9pt; padding:1mm 0; }
+.canon .bp-key i { width:3mm; height:3mm; border-radius:1mm; flex:0 0 3mm; }
+.canon .bp-key b { margin-left:auto; font-variant-numeric:tabular-nums; }
+.canon .bp-heat { border-collapse:separate; border-spacing:1.2mm; width:100%; }
+.canon .bp-heat th { font-size:7.5pt; font-weight:800; color:var(--bp-mut); text-align:center; }
+.canon .bp-heat td { border-radius:1.5mm; text-align:center; color:#fff; font-weight:800; font-size:10pt; padding:2.2mm 1mm; }
+.canon .bp-heat td small { font-weight:600; font-size:6.5pt; opacity:.85; margin-left:1mm; }
+.canon .bp-heat td.nm { color:var(--bp-ink); text-align:left; font-size:9pt; padding-left:0; white-space:nowrap; }
+.canon .bp-heat td.na { background:#F1F5F9; color:#94A3B8; font-weight:600; }
+.canon .bp-tbl { width:100%; border-collapse:collapse; font-size:9pt; }
+.canon .bp-tbl th { text-align:left; font-size:6.8pt; font-weight:800; letter-spacing:.1em; color:var(--bp-mut); text-transform:uppercase; padding:0 2mm 1.8mm; border-bottom:1.5px solid var(--bp-ink); }
+.canon .bp-tbl td { padding:1.8mm 2mm; border-bottom:1px solid var(--bp-line); font-variant-numeric:tabular-nums; }
+.canon .bp-tbl .r { text-align:right; }
+.canon .bp-list { list-style:none; padding:0; margin:0; }
+.canon .bp-list li { display:flex; gap:3mm; padding:2.4mm 0; border-bottom:1px solid var(--bp-line); }
+.canon .bp-list b { font-size:9.8pt; } .canon .bp-list p { color:var(--bp-mut); font-size:8.6pt; margin-top:.6mm; }
+.canon .bp-list.compact li { padding:1.8mm 0; }
+.canon .bp-dot { width:2.4mm; height:2.4mm; border-radius:50%; flex:0 0 2.4mm; margin-top:1.4mm; background:#94A3B8; }
+.canon .bp-dot.r { background:#E11D48; } .canon .bp-dot.a { background:#F59E0B; }
+.canon .bp-none { color:var(--bp-mut); font-size:9pt; font-style:italic; padding:1mm 0; }
+.canon .bp-foot-note { color:var(--bp-mut); font-size:8.2pt; margin-top:2.5mm; }
+/* The background line on every page: a hairline across the foot with the Sthara credit sitting on it. */
+.canon .bp-foot { position:absolute; left:16mm; right:16mm; bottom:8mm; }
+.canon .bp-powered { position:relative; text-align:center; margin-bottom:3mm; }
+.canon .bp-powered::before { content:""; position:absolute; left:0; right:0; top:50%; border-top:1px solid #DCE3EE; }
+.canon .bp-powered span { position:relative; background:#fff; padding:0 4mm; font-size:7.5pt; letter-spacing:.08em; color:#94A3B8; }
+.canon .bp-powered b { color:#5A6B84; font-weight:800; }
+.canon .bp-meta { display:flex; justify-content:space-between; font-size:7.2pt; color:#94A3B8; }
+@media print {
+  @page { size:A4; margin:0; }
+  .canon .bp { gap:0; padding:0; }
+  .canon .bp-page { box-shadow:none !important; break-after:page; }
+  .canon .bp-page:last-child { break-after:auto; }
+  .canon .bp, .canon .bp * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .canon main > :not(.bp):not(:has(.bp)) { display:none !important; }
+}
+
+/* ---------- PROBE ---------- */
+.canon .probe-item { display:flex; gap:12px; align-items:center; width:100%; text-align:left; padding:14px 18px; border-bottom:1px solid var(--line); background:#fff; position:relative; }
+.canon .probe-item:hover { background:#F8FAFD; }
+.canon .probe-item.on { background:var(--pale); }
+.canon .probe-item:focus-visible { outline:2px solid var(--blue); outline-offset:-2px; }
+.canon .probe-sev { width:4px; align-self:stretch; border-radius:3px; flex:0 0 4px; }
+.canon .probe-ev { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:16px; }
+.canon .probe-ev > div { border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:#FBFCFE; display:flex; flex-direction:column; gap:3px; }
+.canon .probe-ev span { font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--mut); text-transform:uppercase; }
+.canon .probe-ev b { font-size:14.5px; line-height:1.35; }
+
+/* ---------- FEES FORECAST ---------- */
+.canon .fc { display:flex; gap:8px; align-items:flex-end; height:220px; }
+.canon .fc-col { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; min-width:0; }
+.canon .fc-col.now .fc-x { color:var(--ink); font-weight:800; }
+.canon .fc-bars { flex:1; width:100%; display:flex; gap:3px; align-items:flex-end; }
+.canon .fc-due { flex:1; background:#1E4FCC; border-radius:4px 4px 0 0; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+.canon .fc-due > i { display:block; background:#A9C4F5; width:100%; }
+.canon .fc-got { flex:1; background:#10B981; border-radius:4px 4px 0 0; }
+.canon .fc-x { font-size:10.5px; color:var(--mut2); font-weight:700; margin-top:6px; white-space:nowrap; }
+.canon .fc-v { font-size:10px; color:var(--mut); font-variant-numeric:tabular-nums; min-height:13px; }
+.canon .fc-key { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }

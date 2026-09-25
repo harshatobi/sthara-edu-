@@ -49,7 +49,10 @@ export default function SchoolsConsole({ devPreview }: { devPreview: boolean }) 
     <OpsFrame devPreview={devPreview}>
       <PageBar eyebrow="OPERATOR CONSOLE" title="Schools"
         sub="Onboard a school: set up classes and subjects, then add its admins, teachers, students and parents."
-        actions={<button className="btn pri" onClick={() => setCreating(c => !c)}><Plus size={15} weight="bold" /> New school</button>} />
+        actions={<>
+          <Link className="btn" href="/ops/enquiries">Website enquiries</Link>
+          <button className="btn pri" onClick={() => setCreating(c => !c)}><Plus size={15} weight="bold" /> New school</button>
+        </>} />
 
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
 

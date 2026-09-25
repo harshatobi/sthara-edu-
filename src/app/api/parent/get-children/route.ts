@@ -29,19 +29,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Parent profile not found' }, { status: 404 });
     }
 
+    if (parentData.role !== 'parent') {
+      return NextResponse.json({ error: 'Only parent accounts can do this.' }, { status: 403 });
+    }
     const schoolId = parentData.school_id;
-    const linked: string[] = parentData.metadata?.linkedStudents || [];
-
-    if (linked.length === 0 || !schoolId) {
+    // Children come from verified guardian links (set by the school), not from profile metadata.
+    const { data: links } = await supabase.from('guardians').select('student_id').eq('parent_id', user.id).eq('verified', true);
+    const childIds = (links || []).map(l => l.student_id);
+    if (childIds.length === 0 || !schoolId) {
       return NextResponse.json({ children: [] });
     }
 
-    // 3. Query linked students by custom_student_id
+    // 3. The linked students themselves
     const { data: studentRows, error: studErr } = await supabase
       .from('users')
       .select('*')
       .eq('school_id', schoolId)
-      .in('custom_student_id', linked);
+      .eq('role', 'student')
+      .in('id', childIds);
 
     if (studErr) throw studErr;
 

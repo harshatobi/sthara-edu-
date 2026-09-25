@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node site/build.mjs --app",
     "dev": "next dev",
+    "prebuild": "node site/build.mjs --app",
     "build": "next build",
+    "test:site": "node --test site/tests/*.test.mjs",
     "start": "next start",
     "lint": "eslint",
     "db:login": "npx -y supabase@2.117.0 login",

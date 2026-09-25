@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Explore Sthara: personal AI tutoring, teacher-led assessment, school operations and parent communication, connected by one living record.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#08121e">
+  <title>Sthara | Constellation concept</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="refinement.css">
+</head>
+<body>
+  <a href="#main" class="skip">Skip to content</a>
+  <canvas id="atmosphere" aria-hidden="true"></canvas>
+  <div class="pointer-light" aria-hidden="true"></div>
+  <div class="reading-progress" aria-hidden="true"></div>
+  <!-- Unmodified supplied artwork, displayed through two native SVG viewports.
+       No generative reconstruction, tracing or alteration of the brand geometry. -->
+  <svg width="0" height="0" class="svg-defs" aria-hidden="true"><defs>
+    <filter id="brand-white" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -.243 -.817 -.083 0 1.143"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+    <filter id="brand-navy" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .008  0 0 0 0 .137  0 0 0 0 .282  -.243 -.817 -.083 0 1.143"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+    <image id="brand-presentation" href="assets/sthara-logo-presentation.png" width="895" height="813"/>
+    <symbol id="pillar-logo" viewBox="350 146 196 316"><use href="#brand-presentation"/></symbol>
+    <symbol id="brand-wordmark" viewBox="120 533 660 148"><use href="#brand-presentation"/></symbol>
+    <symbol id="brand-name" viewBox="190 537 510 86"><use href="#brand-presentation"/></symbol>
+  </defs></svg>
+
+  <header class="site-header">
+    <div class="nav-shell wrap">
+      <a class="brand" href="#top" aria-label="Sthara home, The Unified Institutional OS"><svg class="brand-mark exact-brand" viewBox="0 0 196 316" aria-hidden="true"><use href="#pillar-logo"/></svg><svg class="brand-name exact-brand" viewBox="0 0 510 86" aria-hidden="true"><use href="#brand-name"/></svg></a>
+      <nav class="desktop-nav" aria-label="Primary navigation">
+        <button class="menu-trigger" aria-expanded="false" aria-controls="mega-menu">Platform <span aria-hidden="true">⌄</span></button>
+        <a href="#tml">True Mastery</a><a href="#pricing">Pricing</a><a href="https://www.sthara.in/#/about">About</a><a href="#trust">DPDP</a><a href="#contact">Contact</a>
+      </nav>
+      <div class="nav-actions"><button class="theme-toggle" aria-label="Switch to daylight design" title="Switch design"><span aria-hidden="true">◐</span></button><a class="button small" href="#contact">Book a pilot <span aria-hidden="true">↗</span></a><button class="mobile-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span></button></div>
+    </div>
+    <div id="mega-menu" class="mega wrap" hidden>
+      <div class="mega-intro"><span class="eyebrow">ONE CONNECTED PLATFORM</span><h2>A place for<br>everyone.</h2><a class="text-link" href="#platform">Explore the platform <span>↗</span></a></div>
+      <div class="mega-roles"><a href="#/student"><b>For students <span>↗</span></b><small>A tutor that helps you think.</small></a><a href="#/teacher"><b>For teachers <span>↗</span></b><small>Less marking. More teaching.</small></a><a href="#/admin"><b>For administrators <span>↗</span></b><small>A school you can see clearly.</small></a><a href="#/parent"><b>For parents <span>↗</span></b><small>Stay close to the school day.</small></a></div>
+      <div class="mega-explore"><span>Try it here</span><a href="#demo">The grading story ↗</a><a href="#tml">Explore True Mastery ↗</a><a href="#pricing">Estimate your school’s cost ↗</a><a href="https://www.sthara.in/login">Sign in to Sthara ↗</a></div>
+    </div>
+    <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation" hidden><a href="#platform">Platform</a><a href="#/student">Students</a><a href="#/teacher">Teachers</a><a href="#/admin">Administrators</a><a href="#/parent">Parents</a><a href="#tml">True Mastery</a><a href="#pricing">Pricing</a><a href="#trust">DPDP</a><a href="https://www.sthara.in/#/about">About</a><a href="#contact">Contact</a><a href="https://www.sthara.in/login">Sign in</a></nav>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <div id="home-page">
+      <section class="hero wrap" id="top">
+        <div class="hero-copy">
+          <div class="eyebrow">THE UNIFIED INSTITUTIONAL OS</div>
+          <h1><span data-dark="Every role." data-light="School life,">Every role.</span><br><em data-dark="One rhythm." data-light="connected.">One rhythm.</em></h1>
+          <p>One institutional OS. One unified school. Every learner, teacher and family connected through a living record.</p>
+          <div class="hero-actions"><a class="button" href="#contact">Book a pilot <span aria-hidden="true">↗</span></a><a class="button secondary" href="#product"><span class="play-icon" aria-hidden="true">▷</span> Step inside Sthara</a></div>
+        </div>
+        <div class="constellation" aria-label="Interactive map of four school roles">
+          <canvas id="hero-orbits" aria-hidden="true"></canvas>
+          <div class="pillar-art"><div class="pillar-halo" aria-hidden="true"></div><div class="pillar-motion">
+            <svg class="hero-pillar hero-pillar-3d" viewBox="0 0 1024 1536" aria-hidden="true">
+              <defs>
+                <image id="hero-crystal-art" href="assets/sthara-logo-3d.png" width="1024" height="1536"/>
+                <filter id="hero-crystal-cutout" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  2 0 3 0 -.06"/></filter>
+                <filter id="crystal-teal" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 0 1 0 0  0 .15 .85 0 0  2 0 3 0 -.06"/></filter>
+                <filter id="crystal-amber" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 1 0 0  0 .3 .7 0 0  .85 0 .15 0 0  2 0 3 0 -.06"/></filter>
+                <filter id="crystal-rose" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 1 0 0  0 .6 .4 0 0  .35 0 .65 0 0  2 0 3 0 -.06"/></filter>
+                <clipPath id="crystal-left"><rect x="225" y="282" width="106" height="941"/></clipPath>
+                <clipPath id="crystal-centre"><rect x="452" y="202" width="103" height="487"/><rect x="452" y="841" width="103" height="474"/></clipPath>
+                <clipPath id="crystal-right"><rect x="691" y="282" width="104" height="959"/></clipPath>
+                <mask id="crystal-flow-mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1536"><use href="#hero-crystal-art" filter="url(#hero-crystal-cutout)"/></mask>
+              </defs>
+              <use href="#hero-crystal-art" filter="url(#hero-crystal-cutout)"/>
+              <use href="#hero-crystal-art" filter="url(#crystal-teal)" clip-path="url(#crystal-left)"/>
+              <use href="#hero-crystal-art" filter="url(#crystal-amber)" clip-path="url(#crystal-centre)"/>
+              <use href="#hero-crystal-art" filter="url(#crystal-rose)" clip-path="url(#crystal-right)"/>
+              <g mask="url(#crystal-flow-mask)" fill="none" stroke-width="16" stroke-linecap="round">
+                <path class="crystal-flow" style="--flow:#9ac2ff;--delay:0s" pathLength="100" d="M669 351C508 178 292 425 351 598C390 724 639 723 683 872C748 1061 685 1197 495 1224"/>
+                <path class="crystal-flow" style="--flow:#79dfc6;--delay:-1s" pathLength="100" d="M275 304V1198"/>
+                <path class="crystal-flow" style="--flow:#f1c482;--delay:-2s" pathLength="100" d="M504 300V686M504 861V1288"/>
+                <path class="crystal-flow" style="--flow:#efa5bc;--delay:-3s" pathLength="100" d="M740 304V1215"/>
+              </g>
+            </svg>
+            <span class="pillar-plinth" aria-hidden="true"></span></div><span class="pillar-caption">ONE PILLAR. EVERY POSSIBILITY.</span></div>
+          <button class="role-node node-student" data-role="student" aria-pressed="false"><span class="node-symbol" aria-hidden="true">01</span><span>Student<small>Curiosity, supported</small></span></button>
+          <button class="role-node node-teacher active" data-role="teacher" aria-pressed="true"><span class="node-symbol" aria-hidden="true">02</span><span>Teacher<small>Judgement, amplified</small></span></button>
+          <button class="role-node node-admin" data-role="admin" aria-pressed="false"><span class="node-symbol" aria-hidden="true">03</span><span>Admin<small>Operations, connected</small></span></button>
+          <button class="role-node node-parent" data-role="parent" aria-pressed="false"><span class="node-symbol" aria-hidden="true">04</span><span>Parent<small>Progress, understood</small></span></button>
+          <div class="orbit-caption"><span class="signal" aria-hidden="true"></span><span id="orbit-caption">A teacher’s review becomes a child’s next step.</span></div>
+          <span class="orbit-instruction">Select a role to follow its connection</span>
+        </div>
+      </section>
+
+      <div class="platform-strip wrap"><span>A SCHOOL DAY, CONNECTED</span><a href="#platform">Learning <i>↗</i></a><a href="#demo">Assessment <i>↗</i></a><a href="#/admin">Operations <i>↗</i></a><a href="#/parent">Family <i>↗</i></a><a href="#tml">Understanding <i>↗</i></a></div>
+
+      <section id="platform" class="section wrap">
+        <div class="section-heading reveal"><h2>Institutional in scope.<br><span>Personal by design.</span></h2><p>The unified institutional OS, brought to life as one connected school. Four roles, each with their own superpower.</p></div>
+        <div class="role-explorer reveal">
+          <div class="role-tabs" role="tablist" aria-label="Explore Sthara by role"><button id="tab-student" role="tab" aria-selected="false" tabindex="-1" aria-controls="role-panel" data-explore="student"><span>01</span> Students <b>↗</b></button><button id="tab-teacher" class="active" role="tab" aria-selected="true" aria-controls="role-panel" data-explore="teacher"><span>02</span> Teachers <b>↗</b></button><button id="tab-admin" role="tab" aria-selected="false" tabindex="-1" aria-controls="role-panel" data-explore="admin"><span>03</span> Administrators <b>↗</b></button><button id="tab-parent" role="tab" aria-selected="false" tabindex="-1" aria-controls="role-panel" data-explore="parent"><span>04</span> Parents <b>↗</b></button></div>
+          <div id="role-panel" role="tabpanel" aria-labelledby="tab-teacher" tabindex="0"></div>
+        </div>
+      </section>
+
+      <section id="product" class="section product-section"><div class="wrap">
+        <div class="section-heading reveal"><span class="eyebrow">INSIDE THE SCHOOL DAY</span><h2>The work is connected.<br><span>Now you can see how.</span></h2><p>From curriculum planning to a learner’s next question. Explore the supplied Sthara screens, one part of the school day at a time.</p></div>
+        <div id="capture-gallery"></div>
+        <p class="capture-disclaimer">Supplied design captures. Values are examples, not customer outcomes or live records. Screens illustrate the intended experience, not independent verification of AI, privacy or compliance.</p>
+      </div></section>
+
+      <section id="demo" class="section story-section">
+        <div class="wrap"><div class="section-heading reveal"><span class="eyebrow">FOLLOW ONE PIECE OF WORK</span><h2>From a notebook.<br><span>To a better next lesson.</span></h2><p>Explore the connection between submission, teacher review and learning insight. No student data. No real AI calls.</p></div>
+          <div class="story-layout reveal">
+            <div class="story-controls"><div class="story-step-list" aria-label="Grading story"><button class="story-step active" data-step="0" aria-pressed="true"><span class="step-marker">01</span><span><b>Capture the work</b><small>A photographed notebook, in context.</small></span></button><button class="story-step" data-step="1" aria-pressed="false"><span class="step-marker">02</span><span><b>Review the suggestion</b><small>AI assists. The teacher decides.</small></span></button><button class="story-step" data-step="2" aria-pressed="false"><span class="step-marker">03</span><span><b>Connect the insight</b><small>One review, a shared learning record.</small></span></button></div><div class="story-footer"><button class="text-link" id="story-play">Play the story <span>▷</span></button><span>Illustrative workflow</span></div></div>
+            <div class="story-stage" aria-live="polite"><div class="stage-toolbar"><span>MATHEMATICS / LINEAR EQUATIONS</span><span class="sample-label">Sample work</span></div><div id="story-content"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tml" class="section wrap mastery-section">
+        <div class="mastery-intro reveal"><h2>An exam is a moment.<br><span>Learning is a pattern.</span></h2><p>True Mastery Level brings classroom work, teacher-confirmed homework, quizzes and tutor engagement into a topic-level view.</p><p class="subtle">Select a topic to see the evidence and a possible next step. These are illustrative values, not a predictive model or student assessment.</p><a href="#/teacher" class="text-link">Explore the teacher’s view <span>↗</span></a></div>
+        <div class="mastery-console reveal">
+          <div class="console-head"><b>True Mastery Level™</b><span class="sample-label">Sample learning record</span></div>
+          <div class="mastery-grid">
+            <div class="mastery-meter"><svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="tml-spectrum"><stop stop-color="#ed174c"/><stop offset=".25" stop-color="#ff8846"/><stop offset=".5" stop-color="#f7b900"/><stop offset=".75" stop-color="#5bc69e"/><stop offset="1" stop-color="#0cba87"/></linearGradient></defs><circle class="dial-spectrum" cx="100" cy="100" r="96"/><circle class="dial-track" cx="100" cy="100" r="85"/><circle class="dial-value" cx="100" cy="100" r="85"/></svg><div><span id="mastery-view">TOPIC TML</span><strong id="mastery-score">76</strong><span id="mastery-status">Developing</span></div></div>
+            <div class="topic-list" aria-label="Choose a sample topic"><button data-topic="0" class="active" aria-pressed="true"><span>Linear equations</span><b>76</b></button><button data-topic="1" aria-pressed="false"><span>Motion & force</span><b>62</b></button><button data-topic="2" aria-pressed="false"><span>Comprehension</span><b>88</b></button></div>
+          </div>
+          <div class="tml-tools"><div class="tml-palette" aria-label="Illustrative score palette, low to high"><span>Low</span><i style="--swatch:#ed174c"></i><i style="--swatch:#ff8846"></i><i style="--swatch:#f7b900"></i><i style="--swatch:#5bc69e"></i><i style="--swatch:#0cba87"></i><span>High</span></div><button id="tml-return" disabled>Topic overview ↶</button></div>
+          <div class="evidence-detail"><div class="tml-evidence-label"><b>Explore the evidence</b><span>Click a source below</span></div><div id="evidence-chips" aria-label="Inspect sample evidence"></div><p id="evidence-source-note" role="status">Select a source to inspect its score in the ring.</p><div aria-live="polite"><h3 id="evidence-title"></h3><p id="evidence-copy"></p></div></div>
+        </div>
+      </section>
+
+      <section id="trust" class="section trust-section"><div class="wrap"><div class="section-heading reveal"><h2>A child’s record deserves<br><span>more than a privacy badge.</span></h2><p>Know where data lives, who can see it and how the school stays in control. Start with Sthara’s published policies.</p></div><div class="trust-grid reveal"><div class="trust-statement"><svg viewBox="0 0 96 116" aria-hidden="true"><use href="#pillar-logo"/></svg><h3>Built for schools.<br>Accountable to people.</h3><a class="text-link" href="https://www.sthara.in/#/dpdp">Read the DPDP approach <span>↗</span></a></div><div class="trust-details"><details open><summary>Role-based access <span>+</span></summary><p>Different responsibilities need different views. Ask to see student, teacher, administrator and parent permissions during your pilot.</p></details><details><summary>India-hosted data <span>+</span></summary><p>Sthara describes its platform as hosted in India. Review the published data-residency information and confirm the scope for your school.</p><a href="https://www.sthara.in/#/dpdp%23dp-residency">Read data-residency information ↗</a></details><details><summary>Consent, retention and redressal <span>+</span></summary><p>Review how consent, retention and grievances are handled before introducing the platform to families.</p><a href="https://www.sthara.in/#/privacy">Read the privacy policy ↗</a></details><details><summary>Teachers remain in the loop <span>+</span></summary><p>AI-generated marking suggestions are a starting point for teacher review. The illustrative workflow above makes that decision visible.</p></details></div></div></div></section>
+
+      <section id="pricing" class="section wrap"><div class="section-heading reveal"><span class="eyebrow">ONE SCHOOL. A CLEAR STARTING POINT.</span><h2>Choose your scale.<br><span>Keep the whole platform.</span></h2><p>Every tier includes the tutor, teacher copilot, ERP, parent experience and TML. Usage limits and admin-side AI vary.</p></div><div class="pricing-layout reveal"><div class="tier-options" role="radiogroup" aria-label="Pricing tier"><button role="radio" aria-checked="false" tabindex="-1" data-tier="0"><span><b>Aadhara</b><small>The foundation</small></span><span class="tier-price">₹2,000<small>student / year</small></span></button><button role="radio" aria-checked="false" tabindex="-1" data-tier="1"><span><b>Sthamba</b><small>More room to grow</small></span><span class="tier-price">₹2,500<small>student / year</small></span></button><button class="active" role="radio" aria-checked="true" data-tier="2"><span><b>Shikhara</b><small>Admin AI + priority support</small></span><span class="tier-price">₹3,500<small>student / year</small></span></button><button role="radio" aria-checked="false" tabindex="-1" data-tier="3"><span><b>Mandala</b><small>School groups & trusts</small></span><span class="tier-price">Custom<small>volume pricing</small></span></button></div><div class="calculator"><div class="calculator-head"><h3>Your school, your scale.</h3><span class="sample-label">Indicative estimate</span></div><label for="students">Students on the platform <output id="student-count" for="students">500</output></label><input type="range" id="students" min="100" max="3000" step="50" value="500"><div class="range-labels"><span>100 students</span><span>3,000 students</span></div><div class="estimate" aria-live="polite"><span id="estimate-label">Annual estimate · Shikhara</span><strong id="annual-cost">₹17,50,000</strong><p id="monthly-cost">₹292 per student / month equivalent</p></div><p id="tier-detail">Full admin-side AI, higher usage limits, priority support and staff training.</p><small class="pricing-note">List prices from Sthara’s website. Billed annually. Final quotation, taxes, usage and rollout scope must be confirmed with Sthara.</small><a href="#contact" class="button">Book a pilot <span>↗</span></a></div></div></section>
+
+      <section id="contact" class="section pilot-section"><div class="wrap pilot-grid"><div class="reveal"><span class="eyebrow">START WITH YOUR OWN SCHOOL</span><h2>One grade.<br>One term.<br><em>See it together.</em></h2><p>A paid pilot, using your school’s workflow. The pilot fee is 100% credited to your first annual invoice when you convert.</p><a class="button" href="mailto:sales@sthara.in?subject=Sthara%20paid%20pilot%20enquiry">Book a pilot <span>↗</span></a></div><div class="pilot-path reveal"><h3>A practical path to your pilot</h3><ol><li><b>Choose the grade</b><p>Agree on the pilot scope and what your school wants to learn.</p></li><li><b>Bring the team</b><p>Set up staff, classes and the records needed for the pilot.</p></li><li><b>Use real schoolwork</b><p>Let teachers review submissions and families explore progress.</p></li><li><b>Review the evidence</b><p>Decide on the next step together, with the pilot experience in hand.</p></li></ol><a href="mailto:sales@sthara.in" class="text-link">sales@sthara.in <span>↗</span></a></div></div></section>
+    </div>
+    <div id="role-page" hidden></div>
+  </main>
+
+  <footer class="wrap"><div class="footer-top"><a class="brand" href="#top" aria-label="Sthara home, The Unified Institutional OS"><svg class="brand-mark exact-brand" viewBox="0 0 196 316" aria-hidden="true"><use href="#pillar-logo"/></svg><svg class="brand-words exact-brand" viewBox="0 0 660 148" aria-hidden="true"><use href="#brand-wordmark"/></svg></a><p>One institutional OS.<br><em>Your whole school, connected.</em></p><div><a href="https://www.sthara.in/#/privacy">Privacy</a><a href="https://www.sthara.in/#/dpdp">DPDP</a><a href="https://www.sthara.in/login">Sign in ↗</a></div></div><div class="footer-bottom"><span>© <span data-year>2026</span> Sthara</span><span>Interactive design concept. Not the live product.</span><button id="motion-toggle" aria-pressed="false">Pause motion Ⅱ</button></div></footer>
+  <button class="review-button" id="review-open">Concept notes <span>↗</span></button>
+  <dialog id="review-dialog" aria-labelledby="review-title"><div class="dialog-head"><h2 id="review-title">Built to explore.</h2><button id="review-close" aria-label="Close concept notes">×</button></div><p>Two visual directions. One interactive story. Switch between Constellation and Daylight using the ◐ button in the navigation.</p><ul><li>Select the four roles in the constellation.</li><li>Try the tutor question and teacher-review simulation.</li><li>Explore topic evidence and school pricing.</li><li>Open the four role pages from the Platform menu.</li></ul><p class="subtle">All examples are illustrative. No AI service, student database or messaging system is connected. Nothing here changes the live Sthara website.</p><h3>Add your own product capture</h3><p>Preview an anonymised screenshot on a role page. The image stays in this browser’s memory and disappears on reload. It is not uploaded or included in the saved HTML.</p><label for="capture-role">Role</label><select id="capture-role"><option value="teacher">Teacher</option><option value="student">Student</option><option value="admin">Administrator</option><option value="parent">Parent</option></select><label for="capture-file">Anonymised screenshot (PNG, JPEG or WebP, up to 12 MB)</label><input id="capture-file" type="file" accept="image/png,image/jpeg,image/webp"><p id="capture-status" role="status"></p></dialog>
+  <noscript><div class="no-script">Enable JavaScript to explore the interactive concepts. Pricing, policies and contact links remain available.</div></noscript>
+  <script src="hero-motion.js"></script>
+  <script src="capture-gallery.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

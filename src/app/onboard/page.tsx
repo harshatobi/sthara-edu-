@@ -438,7 +438,7 @@ export default function OnboardPage() {
                 </div>
 
                 <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200 text-sm text-blue-700 font-medium">
-                  🎁 <strong>30-day free trial</strong> starts immediately. No credit card required. 
+                  <Clock className="w-4 h-4 inline -mt-0.5 mr-1" /><strong>{trialDays}-day free trial</strong> starts immediately. No credit card required. 
                   Add unlimited teachers and students during your trial.
                 </div>
 

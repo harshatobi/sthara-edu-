@@ -70,7 +70,9 @@ export async function PATCH(req: NextRequest) {
   const pages = (Array.isArray(sub.image_urls) ? sub.image_urls : []).filter((u: string) => u.startsWith(CAPTURE_PREFIX)).map((u: string) => u.slice(CAPTURE_PREFIX.length));
   if (!pages.length) return bad('This submission has no stored pages to read.', 422);
   try {
-    const source = (sub.ai_result as any)?.source === 'student' ? 'student' : 'teacher_capture';
+    // Only a teacher capture records source 'teacher_capture' (a failed capture never creates a row), so anything
+    // else, including a student hand-in the AI couldn't read the first time, is the student's.
+    const source = (sub.ai_result as any)?.source === 'teacher_capture' ? 'teacher_capture' : 'student';
     const { data: kid } = await db.from('users').select('name').eq('id', sub.student_id).maybeSingle();
     const grade = await gradePages(db, a, pages, { source, capturedBy: source === 'student' ? null : staff.id, studentName: kid?.name || '' });
     await storeCapture(db, a, sub.student_id, pages, grade);

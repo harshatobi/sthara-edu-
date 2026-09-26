@@ -803,3 +803,5 @@
 .canon .rv-confirm label { font-size:12.5px; line-height:1.5; color:#8A1030; }
 .canon .rv-hist { font-size:12.5px; color:var(--mut); display:flex; flex-direction:column; gap:4px; background:#F8FAFD; border-radius:10px; padding:10px 12px; }
 .canon .rv-hist b { display:flex; align-items:center; gap:5px; color:var(--ink); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; }
+/* Inline icons inside running text (Tailwind's preflight makes svg block-level). */
+.canon .cr-why svg, .canon .cr-summary svg, .canon .rv-hist svg, .canon .cr-marks > p.muted svg, .canon .note svg { display:inline-block; vertical-align:-2px; margin-right:3px; }

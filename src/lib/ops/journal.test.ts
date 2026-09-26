@@ -32,3 +32,11 @@ test('school values: tiers (including old names), status, price, seats, dates', 
   assert.equal(journalValue('school', 'curriculum', null), 'None');
   assert.equal(journalValue('school', 'aiEnabled', false), 'Off');
 });
+
+test('deletions read as events with a snapshot of what was removed', () => {
+  assert.equal(journalLabel('platform', 'school.deleted'), 'School deleted');
+  assert.equal(journalLabel('school', 'account.deleted'), 'Account deleted');
+  assert.equal(journalValue('platform', 'school.deleted', { name: 'Old School', code: 'OLD', accounts: 7 }), 'Old School (OLD), 7 accounts');
+  assert.equal(journalValue('platform', 'school.deleted', null), 'Deleted');
+  assert.equal(journalValue('school', 'account.deleted', { name: 'Riya', role: 'teacher', email: 'riya@x.in' }), 'Riya (teacher), riya@x.in');
+});

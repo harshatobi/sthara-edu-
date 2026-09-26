@@ -25,7 +25,6 @@ export const RATE_LIMITS = {
   adminAi:         { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/admin/ai-assistant',      label: 'Admin AI assistant' },
   gradeImage:      { limit: 10,  windowMs: MIN,      per: 'ip',      route: '/api/grade-image',             label: 'Photo grading' },
   submitTyped:     { limit: 20,  windowMs: 5 * MIN,  per: 'user',    route: '/api/student/submit-typed',    label: 'Typed homework submission' },
-  analyzeCourse:   { limit: 5,   windowMs: MIN,      per: 'ip',      route: '/api/superadmin/analyze-course', label: 'Course analysis (operator)' },
   quizGrade:       { limit: 15,  windowMs: 5 * MIN,  per: 'user',    route: '/api/quiz/grade',              label: 'Quiz grading' },
   quizGenerate:    { limit: 10,  windowMs: 5 * MIN,  per: 'user',    route: '/api/quiz/generate',           label: 'Quiz generation (student)' },
   homeworkGrade:   { limit: 10,  windowMs: 5 * MIN,  per: 'user',    route: '/api/homework/grade',          label: 'Homework grading' },

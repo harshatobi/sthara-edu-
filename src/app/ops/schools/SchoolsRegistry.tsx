@@ -16,15 +16,15 @@ import { useOpsApi } from '../useOpsApi';
 
 type SortKey = 'name' | 'status' | 'plan' | 'ends' | 'students' | 'value' | 'created';
 const STATUS_FILTERS = [
-  ['all', 'All'], ['live', 'Live'], ['pilot', 'Active pilots'], ['ending', 'Pilot ending'], ['ended', 'Pilot ended'], ['suspended', 'Suspended'],
+  ['all', 'All'], ['live', 'Live'], ['pilot', 'All pilots'], ['ending', 'Pilot ending'], ['ended', 'Pilot ended'], ['suspended', 'Suspended'],
 ] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number][0];
 
-const matchStatus = (s: RegistrySchool, f: StatusFilter) => {
-  const st = schoolStatus(s).label;
-  return f === 'all' || (f === 'live' && st === 'Live') || (f === 'pilot' && s.plan === 'pilot' && s.active && !s.trialExpired)
-    || (f === 'ending' && st === 'Pilot ending') || (f === 'ended' && st === 'Pilot ended') || (f === 'suspended' && !s.active);
+/** Filters read the same status the chips show (schoolStatus), so a filter always matches its chips. */
+const FILTER_STATUSES: Record<Exclude<StatusFilter, 'all'>, string[]> = {
+  live: ['Live'], pilot: ['Pilot running', 'Pilot ending', 'Pilot ended'], ending: ['Pilot ending'], ended: ['Pilot ended'], suspended: ['Suspended'],
 };
+const matchStatus = (s: RegistrySchool, f: StatusFilter) => f === 'all' || FILTER_STATUSES[f].includes(schoolStatus(s).label);
 
 /** Platform Manager > Schools: the tenant registry. */
 export default function SchoolsRegistry() {

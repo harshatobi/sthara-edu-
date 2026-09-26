@@ -14,6 +14,7 @@ import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { setupChecklist, type RegistrySchool } from '@/lib/ops/attention';
 import { normClass } from '@/lib/ops/people';
+import { journalLabel, journalValue } from '@/lib/ops/journal';
 import { USD_TO_INR } from '@/lib/ai/pricing';
 import {
   CURRICULA, PLANS, PLAN_INFO, REASON_MIN, SCHOOL_FIELD_LABELS, annualValue, effectivePrice,
@@ -397,14 +398,6 @@ function AccessTab({ f, onSaved }: { f: RegistrySchool; onSaved: (msg: string) =
 
 // ── Activity ──────────────────────────────────────────────────────────────────
 
-const val = (key: string, v: unknown) => {
-  if (v === null || v === undefined) return 'None';
-  if (typeof v === 'boolean') return v ? 'On' : 'Off';
-  if (key === 'plan' && typeof v === 'string') return PLAN_INFO[(PLANS as readonly string[]).includes(v) ? (v as Plan) : 'pilot'].label;
-  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return fmtDate(v);
-  return typeof v === 'string' ? v || 'Empty' : JSON.stringify(v);
-};
-
 function ActivityTab({ d }: { d: Data }) {
   return (
     <>
@@ -415,8 +408,8 @@ function ActivityTab({ d }: { d: Data }) {
               {d.journal.map(j => (
                 <tr key={j.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(j.at)}</td>
-                  <td className="nm">{SCHOOL_FIELD_LABELS[j.key as keyof SchoolPatch] ?? j.key}</td>
-                  <td><span className="muted">{val(j.key, j.old_value)}</span> → <b>{val(j.key, j.new_value)}</b></td>
+                  <td className="nm">{journalLabel('school', j.key)}</td>
+                  <td><span className="muted">{journalValue('school', j.key, j.old_value)}</span> → <b>{journalValue('school', j.key, j.new_value)}</b></td>
                   <td>{j.reason}</td>
                   <td className="muted" style={{ overflowWrap: 'anywhere' }}>{j.actor_email ?? '—'}</td>
                 </tr>

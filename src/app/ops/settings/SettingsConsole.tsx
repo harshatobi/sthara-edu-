@@ -9,6 +9,7 @@ import { WarningOctagonIcon as WarningOctagon } from '@phosphor-icons/react/dist
 import { Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { PLATFORM_SETTINGS, REASON_MIN, type PlatformKey, type PlatformValues, type SettingDef } from '@/lib/settings/registry';
+import { journalLabel, journalValue, platformValue as show } from '@/lib/ops/journal';
 import { Section, Table, errText, fmtDateTime } from '../_ui';
 import { useOpsApi } from '../useOpsApi';
 
@@ -51,18 +52,15 @@ export default function SettingsConsole() {
             {!data.journal ? <div className="note err" role="alert">The change log isn&apos;t available. Apply migration <span className="mono">ops_settings</span>.</div>
               : !history.length ? <Empty icon={<ClockCounterClockwise size={26} weight="duotone" />} title="No platform changes yet" /> : (
                 <Table head={<tr><th>When</th><th>Setting</th><th>Change</th><th>Reason</th><th>By</th></tr>}>
-                  {history.map(r => {
-                    const d = PLATFORM_SETTINGS[r.key as PlatformKey] as SettingDef | undefined;
-                    return (
-                      <tr key={r.id}>
-                        <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(r.at)}</td>
-                        <td className="nm">{d?.label ?? r.key}</td>
-                        <td><span className="muted">{d ? show(d, r.old_value ?? d.default) : String(r.old_value)}</span> → <b>{d ? show(d, r.new_value) : String(r.new_value)}</b></td>
-                        <td>{r.reason}</td>
-                        <td className="muted" style={{ overflowWrap: 'anywhere' }}>{r.actor_email ?? '—'}</td>
-                      </tr>
-                    );
-                  })}
+                  {history.map(r => (
+                    <tr key={r.id}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(r.at)}</td>
+                      <td className="nm">{journalLabel('platform', r.key)}</td>
+                      <td><span className="muted">{journalValue('platform', r.key, r.old_value)}</span> → <b>{journalValue('platform', r.key, r.new_value)}</b></td>
+                      <td>{r.reason}</td>
+                      <td className="muted" style={{ overflowWrap: 'anywhere' }}>{r.actor_email ?? '—'}</td>
+                    </tr>
+                  ))}
                 </Table>
               )}
           </Section>
@@ -100,12 +98,6 @@ function PlatformView({ values, stored, onSaved }: { values: PlatformValues; sto
     </>
   );
 }
-
-const show = (d: SettingDef, v: unknown) =>
-  d.type === 'boolean' ? (v ? 'On' : 'Off')
-    : d.type === 'enum' ? d.options.find(o => o.value === v)?.label ?? String(v)
-    : d.type === 'integer' ? `${v}${'unit' in d && d.unit ? ` ${d.unit}` : ''}`
-    : v ? `"${v}"` : 'Empty';
 
 function PlatformSetting({ k, value, disabled, onSaved }: { k: PlatformKey; value: unknown; disabled: boolean; onSaved: (m: string) => void }) {
   const api = useOpsApi();

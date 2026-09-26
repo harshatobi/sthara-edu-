@@ -35,13 +35,13 @@ export default function TrialBanner() {
         <AlertTriangle className="w-4 h-4 shrink-0" />
         <span className="truncate">
           {expired
-            ? 'Your free trial has ended. Upgrade to continue using Sthara.'
-            : `Your free trial expires in ${days} day${days === 1 ? '' : 's'}.`}
+            ? 'Your school’s Sthara pilot has ended. Talk to us to continue.'
+            : `Your school’s Sthara pilot ends in ${days} day${days === 1 ? '' : 's'}.`}
         </span>
       </div>
       <div className="flex items-center space-x-3 shrink-0">
         <a
-          href="mailto:sales@sthara.in?subject=Upgrade Inquiry"
+          href="mailto:sales@sthara.in?subject=Continuing after our Sthara pilot"
           className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
             isUrgent
               ? 'bg-white text-red-600 hover:bg-red-50'
@@ -49,7 +49,7 @@ export default function TrialBanner() {
           }`}
         >
           <Mail className="w-3 h-3" />
-          <span>Upgrade Now</span>
+          <span>Continue with Sthara</span>
         </a>
         {!expired && (
           <button

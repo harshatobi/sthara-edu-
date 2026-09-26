@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { AlertTriangle, Mail, ArrowRight, CheckCircle, ShieldCheck, PauseCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { PLAN_INFO } from '@/lib/settings/registry';
 
 export default function TrialExpiredPage() {
   const { profile, signOut } = useAuth();
@@ -39,11 +39,10 @@ export default function TrialExpiredPage() {
           <AlertTriangle className="w-10 h-10 text-amber-500" />
         </div>
 
-        <h1 className="text-3xl font-black text-[#002147] mb-2">Trial Period Ended</h1>
+        <h1 className="text-3xl font-black text-[#002147] mb-2">Your pilot has ended</h1>
         <p className="text-gray-500 font-medium mb-8">
-          Your free trial has ended.
-          {profile?.name && <> Hi <strong>{profile.name}</strong>,</>} to continue using Sthara,
-          please upgrade to a paid plan.
+          {profile?.name && <>Hi <strong>{profile.name}</strong>. </>}
+          Your school&apos;s Sthara pilot has finished. To continue, your school moves to an annual plan, and everything paid for the pilot is credited to it.
         </p>
 
         {/* What you keep */}
@@ -52,7 +51,7 @@ export default function TrialExpiredPage() {
           {[
             'All student records and grades preserved',
             'All assignments and submissions intact',
-            'Data held for 60 days after trial ends',
+            'Data held for 60 days after the pilot ends',
           ].map(item => (
             <div key={item} className="flex items-center space-x-2.5 text-sm text-gray-600 font-medium">
               <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -63,21 +62,32 @@ export default function TrialExpiredPage() {
 
         {/* Pricing */}
         <div className="bg-[#002147] text-white rounded-2xl p-6 mb-6">
-          <div className="text-xs font-black uppercase tracking-widest text-white/50 mb-2">School Plan</div>
-          <div className="text-4xl font-black mb-1">₹4,999<span className="text-xl font-semibold text-white/60">/month</span></div>
-          <div className="text-white/60 text-sm font-medium mb-4">Unlimited teachers · Unlimited students · All AI features</div>
+          <div className="text-xs font-black uppercase tracking-widest text-white/50 mb-3">Annual plans, per student per year</div>
+          <div className="space-y-2 mb-3 text-left">
+            {(['aadhara', 'sthamba', 'shikhara'] as const).map(p => (
+              <div key={p} className="flex items-baseline justify-between">
+                <span className="font-bold">{PLAN_INFO[p].label}</span>
+                <span className="text-lg font-black">₹{PLAN_INFO[p].price!.toLocaleString('en-IN')}</span>
+              </div>
+            ))}
+            <div className="flex items-baseline justify-between">
+              <span className="font-bold">{PLAN_INFO.mandala.label}</span>
+              <span className="text-sm font-semibold text-white/70">School groups and trusts</span>
+            </div>
+          </div>
+          <div className="text-white/60 text-sm font-medium mb-4">Your pilot payment is credited in full to the annual plan.</div>
           <a
-            href={`mailto:sales@sthara.in?subject=Subscription Inquiry - ${profile?.name || 'School'}&body=Hi Sthara team,%0A%0AI'd like to upgrade from the trial plan.%0A%0ASchool name: %0AContact person: ${profile?.name || ''}%0AEmail: ${profile?.email || ''}%0A%0APlease send me payment details.`}
+            href={`mailto:sales@sthara.in?subject=Continuing after our Sthara pilot - ${profile?.name || 'School'}&body=Hi Sthara team,%0A%0AOur pilot has ended and we'd like to continue on an annual plan.%0A%0ASchool name: %0AContact person: ${profile?.name || ''}%0AEmail: ${profile?.email || ''}%0A%0APlease send me payment details.`}
             className="flex items-center justify-center space-x-2 w-full py-3 bg-white text-[#002147] rounded-xl font-bold hover:bg-gray-100 transition-colors"
           >
             <Mail className="w-4 h-4" />
-            <span>Contact Sales to Upgrade</span>
+            <span>Talk to us about continuing</span>
             <ArrowRight className="w-4 h-4" />
           </a>
         </div>
 
         <p className="text-xs text-gray-400 mb-6">
-          We'll respond within 24 hours with payment options including UPI, NEFT, and credit card.
+          We&apos;ll respond within 24 hours with payment options including UPI, NEFT, and credit card.
         </p>
 
         <button

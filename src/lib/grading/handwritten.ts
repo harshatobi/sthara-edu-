@@ -40,6 +40,8 @@ export interface HandwrittenGrade {
   feedback: string;
   /** Things the teacher should know: a page missing, another student's name, work not matching the questions. */
   flags: string[];
+  /** The name written on the pages, as read (compared with the student server-side; the model is never told who it is). */
+  nameOnPage: string;
   pages: number;
   model: string;
   gradedAt: string;
@@ -75,11 +77,12 @@ HOW TO MARK
 - Not attempted = 0 with "attempted": false.
 - confidence: "high" when the handwriting is clear and the mark is clear-cut; "medium" when you had to interpret a word or the marking is a judgement call; "low" when the answer is hard to read, partly cut off, or you are unsure it is this question's answer. Be honest: the teacher checks every "low" first.
 - reasoning: one or two sentences naming the marking points met and missed. gotRight / toFix: short, specific, addressed to the student.
-- flags: anything the teacher must know (a page seems missing, a different name on the page, the work doesn't match these questions, answers look copied from a key). Empty if none.
+- nameOnPage: the student's name as written on the pages, exactly as you read it; "" if there is none.
+- flags: anything the teacher must know (a page seems missing, two different names on the pages, the work doesn't match these questions, answers look copied from a key). Empty if none.
 - Do not invent answers for pages you cannot see.
 
 Reply with ONE JSON object only:
-{"questions":[{"q":1,"attempted":true,"page":1,"transcription":"…","awarded":2,"confidence":"high","reasoning":"…","gotRight":"…","toFix":"…"}],"legibility":"high|medium|low","summary":"two sentences for the teacher","feedback":"three sentences for the student: what went well, the one thing to fix, how","flags":[]}`;
+{"questions":[{"q":1,"attempted":true,"page":1,"transcription":"…","awarded":2,"confidence":"high","reasoning":"…","gotRight":"…","toFix":"…"}],"legibility":"high|medium|low","nameOnPage":"","summary":"two sentences for the teacher","feedback":"three sentences for the student: what went well, the one thing to fix, how","flags":[]}`;
 }
 
 /**
@@ -114,6 +117,7 @@ export function parseGrade(raw: unknown, questions: Question[], meta: { pages: n
     summary: s(r.summary, 1200),
     feedback: s(r.feedback, 1500),
     flags: (Array.isArray(r.flags) ? r.flags : []).map((f: unknown) => s(f, 300)).filter(Boolean).slice(0, 6),
+    nameOnPage: s(r.nameOnPage, 120),
     pages: meta.pages,
     model: meta.model,
     gradedAt: (meta.now ?? new Date()).toISOString(),
@@ -148,3 +152,10 @@ export const capturePath = (schoolId: string, assignmentId: string, studentId: s
 /** A page path belongs to this school, assignment and student. */
 export const pathBelongs = (path: string, schoolId: string, assignmentId: string, studentId: string) =>
   new RegExp(`^${schoolId}/${assignmentId}/${studentId}/\\d{10,14}-\\d{1,2}\\.jpg$`).test(path);
+
+/** Does the name written on the page plausibly belong to this student? (Any shared name part of 3+ letters.) */
+export function nameMatches(onPage: string, student: string): boolean {
+  const parts = (x: string) => x.toLowerCase().normalize('NFKD').replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+  const a = parts(onPage), b = new Set(parts(student));
+  return !a.length || a.some(w => b.has(w));
+}

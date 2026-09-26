@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
   ]);
   if (me?.role !== 'student') return bad('Only students submit homework.', 403);
   if (!a || a.status === 'draft') return bad('Assignment not found.', 404);
-  if (!(await studentOnRoster(db, a, user.id))) return bad('This assignment isn’t set for you.', 403);
+  const me2 = await studentOnRoster(db, a, user.id);
+  if (!me2) return bad('This assignment isn’t set for you.', 403);
   const { data: already } = await db.from('submissions').select('id').eq('assignment_id', a.id).eq('student_id', user.id).maybeSingle();
   if (already) return bad('You have already submitted this assignment.', 409);
   if (!pages.every(p => pathBelongs(p, a.school_id, a.id, user.id))) return bad('Those pages aren’t yours.', 403);
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
   };
   if (await aiGate(user.id)) return handIn();
   try {
-    const grade = await gradePages(db, a, pages, { source: 'student', capturedBy: null });
+    const grade = await gradePages(db, a, pages, { source: 'student', capturedBy: null, studentName: me2.name });
     const submissionId = await storeCapture(db, a, user.id, pages, grade);
     return NextResponse.json({ success: true, pendingReview: true, aiGraded: true, submissionId });
   } catch (e: any) {

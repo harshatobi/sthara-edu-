@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { agreement, capturePath, gradeOf, gradingPrompt, parseGrade, pathBelongs } from './handwritten';
+import { agreement, capturePath, gradeOf, gradingPrompt, nameMatches, parseGrade, pathBelongs } from './handwritten';
 import type { Question } from '@/lib/teacher/questions';
 
 const Q: Question[] = [
@@ -63,4 +63,11 @@ test('the prompt carries marks, marking points and the MCQ key', () => {
   assert.match(p, /Marking points \/ model answer: Factorise/);
   assert.match(p, /Key: B/);
   assert.match(p, /2 pages/);
+});
+
+test('name on the page is compared loosely with the student', () => {
+  assert.ok(nameMatches('Aarav Sharma', 'Aarav Sharma'));
+  assert.ok(nameMatches('aarav s.', 'Aarav Sharma'), 'first name is enough');
+  assert.ok(nameMatches('', 'Diya Reddy'), 'no name on the page is not a mismatch');
+  assert.ok(!nameMatches('Aarav Sharma', 'Diya Reddy'));
 });

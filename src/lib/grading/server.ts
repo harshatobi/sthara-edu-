@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { sanitizeQuestions } from '@/lib/teacher/questions';
 import { normClass } from '@/lib/teacher/scope';
-import { CAPTURE_PREFIX, gradingPrompt, isCapturePath, parseGrade, type HandwrittenGrade } from './handwritten';
+import { CAPTURE_PREFIX, gradingPrompt, isCapturePath, nameMatches, parseGrade, type HandwrittenGrade } from './handwritten';
 
 export const BUCKET = 'captures';
 export const MAX_PAGES = 8;
@@ -50,7 +50,7 @@ async function download(db: SupabaseClient, path: string) {
 }
 
 /** Reads the pages with the vision model and returns the parsed suggestion. */
-export async function gradePages(db: SupabaseClient, a: any, paths: string[], meta: { source: HandwrittenGrade['source']; capturedBy: string | null }): Promise<HandwrittenGrade> {
+export async function gradePages(db: SupabaseClient, a: any, paths: string[], meta: { source: HandwrittenGrade['source']; capturedBy: string | null; studentName: string }): Promise<HandwrittenGrade> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new GradingError('AI grading isn’t configured on this server (no AI key).', 503);
   const { questions } = sanitizeQuestions(a.questions);
@@ -68,7 +68,11 @@ export async function gradePages(db: SupabaseClient, a: any, paths: string[], me
   let raw: unknown;
   try { raw = JSON.parse((res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim()); }
   catch { throw new GradingError('The AI couldn’t read these pages. Try clearer photos, or mark this one by hand.', 502); }
-  return parseGrade(raw, questions, { pages: pages.length, model, source: meta.source, capturedBy: meta.capturedBy, totalMarks: a.total_marks });
+  const grade = parseGrade(raw, questions, { pages: pages.length, model, source: meta.source, capturedBy: meta.capturedBy, totalMarks: a.total_marks });
+  if (grade.nameOnPage && !nameMatches(grade.nameOnPage, meta.studentName)) {
+    grade.flags.unshift(`The name on the page reads "${grade.nameOnPage}", not ${meta.studentName}. Check this is the right notebook.`);
+  }
+  return grade;
 }
 
 /**

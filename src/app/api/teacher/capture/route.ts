@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (!student) return bad('That student isn’t on this assignment.', 403);
   if (!pages.every(p => pathBelongs(p, a.school_id, a.id, student.id))) return bad('Those pages don’t belong to this student’s work.', 403);
   try {
-    const grade = await gradePages(db, a, pages, { source: 'teacher_capture', capturedBy: staff.id });
+    const grade = await gradePages(db, a, pages, { source: 'teacher_capture', capturedBy: staff.id, studentName: student.name });
     const submissionId = await storeCapture(db, a, student.id, pages, grade, { replaceApproved: false });
     return NextResponse.json({ submissionId, grade });
   } catch (e: any) {
@@ -71,7 +71,8 @@ export async function PATCH(req: NextRequest) {
   if (!pages.length) return bad('This submission has no stored pages to read.', 422);
   try {
     const source = (sub.ai_result as any)?.source === 'student' ? 'student' : 'teacher_capture';
-    const grade = await gradePages(db, a, pages, { source, capturedBy: source === 'student' ? null : staff.id });
+    const { data: kid } = await db.from('users').select('name').eq('id', sub.student_id).maybeSingle();
+    const grade = await gradePages(db, a, pages, { source, capturedBy: source === 'student' ? null : staff.id, studentName: kid?.name || '' });
     await storeCapture(db, a, sub.student_id, pages, grade);
     return NextResponse.json({ submissionId: sub.id, grade });
   } catch (e: any) {

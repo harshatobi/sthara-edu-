@@ -19,32 +19,18 @@
     "vercel:link": "npx -y vercel@59 link"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^4.0.0",
-    "@ai-sdk/google": "^4.0.0",
-    "@ai-sdk/mistral": "^4.0.0",
-    "@ai-sdk/openai": "^4.0.0",
     "@google/genai": "^2.2.0",
-    "@google/generative-ai": "^0.24.1",
     "@phosphor-icons/react": "^2.1.10",
     "@sentry/nextjs": "^10.75.1",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
-    "ai": "^7.0.2",
     "clsx": "^2.1.1",
-    "dotenv": "^17.4.2",
-    "framer-motion": "^12.38.0",
-    "katex": "^0.17.0",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
-    "recharts": "^3.9.0",
-    "rehype-katex": "^7.0.1",
-    "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0",
-    "tailwind-merge": "^3.6.0",
-    "yt-search": "^2.13.1"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

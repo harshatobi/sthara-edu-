@@ -1,37 +1,26 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
+/** The school workspace's working parts: classes, adding people, teaching assignments and the roster. */
+import { useEffect, useMemo, useState } from 'react';
 import { BooksIcon as Books } from '@phosphor-icons/react/dist/ssr/Books';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
-import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { KeyIcon as Key } from '@phosphor-icons/react/dist/ssr/Key';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { UploadSimpleIcon as UploadSimple } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
-import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
+import { Chip, Empty, type Tone } from '@/components/canon/ui';
 import { subjectsForClass } from '@/lib/curriculum';
 import { CSV_TEMPLATE, PERSON_ROLES, normClass, parsePeopleCsv, validatePeople, type PersonInput, type PersonRole, type RowIssue } from '@/lib/ops/people';
-import { useOpsApi } from '../useOpsApi';
-import OpsFrame from '../OpsFrame';
+import { useOpsApi } from '../../useOpsApi';
 
-interface ClassRow { id?: string; name: string; metadata?: { grade?: string | null; section?: string | null; subjects?: string[] } }
-interface Person {
+export interface ClassRow { id?: string; name: string; metadata?: { grade?: string | null; section?: string | null; subjects?: string[] } }
+export interface Person {
   id: string; role: PersonRole | 'superadmin'; name: string; email: string; student_class: string | null; custom_student_id: string | null;
   teacher_class: string | null; assignments: { class: string; subject: string }[] | null; metadata: any;
 }
-interface Issued { name: string; email: string; role: string; detail: string; tempPassword: string }
-
-const STEPS = [
-  { key: 'classes', label: '1. Classes & subjects' },
-  { key: 'people', label: '2. Add people' },
-  { key: 'teaching', label: '3. Teacher assignments' },
-  { key: 'roster', label: '4. Roster & credentials' },
-] as const;
-type StepKey = (typeof STEPS)[number]['key'];
+export interface Issued { name: string; email: string; role: string; detail: string; tempPassword: string }
 
 const ROLE_TONE: Record<string, Tone> = { admin: 'n', teacher: 'b', student: 'g', parent: 'p' };
 const BATCH = 25;
@@ -46,94 +35,8 @@ function suggestedSubjects(grade: string): string[] {
   return ['English', 'Hindi', 'Mathematics', 'EVS'];
 }
 
-function downloadCsv(filename: string, rows: string[][]) {
-  const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  const url = URL.createObjectURL(new Blob([rows.map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' }));
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-export default function SchoolOnboarding({ schoolId, devPreview }: { schoolId: string; devPreview: boolean }) {
-  const api = useOpsApi();
-  const [school, setSchool] = useState<any>(null);
-  const [classes, setClasses] = useState<ClassRow[]>([]);
-  const [people, setPeople] = useState<Person[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [step, setStep] = useState<StepKey>('classes');
-  const [issued, setIssued] = useState<Issued[]>([]);
-  const [downloaded, setDownloaded] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
-      const d = await api<{ school: any; classes: ClassRow[]; people: Person[] }>(`/schools/${schoolId}`);
-      setSchool(d.school); setClasses(d.classes); setPeople(d.people); setErr(null);
-    } catch (e: any) { setErr(e.message); }
-    finally { setLoaded(true); }
-  }, [api, schoolId]);
-  useEffect(() => { void load(); }, [load]);
-
-  // Temporary passwords exist only in this tab: warn before leaving without the handover file.
-  useEffect(() => {
-    if (downloaded) return;
-    const h = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-    window.addEventListener('beforeunload', h);
-    return () => window.removeEventListener('beforeunload', h);
-  }, [downloaded]);
-
-  const addIssued = (list: Issued[]) => { if (list.length) { setIssued(prev => [...prev, ...list]); setDownloaded(false); } };
-  const exportCredentials = () => {
-    downloadCsv(`${school?.settings?.code || 'school'}-credentials.csv`,
-      [['role', 'name', 'email', 'class / roll / children', 'temporary password', 'school code'],
-        ...issued.map(i => [i.role, i.name, i.email, i.detail, i.tempPassword, school?.settings?.code || ''])]);
-    setDownloaded(true);
-  };
-
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    people.forEach(p => { c[p.role] = (c[p.role] ?? 0) + 1; });
-    return c;
-  }, [people]);
-
-  return (
-    <OpsFrame devPreview={devPreview}>
-      <Link href="/ops" className="ws-back" style={{ marginBottom: 10 }}><ArrowLeft size={15} weight="bold" /> All schools</Link>
-      <PageBar eyebrow="ONBOARDING" title={school?.name || (loaded ? 'School' : 'Loading…')}
-        sub={school ? <><span className="mono">{school.settings?.code}</span> · {school.settings?.curriculum || 'Curriculum not set'} · {classes.length} classes · {counts.admin ?? 0} admins, {counts.teacher ?? 0} teachers, {counts.student ?? 0} students, {counts.parent ?? 0} parents</> : undefined}
-        actions={issued.length ? (
-          <button className={`btn ${downloaded ? '' : 'red'}`} onClick={exportCredentials}>
-            <DownloadSimple size={15} weight="bold" /> {downloaded ? 'Download credentials again' : `Download ${issued.length} new credential${issued.length === 1 ? '' : 's'}`}
-          </button>
-        ) : undefined} />
-
-      {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
-      {!downloaded && (
-        <div className="note" style={{ marginBottom: 18 }} role="status">
-          Temporary passwords are shown once and are not stored anywhere. Download the credentials file before leaving this page, and hand it over securely.
-        </div>
-      )}
-
-      <div className="tabs" role="tablist" aria-label="Onboarding steps">
-        {STEPS.map(s => (
-          <button key={s.key} role="tab" aria-selected={step === s.key} className={`tab${step === s.key ? ' on blue' : ''}`} onClick={() => setStep(s.key)}>{s.label}</button>
-        ))}
-      </div>
-
-      {!loaded ? <Skeleton h={320} style={{ borderRadius: 20 }} /> : (
-        <>
-          {step === 'classes' && <ClassesStep schoolId={schoolId} classes={classes} onSaved={load} next={() => setStep('people')} />}
-          {step === 'people' && <PeopleStep schoolId={schoolId} classes={classes} people={people} onCreated={(list) => { addIssued(list); void load(); }} />}
-          {step === 'teaching' && <TeachingStep schoolId={schoolId} classes={classes} people={people} onSaved={load} />}
-          {step === 'roster' && <RosterStep schoolId={schoolId} people={people} onIssued={(i) => addIssued([i])} />}
-        </>
-      )}
-    </OpsFrame>
-  );
-}
-
 // ── Step 1: classes & subjects ───────────────────────────────────────────────
-function ClassesStep({ schoolId, classes, onSaved, next }: { schoolId: string; classes: ClassRow[]; onSaved: () => Promise<void>; next: () => void }) {
+export function ClassesStep({ schoolId, classes, onSaved, next }: { schoolId: string; classes: ClassRow[]; onSaved: () => Promise<void>; next?: () => void }) {
   const api = useOpsApi();
   const [draft, setDraft] = useState<ClassRow[]>(classes);
   const [grade, setGrade] = useState('10');
@@ -197,7 +100,7 @@ function ClassesStep({ schoolId, classes, onSaved, next }: { schoolId: string; c
 
       <div className="acts" style={{ marginTop: 18 }}>
         <button className="btn pri" onClick={save} disabled={saving || draft.length === 0}>{saving ? 'Saving…' : 'Save classes'}</button>
-        {classes.length > 0 && <button className="btn" onClick={next}>Next: add people</button>}
+        {classes.length > 0 && next && <button className="btn" onClick={next}>Next: add people</button>}
         {msg && <span className="muted">{msg}</span>}
       </div>
     </div>
@@ -219,7 +122,7 @@ function SubjectEditor({ subjects, onChange }: { subjects: string[]; onChange: (
 }
 
 // ── Step 2: add people (single + bulk CSV) ───────────────────────────────────
-function PeopleStep({ schoolId, classes, people, onCreated }: {
+export function PeopleStep({ schoolId, classes, people, onCreated }: {
   schoolId: string; classes: ClassRow[]; people: Person[]; onCreated: (issued: Issued[]) => void;
 }) {
   const api = useOpsApi();
@@ -425,7 +328,7 @@ function AssignmentPicker({ classes, value, onChange }: { classes: ClassRow[]; v
 }
 
 // ── Step 3: teacher assignments ──────────────────────────────────────────────
-function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId: string; classes: ClassRow[]; people: Person[]; onSaved: () => Promise<void> }) {
+export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId: string; classes: ClassRow[]; people: Person[]; onSaved: () => Promise<void> }) {
   const api = useOpsApi();
   const teachers = people.filter(p => p.role === 'teacher');
   const [open, setOpen] = useState<string | null>(teachers[0]?.id ?? null);
@@ -485,12 +388,15 @@ function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId: string
 }
 
 // ── Step 4: roster & credentials ─────────────────────────────────────────────
-function RosterStep({ schoolId, people, onIssued }: { schoolId: string; people: Person[]; onIssued: (i: Issued) => void }) {
+export function RosterStep({ schoolId, people, onIssued }: { schoolId: string; people: Person[]; onIssued: (i: Issued) => void }) {
   const api = useOpsApi();
   const [filter, setFilter] = useState<'all' | PersonRole>('all');
   const [shown, setShown] = useState<Record<string, string>>({});
+  const [q, setQ] = useState('');
   const rollToName = useMemo(() => new Map(people.filter(p => p.custom_student_id).map(p => [String(p.custom_student_id), p.name])), [people]);
-  const list = people.filter(p => filter === 'all' || p.role === filter);
+  const needle = q.trim().toLowerCase();
+  const list = people.filter(p => (filter === 'all' || p.role === filter)
+    && (!needle || `${p.name} ${p.email} ${p.custom_student_id ?? ''} ${p.student_class ?? ''}`.toLowerCase().includes(needle)));
 
   const reset = async (p: Person) => {
     try {
@@ -512,7 +418,8 @@ function RosterStep({ schoolId, people, onIssued }: { schoolId: string; people: 
           </button>
         ))}
       </div>
-      {list.length === 0 ? <Empty icon={<UsersThree size={30} weight="duotone" />} title="Nobody here yet">Add people in step 2.</Empty> : list.map(p => (
+      <input className="cmp-in" style={{ margin: '4px 0 8px' }} placeholder="Search by name, email, class or roll number" aria-label="Search the roster" value={q} onChange={e => setQ(e.target.value)} />
+      {list.length === 0 ? <Empty icon={<UsersThree size={30} weight="duotone" />} title={people.length ? 'Nobody matches' : 'Nobody here yet'}>{people.length ? 'Try another search or role.' : 'Use Add people above.'}</Empty> : list.map(p => (
         <div key={p.id} className="row">
           <Chip tone={ROLE_TONE[p.role] ?? 'n'}><span style={{ minWidth: 56, textAlign: 'center' }}>{p.role.toUpperCase()}</span></Chip>
           <div style={{ flex: 1, minWidth: 0 }}>

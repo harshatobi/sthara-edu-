@@ -8,6 +8,7 @@ import { LucideIcon, LogOut, Menu, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/contexts/AuthContext';
 import TrialBanner from '@/components/ui/TrialBanner';
+import PlatformNotice from '@/components/ui/PlatformNotice';
 
 interface NavItem {
   name: string;
@@ -154,6 +155,7 @@ export default function DashboardLayout({ children, role, subtitle, navigation }
 
         {/* Page content */}
         <main className="flex-1 p-4 md:p-8">
+          <PlatformNotice />
           {children}
         </main>
       </div>

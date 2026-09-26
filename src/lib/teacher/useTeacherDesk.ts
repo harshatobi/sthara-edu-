@@ -88,7 +88,9 @@ export function TeacherDeskProvider({ children }: { children: ReactNode }) {
       .catch(e => { if (!cancelled) setError(prev => (loadedAt.current ? prev : e?.message || 'Could not load your desk.')); })
       .finally(() => { inFlight.current = false; });
     return () => { cancelled = true; };
-  }, [authLoading, profile, user, scope, nonce]);
+    // Keyed on identity, not object references: a silent profile refresh must not reload the desk.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, profile?.uid, profile?.schoolId, user?.id, scope, nonce]);
 
   useEffect(() => {
     const onFocus = () => refreshIfStale();

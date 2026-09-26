@@ -2,6 +2,9 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const maxDuration = 60;
 
@@ -12,7 +15,7 @@ export async function POST(request: NextRequest) {
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const ip = getClientIp(request);
-  const rl = checkRateLimit(`grade:${ip}`, 10, 60_000);
+  const rl = checkRateLimit(`grade:${ip}`, ...limitOf('gradeImage'));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please wait before submitting again.' },
@@ -21,6 +24,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     if (!GEMINI_API_KEY) {
       return NextResponse.json({ error: 'Gemini API Key is not configured on server.' }, { status: 500 });
     }
@@ -150,11 +155,11 @@ OUTPUT: Return ONLY valid JSON:
           ? [{ role: 'user' as const, parts: [{ text: systemPrompt + '\n\nSTUDENT\'S ANSWER:\n' + submissionText }] }]
           : [{ role: 'user' as const, parts: [{ text: systemPrompt }, { inlineData: { mimeType, data: base64Image } }] }];
 
-        const genResult = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+        const genResult = await generateMetered(ai, {
+          model: AI_MODELS.standard,
           contents,
           config: { temperature: 0.2, responseMimeType: 'application/json' },
-        });
+        }, { feature: 'gradeImage', userId: user.id });
 
         let textOutput = genResult.text || '';
         if (!textOutput) throw new Error('Empty output from Gemini');

@@ -22,6 +22,9 @@ import { dmy, TYPE_CHIP } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import Composer from './Composer';
 import GradingPanel from './GradingPanel';
+import CaptureReview from './capture/CaptureReview';
+import CaptureStation from './capture/CaptureStation';
+import { CameraIcon as Camera } from '@phosphor-icons/react/dist/ssr/Camera';
 import { readCopilotSeed } from './copilot/handoff';
 
 /**
@@ -190,6 +193,7 @@ export default function AssignmentBoard({ kind }: { kind: 'work' | 'quiz' }) {
             </div>
             {!sub && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {!draft && a.roster.length > 0 && <button className="btn red" onClick={() => go({ capture: '1' })}><Camera size={15} weight="fill" /> Capture notebooks</button>}
                 <button className="btn" onClick={() => go({ edit: '1' })}><PencilSimple size={14} weight="bold" /> Edit</button>
                 {canUnpost && <button className="btn" disabled={!!busy} onClick={() => act('unpost', () => call('/api/teacher/assignments', 'PATCH', { id: a.id, status: 'draft' }), 'Withdrawn to draft')}>{busy === 'unpost' ? 'Withdrawing…' : 'Withdraw to draft'}</button>}
                 {canDelete && !confirmDelete && <button className="btn" onClick={() => setConfirmDelete(true)}><Trash size={14} weight="bold" /> Delete</button>}
@@ -206,7 +210,9 @@ export default function AssignmentBoard({ kind }: { kind: 'work' | 'quiz' }) {
         {actionError && <div className="err" role="alert" style={{ marginBottom: 16 }}>{actionError}</div>}
 
         {sub ? (
-          <GradingPanel key={sub.id} a={a} sub={sub} onPick={id => go({ s: id })} onBack={() => go({ s: null })} />
+          sub.kind === 'handwritten'
+            ? <CaptureReview key={sub.id} a={a} sub={sub} onPick={id => go({ s: id })} onBack={() => go({ s: null })} />
+            : <GradingPanel key={sub.id} a={a} sub={sub} onPick={id => go({ s: id })} onBack={() => go({ s: null })} />
         ) : (
           <>
             {draft && (
@@ -269,6 +275,9 @@ export default function AssignmentBoard({ kind }: { kind: 'work' | 'quiz' }) {
         )}
       </div>
       {composer}
+      {params.get('capture') === '1' && !draft && (
+        <CaptureStation a={a} onClose={() => go({ capture: null })} onReview={id => go({ capture: null, s: id })} />
+      )}
       {toastEl}
     </>
   );

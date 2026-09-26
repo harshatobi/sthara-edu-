@@ -10,15 +10,21 @@ import { BookOpenIcon as BookOpen } from '@phosphor-icons/react/dist/ssr/BookOpe
 import { ChalkboardTeacherIcon as ChalkboardTeacher } from '@phosphor-icons/react/dist/ssr/ChalkboardTeacher';
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
+import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
+import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
+import PlatformNotice from '@/components/ui/PlatformNotice';
 import { colorForIcon } from '@/lib/iconColors';
 
 type Role = 'student' | 'teacher' | 'admin' | 'parent';
 type Step = 'code' | 'role' | 'creds';
 
-// Demo school registry — in a real build this is a lookup against the schools table.
-const SCHOOLS: Record<string, string> = { 'SCH-VSN-2026': 'DPS Vasundhara' };
-const DEFAULT_CODE = 'SCH-VSN-2026';
+// The demo school's code (sample desks). Every other code is looked up in the
+// schools table via /api/auth/verify-school, and sign-in then checks the
+// account belongs to that school.
+const DEMO_CODE = 'SCH-VSN-2026';
+const DEMO_SCHOOL = 'DPS Vasundhara';
+const DEFAULT_CODE = DEMO_CODE;
 
 const ROLE_INFO: Record<Role, { label: string; sub: string; email: string }> = {
   student: { label: 'Student', sub: 'Honest Desk', email: 'ananya.iyer@student.sthara.in' },
@@ -60,6 +66,8 @@ export default function LoginPage() {
 
   const [schoolCode, setSchoolCode] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  /** Set when the code matched a real school; null for the demo code. */
+  const [schoolId, setSchoolId] = useState<string | null>(null);
   const [codeChecking, setCodeChecking] = useState(false);
   const [codeError, setCodeError] = useState('');
 
@@ -71,21 +79,30 @@ export default function LoginPage() {
 
   const passRef = useRef<HTMLInputElement>(null);
 
-  const checkCode = () => {
+  const checkCode = async () => {
     const code = (schoolCode.trim() || DEFAULT_CODE).toUpperCase();
     setCodeError('');
     setCodeChecking(true);
-    setTimeout(() => {
-      setCodeChecking(false);
-      const name = SCHOOLS[code];
-      if (!name) {
-        setCodeError(`School code not found. For this demo, try ${DEFAULT_CODE}.`);
-        return;
+    try {
+      if (code === DEMO_CODE) {
+        setSchoolId(null);
+        setSchoolName(DEMO_SCHOOL);
+      } else {
+        const res = await withTimeout(fetch('/api/auth/verify-school', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schoolCode: code }),
+        }));
+        const data = await res.json().catch(() => ({}));
+        if (!data.valid) { setCodeError(data.error || 'School code not found.'); return; }
+        setSchoolId(data.schoolId);
+        setSchoolName(data.name);
       }
       setSchoolCode(code);
-      setSchoolName(name);
       setStep('role');
-    }, 400);
+    } catch {
+      setCodeError('We couldn’t check that code. Check your connection and try again.');
+    } finally {
+      setCodeChecking(false);
+    }
   };
 
   const backToCode = () => setStep('code');
@@ -110,10 +127,15 @@ export default function LoginPage() {
       const supabase = createClient();
       const { data, error } = await withTimeout(supabase.auth.signInWithPassword({ email: email.trim(), password }));
       if (error || !data.session) throw new Error(error?.message || 'Sign-in failed.');
-      const { data: account, error: profileError } = await withTimeout(supabase.from('users').select('role').eq('id', data.user.id).single());
+      const { data: account, error: profileError } = await withTimeout(supabase.from('users').select('role, school_id').eq('id', data.user.id).single());
       if (profileError || !isRole(account?.role)) throw new Error('Your school account profile is unavailable. Contact your administrator.');
-      document.cookie = `__role=${account.role}; path=/; max-age=3600; SameSite=Lax`;
-      document.cookie = `__session=${data.session.access_token}; path=/; max-age=3600; SameSite=Lax`;
+      // A real school code must match the account's school (operators excepted).
+      if (schoolId && account.role !== 'superadmin' && account.school_id !== schoolId) {
+        await supabase.auth.signOut();
+        throw new Error(`This account isn’t registered at ${schoolName}. Check the school code.`);
+      }
+      document.cookie = `__role=${account.role}; path=/; max-age=43200; SameSite=Lax`;
+      document.cookie = `__session=${data.session.access_token}; path=/; max-age=43200; SameSite=Lax`;
       router.replace(`/${account.role}`);
     } catch (err) {
       setCredsError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
@@ -150,6 +172,10 @@ export default function LoginPage() {
           padding: 40px;
           gap: 80px;
           flex-wrap: wrap;
+          /* Scrolls when the card doesn't fit (phones, landscape, on-screen keyboard). */
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          align-content: safe center;
           font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
         }
         .lg-left { max-width: 460px; color: #fff; }
@@ -171,7 +197,7 @@ export default function LoginPage() {
         .lg-card .sub { color: #8FA5C4; font-size: 13px; margin-bottom: 24px; }
         .lg-in {
           width: 100%; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
-          border-radius: 12px; padding: 14px 16px; color: #fff; font-size: 14px;
+          border-radius: 12px; padding: 14px 16px; color: #fff; font-size: 16px;
           font-family: inherit; margin-bottom: 12px; outline: none; transition: border-color .2s;
         }
         .lg-in:focus { border-color: var(--red); }
@@ -180,7 +206,9 @@ export default function LoginPage() {
           width: 100%; background: var(--red); color: #fff; border-radius: 12px; padding: 15px;
           font-size: 15px; font-weight: 700; cursor: pointer; border: none;
           transition: transform .15s, background .15s;
+          display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px;
         }
+        .lg-go + .lg-go { margin-top: 10px; background: rgba(255,255,255,.08); }
         .lg-go:hover:not(:disabled) { background: #c8102e; transform: translateY(-1px); }
         .lg-go:disabled { opacity: .6; cursor: default; }
         .lg-err {
@@ -205,6 +233,24 @@ export default function LoginPage() {
         .lg-role-card svg { width: 30px; height: 30px; margin: 0 auto 14px; display: block; }
         .lg-role-card .t { font-weight: 800; font-size: 15px; }
         .lg-role-card .s { font-size: 12px; color: #8FA5C4; margin-top: 4px; }
+        .lg-foot a { color: #B9CAE2; display: inline-flex; align-items: center; gap: 5px; }
+        /* Phone: brand block compacts above a full-width card that starts on screen. */
+        @media (max-width: 760px) {
+          .login-container {
+            padding: calc(28px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));
+            gap: 26px; align-content: flex-start; align-items: flex-start;
+          }
+          .lg-left { max-width: none; width: 100%; }
+          .lg-mark { margin-bottom: 14px; gap: 10px; }
+          .lg-mark svg { width: 36px; height: 36px; }
+          .lg-mark span { font-size: 30px; }
+          .lg-left h1 { font-size: 24px; margin-bottom: 8px; }
+          .lg-left p { font-size: 14px; line-height: 1.5; }
+          .lg-tag { display: none; }
+          .lg-card { width: 100%; padding: 24px 20px; border-radius: 20px; }
+          .lg-role-card { padding: 20px 10px; }
+        }
+        @media (max-width: 760px) and (max-height: 700px) { .lg-left p { display: none; } }
       `}</style>
 
       <div className="lg-left">
@@ -218,6 +264,7 @@ export default function LoginPage() {
       </div>
 
       <div className="lg-card">
+        <PlatformNotice variant="card" />
         {step === 'code' && (
           <div>
             <h2>Welcome</h2>
@@ -233,11 +280,11 @@ export default function LoginPage() {
             />
             {codeError && <div className="lg-err">{codeError}</div>}
             <button className="lg-go" onClick={checkCode} disabled={codeChecking}>
-              {codeChecking ? 'Checking…' : 'Continue →'}
+              {codeChecking ? 'Checking…' : <>Continue <ArrowRight size={16} weight="bold" /></>}
             </button>
             <div className="lg-foot">
               New school? <b style={{ color: '#B9CAE2', cursor: 'pointer' }}>
-                <Link href="/#pricing" style={{ color: 'inherit' }}>Book a paid pilot →</Link>
+                <Link href="/#pricing">Book a paid pilot <ArrowRight size={13} weight="bold" /></Link>
               </b>
               <br />
               <span style={{ opacity: .6 }}>Privacy Policy</span> <span style={{ opacity: .6 }}>·</span>{' '}
@@ -248,7 +295,7 @@ export default function LoginPage() {
 
         {step === 'role' && (
           <div>
-            <button className="lg-back" onClick={backToCode} aria-label="Back to school code">←</button>
+            <button className="lg-back" onClick={backToCode} aria-label="Back to school code"><ArrowLeft size={18} weight="bold" /></button>
             <h2 style={{ textAlign: 'center' }}>Select your role</h2>
             <div className="sub" style={{ textAlign: 'center' }}>School: {schoolName} ({schoolCode})</div>
             <div className="lg-role-grid">
@@ -265,13 +312,18 @@ export default function LoginPage() {
 
         {step === 'creds' && (
           <div>
-            <button className="lg-back" onClick={backToRoles} aria-label="Back to role selection">←</button>
+            <button className="lg-back" onClick={backToRoles} aria-label="Back to role selection"><ArrowLeft size={18} weight="bold" /></button>
             <h2 style={{ textAlign: 'center' }}>Sign in as {ROLE_INFO[role].label}</h2>
             <div className="sub" style={{ textAlign: 'center' }}>{schoolName} · {ROLE_INFO[role].sub}</div>
             <input
               className="lg-in"
               placeholder="ID"
-              autoComplete="off"
+              aria-label="Email ID"
+              type="email"
+              inputMode="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
               autoFocus
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -282,14 +334,15 @@ export default function LoginPage() {
               className="lg-in"
               type="password"
               placeholder="Password"
-              autoComplete="off"
+              aria-label="Password"
+              autoComplete="current-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') signIn(); }}
             />
             {credsError && <div className="lg-err">{credsError}</div>}
             <button className="lg-go" onClick={signIn} disabled={signingIn}>
-              {signingIn ? 'Signing in…' : 'Sign in →'}
+              {signingIn ? 'Signing in…' : <>Sign in <ArrowRight size={16} weight="bold" /></>}
             </button>
             {process.env.NODE_ENV === 'development' && <button className="lg-go" disabled={signingIn} onClick={() => startDemo(role)}>Open local demo</button>}
             <div className="lg-foot">

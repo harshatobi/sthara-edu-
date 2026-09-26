@@ -49,7 +49,7 @@ export function useCourse(cls: string, subject: string) {
         // Assignments for this class + subject (RLS: staff see the whole school's).
         assignments: (a.data || []).filter(x => normClass(x.class) === normClass(cls) && normSubject(x.subject) === normSubject(subject)),
       });
-    });
+    }).catch(e => { if (!cancelled) setError(e?.message || 'Could not load the course. Check your connection.'); });
     return () => { cancelled = true; };
   }, [profile?.schoolId, cls, subject, nonce]);
 

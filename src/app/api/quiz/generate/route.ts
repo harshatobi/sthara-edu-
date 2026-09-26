@@ -2,12 +2,15 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request);
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const rl = checkRateLimit(`quiz-generate:${user.id}`, 10, 5 * 60_000);
+  const rl = checkRateLimit(`quiz-generate:${user.id}`, ...limitOf('quizGenerate'));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please wait before generating another quiz.' },
@@ -18,6 +21,8 @@ export async function POST(request: NextRequest) {
   try {
     const { topic, subject } = await request.json();
 
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -36,11 +41,11 @@ Each question should have:
 
 Output ONLY valid JSON, no markdown.`;
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const result = await generateMetered(ai, {
+      model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.4 },
-    });
+    }, { feature: 'quizGenerate', userId: user.id });
     const parsed = JSON.parse(result.text || '{"questions": []}');
     return NextResponse.json(parsed);
 

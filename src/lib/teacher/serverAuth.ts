@@ -19,7 +19,8 @@ export interface Staff {
  * body — so a client can't post into another school or class.
  */
 export async function requireStaff(req: NextRequest): Promise<{ staff: Staff; db: SupabaseClient } | { res: NextResponse }> {
-  const { user, error } = await verifyApiToken(req.headers.get('authorization'));
+  const { user, error, blocked } = await verifyApiToken(req.headers.get('authorization'));
+  if (blocked) return { res: NextResponse.json({ error, code: blocked }, { status: 403 }) };
   if (!user || error) return { res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   const db = createAdminClient();
   const { data: row } = await db.from('users')

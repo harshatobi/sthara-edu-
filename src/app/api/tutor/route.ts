@@ -3,7 +3,10 @@ import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { containsFoulLanguage } from '@/lib/tutor/safety';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: can only chat as yourself' }, { status: 403 });
     }
 
-    const rl = checkRateLimit(`tutor:${user.id}`, 30, 5 * 60_000);
+    const rl = checkRateLimit(`tutor:${user.id}`, ...limitOf('tutor'));
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please slow down and try again shortly.' },
@@ -64,6 +67,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
@@ -194,14 +199,14 @@ CORE RULES:
       }
     }
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const result = await generateMetered(ai, {
+      model: AI_MODELS.standard,
       contents: mergedContents,
       config: {
         systemInstruction,
         temperature: 0.7,
       },
-    });
+    }, { feature: 'tutor', userId: user.id });
 
     const aiText = result.text ?? '';
 

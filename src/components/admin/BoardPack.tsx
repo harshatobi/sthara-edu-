@@ -80,7 +80,10 @@ function Pack({ desk }: { desk: AdminDesk }) {
   const delta = ac.schoolTml !== null && ac.schoolTmlBefore !== null ? ac.schoolTml - ac.schoolTmlBefore : null;
   // Board copy never names a student: swap the at-risk detail (which lists names on the dashboard) for a count.
   // Titles and summaries only: evidence can name students and applicants, which a board pack must not.
-  const items = probe(desk).findings.slice(0, 6).map(f => ({ key: f.key, title: f.title, detail: f.summary, tone: f.level === 'critical' || f.level === 'high' ? 'r' : f.level === 'medium' ? 'a' : 'n' }));
+  // The cover fits five items on one A4 sheet; the rest are counted, and live in Probe.
+  const allFindings = probe(desk).findings;
+  const moreFindings = Math.max(0, allFindings.length - 5);
+  const items = allFindings.slice(0, 5).map(f => ({ key: f.key, title: f.title, detail: f.summary, tone: f.level === 'critical' || f.level === 'high' ? 'r' : f.level === 'medium' ? 'a' : 'n' }));
   const approvedDays = wf.leave.filter(l => l.status === 'approved').reduce((n, l) => n + l.days, 0);
   const confTotal = ac.confidence.firm + ac.confidence.provisional + ac.confidence.insufficient;
   const bandTotal = ac.bands.reduce((n, b) => n + b.count, 0) + ac.noEvidence;
@@ -130,6 +133,7 @@ function Pack({ desk }: { desk: AdminDesk }) {
               ))}
             </ol>
           ) : <Nothing>Nothing currently needs a decision.</Nothing>}
+          {moreFindings > 0 && <p className="bp-foot-note">And {moreFindings} more in Probe, in the Command Centre.</p>}
         </div>
       </Page>
 

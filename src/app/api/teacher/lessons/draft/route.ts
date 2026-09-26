@@ -3,8 +3,11 @@ import { GoogleGenAI } from '@google/genai';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { courseChapters, getCurriculum } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/desk';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -22,7 +25,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireStaff(req);
   if ('res' in auth) return auth.res;
   const { staff } = auth;
-  if (!checkRateLimit(`lesson-draft:${staff.id}`, 12, 10 * 60_000).allowed) {
+  if (!checkRateLimit(`lesson-draft:${staff.id}`, ...limitOf('lessonDraft')).allowed) {
     return NextResponse.json({ error: 'Too many drafts. Try again in a few minutes.' }, { status: 429 });
   }
   const b = await req.json().catch(() => null);
@@ -35,6 +38,8 @@ export async function POST(req: NextRequest) {
   const duration = Math.min(120, Math.max(20, Math.round(Number(b?.durationMin) || 40)));
   const focus = str(b?.focus, 400);
 
+  const aiBlocked = await aiGate(staff.id);
+  if (aiBlocked) return aiBlocked;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'AI drafting isn’t configured on this server.' }, { status: 503 });
 
@@ -63,9 +68,9 @@ Return ONLY JSON:
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const res = await ai.models.generateContent({
-      model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json', temperature: 0.4 },
-    });
+    const res = await generateMetered(ai, {
+      model: AI_MODELS.standard, contents: prompt, config: { responseMimeType: 'application/json', temperature: 0.4 },
+    }, { feature: 'lessonDraft', userId: staff.id, schoolId: staff.schoolId });
     const raw = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const d = JSON.parse(raw);
     const stages = (Array.isArray(d.stages) ? d.stages : []).slice(0, 8).map((s: any) => ({

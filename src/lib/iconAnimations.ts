@@ -24,6 +24,9 @@ export const ICON_ANIMATIONS: Record<string, IconAnimation> = {
   ShieldCheck: 'swell',
   CheckCircle: 'turn',
   Check: 'turn',
+  ChatsCircle: 'swell',
+  EnvelopeSimple: 'lift',
+  WhatsappLogo: 'ring',
 };
 
 export function animationForIcon(Icon: { displayName?: string }): IconAnimation {

@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { demoRows } from '@/lib/demo/student';
+import { compressPhoto, uploadPages } from '@/lib/grading/compress';
+import { gradeOf } from '@/lib/grading/handwritten';
 import { Camera, X, Check, Loader2 } from 'lucide-react';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
@@ -191,12 +193,6 @@ export default function HomeworkWorkspace() {
   };
   const removePage = (i: number) => setPages(p => p.filter((_, idx) => idx !== i));
 
-  const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(',')[1] || '');
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
   // ── Submit: typed mode (auto-grade MCQ instantly; rest -> teacher review) ─
   const submitTyped = async () => {
@@ -234,35 +230,17 @@ export default function HomeworkWorkspace() {
       throw new Error('No active Supabase sign-in token — AI grading needs a real authenticated session (expected in the local demo login).');
     }
 
-    const uploads = await Promise.all(pages.map(async (p, idx) => {
-      const [base64, url] = await Promise.all([
-        fileToBase64(p.file),
-        (async () => {
-          const form = new FormData();
-          form.append('file', p.file);
-          form.append('studentId', profile!.uid);
-          form.append('assignmentId', String(id));
-          form.append('pageIndex', String(idx));
-          const res = await fetch('/api/student/upload-submission', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
-          if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || 'Page upload failed');
-          return (await res.json()).url as string;
-        })(),
-      ]);
-      return { base64, mimeType: p.file.type || 'image/jpeg', url };
-    }));
-
+    // Pages are shrunk on the phone, stored privately one by one, then read by the AI for the teacher.
+    if (pages.length > 8) throw new Error('Up to 8 pages. Remove some and try again.');
+    const blobs = await Promise.all(pages.map(p => compressPhoto(p.file)));
+    const paths = await uploadPages(token, String(id), profile!.uid, blobs);
     const res = await fetch('/api/homework/grade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        assignmentId: id, studentId: profile!.uid, schoolId: profile!.schoolId,
-        images: uploads.map(u => ({ data: u.base64, mimeType: u.mimeType })),
-        imageUrls: uploads.map(u => u.url),
-        questions,
-      }),
+      body: JSON.stringify({ assignmentId: id, pages: paths }),
     });
-    const json = await res.json();
-    if (!res.ok || json.error) throw new Error(json.error || 'AI grading failed');
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.error) throw new Error(json.error || 'Your work could not be handed in. Try again.');
     return json;
   };
 
@@ -314,11 +292,14 @@ export default function HomeworkWorkspace() {
 
   // ── Submitted / results view ───────────────────────────────────────────────
   if (alreadySubmitted) {
-    const grade = justSubmitted?.grade ?? submission?.grade ?? submission?.ai_grade;
+    const grade = justSubmitted?.grade ?? submission?.grade;
     const score = justSubmitted?.score ?? submission?.score;
     const total = justSubmitted?.totalMarks ?? submission?.max_score ?? assignment.total_marks ?? 0;
-    const aiResult = justSubmitted?.aiResult ?? submission?.ai_result;
-    const pendingReview = score == null;
+    // Nothing the AI suggested is shown as a grade: only a teacher-confirmed mark (or instant MCQ marking) is.
+    const confirmed = (submission ?? justSubmitted)?.teacher_approved === true;
+    const v2 = gradeOf(submission?.ai_result);
+    const aiResult = confirmed ? (v2 ? { questions: v2.questions.map(q => ({ questionNumber: q.index + 1, questionText: assignment.questions?.[q.index]?.questionText, whatStudentGotRight: q.gotRight, lostMarksReason: q.toFix, hideScore: true })) } : submission?.ai_result) : null;
+    const pendingReview = !confirmed || score == null;
 
     return (
       <div className="fixed inset-0 z-[70] bg-[#F7F9FB] flex flex-col overflow-y-auto">
@@ -331,7 +312,7 @@ export default function HomeworkWorkspace() {
             <div className={`bg-white rounded-[20px] ${SH} p-10 mt-4 text-center`}>
               {pendingReview
                 ? <Chip tone="b">SUBMITTED</Chip>
-                : <Chip tone="g">AUTO-GRADED — {grade || `${score}/${total}`}</Chip>}
+                : <Chip tone="g">GRADED — {grade || `${score}/${total}`}</Chip>}
               <h1 className="text-[27px] font-extrabold text-[#002147] mt-4">{pendingReview ? 'Submitted' : 'Graded'}</h1>
               <p className="text-[#7A8699] text-[15px] mt-2.5">{assignment.subject} · {assignment.title}</p>
               <p className="text-[#7A8699] text-[13.5px] mt-1">
@@ -339,8 +320,8 @@ export default function HomeworkWorkspace() {
               </p>
               <div className="text-left bg-[#F7F9FB] border border-[#E8EDF4] rounded-2xl p-4 mt-6 text-[13.5px] text-[#33465F] leading-relaxed">
                 {pendingReview
-                  ? "Your teacher will review this before it updates your True Mastery Level. You'll get a notification when it's ready."
-                  : `This grade still needs your teacher's confirmation before it moves your True Mastery Level.`}
+                  ? "Your teacher will check your work and confirm your marks. You'll get a notification when it's ready."
+                  : submission?.teacher_note ? `Your teacher's note: "${submission.teacher_note}"` : 'Your teacher has confirmed this grade. It now counts toward your True Mastery Level.'}
               </div>
               <button onClick={close} className="mt-6 px-5 py-2.5 rounded-xl bg-[#002147] text-white text-[13.5px] font-bold">
                 Back to Homework
@@ -349,13 +330,15 @@ export default function HomeworkWorkspace() {
 
             {Array.isArray(aiResult?.questions) && (
               <div className={`bg-white rounded-[20px] ${SH} p-8 mt-5`}>
-                <div className="text-center text-[#9AA6B8] text-[11.5px] font-extrabold tracking-[.14em] mb-5"><span className="inline-flex items-center gap-1.5"><Sparkle size={13} weight="fill" /> AI FEEDBACK</span></div>
+                <div className="text-center text-[#9AA6B8] text-[11.5px] font-extrabold tracking-[.14em] mb-5"><span className="inline-flex items-center gap-1.5"><Sparkle size={13} weight="fill" /> FEEDBACK ON EACH ANSWER</span></div>
                 <div className="space-y-6">
                   {aiResult.questions.map((q: any, i: number) => (
                     <div key={i} className="border-t border-[#E8EDF4] first:border-t-0 first:pt-0 pt-6">
-                      <Chip tone={q.isFinalAnswerCorrect ? 'g' : 'r'}>
-                        Q{q.questionNumber ?? i + 1} — {q.awardedScore ?? 0}/{q.maxScore ?? '—'}
-                      </Chip>
+                      {q.hideScore ? <Chip tone="n">Q{q.questionNumber ?? i + 1}</Chip> : (
+                        <Chip tone={q.isFinalAnswerCorrect ? 'g' : 'r'}>
+                          Q{q.questionNumber ?? i + 1} — {q.awardedScore ?? 0}/{q.maxScore ?? '—'}
+                        </Chip>
+                      )}
                       {q.questionText && <p className="text-[14px] font-bold text-[#002147] mt-3">{q.questionText}</p>}
                       {q.whatStudentGotRight && <p className="text-[14px] leading-[1.7] text-[#33465F] mt-2"><b>What went right:</b> {q.whatStudentGotRight}</p>}
                       {q.lostMarksReason && <p className="text-[14px] leading-[1.7] text-[#33465F] mt-2"><b>Where marks were lost:</b> {q.lostMarksReason}</p>}

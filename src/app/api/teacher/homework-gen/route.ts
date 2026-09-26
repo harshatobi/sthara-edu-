@@ -2,6 +2,9 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,12 +12,14 @@ export async function POST(request: NextRequest) {
   // Each call spends model quota: teachers and admins only, rate-limited.
   const auth = await requireStaff(request);
   if ('res' in auth) return auth.res;
-  if (!checkRateLimit(`homework-gen:${auth.staff.id}`, 15, 10 * 60_000).allowed) {
+  if (!checkRateLimit(`homework-gen:${auth.staff.id}`, ...limitOf('homeworkGen')).allowed) {
     return NextResponse.json({ error: 'Too many generations. Try again in a few minutes.' }, { status: 429 });
   }
 
   try {
     const { topic, subject, studentClass, difficulty = 'medium', numQuestions = 5, questionType = 'mixed' } = await request.json();
+    const aiBlocked = await aiGate(auth.staff.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
 
@@ -55,11 +60,11 @@ For MCQ, add an "options" array: ["A. option1", "B. option2", "C. option3", "D. 
 Marks: short=2-5, long=8-10, mcq=1-2.
 Make questions educationally meaningful and specific to the topic.`;
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const result = await generateMetered(ai, {
+      model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.6 },
-    });
+    }, { feature: 'homeworkGen', userId: auth.staff.id, schoolId: auth.staff.schoolId });
 
     let rawText = (result.text || '{"questions":[]}').trim();
     rawText = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();

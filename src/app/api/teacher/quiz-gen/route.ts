@@ -1,6 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
+import { recordRestUsage } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -9,7 +12,7 @@ export async function POST(request: NextRequest) {
   // Each call spends model quota: teachers and admins only, rate-limited.
   const auth = await requireStaff(request);
   if ('res' in auth) return auth.res;
-  if (!checkRateLimit(`quiz-gen:${auth.staff.id}`, 15, 10 * 60_000).allowed) {
+  if (!checkRateLimit(`quiz-gen:${auth.staff.id}`, ...limitOf('quizGen')).allowed) {
     return NextResponse.json({ error: 'Too many generations. Try again in a few minutes.' }, { status: 429 });
   }
   try {
@@ -24,6 +27,8 @@ export async function POST(request: NextRequest) {
       className,
     } = body;
 
+    const aiBlocked = await aiGate(auth.staff.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
@@ -74,7 +79,7 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
 }`;
 
     // Use the Gemini REST API directly — more reliable than the SDK for JSON mode
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODELS.standard}:generateContent?key=${apiKey}`;
     
     const geminiBody = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -84,6 +89,8 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
       },
     };
 
+    const usageMeta = { feature: 'quizGen', userId: auth.staff.id, schoolId: auth.staff.schoolId } as const;
+    const started = Date.now();
     const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -92,6 +99,7 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
 
     if (!geminiRes.ok) {
       const errBody = await geminiRes.text();
+      recordRestUsage(AI_MODELS.standard, null, usageMeta, started, `HTTP ${geminiRes.status}`);
       console.error('[quiz-gen] Gemini API error:', geminiRes.status, errBody.substring(0, 500));
       return NextResponse.json(
         { error: `AI service returned error ${geminiRes.status}. Please try again.` },
@@ -100,6 +108,7 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
     }
 
     const geminiData = await geminiRes.json();
+    recordRestUsage(AI_MODELS.standard, geminiData, usageMeta, started);
     let raw: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     console.log('[quiz-gen] Raw AI output (first 500 chars):', raw.substring(0, 500));

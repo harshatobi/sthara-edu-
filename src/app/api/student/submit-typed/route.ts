@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { limitOf } from '@/lib/settings/limits';
 import { computeStudentTml, normalizeComponentType } from '@/lib/tml/engine';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'student') return NextResponse.json({ error: 'Only students submit homework.' }, { status: 403 });
 
-  const rl = checkRateLimit(`submit-typed:${user.id}`, 20, 5 * 60_000);
+  const rl = checkRateLimit(`submit-typed:${user.id}`, ...limitOf('submitTyped'));
   if (!rl.allowed) return NextResponse.json({ error: 'Too many submissions. Try again shortly.' }, { status: 429 });
 
   let body: any;

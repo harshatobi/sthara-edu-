@@ -3,6 +3,9 @@ import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +15,7 @@ export async function POST(request: NextRequest) {
 
   // Strict limit — this loops a Gemini call per student in the class, so one
   // request already fans out to many calls.
-  const rl = checkRateLimit(`homework-generate:${user.id}`, 5, 10 * 60_000);
+  const rl = checkRateLimit(`homework-generate:${user.id}`, ...limitOf('homeworkGenerate'));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please wait before generating homework for another class.' },
@@ -23,6 +26,8 @@ export async function POST(request: NextRequest) {
   try {
     const { class: className, subject, topic, teacherId, schoolId } = await request.json();
 
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
@@ -70,11 +75,11 @@ Adapt the difficulty based on their strengths and weaknesses.
 Format the output as a clean JSON object with a "questions" array containing strings. No markdown blocks, just the JSON string.`;
 
         try {
-          const result = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+          const result = await generateMetered(ai, {
+            model: AI_MODELS.standard,
             contents: prompt,
             config: { responseMimeType: 'application/json', temperature: 0.7 },
-          });
+          }, { feature: 'homeworkGenerate', userId: user.id });
           const parsed = JSON.parse(result.text || '{"questions": ["Describe the main concepts of this topic."]}');
 
           const dueDate = new Date();

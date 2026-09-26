@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
+import { AI_MODELS } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +39,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required field: topic' }, { status: 400 });
     }
 
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       // Rule-based fallback if no Gemini key
@@ -67,11 +72,11 @@ Return ONLY a JSON object matching this schema:
   "weightageScore": 7.6
 }`;
 
-    const res = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const res = await generateMetered(ai, {
+      model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.1 },
-    });
+    }, { feature: 'analyzeSyllabus', userId: user.id });
 
     const text = res.text || '{}';
     const parsed = JSON.parse(text) as Partial<SyllabusAnalysisResult>;

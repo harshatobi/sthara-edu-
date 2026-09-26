@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { requireStaff, type Staff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { limitOf } from '@/lib/settings/limits';
 import { CURRENT_SESSION } from '@/lib/curriculum';
 
 export const dynamic = 'force-dynamic';
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireStaff(req);
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
-  if (!checkRateLimit(`lessons:${staff.id}`, 120, 10 * 60_000).allowed) return NextResponse.json({ error: 'Too many changes at once.' }, { status: 429 });
+  if (!checkRateLimit(`lessons:${staff.id}`, ...limitOf('lessons')).allowed) return NextResponse.json({ error: 'Too many changes at once.' }, { status: 429 });
   const b = await req.json().catch(() => null);
   const cls = str(b?.class, 40), subject = str(b?.subject, 60);
   if (!cls || !subject) return NextResponse.json({ error: 'class and subject are required' }, { status: 400 });

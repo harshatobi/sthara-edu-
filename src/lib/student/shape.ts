@@ -61,7 +61,8 @@ function feedbackText(sub: any): string | null {
 }
 
 export function shapeAssignment(a: any, sub: any | undefined): DeskAssignment {
-  const graded = !!sub && sub.score !== null && sub.score !== undefined && sub.teacher_approved !== false;
+  // Graded only once a teacher confirmed it (or it was all multiple choice, marked instantly): never on an AI suggestion alone.
+  const graded = !!sub && sub.score !== null && sub.score !== undefined && sub.teacher_approved === true;
   return {
     id: a.id,
     subject: (a.subject || 'General').toUpperCase(),

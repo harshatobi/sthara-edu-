@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   School, CheckCircle, ArrowRight, ArrowLeft, Loader2,
   BookOpen, Users, Shield, Sparkles, Building2, Mail,
-  Phone, Globe, Lock, Eye, EyeOff, Zap
+  Phone, Globe, Lock, Eye, EyeOff, Zap, Clock, ClipboardList
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -41,6 +41,14 @@ export default function OnboardPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [schoolCode, setSchoolCode] = useState('');
+  // Operator-controlled: trial length and whether self-serve sign-up is open.
+  const [terms, setTerms] = useState<{ selfServe: boolean; trialDays: number } | null>(null);
+  useEffect(() => {
+    fetch('/api/platform/public').then(r => r.json())
+      .then(d => setTerms({ selfServe: d.selfServe !== false, trialDays: Number(d.trialDays) || 30 }))
+      .catch(() => setTerms({ selfServe: true, trialDays: 30 }));
+  }, []);
+  const trialDays = terms?.trialDays ?? 30;
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const validateSchoolInfo = () => {
@@ -119,22 +127,42 @@ export default function OnboardPage() {
             </div>
             <div className="border-t border-blue-200 pt-3 mt-3">
               <p className="text-xs text-blue-600 font-semibold">
-                📋 Save this information! Your School Code is what teachers and students use to log in.
+                <ClipboardList className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Save this information. Your School Code is what teachers and students use to log in.
               </p>
             </div>
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm text-amber-700 font-medium text-left">
-            🕐 Your 30-day free trial starts now. Add your teachers and students from the Admin dashboard.
+            <Clock className="w-4 h-4 inline -mt-0.5 mr-1.5" />Your {trialDays}-day free trial starts now. Add your teachers and students from the Admin dashboard.
           </div>
 
           <Link
             href="/login"
             className="block w-full py-4 bg-[#002147] text-white rounded-2xl font-bold text-lg hover:bg-[#003580] transition-colors"
           >
-            Go to Login →
+            Go to Login <ArrowRight className="w-5 h-5 inline -mt-0.5 ml-1" />
           </Link>
           <p className="text-xs text-gray-400 mt-4">Enter school code <strong>{schoolCode}</strong> + your admin credentials</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (terms && !terms.selfServe) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#001233] via-[#002147] to-[#003580] flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-10 text-center">
+          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-blue-100">
+            <School className="w-10 h-10 text-[#002147]" />
+          </div>
+          <h1 className="text-3xl font-black text-[#002147] mb-2">Sign-up is by invitation</h1>
+          <p className="text-gray-500 font-medium mb-8">
+            We are onboarding schools personally right now. Tell us about your school and we will set everything up with you.
+          </p>
+          <a href="/contact" className="block w-full py-4 bg-[#002147] text-white rounded-2xl font-bold text-lg hover:bg-[#003580] transition-colors">
+            Contact the Sthara team <ArrowRight className="w-5 h-5 inline -mt-0.5 ml-1" />
+          </a>
+          <Link href="/login" className="block text-sm text-gray-500 font-semibold mt-5 hover:text-[#002147]">Already have a school code? Sign in</Link>
         </div>
       </div>
     );
@@ -153,7 +181,7 @@ export default function OnboardPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center space-x-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 mb-4">
             <Sparkles className="w-4 h-4 text-yellow-400" />
-            <span className="text-white/80 text-sm font-semibold">Free 30-Day Trial — No Credit Card</span>
+            <span className="text-white/80 text-sm font-semibold">Free {trialDays}-Day Trial — No Credit Card</span>
           </div>
           <h1 className="text-4xl font-black text-white mb-2">Get Started with Sthara</h1>
           <p className="text-white/60 font-medium">AI-powered learning management for your school</p>
@@ -410,7 +438,7 @@ export default function OnboardPage() {
                 </div>
 
                 <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200 text-sm text-blue-700 font-medium">
-                  🎁 <strong>30-day free trial</strong> starts immediately. No credit card required. 
+                  <Clock className="w-4 h-4 inline -mt-0.5 mr-1" /><strong>{trialDays}-day free trial</strong> starts immediately. No credit card required. 
                   Add unlimited teachers and students during your trial.
                 </div>
 

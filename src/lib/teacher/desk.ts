@@ -4,6 +4,7 @@
  * canon teacher pages render.
  */
 import { sanitizeQuestions, suggestedScores, type Question } from './questions';
+import { gradeOf, type HandwrittenGrade, type HistoryEntry } from '@/lib/grading/handwritten';
 import { normClass, normSubject, scopeClasses, subjectsIn, type ScopeEntry } from './scope';
 
 export type WorkType = 'homework' | 'quiz' | 'classwork';
@@ -57,6 +58,12 @@ export interface TSubmission {
   aiQuestions: { questionNumber?: number; awardedScore?: number; maxScore?: number; lostMarksReason?: string; whatStudentGotRight?: string }[];
   note: string | null;
   kind: 'typed' | 'handwritten';
+  /** The AI's per-question reading of photographed work (captured by the teacher or sent by the student). */
+  grade: HandwrittenGrade | null;
+  /** Who photographed the work. */
+  source: 'student' | 'teacher_capture' | 'typed';
+  /** Grades reopened for review (most recent last). */
+  history: HistoryEntry[];
 }
 
 export interface TAssignment {
@@ -181,6 +188,7 @@ export function studentTml(s: TStudent, subjects: string[]): number | null {
 function shapeSubmission(sub: any, questions: Question[], name: string, items: any[]): TSubmission {
   const approved = sub.teacher_approved === true;
   const r = sub.ai_result && typeof sub.ai_result === 'object' ? sub.ai_result : null;
+  const g = gradeOf(r);
   const answers = sub.answers && typeof sub.answers === 'object' ? sub.answers : {};
   return {
     id: sub.id,
@@ -190,17 +198,20 @@ function shapeSubmission(sub: any, questions: Question[], name: string, items: a
     state: approved && sub.score !== null && sub.score !== undefined ? 'graded' : 'pending',
     score: sub.score ?? null,
     max: sub.max_score ?? null,
-    suggested: sub.ai_graded && typeof r?.score === 'number' ? r.score : sub.score ?? null,
-    suggestedByQuestion: suggestedScores(questions, answers),
+    suggested: g ? g.suggestedTotal : sub.ai_graded && typeof r?.score === 'number' ? r.score : sub.score ?? null,
+    suggestedByQuestion: g && g.questions.length === questions.length ? g.questions.map(q => q.awarded) : suggestedScores(questions, answers),
     confirmedByQuestion: items.length && questions.length
       ? questions.map((_, i) => { const it = items.find(x => x.question_index === i); return it ? Number(it.score) : null; })
       : null,
     answers,
     imageUrls: Array.isArray(sub.image_urls) ? sub.image_urls : [],
-    aiFeedback: typeof sub.ai_feedback === 'string' ? sub.ai_feedback : r?.overallFeedback ?? null,
-    aiQuestions: Array.isArray(r?.questions) ? r.questions : [],
+    aiFeedback: g ? g.summary || null : typeof sub.ai_feedback === 'string' ? sub.ai_feedback : r?.overallFeedback ?? null,
+    aiQuestions: g ? [] : Array.isArray(r?.questions) ? r.questions : [],
     note: sub.teacher_note ?? null,
     kind: sub.type === 'handwritten' || (!Object.keys(answers).length && (sub.image_urls || []).length) ? 'handwritten' : 'typed',
+    grade: g,
+    source: g ? g.source : sub.type === 'handwritten' ? 'student' : 'typed',
+    history: Array.isArray(r?.history) ? r.history : [],
   };
 }
 

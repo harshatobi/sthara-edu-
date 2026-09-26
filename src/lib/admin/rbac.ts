@@ -30,6 +30,7 @@ export const PERMS = {
   'audit.read': 'Read the audit trail',
   'people.manage': 'Create and remove student, teacher and parent accounts',
   'access.manage': 'Give and take away office roles',
+  'messages.office': 'Read and answer parents\' messages to the school office',
 } as const;
 export type Perm = keyof typeof PERMS;
 
@@ -43,7 +44,7 @@ export const ROLES: Record<RoleKey, { label: string; summary: string; perms: Per
   principal: { label: 'Principal', summary: 'Everything except managing access', perms: ALL.filter(p => p !== 'access.manage') },
   vice_principal: {
     label: 'Vice principal', summary: 'Academics, staff and leave, admissions view, wellness and compliance',
-    perms: ['dashboard.view', 'boardpack.view', 'probe.view', 'academics.read', 'workforce.read', 'leave.approve', 'admissions.read', 'wellness.read', 'compliance.read'],
+    perms: ['dashboard.view', 'boardpack.view', 'probe.view', 'academics.read', 'workforce.read', 'leave.approve', 'admissions.read', 'wellness.read', 'compliance.read', 'messages.office'],
   },
   finance_head: {
     label: 'Finance head', summary: 'All of fees, including voids, concession approval and day close',
@@ -58,7 +59,7 @@ export const ROLES: Record<RoleKey, { label: string; summary: string; perms: Per
   admissions_officer: { label: 'Admissions officer', summary: 'The admissions pipeline', perms: ['dashboard.view', 'probe.view', 'admissions.read', 'admissions.manage'] },
   hr_manager: { label: 'HR manager', summary: 'Staff, leave approval and leave policy', perms: ['dashboard.view', 'probe.view', 'workforce.read', 'leave.approve', 'leave.policy'] },
   academic_coordinator: { label: 'Academic coordinator', summary: 'Academic health and teaching staff', perms: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read'] },
-  counsellor: { label: 'Counsellor', summary: 'Anonymised wellness', perms: ['dashboard.view', 'wellness.read'] },
+  counsellor: { label: 'Counsellor', summary: 'Anonymised wellness and parents\' messages to the office', perms: ['dashboard.view', 'wellness.read', 'messages.office'] },
   dpo: {
     label: 'Data protection officer', summary: 'Consent, DPDP flags and the audit trail',
     perms: ['dashboard.view', 'probe.view', 'compliance.read', 'compliance.act', 'audit.read', 'wellness.read'],

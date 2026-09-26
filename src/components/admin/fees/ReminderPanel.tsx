@@ -81,7 +81,7 @@ export default function ReminderPanel({ families, school, guardianCount, call, o
               </p>
             </>
           ) : <p className="muted" style={{ fontSize: 13.5 }}>Pick a family to preview its message.</p>}
-          <div className="note" style={{ marginTop: 14 }}>Reminders go to the parent&apos;s Sthara inbox. WhatsApp delivery needs a WhatsApp Business account connected first.</div>
+          <div className="note" style={{ marginTop: 14 }}>Reminders go to the parent&apos;s Sthara inbox, and to WhatsApp for parents who linked their number and chose fee updates. Until the school&apos;s WhatsApp Business key is set, WhatsApp copies are logged, not sent.</div>
         </div>
       </div>
     </Workspace>

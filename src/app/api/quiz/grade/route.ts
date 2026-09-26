@@ -2,12 +2,15 @@ import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request);
   if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const rl = checkRateLimit(`quiz-grade:${user.id}`, 15, 5 * 60_000);
+  const rl = checkRateLimit(`quiz-grade:${user.id}`, ...limitOf('quizGrade'));
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please wait before submitting again.' },
@@ -18,6 +21,8 @@ export async function POST(request: NextRequest) {
   try {
     const { title, description, questions, studentAnswers } = await request.json();
 
+    const aiBlocked = await aiGate(user.id);
+    if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -53,11 +58,11 @@ Output ONLY valid JSON with this structure:
   "summary": "Brief 1-sentence encouraging summary of their performance."
 }`;
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const result = await generateMetered(ai, {
+      model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.2 },
-    });
+    }, { feature: 'quizGrade', userId: user.id });
 
     const rawText = result.text || '{}';
     const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```/g, '').trim();

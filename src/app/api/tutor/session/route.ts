@@ -3,10 +3,13 @@ import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { computeStudentTml, getTutorDepthScore } from '@/lib/tml/engine';
 import { containsFoulLanguage } from '@/lib/tutor/safety';
 import { flattenChapters, getCurriculum } from '@/lib/curriculum';
 import { signSession, verifySession, type TutorSessionState } from '@/lib/tutor/sessionToken';
+import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +27,7 @@ export const dynamic = 'force-dynamic';
  */
 
 const STEPS = 3;
-const MODEL = 'gemini-2.5-flash';
+const MODEL = AI_MODELS.standard;
 
 interface Turn { who: 'ai' | 'me'; text: string }
 
@@ -45,15 +48,15 @@ Rules you never break:
 - School environment, ages 10–18: strictly academic, age-appropriate language.
 Always reply with a single JSON object and nothing else.`;
 
-async function ask(prompt: string, cls: string): Promise<Record<string, unknown>> {
+async function ask(prompt: string, cls: string, userId: string, schoolId: string | null): Promise<Record<string, unknown>> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw Object.assign(new Error('The AI tutor is offline right now.'), { status: 503 });
   const ai = new GoogleGenAI({ apiKey });
-  const res = await ai.models.generateContent({
+  const res = await generateMetered(ai, {
     model: MODEL,
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { systemInstruction: SYSTEM(cls), responseMimeType: 'application/json', temperature: 0.4 },
-  });
+  }, { feature: 'tutorSession', userId, schoolId });
   const parsed = JSON.parse(res.text ?? '{}');
   const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';
   if (!text) throw new Error('Empty tutor response');
@@ -85,11 +88,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Tutor sessions are recorded against a student’s mastery, so only students can run them.' }, { status: 403 });
   }
 
-  const rl = checkRateLimit(`tutor-session:${user.id}`, 40, 5 * 60_000);
+  const rl = checkRateLimit(`tutor-session:${user.id}`, ...limitOf('tutorSession'));
   if (!rl.allowed) {
     return NextResponse.json({ error: 'Slow down a little — try again in a moment.' },
       { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } });
   }
+  const aiBlocked = await aiGate(user.id);
+  if (aiBlocked) return aiBlocked;
 
   let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
@@ -111,7 +116,7 @@ export async function POST(req: NextRequest) {
       const out = await ask(
         `Start a ${STEPS}-step Socratic session. Subject: ${subject}. Micro-topic: ${topic}.
 Briefly set up one concrete problem on this topic, then ask step 1 of ${STEPS}: the first guiding question.${syllabusScope(cls, subject, topic)}
-Reply as {"text": "<setup + question 1>"}`, cls);
+Reply as {"text": "<setup + question 1>"}`, cls, user.id, me?.school_id ?? null);
       const state: TutorSessionState = { uid: user.id, subject, topic, step: 1, hints: 0, revealed: false, done: false, iat: Date.now() };
       return NextResponse.json({ verdict: 'question', text: out.text, step: 1, steps: STEPS, hints: 0, token: signSession({ ...state, question: out.text as string }) });
     }
@@ -144,7 +149,7 @@ Student's answer: ${answer}
 Decide whether the answer is correct (minor wording or arithmetic-format differences are fine; a partially right or wrong answer is not correct).
 - If NOT correct: give one hint for this same question without revealing the result. Reply {"correct": false, "text": "<hint>"}
 - If correct${last ? ': this was the final step — confirm the full solution in one or two sentences and praise the reasoning. Reply {"correct": true, "text": "<wrap-up>"}'
-        : `: acknowledge briefly, then ask step ${state.step + 1} of ${STEPS}. Reply {"correct": true, "text": "<ack + next question>"}`}`, cls);
+        : `: acknowledge briefly, then ask step ${state.step + 1} of ${STEPS}. Reply {"correct": true, "text": "<ack + next question>"}`}`, cls, user.id, me?.school_id ?? null);
 
       if (out.correct === true) {
         if (last) { verdict = 'complete'; next = { ...state, done: true }; }
@@ -161,7 +166,7 @@ Conversation so far:
 ${transcript(history)}
 
 The student asked for the answer to be revealed. Explain the answer to this question clearly and briefly, then state the final result of the problem: ${question}
-Reply {"text": "<explanation + answer>"}`, cls);
+Reply {"text": "<explanation + answer>"}`, cls, user.id, me?.school_id ?? null);
       verdict = 'revealed';
       text = out.text as string;
       next = { ...state, revealed: true, done: true };

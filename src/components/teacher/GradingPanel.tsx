@@ -11,6 +11,7 @@ import { useToast } from '@/components/canon/useToast';
 import { marksOf, mcqCorrect, TYPE_LABEL, type Question } from '@/lib/teacher/questions';
 import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
+import Reversals from './capture/Reversals';
 
 const LETTERS = 'ABCDEF';
 
@@ -211,6 +212,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
             Confirming makes this mark count toward {sub.studentName.split(' ')[0]}&apos;s True Mastery Level and notifies them.
             {sub.state === 'graded' ? ' Changing a confirmed grade is recorded in the audit log.' : ''}
           </p>
+          <Reversals sub={sub} onDone={(msg, removed) => { toast(msg); if (removed) onBack(); }} />
         </div>
       </div>
       {toastEl}

@@ -14,6 +14,7 @@ import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { setupChecklist, type RegistrySchool } from '@/lib/ops/attention';
 import { normClass } from '@/lib/ops/people';
+import { journalLabel, journalValue } from '@/lib/ops/journal';
 import { USD_TO_INR } from '@/lib/ai/pricing';
 import {
   CURRICULA, PLANS, PLAN_INFO, REASON_MIN, SCHOOL_FIELD_LABELS, annualValue, effectivePrice,
@@ -124,7 +125,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
       {!data || !f ? (err ? null : <Skeleton h={360} style={{ borderRadius: 20 }} />) : (
         <>
           {tab === 'overview' && <OverviewTab d={data} go={setTab} />}
-          {tab === 'access' && <AccessTab key={`${f.id}:${f.updatedAt}`} f={f} onSaved={msg => { toast(msg); void load(); }} />}
+          {tab === 'access' && <AccessTab key={`${f.id}:${f.updatedAt}`} f={f} onSaved={msg => { toast(msg); void load(); }} onDeleted={() => router.push('/ops/schools')} />}
           {tab === 'classes' && <ClassesStep schoolId={schoolId} classes={data.classes} onSaved={load} next={() => setTab('people')} />}
           {tab === 'people' && (
             <>
@@ -134,7 +135,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
                     <div className="acts" style={{ marginTop: 10 }}><button className="btn sm" onClick={() => setAdding(false)}>Close add people</button></div>
                   </div>
                 : null}
-              <RosterStep schoolId={schoolId} people={data.people} onIssued={i => addIssued([i])} />
+              <RosterStep schoolId={schoolId} people={data.people} onIssued={i => addIssued([i])} onDeleted={msg => { toast(msg); void load(); }} />
             </>
           )}
           {tab === 'teaching' && <TeachingStep schoolId={schoolId} classes={data.classes} people={data.people} onSaved={load} />}
@@ -232,7 +233,7 @@ const text = (k: keyof Draft, v: unknown) =>
     : k === 'pricePerStudent' ? (v ? inr(Number(v), true) : 'List price') : k === 'contractStudents' ? (v ? num(Number(v)) : 'Actual students')
     : String(v || 'None');
 
-function AccessTab({ f, onSaved }: { f: RegistrySchool; onSaved: (msg: string) => void }) {
+function AccessTab({ f, onSaved, onDeleted }: { f: RegistrySchool; onSaved: (msg: string) => void; onDeleted: () => void }) {
   const api = useOpsApi();
   const patch = useSchoolPatch();
   const base = useMemo(() => draftOf(f), [f]);
@@ -370,6 +371,8 @@ function AccessTab({ f, onSaved }: { f: RegistrySchool; onSaved: (msg: string) =
         )}
       </Section>
 
+      <DeleteSchool f={f} onDeleted={onDeleted} />
+
       {changes.length > 0 && (
         <div className="card os-review" style={{ position: 'sticky', bottom: 12, zIndex: 5, boxShadow: '0 10px 40px rgba(0,33,71,.18)' }}>
           <b>{plural(changes.length, 'unsaved change')}</b>
@@ -395,15 +398,53 @@ function AccessTab({ f, onSaved }: { f: RegistrySchool; onSaved: (msg: string) =
   );
 }
 
-// ── Activity ──────────────────────────────────────────────────────────────────
+/** Permanent deletion, confirmed by typing the school's code. Schools with fee records are refused by the server. */
+function DeleteSchool({ f, onDeleted }: { f: RegistrySchool; onDeleted: () => void }) {
+  const api = useOpsApi();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const confirmWith = f.code ?? f.name;
+  const matches = f.code ? typed.trim().toUpperCase() === f.code : typed.trim().toLowerCase() === f.name.trim().toLowerCase();
+  const run = async () => {
+    setBusy(true); setErr(null);
+    try {
+      const r = await api<{ accounts: number; loginFailures: string[] }>(`/schools/${f.id}`, { method: 'DELETE', body: { confirmCode: typed, reason: reason.trim() } });
+      if (r.loginFailures.length) {
+        setErr(`${f.name} was deleted with ${plural(r.accounts, 'account')}, but ${plural(r.loginFailures.length, 'login')} couldn't be removed from Supabase Auth. Those people can't reach any school, but remove the logins in Supabase: ${r.loginFailures.join('; ')}`);
+      } else onDeleted();
+    } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
+  };
+  return (
+    <Section title="Delete school" sub="Permanently removes the school, its classes, work and messages, and every account in it. Schools with fee invoices or receipts can't be deleted: those are kept as financial records, so suspend the school instead.">
+      {!open ? (
+        <button className="btn red" onClick={() => setOpen(true)}>Delete {f.name}</button>
+      ) : (
+        <div className="os-review">
+          <div className="os-danger">
+            <Lock size={20} weight="fill" color="#E11D48" style={{ flex: '0 0 auto' }} />
+            <div style={{ fontSize: 13, lineHeight: 1.55 }}>
+              This can&apos;t be undone. {plural(f.people, 'account')} and their logins are deleted along with everything the school created. A record of the deletion is kept in the audit log.
+            </div>
+          </div>
+          <label className="lbl" htmlFor="del-code" style={{ marginBottom: 0 }}>TYPE <span className="mono">{confirmWith}</span> TO CONFIRM</label>
+          <input id="del-code" className="cmp-in mono" autoComplete="off" value={typed} onChange={e => setTyped(e.target.value)} />
+          <label className="lbl" htmlFor="del-why" style={{ marginBottom: 0 }}>REASON (KEPT IN THE AUDIT LOG)</label>
+          <input id="del-why" className="cmp-in" maxLength={500} value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Duplicate created during onboarding" />
+          {err && <div className="note err" role="alert">{err}</div>}
+          <div className="acts">
+            <button className="btn red" disabled={busy || !matches || reason.trim().length < REASON_MIN} onClick={run}>{busy ? 'Deleting…' : 'Delete permanently'}</button>
+            <button className="btn" onClick={() => { setOpen(false); setTyped(''); setReason(''); setErr(null); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
 
-const val = (key: string, v: unknown) => {
-  if (v === null || v === undefined) return 'None';
-  if (typeof v === 'boolean') return v ? 'On' : 'Off';
-  if (key === 'plan' && typeof v === 'string') return PLAN_INFO[(PLANS as readonly string[]).includes(v) ? (v as Plan) : 'pilot'].label;
-  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return fmtDate(v);
-  return typeof v === 'string' ? v || 'Empty' : JSON.stringify(v);
-};
+// ── Activity ──────────────────────────────────────────────────────────────────
 
 function ActivityTab({ d }: { d: Data }) {
   return (
@@ -415,8 +456,8 @@ function ActivityTab({ d }: { d: Data }) {
               {d.journal.map(j => (
                 <tr key={j.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(j.at)}</td>
-                  <td className="nm">{SCHOOL_FIELD_LABELS[j.key as keyof SchoolPatch] ?? j.key}</td>
-                  <td><span className="muted">{val(j.key, j.old_value)}</span> → <b>{val(j.key, j.new_value)}</b></td>
+                  <td className="nm">{journalLabel('school', j.key)}</td>
+                  <td><span className="muted">{journalValue('school', j.key, j.old_value)}</span> → <b>{journalValue('school', j.key, j.new_value)}</b></td>
                   <td>{j.reason}</td>
                   <td className="muted" style={{ overflowWrap: 'anywhere' }}>{j.actor_email ?? '—'}</td>
                 </tr>

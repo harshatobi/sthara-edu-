@@ -14,6 +14,7 @@ import { Chip, Empty, type Tone } from '@/components/canon/ui';
 import { subjectsForClass } from '@/lib/curriculum';
 import { CSV_TEMPLATE, PERSON_ROLES, normClass, parsePeopleCsv, validatePeople, type PersonInput, type PersonRole, type RowIssue } from '@/lib/ops/people';
 import { useOpsApi } from '../../useOpsApi';
+import { ReasonAction } from '../../_ui';
 
 export interface ClassRow { id?: string; name: string; metadata?: { grade?: string | null; section?: string | null; subjects?: string[] } }
 export interface Person {
@@ -388,7 +389,7 @@ export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId:
 }
 
 // ── Step 4: roster & credentials ─────────────────────────────────────────────
-export function RosterStep({ schoolId, people, onIssued }: { schoolId: string; people: Person[]; onIssued: (i: Issued) => void }) {
+export function RosterStep({ schoolId, people, onIssued, onDeleted }: { schoolId: string; people: Person[]; onIssued: (i: Issued) => void; onDeleted?: (msg: string) => void }) {
   const api = useOpsApi();
   const [filter, setFilter] = useState<'all' | PersonRole>('all');
   const [shown, setShown] = useState<Record<string, string>>({});
@@ -430,6 +431,13 @@ export function RosterStep({ schoolId, people, onIssued }: { schoolId: string; p
           {shown[p.id]
             ? <span className="mono" style={{ fontSize: 13, fontWeight: 700 }}>{shown[p.id]}</span>
             : p.role !== 'superadmin' && <button className="btn sm" onClick={() => reset(p)}><Key size={13} weight="bold" /> New password</button>}
+          {p.role !== 'superadmin' && onDeleted && (
+            <ReasonAction label="Delete" danger confirm={`Delete ${p.name.split(' ')[0] || 'account'}`} placeholder="Reason, e.g. Left the school in June"
+              run={async reason => {
+                const r = await api<{ loginFailures: string[] }>(`/schools/${schoolId}/people/${p.id}`, { method: 'DELETE', body: { reason } });
+                onDeleted(r.loginFailures.length ? `${p.name} deleted, but their login couldn't be removed: ${r.loginFailures[0]}` : `${p.name} deleted.`);
+              }} />
+          )}
         </div>
       ))}
     </div>

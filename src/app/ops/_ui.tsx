@@ -48,7 +48,7 @@ export function schoolStatus(s: Pick<SchoolFacts, 'active' | 'plan' | 'trialExpi
   if (!s.active) return { label: 'Suspended', tone: 'r', rank: 0 };
   if (s.plan === 'pilot' && s.trialExpired) return { label: 'Pilot ended', tone: 'r', rank: 1 };
   if (s.plan === 'pilot' && s.trialDaysLeft !== null && s.trialDaysLeft <= 14) return { label: 'Pilot ending', tone: 'a', rank: 2 };
-  if (s.plan === 'pilot') return { label: 'Active', tone: 'b', rank: 3 };
+  if (s.plan === 'pilot') return { label: 'Pilot running', tone: 'b', rank: 3 };
   return { label: 'Live', tone: 'g', rank: 4 };
 }
 export function StatusChip({ s }: { s: Parameters<typeof schoolStatus>[0] }) {

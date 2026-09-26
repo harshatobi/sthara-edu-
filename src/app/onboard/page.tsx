@@ -133,7 +133,7 @@ export default function OnboardPage() {
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm text-amber-700 font-medium text-left">
-            <Clock className="w-4 h-4 inline -mt-0.5 mr-1.5" />Your {trialDays}-day free trial starts now. Add your teachers and students from the Admin dashboard.
+            <Clock className="w-4 h-4 inline -mt-0.5 mr-1.5" />Your {trialDays}-day pilot starts now. Our team will contact you to confirm the pilot fee and terms. Add your teachers and students from the Admin dashboard.
           </div>
 
           <Link
@@ -181,7 +181,7 @@ export default function OnboardPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center space-x-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 mb-4">
             <Sparkles className="w-4 h-4 text-yellow-400" />
-            <span className="text-white/80 text-sm font-semibold">Free {trialDays}-Day Trial — No Credit Card</span>
+            <span className="text-white/80 text-sm font-semibold">Paid {trialDays}-Day Pilot, Credited If You Continue</span>
           </div>
           <h1 className="text-4xl font-black text-white mb-2">Get Started with Sthara</h1>
           <p className="text-white/60 font-medium">AI-powered learning management for your school</p>
@@ -438,8 +438,8 @@ export default function OnboardPage() {
                 </div>
 
                 <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200 text-sm text-blue-700 font-medium">
-                  <Clock className="w-4 h-4 inline -mt-0.5 mr-1" /><strong>{trialDays}-day free trial</strong> starts immediately. No credit card required. 
-                  Add unlimited teachers and students during your trial.
+                  <Clock className="w-4 h-4 inline -mt-0.5 mr-1" /><strong>{trialDays}-day pilot</strong> starts immediately. Our team contacts you to confirm the pilot fee and terms,
+                  which are credited in full if your school continues.
                 </div>
 
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-xs text-gray-500">

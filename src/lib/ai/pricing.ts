@@ -41,18 +41,15 @@ export const AI_FEATURES = {
   quizGrade:        { label: 'Quiz grading', who: 'Student' },
   homeworkGenerate: { label: 'Homework generation (student)', who: 'Student' },
   gradeImage:       { label: 'Photo grading', who: 'Student' },
-  practice:         { label: 'Practice questions', who: 'Teacher' },
   quizGen:          { label: 'Quiz creator', who: 'Teacher' },
   homeworkGen:      { label: 'Homework creator', who: 'Teacher' },
   paperGen:         { label: 'Question paper generator', who: 'Teacher' },
   copilot:          { label: 'Teaching copilot', who: 'Teacher' },
   lessonDraft:      { label: 'Lesson plan drafting', who: 'Teacher' },
-  analyzeSyllabus:  { label: 'Syllabus analysis', who: 'Teacher' },
   captureGrade:     { label: 'Capture & AI grading', who: 'Teacher' },
   homeworkGrade:    { label: 'Homework photo grading', who: 'Student' },
   adminAi:          { label: 'Admin AI assistant', who: 'Admin' },
   parentAsk:        { label: 'Ask the School OS', who: 'Parent' },
-  analyzeCourse:    { label: 'Course analysis', who: 'Operator' },
 } as const;
 
 export type AiFeature = keyof typeof AI_FEATURES;

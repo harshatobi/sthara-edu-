@@ -37,13 +37,13 @@ export default function TermsPage() {
               </p>
             </Section>
 
-            <Section title="3. Trial & Subscription">
+            <Section title="3. Pilot & Subscription">
               <ul>
-                <li>All new schools receive a <strong>30-day free trial</strong> with full platform access</li>
-                <li>After the trial, continued access requires a paid subscription</li>
-                <li>Pricing is published on our website and may change with 30 days' notice</li>
-                <li>Schools are billed per-institution, not per-user</li>
-                <li>Data is retained for 60 days after subscription ends before permanent deletion</li>
+                <li>New schools start with a <strong>paid pilot</strong>: one grade for one term, at the full price of the chosen plan</li>
+                <li>Pilot fees are credited in full to the annual subscription if the school continues</li>
+                <li>After the pilot, continued access requires an annual subscription</li>
+                <li>Plans are priced per student per year; current prices are published on our website and may change with 30 days' notice</li>
+                <li>Data is retained for 60 days after a pilot or subscription ends before permanent deletion</li>
               </ul>
             </Section>
 

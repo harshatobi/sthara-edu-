@@ -6,24 +6,16 @@ import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-ic
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import type { RegistrySchool } from '@/lib/ops/attention';
-import { PLANS, PLAN_INFO, PLATFORM_SETTINGS, SCHOOL_FIELD_LABELS, type Plan, type PlatformKey, type SchoolPatch } from '@/lib/settings/registry';
-import { Table, downloadCsv, errText, fmtDate, fmtDateTime, num } from '../_ui';
+import { journalLabel, journalValue } from '@/lib/ops/journal';
+import { Table, downloadCsv, errText, fmtDateTime, num } from '../_ui';
 import { useOpsApi } from '../useOpsApi';
 
 interface ConsoleRow { id: number; at: string; actor_email: string | null; scope: 'platform' | 'school'; school_id: string | null; key: string; old_value: unknown; new_value: unknown; reason: string }
 interface DataRow { id: number; at: string; actor: string; actor_role: string | null; action: string; table_name: string; row_id: string | null; school_id: string | null; old_values: Record<string, unknown> | null; new_values: Record<string, unknown> | null }
 type Source = 'console' | 'data';
 
-const label = (r: ConsoleRow) => r.scope === 'platform'
-  ? (PLATFORM_SETTINGS[r.key as PlatformKey]?.label ?? r.key)
-  : (SCHOOL_FIELD_LABELS[r.key as keyof SchoolPatch] ?? r.key);
-const val = (key: string, v: unknown) => {
-  if (v === null || v === undefined) return 'None';
-  if (typeof v === 'boolean') return v ? 'On' : 'Off';
-  if (key === 'plan' && typeof v === 'string') return (PLANS as readonly string[]).includes(v) ? PLAN_INFO[v as Plan].label : v;
-  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return fmtDate(v);
-  return typeof v === 'string' ? v || 'Empty' : JSON.stringify(v);
-};
+const label = (r: ConsoleRow) => journalLabel(r.scope, r.key);
+const val = (r: ConsoleRow, v: unknown) => journalValue(r.scope, r.key, v);
 /** Fields a data-trail UPDATE actually changed. */
 const changedKeys = (r: DataRow) => {
   if (r.action !== 'UPDATE' || !r.old_values || !r.new_values) return [];
@@ -64,7 +56,7 @@ export default function AuditConsole() {
     const stamp = new Date().toISOString().slice(0, 10);
     if (source === 'console') {
       downloadCsv(`sthara-console-changes-${stamp}.csv`, [['When (IST)', 'Scope', 'School', 'Setting', 'From', 'To', 'Reason', 'By'],
-        ...(shown as ConsoleRow[]).map(r => [fmtDateTime(r.at), r.scope, r.scope === 'school' ? name(r.school_id) : '', label(r), val(r.key, r.old_value), val(r.key, r.new_value), r.reason, r.actor_email])]);
+        ...(shown as ConsoleRow[]).map(r => [fmtDateTime(r.at), r.scope, r.scope === 'school' ? name(r.school_id) : '', label(r), val(r, r.old_value), val(r, r.new_value), r.reason, r.actor_email])]);
     } else {
       downloadCsv(`sthara-data-audit-${stamp}.csv`, [['When (IST)', 'School', 'Action', 'Table', 'Record', 'Changed fields', 'By', 'Role'],
         ...(shown as DataRow[]).map(r => [fmtDateTime(r.at), name(r.school_id), r.action, r.table_name, r.row_id, changedKeys(r).join(' '), r.actor, r.actor_role])]);
@@ -105,7 +97,7 @@ export default function AuditConsole() {
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(r.at)}</td>
                     <td>{r.scope === 'platform' ? <Chip tone="p">PLATFORM</Chip> : name(r.school_id)}</td>
                     <td className="nm">{label(r)}</td>
-                    <td><span className="muted">{val(r.key, r.old_value)}</span> → <b>{val(r.key, r.new_value)}</b></td>
+                    <td><span className="muted">{val(r, r.old_value)}</span> → <b>{val(r, r.new_value)}</b></td>
                     <td>{r.reason}</td>
                     <td className="muted" style={{ overflowWrap: 'anywhere' }}>{r.actor_email ?? '—'}</td>
                   </tr>

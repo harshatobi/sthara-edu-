@@ -136,7 +136,8 @@ export default function LoginPage() {
       }
       document.cookie = `__role=${account.role}; path=/; max-age=43200; SameSite=Lax`;
       document.cookie = `__session=${data.session.access_token}; path=/; max-age=43200; SameSite=Lax`;
-      router.replace(`/${account.role}`);
+      // Operators land in the Platform Manager; everyone else in their portal.
+      router.replace(account.role === 'superadmin' ? '/ops' : `/${account.role}`);
     } catch (err) {
       setCredsError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
     } finally {

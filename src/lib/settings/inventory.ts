@@ -104,7 +104,7 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
     detail: aiKey
       ? 'Billed key used by every AI route (GEMINI_API_KEY).'
       : aiOn ? 'Missing while AI features are on: the tutor, grading and generators all fail. Set GEMINI_API_KEY.' : 'Missing. AI is paused, so nothing is failing yet.',
-    enforcedAt: ['16 AI routes under /api'],
+    enforcedAt: ['every AI route under /api'],
   });
   add({
     id: 'env.tutor_secret', group: G1, label: 'Tutor session signing secret', source: 'environment',

@@ -80,7 +80,10 @@ export async function gradePages(db: SupabaseClient, a: any, paths: string[], me
  * the AI's suggestion. Never marks it approved: the teacher confirms in review.
  */
 export async function storeCapture(db: SupabaseClient, a: any, studentId: string, paths: string[], grade: HandwrittenGrade, opts: { replaceApproved?: boolean } = {}) {
-  const { data: existing } = await db.from('submissions').select('id, teacher_approved').eq('assignment_id', a.id).eq('student_id', studentId).maybeSingle();
+  const { data: existing } = await db.from('submissions').select('id, teacher_approved, ai_result').eq('assignment_id', a.id).eq('student_id', studentId).maybeSingle();
+  // Reversals (reopened grades) stay on the record across a re-capture or re-read.
+  const history = Array.isArray((existing?.ai_result as any)?.history) ? (existing!.ai_result as any).history : undefined;
+  if (history) (grade as any).history = history;
   if (existing?.teacher_approved === true && !opts.replaceApproved) {
     throw new GradingError('This work is already graded. Open it to change the mark.', 409);
   }

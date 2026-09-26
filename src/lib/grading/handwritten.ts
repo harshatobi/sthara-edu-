@@ -49,6 +49,14 @@ export interface HandwrittenGrade {
   capturedBy: string | null;
   /** Written when the teacher confirms: how many AI marks they kept. */
   review?: { kept: number; changed: number; by: string; at: string; suggested: number; confirmed: number };
+  /** Reversals: grades reopened for review, with the marks that were withdrawn. */
+  history?: HistoryEntry[];
+}
+
+export interface HistoryEntry {
+  action: 'reopened';
+  by: string; byName?: string; at: string; reason: string;
+  previous: { score: number | null; max: number | null; note: string | null; marks: number[] };
 }
 
 const s = (v: unknown, n = 2000) => (typeof v === 'string' ? v.trim().slice(0, n) : '');

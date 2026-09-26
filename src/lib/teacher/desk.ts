@@ -4,7 +4,7 @@
  * canon teacher pages render.
  */
 import { sanitizeQuestions, suggestedScores, type Question } from './questions';
-import { gradeOf, type HandwrittenGrade } from '@/lib/grading/handwritten';
+import { gradeOf, type HandwrittenGrade, type HistoryEntry } from '@/lib/grading/handwritten';
 import { normClass, normSubject, scopeClasses, subjectsIn, type ScopeEntry } from './scope';
 
 export type WorkType = 'homework' | 'quiz' | 'classwork';
@@ -62,6 +62,8 @@ export interface TSubmission {
   grade: HandwrittenGrade | null;
   /** Who photographed the work. */
   source: 'student' | 'teacher_capture' | 'typed';
+  /** Grades reopened for review (most recent last). */
+  history: HistoryEntry[];
 }
 
 export interface TAssignment {
@@ -209,6 +211,7 @@ function shapeSubmission(sub: any, questions: Question[], name: string, items: a
     kind: sub.type === 'handwritten' || (!Object.keys(answers).length && (sub.image_urls || []).length) ? 'handwritten' : 'typed',
     grade: g,
     source: g ? g.source : sub.type === 'handwritten' ? 'student' : 'typed',
+    history: Array.isArray(r?.history) ? r.history : [],
   };
 }
 

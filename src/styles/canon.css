@@ -797,3 +797,9 @@
   .canon .cs-add { grid-column:1 / -1; }
   .canon .cs-stats { margin-left:0; width:100%; }
 }
+.canon .rv { margin-top:16px; border-top:1px dashed var(--line); padding-top:12px; display:flex; flex-direction:column; gap:10px; }
+.canon .rv-acts { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.canon .rv-confirm { border:1px solid #FECDD3; background:#FFF7F8; border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.canon .rv-confirm label { font-size:12.5px; line-height:1.5; color:#8A1030; }
+.canon .rv-hist { font-size:12.5px; color:var(--mut); display:flex; flex-direction:column; gap:4px; background:#F8FAFD; border-radius:10px; padding:10px 12px; }
+.canon .rv-hist b { display:flex; align-items:center; gap:5px; color:var(--ink); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; }

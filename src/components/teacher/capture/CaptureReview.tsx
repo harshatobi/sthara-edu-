@@ -16,6 +16,7 @@ import { marksOf } from '@/lib/teacher/questions';
 import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import type { Confidence } from '@/lib/grading/handwritten';
+import Reversals from './Reversals';
 
 const CONF: Record<Confidence, { label: string; tone: 'g' | 'a' | 'r' }> = {
   high: { label: 'Clear', tone: 'g' }, medium: { label: 'Check', tone: 'a' }, low: { label: 'Check first', tone: 'r' },
@@ -192,6 +193,7 @@ export default function CaptureReview({ a, sub, onPick, onBack }: { a: TAssignme
             </button>
             {sub.state === 'graded' && sub.score !== null && sub.max && <Chip tone={scoreTone(sub.score, sub.max)}>Graded {sub.score}/{sub.max}</Chip>}
           </div>
+          <Reversals sub={sub} onDone={(msg, removed) => { toast(msg); if (removed) onBack(); }} />
           <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
             <Camera size={12} weight="bold" /> The AI only suggests. Your confirmed marks count toward {sub.studentName.split(' ')[0]}&apos;s True Mastery Level, and the student and family are told.
           </p>

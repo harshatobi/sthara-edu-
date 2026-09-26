@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
           adminEmail: (adminEmail || '').trim().toLowerCase(),
           branches: institutionType === 'college' ? (branches || []) : [],
           active: true,
-          plan: 'trial',
+          plan: 'pilot',
         },
         trial_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30-day trial
       })

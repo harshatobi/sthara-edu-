@@ -29,6 +29,12 @@ export const ICON_COLORS: Record<string, string> = {
   DownloadSimple: '#0EA5E9',     // sky — export
   Sparkle: '#D946EF',            // fuchsia — AI-generated / regenerate
   ShieldCheck: '#059669',        // emerald (dark) — admin / security / DPDP
+  Buildings: '#2F6BFF',          // blue — schools / tenants (operator console)
+  AddressBook: '#06B6D4',        // cyan — people directory
+  Coins: '#F59E0B',              // amber — spend / cost
+  SlidersHorizontal: '#7C3AED',  // violet — settings / controls
+  Heartbeat: '#F43F5E',          // rose — system health
+  ClockCounterClockwise: '#64748B', // slate — history / audit
   CalendarBlank: '#0891B2',      // cyan (dark) — schedule / staff
   House: '#0EA5E9',              // sky — home / family
   ChatCircleDots: '#14B8A6',     // teal — messages

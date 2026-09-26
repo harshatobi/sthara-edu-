@@ -30,8 +30,8 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   },
 };
 
-/** Rupees per US dollar used for display only; stored costs are in USD. */
-export const USD_TO_INR = 88;
+/** Rupees per US dollar for display (Sthara's planning rate); stored costs are in USD. */
+export const USD_TO_INR = 95.5;
 
 /** Every place in the product that calls a model, keyed by what it's for. */
 export const AI_FEATURES = {

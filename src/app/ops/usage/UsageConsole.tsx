@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowsClockwiseIcon as ArrowsClockwise } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
 import { BuildingsIcon as Buildings } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { ChartBarIcon as ChartBar } from '@phosphor-icons/react/dist/ssr/ChartBar';
@@ -15,7 +16,6 @@ import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { featureLabel, type ModelPrice } from '@/lib/ai/pricing';
 import { RANGES, daysInIstMonth, type RangeKey } from '@/lib/ai/window';
 import { useOpsApi } from '../useOpsApi';
-import OpsFrame from '../OpsFrame';
 
 interface Totals {
   calls: number; failed: number; input: number; output: number; thinking: number; cached: number;
@@ -63,9 +63,13 @@ function useMoney(currency: Currency, rate: number) {
 }
 
 /** Operator console > AI usage: tokens and spend on the model APIs, by feature, school, user and model. */
-export default function UsageConsole({ devPreview }: { devPreview: boolean }) {
+export default function UsageConsole() {
   const api = useOpsApi();
-  const [range, setRange] = useState<RangeKey>('30d');
+  const params = useSearchParams();
+  const [range, setRange] = useState<RangeKey>(() => {
+    const r = params.get('range');
+    return r && r in RANGES ? (r as RangeKey) : '30d';
+  });
   const [currency, setCurrency] = useState<Currency>('INR');
   const [tab, setTab] = useState<Tab>('features');
   const [data, setData] = useState<Data | null>(null);
@@ -84,16 +88,14 @@ export default function UsageConsole({ devPreview }: { devPreview: boolean }) {
     return () => { live = false; };
   }, [api, range, nonce]);
 
-  const money = useMoney(currency, data?.usdToInr ?? 88);
+  const money = useMoney(currency, data?.usdToInr ?? 95.5);
   const t = data?.usage.totals;
 
   return (
-    <OpsFrame devPreview={devPreview}>
-      <PageBar eyebrow="OPERATOR CONSOLE" title="AI usage & cost"
+    <>
+      <PageBar eyebrow="PLATFORM MANAGER" title="AI usage & cost"
         sub={data ? <>{data.window.label} · list prices checked {data.pricesChecked} · updated {when(data.checkedAt)}</> : 'Tokens and spend on the AI model APIs, call by call.'}
         actions={<>
-          <Link className="btn" href="/ops">Schools</Link>
-          <Link className="btn" href="/ops/settings">Settings</Link>
           <button className="btn" onClick={reload} disabled={loading} aria-label="Refresh">
             <ArrowsClockwise size={15} weight="bold" /> {loading ? 'Loading…' : 'Refresh'}
           </button>
@@ -154,7 +156,7 @@ export default function UsageConsole({ devPreview }: { devPreview: boolean }) {
           {t.calls === 0 && <div style={{ marginTop: 18 }}><PriceList data={data} currency={currency} /></div>}
         </div>
       )}
-    </OpsFrame>
+    </>
   );
 }
 

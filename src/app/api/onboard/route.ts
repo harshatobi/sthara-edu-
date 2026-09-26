@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       phone: str(b?.phone, 30) || null,
       website: str(b?.website, 200) || null,
       adminEmail, adminUid: uid,
-      plan: 'trial', active: true,
+      plan: 'pilot', active: true,
     },
   }).select('id').single();
 

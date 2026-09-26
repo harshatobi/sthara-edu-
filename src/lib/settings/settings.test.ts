@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  PLANS, PLAN_INFO, annualValue, effectivePrice,
   PLATFORM_DEFAULTS, accessBlock, normaliseCode, parsePlatformValue, parseReason, parseSchoolPatch,
   resolvePlatform, schoolPolicy, type SchoolRow,
 } from './registry';
@@ -34,9 +35,10 @@ test('platform values: defaults, validation, stored overrides', () => {
   assert.equal((v as Record<string, unknown>)['made.up'], undefined);
 });
 
-test('school policy: trial, suspension, AI, legacy rows', () => {
+test('school policy: pilot, suspension, AI, legacy rows', () => {
   const p = schoolPolicy(school(), NOW);
-  assert.equal(p.plan, 'trial');
+  // Rows written before the tiers were named read as their tier: 'trial' is a pilot.
+  assert.equal(p.plan, 'pilot');
   assert.equal(p.trialDaysLeft, 10);
   assert.equal(p.trialExpired, false);
   assert.equal(p.active, true);
@@ -47,14 +49,18 @@ test('school policy: trial, suspension, AI, legacy rows', () => {
   assert.equal(expired.trialDaysLeft, 0);
   // A few hours left still counts as a day.
   assert.equal(schoolPolicy(school({ trial_expires_at: new Date(NOW + 3_600_000).toISOString() }), NOW).trialExpired, false);
-  // Paid plans ignore a stale trial date.
+  // Paid tiers ignore a stale pilot date; legacy 'standard' is Sthamba.
   const paid = schoolPolicy(school({ trial_expires_at: new Date(NOW - DAY).toISOString(), settings: { plan: 'standard', code: 'X' } }), NOW);
+  assert.equal(paid.plan, 'sthamba');
   assert.equal(paid.trialExpired, false);
   assert.equal(paid.trialEndsAt, null);
-  // Legacy rows without flags are active with AI on; unknown plans are treated as trial.
+  assert.equal(schoolPolicy(school({ settings: { plan: 'premium' } }), NOW).plan, 'shikhara');
+  assert.equal(schoolPolicy(school({ settings: { plan: 'enterprise' } }), NOW).plan, 'mandala');
+  assert.equal(schoolPolicy(school({ settings: { plan: 'shikhara' } }), NOW).plan, 'shikhara');
+  // Legacy rows without flags are active with AI on; unknown plans are treated as a pilot.
   const legacy = schoolPolicy(school({ settings: { plan: 'gold' } }), NOW);
   assert.equal(legacy.active, true);
-  assert.equal(legacy.plan, 'trial');
+  assert.equal(legacy.plan, 'pilot');
   assert.equal(legacy.code, null);
   const sus = schoolPolicy(school({ settings: { active: false, aiEnabled: false, suspension: { at: '2026-09-20', reason: 'Unpaid' } } }), NOW);
   assert.equal(sus.active, false);
@@ -82,11 +88,12 @@ test('school edits: only real changes, validated', () => {
   assert.ok('patch' in t && t.patch.trialEndsAt === '2026-12-31T18:29:59.000Z');
   assert.ok('error' in parseSchoolPatch(cur, { trialEndsAt: '2030-01-01' }, NOW));
   assert.ok('error' in parseSchoolPatch(cur, { trialEndsAt: '31/12/2026' }, NOW));
-  // Moving a paid school onto trial needs an end date.
+  // Moving a paid school onto a pilot needs an end date; old plan names are not accepted on write.
   const paid = schoolPolicy(school({ settings: { plan: 'standard', code: 'X1X' } }), NOW);
   assert.ok('error' in parseSchoolPatch(paid, { plan: 'trial' }, NOW));
-  assert.ok('patch' in parseSchoolPatch(paid, { plan: 'trial', trialEndsAt: '2026-10-31' }, NOW));
-  // Trial end is ignored for non-trial plans.
+  assert.ok('error' in parseSchoolPatch(paid, { plan: 'pilot' }, NOW));
+  assert.ok('patch' in parseSchoolPatch(paid, { plan: 'pilot', trialEndsAt: '2026-10-31' }, NOW));
+  // Pilot end is ignored for paid tiers.
   assert.deepEqual(parseSchoolPatch(paid, { trialEndsAt: '2026-10-31' }, NOW), { patch: {} });
 });
 
@@ -186,4 +193,41 @@ test('inventory: AI key only critical while AI is on; store and probe outages ar
   assert.equal(byId(down, 'platform.store').status, 'crit');
   assert.equal(byId(down, 'db.probe').status, 'crit');
   assert.match(byId(down, 'db.probe').detail, /function does not exist/);
+});
+
+test('tiers: list prices, contract price and annual value', () => {
+  assert.deepEqual(PLANS, ['pilot', 'aadhara', 'sthamba', 'shikhara', 'mandala']);
+  assert.equal(PLAN_INFO.aadhara.price, 2000);
+  assert.equal(PLAN_INFO.sthamba.price, 2500);
+  assert.equal(PLAN_INFO.shikhara.price, 3500);
+  assert.equal(PLAN_INFO.mandala.price, null);
+  const s = (settings: Record<string, unknown>) => schoolPolicy(school({ settings: { code: 'X1X', ...settings } }), NOW);
+  // List price x students on the platform, unless seats are contracted.
+  assert.equal(annualValue(s({ plan: 'shikhara' }), 100), 350_000);
+  assert.equal(annualValue(s({ plan: 'shikhara', contractStudents: 420 }), 100), 1_470_000);
+  // A contract price overrides the list price.
+  assert.equal(effectivePrice(s({ plan: 'sthamba', pricePerStudent: 2300 })), 2300);
+  // Mandala has no list price; a pilot converts at the anchor (Shikhara) unless priced.
+  assert.equal(annualValue(s({ plan: 'mandala' }), 100), null);
+  assert.equal(annualValue(s({ plan: 'mandala', pricePerStudent: 3000 }), 10), 30_000);
+  assert.equal(annualValue(s({ plan: 'pilot' }), 40), 140_000);
+  assert.equal(annualValue(s({ plan: 'aadhara' }), 0), null);
+  // Junk contract values are ignored.
+  assert.equal(s({ plan: 'sthamba', contractStudents: -3, pricePerStudent: 'lots' }).contractStudents, null);
+});
+
+test('contract edits: validated, Mandala needs a price', () => {
+  const cur = schoolPolicy(school({ settings: { plan: 'sthamba', code: 'X1X' } }), NOW);
+  const r = parseSchoolPatch(cur, { contractStudents: '420', pricePerStudent: 2400 }, NOW);
+  assert.ok('patch' in r && r.patch.contractStudents === 420 && r.patch.pricePerStudent === 2400);
+  assert.ok('error' in parseSchoolPatch(cur, { contractStudents: 0 }, NOW));
+  assert.ok('error' in parseSchoolPatch(cur, { pricePerStudent: 12.5 }, NOW));
+  assert.ok('error' in parseSchoolPatch(cur, { plan: 'mandala' }, NOW));
+  assert.ok('patch' in parseSchoolPatch(cur, { plan: 'mandala', pricePerStudent: 3000 }, NOW));
+  // Clearing a contract price is allowed on a listed tier.
+  const priced = schoolPolicy(school({ settings: { plan: 'sthamba', code: 'X1X', pricePerStudent: 2400 } }), NOW);
+  assert.deepEqual(parseSchoolPatch(priced, { pricePerStudent: '' }, NOW), { patch: { pricePerStudent: null } });
+  // An unpriced legacy Mandala school can still be suspended.
+  const legacy = schoolPolicy(school({ settings: { plan: 'enterprise', code: 'X1X' } }), NOW);
+  assert.deepEqual(parseSchoolPatch(legacy, { active: false }, NOW), { patch: { active: false } });
 });

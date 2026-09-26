@@ -806,3 +806,50 @@
 .canon .rv-hist b { display:flex; align-items:center; gap:5px; color:var(--ink); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; }
 /* Inline icons inside running text (Tailwind's preflight makes svg block-level). */
 .canon .cr-why svg, .canon .cr-summary svg, .canon .rv-hist svg, .canon .cr-marks > p.muted svg, .canon .note svg { display:inline-block; vertical-align:-2px; margin-right:3px; }
+
+/* ---------- PLATFORM MANAGER (operator console) ---------- */
+.canon .ops-sec { margin-bottom:18px; }
+.canon .ops-sec-hd { display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.canon .ops-sec-hd h2 { font-size:17px; font-weight:800; letter-spacing:-.01em; }
+.canon .ops-sec-hd p { color:var(--mut); font-size:13px; margin-top:3px; line-height:1.5; }
+.canon .ops-kpi-btn { border:1.5px solid transparent; cursor:pointer; transition:border-color .15s; }
+.canon .ops-kpi-btn:hover, .canon .ops-kpi-btn:focus-visible { border-color:var(--ink); }
+.canon .ops-tbl th { white-space:nowrap; }
+.canon .ops-tbl td { font-size:13.5px; }
+.canon .ops-tbl tbody tr.click:hover td { background:var(--body); }
+.canon .ops-tbl .nm { font-weight:700; color:var(--ink); }
+.canon .ops-tbl .sub { color:var(--mut); font-size:12px; margin-top:2px; }
+.canon .ops-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px 22px; }
+.canon .ops-facts dt { font-size:11px; font-weight:800; letter-spacing:.08em; color:var(--mut); text-transform:uppercase; }
+.canon .ops-facts dd { font-size:14px; font-weight:600; margin-top:4px; overflow-wrap:anywhere; }
+.canon .ops-reason { display:grid; gap:8px; min-width:min(360px,100%); padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--body); }
+.canon .ops-q { display:flex; gap:14px; align-items:flex-start; padding:14px 0; border-top:1px solid var(--line); flex-wrap:wrap; }
+.canon .ops-q:first-child { border-top:0; padding-top:4px; }
+.canon .ops-q .ic { flex:0 0 auto; margin-top:2px; }
+.canon .ops-q .tx { flex:1 1 280px; min-width:0; }
+.canon .ops-q .tx b { font-size:14px; }
+.canon .ops-q .tx p { color:var(--mut); font-size:13px; margin-top:3px; line-height:1.5; }
+.canon .ops-q .ac { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start; }
+.canon .ops-filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+.canon .ops-filters .cmp-in { flex:1 1 220px; min-width:0; }
+.canon .ops-filters .cmp-sel { width:auto; min-width:150px; }
+.canon .ops-check { display:grid; gap:2px; }
+.canon .ops-check a, .canon .ops-check button { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; font-size:13.5px; font-weight:600; text-align:left; }
+.canon .ops-check a:hover, .canon .ops-check button:hover { background:var(--body); }
+.canon .ops-tier { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+.canon .ops-tier button { text-align:left; border:1.5px solid var(--line); border-radius:14px; padding:12px 14px; background:#fff; }
+.canon .ops-tier button[aria-pressed="true"] { border-color:var(--ink); box-shadow:var(--sh); }
+.canon .ops-tier .t { font-weight:800; font-size:14px; }
+.canon .ops-tier .p { font-size:12.5px; color:var(--mut); margin-top:3px; }
+.canon .ops-bar { height:8px; border-radius:4px; background:var(--line); overflow:hidden; }
+.canon .ops-bar > i { display:block; height:100%; background:var(--blue); border-radius:4px; }
+@media (max-width:680px) {
+  .canon .ops-filters .cmp-sel { flex:1 1 140px; }
+  .canon .ops-q .ac { width:100%; }
+}
+.canon details.ops-grp { border-top:1px solid var(--line); }
+.canon details.ops-grp:first-of-type { border-top:0; }
+.canon details.ops-grp > summary { display:flex; align-items:center; gap:10px; padding:14px 2px; cursor:pointer; list-style:none; flex-wrap:wrap; }
+.canon details.ops-grp > summary::-webkit-details-marker { display:none; }
+.canon details.ops-grp[open] > summary svg:last-child { transform:rotate(180deg); }
+.canon details.ops-grp > .tbl-wrap { padding-bottom:14px; }

@@ -22,7 +22,8 @@ function journalValue(p: SchoolPolicy, k: keyof SchoolPatch): unknown {
 
 /**
  * PATCH /api/ops/schools/:id/settings
- *   { changes: { name?, code?, plan?, trialEndsAt?, active?, aiEnabled?, curriculum?, institutionType? },
+ *   { changes: { name?, code?, plan?, trialEndsAt?, active?, aiEnabled?, curriculum?, institutionType?,
+ *                contractStudents?, pricePerStudent? },
  *     reason, expectedUpdatedAt? }
  *   { sync: true, reason }  re-applies the sign-in bans/unbans for the school's current status.
  *
@@ -68,10 +69,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (patch.code !== undefined) settings.code = patch.code;
   if (patch.curriculum !== undefined) settings.curriculum = patch.curriculum;
   if (patch.aiEnabled !== undefined) settings.aiEnabled = patch.aiEnabled;
+  if (patch.contractStudents !== undefined) settings.contractStudents = patch.contractStudents;
+  if (patch.pricePerStudent !== undefined) settings.pricePerStudent = patch.pricePerStudent;
   if (patch.plan !== undefined) {
     settings.plan = patch.plan;
     // Leaving the trial clears its end date so an old date can't lock a paying school out.
-    if (patch.plan !== 'trial') rowPatch.trial_expires_at = null;
+    if (patch.plan !== 'pilot') rowPatch.trial_expires_at = null;
   }
   if (patch.trialEndsAt !== undefined) rowPatch.trial_expires_at = patch.trialEndsAt;
   if (patch.active !== undefined) {

@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
-import { collectInventory } from '@/lib/settings/collect';
 import { isPlatformKey, parsePlatformValue, parseReason } from '@/lib/settings/registry';
 import { getPlatformSettings, invalidateSettings } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/ops/settings — the load-bearing settings inventory, platform
- * values, every school's enforced settings and the change journal.
+ * GET /api/ops/settings — the platform-wide controls and the platform change journal.
+ * (Checks moved to /api/ops/health; per-school settings to /api/ops/schools/:id.)
  * Operators only; 404 for everyone else.
  */
 export async function GET(req: NextRequest) {
@@ -17,19 +16,13 @@ export async function GET(req: NextRequest) {
   const db = createAdminClient();
   invalidateSettings(); // the console always shows what's stored right now
   try {
-    const [inv, journal] = await Promise.all([
-      collectInventory(db),
+    const [platform, journal] = await Promise.all([
+      getPlatformSettings(db),
       db.from('settings_changes').select('id, at, actor_email, scope, school_id, key, old_value, new_value, reason')
-        .order('at', { ascending: false }).limit(300),
+        .eq('scope', 'platform').order('at', { ascending: false }).limit(300),
     ]);
-    return NextResponse.json({
-      items: inv.items,
-      platform: inv.platform,
-      platformStored: inv.platformStored,
-      schools: inv.schools,
-      journal: journal.error ? null : journal.data,
-      checkedAt: new Date().toISOString(),
-    });
+    const { __stored, ...values } = platform;
+    return NextResponse.json({ platform: values, platformStored: __stored, journal: journal.error ? null : journal.data, checkedAt: new Date().toISOString() });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Could not load settings.' }, { status: 500 });
   }

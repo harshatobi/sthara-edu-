@@ -30,8 +30,8 @@ export const PLATFORM_SETTINGS = {
   },
   'trial.default_days': {
     type: 'integer', default: 30, min: 7, max: 180, unit: 'days', group: 'Accounts',
-    label: 'Default trial length',
-    help: 'Trial given to schools created through self-serve sign-up, and the starting value when an operator creates a trial school.',
+    label: 'Default pilot length',
+    help: 'Pilot length given to schools created through self-serve sign-up, and the starting value when an operator creates a pilot school. A pilot is one term.',
     enforcedAt: ['/api/onboard', '/api/ops/schools (POST default)'],
   },
   'notice.message': {
@@ -95,13 +95,41 @@ export function resolvePlatform(rows: { key: string; value: unknown }[]): Platfo
 // Per-school settings (stored on public.schools: columns and the settings jsonb)
 // ---------------------------------------------------------------------------
 
-export const PLANS = ['trial', 'standard', 'premium', 'enterprise'] as const;
+/**
+ * Sthara's commercial tiers, priced per student per year (INR). There are no
+ * free trials: a school starts on a paid pilot (one grade, one term, full
+ * price, 100% credited to the annual contract on conversion). A pilot is the
+ * only time-bound plan; its end date lives in schools.trial_expires_at.
+ */
+export const PLANS = ['pilot', 'aadhara', 'sthamba', 'shikhara', 'mandala'] as const;
 export type Plan = (typeof PLANS)[number];
+
+export const PLAN_INFO: Record<Plan, { label: string; price: number | null; position: string; note: string }> = {
+  pilot:    { label: 'Paid pilot', price: null, position: 'Pilot', note: 'One grade, one term, at full tier price. 100% credited to the annual contract on conversion.' },
+  aadhara:  { label: 'Aadhara',  price: 2000, position: 'Floor',    note: 'Entry tier. Offer only when price is the blocker.' },
+  sthamba:  { label: 'Sthamba',  price: 2500, position: 'Standard', note: 'Standard tier.' },
+  shikhara: { label: 'Shikhara', price: 3500, position: 'Anchor',   note: 'Anchor tier: lead with this one.' },
+  mandala:  { label: 'Mandala',  price: null, position: 'Custom',   note: 'School groups and trusts, multi-campus. Price agreed per contract.' },
+};
+/** Plan names used before the tiers were named; read as their tier so old rows keep working. */
+const LEGACY_PLANS: Record<string, Plan> = { trial: 'pilot', standard: 'sthamba', premium: 'shikhara', enterprise: 'mandala' };
+export const planOf = (v: unknown): Plan =>
+  (PLANS as readonly unknown[]).includes(v) ? (v as Plan) : (typeof v === 'string' && LEGACY_PLANS[v]) || 'pilot';
+export const planLabel = (p: Plan) => PLAN_INFO[p].label;
+/** Price per student per year in force for a school: its contract price, else the tier's list price. */
+export const effectivePrice = (p: Pick<SchoolPolicy, 'plan' | 'pricePerStudent'>) => p.pricePerStudent ?? PLAN_INFO[p.plan].price;
+/** Annual contract value in INR, or null when there's no price or seat count to work from. */
+export function annualValue(p: Pick<SchoolPolicy, 'plan' | 'pricePerStudent' | 'contractStudents'>, students: number): number | null {
+  const price = effectivePrice(p) ?? (p.plan === 'pilot' ? PLAN_INFO.shikhara.price : null);
+  const seats = p.contractStudents ?? students;
+  return price !== null && seats > 0 ? price * seats : null;
+}
 export const CURRICULA = ['CBSE', 'ICSE', 'State Board', 'IB', 'Cambridge IGCSE', 'Other'] as const;
 
 /** The keys of schools.settings the product reads. Stored as jsonb, so every field is checked on read. */
 export interface SchoolSettings {
   code?: unknown; plan?: unknown; active?: unknown; aiEnabled?: unknown; curriculum?: unknown; testSchool?: unknown;
+  contractStudents?: unknown; pricePerStudent?: unknown;
   suspension?: { at?: unknown; reason?: unknown } | null;
   [k: string]: unknown;
 }
@@ -131,12 +159,18 @@ export interface SchoolPolicy {
   institutionType: 'school' | 'college';
   testSchool: boolean;
   suspension: { at: string; reason: string } | null;
+  /** Students on the contract (billing seats); null = bill on actual head count. */
+  contractStudents: number | null;
+  /** Agreed INR per student per year; null = the tier's list price. Required for Mandala. */
+  pricePerStudent: number | null;
 }
+
+const posInt = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null);
 
 export function schoolPolicy(s: SchoolRow, now = Date.now()): SchoolPolicy {
   const st = s.settings || {};
-  const plan: Plan = (PLANS as readonly unknown[]).includes(st.plan) ? (st.plan as Plan) : 'trial';
-  const onTrial = plan === 'trial';
+  const plan = planOf(st.plan);
+  const onTrial = plan === 'pilot';
   const ends = onTrial && s.trial_expires_at ? new Date(s.trial_expires_at).getTime() : null;
   const daysLeft = ends === null || Number.isNaN(ends) ? null : Math.max(0, Math.ceil((ends - now) / 86_400_000));
   return {
@@ -154,13 +188,15 @@ export function schoolPolicy(s: SchoolRow, now = Date.now()): SchoolPolicy {
     institutionType: s.institution_type === 'college' ? 'college' : 'school',
     testSchool: st.testSchool === true,
     suspension: st.active === false && st.suspension ? { at: String(st.suspension.at || ''), reason: String(st.suspension.reason || '') } : null,
+    contractStudents: posInt(st.contractStudents),
+    pricePerStudent: posInt(st.pricePerStudent),
   };
 }
 
 /** Why a school's users may not use the product right now, or null. Operators are never blocked. */
 export function accessBlock(p: Pick<SchoolPolicy, 'active' | 'trialExpired'>): { code: 'suspended' | 'trial_expired'; message: string } | null {
   if (!p.active) return { code: 'suspended', message: 'Your school’s Sthara account is suspended. Contact your school office.' };
-  if (p.trialExpired) return { code: 'trial_expired', message: 'Your school’s Sthara trial has ended. Contact your school office.' };
+  if (p.trialExpired) return { code: 'trial_expired', message: 'Your school’s Sthara pilot has ended. Contact your school office.' };
   return null;
 }
 
@@ -175,6 +211,8 @@ export interface SchoolPatch {
   aiEnabled?: boolean;
   curriculum?: string;
   institutionType?: 'school' | 'college';
+  contractStudents?: number | null;
+  pricePerStudent?: number | null;
 }
 
 /**
@@ -194,21 +232,34 @@ export function parseSchoolPatch(current: SchoolPolicy, raw: Record<string, unkn
     if (v !== current.code) patch.code = v;
   }
   if (raw.plan !== undefined) {
-    if (!(PLANS as readonly unknown[]).includes(raw.plan)) return { error: 'Pick a valid plan.' };
+    if (!(PLANS as readonly unknown[]).includes(raw.plan)) return { error: 'Pick a valid tier.' };
     if (raw.plan !== current.plan) patch.plan = raw.plan as Plan;
   }
   const plan = patch.plan ?? current.plan;
-  if (raw.trialEndsAt !== undefined && plan === 'trial') {
-    if (typeof raw.trialEndsAt !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw.trialEndsAt)) return { error: 'Trial end must be a date.' };
+  if (raw.trialEndsAt !== undefined && plan === 'pilot') {
+    if (typeof raw.trialEndsAt !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw.trialEndsAt)) return { error: 'Pilot end must be a date.' };
     // End of that day, India time.
     const t = new Date(`${raw.trialEndsAt}T23:59:59+05:30`);
-    if (Number.isNaN(t.getTime())) return { error: 'Trial end must be a date.' };
-    if (t.getTime() > now + 730 * 86_400_000) return { error: 'A trial can run at most two years ahead.' };
+    if (Number.isNaN(t.getTime())) return { error: 'Pilot end must be a date.' };
+    if (t.getTime() > now + 730 * 86_400_000) return { error: 'A pilot can run at most two years ahead.' };
     const iso = t.toISOString();
     if (!current.trialEndsAt || new Date(current.trialEndsAt).toISOString() !== iso) patch.trialEndsAt = iso;
   }
-  if (patch.plan === 'trial' && patch.trialEndsAt === undefined && !current.trialEndsAt) {
-    return { error: 'Moving a school to the trial plan needs a trial end date.' };
+  if (patch.plan === 'pilot' && patch.trialEndsAt === undefined && !current.trialEndsAt) {
+    return { error: 'Moving a school to a pilot needs a pilot end date.' };
+  }
+  for (const k of ['contractStudents', 'pricePerStudent'] as const) {
+    if (raw[k] === undefined) continue;
+    const v = raw[k] === null || raw[k] === '' ? null : Number(raw[k]);
+    const max = k === 'contractStudents' ? 200_000 : 100_000;
+    if (v !== null && (!Number.isInteger(v) || v < 1 || v > max)) {
+      return { error: k === 'contractStudents' ? `Contracted students must be a whole number from 1 to ${max.toLocaleString('en-IN')}, or empty.` : `Price per student must be whole rupees from 1 to ${max.toLocaleString('en-IN')}, or empty for the list price.` };
+    }
+    if (v !== current[k]) patch[k] = v;
+  }
+  const touchesPrice = patch.plan !== undefined || patch.pricePerStudent !== undefined;
+  if (touchesPrice && plan === 'mandala' && (patch.pricePerStudent === undefined ? current.pricePerStudent : patch.pricePerStudent) === null) {
+    return { error: 'Mandala has no list price: set the agreed price per student.' };
   }
   if (raw.active !== undefined) {
     if (typeof raw.active !== 'boolean') return { error: 'Status must be active or suspended.' };
@@ -231,8 +282,9 @@ export function parseSchoolPatch(current: SchoolPolicy, raw: Record<string, unkn
 
 /** Human labels for journal entries and the change preview. */
 export const SCHOOL_FIELD_LABELS: Record<keyof SchoolPatch, string> = {
-  name: 'School name', code: 'School code', plan: 'Plan', trialEndsAt: 'Trial ends', active: 'Status',
+  name: 'School name', code: 'School code', plan: 'Tier', trialEndsAt: 'Pilot ends', active: 'Status',
   aiEnabled: 'AI features', curriculum: 'Curriculum', institutionType: 'Institution type',
+  contractStudents: 'Contracted students', pricePerStudent: 'Price per student',
 };
 
 export const REASON_MIN = 4;

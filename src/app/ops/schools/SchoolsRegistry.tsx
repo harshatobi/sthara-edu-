@@ -16,13 +16,13 @@ import { useOpsApi } from '../useOpsApi';
 
 type SortKey = 'name' | 'status' | 'plan' | 'ends' | 'students' | 'value' | 'created';
 const STATUS_FILTERS = [
-  ['all', 'All'], ['live', 'Live'], ['pilot', 'In pilot'], ['ending', 'Pilot ending'], ['ended', 'Pilot ended'], ['suspended', 'Suspended'],
+  ['all', 'All'], ['live', 'Live'], ['pilot', 'Active pilots'], ['ending', 'Pilot ending'], ['ended', 'Pilot ended'], ['suspended', 'Suspended'],
 ] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number][0];
 
 const matchStatus = (s: RegistrySchool, f: StatusFilter) => {
   const st = schoolStatus(s).label;
-  return f === 'all' || (f === 'live' && st === 'Live') || (f === 'pilot' && s.plan === 'pilot' && s.active)
+  return f === 'all' || (f === 'live' && st === 'Live') || (f === 'pilot' && s.plan === 'pilot' && s.active && !s.trialExpired)
     || (f === 'ending' && st === 'Pilot ending') || (f === 'ended' && st === 'Pilot ended') || (f === 'suspended' && !s.active);
 };
 
@@ -71,7 +71,7 @@ export default function SchoolsRegistry() {
 
   const th = (k: SortKey, label: string, cls = '') => (
     <th className={cls} aria-sort={sort.k === k ? (sort.asc ? 'ascending' : 'descending') : 'none'}>
-      <button type="button" style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+      <button type="button" style={{ font: 'inherit', color: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4 }}
         onClick={() => setSort(s => ({ k, asc: s.k === k ? !s.asc : true }))}>
         {label}{sort.k === k && (sort.asc ? <CaretUp size={11} weight="bold" /> : <CaretDown size={11} weight="bold" />)}
       </button>
@@ -116,7 +116,7 @@ export default function SchoolsRegistry() {
               const gaps = [!s.curriculum && 'curriculum', s.classes === 0 && 'classes', s.schoolAdmins === 0 && 'admin'].filter(Boolean) as string[];
               return (
                 <tr key={s.id} className="click" onClick={() => router.push(`/ops/schools/${s.id}`)}>
-                  <td><div className="nm">{s.name}</div><div className="sub"><span className="mono">{s.code ?? 'NO CODE'}</span> · {s.curriculum ?? 'Curriculum not set'}{s.testSchool ? ' · test' : ''}</div></td>
+                  <td style={{ minWidth: 220 }}><div className="nm">{s.name}</div><div className="sub"><span className="mono">{s.code ?? 'NO CODE'}</span> · {s.curriculum ?? 'Curriculum not set'}{s.testSchool ? ' · test' : ''}</div></td>
                   <td><PlanChip plan={s.plan} /></td>
                   <td><StatusChip s={s} />{!s.aiEnabled && <> <Chip tone="n">AI OFF</Chip></>}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{s.plan === 'pilot' ? <>{fmtDate(s.trialEndsAt)}<div className="sub">{s.trialExpired ? 'Ended' : s.trialDaysLeft !== null ? `${s.trialDaysLeft} days left` : ''}</div></> : '—'}</td>

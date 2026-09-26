@@ -244,18 +244,18 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
   });
   const expired = S.filter(s => s.active && s.trialExpired);
   add({
-    id: 'school.trial_expired', group: G4, label: 'Expired trials', source: 'school',
+    id: 'school.trial_expired', group: G4, label: 'Ended pilots', source: 'school',
     value: String(expired.length), status: expired.some(s => !s.testSchool && s.people > 0) ? 'warn' : expired.length ? 'info' : 'ok',
     items: expired.map(s => `${s.name} (${plural(s.people, 'account')})`),
-    detail: 'Users of these schools see the trial-ended page and their API calls are refused. Extend the trial or move them to a paid plan in Schools.',
+    detail: 'Users of these schools see the pilot-ended page and their API calls are refused. Extend the pilot or convert the school to a tier in Schools.',
     enforcedAt: ['src/lib/auth/verifyToken.ts', 'src/proxy.ts'],
   });
   const ending = S.filter(s => s.active && !s.trialExpired && s.trialDaysLeft !== null && s.trialDaysLeft <= 7);
   add({
-    id: 'school.trial_ending', group: G4, label: 'Trials ending within 7 days', source: 'school',
+    id: 'school.trial_ending', group: G4, label: 'Pilots ending within 7 days', source: 'school',
     value: String(ending.length), status: ending.some(s => !s.testSchool) ? 'warn' : 'ok',
     items: ending.map(s => `${s.name} (${plural(s.trialDaysLeft ?? 0, 'day')} left)`),
-    detail: 'Their users already see the trial banner.',
+    detail: 'Their users already see the pilot-ending banner.',
   });
   const noAdmin = real.filter(s => s.active && s.schoolAdmins === 0);
   add({

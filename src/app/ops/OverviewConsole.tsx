@@ -13,7 +13,7 @@ import { WarningOctagonIcon as WarningOctagon } from '@phosphor-icons/react/dist
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import type { AttentionAction, AttentionItem, RegistrySchool, Severity } from '@/lib/ops/attention';
-import { CURRICULA, PLANS, PLAN_INFO, annualValue, effectivePrice } from '@/lib/settings/registry';
+import { CURRICULA, PLANS, PLAN_INFO, PLATFORM_SETTINGS, SCHOOL_FIELD_LABELS, annualValue, effectivePrice, type Plan, type PlatformKey, type SchoolPatch } from '@/lib/settings/registry';
 import { Kpi, PlanChip, ReasonAction, Section, StatusChip, Table, errText, fmtDate, fmtDateTime, inr, num, plural } from './_ui';
 import { useOpsApi } from './useOpsApi';
 import { extendedEnd, useSchoolPatch } from './useSchoolPatch';
@@ -152,8 +152,8 @@ export default function OverviewConsole() {
                 {data.journal.map(j => (
                   <tr key={j.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(j.at)}</td>
-                    <td className="nm">{j.scope === 'platform' ? 'Platform' : data.schools.find(s => s.id === j.school_id)?.name ?? 'Deleted school'} · {j.key}</td>
-                    <td><span className="muted">{show(j.old_value)}</span> → <b>{show(j.new_value)}</b></td>
+                    <td className="nm">{j.scope === 'platform' ? 'Platform' : data.schools.find(s => s.id === j.school_id)?.name ?? 'Deleted school'} · {j.scope === 'platform' ? PLATFORM_SETTINGS[j.key as PlatformKey]?.label ?? j.key : SCHOOL_FIELD_LABELS[j.key as keyof SchoolPatch] ?? j.key}</td>
+                    <td><span className="muted">{show(j.old_value, j.key)}</span> → <b>{show(j.new_value, j.key)}</b></td>
                     <td>{j.reason}</td>
                     <td className="muted" style={{ overflowWrap: 'anywhere' }}>{j.actor_email ?? '—'}</td>
                   </tr>
@@ -168,7 +168,8 @@ export default function OverviewConsole() {
   );
 }
 
-const show = (v: unknown) => (v === null || v === undefined ? 'None' : typeof v === 'boolean' ? (v ? 'On' : 'Off') : typeof v === 'string' ? (/^\d{4}-\d{2}-\d{2}T/.test(v) ? fmtDate(v) : v || 'Empty') : JSON.stringify(v));
+const show = (v: unknown, key = '') => (v === null || v === undefined ? (key.includes('.') ? 'Default' : 'None') : typeof v === 'boolean' ? (v ? 'On' : 'Off')
+  : typeof v === 'string' ? (key === 'plan' && (PLANS as readonly string[]).includes(v) ? PLAN_INFO[v as Plan].label : /^\d{4}-\d{2}-\d{2}T/.test(v) ? fmtDate(v) : v || 'Empty') : JSON.stringify(v));
 
 function AttentionRow({ a, schools, onDone }: { a: AttentionItem; schools: RegistrySchool[]; onDone: (msg: string) => void }) {
   const patch = useSchoolPatch();

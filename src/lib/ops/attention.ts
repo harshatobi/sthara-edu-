@@ -57,16 +57,16 @@ export function buildAttention(x: {
     if (s.plan === 'pilot' && s.trialExpired) {
       out.push({
         id: `trial-expired:${s.id}`, severity: 'crit', schoolId: s.id,
-        title: `${s.name}: trial has ended`,
-        detail: `${plural(s.people, 'account')} can't use Sthara. Extend the trial or move the school to a paid plan.`,
-        actions: [{ kind: 'extend-trial', schoolId: s.id, days: 30 }, open('access', 'Change plan')],
+        title: `${s.name}: pilot has ended`,
+        detail: `${plural(s.people, 'account')} can't use Sthara. Extend the pilot or convert the school to a tier.`,
+        actions: [{ kind: 'extend-trial', schoolId: s.id, days: 30 }, open('access', 'Convert to a tier')],
       });
     } else if (s.plan === 'pilot' && s.trialDaysLeft !== null && s.trialDaysLeft <= 14) {
       out.push({
         id: `trial-ending:${s.id}`, severity: 'warn', schoolId: s.id,
-        title: `${s.name}: trial ends in ${plural(s.trialDaysLeft, 'day')}`,
-        detail: 'Their users already see the trial banner. Convert them to a plan or extend.',
-        actions: [{ kind: 'extend-trial', schoolId: s.id, days: 30 }, open('access', 'Change plan')],
+        title: `${s.name}: pilot ends in ${plural(s.trialDaysLeft, 'day')}`,
+        detail: 'Time for the conversion conversation. Convert the school to a tier, or extend the pilot.',
+        actions: [{ kind: 'extend-trial', schoolId: s.id, days: 30 }, open('access', 'Convert to a tier')],
       });
     }
     if (!s.code) {

@@ -4,6 +4,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request);
@@ -40,11 +41,11 @@ Each question should have:
 
 Output ONLY valid JSON, no markdown.`;
 
-    const result = await ai.models.generateContent({
+    const result = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.4 },
-    });
+    }, { feature: 'quizGenerate', userId: user.id });
     const parsed = JSON.parse(result.text || '{"questions": []}');
     return NextResponse.json(parsed);
 

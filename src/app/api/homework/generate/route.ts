@@ -5,6 +5,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,11 +75,11 @@ Adapt the difficulty based on their strengths and weaknesses.
 Format the output as a clean JSON object with a "questions" array containing strings. No markdown blocks, just the JSON string.`;
 
         try {
-          const result = await ai.models.generateContent({
+          const result = await generateMetered(ai, {
             model: AI_MODELS.standard,
             contents: prompt,
             config: { responseMimeType: 'application/json', temperature: 0.7 },
-          });
+          }, { feature: 'homeworkGenerate', userId: user.id });
           const parsed = JSON.parse(result.text || '{"questions": ["Describe the main concepts of this topic."]}');
 
           const dueDate = new Date();

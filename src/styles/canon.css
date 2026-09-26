@@ -110,6 +110,7 @@
 .canon .note { background:#FFF8E7; border-left:3px solid var(--amber); border-radius:10px; padding:14px 16px; font-size:13px; color:#7A5A08; line-height:1.6; }
 .canon .note.info { background:#EFF6FF; border-left-color:var(--sky); color:#1E3A6B; }
 .canon .note.err { background:#FFF1F4; border-left-color:var(--red); color:#8A1030; }
+.canon .note.warn { background:#FFFBEB; border-left-color:var(--amber); color:#7A4A06; }
 .canon .mono-blk { background:var(--ink); color:#CFE0F5; border-radius:16px; padding:22px 24px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12.5px; line-height:2; white-space:pre-wrap; }
 .canon .mono-blk .hd { color:var(--sky); font-weight:600; letter-spacing:.1em; font-size:11px; margin-bottom:12px; font-family:'Plus Jakarta Sans',sans-serif; }
 .canon .qta { width:100%; min-height:140px; border:1.5px solid var(--line); border-radius:14px; padding:16px; font-family:inherit; font-size:14.5px; line-height:1.7; resize:vertical; color:var(--ink); background:#fff; }

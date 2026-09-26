@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export async function POST(request: NextRequest) {
   const { user, error: authError } = await verifyApiToken(request.headers.get('authorization'));
@@ -40,11 +41,11 @@ Rules:
 - Each question must have exactly 4 options
 - Return exactly ${numQuestions} questions`;
 
-    const result = await ai.models.generateContent({
+    const result = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.5 },
-    });
+    }, { feature: 'practice', userId: user.id });
 
     let rawText = (result.text || '{"questions":[]}').trim();
     rawText = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();

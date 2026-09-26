@@ -4,6 +4,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request);
@@ -57,11 +58,11 @@ Output ONLY valid JSON with this structure:
   "summary": "Brief 1-sentence encouraging summary of their performance."
 }`;
 
-    const result = await ai.models.generateContent({
+    const result = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.2 },
-    });
+    }, { feature: 'quizGrade', userId: user.id });
 
     const rawText = result.text || '{}';
     const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```/g, '').trim();

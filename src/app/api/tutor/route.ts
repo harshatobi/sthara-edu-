@@ -6,6 +6,7 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { containsFoulLanguage } from '@/lib/tutor/safety';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -198,14 +199,14 @@ CORE RULES:
       }
     }
 
-    const result = await ai.models.generateContent({
+    const result = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: mergedContents,
       config: {
         systemInstruction,
         temperature: 0.7,
       },
-    });
+    }, { feature: 'tutor', userId: user.id });
 
     const aiText = result.text ?? '';
 

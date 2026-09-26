@@ -7,6 +7,7 @@ import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { courseChapters, getCurriculum } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/desk';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -67,9 +68,9 @@ Return ONLY JSON:
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const res = await ai.models.generateContent({
+    const res = await generateMetered(ai, {
       model: AI_MODELS.standard, contents: prompt, config: { responseMimeType: 'application/json', temperature: 0.4 },
-    });
+    }, { feature: 'lessonDraft', userId: staff.id, schoolId: staff.schoolId });
     const raw = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const d = JSON.parse(raw);
     const stages = (Array.isArray(d.stages) ? d.stages : []).slice(0, 8).map((s: any) => ({

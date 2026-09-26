@@ -4,6 +4,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const maxDuration = 60;
 
@@ -154,11 +155,11 @@ OUTPUT: Return ONLY valid JSON:
           ? [{ role: 'user' as const, parts: [{ text: systemPrompt + '\n\nSTUDENT\'S ANSWER:\n' + submissionText }] }]
           : [{ role: 'user' as const, parts: [{ text: systemPrompt }, { inlineData: { mimeType, data: base64Image } }] }];
 
-        const genResult = await ai.models.generateContent({
+        const genResult = await generateMetered(ai, {
           model: AI_MODELS.standard,
           contents,
           config: { temperature: 0.2, responseMimeType: 'application/json' },
-        });
+        }, { feature: 'gradeImage', userId: user.id });
 
         let textOutput = genResult.text || '';
         if (!textOutput) throw new Error('Empty output from Gemini');

@@ -8,6 +8,7 @@ import { courseChapters, getCurriculum, CURRENT_SESSION } from '@/lib/curriculum
 import { topicKey } from '@/lib/teacher/desk';
 import { parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -143,11 +144,11 @@ ${brief.join('\n\n')}`;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const res = await ai.models.generateContent({
+    const res = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: messages.map((m: any) => ({ role: m.role, parts: [{ text: m.text }] })),
       config: { systemInstruction: system, responseMimeType: 'application/json', temperature: 0.5 },
-    });
+    }, { feature: 'copilot', userId: staff.id, schoolId: staff.schoolId });
     const raw = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const reply = restoreNames(parseReply(JSON.parse(raw)), names);
     if (!reply.say && !reply.artifact && !reply.ask.length) throw new Error('empty reply');

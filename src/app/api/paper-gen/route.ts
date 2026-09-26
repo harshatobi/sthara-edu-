@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,11 +113,11 @@ export async function POST(request: NextRequest) {
     const prompt = buildPrompt(grade, chapters, difficulty, numQuestions, paperType, subject);
 
     const ai = new GoogleGenAI({ apiKey });
-    const result = await ai.models.generateContent({
+    const result = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.6 },
-    });
+    }, { feature: 'paperGen', userId: user.id });
 
     let jsonStr = (result.text || '[]').trim();
     jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();

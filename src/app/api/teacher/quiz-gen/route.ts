@@ -3,6 +3,7 @@ import { requireStaff } from '@/lib/teacher/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { recordRestUsage } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -88,6 +89,8 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
       },
     };
 
+    const usageMeta = { feature: 'quizGen', userId: auth.staff.id, schoolId: auth.staff.schoolId } as const;
+    const started = Date.now();
     const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -96,6 +99,7 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
 
     if (!geminiRes.ok) {
       const errBody = await geminiRes.text();
+      recordRestUsage(AI_MODELS.standard, null, usageMeta, started, `HTTP ${geminiRes.status}`);
       console.error('[quiz-gen] Gemini API error:', geminiRes.status, errBody.substring(0, 500));
       return NextResponse.json(
         { error: `AI service returned error ${geminiRes.status}. Please try again.` },
@@ -104,6 +108,7 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
     }
 
     const geminiData = await geminiRes.json();
+    recordRestUsage(AI_MODELS.standard, geminiData, usageMeta, started);
     let raw: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     console.log('[quiz-gen] Raw AI output (first 500 chars):', raw.substring(0, 500));

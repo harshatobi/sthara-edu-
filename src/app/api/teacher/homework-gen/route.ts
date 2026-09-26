@@ -4,6 +4,7 @@ import { requireStaff } from '@/lib/teacher/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,11 +60,11 @@ For MCQ, add an "options" array: ["A. option1", "B. option2", "C. option3", "D. 
 Marks: short=2-5, long=8-10, mcq=1-2.
 Make questions educationally meaningful and specific to the topic.`;
 
-    const result = await ai.models.generateContent({
+    const result = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.6 },
-    });
+    }, { feature: 'homeworkGen', userId: auth.staff.id, schoolId: auth.staff.schoolId });
 
     let rawText = (result.text || '{"questions":[]}').trim();
     rawText = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();

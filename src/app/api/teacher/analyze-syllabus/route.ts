@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,11 +72,11 @@ Return ONLY a JSON object matching this schema:
   "weightageScore": 7.6
 }`;
 
-    const res = await ai.models.generateContent({
+    const res = await generateMetered(ai, {
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.1 },
-    });
+    }, { feature: 'analyzeSyllabus', userId: user.id });
 
     const text = res.text || '{}';
     const parsed = JSON.parse(text) as Partial<SyllabusAnalysisResult>;

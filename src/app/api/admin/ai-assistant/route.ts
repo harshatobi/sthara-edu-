@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/admin/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { recordUsage } from '@/lib/ai/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +58,13 @@ If the context shows "No data", tell the admin data is not yet available.`,
       ? `${context}\n\n---\nADMIN QUESTION: ${message}`
       : message;
 
-    const response = await chat.sendMessage({ message: fullMessage });
+    const started = Date.now();
+    const usageMeta = { feature: 'adminAi', userId: auth.admin.id, schoolId: auth.admin.schoolId } as const;
+    const response = await chat.sendMessage({ message: fullMessage }).catch((e: unknown) => {
+      recordUsage({ ...usageMeta, model: AI_MODELS.standard, usage: null, ok: false, latencyMs: Date.now() - started, error: e instanceof Error ? e.message : String(e) });
+      throw e;
+    });
+    recordUsage({ ...usageMeta, model: AI_MODELS.standard, usage: response.usageMetadata, ok: true, latencyMs: Date.now() - started });
     const reply = response.text;
 
     return NextResponse.json({ success: true, reply });

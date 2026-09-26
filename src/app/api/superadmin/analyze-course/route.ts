@@ -3,6 +3,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
+import { recordRestUsage } from '@/lib/ai/usage';
 
 export const maxDuration = 60;
 
@@ -81,6 +82,8 @@ Return ONLY valid JSON with no markdown wrapper, no preamble, and strictly match
       }
     };
 
+    const usageMeta = { feature: 'analyzeCourse', userId: user.id } as const;
+    const started = Date.now();
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -89,11 +92,13 @@ Return ONLY valid JSON with no markdown wrapper, no preamble, and strictly match
 
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
+      recordRestUsage(AI_MODELS.deep, null, usageMeta, started, `HTTP ${geminiResponse.status}`);
       console.error('Gemini API Error:', errText);
       throw new Error(`Gemini API failed (${geminiResponse.status}): ${errText}`);
     }
 
     const geminiData = await geminiResponse.json();
+    recordRestUsage(AI_MODELS.deep, geminiData, usageMeta, started);
     let textOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     if (!textOutput) throw new Error('No output returned from Gemini API.');

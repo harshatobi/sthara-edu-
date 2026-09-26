@@ -8,6 +8,7 @@ import { probeFamily, type ProbeFinding } from './probe';
 import { loadFamily } from './load';
 import { parseAskReply, restore, tokenize, type AskReply, type NameBook } from './ask';
 import type { ParentCaller } from './serverAuth';
+import { generateMetered } from '@/lib/ai/usage';
 
 const CONSENT_LABEL: Record<string, string> = {
   ai_tutor: 'AI tutor', wellness_checkin: 'wellness check-ins', data_processing: 'data processing', proctoring: 'proctored tests',
@@ -116,10 +117,10 @@ export async function askSchoolOS(db: SupabaseClient, parent: ParentCaller, mess
   const system = systemPrompt(view, buildBrief(view, findings, book), channel);
   const contents = messages.slice(-12).map(m => ({ role: m.role === 'os' ? 'model' : 'user', parts: [{ text: tokenize(m.text, book) }] }));
   const ai = new GoogleGenAI({ apiKey });
-  const res = await ai.models.generateContent({
+  const res = await generateMetered(ai, {
     model: AI_MODELS.standard, contents,
     config: { systemInstruction: system, responseMimeType: 'application/json', temperature: 0.4 },
-  });
+  }, { feature: 'parentAsk', userId: parent.id, schoolId: parent.schoolId });
   const raw = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();
   const reply = restore(parseAskReply(JSON.parse(raw), book), book);
   if (!reply.say && !reply.ask.length) throw new Error('empty reply');

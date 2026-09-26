@@ -5,6 +5,7 @@ import { AI_MODELS } from '@/lib/settings/limits';
 import { sanitizeQuestions } from '@/lib/teacher/questions';
 import { normClass } from '@/lib/teacher/scope';
 import { CAPTURE_PREFIX, gradingPrompt, isCapturePath, nameMatches, parseGrade, type HandwrittenGrade } from './handwritten';
+import { generateMetered } from '@/lib/ai/usage';
 
 export const BUCKET = 'captures';
 export const MAX_PAGES = 8;
@@ -57,14 +58,14 @@ export async function gradePages(db: SupabaseClient, a: any, paths: string[], me
   const pages = await Promise.all(paths.map(p => download(db, p)));
   const ai = new GoogleGenAI({ apiKey });
   const model = AI_MODELS.handwriting;
-  const res = await ai.models.generateContent({
+  const res = await generateMetered(ai, {
     model,
     contents: [{ role: 'user', parts: [
       { text: gradingPrompt({ title: a.title || 'Homework', subject: a.subject || 'General', cls: a.class || '', questions, pages: pages.length, totalMarks: a.total_marks ?? null }) },
       ...pages.map(data => ({ inlineData: { data, mimeType: 'image/jpeg' } })),
     ] }],
     config: { responseMimeType: 'application/json', temperature: 0.1 },
-  });
+  }, { feature: meta.source === 'teacher_capture' ? 'captureGrade' : 'homeworkGrade', userId: meta.capturedBy, schoolId: a.school_id });
   let raw: unknown;
   try { raw = JSON.parse((res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim()); }
   catch { throw new GradingError('The AI couldn’t read these pages. Try clearer photos, or mark this one by hand.', 502); }

@@ -600,10 +600,11 @@
 .canon .bp-meta { display:flex; justify-content:space-between; font-size:7.2pt; color:#94A3B8; }
 /* Named page: the zero margin applies to board-pack pages only, not to every print in the app. */
 .canon .bp-page { page:boardpack; }
+.canon .bp-cover .bp-list p { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 @media print {
   @page boardpack { size:A4; margin:0; }
   .canon .bp { gap:0; padding:0; }
-  .canon .bp-page { box-shadow:none !important; break-after:page; }
+  .canon .bp-page { box-shadow:none !important; break-after:page; height:297mm; min-height:0; }
   .canon .bp-page:last-child { break-after:auto; }
   .canon .bp, .canon .bp * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   /* Only when the board pack is on screen: print nothing but the pack. */

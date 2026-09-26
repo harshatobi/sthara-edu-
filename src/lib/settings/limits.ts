@@ -42,6 +42,8 @@ export const RATE_LIMITS = {
   lessons:         { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons',         label: 'Lesson plan writes' },
   lessonDraft:     { limit: 12,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons/draft',   label: 'Lesson plan drafting' },
   leave:           { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/leave',           label: 'Leave requests' },
+  capturePage:     { limit: 300, windowMs: 10 * MIN, per: 'user',    route: '/api/grading/pages',           label: 'Photographed work: page uploads' },
+  captureGrade:    { limit: 60,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/capture',         label: 'Capture & AI grading (teacher)' },
   parentDesk:      { limit: 60,  windowMs: 5 * MIN,  per: 'user',    route: '/api/parent/desk',             label: 'Parent portal data' },
   parentAsk:       { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/ask',              label: 'Ask the School OS (web)' },
   schoolMessages:  { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/messages, /api/staff/messages', label: 'Parent and staff messages' },
@@ -58,4 +60,6 @@ export const limitOf = (k: RateLimitKey): [number, number] => [RATE_LIMITS[k].li
 export const AI_MODELS = {
   standard: 'gemini-2.5-flash',
   deep: 'gemini-2.5-pro',
+  /** Reading photographed handwriting and suggesting marks (teacher capture and student photo submissions). */
+  handwriting: 'gemini-2.5-flash',
 } as const;

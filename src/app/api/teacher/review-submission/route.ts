@@ -4,6 +4,7 @@ import { inScope } from '@/lib/teacher/scope';
 import { marksOf, sanitizeQuestions } from '@/lib/teacher/questions';
 import { normalizeComponentType, computeStudentTml, evidenceTopicName } from '@/lib/tml/engine';
 import { notifyGuardians } from '@/lib/parent/notify';
+import { agreement, gradeOf } from '@/lib/grading/handwritten';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (!submissionId) return NextResponse.json({ error: 'submissionId is required' }, { status: 400 });
 
   const { data: sub } = await db.from('submissions')
-    .select('id, student_id, school_id, assignment_id, max_score, teacher_approved')
+    .select('id, student_id, school_id, assignment_id, max_score, teacher_approved, ai_result')
     .eq('id', submissionId).eq('school_id', staff.schoolId).maybeSingle();
   if (!sub) return NextResponse.json({ error: 'Submission not found.' }, { status: 404 });
   const { data: a } = await db.from('assignments')
@@ -68,9 +69,15 @@ export async function POST(req: NextRequest) {
     items = [{ question_index: 0, score, max_score: max }];
   }
 
+  // Captured work: record how many of the AI's suggested marks the teacher kept (the agreement rate).
+  const aiGrade = gradeOf(sub.ai_result);
+  const review = aiGrade && items.length === aiGrade.questions.length
+    ? { ...agreement(aiGrade, items.map(x => x.score)), by: staff.id, at: new Date().toISOString(), suggested: aiGrade.suggestedTotal, confirmed: score }
+    : null;
   const { error: upErr } = await db.from('submissions').update({
     score, max_score: max, grade: `${score}/${max}`, final_grade: `${score}/${max}`,
     teacher_approved: true, teacher_note: note || null,
+    ...(review ? { ai_result: { ...aiGrade, review } } : {}),
   }).eq('id', sub.id);
   if (upErr) {
     console.error('[review-submission] update failed:', upErr.message);

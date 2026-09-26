@@ -18,6 +18,7 @@ import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { normClass, normSubject } from '@/lib/teacher/scope';
 import { defaultStages, fmtDay, todayIso, type Lesson } from '@/lib/teacher/course';
 import type { LessonPrefill } from './SyllabusWorkspace';
+import LessonPrint from './LessonPrint';
 
 const STAGE_COLORS = ['#4C8DFF', '#7C5CFC', '#10B981', '#F59E0B', '#F45E77', '#14B8A6', '#E11D48', '#64748B'];
 type Draft = Omit<Lesson, 'id' | 'teacherId' | 'taughtOn' | 'aiDrafted'> & { aiDrafted: boolean };
@@ -150,6 +151,8 @@ export default function LessonEditor({ course, cls, subject, lesson, prefill, on
         </div>
       </div>
 
+      <LessonPrint d={d} cls={cls} subject={subject} teacher={desk?.me.name ?? ''}
+        homework={(() => { const a = course.assignments.find(x => x.id === d.homeworkAssignmentId); return a ? `${a.title}${a.dueAt ? `, due ${fmtDay(a.dueAt)}` : ''}` : null; })()} />
       <div className="ws-body"><div className="cmp" style={{ maxWidth: 1180 }}>
         {error && <div className="err" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
         <div className="lp-grid">

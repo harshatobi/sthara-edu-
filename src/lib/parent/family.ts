@@ -7,7 +7,7 @@ import { mapMasteryBand, type MasteryBand } from '@/lib/tml/engine';
 import { shapeInvoice, type Invoice } from '@/lib/admin/fees';
 import { normClass, normSubject } from '@/lib/teacher/scope';
 import { topicKey } from '@/lib/teacher/desk';
-import { subjectTeachers } from '@/lib/schedule/engine';
+import { subjectTeachers, wingOf } from '@/lib/schedule/engine';
 
 export const DAY = 86_400_000;
 const ts = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() || 0 : 0);
@@ -101,6 +101,12 @@ export interface Child {
   /** Every teacher this child has, with what they teach them. */
   teachers: (StaffRef & { subjects: string[]; classTeacher: boolean })[];
   consents: Record<string, boolean>;
+  /** The class register for this session so far (newest first) and its totals. */
+  attendance: { days: { day: string; status: 'present' | 'absent' | 'late' | 'excused'; note: string | null }[]; present: number; absent: number; late: number; excused: number; pct: number | null };
+  /** The school calendar for the child's wing: this month onwards. */
+  calendar: { id: string; title: string; kind: string; startsOn: string; endsOn: string; startsAt: string | null; endsAt: string | null; noClasses: boolean }[];
+  /** The child's week from the published timetable: bell rows and lessons. */
+  timetable: { days: number[]; rows: { no: number | null; label: string; start: string; end: string }[]; lessons: { weekday: number; period: number; subject: string; teacher: string | null; group: string }[] } | null;
 }
 
 export interface ThreadSummary {
@@ -152,6 +158,10 @@ export interface FamilyRows {
   tml: any[];
   wellness: any[];
   consents: any[];
+  attendance?: any[];
+  events?: any[];
+  bells?: any[];
+  wings?: any[];
   invoices: any[];
   payments: any[];
   threads: any[];
@@ -300,12 +310,36 @@ export function shapeFamily(rows: FamilyRows, now = Date.now()): FamilyView {
       }
     }
 
+    // ── Attendance, calendar, timetable ──
+    const att = (rows.attendance || []).filter(a => a.student_id === s.id).sort((a, b) => String(b.day).localeCompare(String(a.day)));
+    const tally = (st: string) => att.filter(a => a.status === st).length;
+    const marked = att.length;
+    const attendance = {
+      days: att.map(a => ({ day: String(a.day).slice(0, 10), status: a.status, note: a.note ?? null })),
+      present: tally('present'), absent: tally('absent'), late: tally('late'), excused: tally('excused'),
+      pct: marked ? Math.round(((tally('present') + tally('late')) / marked) * 100) : null,
+    };
+    const wing = wingOf(cls, rows.wings || [])?.id ?? null;
+    const monthStart = `${today.slice(0, 7)}-01`;
+    const calendar = (rows.events || [])
+      .filter(e => String(e.ends_on) >= monthStart && (!e.wing_ids?.length || (wing && e.wing_ids.includes(wing))))
+      .map(e => ({ id: e.id, title: e.title, kind: e.kind, startsOn: String(e.starts_on), endsOn: String(e.ends_on), startsAt: e.starts_at ? String(e.starts_at).slice(0, 5) : null, endsAt: e.ends_at ? String(e.ends_at).slice(0, 5) : null, noClasses: !!e.suspends_classes }))
+      .sort((a, b) => a.startsOn.localeCompare(b.startsOn));
+    const mySlots = (rows.timetable || []).filter(x => normClass(x.class) === normClass(cls));
+    const regular = (rows.bells || []).filter(b => b.kind === 'regular');
+    const ref = regular.find(b => b.wing_id === wing && (b.weekdays || []).map(Number).includes(1)) ?? regular.find(b => b.wing_id === null && (b.weekdays || []).map(Number).includes(1)) ?? regular[0];
+    const timetable = mySlots.length ? {
+      days: [...new Set(regular.flatMap(b => (b.weekdays || []).map(Number)))].sort().filter(d => d <= 6),
+      rows: ((ref?.periods || []) as any[]).sort((a, b) => a.seq - b.seq).map(p => ({ no: p.period_no ?? null, label: p.kind === 'period' ? `P${p.period_no}` : p.label, start: String(p.starts_at).slice(0, 5), end: String(p.ends_at).slice(0, 5) })),
+      lessons: mySlots.map(x => ({ weekday: x.weekday, period: x.period_no, subject: x.subject, teacher: x.teacher_id ? staff.byId.get(x.teacher_id)?.name ?? null : null, group: x.group_label || '' })),
+    } : null;
+
     const name = s.name || 'Your child';
     return {
       id: s.id, name, firstName: name.split(/\s+/)[0], cls, rollNo: s.custom_student_id || null, relationship: rel.get(s.id) ?? null,
       tml, band: bandOf(tml), subjects, work, wellness, fees, classTeacher: ct,
       teachers: [...tmap.values()].sort((a, b) => Number(b.classTeacher) - Number(a.classTeacher) || a.name.localeCompare(b.name)),
-      consents,
+      consents, attendance, calendar, timetable,
     };
   }).sort((a, b) => a.name.localeCompare(b.name));
 

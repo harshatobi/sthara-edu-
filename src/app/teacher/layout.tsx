@@ -58,7 +58,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   }
   return (
     <TeacherDeskProvider>
-      <CanonShell subtitle="TEACHING COPILOT" nav={NAV} label="Teacher navigation">{children}</CanonShell>
+      <CanonShell subtitle="TEACHING COPILOT" nav={NAV} label="Teacher navigation" inbox>{children}</CanonShell>
     </TeacherDeskProvider>
   );
 }

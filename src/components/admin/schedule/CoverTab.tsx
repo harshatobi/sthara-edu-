@@ -1,6 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { dayOf, hm, localOf } from '@/lib/attendance/engine';
+import { useAttendance } from '@/lib/attendance/useAttendance';
 import { CaretLeftIcon as CaretLeft } from '@phosphor-icons/react/dist/ssr/CaretLeft';
 import { CaretRightIcon as CaretRight } from '@phosphor-icons/react/dist/ssr/CaretRight';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
@@ -40,13 +42,23 @@ export default function CoverTab({ rows, call, reload, toast }: { rows: Schedule
   const reported = rows.absences.filter(a => a.on_date === date && a.status === 'reported');
   const awayPeople = useMemo(() => {
     const keys = new Set<PersonKey>();
-    for (const l of rows.leave) if (l.status === 'approved' && l.from_date <= date && l.to_date >= date) keys.add(l.staff_id);
+    for (const l of rows.leave) if (l.status === 'approved' && l.from_date <= date && l.to_date >= date) { const k = personKey(l.staff_id, l.staff_member_id); if (k) keys.add(k); }
     for (const a of rows.absences) if (a.on_date === date && a.status === 'confirmed') keys.add(personKey(a.user_id, a.staff_member_id)!);
     return [...keys].map(k => ({ key: k, away: awayOn(date, k, rows) })).filter(x => x.away.length).sort((a, b) => (names.get(a.key) || '').localeCompare(names.get(b.key) || ''));
   }, [rows, date, names]);
   const openCount = needs.filter(n => n.state === 'open').length;
   const visiting = useMemo(() => lessonsOn(date, rows).filter(l => l.slot.staff_member_id && rows.staff.find(m => m.id === l.slot.staff_member_id)?.employment === 'visiting'), [rows, date]);
   const act = async (fn: () => Promise<unknown>, done: string) => { try { await fn(); reload(); toast(done); } catch (e: any) { toast(e.message); } };
+  // Teachers expected today who haven't checked in by reporting time + grace (the no-show check also alerts them).
+  const [now] = useState(() => localOf(Date.now()));
+  const att = useAttendance(date, date);
+  useEffect(() => { if (date === now.date) call('/api/admin/attendance', 'POST', { entity: 'noshow_check' }).catch(() => {}); }, [date, now.date, call]);
+  const notIn = useMemo(() => {
+    if (!att.data || date !== now.date) return [];
+    return att.data.people.filter(p => p.kind === 'teacher').map(p => ({ p, d: dayOf(date, p, att.data!.rows, now.min) }))
+      .filter(({ p, d }) => d.status === 'not_in' && d.expected.kind === 'work' && now.min > d.expected.start + (att.data!.rows.plans.find(x => x.user_id === p.key)?.grace_min ?? att.data!.rows.settings.grace_min)
+        && !awayPeople.some(a => a.key === p.key));
+  }, [att.data, date, now.date, now.min, awayPeople]);
 
   const printSheet = () => {
     try {
@@ -89,6 +101,18 @@ export default function CoverTab({ rows, call, reload, toast }: { rows: Schedule
       </div>
 
       {!versionOn(rows.versions, date) && <div className="note info" style={{ marginBottom: 18 }}>No timetable is in force on this date, so there are no lessons to cover.</div>}
+
+      {notIn.length > 0 && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <CardHead title="Not checked in" sub="Expected at school but no check-in yet. They've been sent a WhatsApp asking them to reply IN or ABSENT." />
+          {notIn.map(({ p, d }) => (
+            <div className="row" key={p.key}>
+              <span style={{ flex: 1 }}><b>{p.name}</b><span className="muted"> · reporting time {d.expected.kind === 'work' ? hhmm(hm(d.expected.start), true) : ''}</span></span>
+              <button className="btn sm" onClick={() => act(() => call(API, 'POST', { action: 'absent', person: p.key, date, portion: 'full', reason: 'Did not check in' }), `${p.name} marked absent; their lessons are on the board`)}>Mark absent</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {reported.length > 0 && (
         <div className="card" style={{ marginBottom: 18 }}>

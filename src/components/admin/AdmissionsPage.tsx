@@ -235,7 +235,7 @@ function NewApplicant({ session, onClose, onSave }: { session: string; onClose: 
 }
 
 function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
-  a: Applicant; desk: AdminDesk; call: (p: string, m: 'PATCH', b: unknown) => Promise<any>; onClose: () => void; onChanged: (m: string) => void;
+  a: Applicant; desk: AdminDesk; call: (p: string, m: 'PATCH' | 'POST', b: unknown) => Promise<any>; onClose: () => void; onChanged: (m: string) => void;
 }) {
   const [d, setD] = useState<Draft>({
     name: a.name, grade: String(a.grade), dob: a.dob || '', guardianName: a.guardianName || '', guardianPhone: a.guardianPhone || '',
@@ -243,6 +243,7 @@ function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
   });
   const [assessmentOn, setAssessmentOn] = useState(a.assessmentOn || '');
   const [closing, setClosing] = useState<'rejected' | 'withdrawn' | null>(null);
+  const [enrolling, setEnrolling] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -263,9 +264,11 @@ function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
         {manage && a.open && <button className="btn" disabled={busy} onClick={() => setClosing('withdrawn')}>Withdrawn</button>}
         {manage && a.open && <button className="btn" disabled={busy} onClick={() => setClosing('rejected')}>Reject</button>}
         {manage && !a.open && a.stage !== 'enrolled' && <button className="btn" disabled={busy} onClick={() => act({ to: 'reopen' }, `${a.name} reopened`)}>Reopen</button>}
-        {next && <button className="btn pri" disabled={busy} onClick={() => act({ to: next }, `${a.name} moved to ${STAGE_ONE[next].toLowerCase()}`)}>Move to {STAGE_ONE[next].toLowerCase()} <ArrowRight size={13} weight="bold" /></button>}
+        {next && next !== 'enrolled' && <button className="btn pri" disabled={busy} onClick={() => act({ to: next }, `${a.name} moved to ${STAGE_ONE[next].toLowerCase()}`)}>Move to {STAGE_ONE[next].toLowerCase()} <ArrowRight size={13} weight="bold" /></button>}
+        {next === 'enrolled' && !a.studentId && <button className="btn pri" disabled={busy} onClick={() => setEnrolling(true)}>Enrol <ArrowRight size={13} weight="bold" /></button>}
       </div>}>
       {err && <div className="err" role="alert" style={{ marginBottom: 14 }}>{err}</div>}
+      {enrolling && <EnrolPanel a={a} desk={desk} call={call} onCancel={() => setEnrolling(false)} onDone={m => { setEnrolling(false); onChanged(m); }} />}
       {closing && (
         <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--red)' }}>
           <Field label={closing === 'rejected' ? 'REASON FOR REJECTION' : 'WHY DID THEY WITHDRAW?'} htmlFor="close-why" hint="Stays on the applicant's record.">
@@ -300,5 +303,57 @@ function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
         </div>
       </div>
     </Workspace>
+  );
+}
+
+/**
+ * Enrolment: the section and admission number, then the student's login, the parent's (or a link to their existing
+ * account), the fees already raised for the grade, and the move to Enrolled. Passwords are shown once, to hand over.
+ */
+function EnrolPanel({ a, desk, call, onCancel, onDone }: {
+  a: Applicant; desk: AdminDesk; call: (p: string, m: 'PATCH' | 'POST', b: unknown) => Promise<any>; onCancel: () => void; onDone: (m: string) => void;
+}) {
+  const sections = [...new Set(desk.students.filter(s => s.grade === a.grade).map(s => s.cls))].sort();
+  const nextRoll = (() => { const n = desk.students.map(s => Number(s.rollNo)).filter(Number.isFinite); return n.length ? String(Math.max(...n) + 1) : ''; })();
+  const [v, setV] = useState({ className: sections[0] || `Class ${a.grade}-A`, rollNo: nextRoll, studentEmail: '', parentEmail: a.guardianEmail || '', billFees: true });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState<any>(null);
+  if (done) {
+    return (
+      <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--green)' }}>
+        <CardHead title={`${a.name} is enrolled in ${done.cls}`} sub="Hand these over privately now: the passwords aren't shown again." />
+        <div className="row"><span style={{ flex: 1 }}><b>Student login</b><div className="muted">{done.student.email}</div></span><code className="num">{done.student.tempPassword}</code></div>
+        {done.parent && <div className="row"><span style={{ flex: 1 }}><b>Parent login</b><div className="muted">{done.parent.email}</div></span>{done.parent.linked ? <span className="muted">Existing account, now linked</span> : <code className="num">{done.parent.tempPassword}</code>}</div>}
+        {done.parentError && <div className="note" style={{ marginTop: 10 }}>Parent account not created: {done.parentError}. Add them from the user directory.</div>}
+        <p className="muted" style={{ marginTop: 10 }}>{done.invoices ? `${plural(done.invoices, 'fee invoice')} raised (instalments already billed to the grade).` : 'No fees raised.'}</p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+          <button className="btn" onClick={() => window.print()}>Print</button>
+          <button className="btn pri" onClick={() => onDone(`${a.name} enrolled in ${done.cls}`)}>Done</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--blue)' }}>
+      <CardHead title={`Enrol ${a.name}`} sub={`Grade ${a.grade}. Creates the student's login and the parent's (or links their existing account), and moves them to Enrolled.`} />
+      <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <Field label="SECTION" htmlFor="en-c"><input id="en-c" className="cmp-in" list="en-sections" value={v.className} onChange={e => setV({ ...v, className: e.target.value })} /></Field>
+        <Field label="ADMISSION NO." htmlFor="en-r"><input id="en-r" className="cmp-in" value={v.rollNo} onChange={e => setV({ ...v, rollNo: e.target.value })} /></Field>
+        <Field label="STUDENT EMAIL (OPTIONAL)" htmlFor="en-s" hint="Leave blank for a school login ID"><input id="en-s" className="cmp-in" value={v.studentEmail} onChange={e => setV({ ...v, studentEmail: e.target.value })} /></Field>
+        <Field label="PARENT EMAIL" htmlFor="en-p" hint="An existing parent account is linked, not duplicated"><input id="en-p" className="cmp-in" value={v.parentEmail} onChange={e => setV({ ...v, parentEmail: e.target.value })} /></Field>
+      </div>
+      <datalist id="en-sections">{sections.map(s => <option key={s} value={s} />)}</datalist>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, margin: '4px 0 12px' }}><input type="checkbox" checked={v.billFees} onChange={e => setV({ ...v, billFees: e.target.checked })} /> Raise the fee instalments already billed to grade {a.grade} this session</label>
+      {err && <div className="err" role="alert" style={{ marginBottom: 10 }}>{err}</div>}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <button className="btn" onClick={onCancel}>Cancel</button>
+        <button className="btn pri" disabled={busy || !v.className.trim() || !v.rollNo.trim()} onClick={async () => {
+          setBusy(true); setErr(null);
+          try { setDone(await call('/api/admin/admissions/enrol', 'POST', { applicantId: a.id, ...v })); }
+          catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+        }}>{busy ? 'Enrolling…' : 'Enrol and create logins'}</button>
+      </div>
+    </div>
   );
 }

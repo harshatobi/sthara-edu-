@@ -8,6 +8,7 @@ import { toWhatsAppText } from '@/lib/parent/ask';
 import { parentPost, MessageError } from '@/lib/parent/messages';
 import { linkUsable } from './config';
 import { handleStaffInbound } from '@/lib/staff/whatsapp';
+import { handleRegisterInbound } from '@/lib/attendance/whatsapp';
 import { sendWhatsApp } from './send';
 
 const HISTORY_MS = 24 * 3600_000;
@@ -34,6 +35,10 @@ export async function handleInbound(db: SupabaseClient, msg: { from: string; tex
 
   const { data: link } = await db.from('whatsapp_links').select('*').eq('phone_e164', phone).not('verified_at', 'is', null).maybeSingle();
   if (!link || !linkUsable(link)) {
+    // Staff with no login (drivers, security, ayahs) who agreed to WhatsApp, on their register number.
+    const { data: member } = await db.from('staff_members').select('id, school_id, name, active, whatsapp_opt_in')
+      .eq('phone_e164', phone).eq('active', true).eq('whatsapp_opt_in', true).is('user_id', null).limit(1).maybeSingle();
+    if (member) { await handleRegisterInbound(db, member, phone, text, mark); return; }
     await mark({ status: 'ignored' });
     // Answer an unknown number at most once a day.
     const { data: recent } = await db.from('whatsapp_log').select('id').eq('phone_e164', phone).eq('direction', 'out').eq('kind', 'system')

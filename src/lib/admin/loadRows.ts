@@ -69,12 +69,13 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
     all((a, b) => s('proctor_alerts', 'id, flagged_at').eq('school_id', school).gte('flagged_at', since).order('id').range(a, b)),
   ]);
   // Access and ERP controls (RLS returns only what this person's roles allow).
-  const [grants, dayCloses, concessions, leavePolicies, probeAcks] = await Promise.all([
+  const [grants, dayCloses, concessions, leavePolicies, probeAcks, register] = await Promise.all([
     all((a, b) => s('role_grants', '*').eq('school_id', school).order('granted_at').range(a, b)),
     all((a, b) => s('fee_day_closes', '*').eq('school_id', school).gte('day', since).order('day').range(a, b)),
     all((a, b) => s('fee_concession_requests', '*').eq('school_id', school).gte('requested_at', since).order('id').range(a, b)),
     all((a, b) => s('leave_policies', 'leave_type, days_per_year').eq('school_id', school).eq('session', session).range(a, b)),
     all((a, b) => s('probe_acks', '*').eq('school_id', school).range(a, b)),
+    all((a, b) => s('staff_members', 'id, name').eq('school_id', school).order('id').range(a, b)),
   ]);
   if (schoolRow.error || !schoolRow.data) throw new Error(schoolRow.error?.message || 'Your school record could not be found.');
 
@@ -105,6 +106,7 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
     applicants: applicants.data, admissionEvents: events.data, filings: filings.data,
     wellness: wellness.error ? [] : wellness.data || [], proctor: proctor.data, missing,
     meId: who.uid, superadmin: who.superadmin,
+    register: register.data,
     grants: grants.data, dayCloses: dayCloses.data, concessions: concessions.data, leavePolicies: leavePolicies.data, probeAcks: probeAcks.data,
   };
 }

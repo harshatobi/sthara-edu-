@@ -51,6 +51,14 @@ export async function loadFamily(db: SupabaseClient, parent: { id: string; name:
   const { data: timetable } = version && classes.length
     ? await db.from('timetable_slots').select('class, subject, teacher_id, weekday, period_no, combined, group_label').eq('version_id', version.id).in('class_key', classes.map(c => normClass(c)))
     : empty;
+  // Attendance this session, the school calendar and the bell timings (for the child's timetable).
+  const sessionFrom = `${new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1}-04-01`;
+  const [attendance, events, bells, wings] = await Promise.all([
+    kidIds.length ? db.from('attendance').select('student_id, day, status, note').in('student_id', kidIds).gte('day', sessionFrom) : empty,
+    db.from('academic_events').select('id, title, kind, starts_on, ends_on, starts_at, ends_at, wing_ids, suspends_classes').eq('school_id', parent.schoolId).gte('ends_on', sessionFrom),
+    db.from('bell_schedules').select('id, wing_id, kind, weekdays, periods:bell_periods(seq, label, kind, period_no, starts_at, ends_at)').eq('school_id', parent.schoolId),
+    db.from('sched_wings').select('id, name, grade_from, grade_to').eq('school_id', parent.schoolId),
+  ]);
   const invIds = (invoices.data || []).map((i: any) => i.id);
   const threadIds = (threads.data || []).map((t: any) => t.id);
   const [payments, lastMessages] = await Promise.all([
@@ -78,6 +86,10 @@ export async function loadFamily(db: SupabaseClient, parent: { id: string; name:
     students: kids,
     teachers: teachers.data || [],
     timetable: timetable || [],
+    attendance: attendance.data || [],
+    events: events.error ? [] : events.data || [],
+    bells: bells.error ? [] : bells.data || [],
+    wings: wings.error ? [] : wings.data || [],
     assignments: (assignments.data || []).filter((a: any) => classes.some(c => normClass(c) === normClass(a.class))),
     submissions: submissions.data || [],
     tml: tml.data || [],

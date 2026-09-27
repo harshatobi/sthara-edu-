@@ -19,6 +19,8 @@ export { CONSENT_TYPES, LEAVE_TYPES };
 export interface AdminRows {
   school: { id: string; name: string; settings: any };
   users: any[];
+  /** Staff register (id, name) for leave the office entered for staff with no login. */
+  register?: { id: string; name: string }[];
   tml: any[];
   assignments: any[];
   submissions: any[];
@@ -347,7 +349,8 @@ export function shapeLeave(r: any, names: Map<string, string>): LeaveRow {
   const from = String(r.from_date).slice(0, 10);
   const to = String(r.to_date).slice(0, 10);
   return {
-    id: r.id, staffId: r.staff_id, staffName: names.get(r.staff_id) || 'Staff member', type: r.leave_type, from, to,
+    // Leave the office entered for someone with no login carries staff_member_id ("s:" + id in the names map).
+    id: r.id, staffId: r.staff_id ?? `s:${r.staff_member_id}`, staffName: names.get(r.staff_id ?? `s:${r.staff_member_id}`) || 'Staff member', type: r.leave_type, from, to,
     halfDay: !!r.half_day, days: leaveDays(from, to, !!r.half_day), reason: r.reason, status: r.status,
     decidedAt: r.decided_at ?? null, decidedBy: r.decided_by ? names.get(r.decided_by) || 'Admin' : null,
     note: r.decision_note ?? null, createdAt: r.created_at,
@@ -357,7 +360,7 @@ export function shapeLeave(r: any, names: Map<string, string>): LeaveRow {
 function assembleWorkforce(rows: AdminRows, students: AStudent[], tmlBefore: Map<string, Record<string, number>>, now: number): Workforce {
   const today = isoDay(new Date(now));
   const since30 = now - 30 * DAY;
-  const names = new Map(rows.users.map(u => [u.id, u.name || u.email || 'Staff member']));
+  const names = new Map([...(rows.register || []).map(m => [`s:${m.id}`, m.name] as [string, string]), ...rows.users.map(u => [u.id, u.name || u.email || 'Staff member'] as [string, string])]);
   const leave = rows.leave.map(r => shapeLeave(r, names))
     .sort((a, b) => (a.status === 'pending') === (b.status === 'pending') ? (a.from < b.from ? 1 : -1) : a.status === 'pending' ? -1 : 1);
   const onLeaveToday = leave.filter(l => l.status === 'approved' && l.from <= today && l.to >= today);

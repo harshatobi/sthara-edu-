@@ -52,7 +52,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     if (n.href === '/admin/admissions') return !a.can('fees.read');
     return true;
   }).map(n => (n.href === '/admin/fees' && a && !a.can('admissions.read') ? { ...n, label: 'Fees', also: [] } : n));
-  return <CanonShell subtitle="COMMAND CENTRE" nav={nav} label="Admin navigation">{children}</CanonShell>;
+  return <CanonShell subtitle="COMMAND CENTRE" nav={nav} label="Admin navigation" inbox>{children}</CanonShell>;
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

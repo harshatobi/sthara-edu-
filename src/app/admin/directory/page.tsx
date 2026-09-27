@@ -6,6 +6,7 @@ import { Users, Search, ArrowLeft, GraduationCap, BookOpen, UserCheck, Shield, T
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
+import TeacherAssignmentsEditor from '@/components/admin/TeacherAssignmentsEditor';
 
 interface UserData {
   id: string;
@@ -16,7 +17,10 @@ interface UserData {
   branch?: string;
   custom_student_id?: string;
   assignments?: { class: string; subject: string }[];
+  teacher_class?: string | null;
   metadata?: { linkedStudents?: string[] };
+  /** Verified and pending guardian links (parents only). */
+  children?: { name: string; verified: boolean }[];
 }
 
 const ROLE_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
@@ -37,6 +41,7 @@ export default function AdminDirectoryPage() {
   const [filterRole, setFilterRole] = useState<'all' | 'student' | 'teacher' | 'parent' | 'admin'>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
+  const [editing, setEditing] = useState<UserData | null>(null);
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'admin')) router.push('/login');
@@ -243,6 +248,11 @@ export default function AdminDirectoryPage() {
                         )}
                       </td>
                       <td className="p-4 text-xs text-gray-500">
+                        {u.role === 'teacher' && (
+                          <button onClick={() => setEditing(u)} className="mb-1.5 text-blue-700 font-semibold hover:underline">
+                            {u.assignments?.length ? 'Edit classes & subjects' : 'Assign classes & subjects'}
+                          </button>
+                        )}
                         {u.role === 'teacher' && u.assignments && u.assignments.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {u.assignments.map((a, i) => (
@@ -251,9 +261,9 @@ export default function AdminDirectoryPage() {
                               </span>
                             ))}
                           </div>
-                        ) : u.role === 'parent' && u.metadata?.linkedStudents?.length ? (
+                        ) : u.role === 'parent' && u.children?.length ? (
                           <span className="text-purple-600 font-medium">
-                            Linked: {u.metadata.linkedStudents.join(', ')}
+                            Linked: {u.children.map(c => `${c.name}${c.verified ? '' : ' (not verified)'}`).join(', ')}
                           </span>
                         ) : (
                           <span className="text-gray-300">—</span>
@@ -284,6 +294,11 @@ export default function AdminDirectoryPage() {
           </div>
         )}
       </div>
+      {editing && (
+        <TeacherAssignmentsEditor teacher={editing} schoolId={profile!.schoolId!} sections={[...new Set(users.filter(x => x.role === 'student' && x.student_class).map(x => x.student_class!))]}
+          subjectsInUse={[...new Set(users.flatMap(x => (x.assignments || []).map(a => a.subject)))]}
+          onClose={() => setEditing(null)} onSaved={() => { setEditing(null); fetchUsers(); }} />
+      )}
     </div>
   );
 }

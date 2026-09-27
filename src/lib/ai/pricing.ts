@@ -50,6 +50,8 @@ export const AI_FEATURES = {
   homeworkGrade:    { label: 'Homework photo grading', who: 'Student' },
   adminAi:          { label: 'Admin AI assistant', who: 'Admin' },
   parentAsk:        { label: 'Ask the School OS', who: 'Parent' },
+  teacherAsk:       { label: 'Ask the School OS (teachers)', who: 'Teacher' },
+  leadershipAsk:    { label: 'Ask the School OS (leadership)', who: 'Admin' },
 } as const;
 
 export type AiFeature = keyof typeof AI_FEATURES;

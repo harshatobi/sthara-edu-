@@ -7,6 +7,7 @@ import { askSchoolOS } from '@/lib/parent/askServer';
 import { toWhatsAppText } from '@/lib/parent/ask';
 import { parentPost, MessageError } from '@/lib/parent/messages';
 import { linkUsable } from './config';
+import { handleStaffInbound } from '@/lib/staff/whatsapp';
 import { sendWhatsApp } from './send';
 
 const HISTORY_MS = 24 * 3600_000;
@@ -14,8 +15,9 @@ const HISTORY_MS = 24 * 3600_000;
 const HELP = `This is your child's school on Sthara. Ask anything about schoolwork, progress, wellbeing or fees, in any language.\n\nReply STOP to pause messages, START to resume.`;
 
 /**
- * One inbound WhatsApp text from a parent: link check, commands (STOP / START / HELP /
- * SEND / a numbered option), then Ask the School OS with the recent conversation.
+ * One inbound WhatsApp text: link check, then by role. Parents: commands (STOP / START /
+ * HELP / SEND / a numbered option) and Ask the School OS with the recent conversation.
+ * Teachers and school leadership: lib/staff/whatsapp.ts.
  * Runs after the webhook has already answered Meta.
  */
 export async function handleInbound(db: SupabaseClient, msg: { from: string; text: string; id: string | null }) {
@@ -37,11 +39,13 @@ export async function handleInbound(db: SupabaseClient, msg: { from: string; tex
     const { data: recent } = await db.from('whatsapp_log').select('id').eq('phone_e164', phone).eq('direction', 'out').eq('kind', 'system')
       .gte('created_at', new Date(Date.now() - HISTORY_MS).toISOString()).limit(1);
     if (!recent?.length) {
-      await sendWhatsApp(db, { to: phone, kind: 'system', body: 'This number isn’t linked to a Sthara parent account. Sign in to the parent portal and open Settings > WhatsApp to link it.' });
+      await sendWhatsApp(db, { to: phone, kind: 'system', body: 'This number isn’t linked to a Sthara account. Parents: sign in and open Settings > WhatsApp. Teachers and school leaders: open Ask the School OS in Sthara and link WhatsApp there.' });
     }
     return;
   }
   const { data: parent } = await db.from('users').select('id, name, role, school_id').eq('id', link.user_id).maybeSingle();
+  // Teachers and school leadership have their own commands and School OS (lib/staff/whatsapp.ts).
+  if (parent && (parent.role === 'teacher' || parent.role === 'admin')) { await handleStaffInbound(db, parent.id, phone, text, mark); return; }
   if (!parent || parent.role !== 'parent' || !parent.school_id) { await mark({ status: 'ignored' }); return; }
   await mark({ user_id: parent.id, school_id: parent.school_id });
   const reply = (body: string, kind: 'answer' | 'system' | 'message' = 'system', meta: Record<string, unknown> = {}) =>

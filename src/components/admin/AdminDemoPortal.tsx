@@ -136,9 +136,9 @@ export default function AdminDemoPortal() {
             <div className="hero">
               <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
                 <div>
-                  <h1>DPS Vasundhara</h1>
+                  <h1>Sthara Demo School</h1>
                   <div className="hsub">
-                    Command Centre · AY 2026–27 <span className="chip mono">sch-vsn-2026</span> <span className="chip">Shikhara plan · 812 students</span>
+                    Command Centre · AY 2026–27 <span className="chip">Shikhara plan · 812 students</span>
                   </div>
                 </div>
                 <button className="btn" style={{ background: '#fff', color: 'var(--ink)' }} onClick={() => alert('Board pack PDF export generated!')}>

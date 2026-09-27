@@ -101,7 +101,7 @@ function buildDemoProfile(role: Role): UserProfile {
   return {
     uid: 'demo-user',
     id: 'demo-user',
-    email: 'priya.menon@dpsvasundhara.edu.in',
+    email: 'demo.teacher@sthara.in',
     role: role as UserProfile['role'],
     schoolId: 'demo-school',
     name: 'Priya Menon',

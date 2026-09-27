@@ -202,7 +202,7 @@ function DayView({ day, who, hasTimetable, isToday, onFlag }: { day: AgendaDay; 
   return (
     <div className="card">
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-        {who.kind !== 'office' && <Chip tone="b">{plural(lessons, 'PERIOD')}</Chip>}
+        {who.kind !== 'office' && <Chip tone="b">{plural(lessons, 'PERIOD', 'PERIODS')}</Chip>}
         {day.cancelled > 0 && <Chip tone="n">{day.cancelled} OFF FOR A WING HOLIDAY OR SHORTER DAY</Chip>}
       </div>
       {!day.items.length ? (

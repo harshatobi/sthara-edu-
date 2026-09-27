@@ -130,8 +130,10 @@ export default function DutiesTab({ rows, call, reload, toast, canWorkforce, can
               <table className="tbl">
                 <thead><tr><th>Person</th><th className="c">Periods</th><th className="c">Covers</th><th className="c">Roster</th><th className="c">Duties</th><th className="c">Comp-off</th></tr></thead>
                 <tbody>{fair.slice(0, 30).map(r => {
+                  // Compared among teachers only: a driver on gate duty every day is doing their job, not carrying extra.
+                  const teachers = fair.filter(x => x.periodsPerWeek > 0);
                   const total = r.covers + r.rosterPerWeek + r.duties;
-                  const avg = fair.reduce((n, x) => n + x.covers + x.rosterPerWeek + x.duties, 0) / fair.length;
+                  const avg = r.periodsPerWeek > 0 && teachers.length ? teachers.reduce((n, x) => n + x.covers + x.rosterPerWeek + x.duties, 0) / teachers.length : 0;
                   return (
                     <tr key={r.person}>
                       <td><b>{r.name}</b>{avg > 0 && total > avg * 1.75 && total >= 4 && <div style={{ fontSize: 11.5, color: 'var(--amber)', fontWeight: 700 }}>Carrying more than most</div>}</td>

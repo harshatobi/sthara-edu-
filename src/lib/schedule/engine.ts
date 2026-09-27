@@ -393,7 +393,8 @@ export function agenda(who: Subject, from: string, to: string, rows: ScheduleRow
       const teacher = slotPerson(s);
       items.push({
         kind: 'lesson', start: p.starts_at, end: p.ends_at, slot: s, room: roomOf(s, rows.rooms),
-        teacherName: teacher ? names.get(teacher) ?? null : null, covered: takenAway, coveredBy: sub ? names.get(sub) ?? 'a colleague' : null,
+        // A teacher's own agenda doesn't repeat their own name on every lesson.
+        teacherName: teacher && who.kind !== 'teacher' ? names.get(teacher) ?? null : null, covered: takenAway, coveredBy: sub ? names.get(sub) ?? 'a colleague' : null,
       });
     }
 

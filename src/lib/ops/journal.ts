@@ -20,10 +20,12 @@ const isSchoolField = (k: string): k is keyof SchoolPatch => Object.hasOwn(SCHOO
 
 /** The setting's human name; unknown keys fall back to the raw key. */
 const EVENTS: Record<string, string> = { 'school.deleted': 'School deleted', 'account.deleted': 'Account deleted' };
+/** Platform settings that no longer exist, so old journal rows still read properly. */
+const RETIRED: Record<string, string> = { 'onboarding.self_serve': 'Self-serve school sign-up (retired: logins are created by operators only)' };
 
 export function journalLabel(scope: JournalScope, key: string): string {
   if (Object.hasOwn(EVENTS, key)) return EVENTS[key];
-  if (scope === 'platform') return isPlatformKey(key) ? PLATFORM_SETTINGS[key].label : key;
+  if (scope === 'platform') return isPlatformKey(key) ? PLATFORM_SETTINGS[key].label : Object.hasOwn(RETIRED, key) ? RETIRED[key] : key;
   return isSchoolField(key) ? SCHOOL_FIELD_LABELS[key] : key;
 }
 

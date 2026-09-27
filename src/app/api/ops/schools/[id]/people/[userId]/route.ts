@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
-import { resetPassword, updateTeacherAssignments } from '@/lib/ops/accounts';
+import { parseAssignments, resetPassword, updateTeacherAssignments } from '@/lib/ops/accounts';
 import { deleteAccount } from '@/lib/ops/deletions';
 import { parseReason } from '@/lib/settings/registry';
 
@@ -15,8 +15,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (!op) return notFoundResponse();
   const { id, userId } = await params;
   const b = await req.json().catch(() => ({}));
-  const subjects = Array.isArray(b.subjects) ? b.subjects.slice(0, 60) : [];
-  const { error } = await updateTeacherAssignments(createAdminClient(), id, op.id, userId, subjects, b.classTeacherOf || null);
+  const subjects = parseAssignments(b.subjects ?? []);
+  if (!subjects) return NextResponse.json({ error: 'Each assignment needs a class and a subject (at most 60).' }, { status: 400 });
+  const classTeacherOf = typeof b.classTeacherOf === 'string' && b.classTeacherOf.trim() ? b.classTeacherOf.trim().slice(0, 40) : null;
+  const { error } = await updateTeacherAssignments(createAdminClient(), id, op.id, userId, subjects, classTeacherOf);
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

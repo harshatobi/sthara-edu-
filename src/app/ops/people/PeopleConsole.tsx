@@ -80,8 +80,9 @@ export default function PeopleConsole() {
                 <tr key={p.id}>
                   <td><div className="nm">{p.name || '—'}</div><div className="sub" style={{ overflowWrap: 'anywhere' }}>{p.email}</div></td>
                   <td><Chip tone={ROLE_TONE[p.role] ?? 'n'}>{p.role === 'superadmin' ? 'OPERATOR' : p.role.toUpperCase()}</Chip>{p.tempPassword && <div className="sub">temp password</div>}</td>
-                  <td>{p.schoolId ? <Link href={`/ops/schools/${p.schoolId}?tab=people`} style={{ fontWeight: 600 }}>{p.school}</Link> : <span className="muted">—</span>}{p.schoolCode && <div className="sub mono">{p.schoolCode}</div>}</td>
-                  <td style={{ fontSize: 13 }}>{p.detail || '—'}</td>
+                  <td>{p.schoolId ? <Link href={`/ops/schools/${p.schoolId}?tab=${p.role === 'teacher' ? 'teaching' : 'people'}`} style={{ fontWeight: 600 }}>{p.school}</Link> : <span className="muted">—</span>}{p.schoolCode && <div className="sub mono">{p.schoolCode}</div>}</td>
+                  <td style={{ fontSize: 13 }}>{p.detail || '—'}
+                    {p.role === 'teacher' && p.schoolId && <div><Link href={`/ops/schools/${p.schoolId}?tab=teaching`} style={{ color: 'var(--blue)', fontWeight: 700, fontSize: 12.5 }}>Assign classes &amp; subjects</Link></div>}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.createdAt)}</td>
                   <td className="r">
                     {issued[p.id]

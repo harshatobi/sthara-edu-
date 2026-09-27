@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isRole, withTimeout } from '@/lib/auth/roles';
@@ -285,7 +284,8 @@ export default function LoginPage() {
             </button>
             <div className="lg-foot">
               New school? <b style={{ color: '#B9CAE2', cursor: 'pointer' }}>
-                <Link href="/#pricing">Book a paid pilot <ArrowRight size={13} weight="bold" /></Link>
+                {/* The marketing site is static HTML, not an app route: a plain link (no RSC prefetch, which 404s). */}
+                <a href="/#pricing">Book a paid pilot <ArrowRight size={13} weight="bold" /></a>
               </b>
               <br />
               <span style={{ opacity: .6 }}>Privacy Policy</span> <span style={{ opacity: .6 }}>·</span>{' '}

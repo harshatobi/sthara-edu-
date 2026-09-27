@@ -5,6 +5,7 @@ import { SquaresFourIcon as SquaresFour } from '@phosphor-icons/react/dist/ssr/S
 import { BuildingsIcon as Buildings } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { AddressBookIcon as AddressBook } from '@phosphor-icons/react/dist/ssr/AddressBook';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
+import { UserPlusIcon as UserPlus } from '@phosphor-icons/react/dist/ssr/UserPlus';
 import { CoinsIcon as Coins } from '@phosphor-icons/react/dist/ssr/Coins';
 import { SlidersHorizontalIcon as SlidersHorizontal } from '@phosphor-icons/react/dist/ssr/SlidersHorizontal';
 import { HeartbeatIcon as Heartbeat } from '@phosphor-icons/react/dist/ssr/Heartbeat';
@@ -17,6 +18,7 @@ const NAV: CanonNavItem[] = [
   { href: '/ops', label: 'Overview', icon: SquaresFour, exact: true },
   { href: '/ops/schools', label: 'Schools', icon: Buildings },
   { href: '/ops/people', label: 'People', icon: AddressBook },
+  { href: '/ops/requests', label: 'Login requests', short: 'Requests', icon: UserPlus },
   { href: '/ops/enquiries', label: 'Enquiries', icon: EnvelopeSimple },
   { href: '/ops/usage', label: 'AI usage & cost', short: 'AI cost', icon: Coins },
   { href: '/ops/settings', label: 'Platform settings', short: 'Settings', icon: SlidersHorizontal },

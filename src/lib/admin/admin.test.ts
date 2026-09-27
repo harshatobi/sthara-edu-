@@ -245,3 +245,11 @@ test('compliance flags consent and guardian gaps', () => {
   assert.equal(d.compliance.audit[0].actor, 'Admin');
   assert.equal(auditSummary({ table_name: 'fee_payments', action: 'INSERT', new_values: { receipt_no: 'RCT/2026-27/00001' } }), 'Receipt RCT/2026-27/00001 recorded');
 });
+
+test('audit summaries: deletions and the staff attendance tables read as words', () => {
+  assert.equal(auditSummary({ table_name: 'leave_requests', action: 'DELETE', old_values: { status: 'approved' } }), 'Leave request removed');
+  assert.equal(auditSummary({ table_name: 'staff_day_marks', action: 'DELETE', old_values: {} }), 'Staff register mark removed');
+  assert.equal(auditSummary({ table_name: 'shifts', action: 'INSERT', new_values: {} }), 'Shift added');
+  assert.equal(auditSummary({ table_name: 'leave_requests', action: 'UPDATE', new_values: { status: 'approved' }, old_values: { status: 'pending' } }), 'Leave approved');
+  assert.equal(auditSummary({ table_name: 'guardians', action: 'DELETE', old_values: {} }), 'Guardian unlinked');
+});

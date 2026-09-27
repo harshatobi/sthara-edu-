@@ -36,7 +36,8 @@ const nextConfig: NextConfig = {
       { source: '/site/assets/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' }] },
     ];
   },
-  typescript: { ignoreBuildErrors: true },
+  // Type errors fail the build (the codebase type-checks clean; keep it that way).
+  typescript: { ignoreBuildErrors: false },
   images: { unoptimized: true },
   serverExternalPackages: ['firebase-admin', '@google/generative-ai'],
   // The ops Settings module compares the repo's migrations with the ones applied live.

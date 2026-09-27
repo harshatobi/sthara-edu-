@@ -43,13 +43,21 @@ export async function GET(request: NextRequest) {
 
     const { data: users, error: usersErr } = await supabase
       .from('users')
-      .select('id, name, email, role, student_class, branch, custom_student_id, assignments, metadata, created_at')
+      .select('id, name, email, role, student_class, branch, custom_student_id, assignments, teacher_class, metadata, created_at')
       .eq('school_id', schoolId)
       .order('created_at', { ascending: false });
 
     if (usersErr) throw usersErr;
 
-    return NextResponse.json({ users: users || [] });
+    // Parents' children from the verified guardian links (the source of truth), not the older metadata list.
+    const parentIds = (users || []).filter(u => u.role === 'parent').map(u => u.id);
+    const { data: links } = parentIds.length
+      ? await supabase.from('guardians').select('parent_id, student_id, verified').in('parent_id', parentIds)
+      : { data: [] as any[] };
+    const nameOf = new Map((users || []).map(u => [u.id, u.name]));
+    const children = new Map<string, { name: string; verified: boolean }[]>();
+    for (const l of links || []) children.set(l.parent_id, [...(children.get(l.parent_id) || []), { name: nameOf.get(l.student_id) || 'A student', verified: !!l.verified }]);
+    return NextResponse.json({ users: (users || []).map(u => (u.role === 'parent' ? { ...u, children: children.get(u.id) || [] } : u)) });
   } catch (err: any) {
     console.error('[admin/users] Error:', err);
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });

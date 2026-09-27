@@ -246,9 +246,10 @@ export interface Away {
 /** Why a person is away on a date: approved leave and confirmed absences or releases. */
 export function awayOn(date: string, who: PersonKey, rows: Pick<ScheduleRows, 'leave' | 'absences'>): Away[] {
   const out: Away[] = [];
-  if (!who.startsWith('s:')) {
+  {
     for (const l of rows.leave) {
-      if (l.staff_id === who && l.status === 'approved' && l.from_date <= date && l.to_date >= date) {
+      // Accounts' leave carries staff_id; leave HR enters for staff with no login carries staff_member_id.
+      if (personKey(l.staff_id, l.staff_member_id) === who && l.status === 'approved' && l.from_date <= date && l.to_date >= date) {
         out.push({ reason: 'leave', portion: 'full', periods: [], unsureHalf: l.half_day, leaveType: l.leave_type });
       }
     }

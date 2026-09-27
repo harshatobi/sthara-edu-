@@ -5,6 +5,7 @@ import type { FeedCaller } from './access';
 import { teaches } from './access';
 import { detectAbsenceStreaks, detectExamAbsences, istDay, DAY_MS } from './rules';
 import { classTeachersOf, raise } from './raise';
+import { notifyGuardians } from '@/lib/parent/notify';
 
 export type Mark = 'present' | 'absent' | 'late' | 'excused';
 const STATUSES = new Set<Mark>(['present', 'absent', 'late', 'excused']);
@@ -50,6 +51,8 @@ export async function saveRegister(db: SupabaseClient, me: FeedCaller, cls: stri
     const note = typeof m.note === 'string' && m.note.trim() ? m.note.trim().slice(0, 300) : null;
     rows.push({ school_id: me.schoolId, student_id: m.studentId, class_name: displayClass(cls), day, status: m.status as Mark, note, marked_by: me.id, marked_at: new Date().toISOString() });
   }
+  const { data: before } = await db.from('attendance').select('student_id, status').eq('day', day).in('student_id', rows.map(r => r.student_id));
+  const wasAbsent = new Set((before || []).filter(b => b.status === 'absent').map(b => b.student_id));
   const { error } = await db.from('attendance').upsert(rows, { onConflict: 'student_id,day' });
   if (error) {
     console.error('[attendance]', error.message);
@@ -68,6 +71,18 @@ export async function saveRegister(db: SupabaseClient, me: FeedCaller, cls: stri
     ])).created;
   } catch (e: any) {
     console.warn('[attendance] feed checks failed:', e?.message);
+  }
+  // Parents hear the same day when their child is newly marked absent (in the app, and on WhatsApp if they opted in).
+  if (day === today) {
+    for (const r of rows.filter(x => x.status === 'absent' && !wasAbsent.has(x.student_id))) {
+      const s = inClass.get(r.student_id)!;
+      await notifyGuardians(db, {
+        schoolId: me.schoolId, studentId: r.student_id, type: 'attendance', pref: 'alerts',
+        title: `${s.name.split(' ')[0]} is marked absent today`,
+        body: `${s.name} was marked absent in ${displayClass(cls)} today (${day}). If this is unexpected, reply to the class teacher from Messages.`,
+        metadata: { day, class: displayClass(cls) },
+      });
+    }
   }
   const counts = rows.reduce((a, r) => ({ ...a, [r.status]: (a[r.status] || 0) + 1 }), {} as Record<string, number>);
   return { saved: rows.length, counts, raised, rows };

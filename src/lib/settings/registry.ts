@@ -22,17 +22,11 @@ export const PLATFORM_SETTINGS = {
     help: 'Master switch for every Gemini call: tutor, grading, homework and quiz generation, the teaching copilot and the admin assistant. Off returns a clear "paused" message instead of calling the model.',
     enforcedAt: ['src/lib/settings/server.ts aiGate()', 'every route under /api that calls Gemini'],
   },
-  'onboarding.self_serve': {
-    type: 'boolean', default: true, danger: 'on', group: 'Accounts',
-    label: 'Self-serve school sign-up',
-    help: 'Lets anyone create a school and admin login from /onboard without an operator. Off: new schools can only be created here in the console.',
-    enforcedAt: ['/api/onboard'],
-  },
   'trial.default_days': {
     type: 'integer', default: 30, min: 7, max: 180, unit: 'days', group: 'Accounts',
     label: 'Default pilot length',
-    help: 'Pilot length given to schools created through self-serve sign-up, and the starting value when an operator creates a pilot school. A pilot is one term.',
-    enforcedAt: ['/api/onboard', '/api/ops/schools (POST default)'],
+    help: 'The starting pilot length when an operator creates a pilot school. A pilot is one term.',
+    enforcedAt: ['/api/ops/schools (POST default)'],
   },
   'notice.message': {
     type: 'text', default: '', maxLength: 240, group: 'Communication',

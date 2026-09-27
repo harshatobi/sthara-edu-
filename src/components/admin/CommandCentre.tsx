@@ -106,7 +106,7 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
         <Kpi href="/admin/directory" label="ENROLMENT" value={desk.students.length} icon={UsersThree}
           note={`${plural(sections, 'section')} · ${plural(desk.parents, 'parent account')}`} />
         {a.can('workforce.read') && <Kpi href="/admin/staff" label="TEACHING STAFF" value={wf.teachers.length} icon={ChalkboardTeacher}
-          note={wf.ratio ? `1:${wf.ratio} student-teacher ratio${wf.onLeaveToday.length ? ` · ${wf.onLeaveToday.length} on leave today` : ''}` : 'Add teachers in the directory'} />}
+          note={wf.ratio ? `1:${wf.ratio} student-teacher ratio${wf.onLeaveToday.length ? ` · ${wf.onLeaveToday.length} on leave today` : ''}` : 'Request teacher logins in the directory'} />}
         {a.can('academics.read') && <><Kpi href="/admin/academic" label="EVIDENCE COVERAGE" value={evidence !== null ? `${evidence}%` : '—'} icon={Target}
           note={`${ac.evidenced} of ${desk.students.length} with graded work`} noteColor={evidence !== null && evidence < 60 ? 'var(--amber)' : 'var(--mut)'} />
         <Kpi href="/admin/academic#at-risk" label="STUDENTS AT RISK" value={ac.atRisk.length} icon={Warning}

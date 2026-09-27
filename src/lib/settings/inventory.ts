@@ -71,7 +71,6 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
   const add = (i: InventoryItem) => out.push(i);
   const prod = x.env.VERCEL_ENV === 'production';
   const aiOn = x.platform['ai.enabled'];
-  const selfServe = x.platform['onboarding.self_serve'];
 
   // ── Secrets and keys ─────────────────────────────────────────────────────
   const G1 = 'Secrets and keys';
@@ -88,13 +87,13 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
   add({
     id: 'env.public_supabase', group: G1, label: 'Supabase URL and public key', source: 'environment',
     value: pubSet ? 'Set' : 'Not set',
-    status: pubSet ? 'ok' : x.secrets.NEXT_PUBLIC_SUPABASE_URL ? (selfServe ? 'crit' : 'warn') : 'crit',
+    status: pubSet ? 'ok' : x.secrets.NEXT_PUBLIC_SUPABASE_URL ? 'warn' : 'crit',
     detail: pubSet
       ? 'Browser and server clients use NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY.'
       : !x.secrets.NEXT_PUBLIC_SUPABASE_URL
         ? 'NEXT_PUBLIC_SUPABASE_URL is not set: server routes can\'t reach the database at all.'
-        : `NEXT_PUBLIC_SUPABASE_ANON_KEY is not set: the browser falls back to the key hard-coded in src/lib/supabase/client.ts, and self-serve sign-up refuses to run${selfServe ? ' while it is switched on' : ''}.`,
-    enforcedAt: ['src/lib/supabase/client.ts', '/api/onboard'],
+        : 'NEXT_PUBLIC_SUPABASE_ANON_KEY is not set: the browser falls back to the key hard-coded in src/lib/supabase/client.ts.',
+    enforcedAt: ['src/lib/supabase/client.ts'],
   });
   const aiKey = x.secrets.GEMINI_API_KEY || x.secrets.GOOGLE_GENERATIVE_AI_API_KEY;
   add({
@@ -205,7 +204,6 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
     let status: Status = 'ok';
     let note = '';
     if (key === 'ai.enabled' && !v) { status = 'warn'; note = 'AI is paused for every school.'; }
-    if (key === 'onboarding.self_serve' && v) { status = 'info'; note = 'Anyone can create a school from /onboard.'; }
     if (key === 'notice.message' && v) { status = 'info'; note = 'A notice is showing to every user.'; }
     add({
       id: `platform.${key}`, group: G3, label: def.label, source: 'platform',

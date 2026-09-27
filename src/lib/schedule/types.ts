@@ -117,7 +117,7 @@ export interface ScheduleRows {
   /** Section names seen on students (display form). */
   studentClasses: string[];
   /** Approved leave, own or (for the office) the school's. */
-  leave: { id: string; staff_id: string; leave_type: string; from_date: string; to_date: string; half_day: boolean; status: string }[];
+  leave: { id: string; staff_id: string | null; staff_member_id?: string | null; leave_type: string; from_date: string; to_date: string; half_day: boolean; status: string }[];
   absences: Absence[];
   covers: Cover[];
   dutyPosts: DutyPost[];

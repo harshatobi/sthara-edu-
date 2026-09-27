@@ -19,6 +19,8 @@ export { CONSENT_TYPES, LEAVE_TYPES };
 export interface AdminRows {
   school: { id: string; name: string; settings: any };
   users: any[];
+  /** Staff register (id, name) for leave the office entered for staff with no login. */
+  register?: { id: string; name: string }[];
   tml: any[];
   assignments: any[];
   submissions: any[];
@@ -347,7 +349,8 @@ export function shapeLeave(r: any, names: Map<string, string>): LeaveRow {
   const from = String(r.from_date).slice(0, 10);
   const to = String(r.to_date).slice(0, 10);
   return {
-    id: r.id, staffId: r.staff_id, staffName: names.get(r.staff_id) || 'Staff member', type: r.leave_type, from, to,
+    // Leave the office entered for someone with no login carries staff_member_id ("s:" + id in the names map).
+    id: r.id, staffId: r.staff_id ?? `s:${r.staff_member_id}`, staffName: names.get(r.staff_id ?? `s:${r.staff_member_id}`) || 'Staff member', type: r.leave_type, from, to,
     halfDay: !!r.half_day, days: leaveDays(from, to, !!r.half_day), reason: r.reason, status: r.status,
     decidedAt: r.decided_at ?? null, decidedBy: r.decided_by ? names.get(r.decided_by) || 'Admin' : null,
     note: r.decision_note ?? null, createdAt: r.created_at,
@@ -357,7 +360,7 @@ export function shapeLeave(r: any, names: Map<string, string>): LeaveRow {
 function assembleWorkforce(rows: AdminRows, students: AStudent[], tmlBefore: Map<string, Record<string, number>>, now: number): Workforce {
   const today = isoDay(new Date(now));
   const since30 = now - 30 * DAY;
-  const names = new Map(rows.users.map(u => [u.id, u.name || u.email || 'Staff member']));
+  const names = new Map([...(rows.register || []).map(m => [`s:${m.id}`, m.name] as [string, string]), ...rows.users.map(u => [u.id, u.name || u.email || 'Staff member'] as [string, string])]);
   const leave = rows.leave.map(r => shapeLeave(r, names))
     .sort((a, b) => (a.status === 'pending') === (b.status === 'pending') ? (a.from < b.from ? 1 : -1) : a.status === 'pending' ? -1 : 1);
   const onLeaveToday = leave.filter(l => l.status === 'approved' && l.from <= today && l.to >= today);
@@ -451,13 +454,18 @@ export function assembleWellness(rows: any[], enrolled: number, since: string, n
 const TABLE_LABEL: Record<string, string> = {
   submissions: 'Grade', users: 'User account', consents: 'Consent', guardians: 'Guardian link', fee_structures: 'Fee structure',
   fee_invoices: 'Invoice', fee_payments: 'Receipt', fee_reminders: 'Fee reminder', admission_applicants: 'Applicant',
-  leave_requests: 'Leave request', school_filings: 'Filing',
+  leave_requests: 'Leave request', school_filings: 'Filing', classes: 'Class', account_requests: 'Login request',
+  attendance_settings: 'Staff attendance settings', shifts: 'Shift', staff_shift_plans: 'Shift plan', shift_overrides: 'Shift change',
+  staff_punches: 'Check-in', staff_day_marks: 'Staff register mark', attendance_devices: 'Biometric device', attendance_month_reviews: 'Month review',
 };
+const VERB: Record<string, string> = { INSERT: 'added', UPDATE: 'changed', DELETE: 'removed' };
 
 export function auditSummary(r: any): string {
   const t = TABLE_LABEL[r.table_name] || r.table_name;
   const nv = r.new_values || {};
   const ov = r.old_values || {};
+  // A deletion has no new values: say what went, not "Leave undefined".
+  if (r.action === 'DELETE' && !['fee_structures', 'guardians', 'users'].includes(r.table_name)) return `${t} removed`;
   switch (r.table_name) {
     case 'submissions':
       return nv.teacher_approved && !ov.teacher_approved ? 'Grade confirmed' : `${t} changed`;
@@ -491,7 +499,7 @@ export function auditSummary(r: any): string {
     case 'school_filings':
       return nv.status === 'filed' && ov.status !== 'filed' ? 'CBSE wellness report filed' : 'Filing draft saved';
     default:
-      return `${t} ${String(r.action).toLowerCase()}`;
+      return `${t} ${VERB[r.action] ?? String(r.action).toLowerCase()}`;
   }
 }
 

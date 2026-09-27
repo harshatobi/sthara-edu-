@@ -42,6 +42,8 @@ export interface Applicant {
   assessmentOn: string | null;
   notes: string | null;
   stageChangedAt: string;
+  /** The student account made at enrolment, when there is one. */
+  studentId: string | null;
   createdAt: string;
   /** Days in the current stage (open applicants only). */
   daysInStage: number;
@@ -96,7 +98,7 @@ export function shapeApplicant(r: any, events: any[], today = isoDay()): Applica
     previousSchool: r.previous_school ?? null, source: r.source || 'other', stage,
     furthest: (rank(r.furthest_stage) >= 0 ? r.furthest_stage : 'enquiry') as Stage,
     assessmentOn: r.assessment_on ?? null, notes: r.notes ?? null,
-    stageChangedAt: r.stage_changed_at, createdAt: r.created_at,
+    stageChangedAt: r.stage_changed_at, createdAt: r.created_at, studentId: r.student_id ?? null,
     daysInStage: open ? Math.max(0, daysBetween(String(r.stage_changed_at).slice(0, 10), today)) : 0,
     open,
     events: events

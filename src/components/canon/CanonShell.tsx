@@ -10,6 +10,7 @@ import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import TrialBanner from '@/components/ui/TrialBanner';
 import PlatformNotice from '@/components/ui/PlatformNotice';
+import NotificationBell from './NotificationBell';
 import { colorForIcon } from '@/lib/iconColors';
 import { useAuth } from '@/contexts/AuthContext';
 import '@/styles/canon.css';
@@ -34,11 +35,13 @@ const PHONE_TABS = 4;
  * layout: each nav entry is a real URL instead of the mockup's go(role, view)
  * innerHTML swap. Role-agnostic so teacher/admin/parent can move onto it too.
  */
-export default function CanonShell({ subtitle, nav, label, children }: {
+export default function CanonShell({ subtitle, nav, label, children, inbox }: {
   subtitle: string;
   nav: CanonNavItem[];
   label: string;
   children: ReactNode;
+  /** Show the notifications bell (teachers and office; parents have their own). */
+  inbox?: boolean;
 }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
@@ -89,6 +92,7 @@ export default function CanonShell({ subtitle, nav, label, children }: {
         </div>
       </aside>
       <main id="canon-main" tabIndex={-1}>
+        {inbox && <NotificationBell />}
         <PlatformNotice />
         <TrialBanner />
         {children}

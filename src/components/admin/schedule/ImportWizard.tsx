@@ -102,7 +102,7 @@ export default function ImportWizard({ rows, call, onClose, onDone }: { rows: Sc
                   </select>
                 </div>
               ))}
-              <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Unmatched teachers import as &quot;No teacher&quot; unless you pick an account. Add missing teachers in the user directory first if you&apos;d rather.</p>
+              <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Unmatched teachers import as &quot;No teacher&quot; unless you pick an account. Request logins for missing teachers in the user directory first if you&apos;d rather.</p>
             </div>
           ) : resolved.slots.some(s => s.teacher_id || s.staff_member_id) && <p className="muted" style={{ marginBottom: 12 }}>Every teacher matched an account.</p>}
 

@@ -9,19 +9,24 @@ import type { AdminDesk } from '@/lib/admin/desk';
 import type { Perm } from '@/lib/admin/rbac';
 import { useSchedule } from '@/lib/schedule/useSchedule';
 import MySchedule from '@/components/schedule/MySchedule';
+import CheckInCard from '@/components/schedule/CheckInCard';
 import TimetableTab from './TimetableTab';
 import SetupTab from './SetupTab';
 import CalendarTab from './CalendarTab';
 import StaffTab from './StaffTab';
 import CoverTab from './CoverTab';
 import DutiesTab from './DutiesTab';
+import AttendanceTab from './AttendanceTab';
+import ShiftsTab from './ShiftsTab';
 import '@/styles/schedule.css';
 
-type Tab = 'mine' | 'cover' | 'duties' | 'timetable' | 'setup' | 'calendar' | 'staff';
+type Tab = 'mine' | 'cover' | 'duties' | 'attendance' | 'shifts' | 'timetable' | 'setup' | 'calendar' | 'staff';
 const TABS: { key: Tab; label: string; see: Perm[] }[] = [
   { key: 'mine', label: 'My schedule', see: [] },
   { key: 'cover', label: 'Cover', see: ['schedule.academic'] },
   { key: 'duties', label: 'Duties', see: ['schedule.workforce', 'schedule.academic'] },
+  { key: 'attendance', label: 'Attendance', see: ['schedule.workforce', 'workforce.read'] },
+  { key: 'shifts', label: 'Shifts', see: ['schedule.workforce', 'workforce.read'] },
   { key: 'timetable', label: 'Timetable', see: ['schedule.academic', 'academics.read'] },
   { key: 'calendar', label: 'Calendar', see: [] },
   { key: 'setup', label: 'Bells & rooms', see: ['schedule.academic'] },
@@ -61,9 +66,12 @@ function Schedule({ desk }: { desk: AdminDesk }) {
             <div className="card"><Empty icon={<CalendarDots size={26} weight="duotone" />} title="Scheduling isn't in this database yet">The scheduling tables arrive with the scheduling migration. Once it&apos;s applied, this page fills in.</Empty></div>
           ) : (
             <>
+              {tab === 'mine' && <CheckInCard />}
               {tab === 'mine' && <MySchedule rows={common.rows} who={{ kind: 'office', userId: desk.me.id }} schoolName={desk.school.name} title="My schedule" />}
               {tab === 'cover' && <CoverTab {...common} />}
               {tab === 'duties' && <DutiesTab {...common} canWorkforce={a.can('schedule.workforce')} canAcademic={a.can('schedule.academic')} />}
+              {tab === 'attendance' && <AttendanceTab toast={toast} canEdit={a.can('schedule.workforce')} />}
+              {tab === 'shifts' && <ShiftsTab toast={toast} canEdit={a.can('schedule.workforce')} />}
               {tab === 'timetable' && <TimetableTab {...common} canEdit={a.can('schedule.academic')} />}
               {tab === 'calendar' && <CalendarTab {...common} canEdit={a.can('schedule.academic')} />}
               {tab === 'setup' && <SetupTab {...common} canEdit={a.can('schedule.academic')} />}

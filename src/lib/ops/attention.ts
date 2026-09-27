@@ -37,12 +37,26 @@ export interface RegistrySchool extends SchoolFacts {
 const RANK: Record<Severity, number> = { crit: 0, warn: 1, info: 2 };
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** Login requests a school is waiting on (Sthara creates every login). */
+export interface PendingRequests { schoolId: string; count: number; oldestDays: number }
+
 export function buildAttention(x: {
   schools: RegistrySchool[];
   health: InventoryItem[];
   newEnquiries: number;
+  pendingRequests?: PendingRequests[];
 }): AttentionItem[] {
   const out: AttentionItem[] = [];
+  const names = new Map(x.schools.map(s => [s.id, s.name]));
+  for (const p of x.pendingRequests ?? []) {
+    if (p.count <= 0) continue;
+    out.push({
+      id: `requests:${p.schoolId}`, severity: p.oldestDays >= 3 ? 'crit' : 'warn', schoolId: p.schoolId,
+      title: `${names.get(p.schoolId) ?? 'A school'}: ${plural(p.count, 'login request')} waiting`,
+      detail: p.oldestDays >= 1 ? `The oldest has waited ${plural(p.oldestDays, 'day')}. People can't sign in until the logins are made.` : 'Sent today. People can\'t sign in until the logins are made.',
+      actions: [{ kind: 'open', href: `/ops/requests?school=${p.schoolId}`, label: 'Review' }],
+    });
+  }
   for (const s of x.schools) {
     const open = (tab: string, label: string): AttentionAction => ({ kind: 'open', href: `/ops/schools/${s.id}?tab=${tab}`, label });
     if (!s.active) {

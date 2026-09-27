@@ -300,7 +300,7 @@ export default function TmlWhitepaperPage() {
 
         <h3>2.2 Time-Decay Recency Weighting for Homework (H<sub>s,t</sub>)</h3>
         <p>
-          A homework score earned 60 days ago does not accurately reflect a student's current mastery today. TML applies exponential decay to historical assessment submissions using a half-life of <b>t<sub>1/2</sub> = 14 days</b> (&lambda; = &ln; 2 / 14 &approx; 0.0495).
+          A homework score earned 60 days ago does not accurately reflect a student&apos;s current mastery today. TML applies exponential decay to historical assessment submissions using a half-life of <b>t<sub>1/2</sub> = 14 days</b> (&lambda; = &ln; 2 / 14 &approx; 0.0495).
         </p>
 
         <div className="formula-box">
@@ -343,7 +343,7 @@ export default function TmlWhitepaperPage() {
             &mathcal;C<sub>s,t</sub> = min( 1.0 , N<sub>data</sub> / 5 )
           </div>
           <div className="formula-desc">
-            • <b>N<sub>data</sub> &lt; 2</b> &rarr; <i>Insufficient Data</i> (Displayed as "—" on Heat Map)<br />
+            • <b>N<sub>data</sub> &lt; 2</b> &rarr; <i>Insufficient Data</i> (Displayed as &ldquo;—&rdquo; on Heat Map)<br />
             • <b>2 &le; N<sub>data</sub> &lt; 5</b> &rarr; <i>Provisional TML</i> (&plusmn;8% margin of error)<br />
             • <b>N<sub>data</sub> &ge; 5</b> &rarr; <i>Firm TML</i> (High statistical validity)
           </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { UserPlusIcon as UserPlus } from '@phosphor-icons/react/dist/ssr/UserPlus';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
@@ -15,7 +16,7 @@ import {
   nextStage, SOURCES, STAGE_COLOR, STAGE_LABEL, STAGE_ONE, STAGES, STALE_DAYS, type Applicant, type ApplicantStage,
 } from '@/lib/admin/admissions';
 import type { AdminDesk } from '@/lib/admin/desk';
-import { ago, fmtDate, isoDay, plural } from '@/lib/admin/format';
+import { ago, fmtDate, gradeOf, isoDay, plural } from '@/lib/admin/format';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Field, Kpi, MissingNotice, Workspace, downloadCsv } from './kit';
 import { FinanceTabs } from './fees/FeesPage';
@@ -171,10 +172,11 @@ function ApplicantRow({ a, canManage, onOpen, onAdvance }: { a: Applicant; canMa
       <td className="c num" style={{ color: a.daysInStage > STALE_DAYS ? 'var(--amber)' : undefined }}>{a.open ? `${a.daysInStage} d` : '—'}</td>
       <td className="muted" style={{ fontSize: 13 }}>{SOURCES[a.source] || a.source}</td>
       <td className="r" onClick={e => e.stopPropagation()}>
-        {next && (
+        {next === 'enrolled' && <button className="btn sm" onClick={onOpen}>Enrol <ArrowRight size={13} weight="bold" /></button>}
+        {next && next !== 'enrolled' && (
           <button className="btn sm pri" disabled={busy} onClick={async () => {
             setBusy(true); setErr(null);
-            try { await onAdvance(); } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+            try { await onAdvance(); } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not move them.'); } finally { setBusy(false); }
           }}>{busy ? 'Moving…' : <>To {STAGE_ONE[next].toLowerCase()} <ArrowRight size={13} weight="bold" /></>}</button>
         )}
       </td>
@@ -213,7 +215,7 @@ function DetailsForm({ d, set }: { d: Draft; set: (k: keyof Draft, v: string) =>
 
 const blank: Draft = { name: '', grade: '', dob: '', guardianName: '', guardianPhone: '', guardianEmail: '', previousSchool: '', source: 'walk_in', notes: '' };
 
-function NewApplicant({ session, onClose, onSave }: { session: string; onClose: () => void; onSave: (b: any) => Promise<void> }) {
+function NewApplicant({ session, onClose, onSave }: { session: string; onClose: () => void; onSave: (b: Record<string, unknown>) => Promise<void> }) {
   const [d, setD] = useState<Draft>(blank);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -221,7 +223,7 @@ function NewApplicant({ session, onClose, onSave }: { session: string; onClose: 
     if (!d.name.trim()) { setErr('Enter the applicant\'s name.'); return; }
     if (!d.grade) { setErr('Pick the grade applied for.'); return; }
     setBusy(true); setErr(null);
-    try { await onSave({ ...d, grade: Number(d.grade), session }); } catch (e: any) { setErr(e.message); setBusy(false); }
+    try { await onSave({ ...d, grade: Number(d.grade), session }); } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not save.'); setBusy(false); }
   };
   return (
     <Workspace title="New enquiry" sub={`Admissions · AY ${session.replace('-', '–')}`} onClose={onClose}
@@ -234,8 +236,25 @@ function NewApplicant({ session, onClose, onSave }: { session: string; onClose: 
   );
 }
 
+type Call = (p: string, m: 'PATCH' | 'POST' | 'DELETE', b: unknown) => Promise<unknown>;
+
+/** The latest enrolment request for an applicant (Sthara creates the logins when it approves one). */
+interface EnrolRequest { status: 'pending' | 'approved' | 'rejected' | 'cancelled'; options: { className?: string; rollNo?: string }; created_at: string; decision_note: string | null }
+function useEnrolRequest(applicantId: string) {
+  const [req, setReq] = useState<EnrolRequest | null | undefined>(undefined);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    createClient().from('account_requests').select('status, options, created_at, decision_note').eq('applicant_id', applicantId)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setReq((data as EnrolRequest | null) ?? null); });
+    return () => { cancelled = true; };
+  }, [applicantId, tick]);
+  return { req, refresh: () => setTick(t => t + 1) };
+}
+
 function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
-  a: Applicant; desk: AdminDesk; call: (p: string, m: 'PATCH', b: unknown) => Promise<any>; onClose: () => void; onChanged: (m: string) => void;
+  a: Applicant; desk: AdminDesk; call: Call; onClose: () => void; onChanged: (m: string) => void;
 }) {
   const [d, setD] = useState<Draft>({
     name: a.name, grade: String(a.grade), dob: a.dob || '', guardianName: a.guardianName || '', guardianPhone: a.guardianPhone || '',
@@ -243,17 +262,20 @@ function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
   });
   const [assessmentOn, setAssessmentOn] = useState(a.assessmentOn || '');
   const [closing, setClosing] = useState<'rejected' | 'withdrawn' | null>(null);
+  const [enrolling, setEnrolling] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const names = new Map(desk.workforce.admins.map(x => [x.id, x.name]));
   const manage = desk.me.access.can('admissions.manage');
   const next = a.open && manage ? nextStage(a.stage) : null;
+  const { req, refresh } = useEnrolRequest(a.id);
+  const pending = req?.status === 'pending';
 
-  const act = async (body: any, msg: string) => {
+  const act = async (body: Record<string, unknown>, msg: string) => {
     setBusy(true); setErr(null);
     try { await call('/api/admin/admissions', 'PATCH', { id: a.id, ...body }); setClosing(null); setNote(''); onChanged(msg); }
-    catch (e: any) { setErr(e.message); }
+    catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Something went wrong.'); }
     finally { setBusy(false); }
   };
 
@@ -263,9 +285,25 @@ function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
         {manage && a.open && <button className="btn" disabled={busy} onClick={() => setClosing('withdrawn')}>Withdrawn</button>}
         {manage && a.open && <button className="btn" disabled={busy} onClick={() => setClosing('rejected')}>Reject</button>}
         {manage && !a.open && a.stage !== 'enrolled' && <button className="btn" disabled={busy} onClick={() => act({ to: 'reopen' }, `${a.name} reopened`)}>Reopen</button>}
-        {next && <button className="btn pri" disabled={busy} onClick={() => act({ to: next }, `${a.name} moved to ${STAGE_ONE[next].toLowerCase()}`)}>Move to {STAGE_ONE[next].toLowerCase()} <ArrowRight size={13} weight="bold" /></button>}
+        {next && next !== 'enrolled' && <button className="btn pri" disabled={busy} onClick={() => act({ to: next }, `${a.name} moved to ${STAGE_ONE[next].toLowerCase()}`)}>Move to {STAGE_ONE[next].toLowerCase()} <ArrowRight size={13} weight="bold" /></button>}
+        {next === 'enrolled' && !a.studentId && req !== undefined && !pending && <button className="btn pri" disabled={busy} onClick={() => setEnrolling(true)}>Request enrolment <ArrowRight size={13} weight="bold" /></button>}
       </div>}>
       {err && <div className="err" role="alert" style={{ marginBottom: 14 }}>{err}</div>}
+      {pending && req && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--amber)' }}>
+          <CardHead title="Enrolment is with Sthara"
+            sub={`Requested ${fmtDate(req.created_at)}: ${req.options.className ?? ''}, admission no. ${req.options.rollNo ?? ''}. Sthara creates the student's and parent's logins, and ${a.name.split(' ')[0]} moves to Enrolled once they are made.`}
+            right={manage && <button className="btn sm" disabled={busy} onClick={async () => {
+              setBusy(true); setErr(null);
+              try { await call('/api/admin/admissions/enrol', 'DELETE', { applicantId: a.id }); refresh(); }
+              catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not withdraw the request.'); } finally { setBusy(false); }
+            }}>Withdraw request</button>} />
+        </div>
+      )}
+      {req?.status === 'rejected' && a.stage === 'offer' && (
+        <div className="note" style={{ marginBottom: 16 }}>Sthara didn&apos;t enrol {a.name.split(' ')[0]}{req.decision_note ? `: "${req.decision_note}"` : '.'} Fix the details and request again.</div>
+      )}
+      {enrolling && <EnrolPanel a={a} call={call} onCancel={() => setEnrolling(false)} onDone={m => { setEnrolling(false); refresh(); onChanged(m); }} />}
       {closing && (
         <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--red)' }}>
           <Field label={closing === 'rejected' ? 'REASON FOR REJECTION' : 'WHY DID THEY WITHDRAW?'} htmlFor="close-why" hint="Stays on the applicant's record.">
@@ -300,5 +338,54 @@ function ApplicantRecord({ a, desk, call, onClose, onChanged }: {
         </div>
       </div>
     </Workspace>
+  );
+}
+
+/**
+ * Enrolment request: the section and admission number (and optional emails). Sthara creates the logins when it
+ * approves the request: the student's, the parent's (or a link to their existing account), the fees already raised
+ * for the grade, and the move to Enrolled. Sections come from the school's class list.
+ */
+function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; onCancel: () => void; onDone: (m: string) => void }) {
+  const [sections, setSections] = useState<string[] | null>(null);
+  const [v, setV] = useState({ className: '', rollNo: '', studentEmail: '', parentEmail: a.guardianEmail || '', billFees: true });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    createClient().from('classes').select('name').then(({ data }) => {
+      if (cancelled) return;
+      const list = (data || []).map(c => c.name as string).filter(n => gradeOf(n) === a.grade).sort((x, y) => x.localeCompare(y, 'en', { numeric: true }));
+      setSections(list);
+      setV(x => (x.className ? x : { ...x, className: list[0] ?? '' }));
+    });
+    return () => { cancelled = true; };
+  }, [a.grade]);
+  return (
+    <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--blue)' }}>
+      <CardHead title={`Request enrolment for ${a.name}`} sub={`Grade ${a.grade}. Sthara creates the student's login and the parent's (or links their existing account), raises the fees if you ask, and moves them to Enrolled. You'll get the sign-in details from Sthara.`} />
+      {sections && !sections.length && <div className="note" style={{ marginBottom: 12 }}>Your class list has no grade {a.grade} section yet. Ask Sthara to add one.</div>}
+      <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <Field label="SECTION" htmlFor="en-c">
+          <select id="en-c" className="cmp-sel" value={v.className} onChange={e => setV({ ...v, className: e.target.value })} disabled={!sections?.length}>
+            {!sections && <option value="">Loading…</option>}
+            {(sections || []).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </Field>
+        <Field label="ADMISSION NO." htmlFor="en-r"><input id="en-r" className="cmp-in" value={v.rollNo} onChange={e => setV({ ...v, rollNo: e.target.value })} /></Field>
+        <Field label="STUDENT EMAIL (OPTIONAL)" htmlFor="en-s" hint="Leave blank for a school login ID"><input id="en-s" className="cmp-in" value={v.studentEmail} onChange={e => setV({ ...v, studentEmail: e.target.value })} /></Field>
+        <Field label="PARENT EMAIL" htmlFor="en-p" hint="An existing parent account is linked, not duplicated"><input id="en-p" className="cmp-in" value={v.parentEmail} onChange={e => setV({ ...v, parentEmail: e.target.value })} /></Field>
+      </div>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, margin: '4px 0 12px' }}><input type="checkbox" checked={v.billFees} onChange={e => setV({ ...v, billFees: e.target.checked })} /> Raise the fee instalments already billed to grade {a.grade} this session</label>
+      {err && <div className="err" role="alert" style={{ marginBottom: 10 }}>{err}</div>}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <button className="btn" onClick={onCancel}>Cancel</button>
+        <button className="btn pri" disabled={busy || !v.className.trim() || !v.rollNo.trim()} onClick={async () => {
+          setBusy(true); setErr(null);
+          try { await call('/api/admin/admissions/enrol', 'POST', { applicantId: a.id, ...v }); onDone(`Enrolment request for ${a.name} sent to Sthara`); }
+          catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not send the request.'); } finally { setBusy(false); }
+        }}>{busy ? 'Sending…' : 'Send to Sthara'}</button>
+      </div>
+    </div>
   );
 }

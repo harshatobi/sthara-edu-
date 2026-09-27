@@ -1,7 +1,7 @@
 'use client';
 
 /** The school workspace's working parts: classes, adding people, teaching assignments and the roster. */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BooksIcon as Books } from '@phosphor-icons/react/dist/ssr/Books';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { KeyIcon as Key } from '@phosphor-icons/react/dist/ssr/Key';
@@ -13,13 +13,17 @@ import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import { Chip, Empty, type Tone } from '@/components/canon/ui';
 import { coreSubjectsForClass, subjectsForClass } from '@/lib/curriculum';
 import { CSV_TEMPLATE, PERSON_ROLES, normClass, parsePeopleCsv, validatePeople, type PersonInput, type PersonRole, type RowIssue } from '@/lib/ops/people';
+import { normSubject } from '@/lib/teacher/scope';
 import { useOpsApi } from '../../useOpsApi';
 import { ReasonAction } from '../../_ui';
+
+const errMessage = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
 
 export interface ClassRow { id?: string; name: string; metadata?: { grade?: string | null; section?: string | null; subjects?: string[] } }
 export interface Person {
   id: string; role: PersonRole | 'superadmin'; name: string; email: string; student_class: string | null; custom_student_id: string | null;
-  teacher_class: string | null; assignments: { class: string; subject: string }[] | null; metadata: any;
+  teacher_class: string | null; assignments: { class: string; subject: string }[] | null;
+  metadata: { linkedStudents?: string[]; mustChangePassword?: boolean; [k: string]: unknown } | null;
 }
 export interface Issued { name: string; email: string; role: string; detail: string; tempPassword: string }
 
@@ -46,7 +50,9 @@ export function ClassesStep({ schoolId, classes, onSaved, next }: { schoolId: st
   const [sections, setSections] = useState('A, B');
   const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { setDraft(classes); }, [classes]);
+  // A fresh class list from the server replaces the draft (adjusting state during render, not in an effect).
+  const [shownFor, setShownFor] = useState(classes);
+  if (shownFor !== classes) { setShownFor(classes); setDraft(classes); }
 
   const addGrade = () => {
     const secs = sections.split(/[,\s]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
@@ -67,7 +73,7 @@ export function ClassesStep({ schoolId, classes, onSaved, next }: { schoolId: st
       });
       setMsg(`Saved: ${r.created} new, ${r.updated} updated.`);
       await onSaved();
-    } catch (e: any) { setMsg(e.message); }
+    } catch (e: unknown) { setMsg(errMessage(e)); }
     finally { setSaving(false); }
   };
 
@@ -163,18 +169,19 @@ export function PeopleStep({ schoolId, classes, people, onCreated }: {
         const chunk = batch.slice(i, i + BATCH);
         setProgress(`Creating ${Math.min(i + BATCH, batch.length)} of ${batch.length}…`);
         try {
-          const r = await api<{ results: any[] }>(`/schools/${schoolId}/people`, { method: 'POST', body: { people: chunk } });
+          const r = await api<{ results: { row: number; name: string; email: string; role: string; status: string; message?: string; tempPassword: string }[] }>(`/schools/${schoolId}/people`, { method: 'POST', body: { people: chunk } });
           r.results.forEach(x => {
             all.push({ ...x, row: x.row + i });
             if (x.status === 'created') issued.push({ name: x.name, email: x.email, role: x.role, detail: detail(chunk[x.row - 1]), tempPassword: x.tempPassword });
           });
-        } catch (e: any) {
-          if (e.data?.issues) { setIssues(e.data.issues.map((x: RowIssue) => ({ ...x, row: x.row + i }))); break; }
+        } catch (e: unknown) {
+          const bad = (e as { data?: { issues?: RowIssue[] } }).data?.issues;
+          if (bad) { setIssues(bad.map(x => ({ ...x, row: x.row + i }))); break; }
           throw e;
         }
       }
-    } catch (e: any) {
-      setParseErr(e.message);
+    } catch (e: unknown) {
+      setParseErr(errMessage(e));
     } finally {
       setBusy(false); setProgress(null); setResults(all);
       if (issued.length) onCreated(issued);
@@ -312,24 +319,62 @@ export function PeopleStep({ schoolId, classes, people, onCreated }: {
   );
 }
 
-/** Class x subject checkboxes, from each class's subject list. */
-function AssignmentPicker({ classes, value, onChange }: { classes: ClassRow[]; value: { class: string; subject: string }[]; onChange: (v: { class: string; subject: string }[]) => void }) {
-  const has = (c: string, s: string) => value.some(v => normClass(v.class) === normClass(c) && v.subject === s);
-  const toggle = (c: string, s: string) => onChange(has(c, s) ? value.filter(v => !(normClass(v.class) === normClass(c) && v.subject === s)) : [...value, { class: c, subject: s }]);
+/**
+ * Class x subject checkboxes, from each class's subject list. Subjects match ignoring case and spacing (as teacher
+ * scope does), assignments on a subject the class doesn't list still show (untick to remove), and a subject can be
+ * added to a class right here.
+ */
+function AssignmentPicker({ classes, value, onChange, onAddSubject }: {
+  classes: ClassRow[]; value: { class: string; subject: string }[]; onChange: (v: { class: string; subject: string }[]) => void;
+  /** Offered where classes can be changed (the Teaching tab); without it the picker only ticks. */
+  onAddSubject?: (c: ClassRow, subject: string) => Promise<void>;
+}) {
+  const [adding, setAdding] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const same = (v: { class: string; subject: string }, c: string, s: string) => normClass(v.class) === normClass(c) && normSubject(v.subject) === normSubject(s);
+  const has = (c: string, s: string) => value.some(v => same(v, c, s));
+  const toggle = (c: string, s: string) => onChange(has(c, s) ? value.filter(v => !same(v, c, s)) : [...value, { class: c, subject: s }]);
   if (!classes.length) return <p className="muted">No classes set up yet.</p>;
+  const add = async (c: ClassRow) => {
+    const subject = draft.trim();
+    if (!subject || !onAddSubject) return;
+    setErr(null);
+    try { await onAddSubject(c, subject); if (!has(c.name, subject)) onChange([...value, { class: c.name, subject }]); setAdding(null); setDraft(''); }
+    catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not add the subject.'); }
+  };
   return (
     <div style={{ display: 'grid', gap: 8 }}>
-      {classes.map(c => (
-        <div key={c.name} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <b style={{ width: 60, fontSize: 13 }}>{c.name}</b>
-          {(c.metadata?.subjects ?? []).length === 0 && <span className="muted" style={{ fontSize: 12 }}>No subjects on this class</span>}
-          {(c.metadata?.subjects ?? []).map(s => (
-            <button key={s} type="button" className={`ch ${has(c.name, s) ? 'b' : 'n'}`} aria-pressed={has(c.name, s)} onClick={() => toggle(c.name, s)}>
-              {has(c.name, s) && <Check size={11} weight="bold" />}{s}
-            </button>
-          ))}
-        </div>
-      ))}
+      {classes.map(c => {
+        const listed = c.metadata?.subjects ?? [];
+        const extra = value.filter(v => normClass(v.class) === normClass(c.name) && !listed.some(s => normSubject(s) === normSubject(v.subject)));
+        return (
+          <div key={c.name} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <b style={{ width: 80, fontSize: 13 }}>{c.name}</b>
+            {listed.length === 0 && !extra.length && <span className="muted" style={{ fontSize: 12 }}>No subjects on this class</span>}
+            {listed.map(s => (
+              <button key={s} type="button" className={`ch ${has(c.name, s) ? 'b' : 'n'}`} aria-pressed={has(c.name, s)} onClick={() => toggle(c.name, s)}>
+                {has(c.name, s) && <Check size={11} weight="bold" />}{s}
+              </button>
+            ))}
+            {extra.map(v => (
+              <button key={`x:${v.subject}`} type="button" className="ch a" aria-pressed title="Assigned, but not on this class's subject list. Add it to the list, or untick to remove."
+                onClick={() => toggle(c.name, v.subject)}><Check size={11} weight="bold" />{v.subject}</button>
+            ))}
+            {!onAddSubject ? null : adding === c.name ? (
+              <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                <input className="tin" autoFocus aria-label={`New subject for ${c.name}`} placeholder="Subject" value={draft}
+                  onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void add(c); if (e.key === 'Escape') setAdding(null); }} style={{ width: 150 }} />
+                <button type="button" className="btn sm pri" onClick={() => void add(c)}>Add</button>
+                <button type="button" className="btn sm" onClick={() => setAdding(null)}>Cancel</button>
+              </span>
+            ) : (
+              <button type="button" className="btn sm" onClick={() => { setAdding(c.name); setDraft(''); setErr(null); }}><Plus size={12} weight="bold" /> Subject</button>
+            )}
+          </div>
+        );
+      })}
+      {err && <div className="note err" role="alert">{err}</div>}
     </div>
   );
 }
@@ -344,8 +389,8 @@ export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId:
 
   // Classes with no teacher for a subject: the gap list an operator needs before handover.
   const uncovered = useMemo(() => {
-    const covered = new Set(teachers.flatMap(t => (edits[t.id]?.subjects ?? t.assignments ?? []).map(a => `${normClass(a.class)}|${a.subject}`)));
-    return classes.flatMap(c => (c.metadata?.subjects ?? []).filter(s => !covered.has(`${normClass(c.name)}|${s}`)).map(s => `${c.name} ${s}`));
+    const covered = new Set(teachers.flatMap(t => (edits[t.id]?.subjects ?? t.assignments ?? []).map(a => `${normClass(a.class)}|${normSubject(a.subject)}`)));
+    return classes.flatMap(c => (c.metadata?.subjects ?? []).filter(s => !covered.has(`${normClass(c.name)}|${normSubject(s)}`)).map(s => `${c.name} ${s}`));
   }, [teachers, classes, edits]);
 
   const save = async (t: Person) => {
@@ -354,7 +399,14 @@ export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId:
       await api(`/schools/${schoolId}/people/${t.id}`, { method: 'PATCH', body: e });
       setMsg(m => ({ ...m, [t.id]: 'Saved.' }));
       await onSaved();
-    } catch (err: any) { setMsg(m => ({ ...m, [t.id]: err.message })); }
+    } catch (err: unknown) { setMsg(m => ({ ...m, [t.id]: err instanceof Error ? err.message : 'Could not save.' })); }
+  };
+  // Adds a subject to one class's list (keeping its grade and section), then reloads the workspace.
+  const addSubject = async (c: ClassRow, subject: string) => {
+    const listed = c.metadata?.subjects ?? [];
+    if (listed.some(s => normSubject(s) === normSubject(subject))) return;
+    await api(`/schools/${schoolId}/classes`, { method: 'PUT', body: { classes: [{ name: c.name, grade: c.metadata?.grade ?? '', section: c.metadata?.section ?? '', subjects: [...listed, subject] }] } });
+    await onSaved();
   };
 
   if (!teachers.length) return <div className="card"><Empty icon={<UsersThree size={30} weight="duotone" />} title="No teachers yet">Add teachers in step 2, then assign their classes and subjects here.</Empty></div>;
@@ -376,7 +428,7 @@ export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId:
             </button>
             {open === t.id && (
               <div style={{ marginTop: 12 }}>
-                <AssignmentPicker classes={classes} value={e.subjects} onChange={s => set({ subjects: s })} />
+                <AssignmentPicker classes={classes} value={e.subjects} onChange={s => set({ subjects: s })} onAddSubject={addSubject} />
                 <div className="acts" style={{ marginTop: 12 }}>
                   <label className="muted" htmlFor={`ct-${t.id}`}>Class teacher of</label>
                   <select id={`ct-${t.id}`} className="tin" value={e.classTeacherOf || ''} onChange={ev => set({ classTeacherOf: ev.target.value || null })}>
@@ -410,11 +462,11 @@ export function RosterStep({ schoolId, people, onIssued, onDeleted }: { schoolId
       const r = await api<{ tempPassword: string }>(`/schools/${schoolId}/people/${p.id}`, { method: 'POST', body: { action: 'reset-password' } });
       setShown(s => ({ ...s, [p.id]: r.tempPassword }));
       onIssued({ name: p.name, email: p.email, role: p.role, detail: 'password reset', tempPassword: r.tempPassword });
-    } catch (e: any) { setShown(s => ({ ...s, [p.id]: `Error: ${e.message}` })); }
+    } catch (e: unknown) { setShown(s => ({ ...s, [p.id]: `Error: ${errMessage(e)}` })); }
   };
   const detail = (p: Person) => p.role === 'student' ? `${p.student_class || 'No class'} · roll ${p.custom_student_id || '—'}`
     : p.role === 'teacher' ? `${(p.assignments ?? []).map(a => `${a.class} ${a.subject}`).join(', ') || 'No assignments'}${p.teacher_class ? ` · class teacher ${p.teacher_class}` : ''}`
-      : p.role === 'parent' ? `Children: ${((p.metadata?.linkedStudents as string[]) ?? []).map(r => rollToName.get(r) ? `${rollToName.get(r)} (${r})` : r).join(', ') || 'none linked'}` : '';
+      : p.role === 'parent' ? `Children: ${(p.metadata?.linkedStudents ?? []).map(r => rollToName.get(r) ? `${rollToName.get(r)} (${r})` : r).join(', ') || 'none linked'}` : '';
 
   return (
     <div className="card">

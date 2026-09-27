@@ -182,7 +182,7 @@ CORE RULES:
 
     const systemInstruction = isCollege ? collegeSystemInstruction : schoolSystemInstruction;
 
-    let contents = messages.map((msg: any) => ({
+    const contents = messages.map((msg: any) => ({
       role: (msg.sender === 'model' || msg.sender === 'ai') ? 'model' : 'user',
       parts: [{ text: msg.text }]
     }));

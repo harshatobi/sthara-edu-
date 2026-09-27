@@ -7,6 +7,7 @@ import { isoDay, plural } from '@/lib/admin/format';
 import { teacherLoad } from '@/lib/schedule/engine';
 import { useSchedule } from '@/lib/schedule/useSchedule';
 import MySchedule, { gridVersion } from './MySchedule';
+import CheckInCard from './CheckInCard';
 
 /** A teacher's own schedule (mockup-style canon page): day, week, month, the weekly timetable, and any class or room's timetable. */
 export default function TeacherSchedule() {
@@ -20,6 +21,7 @@ export default function TeacherSchedule() {
     <>
       <PageBar eyebrow="MY SCHEDULE" title="Your week"
         sub={load !== null ? `${plural(load, 'period')} a week on ${gv!.name}` : 'Periods, duties, meetings and leave in one place'} />
+      <CheckInCard />
       {error ? <div className="note err" role="alert">Couldn&apos;t load the schedule: {error}</div>
         : !rows || !uid ? <div className="card" aria-busy="true">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} h={48} style={{ marginBottom: 12 }} />)}</div>
           : rows.missing.includes('timetable_versions')

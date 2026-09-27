@@ -8,6 +8,7 @@ import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist
 import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
 import { GearSixIcon as GearSix } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { StudentIcon as Student } from '@phosphor-icons/react/dist/ssr/Student';
+import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import { Empty, PageBar } from '@/components/canon/ui';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -17,13 +18,13 @@ import { FamilyProvider } from '@/lib/parent/useFamily';
 import '@/styles/parent.css';
 
 // Canon parent nav (mockup ROLES.parent), with Ask the School OS as the hero.
-// Attendance isn't recorded anywhere yet, so it isn't listed.
 const NAV: CanonNavItem[] = [
   { href: '/parent', label: 'Home', icon: House, exact: true },
   { href: '/parent/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle },
   { href: '/parent/progress', label: 'Mastery & Reports', short: 'Progress', icon: ChartLineUp },
   { href: '/parent/messages', label: 'School Messages', short: 'Messages', icon: EnvelopeSimple },
   { href: '/parent/schoolwork', label: 'Schoolwork', icon: ListChecks },
+  { href: '/parent/attendance', label: 'Attendance & Calendar', short: 'Calendar', icon: CalendarCheck },
   { href: '/parent/fees', label: 'Fees & Payments', short: 'Fees', icon: CurrencyInr },
   { href: '/parent/settings', label: 'WhatsApp & Privacy', short: 'Settings', icon: GearSix, also: ['/parent/consent'] },
 ];

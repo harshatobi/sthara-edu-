@@ -74,8 +74,12 @@ export function escalateAt(severity: Severity, raisedAt: Date, dayEnd = DEFAULT_
 }
 
 /** Escalated = past its escalation time and still not acknowledged. Derived, so no job is needed to show it. */
-export const isEscalated = (s: { escalate_at?: string | null; acknowledged_at?: string | null }, now = Date.now()) =>
-  !s.acknowledged_at && !!s.escalate_at && new Date(s.escalate_at).getTime() <= now;
+/** Past its escalation time and still unacknowledged. Takes a database row or a FeedItem (camelCase). */
+export function isEscalated(s: { escalate_at?: string | null; acknowledged_at?: string | null } | { escalateAt?: string | null; acknowledgedAt?: string | null }, now = Date.now()) {
+  const at = 'escalateAt' in s ? s.escalateAt : 'escalate_at' in s ? s.escalate_at : null;
+  const acked = 'acknowledgedAt' in s ? s.acknowledgedAt : 'acknowledged_at' in s ? s.acknowledged_at : null;
+  return !acked && !!at && new Date(at).getTime() <= now;
+}
 
 // ── Incidents ──────────────────────────────────────────────────────────────
 export type IncidentCategory = 'health' | 'discipline' | 'bullying' | 'safety' | 'property' | 'child_protection' | 'other';

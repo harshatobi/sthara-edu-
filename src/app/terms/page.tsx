@@ -11,9 +11,9 @@ export default function TermsPage() {
     <div className="min-h-screen bg-gray-50 py-16 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="mb-12 text-center">
-          <Link href="/" className="inline-flex items-center space-x-2 text-[#002147] font-black text-2xl mb-8 hover:opacity-80">
+          <a href="/" className="inline-flex items-center space-x-2 text-[#002147] font-black text-2xl mb-8 hover:opacity-80">
             <span>Sthara School OS</span>
-          </Link>
+          </a>
           <h1 className="text-4xl font-black text-[#002147] mb-4">Terms of Service</h1>
           <p className="text-gray-500 font-medium">Last updated: June 27, 2026</p>
         </div>
@@ -42,7 +42,7 @@ export default function TermsPage() {
                 <li>New schools start with a <strong>paid pilot</strong>: one grade for one term, at the full price of the chosen plan</li>
                 <li>Pilot fees are credited in full to the annual subscription if the school continues</li>
                 <li>After the pilot, continued access requires an annual subscription</li>
-                <li>Plans are priced per student per year; current prices are published on our website and may change with 30 days' notice</li>
+                <li>Plans are priced per student per year; current prices are published on our website and may change with 30 days&apos; notice</li>
                 <li>Data is retained for 60 days after a pilot or subscription ends before permanent deletion</li>
               </ul>
             </Section>
@@ -100,7 +100,7 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <Link href="/privacy" className="text-[#002147] font-bold hover:underline">Privacy Policy</Link>
+          <a href="/privacy" className="text-[#002147] font-bold hover:underline">Privacy Policy</a>
           {' · '}
           <Link href="/login" className="text-[#002147] font-bold hover:underline">← Back to Login</Link>
         </div>

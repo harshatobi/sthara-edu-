@@ -4,6 +4,18 @@ import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
 
 export const dynamic = 'force-dynamic';
 
+/** "Mathematics: Class 10-A, Class 9-B · class teacher Class 10-A", or that they teach nothing yet. */
+function teacherDetail(assignments: unknown, classTeacherOf: string | null) {
+  const bySubject = new Map<string, string[]>();
+  for (const a of Array.isArray(assignments) ? assignments : []) {
+    const { class: c, subject: s } = (a ?? {}) as { class?: unknown; subject?: unknown };
+    if (typeof c !== 'string' || typeof s !== 'string') continue;
+    bySubject.set(s, [...(bySubject.get(s) ?? []), c]);
+  }
+  const taught = [...bySubject].map(([s, cs]) => `${s}: ${cs.join(', ')}`).join('; ');
+  return [taught || 'No classes or subjects assigned', classTeacherOf && `class teacher ${classTeacherOf}`].filter(Boolean).join(' · ');
+}
+
 const ROLES = ['admin', 'teacher', 'student', 'parent', 'superadmin'];
 const UUID = /^[0-9a-f-]{36}$/i;
 
@@ -21,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const db = createAdminClient();
   let query = db.from('users')
-    .select('id, name, email, role, school_id, student_class, custom_student_id, teacher_class, metadata, created_at')
+    .select('id, name, email, role, school_id, student_class, custom_student_id, teacher_class, assignments, metadata, created_at')
     .order('name').limit(200);
   if (q) query = query.or(`name.ilike.%${q}%,email.ilike.%${q}%,custom_student_id.ilike.%${q}%`);
   if (ROLES.includes(role)) query = query.eq('role', role);
@@ -35,7 +47,7 @@ export async function GET(req: NextRequest) {
       schoolId: p.school_id, school: p.school_id ? names.get(p.school_id)?.name ?? 'Deleted school' : null,
       schoolCode: p.school_id ? names.get(p.school_id)?.code ?? null : null,
       detail: p.role === 'student' ? [p.student_class, p.custom_student_id && `roll ${p.custom_student_id}`].filter(Boolean).join(' · ')
-        : p.role === 'teacher' ? (p.teacher_class ? `Class teacher ${p.teacher_class}` : '')
+        : p.role === 'teacher' ? teacherDetail(p.assignments, p.teacher_class)
         : p.role === 'parent' ? `${((p.metadata as { linkedStudents?: unknown[] } | null)?.linkedStudents ?? []).length} linked child(ren)` : '',
       tempPassword: !!(p.metadata as { mustChangePassword?: boolean } | null)?.mustChangePassword,
       createdAt: p.created_at,

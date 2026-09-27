@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { LoadTracker } from '@/lib/loadTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { assembleDesk, type TeacherDesk } from './desk';
@@ -26,12 +27,11 @@ export function TeacherDeskProvider({ children }: { children: ReactNode }) {
   const [desk, setDesk] = useState<TeacherDesk | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
-  const loadedAt = useRef(0);
-  const inFlight = useRef(false);
+  const [tracker] = useState(() => new LoadTracker(STALE_MS));
   const reload = useCallback(() => setNonce(n => n + 1), []);
   const refreshIfStale = useCallback(() => {
-    if (!inFlight.current && loadedAt.current && Date.now() - loadedAt.current > STALE_MS) reload();
-  }, [reload]);
+    if (tracker.stale(Date.now())) reload();
+  }, [tracker, reload]);
 
   const scope = useMemo(() => teachingScope({
     assignments: profile?.assignments, teacher_class: profile?.teacherClass, teacher_subject: profile?.teacherSubject,
@@ -40,12 +40,11 @@ export function TeacherDeskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading || !profile || !user || !profile.schoolId) return;
     let cancelled = false;
-    inFlight.current = true;
+    tracker.start();
     const me = { id: profile.uid, name: profile.name || 'Teacher', subject: profile.teacherSubject || scope[0]?.subject || '' };
     loadTeacherRows(createClient(), { schoolId: profile.schoolId!, uid: profile.uid }, scope)
-      .then(rows => { if (!cancelled) { setDesk(assembleDesk(rows, me, scope, 'live')); setError(null); loadedAt.current = Date.now(); } })
-      .catch(e => { if (!cancelled) setError(prev => (loadedAt.current ? prev : e?.message || 'Could not load your desk.')); })
-      .finally(() => { inFlight.current = false; });
+      .then(rows => { tracker.finish(true); if (!cancelled) { setDesk(assembleDesk(rows, me, scope, 'live')); setError(null); } })
+      .catch(e => { tracker.finish(false); if (!cancelled) setError(prev => (tracker.everLoaded ? prev : e?.message || 'Could not load your desk.')); });
     return () => { cancelled = true; };
     // Keyed on identity, not object references: a silent profile refresh must not reload the desk.
     // eslint-disable-next-line react-hooks/exhaustive-deps

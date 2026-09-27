@@ -32,7 +32,8 @@ export async function PUT(req: NextRequest) {
   if (userId) {
     const { data: u } = await db.from('users').select('id, name, role').eq('id', userId).eq('school_id', admin.schoolId).maybeSingle();
     if (!u || (u.role !== 'teacher' && u.role !== 'admin')) return bad('That account isn\'t a teacher or office account in this school.');
-    name = name || u.name || '';
+    // A linked row mirrors the account's name (renames happen in the user directory).
+    name = u.name || name;
   }
   if (!name) return bad('Give their name.');
   const phone = b.phone ? toE164(b.phone) : null;

@@ -24,16 +24,19 @@
   padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
   min-height:100dvh;
 }
-:where(.canon) *, :where(.canon) *::before, :where(.canon) *::after { box-sizing:border-box; }
-:where(.canon) :where(h1, h2, h3, h4) { letter-spacing:-.025em; line-height:1.15; margin:0; }
-:where(.canon) p { margin:0; }
-:where(.canon) button { font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; }
-:where(.canon) button:disabled { cursor:default; opacity:.6; }
-:where(.canon) a { color:inherit; text-decoration:none; }
+/* Element resets sit in Tailwind's base layer: Tailwind v4 puts its utilities in a cascade layer, and unlayered
+   CSS beats any layered rule whatever its specificity, so unlayered resets here stripped the background, border
+   and colour off every Tailwind-styled button on legacy pages inside the canon shell. In the base layer they lose
+   to utilities (and to the unlayered canon classes such as .btn), as intended. */
+@layer base {
+  :where(.canon) *, :where(.canon) *::before, :where(.canon) *::after { box-sizing:border-box; }
+  :where(.canon) :where(h1, h2, h3, h4) { letter-spacing:-.025em; line-height:1.15; margin:0; }
+  :where(.canon) p { margin:0; }
+  :where(.canon) button { font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; }
+  :where(.canon) button:disabled { cursor:default; opacity:.6; }
+  :where(.canon) a { color:inherit; text-decoration:none; }
+}
 .canon .mono { font-family:'IBM Plex Mono',ui-monospace,monospace; }
-
-/* Element resets above use :where(.canon) — zero specificity — so Tailwind
-   utilities on legacy pages rendered inside the canon shell still win. */
 
 /* ---------- SHELL ---------- */
 .canon > aside { width:264px; flex:0 0 264px; background:var(--nav); min-height:100vh; padding:26px 18px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; }
@@ -853,3 +856,17 @@
 .canon details.ops-grp > summary::-webkit-details-marker { display:none; }
 .canon details.ops-grp[open] > summary svg:last-child { transform:rotate(180deg); }
 .canon details.ops-grp > .tbl-wrap { padding-bottom:14px; }
+
+/* staff notifications bell (NotificationBell) */
+.canon .nb-btn { position:fixed; top:16px; right:22px; z-index:45; width:44px; height:44px; border-radius:50%; background:#fff; box-shadow:var(--sh); display:grid; place-items:center; color:var(--ink); border:1px solid var(--line); }
+.canon .nb-dot { position:absolute; top:-3px; right:-3px; min-width:20px; height:20px; padding:0 5px; border-radius:99px; background:var(--red); color:#fff; font-size:11px; font-weight:800; display:grid; place-items:center; }
+.canon .nb-scrim { position:fixed; inset:0; z-index:46; }
+.canon .nb-panel { position:fixed; top:68px; right:22px; z-index:47; width:min(390px, calc(100vw - 32px)); max-height:min(560px, calc(100vh - 100px)); overflow:auto; background:#fff; border-radius:18px; box-shadow:0 20px 60px rgba(0,33,71,.2); border:1px solid var(--line); }
+.canon .nb-hd { position:sticky; top:0; background:#fff; display:flex; align-items:center; gap:8px; padding:14px 16px; border-bottom:1px solid var(--line); }
+.canon .nb-hd b { flex:1; font-size:15px; }
+.canon .nb-item { padding:12px 16px; border-bottom:1px solid var(--line); }
+.canon .nb-item.un { background:#F4F8FF; }
+.canon .nb-item b { font-size:13.5px; display:block; }
+.canon .nb-item p { font-size:13px; color:#3B4A5E; margin-top:3px; line-height:1.5; }
+.canon .nb-item span { font-size:11.5px; color:var(--mut); }
+@media (max-width:680px) { .canon .nb-btn { top:10px; right:12px; width:40px; height:40px; } .canon .nb-panel { top:58px; right:16px; } }

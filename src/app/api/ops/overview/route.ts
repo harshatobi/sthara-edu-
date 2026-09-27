@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const db = createAdminClient();
   try {
     const mtd = usageWindow({ range: 'mtd' });
-    const [registry, inv, enquiries, journal, usage, operators] = await Promise.all([
+    const [registry, inv, enquiries, journal, usage, operators, requests] = await Promise.all([
       loadRegistry(db),
       collectInventory(db),
       db.from('enquiries').select('status'),
@@ -24,13 +24,23 @@ export async function GET(req: NextRequest) {
         .order('at', { ascending: false }).limit(8),
       'error' in mtd ? Promise.resolve({ data: null, error: null }) : db.rpc('ops_ai_usage', { p_from: mtd.from.toISOString(), p_to: mtd.to.toISOString() }),
       db.from('users').select('id', { count: 'exact', head: true }).eq('role', 'superadmin'),
+      db.from('account_requests').select('school_id, created_at').eq('status', 'pending'),
     ]);
+    // Login requests schools are waiting on, per school (the table may not exist yet on an older database).
+    const bySchool = new Map<string, { count: number; oldest: string }>();
+    for (const r of requests.error ? [] : requests.data || []) {
+      const cur = bySchool.get(r.school_id);
+      bySchool.set(r.school_id, { count: (cur?.count ?? 0) + 1, oldest: !cur || r.created_at < cur.oldest ? r.created_at : cur.oldest });
+    }
+    const now = Date.now();
+    const pendingRequests = [...bySchool].map(([schoolId, v]) => ({ schoolId, count: v.count, oldestDays: Math.floor((now - Date.parse(v.oldest)) / 86_400_000) }));
     const enq = enquiries.data || [];
     const newEnquiries = enq.filter(e => e.status === 'new').length;
     const totals = (usage.data as { totals?: { cost?: number; calls?: number; failed?: number } } | null)?.totals ?? null;
     return NextResponse.json({
       schools: registry,
-      attention: buildAttention({ schools: registry, health: inv.items, newEnquiries }),
+      attention: buildAttention({ schools: registry, health: inv.items, newEnquiries, pendingRequests }),
+      requests: { pending: pendingRequests.reduce((n, p) => n + p.count, 0) },
       health: summarise(inv.items),
       enquiries: {
         new: newEnquiries,

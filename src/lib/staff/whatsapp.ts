@@ -16,11 +16,13 @@ import { toWhatsAppText } from './ask';
 import { parseStaffCommand, resolveRegister } from './commands';
 import { buildDigest, maybeSendDigest } from './digest';
 import { alertCoordinators } from '@/lib/schedule/notify';
+import { parseAttendanceWord } from '@/lib/attendance/commands';
+import { recordPunch } from '@/lib/attendance/server';
 
 const HISTORY_MS = 24 * 3600_000;
 
 const HELP: Record<'teacher' | 'leadership', string> = {
-  teacher: `Sthara on WhatsApp. Ask anything about your classes, or:\n• *ACK* (and a note) to acknowledge the last alert\n• *R* then your answer to reply to the last parent message\n• *ABSENT 4, 12* (roll numbers) or *ALL PRESENT* to mark today's register\n• *TODAY* for your digest\n• *ABSENT* (or *ABSENT AM* / *ABSENT PM*) if you're off today, so the office can arrange cover\n\nReply STOP to pause, START to resume.`,
+  teacher: `Sthara on WhatsApp. Ask anything about your classes, or:\n• *ACK* (and a note) to acknowledge the last alert\n• *R* then your answer to reply to the last parent message\n• *ABSENT 4, 12* (roll numbers) or *ALL PRESENT* to mark today's register\n• *TODAY* for your digest\n• *IN* / *OUT* to check in or out\n• *ABSENT* (or *ABSENT AM* / *ABSENT PM*) if you're off today, so the office can arrange cover\n\nReply STOP to pause, START to resume.`,
   leadership: `Sthara on WhatsApp. Ask anything about the school, or:\n• *ACK* (and a note) to acknowledge the last escalation\n• *R* then your answer to reply to the last parent message\n• *TODAY* for the school digest\n\nReply STOP to pause, START to resume.`,
 };
 
@@ -38,7 +40,7 @@ async function lastContext(db: SupabaseClient, userId: string) {
     draft: rows[0]?.meta.replyDraft as { threadId: string; draft: string; toName: string } | undefined,
     /** What ACK refers to: an ack the School OS proposed, else the latest alert (48 h). */
     ack: (rows[0]?.meta.ack as { situationId: string; note?: string } | undefined)
-      ?? (() => { const r = rows.find(x => x.meta.situationId && within(x, 2 * DAY_MS)); return r ? { situationId: r.meta.situationId as string } : undefined; })(),
+      ?? (() => { const r = rows.find(x => x.meta.situationId && within(x, 2 * DAY_MS)); return r ? { situationId: r.meta.situationId as string, note: undefined as string | undefined } : undefined; })(),
     /** The last parent message we forwarded (R replies to it). */
     thread: rows.find(x => x.meta.threadId && x.meta.type === 'parent_message')?.meta.threadId as string | undefined,
   };
@@ -88,6 +90,14 @@ export async function handleStaffInbound(db: SupabaseClient, userId: string, pho
     await sendWhatsApp(db, { to: phone, userId: me.id, schoolId: me.schoolId, kind: 'notify', body: d.text, meta: { digest: istDay(), options: d.options } });
     return;
   }
+  const word = parseAttendanceWord(text);
+  if (word) {
+    const { error } = await recordPunch(db, { schoolId: me.schoolId, userId: me.id, direction: word.kind === 'check_in' ? 'in' : 'out', source: 'whatsapp', onCampus: null });
+    const at = new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+    await reply(error ? 'I couldn’t record that. Use Check in on My Schedule in Sthara.' : word.kind === 'check_in' ? `Checked in at ${at}. Have a good day.` : `Checked out at ${at}.`);
+    return;
+  }
+
   if (cmd.kind === 'self_absent') {
     const day = istDay();
     const { data: open } = await db.from('staff_absences').select('id, status').eq('user_id', me.id).eq('on_date', day).eq('kind', 'absent').neq('status', 'cancelled').limit(1);

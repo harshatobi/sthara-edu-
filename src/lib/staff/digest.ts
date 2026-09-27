@@ -5,6 +5,9 @@ import { isEscalated, istDay, DAY_MS } from '@/lib/feed/rules';
 import { displayClass, normClass } from '@/lib/teacher/scope';
 import { linkUsable } from '@/lib/whatsapp/config';
 import { sendWhatsApp } from '@/lib/whatsapp/send';
+import { loadScheduleRows } from '@/lib/schedule/load';
+import { agenda, hhmm } from '@/lib/schedule/engine';
+import { needsOn } from '@/lib/schedule/cover';
 
 /** Morning / afternoon / evening by the school's clock (IST). */
 const greeting = () => {
@@ -29,8 +32,23 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
   const top = [...esc, ...crit.filter(r => !esc.includes(r)), ...open.filter(r => r.severity === 'high' && !esc.includes(r))].slice(0, 3);
   const lines: string[] = [];
 
+  // Scheduling: the day's lessons, covers, duties and check-in (missing tables just leave these lines out).
+  const sched = await loadScheduleRows(db, me.schoolId).catch(() => null);
+
   if (me.role === 'teacher') {
     lines.push(`*${greeting()}, ${me.name.split(' ')[0]}.* Here's your day.`);
+    if (sched) {
+      const [day] = agenda({ kind: 'teacher', userId: me.id }, today, today, sched);
+      const lessons = day.items.filter(i => i.kind === 'lesson' && !i.coverFor && !i.covered).length;
+      const covers = day.items.filter(i => i.kind === 'lesson' && i.coverFor) as any[];
+      const duties = day.items.filter(i => i.kind === 'duty') as any[];
+      if (day.off) lines.push(`• ${day.off.title}: no classes today`);
+      else if (lessons || covers.length || duties.length) {
+        lines.push(`• Today: ${plural(lessons, 'period')}${covers.length ? `, *${plural(covers.length, 'cover')}* (${covers.map(c => `P${c.slot.period_no} ${c.slot.class}`).join(', ')})` : ''}${duties.length ? `, duty: ${duties.map(d => `${d.title} ${hhmm(d.start, true)}`).join(', ')}` : ''}`);
+      }
+      const { count: punched } = await db.from('staff_punches').select('id', { count: 'exact', head: true }).eq('user_id', me.id).gte('at', new Date(Date.parse(`${today}T00:00:00Z`) - 330 * 60_000).toISOString());
+      if (!punched && !day.off && lessons) lines.push('• Not checked in yet. Reply *IN* when you reach school.');
+    }
     lines.push(`• Feed: ${plural(open.length, 'open item')}${crit.length ? `, ${crit.length} critical` : ''}${esc.length ? `, ${esc.length} escalated` : ''}`);
     const { data: threads } = await db.from('school_threads').select('id, staff_read_at, last_message_at').eq('staff_id', me.id).eq('status', 'open');
     const unread = (threads || []).filter(t => !t.staff_read_at || t.staff_read_at < t.last_message_at).length;
@@ -65,6 +83,12 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
       const { data: threads } = await db.from('school_threads').select('id, staff_read_at, last_message_at').eq('school_id', me.schoolId).eq('audience', 'office').eq('status', 'open');
       const unread = (threads || []).filter(t => !t.staff_read_at || t.staff_read_at < t.last_message_at).length;
       if (unread) lines.push(`• Parent messages to the office: ${unread}`);
+    }
+    if (sched && (a.can('schedule.academic') || a.can('feed.read'))) {
+      const { needs } = needsOn(today, sched);
+      const openCover = needs.filter(n => n.state === 'open').length;
+      const reported = sched.absences.filter(x => x.on_date === today && x.status === 'reported').length;
+      if (needs.length) lines.push(`• Cover: ${openCover ? `*${plural(openCover, 'lesson')} still need cover*` : 'every lesson covered'}${reported ? `, ${plural(reported, 'absence')} reported on WhatsApp to confirm` : ''}`);
     }
     if (a.can('leave.approve')) {
       const { count } = await db.from('leave_requests').select('id', { count: 'exact', head: true }).eq('school_id', me.schoolId).eq('status', 'pending');

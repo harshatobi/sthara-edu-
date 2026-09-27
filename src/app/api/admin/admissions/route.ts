@@ -87,6 +87,8 @@ export async function PATCH(req: NextRequest) {
     to = cur.furthest_stage === 'enrolled' ? 'offer' : cur.furthest_stage;
   }
   if (![...OPEN_STAGES, ...CLOSED].includes(to)) return bad('Unknown stage.');
+  // Enrolled means the logins exist: Sthara sets it when it approves the enrolment request.
+  if (to === 'enrolled') return bad('Enrolment goes through Sthara: open the applicant and use Request enrolment.', 409);
   if (!canMove(from, to)) return bad(`An applicant at ${from} can't move straight to ${to}.`);
   if (CLOSED.includes(to) && !note) return bad(`Give a reason — it stays on the applicant's record.`);
 

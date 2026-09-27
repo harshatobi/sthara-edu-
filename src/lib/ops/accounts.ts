@@ -27,11 +27,14 @@ export interface PersonResult {
   tempPassword?: string;
 }
 
-const missingRelation = (e: any) => e && (e.code === '42P01' || e.code === 'PGRST205' || /does not exist|Could not find the table/i.test(e.message || ''));
+const missingRelation = (e: { code?: string; message?: string } | null) => e && (e.code === '42P01' || e.code === 'PGRST205' || /does not exist|Could not find the table/i.test(e.message || ''));
 
-async function audit(admin: SupabaseClient, schoolId: string, actorId: string, action: string, rowId: string, values: Record<string, unknown>) {
+/** Who made the change: a Sthara operator, or someone at the school (their role there). */
+export type ActorRole = 'operator' | 'school_admin';
+
+async function audit(admin: SupabaseClient, schoolId: string, actorId: string, action: string, rowId: string, values: Record<string, unknown>, actorRole: ActorRole = 'operator') {
   const { error } = await admin.from('audit_log').insert({
-    actor_id: actorId, actor_role: 'operator', action, table_name: 'users', row_id: rowId, school_id: schoolId, new_values: values,
+    actor_id: actorId, actor_role: actorRole, action, table_name: 'users', row_id: rowId, school_id: schoolId, new_values: values,
   });
   if (error && !missingRelation(error)) console.warn('[ops audit]', error.message);
 }
@@ -42,7 +45,7 @@ export async function schoolState(admin: SupabaseClient, schoolId: string) {
     admin.from('users').select('id, email, custom_student_id').eq('school_id', schoolId),
   ]);
   return {
-    classes: (classes || []) as { id: string; name: string; metadata: any }[],
+    classes: (classes || []) as { id: string; name: string; metadata: Record<string, unknown> | null }[],
     rollToStudent: new Map((people || []).filter(p => p.custom_student_id).map(p => [String(p.custom_student_id).trim().toLowerCase(), p.id as string])),
   };
 }
@@ -53,10 +56,10 @@ export async function createPeople(admin: SupabaseClient, schoolId: string, acto
 
   // Emails are unique platform-wide (one login per email).
   const emails = rows.map(r => r.email).filter(Boolean);
-  const { data: taken } = emails.length ? await admin.from('users').select('email').in('email', emails) : { data: [] as any[] };
+  const { data: taken } = emails.length ? await admin.from('users').select('email').in('email', emails) : { data: [] as { email: string }[] };
   const issues: RowIssue[] = validatePeople(rows, {
     classes: state.classes.map(c => c.name),
-    existingEmails: new Set((taken || []).map((t: any) => String(t.email).toLowerCase())),
+    existingEmails: new Set((taken || []).map(t => String(t.email).toLowerCase())),
     existingRollNos: new Set(state.rollToStudent.keys()),
   });
   if (issues.length) return { issues, results: [] as PersonResult[] };
@@ -117,9 +120,21 @@ export async function createPeople(admin: SupabaseClient, schoolId: string, acto
   return { issues: [] as RowIssue[], results };
 }
 
-/** Replace a teacher's subject/class assignments (no password or role changes). */
+/** Checks untrusted { class, subject } rows; null when any row isn't two non-empty strings. */
+export function parseAssignments(v: unknown): { class: string; subject: string }[] | null {
+  if (!Array.isArray(v) || v.length > 60) return null;
+  const out: { class: string; subject: string }[] = [];
+  for (const x of v) {
+    const c = (x as { class?: unknown } | null)?.class, s = (x as { subject?: unknown } | null)?.subject;
+    if (typeof c !== 'string' || typeof s !== 'string' || !c.trim() || !s.trim()) return null;
+    out.push({ class: c.trim().slice(0, 40), subject: s.trim().slice(0, 80) });
+  }
+  return out;
+}
+
+/** Replace a teacher's subject/class assignments (no password or role changes). Only classes the school has. */
 export async function updateTeacherAssignments(admin: SupabaseClient, schoolId: string, actorId: string, userId: string,
-  subjects: { class: string; subject: string }[], classTeacherOf: string | null) {
+  subjects: { class: string; subject: string }[], classTeacherOf: string | null, actorRole: ActorRole = 'operator') {
   const { data: t } = await admin.from('users').select('id, role, school_id').eq('id', userId).maybeSingle();
   if (!t || t.school_id !== schoolId || t.role !== 'teacher') return { error: 'Teacher not found in this school.' };
   const { classes } = await schoolState(admin, schoolId);
@@ -135,7 +150,7 @@ export async function updateTeacherAssignments(admin: SupabaseClient, schoolId: 
     teaching_subjects: clean.map(s => ({ classId: byNorm.get(normClass(s.class))?.id ?? null, className: s.class, subjectName: s.subject })),
   }).eq('id', userId);
   if (error) return { error: error.message };
-  await audit(admin, schoolId, actorId, 'assignments_updated', userId, { subjects: clean, classTeacherOf });
+  await audit(admin, schoolId, actorId, 'assignments_updated', userId, { subjects: clean, classTeacherOf }, actorRole);
   return { error: null };
 }
 

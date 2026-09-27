@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { journalLabel, journalValue } from './journal';
 
 test('labels: human names, raw key for unknowns, no inherited properties', () => {
-  assert.equal(journalLabel('platform', 'onboarding.self_serve'), 'Self-serve school sign-up');
+  assert.equal(journalLabel('platform', 'ai.enabled'), 'AI features');
+  assert.match(journalLabel('platform', 'onboarding.self_serve'), /^Self-serve school sign-up \(retired/);
   assert.equal(journalLabel('school', 'pricePerStudent'), 'Price per student');
   assert.equal(journalLabel('school', 'made_up'), 'made_up');
   // Keys that are Object.prototype members must not resolve to functions.
@@ -15,7 +16,7 @@ test('platform values: enum labels, units, and the default when nothing was stor
   assert.equal(journalValue('platform', 'notice.tone', 'critical'), 'Incident');
   assert.equal(journalValue('platform', 'trial.default_days', 45), '45 days');
   assert.equal(journalValue('platform', 'ai.enabled', false), 'Off');
-  assert.equal(journalValue('platform', 'onboarding.self_serve', null), 'On (default)');
+  assert.equal(journalValue('platform', 'ai.enabled', null), 'On (default)');
   assert.equal(journalValue('platform', 'notice.message', ''), 'Empty');
 });
 

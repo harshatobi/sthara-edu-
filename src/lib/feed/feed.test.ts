@@ -34,6 +34,9 @@ test('escalated is derived from escalate_at and acknowledgement', () => {
   assert.ok(!isEscalated({ escalate_at: '2026-09-28T05:00:00Z', acknowledged_at: '2026-09-28T04:30:00Z' }, now));
   assert.ok(!isEscalated({ escalate_at: '2026-09-28T07:00:00Z', acknowledged_at: null }, now));
   assert.ok(!isEscalated({ escalate_at: null, acknowledged_at: null }, now));
+  // The feed screens pass FeedItems (camelCase): they were never shown as escalated before.
+  assert.ok(isEscalated({ escalateAt: '2026-09-28T05:00:00Z', acknowledgedAt: null }, now));
+  assert.ok(!isEscalated({ escalateAt: '2026-09-28T05:00:00Z', acknowledgedAt: '2026-09-28T04:30:00Z' }, now));
 });
 
 test('incident routing follows the school policy', () => {

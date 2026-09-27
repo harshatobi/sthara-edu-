@@ -29,7 +29,8 @@ export default function StaffTab({ rows, call, reload, toast, canEdit }: { rows:
     const byUser = new Map(rows.staff.filter(s => s.user_id).map(s => [s.user_id!, s]));
     const logins: Person[] = rows.people.map(p => {
       const m = byUser.get(p.id) ?? null;
-      return { key: p.id, member: m, userId: p.id, name: m?.name || p.name, category: m?.category || (p.role === 'teacher' ? 'teaching' : 'office'), login: p.role, designation: m?.designation || (p.role === 'teacher' ? 'Teacher' : 'Office'), active: m ? m.active : true };
+      // The account's name is the source of truth; the register row only adds details.
+      return { key: p.id, member: m, userId: p.id, name: p.name || m?.name || 'Staff', category: m?.category || (p.role === 'teacher' ? 'teaching' : 'office'), login: p.role, designation: m?.designation || (p.role === 'teacher' ? 'Teacher' : 'Office'), active: m ? m.active : true };
     });
     const others: Person[] = rows.staff.filter(s => !s.user_id || !rows.people.some(p => p.id === s.user_id)).map(s => ({
       key: s.id, member: s, userId: null, name: s.name, category: s.category, login: null, designation: s.designation, active: s.active,

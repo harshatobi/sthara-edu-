@@ -42,9 +42,9 @@ export function parseStaffCommand(raw: string): StaffCommand {
     const half = (self[3] || '').toLowerCase();
     return { kind: 'self_absent', portion: !half ? 'full' : /am|morning|first/.test(half) ? 'am' : 'pm' };
   }
-  const ack = /^\s*(ack|acknowledge|acknowledged|done)\b[\s:,.-]*(.*)$/is.exec(text);
+  const ack = /^\s*(ack|acknowledge|acknowledged|done)\b[\s:,.-]*([\s\S]*)$/i.exec(text);
   if (ack) return { kind: 'ack', note: ack[2].trim().slice(0, 500) };
-  const reply = /^\s*(r|reply)\s*[:\-]?\s+(.+)$/is.exec(text);
+  const reply = /^\s*(r|reply)\s*[:\-]?\s+([\s\S]+)$/i.exec(text);
   if (reply) return { kind: 'reply', text: reply[2].trim() };
   if (/^\s*(all|everyone|everybody)\s+(present|here|in)\s*[.!]?\s*$/i.test(text) || /^\s*present\s+all\s*$/i.test(text)) {
     return { kind: 'register', absent: [], late: [], excused: [] };

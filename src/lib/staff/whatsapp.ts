@@ -40,7 +40,7 @@ async function lastContext(db: SupabaseClient, userId: string) {
     draft: rows[0]?.meta.replyDraft as { threadId: string; draft: string; toName: string } | undefined,
     /** What ACK refers to: an ack the School OS proposed, else the latest alert (48 h). */
     ack: (rows[0]?.meta.ack as { situationId: string; note?: string } | undefined)
-      ?? (() => { const r = rows.find(x => x.meta.situationId && within(x, 2 * DAY_MS)); return r ? { situationId: r.meta.situationId as string } : undefined; })(),
+      ?? (() => { const r = rows.find(x => x.meta.situationId && within(x, 2 * DAY_MS)); return r ? { situationId: r.meta.situationId as string, note: undefined as string | undefined } : undefined; })(),
     /** The last parent message we forwarded (R replies to it). */
     thread: rows.find(x => x.meta.threadId && x.meta.type === 'parent_message')?.meta.threadId as string | undefined,
   };

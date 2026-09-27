@@ -123,7 +123,7 @@ const inputs = (over: Partial<InventoryInputs> = {}): InventoryInputs => ({
     WHATSAPP_ACCESS_TOKEN: true, WHATSAPP_PHONE_NUMBER_ID: true, WHATSAPP_APP_SECRET: true, WHATSAPP_VERIFY_TOKEN: true,
   },
   env: { VERCEL_ENV: 'production', VERCEL_REGION: 'bom1', NODE_ENV: 'production', POLICIES_APPROVED: 'true' },
-  platform: { ...PLATFORM_DEFAULTS, 'onboarding.self_serve': false },
+  platform: { ...PLATFORM_DEFAULTS },
   platformStored: true,
   health: {
     server_version: '17.6', rls_off: [], tables: 42, anon_writable: [], operators: 2, audit_7d: 10,

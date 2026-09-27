@@ -16,21 +16,23 @@ const COMMON_SUBJECTS = ['English', 'Hindi', 'Telugu', 'Tamil', 'Kannada', 'Mala
  * A teacher's classes and subjects, edited by the school. What they teach decides which classes they can set work
  * for, mark and see; "From the timetable" adds every class + subject the published timetable gives them.
  */
-export default function TeacherAssignmentsEditor({ teacher, schoolId, sections, subjectsInUse, onClose, onSaved }: {
+export default function TeacherAssignmentsEditor({ teacher, schoolId, subjectsInUse, onClose, onSaved }: {
   teacher: { id: string; name: string; assignments?: Row[]; teacher_class?: string | null };
-  schoolId: string; sections: string[]; subjectsInUse: string[]; onClose: () => void; onSaved: () => void;
+  schoolId: string; subjectsInUse: string[]; onClose: () => void; onSaved: () => void;
 }) {
   const [rows, setRows] = useState<Row[]>(() => (teacher.assignments?.length ? teacher.assignments.map(a => ({ ...a })) : [{ class: '', subject: '' }]));
   const [classTeacherOf, setClassTeacherOf] = useState(teacher.teacher_class || '');
   const [fromTimetable, setFromTimetable] = useState<Row[]>([]);
+  const [sections, setSections] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [unknown, setUnknown] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const db = createClient();
+      const { data: cls } = await db.from('classes').select('name').eq('school_id', schoolId);
+      if (!cancelled) setSections((cls || []).map(c => c.name as string));
       const { data: v } = await db.from('timetable_versions').select('id').eq('school_id', schoolId).eq('status', 'published')
         .lte('effective_from', new Date().toISOString().slice(0, 10)).order('effective_from', { ascending: false }).limit(1).maybeSingle();
       if (!v) return;
@@ -40,20 +42,21 @@ export default function TeacherAssignmentsEditor({ teacher, schoolId, sections, 
     return () => { cancelled = true; };
   }, [schoolId, teacher.id]);
 
-  const allSections = useMemo(() => [...new Set([...sections, ...fromTimetable.map(r => r.class), ...rows.map(r => r.class)].filter(Boolean).map(displayClass))].sort((a, b) => a.localeCompare(b, 'en', { numeric: true })), [sections, fromTimetable, rows]);
+  // Only sections on the school's class list (Sthara sets those up); typed ones outside it are refused on save.
+  const allSections = useMemo(() => [...new Set(sections.filter(Boolean).map(displayClass))].sort((a, b) => a.localeCompare(b, 'en', { numeric: true })), [sections]);
   const missing = fromTimetable.filter(t => !rows.some(r => normClass(r.class) === normClass(t.class) && r.subject.trim().toLowerCase() === t.subject.toLowerCase()));
   const set = (i: number, patch: Partial<Row>) => setRows(rs => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
-  const save = async (newSections = false) => {
+  const save = async () => {
     setBusy(true); setErr(null);
     try {
       const token = await getAuthToken();
       const res = await fetch('/api/admin/users/assignments', {
         method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ userId: teacher.id, subjects: rows.filter(r => r.class.trim() || r.subject.trim()), classTeacherOf: classTeacherOf || null, newSections }),
+        body: JSON.stringify({ userId: teacher.id, subjects: rows.filter(r => r.class.trim() || r.subject.trim()), classTeacherOf: classTeacherOf || null }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setErr(data.error || 'Could not save.'); setUnknown(data.unknown || []); return; }
+      if (!res.ok) { setErr(data.error || 'Could not save.'); return; }
       onSaved();
     } finally { setBusy(false); }
   };
@@ -64,7 +67,7 @@ export default function TeacherAssignmentsEditor({ teacher, schoolId, sections, 
         <div className="flex items-start gap-3 mb-4">
           <div className="flex-1">
             <h2 id="ta-title" className="text-lg font-bold text-slate-900">{teacher.name}: classes &amp; subjects</h2>
-            <p className="text-sm text-slate-500 mt-1">What a teacher teaches decides which classes they can set work for, mark and see.</p>
+            <p className="text-sm text-slate-500 mt-1">What a teacher teaches decides which classes they can set work for, mark and see. Sections come from your class list; ask Sthara to add a new one.</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="p-2 rounded-lg hover:bg-slate-100"><X className="w-4 h-4" /></button>
         </div>
@@ -101,8 +104,7 @@ export default function TeacherAssignmentsEditor({ teacher, schoolId, sections, 
         {err && <div role="alert" className="mt-4 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-800">{err}</div>}
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onClose} className="btn">Cancel</button>
-          {unknown.length > 0 && <button disabled={busy} onClick={() => save(true)} className="btn">Add {unknown.join(', ')} and save</button>}
-          <button disabled={busy} onClick={() => save(false)} className="btn pri">{busy ? 'Saving…' : 'Save'}</button>
+          <button disabled={busy} onClick={() => save()} className="btn pri">{busy ? 'Saving…' : 'Save'}</button>
         </div>
       </div>
     </div>

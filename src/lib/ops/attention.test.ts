@@ -67,3 +67,11 @@ test('setup checklist follows the onboarding order', () => {
   assert.deepEqual(c.filter(x => !x.done).map(x => x.key), ['subjects', 'students', 'parents']);
   assert.equal(setupChecklist(school(), { total: 0, covered: 0 }).find(x => x.key === 'coverage')?.done, false);
 });
+
+test('login requests a school is waiting on: warn, critical after three days', () => {
+  const out = buildAttention({ schools: [school()], health: [], newEnquiries: 0, pendingRequests: [{ schoolId: 's1', count: 2, oldestDays: 4 }, { schoolId: 'gone', count: 1, oldestDays: 0 }] });
+  assert.deepEqual(out.map(a => [a.id, a.severity]), [['requests:s1', 'crit'], ['requests:gone', 'warn']]);
+  assert.match(out[0].title, /2 login requests waiting/);
+  assert.deepEqual(out[0].actions, [{ kind: 'open', href: '/ops/requests?school=s1', label: 'Review' }]);
+  assert.deepEqual(buildAttention({ schools: [school()], health: [], newEnquiries: 0, pendingRequests: [{ schoolId: 's1', count: 0, oldestDays: 0 }] }), []);
+});

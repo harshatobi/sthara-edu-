@@ -147,6 +147,7 @@ export default function HomeworkWorkspace() {
   }, []);
 
   // ── Proctoring: tab-switch / visibility monitoring ────────────────────────
+  const meSchool = profile?.schoolId, meId = profile?.uid, meName = profile?.name, taskTitle = assignment?.title;
   const reportProctorAlert = useCallback(async (count: number) => {
     try {
       const token = await getAuthToken();
@@ -155,12 +156,12 @@ export default function HomeworkWorkspace() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          schoolId: profile?.schoolId, studentId: profile?.uid, studentName: profile?.name,
-          taskId: id, taskTitle: assignment?.title, switchCount: count,
+          schoolId: meSchool, studentId: meId, studentName: meName,
+          taskId: id, taskTitle, switchCount: count,
         }),
       });
     } catch { /* best-effort */ }
-  }, [profile?.schoolId, profile?.uid, profile?.name, id, assignment?.title, getAuthToken]);
+  }, [meSchool, meId, meName, id, taskTitle, getAuthToken]);
 
   useEffect(() => {
     if (!assignment?.proctored || alreadySubmitted) return;
@@ -485,7 +486,7 @@ export default function HomeworkWorkspace() {
             <div className={`bg-white rounded-[20px] ${SH} p-[30px]`}>
               <div className="text-[11.5px] font-extrabold tracking-[.08em] text-[#7A8699] mb-4">WORK THESE OUT ON PAPER</div>
               {questions.length === 0 ? (
-                <p className="text-[14px] text-[#7A8699]">No questions listed — follow your teacher's instructions.</p>
+                <p className="text-[14px] text-[#7A8699]">No questions listed — follow your teacher&apos;s instructions.</p>
               ) : (
                 <div className="space-y-4">
                   {questions.map((qq, i) => (

@@ -97,9 +97,10 @@ function useWellnessStore() {
   const [error, setError] = useState<string | null>(null);
   const demo = !user;
 
-  const load = useCallback(async () => {
-    if (!profile) return;
-    if (demo) { setState(demoLoad()); return; }
+  /** The student's wellness history, or why it couldn't be read. Sets no state itself. */
+  const fetchState = useCallback(async (): Promise<{ state: WellnessState } | { error: string } | null> => {
+    if (!profile) return null;
+    if (demo) return { state: demoLoad() };
     const supabase = createClient();
     try {
       const since = new Date(Date.now() - 14 * DAY).toISOString();
@@ -126,7 +127,7 @@ function useWellnessStore() {
       const checkins = rows.filter(r => !r.note && levelFromEnergy(r.energy) !== null);
       const todayKey = dayKey(new Date());
       const todayRow = checkins.find(r => dayKey(new Date(r.created_at)) === todayKey);
-      setState({
+      return { state: {
         today: todayRow ? levelFromEnergy(todayRow.energy) : null,
         todayRowId: todayRow?.id ?? null,
         fortnight: fortnightFrom(checkins.map(r => ({ created_at: r.created_at, value: ENERGY_LEVELS[levelFromEnergy(r.energy)!].value }))),
@@ -138,13 +139,21 @@ function useWellnessStore() {
         consent: e3 ? 'unknown' : consentRow?.granted && !consentRow.revoked_at ? 'on-file' : 'pending',
         journalSupported: true,
         sharingSupported,
-      });
-    } catch (e: any) {
-      setError(e?.message || 'Could not load your wellness history.');
+      } };
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : 'Could not load your wellness history.' };
     }
   }, [profile, demo]);
 
-  useEffect(() => { if (!authLoading) void load(); }, [authLoading, load]);
+  useEffect(() => {
+    if (authLoading) return;
+    let cancelled = false;
+    fetchState().then(r => {
+      if (cancelled || !r) return;
+      if ('error' in r) setError(r.error); else setState(r.state);
+    });
+    return () => { cancelled = true; };
+  }, [authLoading, fetchState]);
 
   /** One check-in per day: re-tapping updates today's row instead of stacking new ones. */
   const setEnergy = useCallback(async (level: number) => {

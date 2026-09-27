@@ -120,7 +120,7 @@ function Access({ desk }: { desk: AdminDesk }) {
               ))}</tbody>
             </table>
           </div>
-        ) : <Empty icon={<UserCircle size={26} weight="duotone" />} title="No office accounts">Add office accounts in the user directory with the admin account type.</Empty>}
+        ) : <Empty icon={<UserCircle size={26} weight="duotone" />} title="No office accounts">Office logins are created by Sthara: request them in the user directory as Office / admin.</Empty>}
       </div>
 
       <div className="card" style={{ marginBottom: 22 }}>

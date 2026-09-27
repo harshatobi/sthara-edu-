@@ -28,7 +28,7 @@ export const PERMS = {
   'compliance.read': 'See consent coverage and DPDP flags',
   'compliance.act': 'Ask parents for missing consent',
   'audit.read': 'Read the audit trail',
-  'people.manage': 'Create and remove student, teacher and parent accounts',
+  'people.manage': 'Request new logins from Sthara, remove accounts, and set what teachers teach',
   'access.manage': 'Give and take away office roles',
   'messages.office': 'Read and answer parents\' messages to the school office',
   'feed.read': 'See the school-wide situational feed and escalations',

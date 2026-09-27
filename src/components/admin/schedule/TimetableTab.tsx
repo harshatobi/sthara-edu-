@@ -145,7 +145,7 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
           {draft && mode !== 'class' && <span className="muted" style={{ fontSize: 12.5 }}>Switch to By class to edit.</span>}
         </div>
         {mode === 'class' && !sections.length ? (
-          <Empty icon={<Table size={26} weight="duotone" />} title="No sections yet">Sections come from enrolled students and teachers&apos; classes in the user directory. Add those first.</Empty>
+          <Empty icon={<Table size={26} weight="duotone" />} title="No sections yet">Sections come from enrolled students and teachers&apos; classes in the user directory. Enrol students and assign teachers first.</Empty>
         ) : !focusKey ? <p className="muted">Nothing to show yet.</p> : (
           <WeekGrid bells={rows.bells} wingId={wing} slots={shown} mode={mode} names={names} rooms={rows.rooms} clashing={clashing}
             onCell={draft && mode === 'class' ? (weekday, period) => setEditing({ weekday, period }) : undefined}

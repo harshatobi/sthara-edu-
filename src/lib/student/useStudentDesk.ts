@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { LoadTracker } from '@/lib/loadTracker';
 import { useAuth, type UserProfile } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { DEMO_STUDENT, demoRows } from '@/lib/demo/student';
@@ -70,22 +71,15 @@ export function StudentDeskProvider({ children }: { children: ReactNode }) {
   const [desk, setDesk] = useState<StudentDesk | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
-  const loadedAt = useRef(0);
-  const inFlight = useRef(false);
+  const [tracker] = useState(() => new LoadTracker(STALE_MS));
   const reload = useCallback(() => setNonce(n => n + 1), []);
-  const refreshIfStale = useCallback(() => {
-    if (!inFlight.current && loadedAt.current && Date.now() - loadedAt.current > STALE_MS) reload();
-  }, [reload]);
+  const refreshIfStale = useCallback(() => { if (tracker.stale(Date.now())) reload(); }, [tracker, reload]);
+  // The local no-backend dev bypass (no session): the canon demo dataset, never refreshed.
+  const demoDesk = useMemo(() => (!authLoading && profile && !user ? assemble(demoRows(), DEMO_STUDENT, 'demo') : null), [authLoading, profile, user]);
 
   useEffect(() => {
-    if (authLoading || !profile) return;
+    if (authLoading || !profile || !user) return;
     let cancelled = false;
-
-    if (!user) {
-      setDesk(assemble(demoRows(), DEMO_STUDENT, 'demo'));
-      loadedAt.current = Date.now();
-      return;
-    }
 
     const me = {
       name: profile.name || 'Student',
@@ -93,14 +87,13 @@ export function StudentDeskProvider({ children }: { children: ReactNode }) {
       cls: profile.studentClass || '',
       school: profile.branch || '',
     };
-    inFlight.current = true;
+    tracker.start();
     loadLive(profile)
-      .then(rows => { if (!cancelled) { setDesk(assemble(rows, me, 'live')); setError(null); loadedAt.current = Date.now(); } })
+      .then(rows => { tracker.finish(true); if (!cancelled) { setDesk(assemble(rows, me, 'live')); setError(null); } })
       // A failed background refresh keeps showing the last good data; only a first load surfaces the error.
-      .catch(e => { if (!cancelled) setError(prev => (loadedAt.current ? prev : e?.message || 'Could not load your desk.')); })
-      .finally(() => { inFlight.current = false; });
+      .catch(e => { tracker.finish(false); if (!cancelled) setError(prev => (tracker.everLoaded ? prev : e?.message || 'Could not load your desk.')); });
     return () => { cancelled = true; };
-  }, [authLoading, profile, user, nonce]);
+  }, [authLoading, profile, user, nonce, tracker]);
 
   // Coming back to the tab after a while: refresh in the background.
   useEffect(() => {
@@ -109,7 +102,8 @@ export function StudentDeskProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('focus', onFocus);
   }, [refreshIfStale]);
 
-  const value = useMemo(() => ({ desk, error, loading: !desk && !error, reload, refreshIfStale }), [desk, error, reload, refreshIfStale]);
+  const shown = user ? desk : demoDesk;
+  const value = useMemo(() => ({ desk: shown, error, loading: !shown && !error, reload, refreshIfStale }), [shown, error, reload, refreshIfStale]);
   return createElement(DeskContext.Provider, { value }, children);
 }
 

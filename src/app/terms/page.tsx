@@ -42,7 +42,7 @@ export default function TermsPage() {
                 <li>New schools start with a <strong>paid pilot</strong>: one grade for one term, at the full price of the chosen plan</li>
                 <li>Pilot fees are credited in full to the annual subscription if the school continues</li>
                 <li>After the pilot, continued access requires an annual subscription</li>
-                <li>Plans are priced per student per year; current prices are published on our website and may change with 30 days' notice</li>
+                <li>Plans are priced per student per year; current prices are published on our website and may change with 30 days&apos; notice</li>
                 <li>Data is retained for 60 days after a pilot or subscription ends before permanent deletion</li>
               </ul>
             </Section>

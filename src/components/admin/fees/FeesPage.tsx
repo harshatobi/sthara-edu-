@@ -170,7 +170,7 @@ function Fees({ desk }: { desk: AdminDesk }) {
               ))}</tbody>
             </table>
           </div>
-        ) : <Empty icon={<CurrencyInr size={26} weight="duotone" />} title="No students on roll yet">Add students in the user directory; their grades appear here to price.</Empty>}
+        ) : <Empty icon={<CurrencyInr size={26} weight="duotone" />} title="No students on roll yet">Students join through Admissions (Sthara creates their logins); their grades appear here to price.</Empty>}
       </div>
 
       {L.runs.length > 0 && (

@@ -69,7 +69,8 @@ function AskWorkspace({ view }: { view: FamilyView }) {
     setErr(null);
     setBusy(true);
     setDraft('');
-    const base: Thread = active ?? { id: newId(), title: titleOf(q), turns: [], at: Date.now() };
+    const current = threads.find(t => t.id === activeId) ?? null;
+    const base: Thread = current ?? { id: newId(), title: titleOf(q), turns: [], at: Date.now() };
     const withQ: Thread = { ...base, turns: [...base.turns, { role: 'parent', text: q, at: Date.now() }], at: Date.now() };
     const rest = threads.filter(t => t.id !== base.id);
     save([withQ, ...rest]);
@@ -80,16 +81,16 @@ function AskWorkspace({ view }: { view: FamilyView }) {
       });
       const answer: AskTurn = { role: 'os', text: reply.say || reply.ask.map(a => a.question).join(' '), reply, at: Date.now() };
       save([{ ...withQ, turns: [...withQ.turns, answer] }, ...rest]);
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Drop the unanswered question so "try again" resends it cleanly.
       save([{ ...withQ, turns: base.turns }, ...rest].filter(t => t.turns.length));
       if (!base.turns.length) setActiveId(null);
       setDraft(q);
-      setErr(e?.message || 'Something went wrong.');
+      setErr(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setBusy(false);
     }
-  }, [active, busy, call, save, setActiveId, threads]);
+  }, [activeId, busy, call, save, setActiveId, threads]);
 
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; }, [send]);

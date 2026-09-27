@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, Search, ArrowLeft, GraduationCap, BookOpen, UserCheck, Shield, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import TeacherAssignmentsEditor from '@/components/admin/TeacherAssignmentsEditor';
+import AccountRequests from '@/components/admin/AccountRequests';
 
 interface UserData {
   id: string;
@@ -47,31 +48,31 @@ export default function AdminDirectoryPage() {
     if (!loading && (!profile || profile.role !== 'admin')) router.push('/login');
   }, [profile, loading, router]);
 
-  useEffect(() => {
-    if (!profile?.schoolId) return;
-    fetchUsers();
-  }, [profile?.schoolId]);
-
-  const fetchUsers = async () => {
-    setFetching(true);
-    setFetchError('');
+  const schoolId = profile?.schoolId;
+  /** The school's accounts, or the reason they couldn't be loaded. Sets no state itself. */
+  const loadUsers = useCallback(async (): Promise<{ users: UserData[] } | { error: string }> => {
     try {
       const token = await getAuthToken();
-      const res = await fetch(`/api/admin/users?schoolId=${profile!.schoolId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to load users');
-      }
-      const { users: data } = await res.json();
-      setUsers(data || []);
-    } catch (err: any) {
-      setFetchError(err.message || 'Failed to load directory');
-    } finally {
-      setFetching(false);
+      const res = await fetch(`/api/admin/users?schoolId=${schoolId}`, { headers: { Authorization: `Bearer ${token}` } });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: body.error || 'Failed to load users' };
+      return { users: body.users || [] };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err.message : 'Failed to load directory' };
     }
-  };
+  }, [schoolId]);
+  const apply = useCallback((r: { users: UserData[] } | { error: string }) => {
+    if ('error' in r) setFetchError(r.error); else { setUsers(r.users); setFetchError(''); }
+    setFetching(false);
+  }, []);
+  useEffect(() => {
+    if (!schoolId) return;
+    let cancelled = false;
+    loadUsers().then(r => { if (!cancelled) apply(r); });
+    return () => { cancelled = true; };
+  }, [schoolId, loadUsers, apply]);
+  /** Reload after a change (a deletion, saved assignments). */
+  const fetchUsers = async () => { setFetching(true); apply(await loadUsers()); };
 
   const handleDelete = async (u: UserData) => {
     if (!profile?.schoolId) return;
@@ -148,6 +149,8 @@ export default function AdminDirectoryPage() {
           />
         </div>
       </div>
+
+      <AccountRequests />
 
       {/* Role Filter Tabs */}
       <div className="flex gap-2 flex-wrap">
@@ -295,7 +298,7 @@ export default function AdminDirectoryPage() {
         )}
       </div>
       {editing && (
-        <TeacherAssignmentsEditor teacher={editing} schoolId={profile!.schoolId!} sections={[...new Set(users.filter(x => x.role === 'student' && x.student_class).map(x => x.student_class!))]}
+        <TeacherAssignmentsEditor teacher={editing} schoolId={profile!.schoolId!}
           subjectsInUse={[...new Set(users.flatMap(x => (x.assignments || []).map(a => a.subject)))]}
           onClose={() => setEditing(null)} onSaved={() => { setEditing(null); fetchUsers(); }} />
       )}

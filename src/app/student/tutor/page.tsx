@@ -217,14 +217,15 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
   const title = scripted ? DEMO_TUTOR.topic : topic.name;
   const start = scripted ? (topic.name === DEMO_TUTOR.topic ? topic.start ?? DEMO_TUTOR.start : DEMO_TUTOR.start) : topic.start;
 
-  const [log, setLog] = useState<Line[]>([]);
+  // The demo opens on its first scripted question; a live session asks the tutor for it (busy until it answers).
+  const [log, setLog] = useState<Line[]>(() => (scripted ? [{ who: 'ai', text: DEMO_TUTOR.steps[0].prompt }] : []));
   const [token, setToken] = useState<string | null>(null);
   const [step, setStep] = useState(1);
-  const [steps, setSteps] = useState(3);
+  const [steps, setSteps] = useState(() => (scripted ? DEMO_TUTOR.steps.length : 3));
   const [hints, setHints] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [done, setDone] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(!scripted);
   const [err, setErr] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [result, setResult] = useState<Result | null>(null);
@@ -262,8 +263,7 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    if (scripted) { setSteps(DEMO_TUTOR.steps.length); setLog([{ who: 'ai', text: DEMO_TUTOR.steps[0].prompt }]); return; }
-    setBusy(true);
+    if (scripted) return;
     call({ action: 'start', subject: topic.subject, topic: topic.name })
       .then(d => { setLog([{ who: 'ai', text: d.text }]); setToken(d.token); setStep(d.step); setSteps(d.steps); })
       .catch(e => setErr(e.message))

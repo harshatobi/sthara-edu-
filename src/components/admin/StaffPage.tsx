@@ -64,7 +64,7 @@ function Staff({ desk }: { desk: AdminDesk }) {
         sub={`${plural(wf.teachers.length, 'teacher')} · ${plural(wf.admins.length, 'admin')}${wf.ratio ? ` · 1:${wf.ratio} student-teacher ratio` : ''}`}
         actions={<>
           <button className="btn" onClick={exportCsv}><DownloadSimple size={16} /> Export</button>
-          <Link className="btn pri" href="/admin/directory"><UserPlus size={16} weight="bold" /> Add staff</Link>
+          <Link className="btn pri" href="/admin/directory"><UserPlus size={16} weight="bold" /> Request logins</Link>
         </>} />
       <MissingNotice desk={desk} tables={['leave_requests', 'lesson_plans']} />
 
@@ -133,7 +133,7 @@ function Staff({ desk }: { desk: AdminDesk }) {
               ))}</tbody>
             </table>
           </div>
-        ) : <Empty icon={<UsersThree size={26} weight="duotone" />} title="No teachers yet">Add teachers in the user directory and assign their classes and subjects.</Empty>}
+        ) : <Empty icon={<UsersThree size={26} weight="duotone" />} title="No teachers yet">Sthara creates teacher logins: request them in the user directory, then assign their classes and subjects there.</Empty>}
         {concern && (
           <div className="note" style={{ marginTop: 18 }}>
             <b>{concern.name}</b>: class TML down {Math.abs(concern.delta!)} points in a fortnight

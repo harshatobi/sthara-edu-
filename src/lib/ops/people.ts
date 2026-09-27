@@ -28,7 +28,9 @@ export interface PersonInput {
 export interface RowIssue { row: number; field: string; message: string }
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-export const normClass = (c?: string | null) => (c || '').toLowerCase().replace(/class|[^a-z0-9]/g, '');
+// One class-name rule for ops and teacher scope (they match classes across each other).
+import { normClass } from '@/lib/teacher/scope';
+export { normClass };
 
 /**
  * Validates a batch against itself and the school's existing state.

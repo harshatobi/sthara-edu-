@@ -101,6 +101,7 @@ test('agenda: a teacher across wings, holiday, leave, events', () => {
     ],
     staff: [], people: [{ id: 't1', name: 'Anita Rao', role: 'teacher', email: null }], studentClasses: [],
     leave: [{ id: 'l', staff_id: 't1', leave_type: 'casual', from_date: '2026-10-12', to_date: '2026-10-12', half_day: false, status: 'approved' }],
+    absences: [], covers: [], dutyPosts: [], roster: [], duties: [], visits: [], compOffs: [],
     missing: [],
   };
   const [mon] = agenda({ kind: 'teacher', userId: 't1' }, '2026-09-28', '2026-09-28', rows);

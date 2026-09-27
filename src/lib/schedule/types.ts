@@ -34,15 +34,62 @@ export interface TimetableVersion {
 export interface Slot {
   id?: string; version_id?: string; class: string; group_label: string; weekday: number; period_no: number;
   subject: string; teacher_id: string | null; room_id: string | null; combined: boolean;
+  /** A register member with no login who teaches this lesson (a visiting dance teacher); never set with teacher_id. */
+  staff_member_id?: string | null;
 }
+
+/**
+ * Who someone is across accounts and the staff register: a user id as-is, or "s:" + a register id
+ * for someone with no login. Used as the key for clashes, load, cover and duties.
+ */
+export type PersonKey = string;
+export const personKey = (userId: string | null | undefined, staffMemberId?: string | null): PersonKey | null =>
+  userId || (staffMemberId ? `s:${staffMemberId}` : null);
+export const slotPerson = (s: Pick<Slot, 'teacher_id' | 'staff_member_id'>) => personKey(s.teacher_id, s.staff_member_id);
+/** A person key back to the two columns every scheduling table stores. */
+export const personCols = (k: PersonKey) => (k.startsWith('s:') ? { user_id: null, staff_member_id: k.slice(2) } : { user_id: k, staff_member_id: null });
+/** A person key (or '' for nobody) as a lesson's two teacher columns. */
+export const slotTeacher = (k: PersonKey | '' | null) => (!k ? { teacher_id: null, staff_member_id: null }
+  : k.startsWith('s:') ? { teacher_id: null, staff_member_id: k.slice(2) } : { teacher_id: k, staff_member_id: null });
 
 export type StaffCategory = 'teaching' | 'office' | 'support' | 'assistant';
 export const STAFF_CATEGORIES: Record<StaffCategory, string> = {
   teaching: 'Teaching', office: 'Office', support: 'Support staff', assistant: 'Lab, library and IT',
 };
+export type Employment = 'permanent' | 'contract' | 'visiting';
+export const EMPLOYMENT: Record<Employment, string> = { permanent: 'Permanent', contract: 'Contract', visiting: 'Visiting' };
 export interface StaffMember {
   id: string; user_id: string | null; name: string; category: StaffCategory; designation: string; wing_id: string | null;
   phone_e164: string | null; employee_code: string | null; joined_on: string | null; active: boolean;
+  employment?: Employment; contract_from?: string | null; contract_to?: string | null; whatsapp_opt_in?: boolean;
+}
+
+// ── Cover, duties, visiting staff, comp-off (phase 2) ──────────────────────
+export interface Absence {
+  id: string; user_id: string | null; staff_member_id: string | null; on_date: string; kind: 'absent' | 'release';
+  portion: 'full' | 'am' | 'pm' | 'periods'; period_nos: number[]; reason: string | null;
+  status: 'reported' | 'confirmed' | 'cancelled'; source: 'office' | 'whatsapp'; created_at: string;
+}
+export interface Cover {
+  id: string; on_date: string; slot_id: string; class: string; period_no: number; subject: string;
+  absent_user_id: string | null; absent_staff_member_id: string | null; reason: 'leave' | 'absent' | 'release';
+  status: 'assigned' | 'not_needed'; sub_user_id: string | null; sub_staff_member_id: string | null;
+  flag_note: string | null; flagged_at: string | null;
+}
+export type DutyKind = 'gate' | 'bus' | 'lunch' | 'corridor' | 'assembly' | 'event' | 'other';
+export const DUTY_KINDS: Record<DutyKind, string> = {
+  gate: 'Gate', bus: 'Bus', lunch: 'Lunch', corridor: 'Corridor', assembly: 'Assembly', event: 'Event', other: 'Other',
+};
+export interface DutyPost { id: string; name: string; kind: DutyKind; weekdays: number[]; starts_at: string; ends_at: string; location: string | null; needed: number; active: boolean }
+export interface RosterRow { id: string; post_id: string; weekday: number; user_id: string | null; staff_member_id: string | null }
+export interface DatedDuty {
+  id: string; on_date: string; starts_at: string; ends_at: string; kind: 'invigilation' | 'event' | 'other'; title: string;
+  event_id: string | null; room_id: string | null; user_id: string | null; staff_member_id: string | null; note: string | null;
+}
+export interface VisitSession { id: string; staff_member_id: string; on_date: string; slot_id: string | null; class: string | null; subject: string | null; status: 'taken' | 'missed'; note: string | null }
+export interface CompOff {
+  id: string; user_id: string | null; staff_member_id: string | null; days: number; duty_on: string; source: 'roster' | 'duty' | 'cover' | 'other';
+  source_id: string | null; note: string; granted_at: string; revoked_at: string | null;
 }
 
 export const EVENT_KINDS: Record<EventKind, string> = {
@@ -71,5 +118,12 @@ export interface ScheduleRows {
   studentClasses: string[];
   /** Approved leave, own or (for the office) the school's. */
   leave: { id: string; staff_id: string; leave_type: string; from_date: string; to_date: string; half_day: boolean; status: string }[];
+  absences: Absence[];
+  covers: Cover[];
+  dutyPosts: DutyPost[];
+  roster: RosterRow[];
+  duties: DatedDuty[];
+  visits: VisitSession[];
+  compOffs: CompOff[];
   missing: string[];
 }

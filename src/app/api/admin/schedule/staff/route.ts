@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic';
 /**
  * The staff register (schedule.workforce): everyone who works at the school, including
  * support staff with no login. A row can link a teacher or office account for its details.
- *   PUT    { id?, userId?, name, category, designation?, wingId?, phone?, employeeCode?, joinedOn?, active? }
+ *   PUT    { id?, userId?, name, category, designation?, wingId?, phone?, employeeCode?, joinedOn?, active?,
+ *            employment?: 'permanent' | 'contract' | 'visiting', contractFrom?, contractTo?, whatsappOptIn? }
+ *          WhatsApp consent is only for staff with no login (accounts link WhatsApp themselves) and needs a phone.
  *   DELETE { id }   takes someone off the active register (kept for the record)
  */
 const CATEGORIES: StaffCategory[] = ['teaching', 'office', 'support', 'assistant'];
@@ -42,10 +44,18 @@ export async function PUT(req: NextRequest) {
   }
   const joinedOn = b.joinedOn ? String(b.joinedOn) : null;
   if (joinedOn && !ISO_DAY.test(joinedOn)) return bad('Pick the joining date.');
+  const employment = ['permanent', 'contract', 'visiting'].includes(b.employment) ? b.employment : 'permanent';
+  const contractFrom = b.contractFrom ? String(b.contractFrom) : null, contractTo = b.contractTo ? String(b.contractTo) : null;
+  if ((contractFrom && !ISO_DAY.test(contractFrom)) || (contractTo && !ISO_DAY.test(contractTo))) return bad('Pick the contract dates.');
+  if (contractFrom && contractTo && contractTo < contractFrom) return bad('The contract must end after it starts.');
+  if (employment !== 'permanent' && !contractTo) return bad(`A ${employment} member of staff needs an end date for their contract.`);
+  const optIn = !userId && !!b.whatsappOptIn;
+  if (optIn && !phone) return bad('Add their mobile number to send them their roster on WhatsApp.');
 
   const row = {
     school_id: admin.schoolId, user_id: userId, name, category, designation: str(b.designation, 80), wing_id: wingId,
     phone_e164: phone, employee_code: str(b.employeeCode, 40) || null, joined_on: joinedOn, active: b.active !== false,
+    employment, contract_from: employment === 'permanent' ? null : contractFrom, contract_to: employment === 'permanent' ? null : contractTo, whatsapp_opt_in: optIn,
     updated_at: new Date().toISOString(),
   };
   if (id) {

@@ -13,11 +13,15 @@ import TimetableTab from './TimetableTab';
 import SetupTab from './SetupTab';
 import CalendarTab from './CalendarTab';
 import StaffTab from './StaffTab';
+import CoverTab from './CoverTab';
+import DutiesTab from './DutiesTab';
 import '@/styles/schedule.css';
 
-type Tab = 'mine' | 'timetable' | 'setup' | 'calendar' | 'staff';
+type Tab = 'mine' | 'cover' | 'duties' | 'timetable' | 'setup' | 'calendar' | 'staff';
 const TABS: { key: Tab; label: string; see: Perm[] }[] = [
   { key: 'mine', label: 'My schedule', see: [] },
+  { key: 'cover', label: 'Cover', see: ['schedule.academic'] },
+  { key: 'duties', label: 'Duties', see: ['schedule.workforce', 'schedule.academic'] },
   { key: 'timetable', label: 'Timetable', see: ['schedule.academic', 'academics.read'] },
   { key: 'calendar', label: 'Calendar', see: [] },
   { key: 'setup', label: 'Bells & rooms', see: ['schedule.academic'] },
@@ -58,6 +62,8 @@ function Schedule({ desk }: { desk: AdminDesk }) {
           ) : (
             <>
               {tab === 'mine' && <MySchedule rows={common.rows} who={{ kind: 'office', userId: desk.me.id }} schoolName={desk.school.name} title="My schedule" />}
+              {tab === 'cover' && <CoverTab {...common} />}
+              {tab === 'duties' && <DutiesTab {...common} canWorkforce={a.can('schedule.workforce')} canAcademic={a.can('schedule.academic')} />}
               {tab === 'timetable' && <TimetableTab {...common} canEdit={a.can('schedule.academic')} />}
               {tab === 'calendar' && <CalendarTab {...common} canEdit={a.can('schedule.academic')} />}
               {tab === 'setup' && <SetupTab {...common} canEdit={a.can('schedule.academic')} />}

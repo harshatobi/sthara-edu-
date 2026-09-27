@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { hhmm, maxPeriods, periodOf, roomOf, teachingDays, weekGrid } from '@/lib/schedule/engine';
-import { DAY_NAMES, DAY_SHORT, type BellSchedule, type Room, type Slot } from '@/lib/schedule/types';
+import { DAY_NAMES, DAY_SHORT, slotPerson, type BellSchedule, type Room, type Slot } from '@/lib/schedule/types';
 import type { PrintGrid } from './print';
 
 export type GridMode = 'class' | 'teacher' | 'room';
@@ -39,7 +39,8 @@ function rings(bells: BellSchedule[], wingId: string | null, weekday: number, no
 }
 
 export function lessonLines(s: Slot, mode: GridMode, names: Map<string, string>, rooms: Room[]): string[] {
-  const teacher = s.teacher_id ? names.get(s.teacher_id) || 'Teacher' : 'No teacher';
+  const who = slotPerson(s);
+  const teacher = who ? names.get(who) || 'Teacher' : 'No teacher';
   const room = roomOf(s, rooms)?.name || '';
   const subj = `${s.subject}${s.group_label ? ` · ${s.group_label}` : ''}`;
   if (mode === 'class') return [subj, [teacher, room].filter(Boolean).join(' · ')];

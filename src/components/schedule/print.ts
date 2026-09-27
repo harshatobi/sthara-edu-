@@ -48,3 +48,27 @@ export function printGrids(grids: PrintGrid[]) {
   w.focus();
   setTimeout(() => { w.print(); }, 250);
 }
+
+/** Prints a plain table (cover sheet, duty roster) from its own window. */
+export function printTable(o: { title: string; subtitle: string; school: string; head: string[]; rows: string[][]; landscape?: boolean }) {
+  const w = window.open('', '_blank', 'noopener=no,width=1000,height=800');
+  if (!w) throw new Error('Allow pop-ups for this site to print.');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(o.title)}</title>
+    <style>
+      @page { size: A4 ${o.landscape ? 'landscape' : 'portrait'}; margin: 12mm; }
+      body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #002147; margin: 0; }
+      header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+      h1 { font-size: 20px; margin: 0; } header p { margin: 2px 0 0; font-size: 12px; color: #7A8699; } header b { font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+      th, td { border: 1px solid #C9D3E1; padding: 6px 7px; text-align: left; vertical-align: top; }
+      th { background: #EEF2F7; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+      td.sign { width: 90px; }
+    </style></head><body>
+    <header><div><h1>${esc(o.title)}</h1><p>${esc(o.subtitle)}</p></div><b>${esc(o.school)}</b></header>
+    <table><thead><tr>${o.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+    <tbody>${o.rows.map(r => `<tr>${r.map((c, i) => `<td${i === r.length - 1 && o.head[o.head.length - 1] === 'Signature' ? ' class="sign"' : ''}>${esc(c).replace(/\n/g, '<br>')}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    </body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 250);
+}

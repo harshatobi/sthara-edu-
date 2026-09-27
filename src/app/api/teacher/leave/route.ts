@@ -4,7 +4,7 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
 import { daysBetween, isoDay, sessionOf } from '@/lib/admin/format';
-import { leaveDays, overBalance } from '@/lib/admin/leave';
+import { compOffDaysIn, leaveDays, overBalance } from '@/lib/admin/leave';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,11 +42,12 @@ export async function POST(req: NextRequest) {
 
   // Entitlement check against this school's leave policy for the session the leave starts in.
   const session = sessionOf(new Date(`${from}T12:00:00`));
-  const [pol, reqs] = await Promise.all([
+  const [pol, reqs, comp] = await Promise.all([
     db.from('leave_policies').select('leave_type, days_per_year').eq('school_id', staff.schoolId).eq('session', session),
     db.from('leave_requests').select('id, staff_id, leave_type, from_date, to_date, half_day, status').eq('staff_id', staff.id).in('status', ['pending', 'approved']),
+    db.from('comp_off_grants').select('user_id, days, duty_on, revoked_at').eq('user_id', staff.id),
   ]);
-  const over = overBalance(pol.data || [], reqs.data || [], staff.id, session, b.type, leaveDays(from, to, halfDay));
+  const over = overBalance(pol.data || [], reqs.data || [], staff.id, session, b.type, leaveDays(from, to, halfDay), undefined, compOffDaysIn(comp.data || [], staff.id, session));
   if (over) return NextResponse.json({ error: `${over} Apply the rest as leave without pay, or talk to the office.` }, { status: 409 });
 
   const { data, error } = await db.from('leave_requests').insert({

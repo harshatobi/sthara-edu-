@@ -7,6 +7,7 @@
  *   SEND                       send the reply the School OS just drafted
  *   R <text> / REPLY <text>    reply to the last parent message we forwarded
  *   ABSENT 4, 12 LATE 7        mark today's register by roll number, everyone else present
+ *   ABSENT / SICK [AM|PM]      I'm off today (the office confirms and arranges cover)
  *   ALL PRESENT                mark everyone present
  *   1 … 9                      pick a numbered option from the last message
  *   anything else              a question for the School OS
@@ -16,6 +17,7 @@ export type StaffCommand =
   | { kind: 'ack'; note: string }
   | { kind: 'reply'; text: string }
   | { kind: 'register'; absent: string[]; late: string[]; excused: string[] }
+  | { kind: 'self_absent'; portion: 'full' | 'am' | 'pm' }
   | { kind: 'option'; n: number }
   | { kind: 'ask'; text: string };
 
@@ -33,6 +35,13 @@ export function parseStaffCommand(raw: string): StaffCommand {
   if (upper === 'HELP' || !text) return { kind: 'help' };
   if (['TODAY', 'DIGEST', 'MYDAY'].includes(upper)) return { kind: 'today' };
   if (upper === 'SEND') return { kind: 'send' };
+  // "I'm absent today", "sick", "absent am": the teacher themselves. A register always carries roll numbers.
+  const self = /^\s*(?:i\s*(?:am|'m|m)\s+)?(absent|sick|off|on\s+leave)(?:\s+today)?(?:\s*[-,:]?\s*(half\s*day\s*)?(am|morning|first\s+half|pm|afternoon|second\s+half))?(?:\s+today)?\s*[.!]?\s*$/i.exec(text);
+  // "absent today" on its own reads as a question (who is absent today?), so it stays with Ask.
+  if (self && !/^\s*absent\s+today\s*[.!]?\s*$/i.test(text)) {
+    const half = (self[3] || '').toLowerCase();
+    return { kind: 'self_absent', portion: !half ? 'full' : /am|morning|first/.test(half) ? 'am' : 'pm' };
+  }
   const ack = /^\s*(ack|acknowledge|acknowledged|done)\b[\s:,.-]*(.*)$/is.exec(text);
   if (ack) return { kind: 'ack', note: ack[2].trim().slice(0, 500) };
   const reply = /^\s*(r|reply)\s*[:\-]?\s+(.+)$/is.exec(text);

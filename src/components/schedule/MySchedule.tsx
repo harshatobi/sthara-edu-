@@ -9,8 +9,8 @@ import { SunHorizonIcon as SunHorizon } from '@phosphor-icons/react/dist/ssr/Sun
 import { Chip, Empty } from '@/components/canon/ui';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
 import { fmtDate, isoDay, plural } from '@/lib/admin/format';
-import { addDays, agenda, hhmm, minutes, monthEnd, monthStart, versionOn, weekStart, weekdayOf, wingOf, type AgendaDay, type AgendaItem, type Subject } from '@/lib/schedule/engine';
-import { DAY_NAMES, DAY_SHORT, EVENT_KINDS, type ScheduleRows, type Slot } from '@/lib/schedule/types';
+import { addDays, agenda, hhmm, minutes, monthEnd, monthStart, namesOf, versionOn, weekStart, weekdayOf, wingOf, type AgendaDay, type AgendaItem, type Subject } from '@/lib/schedule/engine';
+import { DAY_NAMES, DAY_SHORT, DUTY_KINDS, EVENT_KINDS, slotPerson, type DutyKind, type ScheduleRows, type Slot } from '@/lib/schedule/types';
 import { normClass } from '@/lib/teacher/scope';
 import WeekGrid, { toPrintGrid, type GridMode } from './WeekGrid';
 import { printGrids } from './print';
@@ -26,15 +26,15 @@ export function gridVersion(rows: ScheduleRows, today: string) {
     ?? null;
 }
 
-export default function MySchedule({ rows, who, schoolName, title, canLookup = true }: {
-  rows: ScheduleRows; who: Subject; schoolName: string; title: string; canLookup?: boolean;
+export default function MySchedule({ rows, who, schoolName, title, canLookup = true, onFlag }: {
+  rows: ScheduleRows; who: Subject; schoolName: string; title: string; canLookup?: boolean; onFlag?: FlagFn;
 }) {
   const today = isoDay();
   const [view, setView] = useState<View>(who.kind === 'office' ? 'month' : 'day');
   const [anchor, setAnchor] = useState(today);
   const [lookup, setLookup] = useState('');
   const [printErr, setPrintErr] = useState<string | null>(null);
-  const names = useMemo(() => new Map(rows.people.map(p => [p.id, p.name || 'Teacher'])), [rows.people]);
+  const names = useMemo(() => namesOf(rows), [rows]);
 
   const range = view === 'day' ? [anchor, anchor] : view === 'week' ? [weekStart(anchor), addDays(weekStart(anchor), 6)]
     : [weekStart(monthStart(anchor)), addDays(weekStart(monthEnd(anchor)), 6)];
@@ -53,7 +53,7 @@ export default function MySchedule({ rows, who, schoolName, title, canLookup = t
     if (w.kind === 'class') return { slots: vs.filter(s => normClass(s.class) === normClass(w.cls)), mode: 'class', wing: wingOf(w.cls, rows.wings)?.id ?? null, title: w.cls };
     if (w.kind === 'room') return { slots: vs.filter(s => s.room_id === w.roomId || (!s.room_id && rows.rooms.find(r => r.id === w.roomId)?.home_class && normClass(rows.rooms.find(r => r.id === w.roomId)!.home_class) === normClass(s.class))), mode: 'room', wing: null, title: rows.rooms.find(r => r.id === w.roomId)?.name || 'Room' };
     if (w.kind === 'teacher') {
-      const mine = vs.filter(s => s.teacher_id === w.userId);
+      const mine = vs.filter(s => slotPerson(s) === w.userId);
       return { slots: mine, mode: 'teacher', wing: mine[0] ? wingOf(mine[0].class, rows.wings)?.id ?? null : null, title };
     }
     return { slots: [], mode: 'teacher', wing: null, title };
@@ -92,7 +92,7 @@ export default function MySchedule({ rows, who, schoolName, title, canLookup = t
       )}
       {printErr && <div className="err" role="alert" style={{ marginBottom: 12 }}>{printErr}</div>}
 
-      {view === 'day' && <DayView day={days[0]} who={who} hasTimetable={!!versionOn(rows.versions, anchor)} isToday={anchor === today} />}
+      {view === 'day' && <DayView day={days[0]} who={who} hasTimetable={!!versionOn(rows.versions, anchor)} isToday={anchor === today} onFlag={onFlag} />}
       {view === 'week' && <WeekList days={days} today={today} who={who} />}
       {view === 'month' && <MonthView days={days} anchor={anchor} today={today} onPick={d => { setAnchor(d); setView('day'); }} />}
       {view === 'grid' && (gv ? (
@@ -121,11 +121,31 @@ export default function MySchedule({ rows, who, schoolName, title, canLookup = t
   );
 }
 
-function ItemRow({ i, compact }: { i: AgendaItem; compact?: boolean }) {
+/** Flag a problem with a cover you've been given; the coordinator is alerted. */
+export type FlagFn = (coverId: string, note: string) => Promise<void>;
+
+const AWAY: Record<string, string> = { absent: 'Marked absent', release: 'Released' };
+
+function ItemRow({ i, compact, onFlag }: { i: AgendaItem; compact?: boolean; onFlag?: FlagFn }) {
+  const [flagging, setFlagging] = useState(false);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   if (i.kind === 'leave') {
-    return <div className="sch-item leave"><div className="m"><b>On {LEAVE_TYPES[i.leaveType]?.toLowerCase() || 'leave'}{i.halfDay ? ' (half day)' : ''}</b>{!compact && <div>Approved. Your periods are marked for cover.</div>}</div></div>;
+    const title = AWAY[i.leaveType]
+      ? `${AWAY[i.leaveType]}${i.portion === 'am' ? ' (morning)' : i.portion === 'pm' ? ' (afternoon)' : i.portion === 'periods' ? ` (P${(i.periods || []).join(', P')})` : ''}`
+      : `On ${LEAVE_TYPES[i.leaveType]?.toLowerCase() || 'leave'}${i.halfDay ? ' (half day)' : ''}`;
+    return <div className="sch-item leave"><div className="m"><b>{title}</b>{!compact && <div>Your periods are arranged for cover by the office.</div>}</div></div>;
   }
   if (i.kind === 'bell') return <div className="sch-item bell">{i.label} · {hhmm(i.start)}–{hhmm(i.end)}</div>;
+  if (i.kind === 'duty') {
+    return (
+      <div className="sch-item duty">
+        <div className="m"><b>{i.title}</b><div>{DUTY_KINDS[i.dutyKind as DutyKind] ?? (i.dutyKind === 'invigilation' ? 'Invigilation' : 'Duty')} · {hhmm(i.start, true)}–{hhmm(i.end, true)}{i.where ? ` · ${i.where}` : ''}</div></div>
+        {!compact && <Chip tone="p">DUTY</Chip>}
+      </div>
+    );
+  }
   if (i.kind === 'event') {
     return (
       <div className={`sch-item event${i.required ? ' req' : ''}`}>
@@ -141,30 +161,48 @@ function ItemRow({ i, compact }: { i: AgendaItem; compact?: boolean }) {
   }
   const s = i.slot;
   return (
-    <div className={`sch-item lesson${i.covered ? ' covered' : ''}`}>
+    <div className={`sch-item lesson${i.covered ? ' covered' : ''}${i.coverFor ? ' cover' : ''}`} style={{ flexWrap: 'wrap' }}>
       <div className="m">
         <b>{s.subject}{s.group_label ? ` · ${s.group_label}` : ''}</b>
-        <div>{s.class}{i.room ? ` · ${i.room.name}` : ''}{i.teacherName && !compact ? ` · ${i.teacherName}` : ''}{compact ? ` · P${s.period_no}` : ` · Period ${s.period_no}`}</div>
+        <div>{s.class}{i.room ? ` · ${i.room.name}` : ''}{i.teacherName && !compact && !i.coverFor ? ` · ${i.teacherName}` : ''}{compact ? ` · P${s.period_no}` : ` · Period ${s.period_no}`}</div>
+        {i.coverFor && <div>Cover for {i.coverFor}{i.flagged ? ' · you flagged a problem' : ''}</div>}
+        {i.covered && <div>{i.coveredBy ? `Covered by ${i.coveredBy}` : 'Cover being arranged'}</div>}
+        {compact && i.coverFor && <div style={{ marginTop: 6 }}><Chip tone="b">COVER</Chip></div>}
       </div>
-      {i.covered && <Chip tone="n">ON LEAVE</Chip>}
+      {!compact && i.coverFor && <Chip tone="b">COVER</Chip>}
+      {!compact && i.covered && <Chip tone="n">AWAY</Chip>}
+      {!compact && i.coverFor && i.coverId && onFlag && !i.flagged && !flagging && (
+        <button className="btn sm" onClick={() => setFlagging(true)}>Flag a problem</button>
+      )}
+      {flagging && (
+        <div style={{ flexBasis: '100%', display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <input className="cmp-in" style={{ flex: 1, minWidth: 200, padding: '8px 12px', fontSize: 13.5 }} aria-label="What's the problem" placeholder="What's the problem? (the coordinator sees this)" maxLength={500} value={note} onChange={e => setNote(e.target.value)} />
+          <button className="btn sm" onClick={() => setFlagging(false)}>Cancel</button>
+          <button className="btn sm pri" disabled={busy || !note.trim()} onClick={async () => {
+            setBusy(true); setErr(null);
+            try { await onFlag!(i.coverId!, note); setFlagging(false); } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+          }}>{busy ? 'Sending…' : 'Send'}</button>
+          {err && <div className="err" role="alert" style={{ flexBasis: '100%' }}>{err}</div>}
+        </div>
+      )}
     </div>
   );
 }
 
-function DayView({ day, who, hasTimetable, isToday }: { day: AgendaDay; who: Subject; hasTimetable: boolean; isToday: boolean }) {
+function DayView({ day, who, hasTimetable, isToday, onFlag }: { day: AgendaDay; who: Subject; hasTimetable: boolean; isToday: boolean; onFlag?: FlagFn }) {
   if (day.off) {
     return <div className="card"><Empty icon={<SunHorizon size={26} weight="duotone" />} title={day.off.title}>{EVENT_KINDS[day.off.kind]}. No classes{day.off.ends_on !== day.off.starts_on ? ` until ${fmtDate(day.off.ends_on, true)}` : ''}.</Empty></div>;
   }
   const lessons = day.items.filter(i => i.kind === 'lesson').length;
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
-  const startOf = (i: AgendaItem) => (i.kind === 'lesson' || i.kind === 'bell' || i.kind === 'event' ? i.start : null);
+  const startOf = (i: AgendaItem) => (i.kind === 'lesson' || i.kind === 'bell' || i.kind === 'event' || i.kind === 'duty' ? i.start : null);
   // The "now" line goes before the first item still to start today.
   const nowAt = isToday ? day.items.findIndex(i => { const s = startOf(i); return !!s && minutes(s) > nowMin; }) : -1;
   return (
     <div className="card">
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-        {who.kind !== 'office' && <Chip tone="b">{plural(lessons, 'PERIOD')}</Chip>}
+        {who.kind !== 'office' && <Chip tone="b">{plural(lessons, 'PERIOD', 'PERIODS')}</Chip>}
         {day.cancelled > 0 && <Chip tone="n">{day.cancelled} OFF FOR A WING HOLIDAY OR SHORTER DAY</Chip>}
       </div>
       {!day.items.length ? (
@@ -180,7 +218,7 @@ function DayView({ day, who, hasTimetable, isToday }: { day: AgendaDay; who: Sub
               <div key={n} style={{ display: 'contents' }}>
                 {line && <div className="sch-now" aria-label="Now" />}
                 <div className="t">{start ? hhmm(start, true) : i.kind === 'leave' ? 'All day' : ''}</div>
-                <ItemRow i={i} />
+                <ItemRow i={i} onFlag={onFlag} />
               </div>
             );
           })}

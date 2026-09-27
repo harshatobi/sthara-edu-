@@ -11,9 +11,9 @@ export default function TermsPage() {
     <div className="min-h-screen bg-gray-50 py-16 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="mb-12 text-center">
-          <Link href="/" className="inline-flex items-center space-x-2 text-[#002147] font-black text-2xl mb-8 hover:opacity-80">
+          <a href="/" className="inline-flex items-center space-x-2 text-[#002147] font-black text-2xl mb-8 hover:opacity-80">
             <span>Sthara School OS</span>
-          </Link>
+          </a>
           <h1 className="text-4xl font-black text-[#002147] mb-4">Terms of Service</h1>
           <p className="text-gray-500 font-medium">Last updated: June 27, 2026</p>
         </div>
@@ -100,7 +100,7 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <Link href="/privacy" className="text-[#002147] font-bold hover:underline">Privacy Policy</Link>
+          <a href="/privacy" className="text-[#002147] font-bold hover:underline">Privacy Policy</a>
           {' · '}
           <Link href="/login" className="text-[#002147] font-bold hover:underline">← Back to Login</Link>
         </div>

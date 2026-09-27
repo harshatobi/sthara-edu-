@@ -454,13 +454,18 @@ export function assembleWellness(rows: any[], enrolled: number, since: string, n
 const TABLE_LABEL: Record<string, string> = {
   submissions: 'Grade', users: 'User account', consents: 'Consent', guardians: 'Guardian link', fee_structures: 'Fee structure',
   fee_invoices: 'Invoice', fee_payments: 'Receipt', fee_reminders: 'Fee reminder', admission_applicants: 'Applicant',
-  leave_requests: 'Leave request', school_filings: 'Filing',
+  leave_requests: 'Leave request', school_filings: 'Filing', classes: 'Class', account_requests: 'Login request',
+  attendance_settings: 'Staff attendance settings', shifts: 'Shift', staff_shift_plans: 'Shift plan', shift_overrides: 'Shift change',
+  staff_punches: 'Check-in', staff_day_marks: 'Staff register mark', attendance_devices: 'Biometric device', attendance_month_reviews: 'Month review',
 };
+const VERB: Record<string, string> = { INSERT: 'added', UPDATE: 'changed', DELETE: 'removed' };
 
 export function auditSummary(r: any): string {
   const t = TABLE_LABEL[r.table_name] || r.table_name;
   const nv = r.new_values || {};
   const ov = r.old_values || {};
+  // A deletion has no new values: say what went, not "Leave undefined".
+  if (r.action === 'DELETE' && !['fee_structures', 'guardians', 'users'].includes(r.table_name)) return `${t} removed`;
   switch (r.table_name) {
     case 'submissions':
       return nv.teacher_approved && !ov.teacher_approved ? 'Grade confirmed' : `${t} changed`;
@@ -494,7 +499,7 @@ export function auditSummary(r: any): string {
     case 'school_filings':
       return nv.status === 'filed' && ov.status !== 'filed' ? 'CBSE wellness report filed' : 'Filing draft saved';
     default:
-      return `${t} ${String(r.action).toLowerCase()}`;
+      return `${t} ${VERB[r.action] ?? String(r.action).toLowerCase()}`;
   }
 }
 

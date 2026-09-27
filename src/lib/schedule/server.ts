@@ -26,10 +26,24 @@ export function dbError(e: { code?: string; message?: string } | null, fallback:
   return NextResponse.json({ error: fallback }, { status: 500 });
 }
 
-/** Teacher and office accounts of the school (a principal can teach too). */
+/**
+ * Who can hold a lesson: teacher and office accounts of the school (a principal can teach too), and
+ * active register members with no login as "s:" + id (a visiting dance teacher).
+ */
 export async function staffIds(db: SupabaseClient, schoolId: string): Promise<Set<string>> {
-  const { data } = await db.from('users').select('id').eq('school_id', schoolId).in('role', ['teacher', 'admin']);
-  return new Set((data || []).map(r => r.id));
+  const [{ data: users }, { data: register }] = await Promise.all([
+    db.from('users').select('id').eq('school_id', schoolId).in('role', ['teacher', 'admin']),
+    db.from('staff_members').select('id').eq('school_id', schoolId).eq('active', true).is('user_id', null),
+  ]);
+  return new Set([...(users || []).map(r => r.id), ...(register || []).map(r => `s:${r.id}`)]);
+}
+/** Names for clash messages: accounts by id, register members by "s:" + id. */
+export async function staffNames(db: SupabaseClient, schoolId: string): Promise<Map<string, string>> {
+  const [{ data: users }, { data: register }] = await Promise.all([
+    db.from('users').select('id, name').eq('school_id', schoolId).in('role', ['teacher', 'admin']),
+    db.from('staff_members').select('id, name').eq('school_id', schoolId),
+  ]);
+  return new Map([...(register || []).map(r => [`s:${r.id}`, r.name] as [string, string]), ...(users || []).map(r => [r.id, r.name || 'A teacher'] as [string, string])]);
 }
 export async function roomIds(db: SupabaseClient, schoolId: string): Promise<Set<string>> {
   const { data } = await db.from('rooms').select('id').eq('school_id', schoolId);
@@ -46,11 +60,14 @@ export function cleanSlot(b: any, staff: Set<string>, rooms: Set<string>): Slot 
   const subject = str(b?.subject, 80);
   if (!subject) return 'Every lesson needs a subject.';
   const teacher = b?.teacher_id ? String(b.teacher_id) : null;
+  const member = b?.staff_member_id ? String(b.staff_member_id) : null;
+  if (teacher && member) return 'A lesson has one teacher.';
   if (teacher && !staff.has(teacher)) return 'That teacher isn\'t on this school\'s staff.';
+  if (member && !staff.has(`s:${member}`)) return 'That person isn\'t on this school\'s staff register.';
   const room = b?.room_id ? String(b.room_id) : null;
   if (room && !rooms.has(room)) return 'That room isn\'t in this school.';
   return {
     class: displayClass(cls), group_label: str(b?.group_label, 40), weekday, period_no: period, subject,
-    teacher_id: teacher, room_id: room, combined: !!b?.combined,
+    teacher_id: teacher, staff_member_id: member, room_id: room, combined: !!b?.combined,
   };
 }

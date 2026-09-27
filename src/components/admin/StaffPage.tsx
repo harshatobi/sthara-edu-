@@ -16,7 +16,7 @@ import { LEAVE_TYPES, subjectName, subjectKey, type AdminDesk, type LeaveRow, ty
 import { ago, daysBetween, fmtDate, isoDay, plural } from '@/lib/admin/format';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Field, Kpi, MissingNotice, Workspace, downloadCsv } from './kit';
-import { BALANCE_TYPES, DEFAULT_POLICY, type Balance } from '@/lib/admin/leave';
+import { POLICY_TYPES, DEFAULT_POLICY, showBalance, type Balance } from '@/lib/admin/leave';
 
 const ACTIVITY: Record<TeacherRow['activity'], { t: string; tone: Tone }> = {
   high: { t: 'HIGH', tone: 'g' }, medium: { t: 'SOME', tone: 'a' }, none: { t: 'NONE', tone: 'r' },
@@ -219,7 +219,7 @@ function LeavePolicy({ desk }: { desk: AdminDesk }) {
   const can = desk.me.access.can('leave.policy');
   const current = Object.fromEntries(desk.workforce.policies.map(p => [p.leave_type, String(p.days_per_year)]));
   const [days, setDays] = useState<Record<string, string>>(() => (desk.workforce.policies.length ? current
-    : Object.fromEntries(BALANCE_TYPES.map(t => [t, String(DEFAULT_POLICY[t])]))));
+    : Object.fromEntries(POLICY_TYPES.map(t => [t, String(DEFAULT_POLICY[t])]))));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -236,7 +236,7 @@ function LeavePolicy({ desk }: { desk: AdminDesk }) {
         sub={unset ? 'Not set yet, so leave is uncapped. The figures below are common defaults; save them or change them.' : "Days per year. Teachers can't apply beyond their balance, except for leave without pay and on-duty."}
         right={can ? <button className="btn sm pri" disabled={busy} onClick={save}>{busy ? 'Saving…' : unset ? 'Set entitlements' : 'Save'}</button> : undefined} />
       <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-        {BALANCE_TYPES.map(t => (
+        {POLICY_TYPES.map(t => (
           <Field key={t} label={LEAVE_TYPES[t].toUpperCase()} htmlFor={`lp-${t}`}>
             <input id={`lp-${t}`} className="cmp-in num" inputMode="decimal" disabled={!can} value={days[t] ?? ''} placeholder="No cap"
               onChange={e => setDays(d => ({ ...d, [t]: e.target.value.replace(/[^\d.]/g, '') }))} />
@@ -276,10 +276,10 @@ function TeacherDetail({ t, desk, onClose }: { t: TeacherRow; desk: AdminDesk; o
           {t.scope.length ? t.scope.map(e => (
             <div className="row" key={`${e.cls}-${e.subject}`}><b style={{ flex: '0 0 110px' }}>{e.cls}</b><span>{e.subject ? subjectName(subjectKey(e.subject)) : 'Class teacher'}</span></div>
           )) : <p className="muted">No classes assigned yet.</p>}
-          {(desk.workforce.balances[t.id] || []).some(b => b.entitled !== null) && (
+          {(desk.workforce.balances[t.id] || []).some(showBalance) && (
             <>
               <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em', margin: '18px 0 4px' }}>LEAVE BALANCES</div>
-              {desk.workforce.balances[t.id].filter(b => b.entitled !== null).map(b => (
+              {desk.workforce.balances[t.id].filter(showBalance).map(b => (
                 <div className="row" key={b.type}><span style={{ flex: 1, fontSize: 13 }}>{b.label}</span>
                   <span className="muted num" style={{ fontSize: 12.5 }}>{b.used} taken{b.pending ? ` · ${b.pending} pending` : ''} of {b.entitled}</span>
                   <b className="num" style={{ width: 60, textAlign: 'right', color: (b.left ?? 0) < 0 ? 'var(--red)' : undefined }}>{b.left} left</b></div>

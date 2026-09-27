@@ -7,7 +7,7 @@ import { defaultTerm } from '@/lib/teacher/course';
 import { displayClass, normClass, teachingScope } from '@/lib/teacher/scope';
 import { findClashes, minutes, periodsPerWeek, wingOf } from '@/lib/schedule/engine';
 import { guessRoomKind } from '@/lib/schedule/importer';
-import { cleanSlot, dbError, roomIds, staffIds } from '@/lib/schedule/server';
+import { cleanSlot, dbError, roomIds, staffIds, staffNames } from '@/lib/schedule/server';
 import { DAY_NAMES, type Slot } from '@/lib/schedule/types';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (b.copyFrom) {
       const src = await draftOf(db, admin.schoolId, b.copyFrom);
       if (!src) return bad('Unknown timetable to copy.');
-      const { data } = await db.from('timetable_slots').select('class, group_label, weekday, period_no, subject, teacher_id, room_id, combined').eq('version_id', src.id).limit(MAX_SLOTS);
+      const { data } = await db.from('timetable_slots').select('class, group_label, weekday, period_no, subject, teacher_id, staff_member_id, room_id, combined').eq('version_id', src.id).limit(MAX_SLOTS);
       copy = data || [];
     }
     const { data: v, error } = await db.from('timetable_versions')
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
       db.from('bell_schedules').select('id, wing_id, kind, bell_periods(period_no, starts_at, ends_at)').eq('school_id', admin.schoolId).eq('kind', 'regular'),
     ]);
     if (!slots?.length) return bad('This timetable has no lessons yet.');
-    const names = new Map((people || []).map(p => [p.id, p.name || 'A teacher']));
+    const names = await staffNames(db, admin.schoolId);
     const clashes = findClashes(slots as Slot[], rooms || []);
     if (clashes.length) {
       return NextResponse.json({ error: `Fix ${clashes.length} clash${clashes.length === 1 ? '' : 'es'} first. ${clashWords(clashes[0], names)}.`, clashes: clashes.length }, { status: 409 });
@@ -229,8 +229,7 @@ export async function PUT(req: NextRequest) {
       const { data: others } = await db.from('timetable_slots').select('*').eq('version_id', v.id).eq('weekday', c.weekday).eq('period_no', c.period_no).neq('class_key', ck);
       const clash = findClashes([...(others || []), ...c.lessons] as Slot[], roomRows || []).find(x => x.slots.some(s => c.lessons.includes(s)));
       if (clash) {
-        const { data: people } = await db.from('users').select('id, name').eq('school_id', admin.schoolId).in('role', ['teacher', 'admin']);
-        return NextResponse.json({ error: `Clash on ${clashWords(clash, new Map((people || []).map(p => [p.id, p.name])))}.` }, { status: 409 });
+        return NextResponse.json({ error: `Clash on ${clashWords(clash, await staffNames(db, admin.schoolId))}.` }, { status: 409 });
       }
     }
     if (old.length) {
@@ -274,7 +273,7 @@ export async function PUT(req: NextRequest) {
     if (![a.weekday, a.period_no, c.weekday, c.period_no].every(Number.isInteger)) return bad('Pick the two periods to swap.');
     if (a.weekday === c.weekday && a.period_no === c.period_no) return NextResponse.json({ ok: true });
     const strip = (rows: any[], to: { weekday: number; period_no: number }): Slot[] => rows.map(r => ({
-      class: r.class, group_label: r.group_label, subject: r.subject, teacher_id: r.teacher_id, room_id: r.room_id, combined: r.combined, ...to,
+      class: r.class, group_label: r.group_label, subject: r.subject, teacher_id: r.teacher_id, staff_member_id: r.staff_member_id, room_id: r.room_id, combined: r.combined, ...to,
     }));
     const [ra, rc] = await Promise.all([cellOf(a.weekday, a.period_no), cellOf(c.weekday, c.period_no)]);
     // A combined lesson spans sections; moving it for one section alone would split it.

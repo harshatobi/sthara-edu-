@@ -43,12 +43,28 @@
 .canon .sch-item.event { border-left:4px solid var(--purple); }
 .canon .sch-item.event.req { border-left-color:var(--amber); }
 .canon .sch-item.leave { background:#FFFBEB; border-color:#F7E3AE; border-left:4px solid var(--amber); }
+.canon .sch-item.duty { border-left:4px solid var(--purple); background:#FBFAFF; }
+.canon .sch-item.cover { border-left-color:var(--green); background:#F4FCF8; }
 .canon .sch-item.covered { opacity:.55; }
 .canon .sch-item .m { flex:1; min-width:0; }
 .canon .sch-item .m b { font-size:14px; }
 .canon .sch-item .m div { font-size:12.5px; color:var(--mut); margin-top:2px; }
 .canon .sch-now { border-top:2px solid var(--red); position:relative; margin:4px 0; grid-column:1 / -1; }
 .canon .sch-now::before { content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--red); }
+
+/* cover board */
+.canon .sch-need { display:grid; grid-template-columns:86px minmax(0,1fr) auto; gap:14px; align-items:center; padding:13px 0; border-top:1px solid var(--line); }
+.canon .sch-need:first-of-type { border-top:0; }
+.canon .sch-need .t { font-size:12px; font-weight:800; color:var(--mut); font-variant-numeric:tabular-nums; }
+.canon .sch-need .t b { display:block; font-size:15px; color:var(--ink); }
+.canon .sch-cand { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; margin-bottom:8px; }
+.canon .sch-cand:hover:not(:disabled) { border-color:var(--blue); background:#F6F9FF; }
+.canon .sch-cand .m { flex:1; min-width:0; }
+.canon .sch-cand .m div { font-size:12px; color:var(--mut); margin-top:2px; }
+.canon .sch-roster td { vertical-align:top; }
+.canon .sch-chipbtn { display:inline-flex; align-items:center; gap:4px; margin:2px 4px 2px 0; padding:4px 9px; border-radius:8px; background:var(--pale); color:var(--ink); font-size:12px; font-weight:700; }
+.canon .sch-chipbtn.none { background:#F1F4F9; color:var(--mut); font-weight:600; }
+@media (max-width:680px) { .canon .sch-need { grid-template-columns:62px minmax(0,1fr); } .canon .sch-need > :last-child { grid-column:1 / -1; } }
 
 /* month */
 .canon .sch-month { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#fff; }

@@ -65,3 +65,14 @@ test('staff ask protocol: tokens, targets, WhatsApp text', () => {
   assert.match(wa.text, /Reply \*SEND\*/);
   assert.deepEqual(wa.options, ['What else?']);
 });
+
+test('a teacher reporting themselves absent is not a class register', () => {
+  assert.deepEqual(parseStaffCommand('ABSENT'), { kind: 'self_absent', portion: 'full' });
+  assert.deepEqual(parseStaffCommand("I'm absent today"), { kind: 'self_absent', portion: 'full' });
+  assert.equal(parseStaffCommand('absent today').kind, 'ask', 'still a question');
+  assert.deepEqual(parseStaffCommand('sick'), { kind: 'self_absent', portion: 'full' });
+  assert.deepEqual(parseStaffCommand('absent am'), { kind: 'self_absent', portion: 'am' });
+  assert.deepEqual(parseStaffCommand('Absent - afternoon'), { kind: 'self_absent', portion: 'pm' });
+  assert.equal(parseStaffCommand('ABSENT 4, 12').kind, 'register', 'roll numbers are a register');
+  assert.equal(parseStaffCommand('who is absent today?').kind, 'ask');
+});

@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
 import { daysBetween, fmtDate, isoDay, plural, sessionOf, sessionStart } from '@/lib/admin/format';
-import { balances, isCapped } from '@/lib/admin/leave';
+import { balances, compOffDaysIn, isCapped, showBalance } from '@/lib/admin/leave';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 
 const CHIP: Record<string, { t: string; tone: Tone }> = {
@@ -24,6 +24,7 @@ export default function LeavePage() {
   const [toast, toastEl] = useToast();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [policies, setPolicies] = useState<{ leave_type: string; days_per_year: number }[]>([]);
+  const [grants, setGrants] = useState<{ user_id: string | null; days: number; duty_on: string; revoked_at: string | null }[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [type, setType] = useState('casual');
   const [from, setFrom] = useState(isoDay());
@@ -40,6 +41,9 @@ export default function LeavePage() {
     let cancelled = false;
     createClient().from('leave_policies').select('leave_type, days_per_year').eq('session', sessionOf())
       .then(({ data }) => { if (!cancelled) setPolicies(data || []); });
+    // Comp-off days HR granted for duties (the compensatory balance); missing table means none.
+    createClient().from('comp_off_grants').select('user_id, days, duty_on, revoked_at').eq('user_id', profile.uid)
+      .then(({ data }) => { if (!cancelled) setGrants(data || []); });
     createClient().from('leave_requests')
       .select('id, leave_type, from_date, to_date, half_day, reason, status, decision_note, decided_at, created_at')
       .eq('staff_id', profile.uid).gte('to_date', sessionStart(sessionOf())).order('from_date', { ascending: false })
@@ -67,7 +71,7 @@ export default function LeavePage() {
   };
 
   const approvedDays = (rows || []).filter(r => r.status === 'approved').reduce((n, r) => n + (r.half_day ? 0.5 : daysBetween(r.from_date, r.to_date) + 1), 0);
-  const bal = balances(policies, (rows || []).map(r => ({ ...r, staff_id: profile?.uid })), profile?.uid || '', sessionOf()).filter(b => b.entitled !== null);
+  const bal = balances(policies, (rows || []).map(r => ({ ...r, staff_id: profile?.uid })), profile?.uid || '', sessionOf(), compOffDaysIn(grants, profile?.uid || '', sessionOf())).filter(showBalance);
   const typeBal = bal.find(b => b.type === type);
   const overBy = typeBal && isCapped(type) ? days - (typeBal.left ?? 0) : 0;
 

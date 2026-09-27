@@ -5,7 +5,7 @@
  * before the server writes a draft. Pure except readXlsx (needs DecompressionStream).
  */
 import { displayClass, normClass } from '@/lib/teacher/scope';
-import type { RoomKind, Slot } from './types';
+import { slotPerson, slotTeacher, type RoomKind, type Slot } from './types';
 
 export interface ImportRow {
   class: string; group: string; weekday: number; period: number; subject: string;
@@ -304,8 +304,9 @@ export interface Resolved {
 }
 
 /**
- * Turns import rows into lessons: teachers matched to accounts (or `teacherMap` from the review screen,
- * raw name -> user id or '' for "no teacher"), rooms matched by name (unknown ones listed to create).
+ * Turns import rows into lessons: teachers matched to accounts or register members (people ids are person keys:
+ * a user id, or "s:" + register id), or `teacherMap` from the review screen (raw name -> person key, or '' for
+ * "no teacher"); rooms matched by name (unknown ones listed to create).
  * Duplicate lessons in one cell are dropped and reported.
  */
 export function resolve(rows: ImportRow[], people: { id: string; name: string; email?: string | null }[], rooms: { id: string; name: string }[],
@@ -343,14 +344,14 @@ export function resolve(rows: ImportRow[], people: { id: string; name: string; e
     }
     slots.push({
       class: displayClass(r.class), group_label: r.group.trim().slice(0, 40), weekday: r.weekday, period_no: r.period,
-      subject: r.subject.trim().slice(0, 80), teacher_id: teacher, room_id: roomId, combined: r.combined,
+      subject: r.subject.trim().slice(0, 80), ...slotTeacher(teacher), room_id: roomId, combined: r.combined,
       // Rooms still to be created travel by name until the server creates them.
       ...(roomId || !r.room.trim() ? {} : { room_name: r.room.trim() }),
     } as Slot);
   }
   // The same teacher and subject in two sections at once came from a combined lesson in the source.
   const byTeacher = new Map<string, Slot[]>();
-  for (const x of slots) if (x.teacher_id) { const k = `${x.teacher_id}|${x.weekday}|${x.period_no}`; byTeacher.set(k, [...(byTeacher.get(k) || []), x]); }
+  for (const x of slots) { const p = slotPerson(x); if (p) { const k = `${p}|${x.weekday}|${x.period_no}`; byTeacher.set(k, [...(byTeacher.get(k) || []), x]); } }
   for (const xs of byTeacher.values()) {
     if (xs.length > 1 && new Set(xs.map(x => x.subject.toLowerCase())).size === 1) xs.forEach(x => { x.combined = true; });
   }

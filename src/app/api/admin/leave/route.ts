@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { bad, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
 import { fmtDate, sessionOf } from '@/lib/admin/format';
-import { leaveDays, overBalance } from '@/lib/admin/leave';
+import { compOffDaysIn, leaveDays, overBalance } from '@/lib/admin/leave';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,11 +27,12 @@ export async function PATCH(req: NextRequest) {
       .eq('id', b.id).eq('school_id', admin.schoolId).maybeSingle();
     if (lr) {
       const session = sessionOf(new Date(`${lr.from_date}T12:00:00`));
-      const [pol, reqs] = await Promise.all([
+      const [pol, reqs, comp] = await Promise.all([
         db.from('leave_policies').select('leave_type, days_per_year').eq('school_id', admin.schoolId).eq('session', session),
         db.from('leave_requests').select('id, staff_id, leave_type, from_date, to_date, half_day, status').eq('staff_id', lr.staff_id).eq('status', 'approved'),
+        db.from('comp_off_grants').select('user_id, days, duty_on, revoked_at').eq('user_id', lr.staff_id),
       ]);
-      const over = overBalance(pol.data || [], reqs.data || [], lr.staff_id, session, lr.leave_type, leaveDays(lr.from_date, lr.to_date, lr.half_day), lr.id);
+      const over = overBalance(pol.data || [], reqs.data || [], lr.staff_id, session, lr.leave_type, leaveDays(lr.from_date, lr.to_date, lr.half_day), lr.id, compOffDaysIn(comp.data || [], lr.staff_id, session));
       if (over && !(b.override && note)) return NextResponse.json({ error: over, overBalance: true }, { status: 409 });
     }
   }

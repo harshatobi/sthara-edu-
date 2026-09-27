@@ -11,7 +11,7 @@ import MySchedule, { gridVersion } from './MySchedule';
 /** A teacher's own schedule (mockup-style canon page): day, week, month, the weekly timetable, and any class or room's timetable. */
 export default function TeacherSchedule() {
   const { profile } = useAuth();
-  const { rows, error } = useSchedule();
+  const { rows, error, call, reload } = useSchedule();
   const uid = profile?.uid;
   const gv = rows ? gridVersion(rows, isoDay()) : null;
   const load = rows && gv && uid ? teacherLoad(rows.slots.filter(s => s.version_id === gv.id)).get(uid) ?? 0 : null;
@@ -24,7 +24,8 @@ export default function TeacherSchedule() {
         : !rows || !uid ? <div className="card" aria-busy="true">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} h={48} style={{ marginBottom: 12 }} />)}</div>
           : rows.missing.includes('timetable_versions')
             ? <div className="card"><Empty icon={<CalendarDots size={26} weight="duotone" />} title="Scheduling isn't switched on yet">Your school&apos;s timetable shows here once scheduling is set up.</Empty></div>
-            : <MySchedule rows={rows} who={{ kind: 'teacher', userId: uid }} schoolName={rows.schoolName} title={profile?.name || 'My timetable'} />}
+            : <MySchedule rows={rows} who={{ kind: 'teacher', userId: uid }} schoolName={rows.schoolName} title={profile?.name || 'My timetable'}
+              onFlag={async (coverId, note) => { await call('/api/teacher/cover', 'PUT', { coverId, note }); reload(); }} />}
     </>
   );
 }

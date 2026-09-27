@@ -13,8 +13,8 @@ import { TableIcon as Table } from '@phosphor-icons/react/dist/ssr/Table';
 import { Chip, Empty, type Tone } from '@/components/canon/ui';
 import { Kpi } from '@/components/admin/kit';
 import { fmtDate, isoDay, plural } from '@/lib/admin/format';
-import { addDays, clashesFor, findClashes, homeRoom, sectionsOf, teacherLoad, versionOn, weekdayOf, wingOf } from '@/lib/schedule/engine';
-import { DAY_NAMES, type ScheduleRows, type Slot, type TimetableVersion } from '@/lib/schedule/types';
+import { addDays, clashesFor, findClashes, homeRoom, namesOf, sectionsOf, teacherLoad, versionOn, weekdayOf, wingOf } from '@/lib/schedule/engine';
+import { DAY_NAMES, slotPerson, slotTeacher, type ScheduleRows, type Slot, type TimetableVersion } from '@/lib/schedule/types';
 import { normClass, normSubject, teachingScope } from '@/lib/teacher/scope';
 import WeekGrid, { toPrintGrid, type GridMode } from '@/components/schedule/WeekGrid';
 import Pop, { run } from '@/components/schedule/Pop';
@@ -36,7 +36,7 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
   const [picked, setPicked] = useState<string | null>(null);
   const version = rows.versions.find(v => v.id === picked) ?? rows.versions.find(v => v.status === 'draft') ?? inForce ?? sorted[0] ?? null;
   const slots = useMemo(() => rows.slots.filter(s => s.version_id === version?.id), [rows.slots, version?.id]);
-  const names = useMemo(() => new Map(rows.people.map(p => [p.id, p.name || 'Teacher'])), [rows.people]);
+  const names = useMemo(() => namesOf(rows), [rows]);
   const sections = useMemo(() => sectionsOf(rows), [rows]);
   const clashes = useMemo(() => findClashes(slots, rows.rooms), [slots, rows.rooms]);
   const clashing = useMemo(() => new Set(clashes.flatMap(c => c.slots)), [clashes]);
@@ -44,11 +44,15 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
 
   const [mode, setMode] = useState<GridMode>('class');
   const [focus, setFocus] = useState<string>('');
-  const teachers = rows.people.filter(p => p.role === 'teacher' || load.has(p.id));
+  // Accounts that teach, plus register members with no login (visiting teachers) who hold lessons or are teaching staff.
+  const teachers = [
+    ...rows.people.filter(p => p.role === 'teacher' || load.has(p.id)).map(p => ({ id: p.id, name: p.name })),
+    ...rows.staff.filter(m => !m.user_id && m.active && (m.category === 'teaching' || load.has(`s:${m.id}`))).map(m => ({ id: `s:${m.id}`, name: `${m.name}${m.employment === 'visiting' ? ' (visiting)' : ''}` })),
+  ];
   const focusKey = mode === 'class' ? (sections.find(c => normClass(c) === normClass(focus)) ?? sections[0] ?? '')
     : mode === 'teacher' ? (teachers.find(t => t.id === focus)?.id ?? teachers[0]?.id ?? '') : (rows.rooms.find(r => r.id === focus)?.id ?? rows.rooms[0]?.id ?? '');
   const shown = mode === 'class' ? slots.filter(s => normClass(s.class) === normClass(focusKey))
-    : mode === 'teacher' ? slots.filter(s => s.teacher_id === focusKey)
+    : mode === 'teacher' ? slots.filter(s => slotPerson(s) === focusKey)
       : slots.filter(s => (s.room_id ?? homeRoom(s.class, rows.rooms)?.id) === focusKey);
   const wing = mode === 'class' ? wingOf(focusKey, rows.wings)?.id ?? null : shown[0] ? wingOf(shown[0].class, rows.wings)?.id ?? null : null;
   const draft = version?.status === 'draft' && canEdit;
@@ -121,7 +125,7 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
         <Kpi label="LESSONS A WEEK" value={slots.length} note={`${plural(new Set(slots.map(s => normClass(s.class))).size, 'section')} of ${sections.length}`} />
         <Kpi label="CLASHES" value={clashes.length} valueColor={clashes.length ? 'var(--red)' : 'var(--green)'} note={clashes.length ? 'Must be fixed before publishing' : 'No teacher, room or section is double-booked'} />
         <Kpi label="TEACHERS TIMETABLED" value={load.size} note={`${teachers.filter(t => !load.has(t.id)).length} with no periods`} />
-        <Kpi label="NO TEACHER" value={slots.filter(s => !s.teacher_id).length} valueColor={slots.some(s => !s.teacher_id) ? 'var(--amber)' : undefined} note="Lessons still to staff" />
+        <Kpi label="NO TEACHER" value={slots.filter(s => !slotPerson(s)).length} valueColor={slots.some(s => !slotPerson(s)) ? 'var(--amber)' : undefined} note="Lessons still to staff" />
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>
@@ -263,7 +267,7 @@ function CellEditor({ rows, version, cls, weekday, period, slots, call, onClose,
 }) {
   const here = slots.filter(s => normClass(s.class) === normClass(cls) && s.weekday === weekday && s.period_no === period);
   const [lessons, setLessons] = useState<Draft[]>(() => here.length
-    ? here.map(s => ({ group_label: s.group_label, subject: s.subject, teacher_id: s.teacher_id || '', room_id: s.room_id || '', combined: s.combined }))
+    ? here.map(s => ({ group_label: s.group_label, subject: s.subject, teacher_id: slotPerson(s) || '', room_id: s.room_id || '', combined: s.combined }))
     : [{ group_label: '', subject: '', teacher_id: '', room_id: '', combined: false }]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -272,7 +276,8 @@ function CellEditor({ rows, version, cls, weekday, period, slots, call, onClose,
   const scoped = rows.people.flatMap(p => teachingScope(p).filter(e => normClass(e.cls) === normClass(cls)).map(e => ({ id: p.id, name: p.name, subject: e.subject })));
   const subjects = [...new Set([...scoped.map(e => e.subject).filter(Boolean), ...slots.filter(s => normClass(s.class) === normClass(cls)).map(s => s.subject)])].sort();
   const home = homeRoom(cls, rows.rooms);
-  const names = new Map(rows.people.map(p => [p.id, p.name]));
+  const names = namesOf(rows);
+  const register = rows.staff.filter(m => !m.user_id && m.active);
   const set = (i: number, patch: Partial<Draft>) => setLessons(ls => ls.map((l, j) => {
     if (j !== i) return l;
     const next = { ...l, ...patch };
@@ -284,13 +289,13 @@ function CellEditor({ rows, version, cls, weekday, period, slots, call, onClose,
     return next;
   }));
   const asSlots: Slot[] = lessons.filter(l => l.subject.trim()).map(l => ({
-    class: cls, group_label: l.group_label.trim(), weekday, period_no: period, subject: l.subject.trim(), teacher_id: l.teacher_id || null, room_id: l.room_id || null, combined: l.combined,
+    class: cls, group_label: l.group_label.trim(), weekday, period_no: period, subject: l.subject.trim(), ...slotTeacher(l.teacher_id), room_id: l.room_id || null, combined: l.combined,
   }));
   const others = slots.filter(s => !(normClass(s.class) === normClass(cls) && s.weekday === weekday && s.period_no === period));
   const warnings = asSlots.flatMap(s => clashesFor(s, [...others, ...asSlots.filter(x => x !== s)], rows.rooms).map(c =>
-    c.kind === 'teacher' ? `${names.get(s.teacher_id!) || 'This teacher'} is also in ${c.slots.filter(x => x !== s).map(x => x.class).join(', ')}${c.slots.every(x => x.combined) ? ' (a combined lesson needs the same subject)' : '. Tick "combined" if it is one lesson for both.'}`
+    c.kind === 'teacher' ? `${names.get(slotPerson(s)!) || 'This teacher'} is also in ${c.slots.filter(x => x !== s).map(x => x.class).join(', ')}${c.slots.every(x => x.combined) ? ' (a combined lesson needs the same subject)' : '. Tick "combined" if it is one lesson for both.'}`
       : c.kind === 'room' ? `The room is also booked for ${c.slots.filter(x => x !== s).map(x => x.class).join(', ')}` : 'Two lessons at once need different group names'));
-  const busyTeachers = new Set(others.filter(s => s.weekday === weekday && s.period_no === period && s.teacher_id).map(s => s.teacher_id!));
+  const busyTeachers = new Set(others.filter(s => s.weekday === weekday && s.period_no === period && slotPerson(s)).map(s => slotPerson(s)!));
 
   return (
     <Pop wide title={`${cls} · ${DAY_NAMES[weekday]} P${period}`} sub={`${version.name}. Split groups (Biology / Computer Science) go in the same period with different group names.`} onClose={onClose}>
@@ -307,6 +312,7 @@ function CellEditor({ rows, version, cls, weekday, period, slots, call, onClose,
                 <option value="">No teacher yet</option>
                 {scoped.length > 0 && <optgroup label={`Teaches ${cls}`}>{[...new Map(scoped.map(e => [e.id, e])).values()].map(e => <option key={e.id} value={e.id}>{e.name}{busyTeachers.has(e.id) ? ' (busy)' : ''}</option>)}</optgroup>}
                 <optgroup label="All staff">{rows.people.filter(p => !scoped.some(e => e.id === p.id)).map(p => <option key={p.id} value={p.id}>{p.name}{busyTeachers.has(p.id) ? ' (busy)' : ''}</option>)}</optgroup>
+                {register.length > 0 && <optgroup label="Staff register (no login)">{register.map(m => <option key={m.id} value={`s:${m.id}`}>{m.name}{m.designation ? `, ${m.designation}` : ''}{busyTeachers.has(`s:${m.id}`) ? ' (busy)' : ''}</option>)}</optgroup>}
               </select>
             </div>
             <div className="cmp-fld" style={{ marginBottom: 0 }}>

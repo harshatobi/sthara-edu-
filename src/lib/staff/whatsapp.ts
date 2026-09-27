@@ -15,11 +15,12 @@ import { askStaffOS, staffRoleOf } from './askServer';
 import { toWhatsAppText } from './ask';
 import { parseStaffCommand, resolveRegister } from './commands';
 import { buildDigest, maybeSendDigest } from './digest';
+import { alertCoordinators } from '@/lib/schedule/notify';
 
 const HISTORY_MS = 24 * 3600_000;
 
 const HELP: Record<'teacher' | 'leadership', string> = {
-  teacher: `Sthara on WhatsApp. Ask anything about your classes, or:\n• *ACK* (and a note) to acknowledge the last alert\n• *R* then your answer to reply to the last parent message\n• *ABSENT 4, 12* (roll numbers) or *ALL PRESENT* to mark today's register\n• *TODAY* for your digest\n\nReply STOP to pause, START to resume.`,
+  teacher: `Sthara on WhatsApp. Ask anything about your classes, or:\n• *ACK* (and a note) to acknowledge the last alert\n• *R* then your answer to reply to the last parent message\n• *ABSENT 4, 12* (roll numbers) or *ALL PRESENT* to mark today's register\n• *TODAY* for your digest\n• *ABSENT* (or *ABSENT AM* / *ABSENT PM*) if you're off today, so the office can arrange cover\n\nReply STOP to pause, START to resume.`,
   leadership: `Sthara on WhatsApp. Ask anything about the school, or:\n• *ACK* (and a note) to acknowledge the last escalation\n• *R* then your answer to reply to the last parent message\n• *TODAY* for the school digest\n\nReply STOP to pause, START to resume.`,
 };
 
@@ -87,6 +88,18 @@ export async function handleStaffInbound(db: SupabaseClient, userId: string, pho
     await sendWhatsApp(db, { to: phone, userId: me.id, schoolId: me.schoolId, kind: 'notify', body: d.text, meta: { digest: istDay(), options: d.options } });
     return;
   }
+  if (cmd.kind === 'self_absent') {
+    const day = istDay();
+    const { data: open } = await db.from('staff_absences').select('id, status').eq('user_id', me.id).eq('on_date', day).eq('kind', 'absent').neq('status', 'cancelled').limit(1);
+    if (open?.length) { await reply(`You're already down as absent today${open[0].status === 'reported' ? ' (waiting for the office to confirm)' : ''}.`); return; }
+    const { error } = await db.from('staff_absences').insert({ school_id: me.schoolId, user_id: me.id, on_date: day, kind: 'absent', portion: cmd.portion, status: 'reported', source: 'whatsapp' });
+    if (error) { console.warn('[wa absent]', error.message); await reply('I couldn’t record that. Please call the school office.'); return; }
+    const when = cmd.portion === 'am' ? 'this morning' : cmd.portion === 'pm' ? 'this afternoon' : 'today';
+    await alertCoordinators(db, me.schoolId, 'Absence reported on WhatsApp', `${me.name} says they are off ${when}. Confirm it on the cover board to arrange cover.`, { absence: true });
+    await reply(`Noted: you're off ${when}. The office will confirm and arrange cover for your periods. Get well soon if you're unwell.`);
+    return;
+  }
+
   // First message of the day: the digest comes first (it is skipped if already sent today).
   await maybeSendDigest(db, me);
 

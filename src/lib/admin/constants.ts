@@ -3,6 +3,7 @@
 export const LEAVE_TYPES: Record<string, string> = {
   casual: 'Casual leave', sick: 'Sick leave', earned: 'Earned leave', duty: 'On duty', maternity: 'Maternity leave',
   paternity: 'Paternity leave', unpaid: 'Leave without pay',
+  compensatory: 'Compensatory leave',
 };
 
 export const CONSENT_TYPES: Record<string, { label: string; purpose: string }> = {

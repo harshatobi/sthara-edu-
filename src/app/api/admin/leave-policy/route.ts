@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { bad, requireAdmin } from '@/lib/admin/serverAuth';
 import { isSession, sessionOf } from '@/lib/admin/format';
-import { BALANCE_TYPES } from '@/lib/admin/leave';
+import { POLICY_TYPES } from '@/lib/admin/leave';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest) {
   const session = isSession(b.session) ? b.session : sessionOf();
   const rows = [];
   const remove: string[] = [];
-  for (const t of BALANCE_TYPES) {
+  for (const t of POLICY_TYPES) {
     const v = b.days[t];
     if (v === '' || v === null || v === undefined) { remove.push(t); continue; }
     const n = Number(v);

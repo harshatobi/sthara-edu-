@@ -46,7 +46,9 @@ export default function ImportWizard({ rows, call, onClose, onDone }: { rows: Sc
     } catch (e: any) { setErr(e?.message || 'Couldn\'t read that file.'); }
   };
 
-  const resolved = useMemo(() => (parsed ? resolve(parsed.rows, rows.people, rows.rooms, map) : null), [parsed, rows.people, rows.rooms, map]);
+  // Accounts and register members with no login (visiting teachers) can both be matched.
+  const matchable = useMemo(() => [...rows.people, ...rows.staff.filter(m => !m.user_id && m.active).map(m => ({ id: `s:${m.id}`, name: m.name, email: null }))], [rows.people, rows.staff]);
+  const resolved = useMemo(() => (parsed ? resolve(parsed.rows, matchable, rows.rooms, map) : null), [parsed, matchable, rows.rooms, map]);
   // Rooms still to be created take a stand-in id, so clashes over them show here too.
   const { clashes, keep } = useMemo(() => {
     if (!resolved) return { clashes: [], keep: [] as Slot[] };
@@ -96,13 +98,13 @@ export default function ImportWizard({ rows, call, onClose, onDone }: { rows: Sc
                   })}>
                     <option value="?">Pick an account</option>
                     <option value="">Leave unassigned</option>
-                    {rows.people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {matchable.map(p => <option key={p.id} value={p.id}>{p.name}{p.id.startsWith('s:') ? ' (register, no login)' : ''}</option>)}
                   </select>
                 </div>
               ))}
               <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Unmatched teachers import as &quot;No teacher&quot; unless you pick an account. Add missing teachers in the user directory first if you&apos;d rather.</p>
             </div>
-          ) : resolved.slots.some(s => s.teacher_id) && <p className="muted" style={{ marginBottom: 12 }}>Every teacher matched an account.</p>}
+          ) : resolved.slots.some(s => s.teacher_id || s.staff_member_id) && <p className="muted" style={{ marginBottom: 12 }}>Every teacher matched an account.</p>}
 
           {resolved.newRooms.length > 0 && (
             <p style={{ fontSize: 13, marginBottom: 12 }}><b>Rooms to create:</b> {resolved.newRooms.map(r => r.name).join(', ')}</p>

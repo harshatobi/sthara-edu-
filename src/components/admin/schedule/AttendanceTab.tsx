@@ -355,8 +355,8 @@ function MonthReview({ data, month, setMonth, today, canEdit, call, reload, toas
         right={<div style={{ display: 'flex', gap: 6 }}>
           <input type="month" className="sch-sel" aria-label="Month" max={today.slice(0, 7)} value={month} onChange={e => e.target.value && setMonth(e.target.value)} />
           <button className="btn sm" onClick={() => downloadCsv(`attendance-${month}.csv`, [
-            ['Name', 'Kind', 'Employee code', 'Working days', 'Present', 'Late', 'Half days', 'Absent', 'Leave days', 'Loss of pay proposed', 'Loss of pay confirmed', 'Status'],
-            ...summaries.map(({ p, m, review }) => [p.name, KIND[p.kind], p.employeeCode ?? '', m.workDays, m.present, m.late, m.halfDays, m.absent, m.leaveDays, m.lopProposed, review ? Number(review.lop_days) : '', review ? 'confirmed' : 'open']),
+            ['Name', 'Kind', 'Employee code', 'Working days', 'Not tracked', 'Present', 'Late', 'Half days', 'Absent', 'Leave days', 'Loss of pay proposed', 'Loss of pay confirmed', 'Status'],
+            ...summaries.map(({ p, m, review }) => [p.name, KIND[p.kind], p.employeeCode ?? '', m.workDays, m.untracked, m.present, m.late, m.halfDays, m.absent, m.leaveDays, m.lopProposed, review ? Number(review.lop_days) : '', review ? 'confirmed' : 'open']),
           ])}><DownloadSimple size={13} /> Export for payroll</button>
         </div>} />
       <div className="tbl-wrap">
@@ -366,7 +366,7 @@ function MonthReview({ data, month, setMonth, today, canEdit, call, reload, toas
             <Fragment key={p.key}>
               <tr>
                 <td><b>{p.name}</b><div className="muted" style={{ fontSize: 12 }}>{KIND[p.kind]}</div></td>
-                <td className="c num">{m.workDays}</td><td className="c num">{m.present}</td><td className="c num">{m.late}</td><td className="c num">{m.absent}</td><td className="c num">{m.leaveDays}</td>
+                <td className="c num">{m.workDays}{m.untracked > 0 && <div className="muted" style={{ fontSize: 11 }}>+{m.untracked} not tracked</div>}</td><td className="c num">{m.present}</td><td className="c num">{m.late}</td><td className="c num">{m.absent}</td><td className="c num">{m.leaveDays}</td>
                 <td className="c">{review ? <b className="num">{Number(review.lop_days)}</b> : <span className="num">{m.lopProposed || '—'}</span>}{review && <div><Chip tone="g">CONFIRMED</Chip></div>}</td>
                 <td className="r">{canEdit && (review
                   ? <button className="btn sm" onClick={async () => { try { await call(API, 'DELETE', { entity: 'review', id: review.id }); reload(); toast('Reopened'); } catch (e: any) { toast(e.message); } }}>Reopen</button>

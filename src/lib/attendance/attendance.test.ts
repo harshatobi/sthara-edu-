@@ -112,6 +112,31 @@ test('biometric export parsing and geofence distance', () => {
   assert.ok(Math.abs(metresBetween({ lat: 17.385, lng: 78.4867 }, { lat: 17.3859, lng: 78.4867 }) - 100) < 2);
 });
 
+test('month: days before the school started keeping attendance, or before someone joined, are not absences', () => {
+  const p = [punch(T, '2026-10-07', '07:40'), punch(T, '2026-10-07', '15:00')];
+  // The school's first record is Oct 7: Oct 1-6 are not tracked, Oct 8 and 9 (no punches) are absences.
+  let m = monthOf('2026-10-01', T, rows({ punches: p, trackedFrom: '2026-10-07' }), '2026-10-10');
+  assert.equal(m.untracked, 5, 'Oct 1, 2, 3, 5, 6 (Oct 4 is Sunday)');
+  assert.deepEqual(m.proposals.map(x => x.date), ['2026-10-08', '2026-10-09']);
+  assert.equal(m.workDays, 3, 'Oct 7, 8, 9');
+  // Nothing ever recorded: nothing is proposed.
+  m = monthOf('2026-10-01', T, rows({ trackedFrom: null }), '2026-10-10');
+  assert.equal(m.lopProposed, 0);
+  // Joined on Oct 9: only Oct 9 counts, even though the school has kept attendance since Oct 1.
+  m = monthOf('2026-10-01', { ...T, since: '2026-10-09' }, rows({ trackedFrom: '2026-10-01' }), '2026-10-10');
+  assert.deepEqual(m.proposals.map(x => x.date), ['2026-10-09']);
+  // A register mark before the start still counts (HR recorded it).
+  m = monthOf('2026-10-01', T, rows({ trackedFrom: '2026-10-07', marks: [{ user_id: 't1', staff_member_id: null, on_date: '2026-10-02', status: 'absent', in_at: null, out_at: null, source: 'register', reason: null }] }), '2026-10-10');
+  assert.ok(m.proposals.some(x => x.date === '2026-10-02'));
+  assert.equal(dayOf('2026-10-02', T, rows({ trackedFrom: '2026-10-07' }), null).status, 'untracked');
+});
+
+test('people: joining day from the contract start, else when they were added', () => {
+  const ps = peopleOf([{ id: 't1', name: 'Priya', role: 'teacher', created_at: '2026-09-23T18:44:06Z' }],
+    [{ id: 'g1', user_id: null, name: 'Guard', active: true, employee_code: 'G1', contract_from: '2026-06-01', created_at: '2026-09-24T10:00:00Z' }]);
+  assert.deepEqual(ps.map(p => p.since), ['2026-06-01', '2026-09-24']);
+});
+
 test('people: accounts and register staff, linked register rows not repeated', () => {
   const ps = peopleOf([{ id: 't1', name: 'Priya', role: 'teacher' }, { id: 'a1', name: 'Asha', role: 'admin' }, { id: 'p1', name: 'Parent', role: 'parent' }],
     [{ id: 'x', user_id: 't1', name: 'Priya', active: true, employee_code: 'E1' }, { id: 'g1', user_id: null, name: 'Guard', active: true, employee_code: 'G1' }, { id: 'g2', user_id: null, name: 'Left', active: false, employee_code: null }]);

@@ -11,7 +11,7 @@ import '@/styles/schedule.css';
 
 export const STATUS: Record<DayStatus, { t: string; tone: Tone }> = {
   present: { t: 'PRESENT', tone: 'g' }, late: { t: 'LATE', tone: 'a' }, half_day: { t: 'HALF DAY', tone: 'a' }, absent: { t: 'ABSENT', tone: 'r' },
-  not_in: { t: 'NOT IN YET', tone: 'n' }, off: { t: 'OFF', tone: 'n' }, leave: { t: 'ON LEAVE', tone: 'p' }, unexpected: { t: 'IN ON A DAY OFF', tone: 'b' },
+  not_in: { t: 'NOT IN YET', tone: 'n' }, off: { t: 'OFF', tone: 'n' }, leave: { t: 'ON LEAVE', tone: 'p' }, unexpected: { t: 'IN ON A DAY OFF', tone: 'b' }, untracked: { t: 'NOT TRACKED', tone: 'n' },
 };
 
 /** Today's check-in for the signed-in teacher or office account, with this month so far. */

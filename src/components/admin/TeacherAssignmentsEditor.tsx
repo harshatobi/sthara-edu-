@@ -100,9 +100,9 @@ export default function TeacherAssignmentsEditor({ teacher, schoolId, sections, 
 
         {err && <div role="alert" className="mt-4 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-800">{err}</div>}
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold">Cancel</button>
-          {unknown.length > 0 && <button disabled={busy} onClick={() => save(true)} className="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold">Add {unknown.join(', ')} and save</button>}
-          <button disabled={busy} onClick={() => save(false)} className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold disabled:opacity-50">{busy ? 'Saving…' : 'Save'}</button>
+          <button onClick={onClose} className="btn">Cancel</button>
+          {unknown.length > 0 && <button disabled={busy} onClick={() => save(true)} className="btn">Add {unknown.join(', ')} and save</button>}
+          <button disabled={busy} onClick={() => save(false)} className="btn pri">{busy ? 'Saving…' : 'Save'}</button>
         </div>
       </div>
     </div>

@@ -47,7 +47,11 @@ export interface Mark { user_id: string | null; staff_member_id: string | null; 
 export interface LeaveRow { staff_id: string | null; staff_member_id?: string | null; leave_type: string; from_date: string; to_date: string; half_day: boolean; status: string }
 
 /** Who the board and the month cover: accounts (teachers and office) and register members with no login. */
-export interface Person { key: PersonKey; name: string; kind: 'teacher' | 'office' | 'register'; employeeCode: string | null }
+export interface Person {
+  key: PersonKey; name: string; kind: 'teacher' | 'office' | 'register'; employeeCode: string | null;
+  /** The first day they were on the staff here (contract start or when they were added); no absences before it. */
+  since?: string | null;
+}
 
 export interface AttendanceRows {
   settings: Settings;
@@ -61,6 +65,11 @@ export interface AttendanceRows {
   events: AcademicEvent[];
   /** Teaching weekdays (from the regular bells); teachers and office are off on the others. */
   workingDays: number[];
+  /**
+   * The first day the school recorded any staff attendance (its earliest punch or register mark), or null when it
+   * never has. A day before it, or before the person joined, with nothing recorded is "not tracked", never an absence.
+   */
+  trackedFrom?: string | null;
 }
 
 const planKey = (p: { user_id: string | null; staff_member_id: string | null }) => personKey(p.user_id, p.staff_member_id)!;
@@ -121,7 +130,14 @@ export function expectedOn(date: string, who: Person, rows: AttendanceRows): Exp
   return { kind: 'work', start: minutes(a), end: minutes(b), label: who.kind === 'teacher' ? 'Teaching day' : 'Office hours', overnight: false };
 }
 
-export type DayStatus = 'present' | 'late' | 'half_day' | 'absent' | 'not_in' | 'off' | 'leave' | 'unexpected';
+export type DayStatus = 'present' | 'late' | 'half_day' | 'absent' | 'not_in' | 'off' | 'leave' | 'unexpected' | 'untracked';
+
+/** Whether attendance was being kept for this person on this day (see AttendanceRows.trackedFrom). */
+export function trackedOn(date: string, who: Person, rows: AttendanceRows): boolean {
+  if (rows.trackedFrom === undefined) return true;  // callers that don't load it (tests, the no-show check for today)
+  if (!rows.trackedFrom || date < rows.trackedFrom) return false;
+  return !who.since || date >= who.since;
+}
 
 export interface Day {
   date: string;
@@ -178,6 +194,7 @@ export function dayOf(date: string, who: Person, rows: AttendanceRows, nowMin: n
     if (expected.kind === 'work' && nowMin !== null && nowMin < expected.end) {
       return { ...base, status: 'not_in' };
     }
+    if (expected.kind === 'work' && !trackedOn(date, who, rows)) return { ...base, status: 'untracked' };
     return { ...base, status: expected.kind === 'work' ? 'absent' : 'off' };
   }
   const ins = use.filter(p => p.direction !== 'out');
@@ -199,6 +216,8 @@ export interface Proposal { key: string; date: string; kind: 'absent' | 'lates' 
 export interface MonthSummary {
   month: string;
   workDays: number; present: number; late: number; halfDays: number; absent: number; leaveDays: number; offDays: number; unexpected: number;
+  /** Working days before attendance was kept for them: neither present nor absent, and never a deduction. */
+  untracked: number;
   proposals: Proposal[];
   /** Loss of pay proposed by the rules, before HR waives any. */
   lopProposed: number;
@@ -217,9 +236,10 @@ export function monthOf(month: string, who: Person, rows: AttendanceRows, today:
   const exempt = !!rows.plans.find(p => planKey(p) === who.key)?.rules_exempt;
   const end = last < today ? last : addDays(today, -1);
   const days = end < first ? [] : datesBetween(first, end).map(d => dayOf(d, who, rows, null));
-  const out: MonthSummary = { month: first, workDays: 0, present: 0, late: 0, halfDays: 0, absent: 0, leaveDays: 0, offDays: 0, unexpected: 0, proposals: [], lopProposed: 0, days };
+  const out: MonthSummary = { month: first, workDays: 0, present: 0, late: 0, halfDays: 0, absent: 0, leaveDays: 0, offDays: 0, unexpected: 0, untracked: 0, proposals: [], lopProposed: 0, days };
   const lateDates: string[] = [];
   for (const d of days) {
+    if (d.status === 'untracked') { out.untracked++; continue; }
     if (d.expected.kind === 'work') out.workDays++;
     if (d.status === 'present' || d.status === 'late') out.present++;
     if (d.status === 'late') { out.late++; lateDates.push(d.date); }
@@ -307,11 +327,19 @@ export function parseLocalDateTime(raw: string): string | null {
 }
 
 /** Everyone the attendance covers, from accounts and the register (register rows linked to an account don't repeat). */
-export function peopleOf(people: { id: string; name: string; role: string }[], staff: { id: string; user_id: string | null; name: string; active: boolean; employee_code: string | null }[]): Person[] {
-  const codeByUser = new Map(staff.filter(s => s.user_id).map(s => [s.user_id!, s.employee_code]));
+export function peopleOf(
+  people: { id: string; name: string; role: string; created_at?: string | null }[],
+  staff: { id: string; user_id: string | null; name: string; active: boolean; employee_code: string | null; contract_from?: string | null; created_at?: string | null }[],
+): Person[] {
+  const reg = new Map(staff.filter(s => s.user_id).map(s => [s.user_id!, s]));
+  // Joining day: a contract start wins; otherwise the day they were added (school-local).
+  const since = (contractFrom?: string | null, created?: string | null) => contractFrom || (created ? localOf(created).date : null);
   return [
-    ...people.filter(p => p.role === 'teacher' || p.role === 'admin').map(p => ({ key: p.id, name: p.name || 'Staff', kind: (p.role === 'teacher' ? 'teacher' : 'office') as Person['kind'], employeeCode: codeByUser.get(p.id) ?? null })),
-    ...staff.filter(s => !s.user_id && s.active).map(s => ({ key: `s:${s.id}`, name: s.name, kind: 'register' as const, employeeCode: s.employee_code })),
+    ...people.filter(p => p.role === 'teacher' || p.role === 'admin').map(p => {
+      const r = reg.get(p.id);
+      return { key: p.id, name: p.name || 'Staff', kind: (p.role === 'teacher' ? 'teacher' : 'office') as Person['kind'], employeeCode: r?.employee_code ?? null, since: since(r?.contract_from, p.created_at) };
+    }),
+    ...staff.filter(s => !s.user_id && s.active).map(s => ({ key: `s:${s.id}`, name: s.name, kind: 'register' as const, employeeCode: s.employee_code, since: since(s.contract_from, s.created_at) })),
   ].sort((a, b) => a.name.localeCompare(b.name));
 }
 

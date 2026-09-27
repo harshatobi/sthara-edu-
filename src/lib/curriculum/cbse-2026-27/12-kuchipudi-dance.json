@@ -1,0 +1,102 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Kuchipudi (Dance)",
+  "codes": [
+    "058"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Kuchipudi"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Traditional Dance Forms of the Region",
+          "topics": [
+            "Brief history of other traditional dance forms of the region"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Exponents of Kuchipudi",
+          "topics": [
+            "Chief exponents, past and present"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Terms",
+          "topics": [
+            "Nritta, nritya, natya, tandava, lasya, lokadharmi, natyadharmi",
+            "Chaturvidha abhinaya with mukhaja abhinaya",
+            "Sanchari and sattvika bhava"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kuchipudi Compositions and Formats",
+          "topics": [
+            "Types of compositions",
+            "Rangapuja, shabdam, ashtapadi, kalaapam (Bhaama Kalaapam, Golla Kalaapam)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Kuchipudi Items",
+          "topics": [
+            "One shabdam (Dashavatara or Prahlada Pattabhishekam), one swarapallavi, one padam, one Kshetrayya padam, one ashtapadi, one tarangam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhaama Kalaapam",
+          "topics": [
+            "An extract from Bhaama Kalaapam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jathi Recitation",
+          "topics": [
+            "Adi tala jathi with teermanam"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

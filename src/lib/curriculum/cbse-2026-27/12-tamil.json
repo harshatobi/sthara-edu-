@@ -1,0 +1,299 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Tamil",
+  "codes": [
+    "106"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "தமிழ்"
+  ],
+  "source": {
+    "title": "Tamil, Code 106, Class XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Tamil_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Pothu Tamil, Class XII, Revised Edition 2025 (SCERT Tamil Nadu)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Iyal 1-5 of the textbook. The document gives the internal assessment total only."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class XII)",
+          "topics": [
+            "Two unseen passages on language, literature, history or science: MCQ (5) and short answer (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Correction of Errors (Class XII)",
+          "topics": [
+            "ல/ள/ழ, ந/ண/ன and ர/ற differences (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vallinam Migum Idangal (Class XII)",
+          "topics": [
+            "3 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Write Examples (Class XII)",
+          "topics": [
+            "Thanvinai, Piravinai, Seyvinai, Seyappattu Vinai, Udanpattu and Edhirmarai forms, Ner Kootru, Ayar Kootru, Thani, Thodar and Kalavai Vakkiyam (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Choose the Correct Sentence (Class XII)",
+          "topics": [
+            "Orumai-panmai, thinai and paal mayakkam; peyar and vinai marapu; pechu vazhakku, vazhaa nilaigal (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Main Course Book",
+      "marks": 33,
+      "chapters": [
+        {
+          "name": "Namathu Mozhiyin Adaiyaalangalai Meettavar",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Matharasa Pattinam",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tamizhar Kudumba Murai",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pandaiya Kaalaththu Pallikkoodangal",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thiraimozhi",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thannaer Ellatha Thamizh",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Elanthamizhe",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Piragorunaal Kodai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nedunalvaadai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 2)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Virunthinar Illam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kamba Ramayanam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nagulan Kavithaigal",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaaviyam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Silappathikaaram",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 4)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Deivamani Maalai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Perumaal Thirumozhi",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Devaaram",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Poetry comprehension 5, prose comprehension 5, poetry short answer 8, prose long answer 15."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Non-detail",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Thambi Nellaiyapparukku",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muthal Kal",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Urimai Thagam",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Suriyanai Pirasavikkum Paarai",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nadigar Thilagam",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "E",
+      "name": "Creative Writing",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Letter Writing (Class XII)",
+          "topics": [
+            "Appreciation, invitation, application, complaint and personal letters (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kavithai or Sirukathai (Class XII)",
+          "topics": [
+            "Poem or short story (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Composition (Class XII)",
+          "topics": [
+            "General essay (6)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

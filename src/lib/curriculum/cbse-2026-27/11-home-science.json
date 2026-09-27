@@ -1,0 +1,213 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Home Science",
+  "codes": [
+    "064"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Home Science, Code 064, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Home_Science_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Developmental norms (birth to three years) or areas of agreement and disagreement",
+        "marks": 5
+      },
+      {
+        "component": "Preparation of healthy snacks for an adolescent",
+        "marks": 7
+      },
+      {
+        "component": "Plan a budget",
+        "marks": 3
+      },
+      {
+        "component": "Prepare a time plan",
+        "marks": 3
+      },
+      {
+        "component": "Fibre properties or care label",
+        "marks": 5
+      },
+      {
+        "component": "File work",
+        "marks": 5
+      },
+      {
+        "component": "Viva",
+        "marks": 2
+      }
+    ]
+  },
+  "textbooks": [
+    "Human Ecology and Family Sciences, Class XI, Part I and II (NCERT)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given; the document's course-level outcomes are summarised in the rationale.",
+    "Use the latest data and latest RDAs."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Introduction to Home Science",
+      "marks": 2,
+      "chapters": [
+        {
+          "name": "Introduction to Home Science",
+          "topics": [
+            "What Home Science is; its areas",
+            "Importance for both boys and girls",
+            "Career options"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Understanding Oneself: Adolescence",
+      "marks": 23,
+      "chapters": [
+        {
+          "name": "Understanding the Self",
+          "topics": [
+            "What makes me 'I': personal and social dimension, self-concept, self-esteem; personal and social identity",
+            "Development and characteristics of the self from infancy to adolescence",
+            "Influences on identity: biological and physical, socio-cultural, emotional and cognitive changes"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Food, Nutrition, Health and Fitness",
+          "topics": [
+            "Food, nutrition, nutrients; balanced diet and RDA",
+            "Health and fitness",
+            "Food groups and the food guide pyramid; vegetarian food guide",
+            "Dietary patterns in adolescence; modifying diet related behaviour; factors influencing eating behaviour",
+            "Eating disorders at adolescence"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Management of Resources",
+          "topics": [
+            "Classification: human and non-human, individual and shared, natural and community resources",
+            "Characteristics of resources",
+            "Managing resources; the management process"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Fabric Around Us",
+          "topics": [
+            "Yarns, fibres, textile products, finishing; fibre properties",
+            "Classification of fibres: filament and staple; natural and manufactured",
+            "Natural fibres: cellulosic, protein, mineral, natural rubber; manufactured fibres",
+            "Yarn processing and terminology",
+            "Fabric production: weaving, knitting, braiding, nets, laces",
+            "Finishing with colour; printing",
+            "Cotton, linen, wool, silk, rayon, nylon, polyester, acrylic, elastomeric fibres"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Media and Communication Technology",
+          "topics": [
+            "What communication is; classification and process",
+            "Media: classification and functions",
+            "Communication technology: classification; modern technologies"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Understanding Family, Community and Society",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Concerns and Needs in Diverse Contexts: Nutrition, Health and Hygiene",
+          "topics": [
+            "Dimensions of health: social, mental, physical; health care; indicators of health",
+            "Nutrition and health; factors affecting nutritional well-being",
+            "Malnutrition, under nutrition, over nutrition",
+            "Personal, environmental and food hygiene",
+            "Water safety: potable water, purification by boiling, chlorine, storage, electric filter, RO"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Concerns and Needs in Diverse Contexts: Resource Availability and Management",
+          "topics": [
+            "Time management: time plan, steps, tips, tools (peak load period, work curve, rest periods, work simplification)",
+            "Space management: space and the home, principles of space planning"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Childhood",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Nutrition, Health and Well-being",
+          "topics": [
+            "Infancy (birth to 12 months)",
+            "Preschool children (1-6 years): needs, healthy eating, balanced meals, low-cost snacks, specific needs, immunisation",
+            "School-age children (7-12 years): requirements, diet planning, influences, healthy habits, health and nutrition issues"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Our Apparel",
+          "topics": [
+            "Clothing functions and selection",
+            "Factors affecting selection in India: age, climate, occasion, fashion, income",
+            "Children's clothing needs from infancy to adolescence",
+            "Clothes for children with special needs"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Adulthood",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Financial Management and Planning",
+          "topics": [
+            "Family income: money, real (direct and indirect), psychic",
+            "Income management; budget: steps and advantages",
+            "Control in money management",
+            "Savings and investment: principles and avenues",
+            "Credit: need; the 4 Cs (character, capacity, capital, collateral)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Care and Maintenance of Fabrics",
+          "topics": [
+            "Mending",
+            "Laundering: stain removal techniques and reagents; common stains",
+            "Cleaning: soaps and detergents; washing by friction, kneading and squeezing, suction, machine",
+            "Finishing: blues, optical brighteners, starches",
+            "Ironing, dry cleaning, storage; care labels"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

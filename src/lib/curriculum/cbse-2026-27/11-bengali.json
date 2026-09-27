@@ -1,0 +1,199 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Bengali",
+  "codes": [
+    "105"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Bangla",
+    "বাংলা"
+  ],
+  "source": {
+    "title": "Bengali, Code 105, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Bengali_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project (file and viva)",
+        "marks": 10
+      },
+      {
+        "component": "ASL: speaking",
+        "marks": 5
+      },
+      {
+        "component": "ASL: listening",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahityanushilan: Bangla 'Ka', Class XI (WBCHSE)",
+    "Panchatantra, Syed Mujtaba Ali (supplementary reader)",
+    "Ucchataro Bangla Byakoron (IX-X), Bamandeb Chakraborty"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Project options: translation, interview, dramatisation, self-composed story, field trip, short film or documentary."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class XI)",
+          "topics": [
+            "Two unseen passages of about 200 words",
+            "Grammar-based fifth question: sandhi, synonyms, antonyms, sadhu-chalit"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Bachya (Voice) Paribartan",
+          "topics": [
+            "5 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ukti (Narration) Paribartan",
+          "topics": [
+            "5 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bangla Shabdabhandar",
+          "topics": [
+            "Tatsama, Tadbhaba, Ardha-Tatsama, Deshi and Bideshi: definition and category (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Literature",
+      "marks": 43,
+      "chapters": [
+        {
+          "name": "Telenapota Abishkar",
+          "topics": [
+            "Prose: Premendra Mitra"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Biral",
+          "topics": [
+            "Prose: Bankim Chandra Chattopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Puimancha",
+          "topics": [
+            "Prose: Bibhutibhushan Bandyopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nun",
+          "topics": [
+            "Poetry: Joy Goswami"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lalan Shah Phakirer Gaan",
+          "topics": [
+            "Poetry: Lalan Shah"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samyabadi",
+          "topics": [
+            "Poetry: Kazi Nazrul Islam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Charan Kobi",
+          "topics": [
+            "Indian poetry in translation: Varavara Rao"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aagun",
+          "topics": [
+            "Drama: Bijon Bhattacharya"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Boi Kena",
+          "topics": [
+            "Supplementary reader: Panchatantra"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ajab Shahar Kolketa",
+          "topics": [
+            "Supplementary reader: Panchatantra"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aadda",
+          "topics": [
+            "Supplementary reader: Panchatantra"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose 10, poetry 12, drama 10, supplementary reader 11."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Creative Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Dialogue Writing",
+          "topics": [
+            "Minimum six pairs of dialogue (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Summary Writing",
+          "topics": [
+            "From a prose passage of 150-180 words (6)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

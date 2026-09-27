@@ -1,0 +1,182 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Telugu (Telangana)",
+  "codes": [
+    "189"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Telugu TS",
+    "Telugu Telangana",
+    "తెలుగు (తెలంగాణ)"
+  ],
+  "source": {
+    "title": "Telugu Telangana, Code 189, Class XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Telugu_Telangana_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment (four components, as per the document)",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "శుభోదయం (Main Course Book)",
+    "ఉపవాచకం (Non-detail text)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Telugu script lesson names as printed. The document gives per-lesson marks with internal choices but no section totals, so unit marks are not recorded."
+  ],
+  "units": [
+    {
+      "code": "P",
+      "name": "పద్యభాగం (Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "శ్రీ కృష్ణరాయబారం",
+          "number": 1,
+          "topics": [
+            "పద్యభాగం (శుభోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "భగీరథ ప్రయత్నం",
+          "number": 2,
+          "topics": [
+            "పద్యభాగం (శుభోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "కోకిలా! ఓ కోకిలా!!",
+          "number": 5,
+          "topics": [
+            "పద్యభాగం (శుభోదయం)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "గద్యభాగం (Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "మిత్రలాభం",
+          "number": 1,
+          "topics": [
+            "గద్యభాగం (శుభోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "తెలంగాణ సాహితీ వికాసం",
+          "number": 2,
+          "topics": [
+            "గద్యభాగం (శుభోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "సృజనశీలత",
+          "number": 6,
+          "topics": [
+            "గద్యభాగం (శుభోదయం)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "N",
+      "name": "ఉపవాచకం (Non-detail, 8 marks)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "యాత్రారచన: నా ప్రథమ విదేశీ యాత్ర",
+          "topics": [
+            "ఉపవాచకం"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "H",
+      "name": "తెలుగు సాహిత్య చరిత్ర (History of Literature, 10 marks)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "తెలుగు సాహిత్య చరిత్ర (Class XII)",
+          "topics": [
+            "అల్లసాని పెద్దన",
+            "ధూర్జటి",
+            "దాశరథి కృష్ణమాచార్యులు",
+            "శ్రీశ్రీ"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "వ్యాకరణం (Grammar)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "ఛందస్సు (Class XII)",
+          "topics": [
+            "మత్తేభము, శార్దూలము, సీసము, తేటగీతి, ఆటవెలది (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "అలంకారములు (Class XII)",
+          "topics": [
+            "ఉపమ, అతిశయోక్తి, క్రమ, శ్లేష, అర్థాంతరన్యాస (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "S",
+      "name": "సృజనాత్మక రచన (Creative Writing, 12 marks)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "సంభాషణ",
+          "topics": [
+            "Dialogue (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "అనువాదం (Class XII)",
+          "topics": [
+            "Translation (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "అపరిచిత గద్యం, పరిచిత గద్యం, పద్యం",
+          "topics": [
+            "Unseen and seen passages (10)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

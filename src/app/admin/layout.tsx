@@ -10,6 +10,8 @@ import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/Use
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { KeyIcon as Key } from '@phosphor-icons/react/dist/ssr/Key';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
+import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
+import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -23,7 +25,9 @@ import type { Perm } from '@/lib/admin/rbac';
 // generator) keep their URLs but are off the canon nav.
 const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true, need: ['dashboard.view'] },
+  { href: '/admin/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle, need: ['os.ask'] },
   { href: '/admin/probe', label: 'Probe', icon: Sparkle, need: ['probe.view'] },
+  { href: '/admin/feed', label: 'Situational Feed', short: 'Feed', icon: Bell, need: ['feed.read', 'incidents.manage'] },
   { href: '/admin/fees', label: 'Admissions & Fees', short: 'Fees', icon: CurrencyInr, also: ['/admin/admissions'], need: ['fees.read'] },
   { href: '/admin/admissions', label: 'Admissions', icon: CurrencyInr, need: ['admissions.read'] },
   { href: '/admin/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple, need: ['messages.office'] },

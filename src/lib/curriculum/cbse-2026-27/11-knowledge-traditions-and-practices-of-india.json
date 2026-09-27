@@ -1,0 +1,206 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Knowledge Traditions and Practices of India",
+  "codes": [
+    "073"
+  ],
+  "stream": "Humanities",
+  "aliases": [
+    "KTPI"
+  ],
+  "source": {
+    "title": "Knowledge Traditions and Practices of India, Code 073, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/KTPI_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment: projects on internal-assessment chapters",
+        "marks": 30
+      }
+    ]
+  },
+  "textbooks": [
+    "Knowledge Traditions and Practices of India, Class XI (CBSE)"
+  ],
+  "notes": [
+    "The document lists chapters with learning objectives and outcomes; topics here summarise those objectives.",
+    "Chapters marked formative are assessed only through internal projects."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Astronomy in India",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Astronomy in India",
+          "number": 1,
+          "topics": [
+            "Characteristics of Indian astronomy in historical perspective",
+            "Indian calendar, panchangam, nakshatras; eclipses, full and new moon",
+            "Indian and European zodiac signs",
+            "Astronomical architecture such as Jantar Mantar",
+            "Ancient and modern methods of prediction"
+          ],
+          "outcomes": [
+            "Summarise the beginnings of Indian astronomy",
+            "Read the panchangam and identify nakshatras in the night sky"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Chemistry in India",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Chemistry in India",
+          "number": 2,
+          "topics": [
+            "Chemistry in India"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Indian Literature Part I: Introduction to Indian Literature",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Indian Literature Part I: Introduction to Indian Literature",
+          "number": 3,
+          "topics": [
+            "Genres of Indian literature in translation",
+            "Author's intent, setting, characters and values",
+            "Comparison of Western and Indian theories and practices",
+            "Literature and contemporary issues"
+          ],
+          "outcomes": [
+            "Compare genres in Indian literature",
+            "Analyse literary works and their connection with contemporary issues"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Indian Philosophical Systems",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Indian Philosophical Systems",
+          "number": 4,
+          "topics": [
+            "Philosophy and daily life; ethics and philosophy",
+            "Nine systems of Indian philosophy and their key features",
+            "Right knowledge in different systems",
+            "Democratic and practical dimensions of Indian philosophy"
+          ],
+          "outcomes": [
+            "Enlist the nine systems and their features",
+            "Compare ethical goals in Western and Indian thought"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Indian Traditional Knowledge on Environmental Conservation",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Indian Traditional Knowledge on Environmental Conservation",
+          "number": 5,
+          "topics": [
+            "Traditional knowledge on environmental conservation"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Life Sciences (1): Ayurveda for Life, Health and Well-being",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Life Sciences (1): Ayurveda for Life, Health and Well-being",
+          "number": 6,
+          "topics": [
+            "Ayurveda as holistic practice balancing inner and outer environment",
+            "Concept of good health; diet and behaviour in restoring health",
+            "Ayurveda and modern ailments; integrative medicine",
+            "Medicinal plants"
+          ],
+          "outcomes": [
+            "List the eight factors of a balanced diet",
+            "Describe the principles of Ayurvedic healing"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Life Sciences (2): The Historical Evolution of Medical Tradition in Ancient India",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Life Sciences (2): The Historical Evolution of Medical Tradition in Ancient India",
+          "number": 7,
+          "topics": [
+            "Historical evolution of medical tradition in ancient India",
+            "Key concepts and texts",
+            "The eight branches of Ayurveda"
+          ],
+          "outcomes": [
+            "Describe the historical evolution of medical tradition",
+            "Summarise the eight branches"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Mathematics in India",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Mathematics in India",
+          "number": 8,
+          "topics": [
+            "Mathematics in India"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "9",
+      "name": "Theatre and Drama in India",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Theatre and Drama in India",
+          "number": 9,
+          "topics": [
+            "Theatre and drama in India"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    }
+  ]
+}

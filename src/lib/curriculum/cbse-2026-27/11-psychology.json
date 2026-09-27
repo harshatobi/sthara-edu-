@@ -1,0 +1,194 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Psychology",
+  "codes": [
+    "037"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Psychology, Code 037, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Psychology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Practical (experiments) file",
+        "marks": 5
+      },
+      {
+        "component": "Project file",
+        "marks": 5
+      },
+      {
+        "component": "Viva voce (project and experiment)",
+        "marks": 5
+      },
+      {
+        "component": "One experiment: conduct 5, reporting 10",
+        "marks": 15
+      }
+    ]
+  },
+  "textbooks": [
+    "Psychology, Class XI (NCERT)"
+  ],
+  "notes": [
+    "The document has no learning-outcomes column for Psychology, so chapter outcomes are left empty.",
+    "Practical: one project or small study and two experiments during the year."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Understanding Psychology",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "Understanding Psychology",
+          "number": 1,
+          "topics": [
+            "Nature of psychology: as a discipline, a natural science and a social science",
+            "Understanding mind and behaviour; popular notions about psychology",
+            "Evolution of psychology; development of psychology in India",
+            "Branches of psychology; psychology and other disciplines; psychology in everyday life"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Methods of Enquiry in Psychology",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Methods of Enquiry in Psychology",
+          "number": 2,
+          "topics": [
+            "Goals of psychological enquiry: steps in scientific research, alternative paradigms",
+            "Nature of psychological data",
+            "Methods: observational, experimental, correlational, survey, psychological testing, case study",
+            "Analysis of data: quantitative and qualitative",
+            "Limitations of psychological enquiry; ethical issues"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Human Development",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "Human Development",
+          "number": 3,
+          "topics": [
+            "Meaning of development; life-span perspective",
+            "Factors influencing development; context of development",
+            "Developmental stages: prenatal, infancy, childhood, challenges of adolescence, adulthood and old age"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Sensory, Attentional and Perceptual Processes",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Sensory, Attentional and Perceptual Processes",
+          "number": 4,
+          "topics": [
+            "Knowing the world; nature and varieties of stimulus",
+            "Sense modalities and their functional limitations",
+            "Attention: selective and sustained",
+            "Perceptual processes and processing approaches; the perceiver",
+            "Principles of perceptual organisation; perception of space, depth and distance: monocular and binocular cues",
+            "Perceptual constancies; illusions; socio-cultural influences on perception"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Learning",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Learning",
+          "number": 5,
+          "topics": [
+            "Nature and paradigms of learning",
+            "Classical conditioning and its determinants",
+            "Operant conditioning, its determinants and key learning processes",
+            "Observational, cognitive, verbal and skill learning",
+            "Factors facilitating learning; learning disabilities"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Human Memory",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Human Memory",
+          "number": 6,
+          "topics": [
+            "Nature of memory; information processing: the stage model",
+            "Sensory, short-term and long-term memory; levels of processing",
+            "Types of long-term memory: declarative and procedural, episodic and semantic",
+            "Forgetting: trace decay, interference, retrieval failure",
+            "Enhancing memory: mnemonics using images and organisation"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VII",
+      "name": "Thinking",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Thinking",
+          "number": 7,
+          "topics": [
+            "Nature of thinking; building blocks of thought",
+            "Processes of thinking: problem solving, reasoning, decision making",
+            "Nature and process of creative thinking",
+            "Thought and language; development of language and language use"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VIII",
+      "name": "Motivation and Emotion",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Motivation and Emotion",
+          "number": 8,
+          "topics": [
+            "Nature of motivation; biological and psychosocial motives",
+            "Maslow's hierarchy of needs",
+            "Nature and expression of emotions; culture and emotional expression and labelling",
+            "Managing negative emotions; enhancing positive emotions"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { accessOf } from '@/lib/admin/serverAuth';
 import { TOPICS, TOPIC_LABEL, type Topic } from './ask';
 import { guardianOf, type ParentCaller } from './serverAuth';
 import { notifyGuardians } from './notify';
+import { whatsappStaff } from '@/lib/staff/notify';
 
 export class MessageError extends Error { constructor(msg: string, public status = 400) { super(msg); } }
 
@@ -79,19 +80,22 @@ export async function parentPost(db: SupabaseClient, parent: ParentCaller, input
       body: `${thread.subject}: ${body.slice(0, 160)}`, metadata: { threadId: thread.id },
     })));
     if (error) console.warn('[messages] notify staff:', error.message);
+    await whatsappStaff(db, thread.school_id, to, 'messages',
+      `*${parent.name || 'A parent'}* (${child?.name || 'student'}, ${child?.student_class || ''}) wrote about "${thread.subject}":\n\n${body.slice(0, 1200)}\n\nReply *R* and your answer to reply from here, or open Parent Messages.`,
+      { type: 'parent_message', threadId: thread.id });
   }
   return { threadId: thread.id, created };
 }
 
 /** A teacher or school admin answers a parent. */
-export async function staffPost(db: SupabaseClient, staff: { id: string; name: string; role: 'teacher' | 'admin'; schoolId: string }, threadId: unknown, rawBody: unknown) {
+export async function staffPost(db: SupabaseClient, staff: { id: string; name: string; role: 'teacher' | 'admin'; schoolId: string }, threadId: unknown, rawBody: unknown, channel: 'web' | 'whatsapp' = 'web') {
   const body = typeof rawBody === 'string' ? rawBody.trim().slice(0, 4000) : '';
   if (!body) throw new MessageError('Write a reply first.');
   if (!isUuid(threadId)) throw new MessageError('Unknown conversation.', 404);
   const { data: t } = await db.from('school_threads').select('*').eq('id', threadId).eq('school_id', staff.schoolId).maybeSingle();
   if (!t || (staff.role === 'teacher' && t.staff_id !== staff.id)) throw new MessageError('Unknown conversation.', 404);
   const now = new Date().toISOString();
-  const { error } = await db.from('school_messages').insert({ thread_id: t.id, school_id: t.school_id, sender_id: staff.id, sender_role: staff.role, body, channel: 'web' });
+  const { error } = await db.from('school_messages').insert({ thread_id: t.id, school_id: t.school_id, sender_id: staff.id, sender_role: staff.role, body, channel });
   if (error) { console.error('[messages] staff insert:', error.message); throw new MessageError('Could not send the reply.', 500); }
   await db.from('school_threads').update({ last_message_at: now, staff_read_at: now, status: 'open' }).eq('id', t.id);
   const { data: child } = await db.from('users').select('name').eq('id', t.student_id).maybeSingle();

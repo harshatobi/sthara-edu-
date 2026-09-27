@@ -1,0 +1,207 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Odia",
+  "codes": [
+    "113"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Oriya",
+    "ଓଡ଼ିଆ"
+  ],
+  "source": {
+    "title": "Odia, Code 113, Class XI (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Odia_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening skill",
+        "marks": 5
+      },
+      {
+        "component": "Speaking skill",
+        "marks": 5
+      },
+      {
+        "component": "Project",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Jyoti Part I, Class XI, 2021 revised (Odisha State Bureau of Textbook Preparation and Production)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Prose: explanation 5, short answers 6, MCQ 10; poetry: explanation 5, short answers 6, MCQ 10; non-detailed short answers 6."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Prose Passage (Class XI)",
+          "topics": [
+            "130-150 words, five 2-mark questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Essay (Class XI)",
+          "topics": [
+            "Contemporary issues (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Report Writing for Newspaper (Class XI)",
+          "topics": [
+            "6 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Pratisabda",
+          "topics": [
+            "Synonyms (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bisheshya",
+          "topics": [
+            "Nouns (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sandhi (Class XI)",
+          "topics": [
+            "Swara, Byanjana, Bisarga (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Idioms (Class XI)",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 48,
+      "chapters": [
+        {
+          "name": "Sarshupadar",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jhelum Nadire Sandhya",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Madhubabu",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sehi Smaraniya Dibasa",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sahada Brukshya",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shapa Mochana",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Himakala",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mitrata",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Payare Pashuchhi Sarana",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Atyacharita",
+          "topics": [
+            "Non-detailed: one-act play"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhalu Upadraba",
+          "topics": [
+            "Non-detailed: one-act play"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Simita Samparka",
+          "topics": [
+            "Non-detailed: one-act play"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

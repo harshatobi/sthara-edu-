@@ -1,0 +1,118 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Bharatanatyam (Dance)",
+  "codes": [
+    "057"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Bharatanatyam"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style.",
+    "The document prints the Class XII Bharatanatyam practical as 30 marks; the subject total and every other style use 70, recorded here."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Exponents of Bharatanatyam",
+          "topics": [
+            "Rukmini Devi Arundale, Balasaraswati, Meenakshi Sundaram Pillai, Tanjore quartet"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Abhinaya Darpana",
+          "topics": [
+            "Chapters and aspects of dance dealt with"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Terms from Abhinaya Darpana",
+          "topics": [
+            "Nritta, nritya, natya; seven tandavas; lasya; lokadharmi, natyadharmi",
+            "Sthana, chari, mandala, bhramari, utplavana",
+            "Abhinaya: angika, vachika, satvika, aharya",
+            "Sangeeta, tala, laya; nine rasas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bharatanatyam Technical Terminology",
+          "topics": [
+            "Araimandi, muzhumandi, kuttanam, korvai, karvai, adavu, shollu, aradhi, theerumanam, jati, gati, avartana, yati, nattuvangam, arangetram"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bharatanatyam Costume and Make-up",
+          "topics": [
+            "Traditional costumes and make-up"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Revision of Adavus",
+          "topics": [
+            "All Class XI adavus"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bharatanatyam Items",
+          "topics": [
+            "Jatiswaram in rupaka talam; padam or keertanam; thillana in adi talam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Talas and Hastas",
+          "topics": [
+            "Adavu syllables in rupaka and triputa; sapta talas",
+            "Viniyoga of asamyuta, samyuta and deva hastas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Carnatic Music Basics",
+          "topics": [
+            "72 melakarta ragas; music of the items learnt"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

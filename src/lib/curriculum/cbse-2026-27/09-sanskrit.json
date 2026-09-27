@@ -1,0 +1,261 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Sanskrit",
+  "codes": [
+    "122"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "संस्कृतम्"
+  ],
+  "source": {
+    "title": "Sanskrit, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Sanskrit_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "आवधिक-परीक्षा (periodic test)",
+        "marks": 5
+      },
+      {
+        "component": "बहुविधमूल्याङ्कनम् (multiple assessment)",
+        "marks": 5
+      },
+      {
+        "component": "निवेशसूचिका (portfolio)",
+        "marks": 5
+      },
+      {
+        "component": "भाषा-संवर्धनाय गतिविधयः (language enrichment)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "शारदा (NCERT, NCF 2023) — pending CBSE notification",
+    "ऋषिकुल्या (NCERT, R2)"
+  ],
+  "notes": [
+    "Units are the question paper's खण्ड."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठितावबोधनम् (Unseen Comprehension)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "अपठितः गद्यांशः",
+          "topics": [
+            "80-100 शब्दपरिमितः गद्यांशः",
+            "एकपदेन पूर्णवाक्येन च अवबोधनम्; शीर्षकलेखनम्; भाषिककार्यम्"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "रचनात्मककार्यम् (Composition)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "पत्रलेखनम्",
+          "topics": [
+            "सङ्केताधारितम् औपचारिकम् अथवा अनौपचारिकं पत्रम् (मञ्जूषायाः सहायतया)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "चित्रवर्णनम् अथवा अनुच्छेदलेखनम्",
+          "topics": [
+            "5 अङ्काः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "संवादपूर्तिः / कथापूर्तिः",
+          "topics": [
+            "मञ्जूषायाः सहायतया"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "अनुप्रयुक्तव्याकरणम् (Applied Grammar)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "सन्धयः",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कारक-उपपदविभक्तयः",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "शब्दरूपाणि",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "धातुरूपाणि",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "प्रत्ययाः",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "समासाः",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सङ्ख्या",
+          "topics": [
+            "1-100 (1-4 केवलं प्रथमा-विभक्तौ), 3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "उच्चारणस्थानानि",
+          "topics": [
+            "2"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अव्ययानि",
+          "topics": [
+            "2"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "पठितावबोधनम् (Prescribed Text)",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "सत्यं शिवं सुन्दरं संस्कृतम्",
+          "number": 1,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सुखस्य मूलं धर्मः धर्मस्य मूलम् अर्थः",
+          "number": 2,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आत्मवत्सर्वभूतेषु यः पश्यति सः पण्डितः",
+          "number": 3,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "न खलु वयस्तेजसो हेतुः",
+          "number": 4,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "एषा सा कृतकबुद्धिः मानवबुद्धेः सहकरी",
+          "number": 5,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मनःपूतं समाचरेत्",
+          "number": 6,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "उपायं चिन्तयेत् प्राज्ञस्तथापायं च चिन्तयेत्",
+          "number": 7,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अन्नाद् आनन्दं प्रति",
+          "number": 8,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कृतं प्रतिकृतं भूयादेष धर्मः सनातनः",
+          "number": 9,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "णमो अरिहन्ताणम्",
+          "number": 10,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "वर्णोच्चारण-शिक्षा २",
+          "number": 11,
+          "topics": [
+            "शारदा (NCERT)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "CBSE says the prescribed lessons will be notified shortly (शीघ्रमेव सूचयिष्यते). Listed here are the chapters of the NCERT Class 9 book शारदा; adjust once CBSE notifies.",
+        "गद्यांशः, पद्यांशः, नाट्यांशः (5 each); प्रश्ननिर्माणम् 5; अन्वयः/भावार्थः 4; कथापूर्तिः 3; अर्थचयनम् 3."
+      ]
+    }
+  ]
+}

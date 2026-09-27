@@ -1,0 +1,323 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "National Cadet Corps",
+  "codes": [
+    "076"
+  ],
+  "stream": "Wellbeing",
+  "aliases": [
+    "NCC"
+  ],
+  "source": {
+    "title": "National Cadet Corps, Code 076, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/NCC_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Practical and internal assessment",
+        "marks": 30
+      }
+    ]
+  },
+  "textbooks": [
+    "NCC Cadet Handbook (common and specialised subjects)"
+  ],
+  "notes": [
+    "The theory paper is 70 marks, but the document gives no unit-wise split, so unit marks are left unpublished.",
+    "Cadets study the common subjects plus the specialised subject of their wing (Army, Navy or Air Force).",
+    "Air Force units Aero Engines and Air Frames are deleted for Class XII."
+  ],
+  "units": [
+    {
+      "code": "C",
+      "name": "Common Subjects",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "National Integration and Awareness (Class XII)",
+          "topics": [
+            "National interests, objectives, threats and opportunities",
+            "Challenges of national integration"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Drill (Class XII)",
+          "topics": [
+            "Drill with arms: parade with rifle, dismissing, gun salute, squad drill, trail, examine arms",
+            "Ceremonial drill: guard mounting"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Weapon Training (Class XII)",
+          "topics": [
+            "Lying position, holding and aiming",
+            "Trigger operation and firing",
+            "Range and safety precautions",
+            "Group and snap shooting"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Personality Development and Leadership (Class XII)",
+          "topics": [
+            "Self-awareness",
+            "Interpersonal relationships and communication",
+            "Time management; interview and social skills"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Disaster Management",
+          "topics": [
+            "Fire service and fire fighting",
+            "Assistance during natural and other calamities"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Social Awareness and Community Development (Class XII)",
+          "topics": [
+            "NGOs",
+            "Drug abuse and trafficking",
+            "Corruption",
+            "Social evils: dowry, female foeticide, child abuse"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Health and Hygiene (Class XII)",
+          "topics": [
+            "Personal and food hygiene",
+            "First aid in common emergencies",
+            "Wounds and fractures"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Adventure and Obstacle Training (Class XII)",
+          "topics": [
+            "Para sailing"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Environment Awareness and Conservation (Class XII)",
+          "topics": [
+            "Waste management",
+            "Pollution control: water, air, noise, soil"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "A",
+      "name": "Specialised Subject: Army",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Armed Forces (Class XII)",
+          "topics": [
+            "Modes of entry into the Army",
+            "Honours and awards"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Map Reading (Class XII)",
+          "topics": [
+            "Cardinal points and types of north",
+            "Bearings and service protractor",
+            "Setting a map, finding north and own position"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Field Craft and Battle Craft (Class XII)",
+          "topics": [
+            "Judging distance, observation, camouflage and concealment",
+            "Field signals"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Infantry Weapons and Equipment (Class XII)",
+          "topics": [
+            "5.56 INSAS rifle",
+            "Organisation of an infantry battalion"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Military History (Class XII)",
+          "topics": [
+            "Indian Army war heroes",
+            "Indo-Pak wars of 1965 and 1971; Kargil"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Communication (Army, Class XII)",
+          "topics": [
+            "Characteristics of walkie-talkie"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "N",
+      "name": "Specialised Subject: Navy",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Naval Orientation (Class XII)",
+          "topics": [
+            "Ship organisation",
+            "Naval customs and traditions",
+            "Modes of entry into the Navy"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Naval Warfare",
+          "topics": [
+            "Anti-submarine warfare"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Naval Communication (Class XII)",
+          "topics": [
+            "Semaphore",
+            "Phonetic alphabet"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Navigation (Navy)",
+          "topics": [
+            "Basic requirements of ship navigation",
+            "Gyro and magnetic compass; types of north",
+            "Simple chart work; tides"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seamanship (Class XII)",
+          "topics": [
+            "Types of anchor, purpose, holding ground"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Boat Work (Class XII)",
+          "topics": [
+            "Rigging a whaler and enterprise boat; parts of a sail",
+            "Elementary sailing rules"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Fire Fighting, Flooding and Damage Control",
+          "topics": [
+            "Causes of damage; flooding and damage control"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ship and Boat Modelling (Class XII)",
+          "topics": [
+            "Types of models",
+            "Ship model competition",
+            "Power tools"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "F",
+      "name": "Specialised Subject: Air Force",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "General Service Knowledge (Class XII)",
+          "topics": [
+            "Organisation and branches of the Air Force"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Air Campaigns",
+          "topics": [
+            "Indo-Pak war 1971",
+            "Operation Safed Sagar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aircraft Recognition",
+          "topics": [
+            "Fighters, transports, helicopters"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Principles of Flight (Class XII)",
+          "topics": [
+            "Bernoulli's theorem and venturi effect",
+            "Aerofoil",
+            "Forces on an aircraft"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Airmanship (Class XII)",
+          "topics": [
+            "ATC/RT procedure",
+            "Aviation medicine"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Navigation (Air Force)",
+          "topics": [
+            "Requirement of navigation",
+            "Glossary of terms"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Meteorology",
+          "topics": [
+            "Importance of meteorology in aviation"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Instruments (Class XII)",
+          "topics": [
+            "Introduction to radars"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aero-modelling (Class XII)",
+          "topics": [
+            "Materials; building and flying aero-models"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

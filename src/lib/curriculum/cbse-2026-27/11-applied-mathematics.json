@@ -1,0 +1,385 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Applied Mathematics",
+  "codes": [
+    "241"
+  ],
+  "stream": "Mathematics",
+  "aliases": [
+    "Applied Maths",
+    "Maths Applied"
+  ],
+  "source": {
+    "title": "Applied Mathematics, Code 241, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Applied_Mathematics_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment: spreadsheet practicals and project",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "No NCERT textbook is prescribed; content as per the CBSE document"
+  ],
+  "notes": [
+    "The document does not break down the 20 internal marks; suggested practicals use spreadsheets or GeoGebra, plus a project."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Numbers, Quantification and Numerical Applications",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Binary Numbers",
+          "number": 1,
+          "topics": [
+            "Binary number system",
+            "Conversion between decimal and binary; applications"
+          ],
+          "outcomes": [
+            "Convert between decimal and binary",
+            "Understand binary in programming, coding and machine learning"
+          ]
+        },
+        {
+          "name": "Indices, Logarithm and Antilogarithm",
+          "number": 2,
+          "topics": [
+            "Indices and their properties",
+            "Common and natural logarithms; laws of logarithms",
+            "Logarithm and exponential as inverse operations",
+            "Finding logarithms and antilogarithms; applications"
+          ],
+          "outcomes": [
+            "Apply rules of indices",
+            "Use logarithms and antilogarithms to simplify calculations"
+          ]
+        },
+        {
+          "name": "Introduction to Bhartiya System of Numeration",
+          "number": 3,
+          "topics": [
+            "Bhartiya system of numeration"
+          ],
+          "outcomes": [
+            "Gain acquaintance with the traditional way of expressing numbers"
+          ]
+        },
+        {
+          "name": "Clocks",
+          "number": 4,
+          "topics": [
+            "Angular value of a minute",
+            "Angle between the hands at a given time",
+            "When the hands meet, are opposite or form an angle"
+          ],
+          "outcomes": [
+            "Calculate angular displacement of clock hands"
+          ]
+        },
+        {
+          "name": "Calendar",
+          "number": 5,
+          "topics": [
+            "Odd days in a month, year and century",
+            "Day of the week for a given date"
+          ],
+          "outcomes": [
+            "Find the day of the week for any date"
+          ]
+        },
+        {
+          "name": "Time and Work",
+          "number": 6,
+          "topics": [
+            "Relationship between work and time",
+            "Work done by individuals and groups"
+          ],
+          "outcomes": [
+            "Solve and graph time-work problems"
+          ]
+        },
+        {
+          "name": "Speed, Distance and Time",
+          "number": 7,
+          "topics": [
+            "Time taken and distance covered from given data"
+          ],
+          "outcomes": [
+            "Represent distance-time relationships graphically"
+          ]
+        },
+        {
+          "name": "Seating Arrangement",
+          "number": 8,
+          "topics": [
+            "Linear and circular seating plans from conditions",
+            "Locating a person's position"
+          ],
+          "outcomes": [
+            "Design seating plans by logical reasoning"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Algebra",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Sets",
+          "number": 9,
+          "topics": [
+            "Sets; roster and set-builder form; types of sets; equal and equivalent sets",
+            "Subsets, power set, universal set; intervals as subsets of real numbers",
+            "Venn diagrams; operations on sets"
+          ],
+          "outcomes": [
+            "Represent sets in roster and set-builder form",
+            "Solve problems using Venn diagrams and set operations"
+          ]
+        },
+        {
+          "name": "Relations",
+          "number": 10,
+          "topics": [
+            "Ordered pairs; Cartesian product of two sets",
+            "Relation as a subset of a Cartesian product; domain and range"
+          ],
+          "outcomes": [
+            "Find Cartesian products and the domain and range of relations"
+          ]
+        },
+        {
+          "name": "Mathematical Logic",
+          "number": 11,
+          "topics": [
+            "Odd man out, syllogism, blood relations, coding-decoding"
+          ],
+          "outcomes": [
+            "Draw valid conclusions using syllogism",
+            "Solve blood relation and coding-decoding problems"
+          ]
+        },
+        {
+          "name": "Sequences and Series",
+          "number": 12,
+          "topics": [
+            "Sequence and series",
+            "Arithmetic mean of two numbers",
+            "Geometric progression: nth term, sum of n terms, sum to infinity; geometric mean",
+            "Relation between AM and GM; applications of AP and GP"
+          ],
+          "outcomes": [
+            "Apply AP and GP formulas to real problems",
+            "Analyse the AM-GM inequality"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Calculus",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Functions and their Graphs",
+          "number": 13,
+          "topics": [
+            "Dependent and independent variables; definition of function",
+            "Domain, range and co-domain; types of functions",
+            "Graphical representation"
+          ],
+          "outcomes": [
+            "Represent functions graphically and apply them to business input-output models"
+          ]
+        },
+        {
+          "name": "Limits and Continuity",
+          "number": 14,
+          "topics": [
+            "Limit of a function; algebra of limits",
+            "Continuity at a point and over an interval"
+          ],
+          "outcomes": [
+            "Solve problems on the algebra of limits"
+          ]
+        },
+        {
+          "name": "Differentiation",
+          "number": 15,
+          "topics": [
+            "Instantaneous rate of change; derivative as slope of tangent",
+            "Derivatives of sum, difference, product and quotient",
+            "Chain rule"
+          ],
+          "outcomes": [
+            "Apply the rules of differentiation"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Combinatorics and Probability",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Permutations and Combinations",
+          "number": 16,
+          "topics": [
+            "Factorial; fundamental principle of counting",
+            "Permutations",
+            "Combinations and their difference from permutations"
+          ],
+          "outcomes": [
+            "Model counting situations with permutations and combinations"
+          ]
+        },
+        {
+          "name": "Probability",
+          "number": 17,
+          "topics": [
+            "Random experiment and sample space",
+            "Events and their types",
+            "Probability in real situations",
+            "Conditional probability"
+          ],
+          "outcomes": [
+            "Solve problems on conditional probability"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Descriptive Statistics",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Measures of Dispersion",
+          "number": 18,
+          "topics": [
+            "Range, mean deviation, standard deviation and variance for grouped and ungrouped data"
+          ],
+          "outcomes": [
+            "Choose an appropriate measure of dispersion"
+          ]
+        },
+        {
+          "name": "Percentiles",
+          "number": 19,
+          "topics": [
+            "Percentile rank of scores in ungrouped data"
+          ],
+          "outcomes": [
+            "Calculate and interpret percentile ranks"
+          ]
+        },
+        {
+          "name": "Correlation",
+          "number": 20,
+          "topics": [
+            "Karl Pearson's coefficient for ungrouped data",
+            "Spearman's rank correlation for ungrouped data"
+          ],
+          "outcomes": [
+            "Interpret correlation coefficients"
+          ]
+        },
+        {
+          "name": "Regression",
+          "number": 21,
+          "topics": [
+            "Dependent and independent variables",
+            "Regression coefficients and equations; properties"
+          ],
+          "outcomes": [
+            "Distinguish correlation and regression; compute regression coefficients"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Basics of Financial Mathematics",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Interest and Interest Rates",
+          "number": 22,
+          "topics": [
+            "Nominal, effective and real interest rates",
+            "Simple and compound interest applications",
+            "Effective rate of interest"
+          ],
+          "outcomes": [
+            "Compare financial products and investment schemes"
+          ]
+        },
+        {
+          "name": "Annuities",
+          "number": 23,
+          "topics": [
+            "Immediate annuity, annuity due, deferred annuity",
+            "Future and present value of ordinary annuity and annuity due (up to 3 periods)"
+          ],
+          "outcomes": [
+            "Apply annuity concepts to real situations"
+          ]
+        },
+        {
+          "name": "Taxes and Utility Bills",
+          "number": 24,
+          "topics": [
+            "Income tax and GST under the new tax guidelines",
+            "Utility bills: electricity, water, PNG"
+          ],
+          "outcomes": [
+            "Calculate income tax, GST and utility bills"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "VII",
+      "name": "Coordinate Geometry",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Straight Lines",
+          "number": 25,
+          "topics": [
+            "Slope of a line",
+            "Forms of the equation of a line"
+          ],
+          "outcomes": [
+            "Model demand and supply curves with linear equations"
+          ]
+        },
+        {
+          "name": "Circles and Parabola",
+          "number": 26,
+          "topics": [
+            "Circle and parabola as loci",
+            "Standard, central, diameter and general forms of a circle",
+            "Parabola from focus and directrix"
+          ],
+          "outcomes": [
+            "Solve coordinate problems using circles and parabolas"
+          ]
+        }
+      ]
+    }
+  ]
+}

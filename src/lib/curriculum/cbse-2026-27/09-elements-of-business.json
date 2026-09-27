@@ -1,0 +1,98 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Elements of Business",
+  "codes": [
+    "154"
+  ],
+  "stream": "Commerce",
+  "source": {
+    "title": "Elements of Business, Code 154, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Elements_of_Business_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Chart or project on a syllabus topic",
+        "marks": 20
+      },
+      {
+        "component": "Viva",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Fundamentals of Business Activities",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Fundamentals of Business Activities",
+          "topics": [
+            "Characteristics of business activities",
+            "Business vs profession and employment",
+            "Characteristics of vocational activities",
+            "Economic, social and political factors affecting business"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Operative Activities in Business",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Operative Activities in Business",
+          "topics": [
+            "Industry: concept, characteristics, types, nature",
+            "Commerce: banking, insurance, transportation, trade"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Steps Involved in Establishing Business",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Steps Involved in Establishing Business",
+          "topics": [
+            "Nature and forms of business organisation",
+            "Sole proprietorship: meaning, features",
+            "Partnership: meaning, features, types"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Fundamental Areas of Business",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Fundamental Areas of Business",
+          "topics": [
+            "Finance",
+            "Marketing",
+            "Human resources"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

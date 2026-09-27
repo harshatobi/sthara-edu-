@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sthara School OS
 
-## Getting Started
+The school platform behind www.sthara.in: student, teacher, parent and school-office portals, the
+AI tutor and grading, and the operator console (Platform Manager). Next.js on Vercel, Supabase
+(Postgres, Auth, Storage) in ap-south-1, Gemini for AI.
 
-First, run the development server:
+## Develop
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # builds the marketing site into public/site, then starts Next.js
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Local dev has no Supabase service key, so server routes that write to the database fail locally;
+UI work runs against the dev role cookie. Environment variables live in Vercel.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Layout
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Path | What |
+|---|---|
+| `src/app/{student,teacher,parent,admin}` | The portals |
+| `src/app/ops` | Platform Manager (operators only; 404 for everyone else) |
+| `src/app/api` | Server routes |
+| `src/lib` | Domain logic (settings and tiers, TML, curriculum, grading, ops) |
+| `site/` | Marketing site source, built into `public/site` |
+| `supabase/migrations` | Database migrations, applied in order |
 
-## Learn More
+## Checks
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx tsc --noEmit
+npm run lint
+npx tsx --test src/lib/**/*.test.ts     # unit tests (settings, ops, AI usage)
+npx tsx src/lib/tml/run-test.ts         # TML engine checks
+npx tsx src/lib/curriculum/validate.ts  # curriculum integrity
+npm run test:site                       # marketing site
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run db:login && npm run db:link
+npm run db:status      # which migrations are applied
+npm run db:push:dry    # preview, then npm run db:push
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Never commit keys: server secrets come from Vercel environment variables only.

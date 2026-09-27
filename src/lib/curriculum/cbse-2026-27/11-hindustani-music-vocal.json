@@ -1,0 +1,161 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Hindustani Music (Vocal)",
+  "codes": [
+    "034"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Vocal), Code 034, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindustani_Vocal_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Choice raga (vilambit and drut khayal)",
+        "marks": 15
+      },
+      {
+        "component": "Examiner's choice of ragas",
+        "marks": 12
+      },
+      {
+        "component": "Dhrupad with dugun",
+        "marks": 14
+      },
+      {
+        "component": "Devotional song",
+        "marks": 6
+      },
+      {
+        "component": "Raga recognition",
+        "marks": 8
+      },
+      {
+        "component": "Recitation of thekas",
+        "marks": 10
+      },
+      {
+        "component": "Practical file",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) in five units of 6 marks; practical 70 marks."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Basic Concepts of Music",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Basic Concepts of Music",
+          "topics": [
+            "Nada, shruti, swar, saptak, thaat, jati, laya, tala",
+            "Margi and desi sangeet, raga"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "History of Dhrupad, Khayal and Tarana",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "History of Dhrupad, Khayal and Tarana",
+          "topics": [
+            "Brief history of Dhrupad, Khayal and Tarana"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Natya Shastra and Great Musicians",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Natya Shastra and Great Musicians",
+          "topics": [
+            "Musical elements in Natya Shastra",
+            "Tansen, V.N. Bhatkhande, V.D. Paluskar"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Talas and the Tanpura",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Talas and the Tanpura",
+          "topics": [
+            "Teentala, Ektala, Chautala with notation in thah, dugun, chaugun",
+            "Structure of the tanpura"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Prescribed Ragas (Class XI)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Prescribed Ragas (Class XI)",
+          "topics": [
+            "Critical study and recognition of Bihag, Bhimpalasi, Bhairavi",
+            "Notation of compositions in the prescribed ragas"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Khayal",
+          "topics": [
+            "One vilambit khayal with elaborations and tanas",
+            "Drut khayal in Bihag, Bhairavi and Bhimpalasi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dhrupad and Devotional Song",
+          "topics": [
+            "One dhrupad with dugun",
+            "One devotional song"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Raga Recognition and Thekas",
+          "topics": [
+            "Recognising ragas from swara phrases",
+            "Thekas of Teentala, Chautala, Ektala with dugun and chaugun"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

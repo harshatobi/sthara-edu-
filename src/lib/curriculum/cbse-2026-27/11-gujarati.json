@@ -1,0 +1,257 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Gujarati",
+  "codes": [
+    "110"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ગુજરાતી"
+  ],
+  "source": {
+    "title": "Gujarati, Code 110, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Gujarati_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening skill (supplementary lessons)",
+        "marks": 10
+      },
+      {
+        "component": "Speaking skill",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Gujarati (Dwitiya Bhasha), Class XI, Ed. 2016/2017 (Gujarat Rajya Shala Pathya Pustak Mandal, Gandhinagar)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Supplementary reader lessons are for listening and speaking activities only and are not set in the written paper."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Vachan (Reading)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Apathit Gadyansh-Padyansh (Class XI)",
+          "topics": [
+            "Unseen prose passage (5) and unseen poem (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Vyakaran (Applied Grammar)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Rudhiprayog (Class XI)",
+          "topics": [
+            "Idioms from the textbook (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sandhi (Class XI)",
+          "topics": [
+            "From the textbook (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vakyo Sudharo (Class XI)",
+          "topics": [
+            "Correct the sentences (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kriyana Kaal (Class XI)",
+          "topics": [
+            "Transformation of sentences by tense (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Sahitya (Literature)",
+      "marks": 37,
+      "chapters": [
+        {
+          "name": "જાગને જાદવા",
+          "topics": [
+            "Pad: Narsinh Mehta"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પિતાની સેવામાં",
+          "topics": [
+            "Poetry: Dalpatram"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ભવિષ્યવેત્તા",
+          "topics": [
+            "Poetry: Chandravadan Mehta"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પૂજારી તું પાછો જા!",
+          "topics": [
+            "Poetry: Krishnalal Shridharani"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "એક જ દે ચિનગારી",
+          "topics": [
+            "Song: Harihar Bhatt"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "રસ્તા વસંતના",
+          "topics": [
+            "Ghazal: Manoj Khanderia"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "વિસામો",
+          "topics": [
+            "Poetry: Venibhai Purohit"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ખરી મા",
+          "topics": [
+            "Short story: Ramanlal Desai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "મારા રાહબર: અહેમદ જલાલુદ્દીન",
+          "topics": [
+            "Autobiography extract: Dr. A. P. J. Abdul Kalam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "બે લઘુકથાઓ: ઠે, ઘા",
+          "topics": [
+            "Short stories: Mohanlal Patel, Janak Trivedi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "કર્ણ-કુંતી સંવાદ",
+          "topics": [
+            "Drama extract: Manubhai Pancholi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "મૌન એ જ વીરતા",
+          "topics": [
+            "Reflective essay: Chandrakant Mehta"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "દિલાવરી",
+          "topics": [
+            "Folk tale: Raghavji Madhad"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Passages (Class XI)",
+          "topics": [
+            "Seen poetry and prose passages from Kavya 9 Harina Darshan, Kavya 17 Maru Ghar, Path 6 Aanti, Path 8 Pustak: Dilojaan Dost"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "History of Modern Gujarati Literature (Class XI)",
+          "topics": [
+            "One question of 4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "વ્હાણું વાય",
+          "topics": [
+            "Supplementary reader: Priyakant Maniyar"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "બાબુ વીજળી",
+          "topics": [
+            "Supplementary reader: Aniruddh Brahmbhatt"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "બે મા",
+          "topics": [
+            "Supplementary reader: Ahmed Nadeem Qasmi"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ],
+      "notes": [
+        "Part A 15 (prose and poetry 5, seen poetry 5, seen prose 5), Part B 22 (poetry 9, prose 9, history of literature 4)."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Lekhan (Effective Writing)",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Nibandh Lekhan (Class XI)",
+          "topics": [
+            "Essay of at least 200 words on contemporary issues (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aheval Lekhan (Class XI)",
+          "topics": [
+            "Report writing (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aupcharik Patra Lekhan (Class XI)",
+          "topics": [
+            "Official letter (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

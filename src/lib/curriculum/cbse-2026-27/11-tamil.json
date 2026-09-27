@@ -1,0 +1,285 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Tamil",
+  "codes": [
+    "106"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "தமிழ்"
+  ],
+  "source": {
+    "title": "Tamil, Code 106, Class XI (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Tamil_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Pothu Tamil, Class XI, Revised Edition 2025 (SCERT Tamil Nadu)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Iyal 1-5 of the textbook. The document gives the internal assessment total only."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class XI)",
+          "topics": [
+            "Two unseen passages on language, literature, history or science: MCQ (5) and short answer (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Correction of Errors (Class XI)",
+          "topics": [
+            "ல/ள/ழ, ந/ண/ன and ர/ற differences (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vallinam Migum Idangal (Class XI)",
+          "topics": [
+            "3 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Write Examples (Class XI)",
+          "topics": [
+            "Thanvinai, Piravinai, Seyvinai, Seyappattu Vinai, Udanpattu and Edhirmarai forms, Ner Kootru, Ayar Kootru, Thani, Thodar and Kalavai Vakkiyam (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Choose the Correct Sentence (Class XI)",
+          "topics": [
+            "Orumai-panmai, thinai and paal mayakkam; peyar and vinai marapu; pechu vazhakku, vazhaa nilaigal (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Main Course Book",
+      "marks": 33,
+      "chapters": [
+        {
+          "name": "Pechu Mozhiyum Kavithai Mozhiyum",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Iyarkai Velanmai",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Malai Idappeyargal: Oor Aayvu",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tamizhnaattu Kalvi Varalaru",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aanandha Rangar Naatkurippu",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Yugaththin Paadal",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ovvoru Pullaiyum",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ainguru Nooru",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manonmaniyam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 2)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kavadi Sindhu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kurundhogai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pillai Koodam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tholainthu Poanavargal",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 4)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seeraa Puranam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pathitru Paththu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Poetry comprehension 5, prose comprehension 5, poetry short answer 8, prose long answer 15."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Non-detail",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Isaith Thamizhar Iruvar",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Yaanai Doctor",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vaadi Vaasal",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ore Nanban",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sevvi",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "E",
+      "name": "Creative Writing",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Letter Writing (Class XI)",
+          "topics": [
+            "Appreciation, invitation, application, complaint and personal letters (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kavithai or Sirukathai (Class XI)",
+          "topics": [
+            "Poem or short story (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Composition (Class XI)",
+          "topics": [
+            "General essay (6)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

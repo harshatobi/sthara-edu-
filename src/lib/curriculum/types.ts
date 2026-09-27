@@ -35,6 +35,17 @@ export interface CurriculumUnit {
   marks: number | null;
   chapters: CurriculumChapter[];
   notes?: string[];
+  /**
+   * Codes of the units this one is an either/or alternative to (e.g. Class 12
+   * Accountancy: Computerised Accounting instead of Financial Statement
+   * Analysis). Excluded from the theory-total check; schools pick one track.
+   */
+  alternativeTo?: string[];
+  /**
+   * Assessed in the practical / internal component, not the theory paper
+   * (e.g. Geography's practical book). Its marks count toward `internal`.
+   */
+  practical?: boolean;
 }
 
 export interface AssessmentComponent {
@@ -51,11 +62,23 @@ export interface CurriculumSubject {
   subject: string;
   /** CBSE subject code(s), e.g. ["041", "241"] for Maths Standard/Basic. */
   codes: string[];
+  /**
+   * Other names schools use for this subject in this class, e.g. "English" for
+   * English Core in Class 11-12. Lookup matches these after the exact name.
+   */
+  aliases?: string[];
+  /** Grouping for pickers. */
+  stream?: 'Language' | 'Science' | 'Mathematics' | 'Commerce' | 'Humanities' | 'Computer' | 'Arts' | 'Skill' | 'Wellbeing';
   source: { title: string; url: string; retrievedOn: string };
   assessment: {
     /** Theory paper total; null when the document doesn't state it yet. */
     theory: number | null;
     internal: number;
+    /**
+     * Paper total when it isn't 100 (e.g. practical-heavy subjects that print
+     * their own totals). Omitted means theory + internal = 100.
+     */
+    total?: number;
     internalBreakdown: AssessmentComponent[];
   };
   /** Prescribed books as listed in the document (NCERT textbooks first). */

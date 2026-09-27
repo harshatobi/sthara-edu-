@@ -1,0 +1,283 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Gujarati",
+  "codes": [
+    "010"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ગુજરાતી"
+  ],
+  "source": {
+    "title": "Gujarati, Code 010, Classes IX-X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Gujarati_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic written test (best 2 of 3)",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessment: listening and speaking",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activities",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Gujarati (Dwitiya Bhasha), Class IX, Ed. 2016 (Gujarat Rajya Shala Pathya Pustak Mandal, Gandhinagar)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "One of the prescribed poems is taken for poetry appreciation (padyasamiksha)."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Vachan (Reading)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Apathit Gadyansh (Class IX)",
+          "topics": [
+            "Unseen prose passage: MCQ (5) and very short answers (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Vyakaran (Applied Grammar)",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Sarvanam",
+          "topics": [
+            "Pronouns (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sanyojak",
+          "topics": [
+            "Conjunctions: to, ane, etle, jyare-tyare (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samanarthi - Virodhi Shabdo",
+          "topics": [
+            "Synonyms (3) and antonyms (3) from the textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rudhiprayog",
+          "topics": [
+            "Idioms from the textbook (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ling",
+          "topics": [
+            "Gender (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shuddh - Ashuddh Vakya",
+          "topics": [
+            "Correct the sentences (2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Sahitya (Literature)",
+      "marks": 38,
+      "chapters": [
+        {
+          "name": "છપ્પા",
+          "topics": [
+            "Poetry: Akho"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "જ્યાં જ્યાં વસે એક ગુજરાતી",
+          "topics": [
+            "Poetry: Khabardar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "તું તારા દિલનો દીવો",
+          "topics": [
+            "Poetry: Bhogilal Gandhi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "નવસર્જનની વાટે",
+          "topics": [
+            "Poetry: Balmukund Dave"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "એ લોકો",
+          "topics": [
+            "Poetry: Priyakant Maniyar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "મારું તારું",
+          "topics": [
+            "Ghazal: Rajendra Shukla"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "દીકરીની વિદાય",
+          "topics": [
+            "Poetry: Anil Chavda"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "લઘુકાવ્યો",
+          "topics": [
+            "Duha, muktak, haiku: Hasmukh Pathak, Ravji Patel"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પરોપકારી મનુષ્યો",
+          "topics": [
+            "Prose: Vidyaben Nilkanth"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ભાષા જાય તો સંસ્કૃતિ જાય",
+          "topics": [
+            "Prose: Father Valles"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પારખું",
+          "topics": [
+            "One-act play: Jayantilal Dalal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "વારસાગત",
+          "topics": [
+            "Short story: Durgesh Oza"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ઘડવૈયા",
+          "topics": [
+            "Sketch: Nanabhai Jebaliya"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "સો ટચનું સોનું",
+          "topics": [
+            "Short story: Sudha Murty"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "છબી ભીતરની",
+          "topics": [
+            "Memoir: Ashwin Mehta"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પ્રાણીઓનું ગોકુળ",
+          "topics": [
+            "Autobiography extract: Prakash Amte"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પ્રેરક પ્રસંગો",
+          "topics": [
+            "Prose, compiled"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ઉપમન્યુ",
+          "topics": [
+            "Supplementary reader: Nanabhai Bhatt"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "જન્મી રહેલા બાળક અને ભગવાન વચ્ચેનો સંવાદ",
+          "topics": [
+            "Supplementary reader: I. K. Vijaliwala"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Part A 8 (poetry 4, prose 4), Part B 30 (poetry 12, prose and supplementary reader 18)."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Lekhan (Effective Writing)",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Anuchchhed Lekhan",
+          "topics": [
+            "Paragraph of at least 120 words on contemporary issues (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Varta Lekhan",
+          "topics": [
+            "Story building from given points (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Patra / Jaherat Lekhan",
+          "topics": [
+            "Official letter (application, complaint) or advertisement on cleanliness, health, education, rules in public places or environment (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

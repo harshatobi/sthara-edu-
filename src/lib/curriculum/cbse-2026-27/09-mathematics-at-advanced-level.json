@@ -1,0 +1,121 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Mathematics at Advanced Level",
+  "codes": [],
+  "stream": "Mathematics",
+  "aliases": [
+    "Maths Advanced",
+    "Advanced Mathematics"
+  ],
+  "source": {
+    "title": "Mathematics at Advanced Level (Optional), Grade 9 (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/MathsAd_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Mathematics at Advanced Level, Grade 9 (CBSE, 2026-27)"
+  ],
+  "notes": [
+    "Optional advanced-level course under NCF 2023 for Grade 9. The CBSE document is the textbook itself and gives no assessment scheme, so no marks are recorded.",
+    "Topics are the section headings of each chapter."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Mathematics at Advanced Level",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Sets",
+          "number": 1,
+          "topics": [
+            "Set",
+            "Representation of a Set",
+            "Finite and Infinite Sets",
+            "Empty or Null Set",
+            "Equality of Sets",
+            "Subset",
+            "Cardinality of a Set",
+            "Power Set",
+            "Universal Set",
+            "Venn Diagram",
+            "Set Operations",
+            "Complement of a Set",
+            "Application of Sets"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Logarithms",
+          "number": 2,
+          "topics": [
+            "Introduction to Logarithms",
+            "Understanding Logarithms as the Inverse of Exponents",
+            "Logarithms Properties",
+            "Logarithms Across Subjects",
+            "Solving Logarithmic Equations: The Search for ‘ x’"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Relations and Functions",
+          "number": 3,
+          "topics": [
+            "Ordered Pairs",
+            "Cartesian Product of Sets",
+            "Relations",
+            "Functions",
+            "Some Functions and their Graphs"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Coordinate Geometry",
+          "number": 4,
+          "topics": [
+            "Introduction: The Language of Graphs",
+            "The Cartesian System",
+            "Let Us Explore Four Quadrants",
+            "Moving Points: The Magic of Reflections",
+            "Coordinates as Perpendicular Distances",
+            "The Concept of Slope (Gradient)",
+            "Properties of Slope",
+            "Intercept",
+            "Different Forms of the Equation of a Line"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Combinatorics",
+          "number": 5,
+          "topics": [
+            "Introduction: The Mathematics of Possibilities",
+            "The Fundamental Principle of Counting (FPC)",
+            "Factorials",
+            "Permutations: When Order Matters",
+            "Combinations: When Order Does NOT Matter",
+            "Combinatorics in the Modern World"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Exploring some more Progressions",
+          "number": 6,
+          "topics": [
+            "Sum of the first n terms of a Geometric Progression",
+            "Infinite Geometric Progression",
+            "Method of Differences and Combinatorics"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

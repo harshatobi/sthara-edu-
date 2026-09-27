@@ -253,7 +253,7 @@ export default function TmlWhitepaperPage() {
           <b style={{ fontSize: '15px' }}>Sthara School OS — TML Whitepaper</b>
         </div>
         <button onClick={handlePrint} className="btn-print">
-          <span>📥 Save as PDF / Print</span>
+          <span>Save as PDF / Print</span>
         </button>
       </div>
 

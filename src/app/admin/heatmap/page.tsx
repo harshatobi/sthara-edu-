@@ -30,6 +30,13 @@ interface StudentDetail {
   overallAvg: number | null;
 }
 
+interface HeatAssignment { id: string; subject?: string | null }
+interface HeatSubmission {
+  assignment_id: string; student_id: string; teacher_approved?: boolean | null;
+  score?: number | null; max_score?: number | null; final_grade?: string | null;
+  ai_result?: { totalScore?: number; maxTotalScore?: number } | null;
+}
+
 export default function AdminHeatmap() {
   const { profile, loading } = useAuth();
   const router = useRouter();
@@ -72,9 +79,9 @@ export default function AdminHeatmap() {
           classMap[cls].push(s);
         });
 
-        const assignments = assignmentsData || [];
-        const submissions = submissionsData || [];
-        const assignMap = new Map(assignments.map((a: any) => [a.id, a]));
+        const assignments: HeatAssignment[] = assignmentsData || [];
+        const submissions: HeatSubmission[] = submissionsData || [];
+        const assignMap = new Map(assignments.map(a => [a.id, a]));
 
         const subjectSet = new Set<string>();
         const allSubs: Record<string, Record<string, { score: number; max: number }[]>> = {};

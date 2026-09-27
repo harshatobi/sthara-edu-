@@ -1,0 +1,254 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Punjabi",
+  "codes": [
+    "004"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ਪੰਜਾਬੀ"
+  ],
+  "source": {
+    "title": "Punjabi, Code 004, Classes IX-X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Punjabi_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic tests (average of best two)",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessment",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activities",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahit Mala 10 (Punjabi poetry and prose), Punjab School Education Board",
+    "Vangi 10 (Punjabi stories and one-act plays), Punjab School Education Board"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Lesson names are given in Gurmukhi as printed.",
+    "Textbook questions: MCQ 10, one-or-two-word answers 4, short answers (25-30 words) 14, long answers on poetry and prose 8, long answer on one-act play 4."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Reading Skill",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Class X)",
+          "topics": [
+            "Prose passage of 200-250 words, 6 MCQs (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen Poem Extract (Class X)",
+          "topics": [
+            "Four questions (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Grammar",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Samasi Shabad",
+          "topics": [
+            "Compound words (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bahu-Arthak",
+          "topics": [
+            "Words with many meanings (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kiriya Visheshan",
+          "topics": [
+            "Adverbs (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Agetar-Pichhetar",
+          "topics": [
+            "Prefixes and suffixes: word formation (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muhavre (Class X)",
+          "topics": [
+            "Idioms from ਕ to ਞ used in sentences (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Writing Skill",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Lekh Rachna (Class X)",
+          "topics": [
+            "Essay of 200 words on reflective or general topics, one of three with points (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pattar Rachna (Class X)",
+          "topics": [
+            "Personal or formal letter, one of two with points (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Picture Description (Class X)",
+          "topics": [
+            "50 words (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Text Books",
+      "marks": 40,
+      "chapters": [
+        {
+          "name": "ਸੋ ਕਿਉ ਮੰਦਾ ਆਖੀਐ",
+          "topics": [
+            "Poetry: Guru Nanak Dev Ji"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਕਿਰਪਾ ਕਰਿ ਕੈ ਬਖਸਿ ਲੈਹੁ",
+          "topics": [
+            "Poetry: Guru Amar Das Ji"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਤੂੰ ਮੇਰਾ ਪਿਤਾ ਤੂੰ ਹੈ ਮੇਰਾ ਮਾਤਾ",
+          "topics": [
+            "Poetry: Guru Arjan Dev Ji"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਸਤਿਗੁਰ ਨਾਨਕ ਪ੍ਰਗਟਿਆ",
+          "topics": [
+            "Poetry: Bhai Gurdas Ji"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਜੰਗ ਦਾ ਹਾਲ",
+          "topics": [
+            "Poetry: Shah Muhammad"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਘਰ ਦਾ ਪਿਆਰ",
+          "topics": [
+            "Prose: Principal Teja Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਬੋਲੀ",
+          "topics": [
+            "Prose: S. Gurbaksh Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਪ੍ਰਾਰਥਨਾ",
+          "topics": [
+            "Prose: Dr. Balbir Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਮੇਰੇ ਵੱਡੇ-ਵਡੇਰੇ",
+          "topics": [
+            "Prose: Giani Gurdit Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਤੁਰਨ ਦਾ ਹੁਨਰ",
+          "topics": [
+            "Prose: Dr. Narinder Singh Kapoor"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਕੁਲਫ਼ੀ",
+          "topics": [
+            "Story: Sujan Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਅੰਗ-ਸੰਗ",
+          "topics": [
+            "Story: Waryam Singh Sandhu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਧਰਤੀ ਹੇਠਲਾ ਬਲ਼ਦ",
+          "topics": [
+            "Story: Kulwant Singh Virk"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਜ਼ਫ਼ਰਨਾਮਾ",
+          "topics": [
+            "One-act play: Dr. Harcharan Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਦੂਜਾ ਵਿਆਹ",
+          "topics": [
+            "One-act play: Sant Singh Sekhon"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

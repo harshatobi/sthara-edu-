@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
 import { loadRegistry } from '@/lib/ops/registry';
+import { deleteSchool } from '@/lib/ops/deletions';
+import { normaliseCode, parseReason } from '@/lib/settings/registry';
+import { invalidateSettings } from '@/lib/settings/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,4 +56,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       costUsd: u.reduce((n, r) => n + Number(r.cost_usd ?? 0), 0),
     },
   });
+}
+
+/**
+ * DELETE /api/ops/schools/:id — { confirmCode, reason }: permanently delete a school and every
+ * account in it. The operator types the school's sign-in code (or its name, if it has none) to confirm. Refused (409) when the
+ * school has fee records, which are kept: suspend such a school instead.
+ */
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const op = await operatorFromRequest(req);
+  if (!op) return notFoundResponse();
+  const { id } = await params;
+  if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
+  const b = await req.json().catch(() => ({}));
+  const reason = parseReason(b.reason);
+  if (!reason) return NextResponse.json({ error: 'Give a reason for deleting the school (at least 4 characters).' }, { status: 400 });
+  const db = createAdminClient();
+  const { data: school } = await db.from('schools').select('name, settings').eq('id', id).maybeSingle();
+  if (!school) return NextResponse.json({ error: 'School not found' }, { status: 404 });
+  // Confirm with the sign-in code, or the name for a school that has no code.
+  const code = String((school.settings as { code?: unknown } | null)?.code ?? '');
+  const typed = typeof b.confirmCode === 'string' ? b.confirmCode : '';
+  const confirmed = code ? normaliseCode(typed) === code : typed.trim().toLowerCase() === String(school.name).trim().toLowerCase();
+  if (!confirmed) {
+    return NextResponse.json({ error: code ? 'Type the school’s sign-in code exactly to confirm.' : 'Type the school’s name exactly to confirm.' }, { status: 400 });
+  }
+  const out = await deleteSchool(db, op, id, reason);
+  invalidateSettings(id);
+  return out.ok ? NextResponse.json({ ok: true, ...out.result }) : NextResponse.json({ error: out.error }, { status: out.status });
 }

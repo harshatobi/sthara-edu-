@@ -11,9 +11,10 @@ import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/Use
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import { Chip, Empty, type Tone } from '@/components/canon/ui';
-import { subjectsForClass } from '@/lib/curriculum';
+import { coreSubjectsForClass, subjectsForClass } from '@/lib/curriculum';
 import { CSV_TEMPLATE, PERSON_ROLES, normClass, parsePeopleCsv, validatePeople, type PersonInput, type PersonRole, type RowIssue } from '@/lib/ops/people';
 import { useOpsApi } from '../../useOpsApi';
+import { ReasonAction } from '../../_ui';
 
 export interface ClassRow { id?: string; name: string; metadata?: { grade?: string | null; section?: string | null; subjects?: string[] } }
 export interface Person {
@@ -25,12 +26,14 @@ export interface Issued { name: string; email: string; role: string; detail: str
 const ROLE_TONE: Record<string, Tone> = { admin: 'n', teacher: 'b', student: 'g', parent: 'p' };
 const BATCH = 25;
 
-/** Suggested subjects for a grade: the ingested CBSE 2026-27 subjects for 9-12, plus languages. */
+/**
+ * Suggested subjects for a new class: the compulsory CBSE 2026-27 subjects for
+ * 8-12 (11-12 are stream-based, so only English Core; electives are added per
+ * section from the full list), plus Hindi for 11-12 schools to remove if unused.
+ */
 function suggestedSubjects(grade: string): string[] {
   const g = Number(grade);
-  const official = g >= 9 ? subjectsForClass(String(g)) : [];
-  if (g >= 11) return [...new Set(['English', ...official])];
-  if (g >= 9) return [...new Set(['English', 'Hindi', ...official])];
+  if (g >= 8) return coreSubjectsForClass(String(g));
   if (g >= 6) return ['English', 'Hindi', 'Mathematics', 'Science', 'Social Science'];
   return ['English', 'Hindi', 'Mathematics', 'EVS'];
 }
@@ -94,7 +97,7 @@ export function ClassesStep({ schoolId, classes, onSaved, next }: { schoolId: st
             <div style={{ fontWeight: 800, fontSize: 15 }}>{c.name}</div>
             {!c.id && <Chip tone="a" className="xs">NEW</Chip>}
           </div>
-          <SubjectEditor subjects={c.metadata?.subjects ?? []} onChange={s => setSubjects(i, s)} />
+          <SubjectEditor grade={c.metadata?.grade ?? c.name} subjects={c.metadata?.subjects ?? []} onChange={s => setSubjects(i, s)} />
         </div>
       ))}
 
@@ -107,15 +110,19 @@ export function ClassesStep({ schoolId, classes, onSaved, next }: { schoolId: st
   );
 }
 
-function SubjectEditor({ subjects, onChange }: { subjects: string[]; onChange: (s: string[]) => void }) {
+function SubjectEditor({ grade, subjects, onChange }: { grade: string; subjects: string[]; onChange: (s: string[]) => void }) {
   const [add, setAdd] = useState('');
+  // Every ingested CBSE subject for this grade, offered as suggestions while typing.
+  const listId = `subj-${grade.replace(/[^a-z0-9]/gi, '')}`;
+  const official = subjectsForClass(grade).filter(s => !subjects.includes(s));
   return (
     <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
       {subjects.map(s => (
         <button key={s} type="button" className="ch b" title={`Remove ${s}`} aria-label={`Remove ${s}`} onClick={() => onChange(subjects.filter(x => x !== s))}>{s} <X size={11} weight="bold" /></button>
       ))}
       <form onSubmit={e => { e.preventDefault(); const v = add.trim(); if (v && !subjects.includes(v)) onChange([...subjects, v]); setAdd(''); }}>
-        <input className="tin" style={{ width: 150, padding: '6px 10px', fontSize: 13 }} placeholder="Add subject" value={add} onChange={e => setAdd(e.target.value)} />
+        <input className="tin" style={{ width: 190, padding: '6px 10px', fontSize: 13 }} placeholder="Add subject" list={listId} value={add} onChange={e => setAdd(e.target.value)} />
+        <datalist id={listId}>{official.map(s => <option key={s} value={s} />)}</datalist>
       </form>
     </div>
   );
@@ -388,7 +395,7 @@ export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId:
 }
 
 // ── Step 4: roster & credentials ─────────────────────────────────────────────
-export function RosterStep({ schoolId, people, onIssued }: { schoolId: string; people: Person[]; onIssued: (i: Issued) => void }) {
+export function RosterStep({ schoolId, people, onIssued, onDeleted }: { schoolId: string; people: Person[]; onIssued: (i: Issued) => void; onDeleted?: (msg: string) => void }) {
   const api = useOpsApi();
   const [filter, setFilter] = useState<'all' | PersonRole>('all');
   const [shown, setShown] = useState<Record<string, string>>({});
@@ -430,6 +437,13 @@ export function RosterStep({ schoolId, people, onIssued }: { schoolId: string; p
           {shown[p.id]
             ? <span className="mono" style={{ fontSize: 13, fontWeight: 700 }}>{shown[p.id]}</span>
             : p.role !== 'superadmin' && <button className="btn sm" onClick={() => reset(p)}><Key size={13} weight="bold" /> New password</button>}
+          {p.role !== 'superadmin' && onDeleted && (
+            <ReasonAction label="Delete" danger confirm={`Delete ${p.name.split(' ')[0] || 'account'}`} placeholder="Reason, e.g. Left the school in June"
+              run={async reason => {
+                const r = await api<{ loginFailures: string[] }>(`/schools/${schoolId}/people/${p.id}`, { method: 'DELETE', body: { reason } });
+                onDeleted(r.loginFailures.length ? `${p.name} deleted, but their login couldn't be removed: ${r.loginFailures[0]}` : `${p.name} deleted.`);
+              }} />
+          )}
         </div>
       ))}
     </div>

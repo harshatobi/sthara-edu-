@@ -1,0 +1,178 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Malayalam",
+  "codes": [
+    "012"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "മലയാളം",
+    "Malyalam"
+  ],
+  "source": {
+    "title": "Malayalam, Code 012, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Malyalam_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Pen-paper tests, art integration projects, portfolio and subject enrichment activities",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Kerala Padavali Malayalam and Adisthana Padavali Malayalam, Std X, 2025 (SCERT Kerala)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Literature: MCQ 18, prose short answers 9, poetry short answers 9."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class X)",
+          "topics": [
+            "Two passages with 8 and 7 very short answer questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Creative Writing",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Essay Writing (Class X)",
+          "topics": [
+            "Social issues, family and school life; one of two topics in 200 words (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter Writing (Class X)",
+          "topics": [
+            "Applications, letter to the editor, commercial correspondence (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "News Report (Class X)",
+          "topics": [
+            "Reporting simple events for a newspaper (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Transformation of Sentences (Class X)",
+          "topics": [
+            "Active and passive voice; simple and compound sentences (angavakyam, angivakyam); sentence making and correction (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vocabulary Building (Class X)",
+          "topics": [
+            "7 MCQs"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 36,
+      "chapters": [
+        {
+          "name": "Mathrubhasha Nammude Ulluluzhukunna Jeeva Nadhi",
+          "topics": [
+            "Prose: Prakash Raj"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mannum Manushyanum",
+          "topics": [
+            "Prose: T. Padmanabhan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muringamarathoppu",
+          "topics": [
+            "Prose: Unnikrishnan Puthoor"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Charithram Rachicha Nadakam",
+          "topics": [
+            "Prose: K. Kelappan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vijnana Bhashayum Vaijnanika Samoohavum",
+          "topics": [
+            "Prose: C. M. Muraleedharan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathakalathi Mohanam",
+          "topics": [
+            "Poem: Ezhuthachan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Batherikkaduthu Malankarayil",
+          "topics": [
+            "Poem: P. P. Ramachandran"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prayanam",
+          "topics": [
+            "Poem: Vayalar Rama Varma"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vishukani",
+          "topics": [
+            "Poem: Vailoppilli Sreedhara Menon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ente Bhasha",
+          "topics": [
+            "Poem: Vallathol Narayana Menon"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

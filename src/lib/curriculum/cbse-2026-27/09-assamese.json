@@ -1,0 +1,193 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Assamese",
+  "codes": [
+    "014"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Asamiya",
+    "অসমীয়া"
+  ],
+  "source": {
+    "title": "Assamese, Code 014, Classes IX-X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Assamese_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic test",
+        "marks": 10
+      },
+      {
+        "component": "Subject enrichment activity",
+        "marks": 5
+      },
+      {
+        "component": "Notebook keeping",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Asamiya Sahitya Chayanika (Assam State Textbook Production and Publication Corporation, Guwahati)",
+    "Rachana Bichitra, Dharma Singha Deka (Assam Book Depot, Guwahati)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Reading",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Bodh Parikshyan (Class IX)",
+          "topics": [
+            "One unseen passage of at least 500 words: 12 general questions of 1 and 2 marks and 3 grammar-based questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Likhan Kala (Writing)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Galpa Likhan / Rachana (Class IX)",
+          "topics": [
+            "Story writing or biographical essay (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pratibedan Prastutkaran (Class IX)",
+          "topics": [
+            "Report on a school function (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Phakara Jojana (Class IX)",
+          "topics": [
+            "Proverbs, serial numbers 1-10 (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhab Samprasaran (Class IX)",
+          "topics": [
+            "Expansion of an idea (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jatuwa Khanda Bakyare Bakya Rachana (Class IX)",
+          "topics": [
+            "Sentences with idiomatic phrases: kapal, kaan, kakal, athu (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Byakaran (Grammar)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Sandhi (Class IX)",
+          "topics": [
+            "Swar, Byanjan (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pad",
+          "topics": [
+            "Biseshya, Biseshan, Sarbanam, Kriya, Abyay (2 each)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Linga",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Basan",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Gadya (Prose)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Anyar Prati Byabahar",
+          "topics": [
+            "Satyanath Bora"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Andha Biswash Aru Kusangskar",
+          "topics": [
+            "Jayanta Madhab Bora"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bharatar Boichitrar Majat Oikya",
+          "topics": [
+            "Dr. Hemanta Kumar Sarma"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Padya (Poetry)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Manab Bandana",
+          "topics": [
+            "Chandra Kumar Agarwala"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prachanda Dhumuhai Prasna Karile Mok",
+          "topics": [
+            "Dr. Bhupen Hazarika"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mor Desh",
+          "topics": [
+            "Hiren Bhattacharjya"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

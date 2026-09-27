@@ -1,0 +1,198 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Mathematics",
+  "codes": [],
+  "stream": "Mathematics",
+  "aliases": [
+    "Maths",
+    "Math"
+  ],
+  "source": {
+    "title": "Ganita Prakash: Textbook of Mathematics for Grade 8, Parts I and II (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hegp1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Ganita Prakash: Textbook of Mathematics for Grade 8, Parts I and II (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source.",
+    "Topics are the section headings of each NCERT chapter. Part II chapters are numbered 8-14 here to keep one sequence."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Ganita Prakash Part I",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "A Square and A Cube",
+          "number": 1,
+          "topics": [
+            "Square Numbers",
+            "Cubic Numbers"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Power Play",
+          "number": 2,
+          "topics": [
+            "Experiencing the Power Play",
+            "Exponential Notation and Operations",
+            "The Other Side of Powers"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Story of Numbers",
+          "number": 3,
+          "topics": [
+            "Reema’s Curiosity",
+            "Some Early Number Systems",
+            "The Idea of a Base"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Quadrilaterals",
+          "number": 4,
+          "topics": [
+            "Rectangles and Squares",
+            "Angles in a Quadrilateral",
+            "More Quadrilaterals with Parallel Opposite Sides",
+            "Quadrilaterals with Equal Sidelengths",
+            "Playing with Quadrilaterals",
+            "Kite and Trapezium"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Number Play",
+          "number": 5,
+          "topics": [
+            "Is This a Multiple Of?",
+            "Checking Divisibility Quickly",
+            "Digits in Disguise"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "We Distribute, Yet Things Multiply",
+          "number": 6,
+          "topics": [
+            "Some Properties of Multiplication",
+            "Special Cases of the Distributive Property",
+            "Mind the Mistake, Mend the Mistake",
+            "This Way or That Way, All Ways Lead to the Bay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Proportional Reasoning-1",
+          "number": 7,
+          "topics": [
+            "Observing Similarity in Change",
+            "Ratios",
+            "Ratios in their Simplest Form",
+            "Problem Solving with Proportional Reasoning",
+            "Sharing, but Not Equally!",
+            "Unit Conversions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Ganita Prakash Part II",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Fractions in Disguise",
+          "number": 8,
+          "topics": [
+            "Fractions as Percentages",
+            "Percentage of Some Quantity",
+            "Using Percentages"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Baudhayana-Pythagoras Theorem",
+          "number": 9,
+          "topics": [
+            "Doubling a Square",
+            "Halving a Square",
+            "Hypotenuse of an Isosceles Right Triangle",
+            "Combining Two Different Squares",
+            "Right–Triangles Having Integer Sidelengths",
+            "A Long-Standing Open Problem",
+            "Further Applications of the Baudhāyana - Pythagoras Theorem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Proportional Reasoning-2",
+          "number": 10,
+          "topics": [
+            "Proportionality — A Quick Recap",
+            "Ratios in Maps",
+            "Ratios with More than 2 Terms",
+            "Dividing a Whole in a Given Ratio",
+            "A Slice of the Pie",
+            "Inverse Proportions"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Exploring Some Geometric Themes",
+          "number": 11,
+          "topics": [
+            "Fractals",
+            "Visualising Solids"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tales by Dots and Lines",
+          "number": 12,
+          "topics": [
+            "The Balancing Act",
+            "Visualising and Interpreting Data"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Algebra Play",
+          "number": 13,
+          "topics": [
+            "Algebra Play",
+            "Thinking about ‘Think of a Number’ Tricks",
+            "Number Pyramids",
+            "Fun with Grids",
+            "The Largest Product",
+            "Decoding Divisibility Tricks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Area",
+          "number": 14,
+          "topics": [
+            "Rectangle and Squares"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,244 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Physical Education",
+  "codes": [
+    "048"
+  ],
+  "stream": "Wellbeing",
+  "aliases": [
+    "PE",
+    "Phy Ed",
+    "Physical Ed"
+  ],
+  "source": {
+    "title": "Physical Education, Code 048, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/PhysicalEducation_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Physical fitness test (SAI Khelo India)",
+        "marks": 6
+      },
+      {
+        "component": "Proficiency in games and sports (one IOA recognised sport)",
+        "marks": 7
+      },
+      {
+        "component": "Yogic practices",
+        "marks": 7
+      },
+      {
+        "component": "Record file",
+        "marks": 5
+      },
+      {
+        "component": "Viva voce (health, games and sports, yoga)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Physical Education, Class XII (as per CBSE curriculum)"
+  ],
+  "notes": [
+    "The document states a 70-mark theory paper, but its Class XII unit weights (including the alternative questions for visually impaired candidates) add up to 80, so unit marks are left unpublished here until CBSE corrects the table. Printed weights: 5+4, 7, 6+1, 4+4, 7, 8, 4+4, 10, 7, 9.",
+    "Record file practicals: fitness test administration; procedure, benefits and contraindications of two asanas for a lifestyle disease; one IOA recognised sport."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Management of Sporting Events",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Management of Sporting Events",
+          "number": 1,
+          "topics": [
+            "Functions of sports event management: planning, organising, staffing, directing, controlling",
+            "Committees and their responsibilities (pre, during, post)",
+            "Fixtures: knock-out (bye and seeding), league (staircase, cyclic, tabular), combination tournaments",
+            "Intramural and extramural tournaments",
+            "Community sports programmes: sports day, health run, run for fun, run for a cause, run for unity"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Children and Women in Sports",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Children and Women in Sports",
+          "number": 2,
+          "topics": [
+            "WHO exercise guidelines for different age groups",
+            "Postural deformities (knock knees, flat foot, round shoulders, lordosis, kyphosis, scoliosis, bow legs) and corrective measures",
+            "Women's participation in sports: physical, psychological and social benefits",
+            "Special considerations: menarche and menstrual dysfunction",
+            "Female athlete triad: osteoporosis, amenorrhea, eating disorders"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Yoga as Preventive Measure for Lifestyle Disease",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Yoga as Preventive Measure for Lifestyle Disease",
+          "number": 3,
+          "topics": [
+            "Obesity: asanas and pranayama, procedure, benefits and contraindications",
+            "Diabetes",
+            "Asthma",
+            "Hypertension",
+            "Back pain and arthritis"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Physical Education and Sports for CWSN (Divyang)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Physical Education and Sports for CWSN (Divyang)",
+          "number": 4,
+          "topics": [
+            "Organisations promoting disability sports: Special Olympics, Paralympics, Deaflympics",
+            "Classification and divisioning in sports",
+            "Inclusion in sports: need and implementation",
+            "Advantages of physical activity for children with special needs",
+            "Strategies to make physical activities accessible"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Sports and Nutrition",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Sports and Nutrition",
+          "number": 5,
+          "topics": [
+            "Balanced diet and nutrition",
+            "Macro and micro nutrients: sources and functions",
+            "Nutritive and non-nutritive components of diet",
+            "Eating for weight control: healthy weight, pitfalls of dieting, food intolerance, food myths",
+            "Diet in sports: pre, during and post competition"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Test and Measurement in Sports",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Test and Measurement in Sports",
+          "number": 6,
+          "topics": [
+            "SAI Khelo India fitness test in school",
+            "Harvard step test for cardiovascular fitness",
+            "Computing basal metabolic rate (BMR)",
+            "Rikli and Jones senior citizen fitness test",
+            "Johnson-Metheny test of motor educability"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Physiology and Injuries in Sport",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Physiology and Injuries in Sport",
+          "number": 7,
+          "topics": [
+            "Physiological factors determining components of physical fitness",
+            "Effect of exercise on the muscular and cardio-respiratory systems",
+            "Physiological changes due to ageing",
+            "Sports injuries: soft tissue (abrasion, contusion, laceration, incision, sprain, strain), bone and joint (dislocation, fractures)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Biomechanics and Sports",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Biomechanics and Sports",
+          "number": 8,
+          "topics": [
+            "Newton's laws of motion in sports",
+            "Levers and their application in sports",
+            "Equilibrium (dynamic and static) and centre of gravity",
+            "Friction and sports",
+            "Projectile in sports"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "9",
+      "name": "Psychology and Sports",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Psychology and Sports",
+          "number": 9,
+          "topics": [
+            "Personality: Jung's classification and Big Five theory",
+            "Motivation: types and techniques",
+            "Exercise adherence: reasons, benefits, strategies",
+            "Aggression in sports",
+            "Psychological attributes: self-esteem, mental imagery, self-talk, goal setting"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "10",
+      "name": "Training in Sports",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Training in Sports",
+          "number": 10,
+          "topics": [
+            "Talent identification and development",
+            "Sports training cycle: micro, meso, macro",
+            "Methods to develop strength, endurance and speed",
+            "Methods to develop flexibility and coordinative ability",
+            "Circuit training"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

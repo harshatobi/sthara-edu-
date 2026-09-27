@@ -1,0 +1,132 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "12", "subject": "Business Studies", "codes": ["054"], "stream": "Commerce",
+  "aliases": ["BST", "Business"],
+  "source": { "title": "Business Studies, Code 054, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/BusinessStudies_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [
+    { "component": "Project: initiative, cooperativeness and participation", "marks": 2 },
+    { "component": "Project: creativity in presentation", "marks": 2 },
+    { "component": "Project: content, observation and research work", "marks": 4 },
+    { "component": "Project: analysis of situations", "marks": 4 },
+    { "component": "Project: viva", "marks": 8 }
+  ] },
+  "textbooks": ["Business Studies, Class XII, Part I and II (NCERT)"],
+  "notes": [
+    "The document gives marks for groups of units; each group is recorded as one unit carrying the group's marks.",
+    "One project from: elements of business environment, principles of management, stock exchange, marketing."
+  ],
+  "units": [
+    { "code": "1-3", "name": "Nature and Significance of Management; Principles of Management; Business Environment", "marks": 16, "chapters": [
+      { "name": "Nature and Significance of Management", "number": 1, "topics": [
+        "Management: concept, objectives and importance; effectiveness and efficiency",
+        "Management as science, art and profession",
+        "Levels of management",
+        "Management functions: planning, organising, staffing, directing and controlling",
+        "Coordination: concept, characteristics and importance"
+      ], "outcomes": [
+        "Explain the concept, objectives and importance of management",
+        "Examine management as a science, art and profession",
+        "Understand the role of top, middle and lower management",
+        "Explain the importance of coordination"
+      ] },
+      { "name": "Principles of Management", "number": 2, "topics": [
+        "Principles of management: concept and significance",
+        "Fayol's principles of management",
+        "Taylor's scientific management: principles and techniques"
+      ], "outcomes": ["Discuss Fayol's principles", "Explain the principles and techniques of scientific management", "Compare the contributions of Fayol and Taylor"] },
+      { "name": "Business Environment", "number": 3, "topics": [
+        "Business environment: concept and importance",
+        "Dimensions: economic, social, technological, political and legal",
+        "Demonetisation: concept and features"
+      ], "outcomes": ["Describe the importance and dimensions of business environment", "Understand the concept of demonetisation"] }
+    ] },
+    { "code": "4-5", "name": "Planning; Organising", "marks": 14, "chapters": [
+      { "name": "Planning", "number": 4, "topics": [
+        "Planning: concept, importance and limitations",
+        "Planning process",
+        "Single use and standing plans: objectives, strategy, policy, procedure, method, rule, budget and programme"
+      ], "outcomes": ["Describe the importance, limitations and process of planning", "Describe the types of plans"] },
+      { "name": "Organising", "number": 5, "topics": [
+        "Organising: concept and importance; organising process",
+        "Structure of organisation: functional and divisional",
+        "Formal and informal organisation",
+        "Delegation: concept, elements and importance",
+        "Decentralisation: concept and importance"
+      ], "outcomes": [
+        "Explain the advantages, disadvantages and suitability of functional and divisional structures",
+        "Discuss formal and informal organisation",
+        "Describe the elements of delegation and differentiate delegation from decentralisation"
+      ] }
+    ] },
+    { "code": "6-8", "name": "Staffing; Directing; Controlling", "marks": 20, "chapters": [
+      { "name": "Staffing", "number": 6, "topics": [
+        "Staffing: concept and importance; staffing as part of human resource management",
+        "Staffing process",
+        "Recruitment: sources, merits and demerits of internal and external sources",
+        "Selection process",
+        "Training and development: concept and importance; on the job and off the job methods; induction, vestibule, apprenticeship and internship training"
+      ], "outcomes": [
+        "Describe the steps in staffing, recruitment and selection",
+        "Differentiate training and development and discuss methods of training"
+      ] },
+      { "name": "Directing", "number": 7, "topics": [
+        "Directing: concept, importance and elements",
+        "Motivation: concept, Maslow's hierarchy of needs, financial and non-financial incentives",
+        "Leadership: concept; authoritative, democratic and laissez faire styles",
+        "Communication: concept, formal and informal; barriers and how to overcome them"
+      ], "outcomes": [
+        "Explain Maslow's hierarchy of needs and types of incentives",
+        "Describe leadership styles",
+        "Discuss barriers to communication and measures to overcome them"
+      ] },
+      { "name": "Controlling", "number": 8, "topics": [
+        "Controlling: concept and importance",
+        "Relationship between planning and controlling",
+        "Steps in the process of control"
+      ], "outcomes": ["Explain the importance and process of controlling and its relationship with planning"] }
+    ] },
+    { "code": "9-10", "name": "Financial Management; Financial Markets", "marks": 15, "chapters": [
+      { "name": "Financial Management", "number": 9, "topics": [
+        "Financial management: concept, role and objectives",
+        "Financial decisions: investment, financing and dividend; factors affecting",
+        "Financial planning: concept and importance",
+        "Capital structure: concept and factors affecting",
+        "Fixed and working capital: concept and factors affecting requirements"
+      ], "outcomes": [
+        "Discuss the three financial decisions and the factors affecting them",
+        "Describe the factors determining capital structure and fixed and working capital requirements"
+      ] },
+      { "name": "Financial Markets", "number": 10, "topics": [
+        "Financial markets: concept; money market: concept",
+        "Capital market: primary and secondary",
+        "Stock exchange: functions and trading procedure; depository services and demat account",
+        "SEBI: objectives and functions"
+      ], "outcomes": [
+        "Differentiate capital and money markets, and primary and secondary markets",
+        "Explain the functions of and trading procedure on a stock exchange",
+        "State the objectives and functions of SEBI"
+      ] }
+    ] },
+    { "code": "11-12", "name": "Marketing Management; Consumer Protection", "marks": 15, "chapters": [
+      { "name": "Marketing", "number": 11, "topics": [
+        "Marketing: concept, functions and philosophies",
+        "Marketing mix: concept and elements",
+        "Product: branding, labelling and packaging",
+        "Price: concept and factors determining price",
+        "Physical distribution: concept, components and channels of distribution",
+        "Promotion: advertising, personal selling, sales promotion and public relations"
+      ], "outcomes": [
+        "Explain the features, functions and philosophies of marketing",
+        "Describe the elements of the marketing mix and promotion mix"
+      ] },
+      { "name": "Consumer Protection", "number": 12, "topics": [
+        "Consumer protection: concept and importance",
+        "Consumer Protection Act 2019: meaning of consumer, rights and responsibilities, who can file a complaint, redressal machinery, remedies",
+        "Consumer awareness: role of consumer organisations and NGOs"
+      ], "outcomes": [
+        "Explain consumer rights and responsibilities under the Consumer Protection Act 2019",
+        "Discuss the redressal machinery and remedies available",
+        "Describe the role of consumer organisations and NGOs"
+      ] }
+    ] }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Sculpture (Fine Arts)",
+  "codes": [
+    "051"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Fine Arts (Painting, Graphics, Sculpture, Applied Art), Codes 049-052, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Fine_Arts_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Modelling in relief",
+        "marks": 25
+      },
+      {
+        "component": "Modelling in round",
+        "marks": 25
+      },
+      {
+        "component": "Portfolio assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "History of Indian Art (NCERT / CBSE)"
+  ],
+  "notes": [
+    "Theory (History of Indian Art, 30 marks, 2 hours) is common to Painting, Graphics, Sculpture and Applied Art. The practical paper (70 marks, 6 hours) is specific to each.",
+    "Questions are set only from the artworks listed."
+  ],
+  "units": [
+    {
+      "code": "T1",
+      "name": "Miniature Painting (16th to 19th century)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "The Rajasthani School",
+          "topics": [
+            "Maru Ragini (Sahibdin, Mewar); Chaugan Players (Dana, Jodhpur); Krishna on Swing (Nuruddin, Bikaner); Radha / Bani Thani (Nihal Chand, Kishangarh); Bharat Meets Rama at Chitrakuta (Guman, Jaipur)",
+            "Origin, sub-schools, features, aesthetic parameters"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Pahari School",
+          "topics": [
+            "Krishna with Gopis (Manku, Basohli)",
+            "Nand, Yashoda and Krishna with Kinsmen Going to Vrindavana (Nainsukh, Kangra)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Mughal School",
+          "topics": [
+            "Krishna Lifting Mount Govardhan (Miskin)",
+            "Falcon on a Bird-Rest (Ustad Mansoor)",
+            "Kabir and Raidas (Ustad Faquirullah Khan)",
+            "Marriage Procession of Dara Shikoh (Haji Madni)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Deccan School",
+          "topics": [
+            "Hazrat Nizamuddin Auliya and Amir Khusro (Hyderabad)",
+            "Chand Bibi Playing Polo (Golconda)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "T2",
+      "name": "Indian National Flag, the Bengal School and Modern Trends",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "National Flag of India and Artists in the Freedom Movement",
+          "topics": [
+            "Symbolic significance of the flag's forms and colours",
+            "Contribution of Indian artists to the freedom movement"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Bengal School of Painting",
+          "topics": [
+            "Journey's End (Abanindranath Tagore)",
+            "Shiv and Sati (Nandlal Bose)",
+            "Radhika (M.A.R. Chughtai)",
+            "Meghdoot (Ram Gopal Vijaivargiya)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Modern Trends in Indian Art",
+          "topics": [
+            "Paintings: Rama Vanquishing the Pride of the Ocean (Raja Ravi Varma), Mother and Child (Jamini Roy), Haldi Grinders (Amrita Sher-Gil), Mother Teresa (M.F. Husain)",
+            "Graphic prints: Children (Somnath Hore), Devi (Jyoti Bhatt), Of Walls (Anupam Sud), Man, Woman and Tree (K. Laxma Goud)",
+            "Sculptures: Triumph of Labour (D.P. Roy Chowdhury), Santhal Family (Ramkinkar Baij), Cries Unheard (Amarnath Sehgal), Ganesha (P.V. Janakiram)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P1",
+      "name": "Modelling in Relief",
+      "marks": 25,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Modelling in Relief",
+          "topics": [
+            "High and low relief in clay and plaster of Paris"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P2",
+      "name": "Modelling in Round",
+      "marks": 25,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Modelling in Round",
+          "topics": [
+            "Round sculpture in clay and plaster of Paris"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P3",
+      "name": "Portfolio Assessment",
+      "marks": 20,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Sculpture Portfolio",
+          "topics": [
+            "Year's record (8)",
+            "Six works of 25-30 cm: high relief, low relief, round, folk art, own style, hollow clay composition (12)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

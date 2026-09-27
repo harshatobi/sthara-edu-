@@ -1,0 +1,161 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Hindustani Music (Vocal)",
+  "codes": [
+    "034"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Vocal), Code 034, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindustani_Vocal_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Choice raga (vilambit and drut khayal)",
+        "marks": 18
+      },
+      {
+        "component": "Examiner's choice of ragas",
+        "marks": 10
+      },
+      {
+        "component": "Tarana and dhamar",
+        "marks": 16
+      },
+      {
+        "component": "Raga identification",
+        "marks": 6
+      },
+      {
+        "component": "Reciting thekas",
+        "marks": 10
+      },
+      {
+        "component": "Tuning of tanpura",
+        "marks": 5
+      },
+      {
+        "component": "Practical file",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) in five units of 6 marks; practical 70 marks."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Ornamentation and Musical Terms",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Ornamentation and Musical Terms",
+          "topics": [
+            "Alankar, kan, meend, khatka, murki, gamak",
+            "Gram, murchhana, alap, tana"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Time Theory of Ragas",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Time Theory of Ragas",
+          "topics": [
+            "Historical development of the time theory of ragas"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Texts and Great Musicians",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Texts and Great Musicians",
+          "topics": [
+            "Sangeet Ratnakar and Sangeet Parijat",
+            "Faiyaz Khan, Bade Ghulam Ali Khan, Krishna Rao Shankar Pandit"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Talas and Tanpura Tuning",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Talas and Tanpura Tuning",
+          "topics": [
+            "Jhaptala, Rupak, Dhamar in thah, dugun, tigun, chaugun",
+            "Tuning the tanpura"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Prescribed Ragas (Class XII)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Prescribed Ragas (Class XII)",
+          "topics": [
+            "Critical study and recognition of Bhairav, Bageshri, Malkauns",
+            "Notation of compositions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Khayal",
+          "topics": [
+            "Vilambit khayal in two prescribed ragas",
+            "Drut khayal in Bhairav, Bageshri, Malkauns"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tarana and Dhamar",
+          "topics": [
+            "One tarana and one dhamar with dugun and chaugun"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Recognition, Thekas and Tanpura",
+          "topics": [
+            "Raga recognition",
+            "Thekas of Jhaptala, Rupak, Dhamar",
+            "Tuning of tanpura"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

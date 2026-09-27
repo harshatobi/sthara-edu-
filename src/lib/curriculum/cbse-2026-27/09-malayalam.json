@@ -1,0 +1,178 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Malayalam",
+  "codes": [
+    "012"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "മലയാളം",
+    "Malyalam"
+  ],
+  "source": {
+    "title": "Malayalam, Code 012, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Malyalam_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Pen-paper tests, art integration projects, portfolio and subject enrichment activities",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Kerala Padavali Malayalam Part 1 and 2, and Adisthana Padavali Malayalam, Std IX, 2024 (SCERT Kerala)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Literature: MCQ 18, prose short answers 9, poetry short answers 9."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class IX)",
+          "topics": [
+            "Two passages with 8 and 7 very short answer questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Creative Writing",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Essay Writing (Class IX)",
+          "topics": [
+            "Social issues, family and school life; one of two topics in 200 words (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter Writing (Class IX)",
+          "topics": [
+            "Applications, letter to the editor, commercial correspondence (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "News Report (Class IX)",
+          "topics": [
+            "Reporting simple events for a newspaper (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Transformation of Sentences (Class IX)",
+          "topics": [
+            "Active and passive voice; simple and compound sentences (angavakyam, angivakyam); sentence making and correction (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vocabulary Building (Class IX)",
+          "topics": [
+            "7 MCQs"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 36,
+      "chapters": [
+        {
+          "name": "Amma",
+          "topics": [
+            "Prose: Madhavikutty"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manalkunnukalkkidayiloode",
+          "topics": [
+            "Prose: Benyamin"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aruvippurathuninnu Oru Sandesam",
+          "topics": [
+            "Prose: P. K. Gopalakrishnan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chiriyude Arangettam",
+          "topics": [
+            "Prose: Charlie Chaplin"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ningalum Ningalude Joliyum",
+          "topics": [
+            "Prose: K. P. Kesava Menon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sukruthahaarangal",
+          "topics": [
+            "Poem: N. Kumaranasan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pulimavu Vetti",
+          "topics": [
+            "Poem: Edassery Govindan Nair"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vamsam",
+          "topics": [
+            "Poem: Vijayalakshmi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kanunnundu Anekamaksharangal",
+          "topics": [
+            "Poem: M. R. Renukumar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Smarakam",
+          "topics": [
+            "Poem: Veerankutty"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

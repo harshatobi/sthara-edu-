@@ -1,0 +1,114 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Carnatic Music (Percussion Instruments)",
+  "codes": [
+    "033"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Carnatic Music (Percussion Instruments), Code 033, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Carnatic_Percussion_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Tuning",
+        "marks": 6
+      },
+      {
+        "component": "Sollukattu",
+        "marks": 14
+      },
+      {
+        "component": "Accompaniment",
+        "marks": 8
+      },
+      {
+        "component": "Mohra and korvai",
+        "marks": 12
+      },
+      {
+        "component": "Tani avartanam",
+        "marks": 10
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory is 30 marks without a unit-wise split."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Instrument and Techniques (Class X)",
+          "topics": [
+            "Structure and components of the opted instrument",
+            "Sapta tala alankaras in three speeds"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tala Angas, Korvai and Koraippu",
+          "topics": [
+            "16 angas of talas",
+            "Korvai and koraippu in Adi and Roopaka"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jaati and Gati Bhedas",
+          "topics": [
+            "Jaati and gati bhedas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Schools and Masters of Mridangam",
+          "topics": [
+            "Brief outline of schools of mridangam playing",
+            "Palghat Mani Iyer, Palani Subramania Pillai"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Tuning and Sollukattu (Class X)",
+          "topics": [
+            "Tuning the mridangam",
+            "Sollukattu for Adi, Rupaka, Triputa and Chapu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Accompaniment, Mohra and Tani Avartanam (Class X)",
+          "topics": [
+            "Accompanying varnam and tillana",
+            "Mohra and korvai",
+            "Tani avartanam of 6-8 avartanas in Adi and Roopaka"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "English",
+  "codes": [],
+  "stream": "Language",
+  "aliases": [
+    "English (R1)",
+    "English (R2)"
+  ],
+  "source": {
+    "title": "Poorvi: Textbook of English for Grade 8 (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hepr1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Poorvi: Textbook of English for Grade 8 (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source.",
+    "Genres (prose or poem) are inferred from the contents page and may need checking against the book."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Unit 1: Wit and Wisdom",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "The Wit that Won Hearts",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Concrete Example",
+          "topics": [
+            "Poem (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Wisdom Paves the Way",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Unit 2: Values and Dispositions",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "A Tale of Valour: Major Somnath Sharma and the Battle of Badgam",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Somebody's Mother",
+          "topics": [
+            "Poem (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Verghese Kurien: I Too Had A Dream",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Unit 3: Mystery and Magic",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "The Case of the Fifth Word",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Magic Brush of Dreams",
+          "topics": [
+            "Poem (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Spectacular Wonders",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Unit 4: Environment",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "The Cherry Tree",
+          "topics": [
+            "Poem (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Harvest Hymn",
+          "topics": [
+            "Poem (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Waiting for the Rain",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Unit 5: Science and Curiosity",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Feathered Friend",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Magnifying Glass",
+          "topics": [
+            "Poem (Poorvi)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bibha Chowdhuri: The Beam of Light that Lit the Path for Women in Indian Science",
+          "topics": [
+            "Prose (Poorvi)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

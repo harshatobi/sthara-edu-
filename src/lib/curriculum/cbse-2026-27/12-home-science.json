@@ -1,0 +1,227 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Home Science",
+  "codes": [
+    "064"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Home Science, Code 064, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Home_Science_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Project",
+        "marks": 5
+      },
+      {
+        "component": "Diet modification, supplementary food or school canteen menu",
+        "marks": 5
+      },
+      {
+        "component": "Adulterant identification",
+        "marks": 2
+      },
+      {
+        "component": "Applied textile design sample",
+        "marks": 4
+      },
+      {
+        "component": "Stain removal",
+        "marks": 2
+      },
+      {
+        "component": "Consumer education leaflet",
+        "marks": 5
+      },
+      {
+        "component": "File work",
+        "marks": 5
+      },
+      {
+        "component": "Viva",
+        "marks": 2
+      }
+    ]
+  },
+  "textbooks": [
+    "Human Ecology and Family Sciences, Class XII, Part I and II (NCERT)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given; the document's course-level outcomes are summarised in the rationale."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Work, Livelihood and Career",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Work, Livelihood and Career",
+          "topics": [
+            "Work and meaningful work; traditional occupations in India",
+            "Work, age and gender: women and work, KGBV, Beti Bachao Beti Padhao",
+            "Attitudes to work; quality of work life; life skills and soft skills",
+            "Ergonomics: concept, need and benefits",
+            "Entrepreneurship: definition and characteristics"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Nutrition, Food Science and Technology",
+      "marks": 23,
+      "chapters": [
+        {
+          "name": "Clinical Nutrition and Dietetics",
+          "topics": [
+            "Basic concepts; diet therapy",
+            "Regular and modified diets",
+            "Prevention of chronic diseases",
+            "Career preparation and scope"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Public Nutrition and Health",
+          "topics": [
+            "Public health nutrition",
+            "Nutritional problems of India: protein energy malnutrition; iron, vitamin A and iodine deficiency",
+            "Strategies and nutrition programmes in India",
+            "Health care; scope"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Food Processing and Technology",
+          "topics": [
+            "Food science, processing, technology and manufacturing",
+            "Development and importance of food processing and preservation",
+            "Classification of food by perishability and processing",
+            "Career and scope"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Food Quality and Food Safety",
+          "topics": [
+            "Food safety: toxicity and hazard; physical, chemical and biological hazards",
+            "Food infection, poisoning and intoxication; food quality",
+            "FSSA 2006; Codex Alimentarius, ISO, WTO",
+            "Food safety management: GMP, GHP, HACCP"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Human Development and Family Studies",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Early Childhood Care and Education",
+          "topics": [
+            "Objectives and guiding principles of NCF",
+            "Daycare and creche",
+            "Career preparation and scope"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Management of Support Services, Institutions and Programmes for Children, Youth and Elderly",
+          "topics": [
+            "Vulnerability of children; ICDS, SOS Children's Village, government children's homes, adoption",
+            "Vulnerability of youth; youth programmes in India",
+            "Vulnerability of the elderly; programmes for the elderly",
+            "Career and scope"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Fabric and Apparel",
+      "marks": 17,
+      "chapters": [
+        {
+          "name": "Design for Fabric and Apparel",
+          "topics": [
+            "Structural and applied design",
+            "Elements: colour, texture, line, shape, pattern",
+            "Principles: proportion, balance, emphasis, rhythm, harmony, composition"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Fashion Design and Merchandising",
+          "topics": [
+            "Fashion terminology: fashion, fads, style, classic",
+            "Fashion development and evolution",
+            "Fashion merchandising and retail organisations"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Care and Maintenance of Fabrics in Institutions",
+          "topics": [
+            "Washing, drying and ironing equipment",
+            "Institutions",
+            "Career and scope"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Resource Management",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Hospitality Management",
+          "topics": [
+            "Departments: front office, housekeeping, food and beverages, support services",
+            "Scope"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Consumer Education and Protection",
+          "topics": [
+            "Consumer product, behaviour, forum, problems",
+            "Consumer Protection Act; consumer rights and responsibilities",
+            "Standard marks: ISI, Wool Mark, Hallmark, Silk Mark, Ecomark",
+            "Protection councils"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Communication and Extension",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Development Communication and Journalism",
+          "topics": [
+            "Development, development journalism and development communication",
+            "Methods: campaign, radio and television, print, ICT",
+            "Skills and career avenues"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

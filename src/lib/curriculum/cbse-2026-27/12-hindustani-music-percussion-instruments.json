@@ -1,0 +1,152 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Hindustani Music (Percussion Instruments)",
+  "codes": [
+    "036"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Percussion Instruments), Code 036, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindustani_Percussion_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Tuning of instrument",
+        "marks": 10
+      },
+      {
+        "component": "Choice performance in prescribed talas",
+        "marks": 20
+      },
+      {
+        "component": "Tala of examiner's choice",
+        "marks": 15
+      },
+      {
+        "component": "Accompaniment in vilambit and drut",
+        "marks": 10
+      },
+      {
+        "component": "Reciting tala and composition",
+        "marks": 10
+      },
+      {
+        "component": "Practical file",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) in five units of 6 marks; practical 70 marks."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Uthan and Comparative Talas",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Uthan and Comparative Talas",
+          "topics": [
+            "Uthan",
+            "Chautala and Ektala; Jhaptala and Sultala compared"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Layakari and Gharanas",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Layakari and Gharanas",
+          "topics": [
+            "Layakari and its varieties",
+            "Gharanas of tabla or pakhawaj"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "History of Tabla",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "History of Tabla",
+          "topics": [
+            "History of tabla"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Great Percussionists",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Great Percussionists",
+          "topics": [
+            "Pandit Kishan Maharaj, Ustad Zakir Hussain",
+            "Raja Chhatrapati Singh, Guru Purushottam Das"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Tala Notation (Class XII)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Tala Notation (Class XII)",
+          "topics": [
+            "Notation of Teentala or Adi tala, Rupak or Tevra",
+            "Recognising talas from portions of thekas"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Thekas and Compositions",
+          "topics": [
+            "Theka of Rupak with elaborations",
+            "Kaydas, rela, tukras, parans, farmaishi chakradar in prescribed talas",
+            "Advance kayada or rela with paltas and tihai in Rupak or Tevra"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Accompaniment, Solo and Tuning",
+          "topics": [
+            "Laggis in Dadra on pakhawaj",
+            "Solo of 10-15 minutes",
+            "Accompanying folk songs and classical vocal music",
+            "Tuning the instrument"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

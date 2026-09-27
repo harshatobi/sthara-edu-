@@ -11,6 +11,8 @@ import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/C
 import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
 import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
 import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
+import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
+import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import TeacherDemoPortal from '@/components/teacher/TeacherDemoPortal';
@@ -20,9 +22,11 @@ import { useRoleGuard } from '@/lib/auth/useRoleGuard';
 import type { TeacherView } from '@/lib/demo/teacher';
 import { TeacherDeskProvider } from '@/lib/teacher/useTeacherDesk';
 
-// Canon teacher nav (mockup ROLES.teacher). Attendance isn't built yet, so it isn't listed.
+// Canon teacher nav (mockup ROLES.teacher).
 const NAV: CanonNavItem[] = [
   { href: '/teacher', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true },
+  { href: '/teacher/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle },
+  { href: '/teacher/attendance', label: 'Attendance', short: 'Register', icon: CalendarCheck },
   { href: '/teacher/homework', label: 'Homework', icon: FileText },
   { href: '/teacher/quiz', label: 'Quiz Creator', short: 'Quiz', icon: ClipboardText },
   { href: '/teacher/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple },

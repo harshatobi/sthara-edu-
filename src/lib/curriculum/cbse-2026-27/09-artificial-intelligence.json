@@ -1,0 +1,185 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Artificial Intelligence",
+  "codes": [
+    "417"
+  ],
+  "stream": "Skill",
+  "aliases": [
+    "AI"
+  ],
+  "source": {
+    "title": "Artificial Intelligence, Code 417, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/417-AI-IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Practical file (minimum 15 Python programs)",
+        "marks": 15
+      },
+      {
+        "component": "Practical examination (3 Python programs)",
+        "marks": 15
+      },
+      {
+        "component": "Viva voce",
+        "marks": 5
+      },
+      {
+        "component": "Project / field visit / portfolio (related to SDGs)",
+        "marks": 15
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: 2 each."
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "AI Reflection, Project Cycle and Ethics",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "AI Reflection, Project Cycle and Ethics",
+          "number": 1,
+          "topics": [
+            "AI and its applications; three domains: data, computer vision, NLP",
+            "AI project cycle: problem scoping (4Ws canvas), data acquisition, exploration, modelling, evaluation, deployment",
+            "Data visualisation with graphs",
+            "Rule-based and learning-based modelling",
+            "AI ethics: bias and access"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Data Literacy",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Data Literacy",
+          "number": 2,
+          "topics": [
+            "Data literacy and its importance; data literacy process framework",
+            "Data privacy and security; cyber security best practices"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B3",
+      "name": "Math for AI (Statistics and Probability)",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Math for AI (Statistics and Probability)",
+          "number": 3,
+          "topics": [
+            "Patterns in numbers and images",
+            "Uses of statistics, linear algebra, probability, calculus in AI",
+            "Statistics: data collection, tabulation, measures",
+            "Probability in everyday situations"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B4",
+      "name": "Introduction to Generative AI",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Introduction to Generative AI",
+          "number": 4,
+          "topics": [
+            "Generative vs conventional AI; types and examples",
+            "Benefits and limitations",
+            "Using generative AI tools; ethical considerations"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B5",
+      "name": "Introduction to Python",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Introduction to Python",
+          "number": 5,
+          "topics": [
+            "Python basics: input and output, variables, arithmetic operators, expressions, data types",
+            "Flow of control and conditions",
+            "Lists"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

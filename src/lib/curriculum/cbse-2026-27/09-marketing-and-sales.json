@@ -1,0 +1,170 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Marketing and Sales",
+  "codes": [
+    "412"
+  ],
+  "stream": "Skill",
+  "source": {
+    "title": "Marketing and Sales, Code 412, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/412-MARKETING_SALES_IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Project",
+        "marks": 10
+      },
+      {
+        "component": "Viva",
+        "marks": 5
+      },
+      {
+        "component": "Practical file",
+        "marks": 15
+      },
+      {
+        "component": "Skill demonstration via lab activities",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: 2 each."
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Introduction to Marketing and Sales",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Introduction to Marketing and Sales",
+          "number": 1,
+          "topics": [
+            "What marketing is; concept of sales"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Concept of Market",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Concept of Market",
+          "number": 2,
+          "topics": [
+            "Market; competition; product; service"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B3",
+      "name": "Basic Concept of Sales and Selling",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Basic Concept of Sales and Selling",
+          "number": 3,
+          "topics": [
+            "Concept and types of selling; selling tasks; intermediaries"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B4",
+      "name": "Understanding Customer and Consumer",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Understanding Customer and Consumer",
+          "number": 4,
+          "topics": [
+            "Types of customers; buyer behaviour; influencing factors"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B5",
+      "name": "Activities in Sales and Marketing",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Activities in Sales and Marketing",
+          "number": 5,
+          "topics": [
+            "Sales tasks; money; roles in sales and marketing"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

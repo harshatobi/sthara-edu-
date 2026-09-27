@@ -1,0 +1,231 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "English Elective",
+  "codes": [
+    "001"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "English Literature"
+  ],
+  "source": {
+    "title": "English Elective, Code 001, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/English_elective_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Seminar: presentation, poetry reading, critical review or theatre workshop",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Kaleidoscope, Class XII (NCERT)",
+    "A Tiger for Malgudi or The Financial Expert, R.K. Narayan"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections; literature chapters are the prescribed texts.",
+    "Fiction: students select one of the two prescribed novels."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Unseen Passages and Poem",
+          "topics": [
+            "Literary or discursive passage of 950-1000 words: 12 of 15 objective questions",
+            "Poem of 10-12 lines: 4 of 5 objective questions",
+            "Case-based factual passage of 100-120 words: 4 of 5 objective questions"
+          ],
+          "outcomes": [
+            "Comprehend, interpret, infer, analyse and appreciate unseen texts"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Applied Grammar",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Applied Grammar",
+          "topics": [
+            "Transformation of sentences: 8 of 10 objective questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Creative Writing",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Discursive and Interpretative Writing",
+          "topics": [
+            "Three of four long writing tasks, 120-150 words each"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Article, Report or Speech",
+          "topics": [
+            "Argumentative or discursive essay on contemporary issues, 120-150 words"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "Textbook: Kaleidoscope",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "I Sell my Dreams",
+          "topics": [
+            "Short story (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Eveline",
+          "topics": [
+            "Short story (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Wedding in Brownsville",
+          "topics": [
+            "Short story (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Lecture Upon the Shadow",
+          "topics": [
+            "Poem (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Poems by Milton",
+          "topics": [
+            "Poem (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Poems by Blake",
+          "topics": [
+            "Poem (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kubla Khan",
+          "topics": [
+            "Poem (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Trees",
+          "topics": [
+            "Poem (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Wild Swans of Coole",
+          "topics": [
+            "Poem (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Time and Time Again",
+          "topics": [
+            "Poem (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Freedom",
+          "topics": [
+            "Non-fiction (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Mark on the Wall",
+          "topics": [
+            "Non-fiction (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Film-making",
+          "topics": [
+            "Non-fiction (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Why the Novel Matters",
+          "topics": [
+            "Non-fiction (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Argumentative Indian",
+          "topics": [
+            "Non-fiction (Kaleidoscope)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chandalika",
+          "topics": [
+            "Drama by Rabindranath Tagore (Kaleidoscope)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "Fiction",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "A Tiger for Malgudi",
+          "topics": [
+            "Novel by R.K. Narayan (alternative to The Financial Expert)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Financial Expert",
+          "topics": [
+            "Novel by R.K. Narayan (alternative to A Tiger for Malgudi)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

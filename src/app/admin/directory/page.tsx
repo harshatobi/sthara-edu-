@@ -75,7 +75,7 @@ export default function AdminDirectoryPage() {
       return;
     }
     const confirmed = window.confirm(
-      `⚠️ Delete "${u.name}" (${u.role})?\n\nThis will permanently remove their account and all associated data. This action CANNOT be undone.`
+      `Delete "${u.name}" (${u.role})?\n\nThis will permanently remove their account and all associated data. This action CANNOT be undone.`
     );
     if (!confirmed) return;
 

@@ -1,0 +1,198 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Telugu (AP)",
+  "codes": [
+    "107"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Telugu",
+    "తెలుగు",
+    "Telugu AP",
+    "తెలుగు (ఆంధ్రప్రదేశ్)"
+  ],
+  "source": {
+    "title": "Telugu-AP, Code 107, Class XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Telugu_AP_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodical tests",
+        "marks": 10
+      },
+      {
+        "component": "Note books",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Gnanapeetham, Intermediate Telugu II Year (Intermediate Vidyamandali AP, 2019)",
+    "Nandini, Telugu Upavachakam (2019)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Section D (45) has no printed split between text book, non-detail and history of literature.",
+    "Internal assessment split follows the Class XI scheme in the same document."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Aparichita Gadyamsam (Class XII)",
+          "topics": [
+            "Unseen prose passage"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Chandassu (Class XII)",
+          "topics": [
+            "Champakamala, Utpalamala, Mattebham, Shardulam, Ataveladi, Tetagiti"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Alankaras (Class XII)",
+          "topics": [
+            "Upama, Rupaka, Arthantaranyasa, Slesha, Utpreksha, Atisayokti"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Writing",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "Samanya Vyasalu",
+          "topics": [
+            "Composition and writing"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Translation (Class XII)",
+          "topics": [
+            "English to Telugu"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature and History of Telugu Literature",
+      "marks": 45,
+      "chapters": [
+        {
+          "name": "Mana Aatalu",
+          "topics": [
+            "Prose (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chaatuvulu",
+          "topics": [
+            "Prose (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vemana Kavitvamu",
+          "topics": [
+            "Prose (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jathee Yodyama Kavitvam",
+          "topics": [
+            "Prose (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sathya Prashastyamu",
+          "topics": [
+            "Poetry (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hanumat Sandesam",
+          "topics": [
+            "Poetry (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Karma Bhumilo Pusinna O Puvva",
+          "topics": [
+            "Poetry (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Eedaari Ekkadikopotundi",
+          "topics": [
+            "Poetry (Gnanapeetham)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gaveshana",
+          "topics": [
+            "Non-detail (Nandini)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Therichina Kallu",
+          "topics": [
+            "Non-detail (Nandini)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aasha Khareedu Anaa",
+          "topics": [
+            "Non-detail (Nandini)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "History of Telugu Literature: Prabandha to Modern Age",
+          "topics": [
+            "Peddana, Dhurjati, Chemakura, Tenali Ramakrishna, Kandukuri, Rayaprolu, Sri Sri, Tirupati Venkata Kavulu, Viswanatha Satyanarayana",
+            "Satakas (neeti and bhakti), novel and drama"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

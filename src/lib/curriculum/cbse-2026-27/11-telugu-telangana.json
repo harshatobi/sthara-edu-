@@ -1,0 +1,241 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Telugu (Telangana)",
+  "codes": [
+    "189"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Telugu TS",
+    "Telugu Telangana",
+    "తెలుగు (తెలంగాణ)"
+  ],
+  "source": {
+    "title": "Telugu Telangana, Code 189, Class XI (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Telugu_Telangana_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment (four components, as per the document)",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "నవోదయం (Main Course Book)",
+    "ఉపవాచకం (Non-detail text)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Telugu script lesson names as printed. The document gives per-lesson marks with internal choices but no section totals, so unit marks are not recorded."
+  ],
+  "units": [
+    {
+      "code": "P",
+      "name": "పద్యభాగం (Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "విద్యాలక్ష్యం",
+          "number": 1,
+          "topics": [
+            "పద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "మిత్రధర్మం",
+          "number": 2,
+          "topics": [
+            "పద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "శతకసుధ",
+          "number": 3,
+          "topics": [
+            "పద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "నా పేరు ప్రజాకోటి",
+          "number": 5,
+          "topics": [
+            "పద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "గద్యభాగం (Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "పాల్కురికి సోమనాథుడు",
+          "number": 1,
+          "topics": [
+            "గద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ప్రాచీన సాహిత్యంలో మానవతావాదం",
+          "number": 3,
+          "topics": [
+            "గద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "బతుకమ్మ పండుగ",
+          "number": 4,
+          "topics": [
+            "గద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "రాజా బహద్దూర్ వెంకట రామారెడ్డి సేవాతత్పరత",
+          "number": 6,
+          "topics": [
+            "గద్యభాగం (నవోదయం)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "N",
+      "name": "ఉపవాచకం (Non-detail, 8 marks)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "గొల్ల రామవ్వ",
+          "topics": [
+            "ఉపవాచకం"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "బిచ్చగాడు",
+          "topics": [
+            "ఉపవాచకం"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "స్నేహలతాదేవి లేఖ",
+          "topics": [
+            "ఉపవాచకం"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "H",
+      "name": "తెలుగు సాహిత్య చరిత్ర (History of Literature, 10 marks)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "తెలుగు సాహిత్య చరిత్ర (Class XI)",
+          "topics": [
+            "పోతన",
+            "తెనాలి రామకృష్ణుడు",
+            "సురవరం ప్రతాపరెడ్డి",
+            "సి. నారాయణరెడ్డి"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "వ్యాకరణం (Grammar)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "సంధులు",
+          "topics": [
+            "సంస్కృత సంధులు: సవర్ణదీర్ఘ, గుణ",
+            "తెలుగు సంధులు: అకార, ఇకార, ఉకార, గసడదవాదేశ (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "సమాసాలు",
+          "topics": [
+            "ద్వంద్వ, ద్విగు, బహువ్రీహి, రూపక (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ఛందస్సు (Class XI)",
+          "topics": [
+            "ఉత్పలమాల, చంపకమాల, ఆటవెలది, తేటగీతి (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "అలంకారాలు (Class XI)",
+          "topics": [
+            "ఉపమ, క్రమ, అతిశయోక్తి, అర్థాంతరన్యాస (2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "S",
+      "name": "సృజనాత్మకత (Creative Writing)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "లేఖ",
+          "topics": [
+            "Letter (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "అనువాదం",
+          "topics": [
+            "Translation (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "అపరిచిత గద్యం",
+          "topics": [
+            "Unseen prose (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "పరిచిత గద్యం",
+          "topics": [
+            "Seen prose (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "పరిచిత పద్యం",
+          "topics": [
+            "Seen poem (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

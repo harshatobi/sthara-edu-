@@ -1,0 +1,132 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "English Communicative",
+  "codes": [
+    "101"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "English (Communicative)"
+  ],
+  "source": {
+    "title": "English Communicative, Code 101, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/English_Communicative_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic assessment",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessment",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment: assessment of listening and speaking skills",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Interact in English: Main Course Book (CBSE, revised)",
+    "Interact in English: Literature Reader (CBSE, revised)",
+    "Interact in English: Workbook (CBSE, revised)"
+  ],
+  "notes": [
+    "The CBSE Literature Reader's lesson list is not in the syllabus document."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Skills",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Communicative)",
+          "topics": [
+            "Two unseen passages, up to 750 words, continuous and non-continuous texts from MCB themes (12+10)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing Skills",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "Application",
+          "topics": [
+            "Leave, change of subject or section, bus timings; up to 50 words (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Factual Description",
+          "topics": [
+            "A person or object, up to 100 words (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Formal Letter (Communicative)",
+          "topics": [
+            "Up to 120 words, aligned to MCB topics (7)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Article",
+          "topics": [
+            "Up to 150 words on verbal cues (8)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Grammar (Communicative)",
+          "topics": [
+            "Tenses, modals, subject-verb concord",
+            "Reported speech",
+            "Noun, adverb and relative clauses; determiners",
+            "Gap filling 3, editing or omission 4, reordering or transformation 3"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature Textbook",
+      "marks": 26,
+      "chapters": [
+        {
+          "name": "Literature Reader",
+          "topics": [
+            "Two of three extracts from prose or poetry (8)",
+            "Five short answers (10)",
+            "One long answer on values and extrapolation (8)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

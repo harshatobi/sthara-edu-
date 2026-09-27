@@ -1,0 +1,244 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Marathi",
+  "codes": [
+    "009"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "मराठी"
+  ],
+  "source": {
+    "title": "Marathi, Code 009, Classes IX-X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Marathi_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Notebook records, homework, classwork, periodic test, subject enrichment and portfolio",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Aksharbharati, Iyatta Dahavi (Maharashtra State Bureau of Textbook Production, Pune)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Lessons marked 'for reading only' in the document are recorded as formative."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Vachan va Aakalan (Reading)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Apathit Gadyansh",
+          "topics": [
+            "Unseen prose passage of 150-200 words: MCQ and very short answers"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Apathit Padyansh",
+          "topics": [
+            "Unseen poem of 10-12 lines: MCQ and very short answers"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Vyakaran (Grammar)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Shabdanchya Aath Jati",
+          "topics": [
+            "The eight parts of speech"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Linga, Vachan",
+          "topics": [
+            "Gender and number (textbook based)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaal",
+          "topics": [
+            "Tenses: identify and change"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vakyache Prakar",
+          "topics": [
+            "Adnyarthi, Vidhanarthi (hokarathi and nakarathi), Udgararthi, Prashnarthi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samanarthi, Viruddharthi Shabd",
+          "topics": [
+            "Synonyms and antonyms (textbook based)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samas",
+          "topics": [
+            "Dvigu, Dvandva (three kinds), Avyayibhav"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Pathyapustak (Textbook)",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "तू बुद्धी दे",
+          "topics": [
+            "Prayer: Guru Thakur"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "संतवाणी: अंकिला मी दास तुझा",
+          "topics": [
+            "Sant Namdev"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "शाल",
+          "topics": [
+            "R. G. Jadhav"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "उपास",
+          "topics": [
+            "P. L. Deshpande"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "दोन दिवस",
+          "topics": [
+            "Poem: Narayan Surve"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "चुडीवाला",
+          "topics": [
+            "Jayashree Ruikar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "फूटप्रिंट्स",
+          "topics": [
+            "Dr. Pradeep Awate"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ऊर्जाशक्तीचा जागर",
+          "topics": [
+            "Dr. Raghunath Mashelkar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "औक्षण",
+          "topics": [
+            "Poem: Indira Sant"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रंग साहित्याचे",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "खरा नागरिक",
+          "topics": [
+            "Suhas Baratakke"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "स्वप्न करू साकार",
+          "topics": [
+            "Poem: Kishor Pathak"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मोठे होत असलेल्या मुलांनो",
+          "topics": [
+            "Supplementary reader (sthulvachan): Dr. Anil Kakodkar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "व्युत्पत्ती कोश",
+          "topics": [
+            "Supplementary reader (sthulvachan)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose and poetry 25, supplementary reader 5."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Lekhan (Writing)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Nibandh / Gosht Lekhan",
+          "topics": [
+            "Essay (autobiographical, imaginative, descriptive) or story from points, 120-150 words (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aupcharik Patra",
+          "topics": [
+            "Formal letter: demand or complaint, envelope required (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jahirat Lekhan",
+          "topics": [
+            "Advertisement writing (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

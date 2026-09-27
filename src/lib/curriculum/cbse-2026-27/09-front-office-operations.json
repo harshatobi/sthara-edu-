@@ -1,0 +1,177 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Front Office Operations",
+  "codes": [
+    "410"
+  ],
+  "stream": "Skill",
+  "aliases": [
+    "Front Office"
+  ],
+  "source": {
+    "title": "Front Office Operations, Code 410, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/410-FRONT_OFFICE_OPERATIONS-IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 15
+      },
+      {
+        "component": "Written test",
+        "marks": 10
+      },
+      {
+        "component": "Viva voce",
+        "marks": 10
+      },
+      {
+        "component": "Practical file / student portfolio",
+        "marks": 10
+      },
+      {
+        "component": "Viva on project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: 2 each."
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Introduction to Tourism (Front Office)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Introduction to Tourism (Front Office)",
+          "number": 1,
+          "topics": [
+            "Introduction to Tourism (Front Office)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Major Tourist Destinations of India",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Major Tourist Destinations of India",
+          "number": 2,
+          "topics": [
+            "Major Tourist Destinations of India"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B3",
+      "name": "Impacts of Tourism",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Impacts of Tourism",
+          "number": 3,
+          "topics": [
+            "Impacts of Tourism"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B4",
+      "name": "Hotels",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Hotels",
+          "number": 4,
+          "topics": [
+            "Hotels"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B5",
+      "name": "Classification of Hotels",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Classification of Hotels",
+          "number": 5,
+          "topics": [
+            "Classification of Hotels"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Computer Applications",
+  "codes": [
+    "165"
+  ],
+  "stream": "Computer",
+  "aliases": [
+    "Computer",
+    "Computers",
+    "IT"
+  ],
+  "source": {
+    "title": "Computer Applications, Code 165, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Computer_Applications_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Lab test: word processing, spreadsheets, presentations",
+        "marks": 30
+      },
+      {
+        "component": "Report file (4 documents per tool)",
+        "marks": 8
+      },
+      {
+        "component": "Viva voce",
+        "marks": 2
+      },
+      {
+        "component": "Project",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Basics of Information Technology",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Basics of Information Technology",
+          "topics": [
+            "Characteristics and components of a computer: CPU, memory, storage, I/O devices",
+            "Primary (RAM, ROM) and secondary memory; storage devices",
+            "System and application software, including mobile apps",
+            "Networks: PAN, LAN, MAN, WAN; wired and wireless, Wi-Fi, Bluetooth, cloud",
+            "Multimedia: images, audio, video, animation"
+          ],
+          "outcomes": [
+            "Identify components and functions of computer systems"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Cyber Safety",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Cyber Safety",
+          "topics": [
+            "Safe browsing and social networks: identity protection, passwords, privacy, confidentiality",
+            "Cyber stalking; reporting cyber crimes",
+            "Malware: viruses, adware"
+          ],
+          "outcomes": [
+            "Understand safe internet practices"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Office Tools",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Office Tools",
+          "topics": [
+            "Word processor: formatting, headers and footers, tables, pictures, track changes, drawing tools",
+            "Presentation tool: layouts, views, formatting, animations, sound, rehearsed timings",
+            "Spreadsheets: data entry, auto fill, formulas, SUM, AVERAGE, MAX, MIN, IF, charts"
+          ],
+          "outcomes": [
+            "Create and edit documents, spreadsheets and presentations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Lab Exercises",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Lab Exercises (Class IX)",
+          "topics": [
+            "Browser settings for secure connection; file system navigation",
+            "Letters, reports, greeting cards; a document in an Indian language",
+            "Presentations with images, animation and sound",
+            "Spreadsheet operations and charts"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

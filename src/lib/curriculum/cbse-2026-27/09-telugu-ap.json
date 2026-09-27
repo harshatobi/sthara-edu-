@@ -1,0 +1,268 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Telugu (AP)",
+  "codes": [
+    "007"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Telugu",
+    "తెలుగు",
+    "Telugu AP",
+    "తెలుగు (ఆంధ్రప్రదేశ్)"
+  ],
+  "source": {
+    "title": "Telugu (A.P), Code 007, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Telugu_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic tests",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessments",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio / notebooks",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activities",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Telugu Parimalam, Telugu Vachakam (Government of Andhra Pradesh, 2023)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Aparichita Gadyamsham",
+          "topics": [
+            "Unseen prose passage"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Lekha Rachana",
+          "topics": [
+            "Report writing (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vyasa Rachana",
+          "topics": [
+            "Essay writing (8)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Telugu and Sanskrita Sandhulu",
+          "topics": [
+            "Akaara, Ikaara, Ukaara; Savarna Deergha, Guna, Vriddhi, Yanaadesha sandhulu (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paryaaya Padaalu",
+          "topics": [
+            "Synonyms (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prakriti - Vikritulu",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vyatirekha Padaalu",
+          "topics": [
+            "Antonyms (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jateeyaalu",
+          "topics": [
+            "Idioms (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Saametalu",
+          "topics": [
+            "Proverbs (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 37,
+      "chapters": [
+        {
+          "name": "Dharmabodha",
+          "topics": [
+            "Poetry (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chaitanyam",
+          "topics": [
+            "Poetry (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Harivillu",
+          "topics": [
+            "Poetry (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sneham",
+          "topics": [
+            "Poetry (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Theerpu",
+          "topics": [
+            "Poetry (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Matamahima",
+          "topics": [
+            "Poetry (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Illakagaane",
+          "topics": [
+            "Prose (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rangasthalam",
+          "topics": [
+            "Prose (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Priyamaina Naannaku",
+          "topics": [
+            "Prose (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Edeshamegina",
+          "topics": [
+            "Prose (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Naa Chaduvu",
+          "topics": [
+            "Prose (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Akupachha Thoranam",
+          "topics": [
+            "Prose (Telugu Parimalam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nyayapati Subbarao",
+          "topics": [
+            "Non-detail (Telugu Parimalam, non-detail)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Konda Venkatappayya",
+          "topics": [
+            "Non-detail (Telugu Parimalam, non-detail)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kasinathuni Nageswararao",
+          "topics": [
+            "Non-detail (Telugu Parimalam, non-detail)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unnava Dampathulu",
+          "topics": [
+            "Non-detail (Telugu Parimalam, non-detail)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Duvvuri Subbamma",
+          "topics": [
+            "Non-detail (Telugu Parimalam, non-detail)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ayyadevara Kaleswararao",
+          "topics": [
+            "Non-detail (Telugu Parimalam, non-detail)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

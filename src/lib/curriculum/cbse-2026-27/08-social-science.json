@@ -1,0 +1,172 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Social Science",
+  "codes": [],
+  "stream": "Humanities",
+  "aliases": [
+    "SST",
+    "Social Studies"
+  ],
+  "source": {
+    "title": "Exploring Society: India and Beyond, Grade 8, Parts I and II (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hees1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Exploring Society: India and Beyond, Grade 8, Parts I and II (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source.",
+    "Part I and Part II chapters are grouped by the book's themes; the chapter number in each topic refers to its part."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Theme A: India and the World: Land and the People",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Natural Resources and Their Use",
+          "topics": [
+            "Exploring Society Part I, chapter 1"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "World Geography: Some Glimpses",
+          "topics": [
+            "Exploring Society Part II, chapter 1"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Theme B: Tapestry of the Past",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Reshaping India's Political Map",
+          "topics": [
+            "Exploring Society Part I, chapter 2"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Rise of the Marathas",
+          "topics": [
+            "Exploring Society Part I, chapter 3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Colonial Era in India",
+          "topics": [
+            "Exploring Society Part I, chapter 4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "India's Long Road to Independence",
+          "topics": [
+            "Exploring Society Part II, chapter 2"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Cultural Currents: 13th to 17th Centuries",
+          "topics": [
+            "Exploring Society Part II, chapter 8"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Theme C: Our Cultural Heritage and Knowledge Traditions",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "A Journey Through Indian Architecture",
+          "topics": [
+            "Exploring Society Part II, chapter 3"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Theme D: Governance and Democracy",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Universal Franchise and India's Electoral System",
+          "topics": [
+            "Exploring Society Part I, chapter 5"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Parliamentary System: Legislature and Executive",
+          "topics": [
+            "Exploring Society Part I, chapter 6"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Role of the Judiciary in Our Society",
+          "topics": [
+            "Exploring Society Part II, chapter 4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Citizenship: Rights and Duties",
+          "topics": [
+            "Exploring Society Part II, chapter 5"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "E",
+      "name": "Theme E: Economic Life Around Us",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Factors of Production",
+          "topics": [
+            "Exploring Society Part I, chapter 7"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dynamics of Population",
+          "topics": [
+            "Exploring Society Part II, chapter 6"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "India's Urban Landscape",
+          "topics": [
+            "Exploring Society Part II, chapter 7"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

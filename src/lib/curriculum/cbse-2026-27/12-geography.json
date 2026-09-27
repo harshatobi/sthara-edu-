@@ -1,0 +1,399 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Geography",
+  "codes": [
+    "029"
+  ],
+  "stream": "Humanities",
+  "aliases": [
+    "Geo"
+  ],
+  "source": {
+    "title": "Geography, Code 029, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Geography_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Practical: written exam on the practical syllabus",
+        "marks": 25
+      },
+      {
+        "component": "Practical record book",
+        "marks": 2
+      },
+      {
+        "component": "Viva voce",
+        "marks": 3
+      }
+    ]
+  },
+  "textbooks": [
+    "Fundamentals of Human Geography, Class XII (NCERT)",
+    "India: People and Economy, Class XII (NCERT)",
+    "Practical Work in Geography Part II, Class XII (NCERT)"
+  ],
+  "notes": [
+    "Theory is 35 marks per book (including 5 marks of map work each). Unit codes are prefixed H (Fundamentals of Human Geography) and I (India: People and Economy).",
+    "The practical is examined externally by CBSE.",
+    "No learning-outcomes column is given, so chapter outcomes are left empty.",
+    "The document lists \"Cologne\" among South American sea ports; recorded as Colon (Panama), the port in the NCERT map list."
+  ],
+  "units": [
+    {
+      "code": "H-I",
+      "name": "Human Geography",
+      "marks": 3,
+      "chapters": [
+        {
+          "name": "Human Geography: Nature and Scope",
+          "number": 1,
+          "topics": [
+            "Approaches: regional and systematic geography, dualism",
+            "Nature of human geography; naturalisation of humans and humanisation of nature",
+            "Schools of thought; fields and subfields"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "H-II",
+      "name": "People",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "The World Population: Distribution, Density and Growth",
+          "number": 2,
+          "topics": [
+            "Distribution and density; factors influencing distribution",
+            "Population growth; components of population change",
+            "Demographic transition; population control measures"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Human Development",
+          "number": 3,
+          "topics": [
+            "Concept and selected indicators; growth and development",
+            "The four pillars and approaches to human development",
+            "Measuring: HDI, HPI and GNH; international comparisons"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Population Composition",
+          "topics": [
+            "Sex composition, age structure, age-sex pyramid",
+            "Rural-urban composition, literacy, occupational structure"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "Human Settlements (World)",
+          "topics": [
+            "Classification of settlements; types, patterns and problems of rural settlement",
+            "Urban settlement: classification by population, occupational structure and administrative set up; problems"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "H-III",
+      "name": "Human Activities",
+      "marks": 19,
+      "chapters": [
+        {
+          "name": "Primary Activities",
+          "number": 4,
+          "topics": [
+            "Hunting and gathering; pastoralism: nomadic herding, commercial livestock rearing",
+            "Primitive and intensive subsistence agriculture",
+            "Commercial agriculture: plantation, extensive grain cultivation, mixed, dairy, Mediterranean, market gardening and horticulture, cooperative and collective farming",
+            "Mining: factors and methods"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Secondary Activities",
+          "number": 5,
+          "topics": [
+            "Characteristics of modern large-scale manufacturing",
+            "Factors influencing industrial location",
+            "Classification of industries by size, inputs, outputs and ownership",
+            "High-tech industry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tertiary and Quaternary Activities",
+          "number": 6,
+          "topics": [
+            "Tertiary activities: concept and types; trade, transport, communication, services",
+            "Tourism and major tourist regions; medical services for overseas patients in India",
+            "Quaternary and quinary activities",
+            "The digital divide"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Transport and Communication",
+          "number": 7,
+          "topics": [
+            "Roadways, highways, road density, border roads",
+            "Trans-continental railways: Trans-Siberian, Trans-Canadian, Australian",
+            "Sea routes, shipping canals, inland waterways; inter-continental air routes; pipelines",
+            "Satellite communication and cyberspace"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "International Trade",
+          "number": 8,
+          "topics": [
+            "History, existence and basis of international trade",
+            "Balance of trade; bilateral and multilateral trade; free trade; dumping",
+            "WTO and regional trade blocs; concerns",
+            "Ports as gateways; types of port"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "H-Map",
+      "name": "Map Work (World)",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Map Work: Human Geography",
+          "topics": [
+            "Areas of subsistence gathering, nomadic herding, commercial livestock rearing, extensive commercial grain farming and mixed farming",
+            "Terminal stations of the Trans-Siberian, Trans-Canadian and Trans-Australian railways",
+            "Major sea ports: North Cape, London, Hamburg, Vancouver, San Francisco, New Orleans, Rio de Janeiro, Colon, Valparaiso, Suez, Cape Town, Yokohama, Shanghai, Hong Kong, Aden, Karachi, Kolkata, Perth, Sydney, Melbourne",
+            "Major airports: Tokyo, Beijing, Mumbai, Jeddah, Aden, Johannesburg, Nairobi, Moscow, London, Paris, Berlin, Rome, Chicago, New Orleans, Mexico City, Buenos Aires, Santiago, Darwin, Wellington",
+            "Inland waterways: Suez Canal, Panama Canal, Rhine waterway, St. Lawrence Seaway"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "I-I",
+      "name": "People (India)",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Population: Distribution, Density, Growth and Composition",
+          "number": 1,
+          "topics": [
+            "Distribution and density",
+            "Growth; four phases; regional variation",
+            "Rural-urban, linguistic and religious composition; working population",
+            "Beti Bachao Beti Padhao"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Migration",
+          "topics": [
+            "Types",
+            "Causes",
+            "Consequences"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "I-II",
+      "name": "Human Settlements (India)",
+      "marks": 3,
+      "chapters": [
+        {
+          "name": "Human Settlements",
+          "number": 2,
+          "topics": [
+            "Rural settlements: types and distribution",
+            "Urban settlements; evolution of towns; urbanisation in India",
+            "Functional classification of towns",
+            "Smart Cities Mission"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "I-III",
+      "name": "Resources and Development",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Land Resources and Agriculture",
+          "number": 3,
+          "topics": [
+            "Land use categories and changes; common property resources",
+            "Agricultural land use; cropping seasons; types of farming",
+            "Major crops: wheat, rice, tea, coffee, cotton, jute, sugarcane, rubber",
+            "Agricultural development, output and technology; problems of Indian agriculture"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Water Resources",
+          "number": 4,
+          "topics": [
+            "Surface and groundwater; lagoons and backwaters",
+            "Water demand and utilisation",
+            "Deterioration of water quality",
+            "Conservation and management; rainwater harvesting; watershed management"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mineral and Energy Resources",
+          "number": 5,
+          "topics": [
+            "Types of minerals; major mineral belts",
+            "Iron ore, manganese, bauxite, copper, mica",
+            "Conventional energy: coal, petroleum, natural gas",
+            "Non-conventional: nuclear, solar, wind, tidal and wave, geothermal, bio energy",
+            "Conservation of mineral resources"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Planning and Sustainable Development in Indian Context",
+          "number": 6,
+          "topics": [
+            "Target area planning: Hill Area Development, Drought Prone Area Programme",
+            "Sustainable development",
+            "Case studies: Integrated Tribal Development Project in Bharmaur; Indira Gandhi Canal command area"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "I-IV",
+      "name": "Transport, Communication and International Trade",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Transport and Communication (India)",
+          "number": 7,
+          "topics": [
+            "Road, rail, oil and gas pipelines",
+            "Inland waterways and oceanic routes; air transport",
+            "Personal and mass communication"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "International Trade (India)",
+          "number": 8,
+          "topics": [
+            "Changing composition of exports and imports",
+            "Direction of trade",
+            "Seaports and hinterlands; airports"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "I-V",
+      "name": "Geographical Perspective on Selected Issues and Problems",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Geographical Perspective on Selected Issues and Problems",
+          "number": 9,
+          "topics": [
+            "Environmental pollution: types",
+            "Urban waste disposal",
+            "Rural-urban migration: case study",
+            "Problems of slums",
+            "Land degradation: case study"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "I-Map",
+      "name": "Map Work (India)",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Map Work: India People and Economy",
+          "topics": [
+            "States with highest and lowest population density (2011)",
+            "Leading producing states: rice, wheat, cotton, jute, sugarcane, tea, coffee",
+            "Mines: iron ore (Mayurbhanj, Bailadila, Ratnagiri, Bellary), manganese (Balaghat, Shimoga), copper (Hazaribagh, Singhbhum, Khetri), bauxite (Katni, Bilaspur, Koraput), coal (Jharia, Bokaro, Raniganj, Neyveli)",
+            "Oil refineries: Mathura, Jamnagar, Barauni",
+            "Sea ports: Kandla, Mumbai, Marmagao, Kochi, Mangalore, Tuticorin, Chennai, Visakhapatnam, Paradip, Haldia",
+            "International airports: Ahmedabad, Mumbai, Bengaluru, Chennai, Kolkata, Guwahati, Delhi, Amritsar, Thiruvananthapuram, Hyderabad"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "Pr",
+      "name": "Practical Work in Geography Part II",
+      "marks": 25,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Data: its Source and Compilation",
+          "number": 1,
+          "topics": [
+            "Primary, secondary and unpublished sources",
+            "Tabulation, classification and grouping of data",
+            "Frequency polygon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Data Processing",
+          "number": 2,
+          "topics": [
+            "Tabulating and processing data",
+            "Mean, median and mode and their comparison"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Graphical Representation of Data",
+          "number": 3,
+          "topics": [
+            "Line graphs, polygraphs, simple, multiple and compound bar diagrams, line and bar, pie diagram, flowchart",
+            "Thematic maps: dot, choropleth and isopleth"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Spatial Information Technology",
+          "number": 4,
+          "topics": [
+            "GIS: advantages, components, spatial data formats",
+            "Sequence of GIS activities; spatial and attribute data input; linkages and matching",
+            "Overlay and buffer analysis"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

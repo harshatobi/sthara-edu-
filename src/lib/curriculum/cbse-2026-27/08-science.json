@@ -1,0 +1,192 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Science",
+  "codes": [],
+  "stream": "Science",
+  "aliases": [
+    "Sci"
+  ],
+  "source": {
+    "title": "Curiosity: Textbook of Science for Grade 8 (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hecu1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Curiosity: Textbook of Science for Grade 8 (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source.",
+    "Topics are the section headings of each NCERT chapter (the book frames sections as questions)."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Curiosity",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Exploring the Investigative World of Science",
+          "number": 1,
+          "topics": [
+            "The process of scientific investigation: observation, questions, hypotheses, experiments"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Invisible Living World: Beyond Our Naked Eye",
+          "number": 2,
+          "topics": [
+            "What Is a Cell?",
+            "What Are the Levels of Organisation in the Body of a Living Organism?",
+            "What Are Microorganisms?",
+            "How Are We Connected to Microbes?",
+            "Why Is Cell Considered to Be a Basic Unit of Life?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Health: The Ultimate Treasure",
+          "number": 3,
+          "topics": [
+            "Health: Is It More Than Not Falling Sick?",
+            "How Can We Stay Healthy?",
+            "How Do We Know That We Are Unwell?",
+            "Diseases: What Are the Causes and Types?",
+            "How to Prevent and Control Diseases?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Electricity: Magnetic and Heating Effects",
+          "number": 4,
+          "topics": [
+            "Does an Electric Current Have a Magnetic Effect?",
+            "Does a Current Carrying Wire Get Hot?",
+            "How Does a Battery Generate Electricity?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Exploring Forces",
+          "number": 5,
+          "topics": [
+            "What Is a Force?",
+            "What Can a Force Do to the Objects on Which It Is Applied?",
+            "Are Forces an Interaction Between Two or More Objects?",
+            "What Are the Different Types of Forces?",
+            "Weight and Its Measurement",
+            "Floating and Sinking"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pressure, Winds, Storms, and Cyclones",
+          "number": 6,
+          "topics": [
+            "Pressure",
+            "Pressure Exerted by Air",
+            "Formation of Wind",
+            "High-Speed Winds Result in Lowering of Air Pressure",
+            "Storms, Thunderstorms, and Lightning",
+            "Cyclone"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Particulate Nature of Matter",
+          "number": 7,
+          "topics": [
+            "What Is Matter Composed of?",
+            "What Decides Different States of Matter?",
+            "How Does the Interparticle Spacing Differ in the Three States of Matter?",
+            "How Particles Move in Different States of Matter?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nature of Matter: Elements, Compounds, and Mixtures",
+          "number": 8,
+          "topics": [
+            "What Are Mixtures?",
+            "What Are Pure Substances?",
+            "What Are the Types of Pure Substances?",
+            "How Do We Use Elements, Compounds, and Mixtures?",
+            "What Are Minerals?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Amazing World of Solutes, Solvents, and Solutions",
+          "number": 9,
+          "topics": [
+            "What Are Solute, Solvent, and Solution?",
+            "How Much Solute Can a Fixed Amount of Solvent Dissolve?",
+            "Solubility of Gases",
+            "Why Do Objects Float or Sink in Water?",
+            "What Is Density?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Light: Mirrors and Lenses",
+          "number": 10,
+          "topics": [
+            "What Are Spherical Mirrors?",
+            "What Are the Characteristics of Images Formed by Spherical Mirrors?",
+            "What Are the Laws of Reflection?",
+            "What Is a Lens?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Keeping Time with the Skies",
+          "number": 11,
+          "topics": [
+            "How Does the Moon’s Appearance Change and Why?",
+            "How Did Calendars Come into Existence?",
+            "Are Festivals Related to Astronomical Phenomena?",
+            "Why Do We Launch Artificial Satellites in Space?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "How Nature Works in Harmony",
+          "number": 12,
+          "topics": [
+            "How Do We Experience and Interpret Our Surroundings?",
+            "Who All Live Together in Nature?",
+            "Does Every Organism in a Community Matter?",
+            "What Are the Different Types of Interactions Among Organisms and their Surroundings?",
+            "Who Eats Whom?",
+            "What Happens to Waste in Nature?",
+            "How Does One Change Lead to Another?",
+            "How Do Interactions Maintain Balance in Ecosystems?",
+            "What Are the Benefits of an Ecosystem?"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Our Home: Earth, a Unique Life Sustaining Planet",
+          "number": 13,
+          "topics": [
+            "Why Is Earth a Unique Planet?",
+            "What Do the Planets of Our Solar System Look Like?",
+            "What Makes the Earth Suitable for Life to Exist ?",
+            "What Allows Life to Be Sustained on Earth?",
+            "What Keeps Life from Disappearing?",
+            "What Are the Threats to Life on Earth?"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

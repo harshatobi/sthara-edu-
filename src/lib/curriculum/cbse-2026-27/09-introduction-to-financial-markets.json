@@ -1,0 +1,264 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Introduction to Financial Markets",
+  "codes": [
+    "405"
+  ],
+  "stream": "Skill",
+  "aliases": [
+    "Financial Markets",
+    "FMM"
+  ],
+  "source": {
+    "title": "Introduction to Financial Markets, Code 405, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/405-FMM-IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Project",
+        "marks": 10
+      },
+      {
+        "component": "Viva based on project",
+        "marks": 5
+      },
+      {
+        "component": "Practical file",
+        "marks": 10
+      },
+      {
+        "component": "Skill demonstration via lab activities",
+        "marks": 25
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: 2 each."
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Money: What it is",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Money: What it is",
+          "number": 1,
+          "topics": [
+            "History of money; barter; currencies"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Money Exchange Systems",
+      "marks": 3,
+      "chapters": [
+        {
+          "name": "Money Exchange Systems",
+          "number": 2,
+          "topics": [
+            "Division of labour; modern currency"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B3",
+      "name": "Key Characteristics of Money",
+      "marks": 2,
+      "chapters": [
+        {
+          "name": "Key Characteristics of Money",
+          "number": 3,
+          "topics": [
+            "Medium of exchange, store of value"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B4",
+      "name": "What is Financial Planning",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "What is Financial Planning",
+          "number": 4,
+          "topics": [
+            "Goal setting; creating a plan"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B5",
+      "name": "What is Income",
+      "marks": 2,
+      "chapters": [
+        {
+          "name": "What is Income",
+          "number": 5,
+          "topics": [
+            "Sources of income"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B6",
+      "name": "What are Expenses",
+      "marks": 2,
+      "chapters": [
+        {
+          "name": "What are Expenses",
+          "number": 6,
+          "topics": [
+            "Fixed and variable expenses"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B7",
+      "name": "What is a Bank",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "What is a Bank",
+          "number": 7,
+          "topics": [
+            "Banking and bank services"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B8",
+      "name": "Why Save",
+      "marks": 3,
+      "chapters": [
+        {
+          "name": "Why Save",
+          "number": 8,
+          "topics": [
+            "Importance of saving"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B9",
+      "name": "Setting Goals",
+      "marks": 3,
+      "chapters": [
+        {
+          "name": "Setting Goals",
+          "number": 9,
+          "topics": [
+            "Short and long term financial goals"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B10",
+      "name": "Systematic Saving and Investments",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Systematic Saving and Investments",
+          "number": 10,
+          "topics": [
+            "Saving and investment avenues"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B11",
+      "name": "Making a Budget",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Making a Budget",
+          "number": 11,
+          "topics": [
+            "Personal budget"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

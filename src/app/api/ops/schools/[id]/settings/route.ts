@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
-import { parseReason, parseSchoolPatch, schoolPolicy, type SchoolPatch, type SchoolPolicy, type SchoolRow } from '@/lib/settings/registry';
+import { examTrackLabel, parseReason, parseSchoolPatch, schoolPolicy, type SchoolPatch, type SchoolPolicy, type SchoolRow } from '@/lib/settings/registry';
 import { invalidateSettings } from '@/lib/settings/server';
 import { syncSchoolAccess } from '@/lib/settings/suspension';
 
@@ -16,6 +16,7 @@ function journalValue(p: SchoolPolicy, k: keyof SchoolPatch): unknown {
   switch (k) {
     case 'trialEndsAt': return p.trialEndsAt;
     case 'active': return p.active ? 'active' : 'suspended';
+    case 'examTracks': return p.examTracks.length ? p.examTracks.map(examTrackLabel).join(', ') : 'none';
     default: return p[k] ?? null;
   }
 }
@@ -23,7 +24,7 @@ function journalValue(p: SchoolPolicy, k: keyof SchoolPatch): unknown {
 /**
  * PATCH /api/ops/schools/:id/settings
  *   { changes: { name?, code?, plan?, trialEndsAt?, active?, aiEnabled?, curriculum?, institutionType?,
- *                contractStudents?, pricePerStudent? },
+ *                contractStudents?, pricePerStudent?, examTracks? },
  *     reason, expectedUpdatedAt? }
  *   { sync: true, reason }  re-applies the sign-in bans/unbans for the school's current status.
  *
@@ -71,6 +72,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (patch.aiEnabled !== undefined) settings.aiEnabled = patch.aiEnabled;
   if (patch.contractStudents !== undefined) settings.contractStudents = patch.contractStudents;
   if (patch.pricePerStudent !== undefined) settings.pricePerStudent = patch.pricePerStudent;
+  if (patch.examTracks !== undefined) settings.examTracks = patch.examTracks;
   if (patch.plan !== undefined) {
     settings.plan = patch.plan;
     // Leaving the trial clears its end date so an old date can't lock a paying school out.

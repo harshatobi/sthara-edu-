@@ -1,0 +1,189 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Urdu Core",
+  "codes": [
+    "303"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Urdu",
+    "اردو"
+  ],
+  "source": {
+    "title": "Urdu Core, Code 303, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/URDU_CORE_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Speaking and listening skills",
+        "marks": 10
+      },
+      {
+        "component": "Project work",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Nai Awaaz, Urdu Core, Class XII (NCERT, 2011)",
+    "Urdu Qawaid (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in Urdu as printed in the NCERT textbook.",
+    "Deleted: Japan, Bade bol ka sar neecha, Ek gadhe ki sarguzasht, Rubaiyan, Phool mala."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Reading",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Urdu Core, Class XII)",
+          "topics": [
+            "Two factual passages of about 150 words (5+5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Writing",
+      "marks": 35,
+      "chapters": [
+        {
+          "name": "Essay (Urdu Core, Class XII)",
+          "topics": [
+            "10 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter Writing (Urdu Core, Class XII)",
+          "topics": [
+            "Personal, business, official and applications (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Precis Writing (Urdu Core)",
+          "topics": [
+            "7 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sentence Making with Idioms (Urdu Core)",
+          "topics": [
+            "10 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Prose",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "میگھالیہ",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "دعوت",
+          "topics": [
+            "Inshaiya: Rasheed Ahmad Siddiqui"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "گاؤں کی لاج",
+          "topics": [
+            "Afsana: Ali Abbas Husaini"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "بے مثال گلوکارہ: لتا منگیشکر",
+          "topics": [
+            "Translation: Kumar Gandharva"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "چچا چھکن نے خط لکھا",
+          "topics": [
+            "Humorous essay: Syed Imtiaz Ali Taj"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ذرا فون کر لوں",
+          "topics": [
+            "Inshaiya: Ibn-e-Insha"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "خط",
+          "topics": [
+            "Maktoob: Mirza Ghalib"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "پھول والوں کی سیر",
+          "topics": [
+            "Mazmoon: Mirza Farhatullah Beg"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "آگرہ بازار",
+          "topics": [
+            "Drama: Habib Tanvir"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Extract with questions 7, essay-type question 5, four short answers 8."
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Poetry",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "پرچھائیاں",
+          "topics": [
+            "Long poem: Sahir Ludhianvi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اپنے گھر کا حال",
+          "topics": [
+            "Masnavi: Mir Taqi Mir"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Essay-type question 5, five very short answers 5, five objective questions 5."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Entrepreneurship",
+  "codes": [
+    "066"
+  ],
+  "stream": "Commerce",
+  "source": {
+    "title": "Entrepreneurship, Code 066, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Enterprenuership_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Project 1",
+        "marks": 10
+      },
+      {
+        "component": "Project 2",
+        "marks": 10
+      },
+      {
+        "component": "Numerical assessment",
+        "marks": 5
+      },
+      {
+        "component": "Viva voce",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Entrepreneurship, Class XI (CBSE textbook)"
+  ],
+  "notes": [
+    "The document gives marks for groups of units; each group is recorded as one unit carrying the group's marks."
+  ],
+  "units": [
+    {
+      "code": "1-2",
+      "name": "Entrepreneurship: Concept and Functions; An Entrepreneur",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Entrepreneurship: Concept and Functions",
+          "number": 1,
+          "topics": [
+            "Concept, functions and need",
+            "Why entrepreneurship for you",
+            "Myths, advantages and limitations",
+            "Process of entrepreneurship",
+            "The Indian scenario"
+          ],
+          "outcomes": [
+            "Explain the functions of an entrepreneur",
+            "Assess how entrepreneurship can shape a career",
+            "Describe entrepreneurial activity in India"
+          ]
+        },
+        {
+          "name": "An Entrepreneur",
+          "number": 2,
+          "topics": [
+            "Why be an entrepreneur",
+            "Types of entrepreneurs",
+            "Competencies and characteristics",
+            "Entrepreneurial values, attitudes and motivation",
+            "Intrapreneur: meaning and importance"
+          ],
+          "outcomes": [
+            "Differentiate types of entrepreneurs",
+            "Appreciate ethical entrepreneurship",
+            "Distinguish entrepreneur and intrapreneur"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "3-4",
+      "name": "Entrepreneurial Journey; Entrepreneurship as Innovation and Problem Solving",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Entrepreneurial Journey",
+          "number": 3,
+          "topics": [
+            "Idea generation",
+            "Feasibility study and opportunity assessment",
+            "Business plan: meaning, purpose and elements",
+            "Execution of the business plan"
+          ],
+          "outcomes": [
+            "Draft a basic business plan",
+            "Understand why business plans succeed or fail"
+          ]
+        },
+        {
+          "name": "Entrepreneurship as Innovation and Problem Solving",
+          "number": 4,
+          "topics": [
+            "Entrepreneurs as problem solvers",
+            "Innovations and entrepreneurial ventures: global and Indian",
+            "Role of technology: e-commerce and social media",
+            "Social entrepreneurship"
+          ],
+          "outcomes": [
+            "Understand technology and digitisation for new businesses",
+            "Discuss social entrepreneurship"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Understanding the Market",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Understanding the Market",
+          "number": 5,
+          "topics": [
+            "Market: concept and types",
+            "Micro and macro market environment",
+            "Market research: concept, importance, process",
+            "Marketing mix"
+          ],
+          "outcomes": [
+            "Scan the market environment",
+            "Conduct market research"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "6-7",
+      "name": "Business Finance and Arithmetic; Resource Mobilisation",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Business Finance and Arithmetic",
+          "number": 6,
+          "topics": [
+            "Unit of sale, unit price and unit cost for a single product or service",
+            "Start-up, variable and fixed costs",
+            "Break-even analysis for a single product or service"
+          ],
+          "outcomes": [
+            "Calculate break-even for a single product or service"
+          ]
+        },
+        {
+          "name": "Resource Mobilisation (Class XI)",
+          "number": 7,
+          "topics": [
+            "Physical, human, financial and intangible resources",
+            "Selection and use of human resources and professionals: accountants, lawyers, auditors, board members"
+          ],
+          "outcomes": [
+            "Identify types of resources"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "English",
+  "codes": [
+    "184"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "English Language and Literature",
+    "English (R1)",
+    "English (R2)"
+  ],
+  "source": {
+    "title": "English, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/English_LL_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic pen and paper tests",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessment (quizzes, oral discussions, presentations)",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment projects (ALS, art, IKS, tech integrated)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Kaveri: Textbook of English for Grade 9 (NCERT)"
+  ],
+  "notes": [
+    "Kaveri serves both R1 and R2 learners; the question paper design differs (R1 shown as the main structure, R2 differences in notes).",
+    "Kaveri unit lists are taken from the NCERT textbook contents page (first edition, January 2026); main and companion texts per unit.",
+    "R2 paper: reading 12+8; grammar via paragraph completion; writing 4+5+5+6 (notice or poster, letter or e-mail, speech or article, narrative essay); literature 15 extract + 10 short + 5 long."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Skills",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Unseen Passages",
+          "topics": [
+            "Descriptive or discursive passage of 400-450 words (10)",
+            "Case based passage with verbal or visual inputs, 200-250 words (10)",
+            "Selected and constructed responses"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Grammar",
+          "topics": [
+            "Sequence of tenses",
+            "Modal auxiliaries: ability, obligation, permission, possibility, advice",
+            "Reported speech: statements, questions, commands and requests",
+            "Conditional clause type 1",
+            "Subject-verb concord",
+            "Determiners",
+            "Noun and relative clauses",
+            "Editing / omitting (4), sentence rearrangement (3), sentence transformation (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Writing Skills",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Notice and Informal Invitation",
+          "topics": [
+            "Up to 50 words (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter to the Editor and Formal E-mail",
+          "topics": [
+            "120-150 words presenting views and suggestions (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Factual Description and Magazine Article",
+          "topics": [
+            "120-150 words (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Descriptive and Narrative Essay",
+          "topics": [
+            "200-250 words (7)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Language through Literature: Kaveri",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "How I Taught My Grandmother to Read",
+          "number": 1,
+          "topics": [
+            "Unit 1, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bharat Our Land",
+          "topics": [
+            "Unit 1, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Pot Maker",
+          "number": 2,
+          "topics": [
+            "Unit 2, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gifts of Grace: Honouring Our Vocations",
+          "topics": [
+            "Unit 2, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Winds of Change",
+          "number": 3,
+          "topics": [
+            "Unit 3, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Canvas of Soil",
+          "topics": [
+            "Unit 3, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vitamin-M",
+          "number": 4,
+          "topics": [
+            "Unit 4, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "I Cannot Remember My Mother",
+          "topics": [
+            "Unit 4, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The World of Limitless Possibilities",
+          "number": 5,
+          "topics": [
+            "Unit 5, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nine Gold Medals",
+          "topics": [
+            "Unit 5, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Twin Melodies",
+          "number": 6,
+          "topics": [
+            "Unit 6, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Friend Found in Music",
+          "topics": [
+            "Unit 6, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Carrier of Words",
+          "number": 7,
+          "topics": [
+            "Unit 7, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Words",
+          "topics": [
+            "Unit 7, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Follow That Dream",
+          "number": 8,
+          "topics": [
+            "Unit 8, main text (Kaveri)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Believe in Yourself",
+          "topics": [
+            "Unit 8, companion text (Kaveri)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Extracts 10 (drama/prose and poetry), five short answers 10, two long answers 10."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Legal Studies",
+  "codes": [
+    "074"
+  ],
+  "stream": "Humanities",
+  "aliases": [
+    "Law"
+  ],
+  "source": {
+    "title": "Legal Studies, Code 074, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/LegalStudies_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project: preparation and presentation of file",
+        "marks": 5
+      },
+      {
+        "component": "Project: research work",
+        "marks": 5
+      },
+      {
+        "component": "Project: understanding and application of legal concepts",
+        "marks": 5
+      },
+      {
+        "component": "Viva",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Legal Studies, Class XI (CBSE, revised 2022-23)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given; course competencies: identify legal issues, apply law, legal research, legal values."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Introduction to Political Institutions",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Concept of State",
+          "number": 1,
+          "topics": [
+            "What a state is; the state and Article 12",
+            "What government is; emergence of the state from society",
+            "Definition, theories of origin, elements and role of the state"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Forms and Organs of Government",
+          "number": 2,
+          "topics": [
+            "Forms: monarchy, aristocracy, dictatorship, democracy",
+            "Functions of the legislature, executive and judiciary"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Separation of Powers",
+          "number": 3,
+          "topics": [
+            "Montesquieu's doctrine: features, checks and balances, impact",
+            "Benefits and defects of the doctrine",
+            "Separation of powers in Britain, the USA and India"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Basic Features of the Constitution of India",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Salient Features of the Constitution of India",
+          "number": 1,
+          "topics": [
+            "Meaning, definition and historical perspective",
+            "Preamble; fundamental rights, directive principles and fundamental duties; amendment",
+            "Adult suffrage, single citizenship, independent judiciary, emergency provisions",
+            "Federal in form, unitary in character; centre-state relations; schedules"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Administrative Law",
+          "number": 2,
+          "topics": [
+            "Administrative and constitutional law: key differences",
+            "Reasons for growth of administrative law",
+            "Types of administrative action",
+            "Rule of law; droit system"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Jurisprudence, Nature and Sources of Law",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Jurisprudence, Nature and Meaning of Law",
+          "number": 1,
+          "topics": [
+            "Historical perspective",
+            "Schools of law",
+            "Function and purpose of law"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Classification of Laws",
+          "number": 2,
+          "topics": [
+            "By subject matter",
+            "By scope",
+            "By jurisdiction"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sources of Law",
+          "number": 3,
+          "topics": [
+            "Custom and its importance in India",
+            "Judicial precedent",
+            "Legislation"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Law Reform",
+          "number": 4,
+          "topics": [
+            "Need for law reform",
+            "Law reforms in India; recent reforms"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Cyber Laws, Safety and Security in India",
+          "number": 5,
+          "topics": [
+            "Need for cyber laws; cyber safety and security",
+            "Cyber crime and its categories",
+            "IT Act 2000: scope; Section 66A"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Judiciary: Constitutional, Civil and Criminal Courts and Processes",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Judiciary: Constitutional, Civil and Criminal Courts and Processes",
+          "topics": [
+            "Establishment of the Supreme Court and High Courts; independence and impartiality",
+            "Structure and hierarchy of courts; civil process and civil courts",
+            "Legal terminology; jurisdictions; res subjudice and res judicata (CPC 1908)",
+            "Criminal courts: types of offences, FIR, investigation and prosecution, autrefois acquit and convict, role of police",
+            "Family courts; administrative tribunals"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Family Justice System",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Institutional Framework: Marriage and Divorce",
+          "number": 1,
+          "topics": [
+            "Nature of family laws in India; human rights and gender perspective",
+            "Family courts: role of women, lawyers and counsellors",
+            "Marriage and divorce"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Child Rights",
+          "number": 2,
+          "topics": [
+            "Rights to education, health and shelter",
+            "Child labour; sexual abuse; juvenile justice"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Adoption",
+          "number": 3,
+          "topics": [
+            "Adoption",
+            "Minor custody and guardianship"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Property, Succession and Inheritance",
+          "number": 4,
+          "topics": [
+            "Joint family and separate property",
+            "Intestate succession and its rules",
+            "Testamentary succession"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prevention of Violence against Women",
+          "number": 5,
+          "topics": [
+            "Domestic abuse",
+            "International legal framework",
+            "Laws in India"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

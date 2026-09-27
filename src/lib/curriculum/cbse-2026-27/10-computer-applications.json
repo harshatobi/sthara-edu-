@@ -1,0 +1,123 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Computer Applications",
+  "codes": [
+    "165"
+  ],
+  "stream": "Computer",
+  "aliases": [
+    "Computer",
+    "Computers",
+    "IT"
+  ],
+  "source": {
+    "title": "Computer Applications, Code 165, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Computer_Applications_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Lab test: HTML web page from a diagram",
+        "marks": 20
+      },
+      {
+        "component": "Report file (at least 10 HTML pages)",
+        "marks": 15
+      },
+      {
+        "component": "Viva voce",
+        "marks": 5
+      },
+      {
+        "component": "Project",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Networking",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Networking",
+          "topics": [
+            "WWW, web servers and clients, websites, browsers, blogs, newsgroups, web and e-mail addresses",
+            "Protocols: TCP/IP, SMTP, POP3, HTTP, HTTPS, SSH, SFTP, FTP, SCP, TELNET",
+            "Internet services: search, chat, e-mail, video conferencing, e-learning, e-banking, e-governance, social networking",
+            "Mobile technologies: SMS, MMS, 3G, 4G, 5G"
+          ],
+          "outcomes": [
+            "Understand networking components and internet services"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "HTML",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "HTML",
+          "topics": [
+            "HTML document structure and body attributes",
+            "Text tags: br, hr, headings, p, b, i, u, lists, description lists",
+            "font, img, sup, sub; forms; audio and video",
+            "Tables with rowspan and colspan; links with href, mailto, target",
+            "CSS: colour, background, border, margin, size, outline, font, align, float"
+          ],
+          "outcomes": [
+            "Create web pages with HTML elements, links, forms and CSS"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Cyber Ethics",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Cyber Ethics",
+          "topics": [
+            "Netiquettes",
+            "Software licences and open source",
+            "IPR, plagiarism, digital property rights",
+            "Freedom of information and the digital divide",
+            "E-commerce: privacy, fraud, secure transmission"
+          ],
+          "outcomes": [
+            "Understand responsible online behaviour"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Practicals",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Lab Exercises (Class X)",
+          "topics": [
+            "Static web pages with CSS, images, audio, video, tables",
+            "A multi-page website; HTML forms",
+            "Blog on malware; web page on plagiarism"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

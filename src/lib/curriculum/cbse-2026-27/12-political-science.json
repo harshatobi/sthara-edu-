@@ -1,0 +1,387 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Political Science",
+  "codes": [
+    "028"
+  ],
+  "stream": "Humanities",
+  "aliases": [
+    "Pol Science",
+    "Pol Sci",
+    "Civics"
+  ],
+  "source": {
+    "title": "Political Science, Code 028, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/PoliticalScience_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project: introduction / overview",
+        "marks": 2
+      },
+      {
+        "component": "Project: variety of contents",
+        "marks": 3
+      },
+      {
+        "component": "Project: presentation",
+        "marks": 3
+      },
+      {
+        "component": "Project: conclusion",
+        "marks": 1
+      },
+      {
+        "component": "Project: bibliography",
+        "marks": 1
+      },
+      {
+        "component": "Viva voce",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Contemporary World Politics, Class XII (NCERT)",
+    "Politics in India since Independence, Class XII (NCERT)",
+    "Additional reference material (annexure to the CBSE document)"
+  ],
+  "notes": [
+    "Unit codes are prefixed A (Contemporary World Politics) and B (Politics in India since Independence).",
+    "Map questions can come from any lesson of Politics in India since Independence; cartoon and passage questions from either book.",
+    "Competency based questions will be 50% of the Class XII paper in 2026-27.",
+    "Additional reference material (not assessed): Arab Spring; BRICS; UNESCO, UNICEF and other agencies; terrorism; Patel and national integration; NITI Aayog; India-EU relations; Jaya Prakash Narayan; the Kashmir issue; NDA III, IV and V."
+  ],
+  "units": [
+    {
+      "code": "A-1",
+      "name": "The End of Bipolarity",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "The End of Bipolarity",
+          "number": 1,
+          "topics": [
+            "The Soviet system",
+            "Gorbachev and the disintegration; causes and consequences",
+            "Shock therapy and its consequences",
+            "New entities: Russia, Balkan states, Central Asian states",
+            "India's relations with Russia and other post-communist countries"
+          ],
+          "outcomes": [
+            "Discuss the background and outcome of the Soviet disintegration",
+            "Assess the features of shock therapy",
+            "Trace India-Russia relations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-2",
+      "name": "Contemporary Centres of Power",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Contemporary Centres of Power",
+          "number": 2,
+          "topics": [
+            "European Union",
+            "ASEAN",
+            "Rise of China as an economic power",
+            "Japan and South Korea as emerging powers"
+          ],
+          "outcomes": [
+            "Compare the EU and ASEAN",
+            "Evaluate China's rise and its impact",
+            "Summarise India's relations with China"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-3",
+      "name": "Contemporary South Asia",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Contemporary South Asia",
+          "number": 3,
+          "topics": [
+            "Military and democracy in Pakistan and Bangladesh",
+            "Monarchy and democracy in Nepal",
+            "Ethnic conflict and democracy in Sri Lanka",
+            "India-Pakistan conflicts; India and its neighbours",
+            "Peace and cooperation"
+          ],
+          "outcomes": [
+            "Appreciate the mixed record of democracy in South Asia",
+            "Justify the creation of SAARC",
+            "Understand the role of the US and China in South Asia"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-4",
+      "name": "International Organisations",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "International Organisations",
+          "number": 4,
+          "topics": [
+            "Meaning and importance of international organisations; evolution of the UN",
+            "Principal organs of the UN",
+            "Reform of the UN after the Cold War; India and UN reforms",
+            "Key agencies: IMF, World Bank, WTO, ILO, IAEA; NGOs: Amnesty International, Human Rights Watch",
+            "Implications and future of international organisations"
+          ],
+          "outcomes": [
+            "Appreciate the role of the UN and its agencies",
+            "Understand the need for UN reform"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-5",
+      "name": "Security in the Contemporary World",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Security in the Contemporary World",
+          "number": 5,
+          "topics": [
+            "Meaning and types of security",
+            "Traditional and non-traditional notions",
+            "New sources of threats",
+            "Cooperative security",
+            "India's security strategy"
+          ],
+          "outcomes": [
+            "Recognise the causes of security threats",
+            "Think critically about stakeholders in security"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-6",
+      "name": "Environment and Natural Resources",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Environment and Natural Resources",
+          "number": 6,
+          "topics": [
+            "Environmental concerns; global commons",
+            "Common but differentiated responsibilities",
+            "India's stand on environmental issues",
+            "Environmental movements; resource geopolitics",
+            "Rights of indigenous peoples"
+          ],
+          "outcomes": [
+            "Explain global environmental issues",
+            "Appreciate India's responsibility in protecting the environment",
+            "Understand concerns of indigenous communities"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-7",
+      "name": "Globalisation",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Globalisation",
+          "number": 7,
+          "topics": [
+            "Concept; causes and consequences",
+            "India and globalisation",
+            "Resistance to globalisation, including in India"
+          ],
+          "outcomes": [
+            "Elucidate the political, economic and cultural dimensions of globalisation",
+            "Evaluate its impact on India"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-1",
+      "name": "Challenges of Nation-Building",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Challenges of Nation Building",
+          "number": 1,
+          "topics": [
+            "Three challenges for the new nation",
+            "Partition: displacement and rehabilitation",
+            "Integration of princely states: Hyderabad, Manipur",
+            "Reorganisation of states"
+          ],
+          "outcomes": [
+            "Analyse the challenges independent India faced",
+            "Explain the accession of princely states",
+            "Assess language as the basis of state reorganisation"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-2",
+      "name": "Era of One-Party Dominance",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Era of One-Party Dominance",
+          "number": 2,
+          "topics": [
+            "Challenge of building democracy",
+            "Congress dominance in the first three general elections; Congress as a social and ideological coalition; factions",
+            "Emergence of opposition parties"
+          ],
+          "outcomes": [
+            "Assess Congress dominance from 1952 to 1967",
+            "Evaluate the role of opposition parties"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-3",
+      "name": "Politics of Planned Development",
+      "marks": 2,
+      "chapters": [
+        {
+          "name": "Politics of Planned Development",
+          "number": 3,
+          "topics": [
+            "Ideas of development; planning; Planning Commission",
+            "First Five Year Plan; rapid industrialisation"
+          ],
+          "outcomes": [
+            "Identify options considered to balance growth and justice",
+            "Understand why the Planning Commission was formed"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-4",
+      "name": "India's External Relations",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "India's External Relations",
+          "number": 4,
+          "topics": [
+            "International context",
+            "Non-alignment: Nehru's role, distance from two camps, Afro-Asian unity",
+            "Peace and conflict with China; 1962",
+            "Wars and peace with Pakistan; Bangladesh war 1971",
+            "India's nuclear policy"
+          ],
+          "outcomes": [
+            "Recognise the significance of NAM",
+            "Compare aspects of India-China relations",
+            "Demonstrate knowledge of the Indo-Pak wars"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-5",
+      "name": "Challenges to and Restoration of the Congress System",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Challenges to and Restoration of the Congress System",
+          "number": 5,
+          "topics": [
+            "Political succession: Nehru to Shastri to Indira Gandhi",
+            "Fourth general election 1967: non-Congressism, verdict, coalitions, defections",
+            "Split in the Congress: Indira vs the Syndicate; presidential election 1969",
+            "1971 election and restoration"
+          ],
+          "outcomes": [
+            "Evaluate opposition unity and the Congress split",
+            "Analyse the restoration of the Congress system"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-6",
+      "name": "The Crisis of Democratic Order",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "The Crisis of Democratic Order",
+          "number": 6,
+          "topics": [
+            "Background: economic context, Gujarat and Bihar movements, conflict with judiciary",
+            "Declaration of Emergency: crisis, response, consequences",
+            "Lessons of the Emergency",
+            "Politics after Emergency: 1977 elections, Janata government; legacy"
+          ],
+          "outcomes": [
+            "Understand the causes and consequences of the Emergency",
+            "Evaluate the Janata government"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-7",
+      "name": "Regional Aspirations",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Regional Aspirations",
+          "number": 7,
+          "topics": [
+            "Region and the nation: Indian approach, areas of tension",
+            "Jammu and Kashmir: roots, disputes, politics since 1948, insurgency, 2022 and beyond",
+            "Punjab: political context, cycle of violence, road to peace",
+            "The Northeast: autonomy, secessionist movements, movements against outsiders, Assam"
+          ],
+          "outcomes": [
+            "Discuss the implications of regional demands",
+            "Appreciate government initiatives on regional aspirations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-8",
+      "name": "Recent Developments in Indian Politics",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Recent Developments in Indian Politics",
+          "number": 8,
+          "topics": [
+            "Context of the 1990s; era of coalition",
+            "Political rise of backward classes: Mandal",
+            "Communalism, secularism and democracy: Ayodhya, from legal proceedings to acceptance",
+            "Emergence of new consensus; Lok Sabha elections 2004-2019; growing consensus"
+          ],
+          "outcomes": [
+            "Understand changes since 1989",
+            "Trace the rise of the BJP",
+            "Identify areas of growing consensus"
+          ]
+        }
+      ]
+    }
+  ]
+}

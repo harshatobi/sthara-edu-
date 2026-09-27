@@ -1,0 +1,133 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Kathak (Dance)",
+  "codes": [
+    "056"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Kathak"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "History of Indian Dance",
+          "topics": [
+            "A brief history of Indian dance"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Themes and Legends in Kathak",
+          "topics": [
+            "Ramayana, Mahabharata, Bhagavata Purana and Gita Govinda in the context of Kathak",
+            "Kalia daman, Govardhan lila, Panghat lila, Draupadi cheer haran, Makhan chori, Marich vadh, Bhasmasur vadh, Madan dahan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "History of Kathak",
+          "topics": [
+            "References in ancient texts",
+            "Mandir kal (kathavachak, rasdhari), Darbar kal, modern era"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathak Repertoire",
+          "topics": [
+            "Invocation, traditional compositions",
+            "Abhinaya: bhajan, thumri, dadra, ghazal, dhrupad, kavit",
+            "Tarana, trivat, chaturang"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Distinctive Aspects of Kathak",
+          "topics": [
+            "Ghungroo, chakkars, upaj, costume"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Notation of Teentaal and Jhaptaal",
+          "topics": [
+            "Thah, dugun, chaugun"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathak Terminology (Class XI)",
+          "topics": [
+            "Nritta, nritya, natya, tandava, lasya, anga, upanga, pratyanga"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Tatkar and Basic Positions",
+          "topics": [
+            "Basic standing position; patterns of tatkar",
+            "Tatkar in teentaal in thah, dugun, chaugun"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Body Exercises and Chakkars",
+          "topics": [
+            "Anga, pratyanga, upanga exercises",
+            "Ten hastak movements and chakkars in teentaal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Parhant with Hasta Kriya",
+          "topics": [
+            "Teentaal and jhaptaal in thah, dugun, chaugun"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathak Compositions (Class XI)",
+          "topics": [
+            "Thaat, aamad, tez aamad, vandana, tukra/toda, natwari tukra, gatnikas, gatbhaav, paran, tihaayi, ladi/laya baant, parhant of tukda"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

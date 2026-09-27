@@ -1,0 +1,133 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Beauty and Wellness",
+  "codes": [
+    "407"
+  ],
+  "stream": "Skill",
+  "source": {
+    "title": "Beauty and Wellness, Code 407, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/407-BEAUTY_AND_WELLNESS-IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 15
+      },
+      {
+        "component": "Written test",
+        "marks": 10
+      },
+      {
+        "component": "Viva voce",
+        "marks": 10
+      },
+      {
+        "component": "Practical file / student portfolio",
+        "marks": 10
+      },
+      {
+        "component": "Viva on project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: 5 for units 1-3 (term 1) and 5 for units 4-5 (term 2)."
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Part B: Subject Specific Skills",
+      "marks": 40,
+      "chapters": [
+        {
+          "name": "Introduction to Beauty and Wellness Industry and Beauty Therapy",
+          "number": 1,
+          "topics": [
+            "Introduction to Beauty and Wellness Industry and Beauty Therapy"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manicure, Pedicure and Mehendi Services",
+          "number": 2,
+          "topics": [
+            "Manicure, Pedicure and Mehendi Services"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hair Care",
+          "number": 3,
+          "topics": [
+            "Hair Care"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Marks are printed per term: 20 for units 1-2 and the remainder for unit 3, 40 in all."
+      ]
+    }
+  ]
+}

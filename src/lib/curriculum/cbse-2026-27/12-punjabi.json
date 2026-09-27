@@ -1,0 +1,202 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Punjabi",
+  "codes": [
+    "104"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ਪੰਜਾਬੀ"
+  ],
+  "source": {
+    "title": "Punjabi, Code 104, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Punjabi_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project",
+        "marks": 10
+      },
+      {
+        "component": "Listening and speaking activities",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Lazmi Punjabi 12, Punjab School Education Board"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Lesson names are given in Gurmukhi as printed. Literature: poetry 12, stories 19, Punjabi culture 13."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Advanced Reading Skill",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Class XII)",
+          "topics": [
+            "Information-rich passage with 8 MCQs"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Effective Writing Skill",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Karobari Pattar",
+          "topics": [
+            "Business letter (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paragraph Writing (Class XII)",
+          "topics": [
+            "125-150 words on a given topic (7)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Vihaarak Viakaran (Applied Grammar)",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Vaak-Vatandra",
+          "topics": [
+            "Sentence transformation from the textbook (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Akhaan / Akhautan",
+          "topics": [
+            "Proverbs used in sentences (10)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Sahit (Literature)",
+      "marks": 44,
+      "chapters": [
+        {
+          "name": "ਟੁਕੜੀ ਜੱਗ ਤੋਂ ਨਿਆਰੀ",
+          "topics": [
+            "Poetry: Bhai Vir Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਤਾਜ ਮਹਲ",
+          "topics": [
+            "Poetry: Prof. Mohan Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਚੁੰਮ ਚੁੰਮ ਰੱਖੋ",
+          "topics": [
+            "Poetry: Nand Lal Noorpuri"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਵਾਰਸ ਸ਼ਾਹ",
+          "topics": [
+            "Poetry: Amrita Pritam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਮੇਰਾ ਬਚਪਨ",
+          "topics": [
+            "Poetry: Harbhajan Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਗੀਤ",
+          "topics": [
+            "Poetry: Shiv Kumar Batalvi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਸਾਂਝ",
+          "topics": [
+            "Story: Sujan Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਨੀਲੀ",
+          "topics": [
+            "Story: Kartar Singh Duggal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਮਾੜਾ ਬੰਦਾ",
+          "topics": [
+            "Story: Prem Parkash"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਘਰ ਜਾ ਆਪਣੇ",
+          "topics": [
+            "Story: Gulzar Singh Sandhu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਪੰਜਾਬ ਦੇ ਮੇਲੇ ਤੇ ਤਿਉਹਾਰ",
+          "topics": [
+            "Punjabi culture: Dr. S. S. Vanjara Bedi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਪੰਜਾਬ ਦੇ ਰਸਮ-ਰਿਵਾਜ",
+          "topics": [
+            "Punjabi culture: Gulzar Singh Sandhu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਪੰਜਾਬ ਦੀਆਂ ਲੋਕ-ਖੇਡਾਂ",
+          "topics": [
+            "Punjabi culture: Sukhdev Madpuri"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਪੰਜਾਬ ਦੇ ਲੋਕ-ਨਾਚ",
+          "topics": [
+            "Punjabi culture: Dr. Jagir Singh Noor"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

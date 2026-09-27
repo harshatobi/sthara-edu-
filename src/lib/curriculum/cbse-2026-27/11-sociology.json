@@ -1,0 +1,184 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Sociology",
+  "codes": [
+    "039"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Sociology, Code 039, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Sociology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project: introduction",
+        "marks": 2
+      },
+      {
+        "component": "Project: statement of purpose",
+        "marks": 2
+      },
+      {
+        "component": "Project: research question",
+        "marks": 2
+      },
+      {
+        "component": "Project: methodology",
+        "marks": 3
+      },
+      {
+        "component": "Project: data analysis",
+        "marks": 4
+      },
+      {
+        "component": "Project: conclusion",
+        "marks": 2
+      },
+      {
+        "component": "Viva on the project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Introducing Sociology, Class XI (NCERT)",
+    "Understanding Society, Class XI (NCERT)"
+  ],
+  "notes": [
+    "The document has no learning-outcomes column for Sociology, so chapter outcomes are left empty.",
+    "Unit numbers follow the document, which skips units dropped from the syllabus.",
+    "Part A Introducing Sociology 44 marks; Part B Understanding Society 36."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Sociology, Society and its Relationship with other Social Science Disciplines",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Sociology, Society and its Relationship with other Social Science Disciplines",
+          "number": 1,
+          "topics": [
+            "Introducing society: individuals and collectivities; pluralities and inequalities among societies",
+            "Introducing sociology: emergence, nature and scope",
+            "Relationship with other social science disciplines"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Terms, Concepts and their Use in Sociology",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Terms, Concepts and their Use in Sociology",
+          "number": 2,
+          "topics": [
+            "Social groups and society",
+            "Social stratification",
+            "Status and role",
+            "Society and social control"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Understanding Social Institutions",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Understanding Social Institutions",
+          "number": 3,
+          "topics": [
+            "Family, marriage and kinship",
+            "Work and economic life",
+            "Political institutions",
+            "Religion as a social institution",
+            "Education as a social institution"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Culture and Socialisation",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Culture and Socialisation",
+          "number": 4,
+          "topics": [
+            "Defining culture; dimensions of culture",
+            "Socialisation; agencies of socialisation"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Social Change and Social Order in Rural and Urban Society",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Social Change and Social Order in Rural and Urban Society",
+          "number": 7,
+          "topics": [
+            "Social change: types, causes and consequences",
+            "Social order: domination, authority and law; contestation, crime and violence",
+            "Village, town and city",
+            "Social order and social change in rural and urban areas"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "9",
+      "name": "Introducing Western Sociologists",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Introducing Western Sociologists",
+          "number": 9,
+          "topics": [
+            "The context of sociology",
+            "Karl Marx on class conflict",
+            "Emile Durkheim: division of labour in society",
+            "Max Weber: interpretive sociology, ideal type and bureaucracy"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "10",
+      "name": "Indian Sociologists",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Indian Sociologists",
+          "number": 10,
+          "topics": [
+            "G.S. Ghurye on caste and race",
+            "D.P. Mukerji on tradition and change",
+            "A.R. Desai on the state",
+            "M.N. Srinivas on the village"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

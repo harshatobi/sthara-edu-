@@ -1,0 +1,298 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Hindi Elective",
+  "codes": [
+    "002"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Hindi (Elective)",
+    "हिंदी (ऐच्छिक)"
+  ],
+  "source": {
+    "title": "Hindi (Elective), Code 002, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindi_Elective_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "श्रवण (listening)",
+        "marks": 5
+      },
+      {
+        "component": "वाचन (speaking)",
+        "marks": 5
+      },
+      {
+        "component": "परियोजना कार्य (project)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "अंतरा भाग 2 (NCERT)",
+    "अंतराल भाग 2 (NCERT)",
+    "अभिव्यक्ति और माध्यम (NCERT)"
+  ],
+  "notes": [
+    "Lesson lists are the current NCERT reprints (textbook contents pages), less the lessons the CBSE document says are not examined.",
+    "Units are the question paper's sections (खंड क, ख, ग).",
+    "Not examined in 2026-27: part of Nirala (Geet Gaane Do Mujhe), Vishnu Khare (Ek Kam, Satya), Keshavdas (Ramchandrika), part of Ghananand, Brajmohan Vyas (Kachcha Chittha), Ramvilas Sharma (Yathasmai Rochate Vishwam), Sanjeev (Aarohan, Antral)."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठित बोध (Unseen Comprehension)",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "अपठित गद्यांश",
+          "topics": [
+            "लगभग 250 शब्दों का अपठित गद्यांश: बोध, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (10 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अपठित पद्यांश",
+          "topics": [
+            "लगभग 100 शब्दों का अपठित पद्यांश: बोध, सराहना, सौंदर्य, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (8 अंक)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "अभिव्यक्ति और माध्यम (Expression and Media)",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "रचनात्मक लेखन",
+          "topics": [
+            "तीन नए और अप्रत्याशित विषयों में से एक पर लगभग 100 शब्दों में (5 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कैसे बनती है कविता",
+          "number": 6,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "नाटक लिखने का व्याकरण",
+          "number": 7,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कैसे लिखें कहानी",
+          "number": 8,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विभिन्न माध्यमों के लिए लेखन",
+          "number": 3,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पत्रकारीय लेखन के विभिन्न रूप और लेखन प्रक्रिया",
+          "number": 4,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विशेष लेखन: स्वरूप और प्रकार",
+          "number": 5,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Lessons 3, 4 and 5: short questions 5 marks and two 3-mark answers 6 marks. Lessons 6, 7 and 8: two 3-mark answers, 6 marks."
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "अंतरा भाग 2: कविता खंड (Poetry)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "जयशंकर प्रसाद: देवसेना का गीत; कार्नेलिया का गीत",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सूर्यकांत त्रिपाठी 'निराला': सरोज स्मृति",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सच्चिदानंद हीरानंद वात्स्यायन 'अज्ञेय': यह दीप अकेला; मैंने देखा, एक बूँद",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "केदारनाथ सिंह: बनारस; दिशा",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रघुवीर सहाय: वसंत आया; तोड़ो",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "तुलसीदास: भरत-राम का प्रेम; पद",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मलिक मुहम्मद जायसी: बारहमासा",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विद्यापति: पद",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "घनानंद: कवित्त",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "अंतरा भाग 2: गद्य खंड (Prose)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "रामचंद्र शुक्ल: प्रेमघन की छाया-स्मृति",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पंडित चंद्रधर शर्मा गुलेरी: सुमिरिनी के मनके",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "फणीश्वरनाथ 'रेणु': संवदिया",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "भीष्म साहनी: गांधी, नेहरू और यास्सेर अराफ़ात",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "असगर वजाहत: शेर, पहचान, चार हाथ, साझा",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "निर्मल वर्मा: जहाँ कोई वापसी नहीं",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ममता कालिया: दूसरा देवदास",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "हजारी प्रसाद द्विवेदी: कुटज",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C3",
+      "name": "अंतराल भाग 2 (Supplementary Reader)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "सूरदास की झोंपड़ी (प्रेमचंद)",
+          "topics": [
+            "अंतराल भाग 2"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "बिस्कोहर की माटी (विश्वनाथ त्रिपाठी)",
+          "topics": [
+            "अंतराल भाग 2"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अपना मालवा: खाऊ-उजाड़ू सभ्यता में (प्रभाष जोशी)",
+          "topics": [
+            "अंतराल भाग 2"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

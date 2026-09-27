@@ -1,0 +1,93 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Kuchipudi (Dance)",
+  "codes": [
+    "058"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Kuchipudi"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "History of Kuchipudi",
+          "topics": [
+            "A history of Kuchipudi dance"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Distinctive Features of Kuchipudi",
+          "topics": [
+            "Structure and format"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kuchipudi Repertoire",
+          "topics": [
+            "Repertoire and literary content"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Positions and Body Movements",
+          "topics": [
+            "Standing and sitting positions",
+            "Exercises of body parts; eyes, hands and face"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Adugus in Trikala",
+          "topics": [
+            "Mandikoppu, vonti adugu, venuka naatu, prakka naatu, kettera naatu, chuttu naatu, prakka kuppi naatu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Teermanams",
+          "topics": [
+            "Teermanams in five jaatis, recited with tala"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

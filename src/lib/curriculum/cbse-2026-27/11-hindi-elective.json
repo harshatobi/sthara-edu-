@@ -1,0 +1,298 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Hindi Elective",
+  "codes": [
+    "002"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Hindi (Elective)",
+    "हिंदी (ऐच्छिक)"
+  ],
+  "source": {
+    "title": "Hindi (Elective), Code 002, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindi_Elective_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "श्रवण (listening)",
+        "marks": 5
+      },
+      {
+        "component": "वाचन (speaking)",
+        "marks": 5
+      },
+      {
+        "component": "परियोजना कार्य (project)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "अंतरा भाग 1 (NCERT)",
+    "अंतराल भाग 1 (NCERT)",
+    "अभिव्यक्ति और माध्यम (NCERT)"
+  ],
+  "notes": [
+    "Lesson lists are the current NCERT reprints (textbook contents pages), less the lessons the CBSE document says are not examined.",
+    "Units are the question paper's sections (खंड क, ख, ग).",
+    "Not examined in 2026-27: Naye ki Janm Kundli (Ek), Padmakar, part of Mahadevi Varma, Narendra Sharma (Neend Uchat Jaati Hai), Ande ke Chhilke (Antral)."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठित बोध (Unseen Comprehension)",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "अपठित गद्यांश",
+          "topics": [
+            "लगभग 250 शब्दों का अपठित गद्यांश: बोध, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (10 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अपठित पद्यांश",
+          "topics": [
+            "लगभग 100 शब्दों का अपठित पद्यांश: बोध, सराहना, सौंदर्य, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (8 अंक)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "अभिव्यक्ति और माध्यम (Expression and Media)",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "दृश्य लेखन",
+          "topics": [
+            "दी गई स्थिति या घटना के आधार पर लगभग 120 शब्दों में दृश्य लेखन (5 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "औपचारिक पत्र, स्ववृत्त लेखन, रोज़गार संबंधी आवेदन पत्र",
+          "topics": [
+            "लगभग 100 शब्दों में (5 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "व्यावहारिक लेखन",
+          "topics": [
+            "प्रतिवेदन, प्रेस-विज्ञप्ति, परिपत्र, कार्यसूची, कार्यवृत्त (3 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "जनसंचार माध्यम",
+          "number": 1,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पत्रकारिता के विविध आयाम",
+          "number": 2,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "डायरी लिखने की कला",
+          "number": 9,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कथा-पटकथा",
+          "number": 10,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कार्यालयी लेखन और प्रक्रिया",
+          "number": 14,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "स्ववृत्त (बायोडेटा) लेखन और रोज़गार संबंधी आवेदन पत्र",
+          "number": 15,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Lessons 1 and 2: short questions, 5 marks. Two 2-mark questions on studied lessons, 4 marks."
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "अंतरा भाग 1: काव्य खंड (Poetry)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "कबीर: अरे इन दोहुन राह न पाई; बालम, आवो हमारे गेह रे",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सूरदास: खेलन में को काको गुसैयाँ; मुरली तऊ गुपालहिं भावति",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "देव: हँसी की चोट; सपना; दरबार",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सुमित्रानंदन पंत: संध्या के बाद",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "महादेवी वर्मा: जाग तुझको दूर जाना",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "नागार्जुन: बादल को घिरते देखा है",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "श्रीकांत वर्मा: हस्तक्षेप",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "धूमिल: घर में वापसी",
+          "topics": [
+            "काव्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "अंतरा भाग 1: गद्य खंड (Prose)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "प्रेमचंद: ईदगाह",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अमरकांत: दोपहर का भोजन",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "हरिशंकर परसाई: टार्च बेचनेवाले",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रांगेय राघव: गूँगे",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सुधा अरोड़ा: ज्योतिबा फुले",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ओमप्रकाश वाल्मीकि: खानाबदोश",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पांडेय बेचन शर्मा 'उग्र': उसकी माँ",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "भारतेंदु हरिश्चंद्र: भारतवर्ष की उन्नति कैसे हो सकती है?",
+          "topics": [
+            "गद्य खंड (अंतरा भाग 1)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C3",
+      "name": "अंतराल भाग 1 (Supplementary Reader)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "हुसैन की कहानी अपनी ज़बानी: बड़ौदा का बोर्डिंग स्कूल; रानीपुर बाज़ार (मक़बूल फ़िदा हुसैन)",
+          "topics": [
+            "अंतराल भाग 1"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आवारा मसीहा: दिशाहारा (विष्णु प्रभाकर)",
+          "topics": [
+            "अंतराल भाग 1"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

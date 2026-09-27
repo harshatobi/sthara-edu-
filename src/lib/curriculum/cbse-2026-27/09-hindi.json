@@ -1,0 +1,243 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Hindi",
+  "codes": [
+    "002"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "हिंदी",
+    "Hindi (R1)",
+    "Hindi (R2)"
+  ],
+  "source": {
+    "title": "Hindi, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Hindi_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "सामयिक आकलन (periodic assessment)",
+        "marks": 5
+      },
+      {
+        "component": "बहुविध आकलन (multiple assessment)",
+        "marks": 5
+      },
+      {
+        "component": "पोर्टफ़ोलियो (portfolio)",
+        "marks": 5
+      },
+      {
+        "component": "श्रवण एवं वाचन (listening and speaking)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "गंगा: कक्षा 9 के लिए हिंदी की पाठ्यपुस्तक (NCERT, NCF 2023)"
+  ],
+  "notes": [
+    "NCF 2023 structure with R1 (first language) and R2 (second language) papers; R1 shown. R2 differs: two unseen prose passages; grammar on vocabulary and idioms (4), word formation (4), punctuation (2), noun, pronoun, particles (6); writing task (iv) is picture-based writing.",
+    "Lesson list from the NCERT Ganga contents page; the CBSE document gives no textbook breakdown of the 30 marks."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठित बोध (Unseen Comprehension)",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "अपठित गद्यांश",
+          "topics": [
+            "लगभग 200 शब्दों का गद्यांश (7)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अपठित काव्यांश",
+          "topics": [
+            "लगभग 80-100 शब्दों का काव्यांश (7)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "व्यावहारिक व्याकरण (Applied Grammar)",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "शब्द-निर्माण",
+          "topics": [
+            "उपसर्ग, प्रत्यय"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "संज्ञा, सर्वनाम, विशेषण, क्रिया",
+          "topics": [
+            "पद परिचय"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अर्थ की दृष्टि से वाक्य-भेद",
+          "topics": [
+            "वाक्य-भेद"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अलंकार",
+          "topics": [
+            "शब्दालंकार: अनुप्रास, यमक, श्लेष"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "पाठ्यपुस्तक गंगा: गद्य खंड (Prose)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "दो बैलों की कथा (प्रेमचंद)",
+          "topics": [
+            "गद्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "क्या लिखूँ? (पदुमलाल पुन्नालाल बख्शी)",
+          "topics": [
+            "गद्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "संवादहीन (शेखर जोशी)",
+          "topics": [
+            "गद्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ऐसी भी बातें होती हैं: लता मंगेशकर से साक्षात्कार (यतींद्र मिश्र)",
+          "topics": [
+            "गद्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आखिरी चट्टान तक (मोहन राकेश)",
+          "topics": [
+            "गद्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रीढ़ की हड्डी (जगदीशचंद्र माथुर)",
+          "topics": [
+            "गद्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मैं और मेरा देश (कन्हैयालाल मिश्र 'प्रभाकर')",
+          "topics": [
+            "गद्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Split of the 30 textbook marks between prose and poetry is an even share; the document gives only the section total."
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "पाठ्यपुस्तक गंगा: काव्य खंड (Poetry)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "पद (रैदास)",
+          "topics": [
+            "काव्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "राम-लक्ष्मण-परशुराम संवाद (तुलसीदास)",
+          "topics": [
+            "काव्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "भारति, जय, विजयकरे! (सूर्यकांत त्रिपाठी 'निराला')",
+          "topics": [
+            "काव्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "झाँसी की रानी (सुभद्रा कुमारी चौहान)",
+          "topics": [
+            "काव्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "घर की याद (भवानीप्रसाद मिश्र)",
+          "topics": [
+            "काव्य खंड (गंगा)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "रचनात्मक लेखन (Writing)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "अनुच्छेद लेखन",
+          "topics": [
+            "तीन में से एक विषय पर लगभग 120 शब्द (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अनौपचारिक पत्र",
+          "topics": [
+            "लगभग 100 शब्द (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "संवाद लेखन",
+          "topics": [
+            "लगभग 80 शब्द (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सूचना लेखन",
+          "topics": [
+            "लगभग 80 शब्द (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

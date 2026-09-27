@@ -7,6 +7,8 @@ import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { computeStudentTml, getTutorDepthScore } from '@/lib/tml/engine';
 import { containsFoulLanguage } from '@/lib/tutor/safety';
 import { flattenChapters, getCurriculum } from '@/lib/curriculum';
+import { examsForChapter } from '@/lib/curriculum/exams';
+import { getSchoolPolicy } from '@/lib/settings/server';
 import { signSession, verifySession, type TutorSessionState } from '@/lib/tutor/sessionToken';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
@@ -70,13 +72,20 @@ async function ask(prompt: string, cls: string, userId: string, schoolId: string
  * restrictions (e.g. "derivation not required"). Empty when the topic isn't a
  * curriculum chapter.
  */
-function syllabusScope(cls: string, subject: string, topic: string): string {
+function syllabusScope(cls: string, subject: string, topic: string, exams: string[] = []): string {
   const sub = getCurriculum(cls, subject);
   const ch = sub && flattenChapters(sub).find(c => c.name.toLowerCase() === topic.toLowerCase());
   if (!sub || !ch) return '';
+  // Exam track: the student is preparing for these exams, so the tutor may go
+  // to exam depth on this chapter, including the listed beyond-board content.
+  const hits = exams.length ? examsForChapter(sub.class, sub.subject, ch.name, exams) : [];
+  const examBlock = hits.length
+    ? `\n- The student is preparing for ${[...new Set(hits.map(h => h.exam.exam))].join(', ')}. Related exam units: ${hits.map(h => `${h.exam.exam} "${h.unit.name}"${h.unit.beyondBoard?.length ? ` (beyond the board: ${h.unit.beyondBoard.join('; ')})` : ''}`).join(' | ')}.
+You may pitch questions at that exam's level and cover the beyond-board content, but say so when you step outside the board syllabus.`
+    : '';
   return `\nOfficial CBSE ${sub.session} syllabus for this chapter (Class ${sub.class} ${sub.subject}, unit "${ch.unitName}"):
 - Prescribed content: ${ch.topics.join('; ')}
-${ch.notes?.length ? `- Restrictions: ${ch.notes.join('; ')}\n` : ''}Stay within this content and its restrictions; do not use methods or topics beyond it.`;
+${ch.notes?.length ? `- Restrictions: ${ch.notes.join('; ')}\n` : ''}${hits.length ? examBlock : 'Stay within this content and its restrictions; do not use methods or topics beyond it.'}`;
 }
 
 const transcript = (h: Turn[]) => h.map(t => `${t.who === 'ai' ? 'Tutor' : 'Student'}: ${t.text}`).join('\n');
@@ -103,8 +112,12 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
 
   try {
-    const { data: me } = await supabase.from('users').select('school_id, student_class').eq('id', user.id).maybeSingle();
+    const { data: me } = await supabase.from('users').select('school_id, student_class, metadata').eq('id', user.id).maybeSingle();
     const cls = me?.student_class || '';
+    // Exam track: only exams the school still has switched on count.
+    const policy = me?.school_id ? await getSchoolPolicy(me.school_id, supabase) : null;
+    const picked: unknown = (me?.metadata as Record<string, unknown> | null)?.targetExams;
+    const exams = Array.isArray(picked) ? picked.filter((x): x is string => typeof x === 'string' && !!policy?.examTracks.includes(x)) : [];
 
     // ── start ────────────────────────────────────────────────────────────────
     if (action === 'start') {
@@ -115,7 +128,7 @@ export async function POST(req: NextRequest) {
 
       const out = await ask(
         `Start a ${STEPS}-step Socratic session. Subject: ${subject}. Micro-topic: ${topic}.
-Briefly set up one concrete problem on this topic, then ask step 1 of ${STEPS}: the first guiding question.${syllabusScope(cls, subject, topic)}
+Briefly set up one concrete problem on this topic, then ask step 1 of ${STEPS}: the first guiding question.${syllabusScope(cls, subject, topic, exams)}
 Reply as {"text": "<setup + question 1>"}`, cls, user.id, me?.school_id ?? null);
       const state: TutorSessionState = { uid: user.id, subject, topic, step: 1, hints: 0, revealed: false, done: false, iat: Date.now() };
       return NextResponse.json({ verdict: 'question', text: out.text, step: 1, steps: STEPS, hints: 0, token: signSession({ ...state, question: out.text as string }) });
@@ -139,7 +152,7 @@ Reply as {"text": "<setup + question 1>"}`, cls, user.id, me?.school_id ?? null)
       }
       const last = state.step >= STEPS;
       const out = await ask(
-        `Subject: ${state.subject}. Micro-topic: ${state.topic}. This is step ${state.step} of ${STEPS}.${syllabusScope(cls, state.subject, state.topic)}
+        `Subject: ${state.subject}. Micro-topic: ${state.topic}. This is step ${state.step} of ${STEPS}.${syllabusScope(cls, state.subject, state.topic, exams)}
 Conversation so far:
 ${transcript(history)}
 

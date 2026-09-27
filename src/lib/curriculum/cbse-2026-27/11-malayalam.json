@@ -1,0 +1,164 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Malayalam",
+  "codes": [
+    "112"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "മലയാളം",
+    "Malyalam"
+  ],
+  "source": {
+    "title": "Malayalam, Code 112, Class XI (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Malyalam_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Pen-paper tests, art integration projects, portfolio and subject enrichment activities",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Higher Secondary Malayalam Plus One, 2024 (SCERT Kerala)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Literature: MCQ 20, prose short answers 15, poetry short answers 15. Page numbers refer to the textbook."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Class XI)",
+          "topics": [
+            "10 of 12 very short answer questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Creative Writing",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Essay Writing (Class XI)",
+          "topics": [
+            "One of two topics in 200 words (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter Writing (Class XI)",
+          "topics": [
+            "Applications, letter to the editor, commercial correspondence (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Applied Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Applied Grammar (Class XI)",
+          "topics": [
+            "Parts of speech, idioms and proverbs, correction and transformation of sentences (10 MCQs)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 50,
+      "chapters": [
+        {
+          "name": "Ormayude Njarambu (p. 12)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kelkkunnundo (p. 53)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kavyakalaye Kurichu Chila Nireekshanangal (p. 60)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lathiyum Vediyundayum (p. 73)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sasthrakriya (p. 103)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sandarsanam (p. 9)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Oonjalil (p. 65)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Peelikkannukal (p. 85)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Anukampa (p. 89)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samkramanam (p. 100)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

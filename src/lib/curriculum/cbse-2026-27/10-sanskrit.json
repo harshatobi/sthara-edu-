@@ -1,0 +1,231 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Sanskrit",
+  "codes": [
+    "122"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "संस्कृतम्"
+  ],
+  "source": {
+    "title": "Sanskrit, Code 122, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Sanskrit_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "आवधिक-परीक्षा (periodic test)",
+        "marks": 5
+      },
+      {
+        "component": "बहुविधमूल्याङ्कनम् (multiple assessment)",
+        "marks": 5
+      },
+      {
+        "component": "निवेशसूचिका (portfolio)",
+        "marks": 5
+      },
+      {
+        "component": "भाषा-संवर्धनाय गतिविधयः (language enrichment)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "शेमुषी भाग 2 (NCERT)",
+    "अभ्यासवान् भव भाग 2 (NCERT)",
+    "व्याकरणवीथिः (NCERT)"
+  ],
+  "notes": [
+    "Grammar questions are chosen from शेमुषी where possible, otherwise from अभ्यासवान् भव."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठितावबोधनम् (Unseen Comprehension)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "अपठितः गद्यांशः",
+          "topics": [
+            "80-100 शब्दपरिमितः गद्यांशः",
+            "एकपदेन पूर्णवाक्येन च अवबोधनम्; शीर्षकलेखनम्; भाषिककार्यम्"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "रचनात्मककार्यम् (Composition)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "पत्रलेखनम्",
+          "topics": [
+            "औपचारिकम् अथवा अनौपचारिकं पत्रम् (मञ्जूषायाः सहायतया)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "चित्रवर्णनम् अथवा अनुच्छेदलेखनम्",
+          "topics": [
+            "5 अङ्काः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अनुवादः",
+          "topics": [
+            "हिन्दी/आङ्ग्लभाषातः संस्कृतेन अनुवादः (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "अनुप्रयुक्तव्याकरणम् (Applied Grammar)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "सन्धिः",
+          "topics": [
+            "4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "समासाः",
+          "topics": [
+            "4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "प्रत्ययाः",
+          "topics": [
+            "4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "वाच्यप्रकरणम्",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "समयः",
+          "topics": [
+            "4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अव्ययपदानि",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "संशोधनकार्यम्",
+          "topics": [
+            "3"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "पठितावबोधनम् (Prescribed Text)",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "शुचिपर्यावरणम्",
+          "number": 1,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "बुद्धिर्बलवती सदा",
+          "number": 2,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "शिशुलालनम्",
+          "number": 3,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "जननी तुल्यवत्सला",
+          "number": 4,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सुभाषितानि",
+          "number": 5,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सौहार्दं प्रकृतेः शोभा",
+          "number": 6,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विचित्रः साक्षी",
+          "number": 7,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सूक्तयः",
+          "number": 8,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अन्योक्तयः",
+          "number": 10,
+          "topics": [
+            "शेमुषी भाग 2 (NCERT)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "गद्यांशः, पद्यांशः, नाट्यांशः (5 each); प्रश्ननिर्माणम् 4; अन्वयः/भावार्थः 4; घटनाक्रमानुसारं वाक्यलेखनम् 4; अर्थचयनम् 3."
+      ]
+    }
+  ]
+}

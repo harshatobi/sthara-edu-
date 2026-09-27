@@ -1,0 +1,92 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Painting",
+  "codes": [
+    "049"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Art",
+    "Drawing"
+  ],
+  "source": {
+    "title": "Painting, Code 049, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Painting_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 50
+      },
+      {
+        "component": "Periodic tests (best two of three)",
+        "marks": 10
+      },
+      {
+        "component": "Portfolio / project work (10 best works)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Fundamentals of Visual Arts; Methods and Materials of Painting",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Fundamentals of Visual Arts and Painting Materials",
+          "topics": [
+            "Elements of visual art",
+            "Tools; poster colours, water colours, oil pastels, pencils"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Story of Indian Art",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Story of Indian Art (Class IX)",
+          "topics": [
+            "Wizard's Dance, Bhimbetka (painting)",
+            "Yaksha-Yakshi, RBI New Delhi, by Ramkinkar Baij (sculpture)",
+            "Sun Temple, Konark (architecture)",
+            "Folk art floor decoration: Alpana, Rangoli, Mandana"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Still Life",
+          "topics": [
+            "Accurate drawing and composition of objects (15)",
+            "Compositional arrangement (15)",
+            "Treatment of medium and colour scheme (10)",
+            "Originality and overall expression (10)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

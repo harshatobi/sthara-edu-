@@ -1,0 +1,145 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Elements of Book-keeping and Accountancy",
+  "codes": [
+    "254"
+  ],
+  "stream": "Commerce",
+  "aliases": [
+    "Book-keeping",
+    "Accountancy (Elements)"
+  ],
+  "source": {
+    "title": "Elements of Book-keeping and Accountancy, Code 254, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Elements_of_BK_Acc_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Project I",
+        "marks": 15
+      },
+      {
+        "component": "Project II",
+        "marks": 15
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Introduction to Book-keeping and Accounting",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Introduction to Book-keeping and Accounting",
+          "topics": [
+            "Need, objectives and advantages"
+          ],
+          "outcomes": [
+            "Describe the objectives and advantages of book-keeping and accounting"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Accounting Equation Effects",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Accounting Equation Effects",
+          "topics": [
+            "Business entity concept",
+            "Dual aspect and the accounting equation",
+            "Effect of transactions on the equation"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Nature of Accounts and Rules of Debit and Credit",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Nature of Accounts and Rules of Debit and Credit",
+          "topics": [
+            "Classification of accounts",
+            "Rules of debit and credit",
+            "Vouchers and supporting documents: bills, cash memo, debit and credit notes"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Journal",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Journal",
+          "topics": [
+            "Need for journal; journal entries (no compound entries)",
+            "Subsidiary books: cash, purchase, sales, returns books, journal proper"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Ledger",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "Ledger",
+          "topics": [
+            "Definition, importance, relation to journal",
+            "Posting rules and procedure; balancing accounts"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Recording and Posting of Cash Transactions",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Recording and Posting of Cash Transactions",
+          "topics": [
+            "Simple cash book; cash book with discount column",
+            "Petty cash book on imprest system"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Trial Balance (Class IX)",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "Trial Balance (Class IX)",
+          "topics": [
+            "Purpose and preparation by balance method (no suspense account)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

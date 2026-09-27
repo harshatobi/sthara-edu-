@@ -1,0 +1,281 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Hindi Course B",
+  "codes": [
+    "085"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Hindi B",
+    "हिंदी (ब)"
+  ],
+  "source": {
+    "title": "Hindi Course B, Code 085, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Hindi_B_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "सामयिक आकलन (periodic assessment)",
+        "marks": 5
+      },
+      {
+        "component": "बहुविध आकलन (multiple assessment)",
+        "marks": 5
+      },
+      {
+        "component": "पोर्टफ़ोलियो (portfolio)",
+        "marks": 5
+      },
+      {
+        "component": "श्रवण एवं वाचन (listening and speaking)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "स्पर्श भाग 2 (NCERT)",
+    "संचयन भाग 2 (NCERT)"
+  ],
+  "notes": [
+    "Not examined: Bihari (Dohe), Mahadevi Varma (Madhur-Madhur Mere Deepak Jal), Anton Chekhov (Girgit). Lesson lists from the current NCERT reprints."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठित बोध (Unseen Comprehension)",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "अपठित गद्यांश",
+          "topics": [
+            "दो अपठित गद्यांश, लगभग 200 शब्द (7+7)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "व्यावहारिक व्याकरण (Applied Grammar)",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "पदबंध",
+          "topics": [
+            "4 अंक"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रचना के आधार पर वाक्य रूपांतरण",
+          "topics": [
+            "4 अंक"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "समास",
+          "topics": [
+            "4 अंक"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मुहावरे",
+          "topics": [
+            "4 अंक"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "स्पर्श भाग 2: काव्य खंड (Poetry)",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "कबीर: साखी",
+          "topics": [
+            "काव्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मीरा: पद",
+          "topics": [
+            "काव्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मैथिलीशरण गुप्त: मनुष्यता",
+          "topics": [
+            "काव्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सुमित्रानंदन पंत: पर्वत प्रदेश में पावस",
+          "topics": [
+            "काव्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "वीरेन डंगवाल: तोप",
+          "topics": [
+            "काव्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कैफ़ी आज़मी: कर चले हम फ़िदा",
+          "topics": [
+            "काव्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रवींद्रनाथ ठाकुर: आत्मत्राण",
+          "topics": [
+            "काव्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "स्पर्श भाग 2: गद्य खंड (Prose)",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "प्रेमचंद: बड़े भाई साहब",
+          "topics": [
+            "गद्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सीताराम सेकसरिया: डायरी का एक पन्ना",
+          "topics": [
+            "गद्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "लीलाधर मंडलोई: तताँरा-वामीरो कथा",
+          "topics": [
+            "गद्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "प्रहलाद अग्रवाल: तीसरी कसम के शिल्पकार शैलेंद्र",
+          "topics": [
+            "गद्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "निदा फ़ाज़ली: अब कहाँ दूसरे के दुख से दुखी होने वाले",
+          "topics": [
+            "गद्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रवींद्र केलेकर: पतझर में टूटी पत्तियाँ (गिन्नी का सोना; झेन की देन)",
+          "topics": [
+            "गद्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "हबीब तनवीर: कारतूस (एकांकी)",
+          "topics": [
+            "गद्य खंड (स्पर्श भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C3",
+      "name": "संचयन भाग 2 (Supplementary Reader)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "हरिहर काका (मिथिलेश्वर)",
+          "topics": [
+            "पूरक पाठ (संचयन भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सपनों के-से दिन (गुरदयाल सिंह)",
+          "topics": [
+            "पूरक पाठ (संचयन भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "टोपी शुक्ला (राही मासूम रज़ा)",
+          "topics": [
+            "पूरक पाठ (संचयन भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "रचनात्मक लेखन (Writing)",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "अनुच्छेद लेखन",
+          "topics": [
+            "लगभग 120 शब्द (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "औपचारिक पत्र",
+          "topics": [
+            "लगभग 100 शब्द (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सूचना लेखन",
+          "topics": [
+            "लगभग 60 शब्द (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विज्ञापन लेखन",
+          "topics": [
+            "लगभग 40 शब्द (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ई-मेल लेखन अथवा लघुकथा लेखन",
+          "topics": [
+            "लगभग 80-100 शब्द (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

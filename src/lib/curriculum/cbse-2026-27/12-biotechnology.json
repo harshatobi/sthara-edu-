@@ -1,0 +1,134 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Biotechnology",
+  "codes": [
+    "045"
+  ],
+  "stream": "Science",
+  "aliases": [
+    "Biotech"
+  ],
+  "source": {
+    "title": "Biotechnology, Code 045, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/BioTechnology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Two experiments (one computer based)",
+        "marks": 12
+      },
+      {
+        "component": "Practical record",
+        "marks": 4
+      },
+      {
+        "component": "Viva on practicals",
+        "marks": 4
+      },
+      {
+        "component": "Project write-up",
+        "marks": 5
+      },
+      {
+        "component": "Viva on project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "A Text Book of Biotechnology, Class XII (CBSE)",
+    "A Laboratory Manual of Biotechnology, Class XII (CBSE)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given.",
+    "Unit numbering continues from Class XI."
+  ],
+  "units": [
+    {
+      "code": "V",
+      "name": "Protein and Gene Manipulation",
+      "marks": 40,
+      "chapters": [
+        {
+          "name": "Recombinant DNA Technology",
+          "topics": [
+            "Tools of recombinant DNA technology",
+            "Making an rDNA molecule",
+            "Introduction of recombinant DNA into host cells",
+            "Identification of recombinants",
+            "Polymerase chain reaction (PCR)",
+            "DNA sequencing"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Protein Structure and Engineering",
+          "topics": [
+            "The world of proteins",
+            "Structure-function relationship",
+            "Characterisation of proteins",
+            "Protein based products",
+            "Protein engineering"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Genomics, Proteomics and Bioinformatics",
+          "topics": [
+            "Gene prediction and counting",
+            "Genome similarity",
+            "SNPs and comparative genomics",
+            "Functional genomics",
+            "Proteomics",
+            "Information sources",
+            "Analysis using bioinformatics tools"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Cell Culture and Genetic Manipulation",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Microbial Cell Culture and its Applications",
+          "topics": [
+            "Microbial nutrition and culture techniques",
+            "Measurement and kinetics of microbial growth",
+            "Isolation of microbial products",
+            "Strain isolation and improvement",
+            "Applications of microbial culture technology"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Plant Cell Culture and Applications",
+          "topics": [
+            "Cell and tissue culture techniques",
+            "Applications of cell and tissue culture",
+            "Transgenic plants with beneficial traits",
+            "Biosafety of transgenic plants"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Animal Cell Culture and Applications",
+          "topics": [
+            "Animal cell culture techniques",
+            "Applications of animal cell culture",
+            "Stem cell technology"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

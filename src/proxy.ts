@@ -16,7 +16,8 @@ import type { NextRequest } from 'next/server';
 
 // ── Role → allowed path prefixes ─────────────────────────────────────────────
 const ROLE_ROUTES: Record<string, string[]> = {
-  superadmin: ['/superadmin', '/admin', '/teacher', '/student', '/parent'],
+  // Operators work in /ops (gated by its own layout, so not listed here) and may open any portal.
+  superadmin: ['/admin', '/teacher', '/student', '/parent'],
   admin:      ['/admin'],
   teacher:    ['/teacher'],
   student:    ['/student'],
@@ -28,7 +29,7 @@ const DASHBOARD: Record<string, string> = {
   teacher:    '/teacher',
   admin:      '/admin',
   parent:     '/parent',
-  superadmin: '/superadmin',
+  superadmin: '/ops',
 };
 
 export function proxy(request: NextRequest) {
@@ -41,7 +42,7 @@ export function proxy(request: NextRequest) {
   }
 
   // ── Protected routes only ───────────────────────────────────────────────────
-  const protectedPrefixes = ['/student', '/teacher', '/admin', '/superadmin', '/parent'];
+  const protectedPrefixes = ['/student', '/teacher', '/admin', '/parent'];
   const isProtected = protectedPrefixes.some(p => pathname.startsWith(p));
   if (!isProtected) return NextResponse.next();
 
@@ -60,8 +61,7 @@ export function proxy(request: NextRequest) {
 
   // 2. Trial check
   const trialOk = request.cookies.get('__trial_ok')?.value;
-  const isSuperadminPath = pathname.startsWith('/superadmin');
-  if (!isSuperadminPath && (trialOk === 'expired' || trialOk === 'suspended')) {
+  if (trialOk === 'expired' || trialOk === 'suspended') {
     return NextResponse.redirect(new URL('/trial-expired', request.url));
   }
 
@@ -84,7 +84,6 @@ export const config = {
     '/student/:path*',
     '/teacher/:path*',
     '/admin/:path*',
-    '/superadmin/:path*',
     '/parent/:path*',
   ],
 };

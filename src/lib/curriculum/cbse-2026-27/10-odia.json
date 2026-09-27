@@ -1,0 +1,240 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Odia",
+  "codes": [
+    "013"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Oriya",
+    "ଓଡ଼ିଆ"
+  ],
+  "source": {
+    "title": "Odia, Code 013, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Odia_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic tests (best 2 of 3)",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activity",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessments",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Sindhu, Class X, 2024 revised (Board of Secondary Education, Odisha)",
+    "Madhyamika Byakarana, Class X, 2024 revised (BSE Odisha)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Prose: explanation 5, short answers 6, MCQ 10; poetry: explanation 5, short answers 6, MCQ 10; non-detailed short answers 6."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Prose Passage (Class X)",
+          "topics": [
+            "130-150 words, five 2-mark questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Essay (Class X)",
+          "topics": [
+            "Contemporary issues (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter to the Editor (Class X)",
+          "topics": [
+            "6 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Chhanda",
+          "topics": [
+            "Bhagabatabani, Natabani, Bangalashree, Ramakeri (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Transformation of Sentences",
+          "topics": [
+            "Simple, compound, complex (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Idioms (Class X)",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Correction of Common Errors in Words",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 48,
+      "chapters": [
+        {
+          "name": "Bande Utkala Janani (Class X)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhimanka Singhanada Radi",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Raghabanka Lanka Jatranukula",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chilikare Sayantana Drushya",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mangale Aila Usha",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jaga Bandhanahara",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sarbamsaha Mati",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Janmabhumi",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sabhyata O Bigyana",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Matrubhasha O Lokashikshya",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Narendru Vivekananda",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Katha",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kalara Kapola Tale",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bela, Aswattha O Batabrukshya",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Falgu",
+          "topics": [
+            "Non-detailed: one-act play"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Konarka",
+          "topics": [
+            "Non-detailed: one-act play"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

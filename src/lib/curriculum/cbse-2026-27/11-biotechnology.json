@@ -1,0 +1,150 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Biotechnology",
+  "codes": [
+    "045"
+  ],
+  "stream": "Science",
+  "aliases": [
+    "Biotech"
+  ],
+  "source": {
+    "title": "Biotechnology, Code 045, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/BioTechnology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Two experiments",
+        "marks": 20
+      },
+      {
+        "component": "Viva on experiments",
+        "marks": 5
+      },
+      {
+        "component": "Practical record",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "A Text Book of Biotechnology, Class XI (CBSE)",
+    "Biotechnology, Class XI (NCERT, reference)",
+    "A Laboratory Manual of Biotechnology, Class XI (CBSE)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given.",
+    "Practicals: buffers and pH, sterilisation, bacterial growth medium, cell counting, DNS sugar estimation, amylase assay, biuret protein estimation."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Biotechnology: An Overview",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Biotechnology: An Overview",
+          "topics": [
+            "Historical perspectives",
+            "Technology and applications of biotechnology",
+            "Global market and biotech products"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Molecules of Life",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Biomolecules: Building Blocks",
+          "topics": [
+            "Carbohydrates: sugars and their derivatives",
+            "Proteins: amino acids",
+            "Lipids: simple fatty acids, glycerol and cholesterol",
+            "Nucleic acids: nucleotides"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Macromolecules: Structure and Function",
+          "topics": [
+            "Carbohydrates: the energy givers",
+            "Proteins: the performers",
+            "Enzymes: the catalysts",
+            "Lipids and biomembranes: the barriers",
+            "Nucleic acids: the managers"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Genetics and Molecular Biology",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Concepts of Genetics",
+          "topics": [
+            "Historical perspective",
+            "Multiple alleles",
+            "Linkage and crossing over",
+            "Genetic mapping"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Genes and Genomes: Structure and Function",
+          "topics": [
+            "Discovery of DNA as genetic material",
+            "DNA replication",
+            "Fine structure of the gene",
+            "From gene to protein",
+            "Transcription",
+            "Genetic code",
+            "Translation",
+            "Mutations",
+            "Human genetic disorders"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Cells and Organisms",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "The Basic Unit of Life",
+          "topics": [
+            "Cell structure and components",
+            "Organisation of life"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Cell Growth and Development",
+          "topics": [
+            "Cell division",
+            "Cell cycle",
+            "Cell communication",
+            "Nutrition",
+            "Reproduction",
+            "Immune response in animals"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

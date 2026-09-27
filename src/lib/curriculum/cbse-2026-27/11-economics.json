@@ -1,0 +1,64 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "11", "subject": "Economics", "codes": ["030"], "stream": "Humanities",
+  "aliases": ["Eco"],
+  "source": { "title": "Economics, Code 030, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Economics_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [
+    { "component": "Project: relevance of the topic", "marks": 3 },
+    { "component": "Project: knowledge content / research work", "marks": 6 },
+    { "component": "Project: presentation technique", "marks": 3 },
+    { "component": "Project: viva voce", "marks": 8 }
+  ] },
+  "textbooks": ["Statistics for Economics (NCERT)", "Introductory Microeconomics (NCERT)", "Supplementary Reading Material in Economics (CBSE)"],
+  "notes": [
+    "The document has no learning-outcomes column for Economics, so chapter outcomes are left empty.",
+    "For all numerical problems the appropriate economic interpretation of the result is expected.",
+    "One project of 3,500-4,000 words per session."
+  ],
+  "units": [
+    { "code": "1-2", "name": "Introduction; Collection, Organisation and Presentation of Data", "marks": 15, "chapters": [
+      { "name": "Introduction (Statistics for Economics)", "topics": ["What is Economics?", "Meaning, scope, functions and importance of statistics in Economics"], "outcomes": [] },
+      { "name": "Collection of Data", "topics": ["Sources of data: primary and secondary", "How basic data is collected, with concepts of sampling; methods of collecting data", "Important sources of secondary data: Census of India and National Sample Survey Organisation"], "outcomes": [] },
+      { "name": "Organisation of Data", "topics": ["Meaning and types of variables", "Frequency distribution"], "outcomes": [] },
+      { "name": "Presentation of Data", "topics": ["Tabular presentation", "Diagrammatic presentation: geometric forms (bar and pie diagrams)", "Frequency diagrams: histogram, polygon and ogive", "Arithmetic line graphs (time series graph)"], "outcomes": [] }
+    ] },
+    { "code": "3", "name": "Statistical Tools and Interpretation", "marks": 25, "chapters": [
+      { "name": "Measures of Central Tendency", "topics": ["Arithmetic mean", "Median", "Mode"], "outcomes": [] },
+      { "name": "Correlation", "topics": ["Meaning and properties; scatter diagram", "Karl Pearson's method (two variables, ungrouped data)", "Spearman's rank correlation (non-repeated and repeated ranks)"], "outcomes": [] },
+      { "name": "Introduction to Index Numbers", "topics": ["Meaning and types: Wholesale Price Index, Consumer Price Index, index of industrial production", "Uses of index numbers; inflation and index numbers", "Simple aggregative method"], "outcomes": [] }
+    ] },
+    { "code": "4", "name": "Introduction (Microeconomics)", "marks": 4, "chapters": [
+      { "name": "Introduction to Microeconomics", "topics": ["Meaning of microeconomics and macroeconomics; positive and normative economics", "What is an economy? Central problems: what, how and for whom to produce", "Production possibility frontier and opportunity cost"], "outcomes": [] }
+    ] },
+    { "code": "5", "name": "Consumer's Equilibrium and Demand", "marks": 14, "chapters": [
+      { "name": "Theory of Consumer Behaviour", "topics": [
+        "Utility, marginal utility, law of diminishing marginal utility; consumer's equilibrium by marginal utility analysis",
+        "Indifference curve analysis: budget set and budget line, indifference curve and map, conditions of equilibrium"
+      ], "outcomes": [] },
+      { "name": "Demand and Price Elasticity of Demand", "topics": [
+        "Demand, market demand, determinants, demand schedule, demand curve and its slope",
+        "Movement along and shifts in the demand curve",
+        "Price elasticity of demand: factors affecting; measurement by percentage-change and total expenditure methods"
+      ], "outcomes": [] }
+    ] },
+    { "code": "6", "name": "Producer Behaviour and Supply", "marks": 14, "chapters": [
+      { "name": "Production and Costs", "topics": [
+        "Production function: short run and long run; total, average and marginal product",
+        "Returns to a factor",
+        "Short run costs: total, fixed, variable, average, average fixed, average variable and marginal cost and their relationships"
+      ], "outcomes": [] },
+      { "name": "The Theory of the Firm under Perfect Competition", "topics": [
+        "Revenue: total, average and marginal revenue and their relationship",
+        "Producer's equilibrium: meaning and MR = MC conditions",
+        "Supply, market supply, determinants, supply schedule, supply curve, movements and shifts",
+        "Price elasticity of supply: percentage-change method"
+      ], "outcomes": [] }
+    ] },
+    { "code": "7", "name": "Forms of Market and Price Determination under Perfect Competition", "marks": 8, "chapters": [
+      { "name": "Market Equilibrium", "topics": [
+        "Perfect competition: features",
+        "Determination of market equilibrium and effects of shifts in demand and supply (short run only)",
+        "Simple applications of demand and supply: price ceiling, price floor"
+      ], "outcomes": [] }
+    ] }
+  ]
+}

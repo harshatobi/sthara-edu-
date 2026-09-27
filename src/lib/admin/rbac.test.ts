@@ -10,9 +10,11 @@ test('role catalogue matches the database seed', () => {
   const rows = [...seed.matchAll(/\('(\w+)', ARRAY\[([^\]]*)\]\)/g)];
   const db: Record<string, string[]> = Object.fromEntries(rows.map(m => [m[1], m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))]));
   // Permissions added to the catalogue by later migrations (INSERT … ON CONFLICT DO NOTHING).
-  const later = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260925180000_parent_connect.sql'), 'utf8');
-  const add = later.slice(later.indexOf('INSERT INTO public.role_permissions'), later.indexOf('ON CONFLICT DO NOTHING'));
-  for (const m of add.matchAll(/\('(\w+)', ARRAY\[([^\]]*)\]\)/g)) db[m[1]] = [...(db[m[1]] || []), ...m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))];
+  for (const f of ['20260925180000_parent_connect.sql', '20260926200000_situational_feed.sql', '20260926210000_staff_whatsapp.sql']) {
+    const later = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations', f), 'utf8');
+    const add = later.slice(later.indexOf('INSERT INTO public.role_permissions'), later.indexOf('ON CONFLICT DO NOTHING'));
+    for (const m of add.matchAll(/\('(\w+)',\s+ARRAY\[([^\]]*)\]\)/g)) db[m[1]] = [...(db[m[1]] || []), ...m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))];
+  }
   for (const k of Object.keys(db)) db[k] = [...new Set(db[k])].sort();
   assert.deepEqual(Object.keys(db).sort(), [...ROLE_KEYS].sort());
   for (const r of ROLE_KEYS) assert.deepEqual(db[r], [...ROLES[r].perms].sort(), `role ${r}`);
@@ -29,6 +31,8 @@ test('separation of duties is built into the roles', () => {
   assert.ok(!ROLES.principal.perms.includes('access.manage'));
   assert.ok(!ROLES.counsellor.perms.includes('fees.read'));
   assert.ok(!ROLES.finance_head.perms.includes('wellness.read'));
+  // Ask the School OS about the whole school is for leadership only.
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('os.ask')).sort(), ['principal', 'school_admin', 'vice_principal']);
 });
 
 test('access is the union of active roles', () => {

@@ -330,7 +330,7 @@ export default function PaperGenPage() {
           {/* Instructions */}
           <div className="px-8 py-4 bg-amber-50 border-b border-amber-100">
             <p className="text-xs text-amber-700 font-medium">
-              📋 Instructions: {paperType === 'mcq'
+              Instructions: {paperType === 'mcq'
                 ? 'Choose the most appropriate answer for each question. Each question carries 1 mark.'
                 : paperType === 'saq'
                 ? 'Answer all questions concisely. Each answer should be 2-3 sentences.'

@@ -1,0 +1,122 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Bharatanatyam (Dance)",
+  "codes": [
+    "057"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Bharatanatyam"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "History of Indian Dance",
+          "topics": [
+            "A brief history of Indian dance"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Themes in Bharatanatyam",
+          "topics": [
+            "Ramayana: kandas and episodes",
+            "Bhagavata Purana: skandas",
+            "Gita Govinda ashtapadis",
+            "Cosmic dance of Siva and Nataraja; Mahishasura Mardini; Ganesha"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "History of Bharatanatyam",
+          "topics": [
+            "Natyotpatti in the Abhinaya Darpanam",
+            "Thanjavur, Pandanallur and Vazhuvur schools",
+            "Tanjore quartet and the present repertoire"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bharatanatyam Repertoire",
+          "topics": [
+            "Pushpanjali, mallari, kautuvam, alarippu, jatiswaram, shabdam, varnam, keertanam, padam, ashtapadi, javali, thillana"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Distinctive Aspects of Bharatanatyam",
+          "topics": [
+            "Costume and jewellery, language and music, technique, basic posture"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Positions and Body Movements",
+          "topics": [
+            "Pada and mandala bhedas",
+            "Stretching and flexing of body parts",
+            "Shiro, drishti and greeva bheda"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Adavus in Trikala",
+          "topics": [
+            "Tattu, nattu, ta tei tei ta, kudittu mettu, tei ya teiyi, tat tei ta ha, tat tei tam, kattu and utplavana, mandi, sarukkai adavus"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Korvais, Gaits and Alarippu",
+          "topics": [
+            "Simple korvais in adi talam",
+            "Tisra and chatusra gaits",
+            "Alarippu in tisra eka talam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tala",
+          "topics": [
+            "Adi and rupaka talam with hastakriya; adavu syllables in trikala"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

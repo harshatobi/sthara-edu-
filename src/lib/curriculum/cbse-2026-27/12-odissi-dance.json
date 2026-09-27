@@ -1,0 +1,120 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Odissi (Dance)",
+  "codes": [
+    "059"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Odissi"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Chhau",
+          "topics": [
+            "Mayurbhanj, Seraikella and Purulia styles"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gurus of Odissi",
+          "topics": [
+            "Guru Pankaj Charan Das, Guru Kelucharan Mohapatra, Guru Deba Prasad Das"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Texts",
+          "topics": [
+            "Natya Shastra, Abhinaya Darpana, Abhinaya Chandrika: authors, scope, origin myths"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Abhinaya and Rasa",
+          "topics": [
+            "Angika, vachika, aharya, sattvik; nine rasas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aharya and Music of Odissi",
+          "topics": [
+            "Costume and music accompaniment"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Odissi Terms (Class XII)",
+          "topics": [
+            "Nritta, nritya, natya; matra, laya, taal, avartana, vibhaga; tandava, lasya; natyadharmi, lokadharmi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Folk Dances of Odisha",
+          "topics": [
+            "Names of folk dances of Odisha"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Pallavi",
+          "topics": [
+            "Definition, demonstration, recitation of ukutas, raga, taal, choreographer, hastas and bhangis"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paad Bhedas and Bhramaris",
+          "topics": [
+            "Demonstration"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pataka Hasta Viniyoga",
+          "topics": [
+            "According to Abhinaya Darpana"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

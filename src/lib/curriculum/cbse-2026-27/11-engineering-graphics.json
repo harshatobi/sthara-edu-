@@ -1,0 +1,165 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Engineering Graphics",
+  "codes": [
+    "046"
+  ],
+  "stream": "Science",
+  "aliases": [
+    "EG",
+    "Engg Graphics"
+  ],
+  "source": {
+    "title": "Engineering Graphics, Code 046, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Engineering_Graphics_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Practicals (2)",
+        "marks": 15
+      },
+      {
+        "component": "Drawing / sketch",
+        "marks": 5
+      },
+      {
+        "component": "Viva voce",
+        "marks": 5
+      },
+      {
+        "component": "Sessional work",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Engineering Graphics, Class XI (CBSE / NCERT)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given.",
+    "Dimensioning and conventions strictly as per SP 46:2003 (Revised).",
+    "Activity: two industrial visits."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Plane Geometry",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Introduction",
+          "number": 1,
+          "topics": [
+            "Capital and small letters and numerals in standard proportions",
+            "Unidirectional and aligned dimensioning as per SP 46:2003",
+            "Drawing instruments"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lines, Angles and Rectilinear Figures",
+          "number": 2,
+          "topics": [
+            "Construction and division of lines and angles",
+            "Triangles, square, rhombus, regular pentagon and hexagon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Circles, Inscribing and Circumscribing of Circles",
+          "number": 3,
+          "topics": [
+            "Construction of circles",
+            "Inscribing and circumscribing circles in triangle, square, rhombus, pentagon, hexagon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Introduction to Engineering Curves",
+          "topics": [
+            "Ellipse, parabola, hyperbola, involute, helix, cycloids and sine curve: definition and applications"
+          ],
+          "outcomes": [],
+          "notes": [
+            "For internal assessment only."
+          ],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Solid Geometry",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Orthographic Projection of Points and Lines",
+          "number": 4,
+          "topics": [
+            "Orthographic projection conventions",
+            "Projection of points and lines"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Orthographic Projection of Regular Plane Figures",
+          "number": 5,
+          "topics": [
+            "Triangle, square, pentagon, hexagon, circle, semicircle"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Orthographic Projection of Right Regular Solids",
+          "number": 6,
+          "topics": [
+            "Cube, prisms and pyramids, cone, cylinder, sphere, hemisphere, frustums",
+            "Axis perpendicular to HP/VP or parallel to both"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Section of Solids",
+          "number": 7,
+          "topics": [
+            "Sections of cubes, prisms, pyramids, cones, cylinders and spheres by a vertical cutting plane"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Machine Drawing",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Orthographic Projections of Simple Machine Blocks",
+          "number": 8,
+          "topics": [
+            "Orthographic projection of simple machine blocks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Isometric Projection of Laminae",
+          "number": 9,
+          "topics": [
+            "Isometric scale (10 mm main, 1 mm minor divisions)",
+            "Isometric projection of regular plane figures parallel to HP or VP"
+          ],
+          "outcomes": [],
+          "notes": [
+            "Isometric view of plane figures (full size scale) is for internal assessment only."
+          ]
+        }
+      ]
+    }
+  ]
+}

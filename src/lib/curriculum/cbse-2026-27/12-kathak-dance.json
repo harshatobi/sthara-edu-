@@ -1,0 +1,130 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Kathak (Dance)",
+  "codes": [
+    "056"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Kathak"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style.",
+    "Practical evaluation: angashuddhi 20, laya 15, bhaav paksh 15, tatkaar 10, repertoire and parhant 10."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Kathak among Classical Dance Styles",
+          "topics": [
+            "Brief history with other classical dance styles of India"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Abhinaya",
+          "topics": [
+            "Angika, vachika, aharya, satvika"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gharanas of Kathak",
+          "topics": [
+            "Lucknow, Jaipur, Banaras"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rasa",
+          "topics": [
+            "Definition and the nine rasas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Terms",
+          "topics": [
+            "Sangeet, tal, laya, angahara, bhramari, lokadharmi, natyadharmi, rasa, bhava"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathak Technical Terminology",
+          "topics": [
+            "Vandana, tihaayi, aamad, toda/tukra, paran, chakardar toda and paran, gatnikas, gatbhaav",
+            "Theka of dadra, kaharwa, roopak; tali, khali, sam, tihaayi",
+            "Notating a tukra/toda and paran"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathak Costume and Make-up",
+          "topics": [
+            "Traditional costumes and make-up"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Tatkar in Teentaal and Jhaptaal",
+          "topics": [
+            "Slow, dugun and chaugun tempos"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathak Compositions (Class XII)",
+          "topics": [
+            "Vandana, thaat, aamad, fast aamad, tukda/toda, tihaayi, gatnikas, gatbhav, parhant with hasta kriya; some in jhaptaal and dhamar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Improvisation",
+          "topics": [
+            "Improvisation in nritta and abhinaya"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Parhant",
+          "topics": [
+            "Recitation of bols to the theka of all compositions"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

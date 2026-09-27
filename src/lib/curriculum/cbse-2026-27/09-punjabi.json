@@ -1,0 +1,254 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Punjabi",
+  "codes": [
+    "004"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ਪੰਜਾਬੀ"
+  ],
+  "source": {
+    "title": "Punjabi, Code 004, Classes IX-X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Punjabi_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic tests (average of best two)",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessment",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activities",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahit Mala 9 (Punjabi poetry and prose), Punjab School Education Board",
+    "Vangi 9 (Punjabi stories and one-act plays), Punjab School Education Board"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Lesson names are given in Gurmukhi as printed.",
+    "Textbook questions: MCQ 10, one-or-two-word answers 4, short answers (25-30 words) 14, long answers on poetry and prose 8, long answer on one-act play 4."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Reading Skill",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Class IX)",
+          "topics": [
+            "Prose passage of 200-250 words, 6 MCQs (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen Poem Extract (Class IX)",
+          "topics": [
+            "Four questions (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Grammar",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Virodhi Shabad",
+          "topics": [
+            "Antonyms (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ling",
+          "topics": [
+            "Gender (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vismik",
+          "topics": [
+            "Interjections (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shabad Shudhi",
+          "topics": [
+            "Spelling correction (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kiriya",
+          "topics": [
+            "Verbs (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muhavre (Class IX)",
+          "topics": [
+            "Idioms from ੳ to ਹ used in sentences (2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Writing Skill",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Lekh Rachna (Class IX)",
+          "topics": [
+            "Essay of 200 words on reflective or general topics, one of three with points (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pattar Rachna (Class IX)",
+          "topics": [
+            "Personal or formal letter, one of two with points (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Picture Description (Class IX)",
+          "topics": [
+            "50 words (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Text Books",
+      "marks": 40,
+      "chapters": [
+        {
+          "name": "ਸਮਾਂ",
+          "topics": [
+            "Poetry: Bhai Vir Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਵਿਸਾਖੀ ਦਾ ਮੇਲਾ",
+          "topics": [
+            "Poetry: Dhani Ram Chatrik"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਮੈਂ ਪੰਜਾਬੀ",
+          "topics": [
+            "Poetry: Firozdin Sharaf"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਨਵੀਂ ਪੁਰਾਣੀ ਤਹਿਜ਼ੀਬ",
+          "topics": [
+            "Poetry: Vidhata Singh Teer"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਮਾਤਾ ਗੁਜਰੀ ਜੀ",
+          "topics": [
+            "Poetry: Nand Lal Noorpuri"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਵਹਿਮੀ ਤਾਇਆ",
+          "topics": [
+            "Prose: Suba Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਮੁੜ ਵੇਖਿਆ ਪਿੰਡ",
+          "topics": [
+            "Prose: Balraj Sahni"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਖ਼ੁਸ਼ੀਆਂ ਆਪੇ ਨਹੀਂ ਆਉਂਦੀਆਂ",
+          "topics": [
+            "Prose: Dr. T. R. Sharma"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਬੇਬੇ ਜੀ",
+          "topics": [
+            "Prose: Dr. Harpal Singh Pannu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਜਨਮ-ਦਿਨ",
+          "topics": [
+            "Story: Savinder Singh Uppal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਸਾਂਝੀ ਕੰਧ",
+          "topics": [
+            "Story: Santokh Singh Dhir"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਬੱਸ-ਕੰਡਕਟਰ",
+          "topics": [
+            "Story: Dr. Dalip Kaur Tiwana"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਮੌਨਧਾਰੀ",
+          "topics": [
+            "One-act play: Ishwar Chander Nanda"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ਸਿਰਜਣਾ",
+          "topics": [
+            "One-act play: Pali Bhupinder Singh"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

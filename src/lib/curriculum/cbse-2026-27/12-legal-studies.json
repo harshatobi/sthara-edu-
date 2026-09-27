@@ -1,0 +1,229 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Legal Studies",
+  "codes": [
+    "074"
+  ],
+  "stream": "Humanities",
+  "aliases": [
+    "Law"
+  ],
+  "source": {
+    "title": "Legal Studies, Code 074, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/LegalStudies_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project: Understanding Case Laws (three decided cases: civil, criminal, constitutional)",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Legal Studies, Class XII (CBSE, revised 2023-24)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given; course competencies: identify legal issues, apply law, legal research, legal values."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Judiciary",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Judiciary",
+          "number": 1,
+          "topics": [
+            "Structure, hierarchy of courts and legal officers",
+            "Constitution, roles and impartiality",
+            "Appointment, retirement and removal of judges",
+            "Tribunals",
+            "Courts and judicial review"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Alternative Dispute Resolution in India",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Alternative Dispute Resolution",
+          "number": 2,
+          "topics": [
+            "Adversarial and inquisitorial systems",
+            "Meaning and scope of ADR",
+            "Arbitration, mediation, conciliation",
+            "Lok Adalat; ombudsman; Lokpal and Lokayukta"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Topics in Law I (Business Laws)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Law of Contract",
+          "number": 3,
+          "topics": [
+            "Formation, intention, consideration, capacity, consent",
+            "Types of contracts",
+            "Discharge of contract; remedies for breach"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Law of Torts",
+          "topics": [
+            "Concept and sources",
+            "Intentional tort; defamation; negligence",
+            "Strict and absolute liability"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Law of Property",
+          "topics": [
+            "Types of property",
+            "Who can transfer; essentials of a valid transfer",
+            "Sale, lease, exchange, gift"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Intellectual Property Law",
+          "topics": [
+            "International obligations shaping Indian IPR; WIPO",
+            "Copyright, patent, trademark, geographical indication, design"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Topics in Law II (General Laws)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Law and Sustainable Development",
+          "number": 4,
+          "topics": [
+            "International initiatives",
+            "Constitutional provisions",
+            "Environment Protection Act 1986; Pollution Control Boards"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Forms of Legal Entities",
+          "topics": [
+            "Sole proprietorship, partnership, LLP",
+            "Private and public limited company; one person company"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Criminal Laws in India",
+          "topics": [
+            "Objectives of criminal law; legislations",
+            "Intention and motive; stages of crime",
+            "Indian Evidence Act; admission and confession"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Concept of Human Rights",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Human Rights in India",
+          "number": 5,
+          "topics": [
+            "Historical context",
+            "Preamble, fundamental rights, directive principles, fundamental duties"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Human Rights Violations: Complaint Mechanism (Quasi-Judicial Bodies)",
+          "topics": [
+            "Quasi-judicial bodies",
+            "NHRC, National Commission for Minorities, NCW, National Commission for SC and ST, NCPCR"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "International Law",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "International Law",
+          "number": 6,
+          "topics": [
+            "Historical evolution and meaning",
+            "Sources of international law",
+            "International human rights",
+            "International and municipal law; international law and India",
+            "Dispute resolution"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Legal Profession in India",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Legal Profession in India",
+          "number": 7,
+          "topics": [
+            "The Advocates Act 1961",
+            "Professional ethics; advertising by lawyers",
+            "Liberalisation and globalisation of the profession; women in law",
+            "Legal education in India, USA and UK; opportunities for law graduates"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Legal Services",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Legal Services",
+          "number": 8,
+          "topics": [
+            "History of legal services",
+            "Free legal aid under criminal law; legal aid by the state and under the Constitution",
+            "NALSA; Legal Services Authorities Act 1987",
+            "Legal aid, social justice and human rights"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

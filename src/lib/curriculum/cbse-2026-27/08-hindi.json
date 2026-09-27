@@ -1,0 +1,142 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Hindi",
+  "codes": [],
+  "stream": "Language",
+  "aliases": [
+    "हिंदी"
+  ],
+  "source": {
+    "title": "मल्हार: कक्षा 8 के लिए हिंदी की पाठ्यपुस्तक (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hhml1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "मल्हार: कक्षा 8 के लिए हिंदी की पाठ्यपुस्तक (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source.",
+    "'Padhne ke liye' texts are for reading, not assessment; recorded as formative."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "मल्हार",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "स्वदेश (गयाप्रसाद शुक्ल 'सनेही')",
+          "number": 1,
+          "topics": [
+            "कविता (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "दो गौरैया (भीष्म साहनी)",
+          "number": 2,
+          "topics": [
+            "कहानी (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "एक आशीर्वाद (दुष्यंत कुमार)",
+          "number": 3,
+          "topics": [
+            "कविता (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "हरिद्वार (भारतेंदु हरिश्चंद्र)",
+          "number": 4,
+          "topics": [
+            "पत्र (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कबीर के दोहे (कबीर)",
+          "number": 5,
+          "topics": [
+            "दोहे (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "एक टोकरी भर मिट्टी (माधवराव सप्रे)",
+          "number": 6,
+          "topics": [
+            "कहानी (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मत बाँधो (महादेवी वर्मा)",
+          "number": 7,
+          "topics": [
+            "कविता (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "नए मेहमान (उदयशंकर भट्ट)",
+          "number": 8,
+          "topics": [
+            "एकांकी (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आदमी का अनुपात (गिरिजा कुमार माथुर)",
+          "number": 9,
+          "topics": [
+            "कविता (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "तरुण के स्वप्न (सुभाषचंद्र बोस)",
+          "number": 10,
+          "topics": [
+            "उद्बोधन (मल्हार)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मित्रलाभ (पंचतंत्र से)",
+          "topics": [
+            "पढ़ने के लिए (मल्हार)"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "कदम मिलाकर चलना होगा (अटल बिहारी वाजपेयी)",
+          "topics": [
+            "पढ़ने के लिए (मल्हार)"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "भारति, जय, विजय करे! (सूर्यकांत त्रिपाठी 'निराला')",
+          "topics": [
+            "पढ़ने के लिए (मल्हार)"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    }
+  ]
+}

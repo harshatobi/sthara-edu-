@@ -231,3 +231,15 @@ test('contract edits: validated, Mandala needs a price', () => {
   const legacy = schoolPolicy(school({ settings: { plan: 'enterprise', code: 'X1X' } }), NOW);
   assert.deepEqual(parseSchoolPatch(legacy, { active: false }, NOW), { patch: { active: false } });
 });
+
+test('exam tracks: school setting parses, orders and rejects unknown ids', () => {
+  const p = schoolPolicy({ id: 's', name: 'S', institution_type: 'school', trial_expires_at: null, settings: { examTracks: ['neet-ug', 'bogus', 'jee-main'] } });
+  assert.deepEqual(p.examTracks, ['jee-main', 'neet-ug']);
+  const ok = parseSchoolPatch(p, { examTracks: ['neet-ug', 'jee-main', 'jee-advanced'] });
+  assert.ok('patch' in ok);
+  if ('patch' in ok) assert.deepEqual(ok.patch.examTracks, ['jee-main', 'jee-advanced', 'neet-ug']);
+  const same = parseSchoolPatch(p, { examTracks: ['jee-main', 'neet-ug'] });
+  assert.ok('patch' in same && same.patch.examTracks === undefined, 'no change when only the order differs');
+  assert.ok('error' in parseSchoolPatch(p, { examTracks: ['bogus'] }));
+  assert.ok('error' in parseSchoolPatch(p, { examTracks: 'jee-main' }));
+});

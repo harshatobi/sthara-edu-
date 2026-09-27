@@ -1,0 +1,268 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "English Elective",
+  "codes": [
+    "001"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "English Literature"
+  ],
+  "source": {
+    "title": "English Elective, Code 001, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/English_elective_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Seminar: presentation, poetry reading, critical review or theatre workshop",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Woven Words, Class XI (NCERT)",
+    "The Old Man and the Sea, Ernest Hemingway (unabridged)",
+    "Arms and the Man, George Bernard Shaw"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections; literature chapters are the prescribed texts."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Unseen Passages and Poem",
+          "topics": [
+            "Literary or discursive passage of 950-1000 words: 12 of 15 objective questions",
+            "Poem of 10-12 lines: 8 of 9 objective questions",
+            "Case-based passage of 100-120 words with visual input: 5 of 7 objective questions"
+          ],
+          "outcomes": [
+            "Comprehend, interpret, infer, analyse and appreciate unseen texts"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Creative Writing Skills",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Essay",
+          "topics": [
+            "Argumentative, discursive, reflective or descriptive essay, 120-150 words"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Article",
+          "topics": [
+            "Contemporary topical issue, 120-150 words"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Speech",
+          "topics": [
+            "Contemporary topical issue, 120-150 words"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "Textbook: Woven Words",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "The Lament",
+          "topics": [
+            "Short story (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Pair of Mustachios",
+          "topics": [
+            "Short story (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Rocking-horse Winner",
+          "topics": [
+            "Short story (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Adventure of the Three Garridebs",
+          "topics": [
+            "Short story (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pappachi's Moth",
+          "topics": [
+            "Short story (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Third and Final Continent",
+          "topics": [
+            "Short story (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Peacock",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Let Me Not to the Marriage of True Minds",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Coming",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Telephone Conversation",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The World is too Much with Us",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mother Tongue",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hawk Roosting",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ode to a Nightingale",
+          "topics": [
+            "Poem (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "My Watch",
+          "topics": [
+            "Essay (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "My Three Passions",
+          "topics": [
+            "Essay (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Patterns of Creativity",
+          "topics": [
+            "Essay (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tribal Verse",
+          "topics": [
+            "Essay (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "What is a Good Book?",
+          "topics": [
+            "Essay (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Story",
+          "topics": [
+            "Essay (Woven Words)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bridges",
+          "topics": [
+            "Essay (Woven Words)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "Drama",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Arms and the Man",
+          "topics": [
+            "Drama by George Bernard Shaw",
+            "Characters, events and episodes"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C3",
+      "name": "Fiction",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "The Old Man and the Sea",
+          "topics": [
+            "Novel by Ernest Hemingway (unabridged)",
+            "Characters, events, episodes and interpersonal relationships"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

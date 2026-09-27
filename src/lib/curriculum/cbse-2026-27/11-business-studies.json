@@ -1,0 +1,131 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "11", "subject": "Business Studies", "codes": ["054"], "stream": "Commerce",
+  "aliases": ["BST", "Business"],
+  "source": { "title": "Business Studies, Code 054, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/BusinessStudies_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [
+    { "component": "Project: initiative, cooperativeness and participation", "marks": 2 },
+    { "component": "Project: creativity in presentation", "marks": 2 },
+    { "component": "Project: content, observation and research work", "marks": 4 },
+    { "component": "Project: analysis of situations", "marks": 4 },
+    { "component": "Project: viva", "marks": 8 }
+  ] },
+  "textbooks": ["Business Studies, Class XI (NCERT)"],
+  "notes": [
+    "The document gives marks for groups of units; each group is recorded as one unit carrying the group's marks.",
+    "Project options: field visit, case study on a product, aids to trade, import/export procedure, visit to a state emporium."
+  ],
+  "units": [
+    { "code": "1-2", "name": "Nature and Purpose of Business; Forms of Business Organisations", "marks": 16, "chapters": [
+      { "name": "Evolution and Fundamentals of Business", "number": 1, "topics": [
+        "History of trade and commerce in India: indigenous banking, rise of intermediaries, transport, trading communities, merchant corporations, major trade centres, imports and exports, position of the Indian sub-continent in the world economy",
+        "Business: meaning and characteristics",
+        "Business, profession and employment: concept",
+        "Objectives of business",
+        "Classification of business activities: industry and commerce",
+        "Industry: primary, secondary, tertiary",
+        "Commerce: trade (internal, external; wholesale and retail) and auxiliaries to trade (banking, insurance, transportation, warehousing, communication, advertising)",
+        "Business risk: concept"
+      ], "outcomes": [
+        "Describe the history of trade and commerce in India",
+        "Distinguish economic and non-economic activities and state the characteristics of business",
+        "Differentiate between business, profession and employment",
+        "Appreciate the economic and social objectives of business and the role of profit",
+        "Describe types of industries and the role of commerce, trade and auxiliaries to trade",
+        "Examine the nature and causes of business risk"
+      ] },
+      { "name": "Forms of Business Organisation", "number": 2, "topics": [
+        "Sole proprietorship: concept, merits and limitations",
+        "Partnership: concept, types, merits and limitations, registration, partnership deed, types of partners",
+        "Hindu Undivided Family business: concept",
+        "Cooperative societies: concept, merits, limitations; consumers', producers', marketing, farmers', credit and housing cooperatives",
+        "Company: concept, merits and limitations; private, public and one person company",
+        "Formation of a company: stages and important documents",
+        "Choice of form of business organisation"
+      ], "outcomes": [
+        "Explain the concept, merits and limitations of each form of business organisation",
+        "Discuss types of partners: active, sleeping, secret, nominal and partner by estoppel",
+        "Distinguish between a private and a public company",
+        "Describe the stages and documents in the formation of a company",
+        "Explain the factors that influence the choice of form of organisation"
+      ] }
+    ] },
+    { "code": "3-4", "name": "Public, Private and Global Enterprises; Business Services", "marks": 14, "chapters": [
+      { "name": "Public, Private and Global Enterprises", "number": 3, "topics": [
+        "Public sector and private sector enterprises: concept",
+        "Forms of public sector enterprises: departmental undertakings, statutory corporations, government company",
+        "Global enterprises: features; joint venture; public private partnership: concept"
+      ], "outcomes": [
+        "Explain the features, merits and limitations of forms of public sector enterprise",
+        "Describe global enterprises, joint ventures and public private partnership"
+      ] },
+      { "name": "Business Services", "number": 4, "topics": [
+        "Business services: meaning and types",
+        "Banking: savings, current, recurring, fixed deposit and multiple option deposit accounts",
+        "Banking services: bank draft, bank overdraft, cash credit; e-banking: meaning, types of digital payments",
+        "Insurance: principles (utmost good faith, insurable interest, indemnity, contribution, subrogation, causa proxima); life, health, fire and marine insurance",
+        "Postal service: mail, registered post, parcel, speed post, courier"
+      ], "outcomes": [
+        "Describe types of bank account and banking services",
+        "Explain the principles and types of insurance",
+        "Understand the utility of postal and telecom services"
+      ] }
+    ] },
+    { "code": "5-6", "name": "Emerging Modes of Business; Social Responsibility of Business and Business Ethics", "marks": 10, "chapters": [
+      { "name": "Emerging Modes of Business", "number": 5, "topics": ["E-business: concept, scope and benefits"], "outcomes": ["Give the meaning and scope of e-business", "Distinguish e-business from traditional business"] },
+      { "name": "Social Responsibility of Business and Business Ethics", "number": 6, "topics": [
+        "Concept of social responsibility and the case for it",
+        "Responsibility towards owners, investors, consumers, employees, government and community",
+        "Role of business in environment protection",
+        "Business ethics: concept and elements"
+      ], "outcomes": [
+        "State the concept of and case for social responsibility",
+        "Identify social responsibility towards different interest groups",
+        "Describe the elements of business ethics"
+      ] }
+    ] },
+    { "code": "7-8", "name": "Sources of Business Finance; Small Business", "marks": 20, "chapters": [
+      { "name": "Sources of Business Finance", "number": 7, "topics": [
+        "Concept of business finance",
+        "Owners' funds: equity shares, preference shares, retained earnings",
+        "Borrowed funds: debentures and bonds, loans from financial institutions and commercial banks, public deposits, trade credit, inter corporate deposits"
+      ], "outcomes": [
+        "State the meaning, nature and importance of business finance",
+        "Classify sources of funds and distinguish owners' funds from borrowed funds"
+      ] },
+      { "name": "Small Business and Enterprises", "number": 8, "topics": [
+        "Entrepreneurship development: concept, characteristics and need; process; Start-up India scheme; ways to fund a start-up",
+        "Intellectual property rights and entrepreneurship",
+        "Small scale enterprise as defined by the MSMED Act 2006",
+        "Role of small business in India, especially in rural areas",
+        "Government schemes and agencies: NSIC and DIC, with reference to rural and backward areas"
+      ], "outcomes": [
+        "Understand entrepreneurship development and intellectual property rights",
+        "Discuss the role of small business in India",
+        "Appreciate government schemes and agencies for small scale industries"
+      ] }
+    ] },
+    { "code": "9-10", "name": "Internal Trade; International Business", "marks": 20, "chapters": [
+      { "name": "Internal Trade", "number": 9, "topics": [
+        "Internal trade: meaning and types; services of wholesalers and retailers",
+        "Retail trade: itinerant and small scale fixed shop retailers",
+        "Large scale retailers: departmental stores, chain stores",
+        "GST: concept and key features"
+      ], "outcomes": [
+        "State the types of internal trade and the services of wholesalers and retailers",
+        "Explain the types of retail trade and the features of departmental and chain stores",
+        "Understand the concept of GST"
+      ] },
+      { "name": "International Business", "number": 10, "topics": [
+        "International trade: concept and benefits",
+        "Export trade: meaning and procedure",
+        "Import trade: meaning and procedure",
+        "Documents: indent, letter of credit, shipping order, shipping bills, mate's receipt (DA/DP)",
+        "World Trade Organization: meaning and objectives"
+      ], "outcomes": [
+        "Explain the steps in executing export and import trade",
+        "Identify and explain the documents used in international trade",
+        "Discuss the objectives of the WTO"
+      ] }
+    ] }
+  ]
+}

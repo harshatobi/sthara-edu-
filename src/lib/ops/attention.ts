@@ -37,6 +37,10 @@ export interface RegistrySchool extends SchoolFacts {
 const RANK: Record<Severity, number> = { crit: 0, warn: 1, info: 2 };
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** From the error log: open problems seen in the last day, new ones, and any happening a lot in the last hour. */
+export interface ErrorPulse { open24h: number; new24h: number; spikes: { fingerprint: string; message: string; lastHour: number }[] }
+export const SPIKE_PER_HOUR = 20;
+
 /** Login requests a school is waiting on (Sthara creates every login). */
 export interface PendingRequests { schoolId: string; count: number; oldestDays: number }
 
@@ -45,8 +49,33 @@ export function buildAttention(x: {
   health: InventoryItem[];
   newEnquiries: number;
   pendingRequests?: PendingRequests[];
+  errors?: ErrorPulse;
 }): AttentionItem[] {
   const out: AttentionItem[] = [];
+  const log: AttentionAction = { kind: 'open', href: '/ops/errors', label: 'Open error log' };
+  for (const s of (x.errors?.spikes ?? []).slice(0, 3)) {
+    out.push({
+      id: `error-spike:${s.fingerprint}`, severity: 'crit',
+      title: `Error spike: ${s.lastHour} in the last hour`,
+      detail: s.message.length > 160 ? `${s.message.slice(0, 157)}…` : s.message,
+      actions: [log],
+    });
+  }
+  if (x.errors && x.errors.new24h > 0) {
+    out.push({
+      id: 'errors-new', severity: 'warn',
+      title: `${plural(x.errors.new24h, 'new error')} in the last 24 hours`,
+      detail: `${plural(x.errors.open24h, 'open problem')} seen today in all. Look at the new ones first.`,
+      actions: [log],
+    });
+  } else if (x.errors && x.errors.open24h > 0) {
+    out.push({
+      id: 'errors-open', severity: 'info',
+      title: `${plural(x.errors.open24h, 'open error')} seen in the last 24 hours`,
+      detail: 'Known problems still happening. Resolve them once fixed, or ignore the ones that are not ours.',
+      actions: [log],
+    });
+  }
   const names = new Map(x.schools.map(s => [s.id, s.name]));
   for (const p of x.pendingRequests ?? []) {
     if (p.count <= 0) continue;

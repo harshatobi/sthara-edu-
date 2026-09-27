@@ -9,6 +9,7 @@ import { UserPlusIcon as UserPlus } from '@phosphor-icons/react/dist/ssr/UserPlu
 import { CoinsIcon as Coins } from '@phosphor-icons/react/dist/ssr/Coins';
 import { SlidersHorizontalIcon as SlidersHorizontal } from '@phosphor-icons/react/dist/ssr/SlidersHorizontal';
 import { HeartbeatIcon as Heartbeat } from '@phosphor-icons/react/dist/ssr/Heartbeat';
+import { BugIcon as Bug } from '@phosphor-icons/react/dist/ssr/Bug';
 import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
@@ -22,6 +23,7 @@ const NAV: CanonNavItem[] = [
   { href: '/ops/enquiries', label: 'Enquiries', icon: EnvelopeSimple },
   { href: '/ops/usage', label: 'AI usage & cost', short: 'AI cost', icon: Coins },
   { href: '/ops/settings', label: 'Platform settings', short: 'Settings', icon: SlidersHorizontal },
+  { href: '/ops/errors', label: 'Error log', short: 'Errors', icon: Bug },
   { href: '/ops/health', label: 'System health', short: 'Health', icon: Heartbeat },
   { href: '/ops/audit', label: 'Audit log', short: 'Audit', icon: ClockCounterClockwise },
   { href: '/ops/operators', label: 'Operators', icon: ShieldCheck },

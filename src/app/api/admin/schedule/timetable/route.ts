@@ -22,6 +22,7 @@ export const dynamic = 'force-dynamic';
  *   PUT    { action: 'cell', versionId, class, weekday, period_no, lessons: [{ group_label, subject, teacher_id, room_id, combined }] }
  *          replaces what one section has in one period (lessons: [] clears it)
  *   PUT    { action: 'swap', versionId, class, a: { weekday, period_no }, b: { weekday, period_no } }   drag and drop within a section
+ *   PUT    { action: 'lock', versionId, class, weekday, period_no, locked }  keep a period's lessons where they are when re-solving
  *   DELETE { id }                                                    a draft only
  * Lessons live only in drafts; a published timetable changes by copying it to a new draft.
  */
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (b.copyFrom) {
       const src = await draftOf(db, admin.schoolId, b.copyFrom);
       if (!src) return bad('Unknown timetable to copy.');
-      const { data } = await db.from('timetable_slots').select('class, group_label, weekday, period_no, subject, teacher_id, staff_member_id, room_id, combined').eq('version_id', src.id).limit(MAX_SLOTS);
+      const { data } = await db.from('timetable_slots').select('class, group_label, weekday, period_no, subject, teacher_id, staff_member_id, room_id, combined, locked').eq('version_id', src.id).limit(MAX_SLOTS);
       copy = data || [];
     }
     const { data: v, error } = await db.from('timetable_versions')
@@ -236,7 +237,9 @@ export async function PUT(req: NextRequest) {
       const { error } = await db.from('timetable_slots').delete().in('id', old.map(o => o.id));
       if (error) return dbError(error, 'Could not change the timetable.');
     }
-    const rows = cells.flatMap(c => c.lessons.map(l => ({ ...l, version_id: v.id, school_id: admin.schoolId })));
+    // A locked period stays locked when its lessons are edited (swapped lessons carry their own lock).
+    const lockedCell = new Set(old.filter(o => o.locked).map(o => `${o.weekday}|${o.period_no}`));
+    const rows = cells.flatMap(c => c.lessons.map(l => ({ ...l, locked: l.locked ?? lockedCell.has(`${c.weekday}|${c.period_no}`), version_id: v.id, school_id: admin.schoolId })));
     if (rows.length) {
       const { error } = await db.from('timetable_slots').insert(rows);
       if (error) {
@@ -267,13 +270,22 @@ export async function PUT(req: NextRequest) {
     return replace([{ weekday, period_no: period, lessons }]);
   }
 
+  if (b.action === 'lock') {
+    const weekday = Number(b.weekday), period = Number(b.period_no);
+    if (!Number.isInteger(weekday) || !Number.isInteger(period)) return bad('Pick a day and period.');
+    const { data, error } = await db.from('timetable_slots').update({ locked: !!b.locked }).eq('version_id', v.id).eq('class_key', ck).eq('weekday', weekday).eq('period_no', period).select('id');
+    if (error) return dbError(error, 'Could not change the lock.');
+    if (!data?.length) return bad('There is no lesson there to lock.', 404);
+    return NextResponse.json({ ok: true, locked: !!b.locked });
+  }
+
   if (b.action === 'swap') {
     const a = { weekday: Number(b.a?.weekday), period_no: Number(b.a?.period_no) };
     const c = { weekday: Number(b.b?.weekday), period_no: Number(b.b?.period_no) };
     if (![a.weekday, a.period_no, c.weekday, c.period_no].every(Number.isInteger)) return bad('Pick the two periods to swap.');
     if (a.weekday === c.weekday && a.period_no === c.period_no) return NextResponse.json({ ok: true });
     const strip = (rows: any[], to: { weekday: number; period_no: number }): Slot[] => rows.map(r => ({
-      class: r.class, group_label: r.group_label, subject: r.subject, teacher_id: r.teacher_id, staff_member_id: r.staff_member_id, room_id: r.room_id, combined: r.combined, ...to,
+      class: r.class, group_label: r.group_label, subject: r.subject, teacher_id: r.teacher_id, staff_member_id: r.staff_member_id, room_id: r.room_id, combined: r.combined, locked: !!r.locked, ...to,
     }));
     const [ra, rc] = await Promise.all([cellOf(a.weekday, a.period_no), cellOf(c.weekday, c.period_no)]);
     // A combined lesson spans sections; moving it for one section alone would split it.

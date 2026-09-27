@@ -49,6 +49,7 @@ export const RATE_LIMITS = {
   schoolMessages:  { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/messages, /api/staff/messages', label: 'Parent and staff messages' },
   whatsappLink:    { limit: 5,   windowMs: 15 * MIN, per: 'user',    route: '/api/parent/whatsapp',         label: 'WhatsApp number linking' },
   whatsappInbound: { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/whatsapp/webhook',        label: 'Ask the School OS (WhatsApp), per number' },
+  clientErrors:    { limit: 30,  windowMs: MIN,      per: 'ip',      route: '/api/errors',                  label: 'Browser error reports (ops error log)' },
 } as const satisfies Record<string, RateLimit>;
 
 export type RateLimitKey = keyof typeof RATE_LIMITS;

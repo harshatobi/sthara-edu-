@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
 import { collectInventory } from '@/lib/settings/collect';
 import { summarise } from '@/lib/settings/inventory';
-import { buildAttention } from '@/lib/ops/attention';
+import { SPIKE_PER_HOUR, buildAttention } from '@/lib/ops/attention';
 import { loadRegistry } from '@/lib/ops/registry';
 import { usageWindow } from '@/lib/ai/window';
 import { USD_TO_INR } from '@/lib/ai/pricing';
@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
   const db = createAdminClient();
   try {
     const mtd = usageWindow({ range: 'mtd' });
-    const [registry, inv, enquiries, journal, usage, operators, requests] = await Promise.all([
+    const dayAgo = new Date(Date.now() - 86_400_000).toISOString(), hourAgo = new Date(Date.now() - 3_600_000).toISOString();
+    const [registry, inv, enquiries, journal, usage, operators, requests, errorGroups, lastHour] = await Promise.all([
       loadRegistry(db),
       collectInventory(db),
       db.from('enquiries').select('status'),
@@ -25,7 +26,19 @@ export async function GET(req: NextRequest) {
       'error' in mtd ? Promise.resolve({ data: null, error: null }) : db.rpc('ops_ai_usage', { p_from: mtd.from.toISOString(), p_to: mtd.to.toISOString() }),
       db.from('users').select('id', { count: 'exact', head: true }).eq('role', 'superadmin'),
       db.from('account_requests').select('school_id, created_at').eq('status', 'pending'),
+      db.from('app_error_groups').select('fingerprint, message, first_seen').eq('status', 'open').gte('last_seen', dayAgo).limit(1000),
+      db.from('app_errors').select('fingerprint, repeats').gte('at', hourAgo).limit(20000),
     ]);
+    // The error log's pulse (tables may not exist yet on an older database: then no error items).
+    const openGroups = errorGroups.error ? [] : errorGroups.data || [];
+    const perHour = new Map<string, number>();
+    for (const e of lastHour.error ? [] : lastHour.data || []) perHour.set(e.fingerprint, (perHour.get(e.fingerprint) || 0) + e.repeats);
+    const errors = {
+      open24h: openGroups.length,
+      new24h: openGroups.filter(g => g.first_seen >= dayAgo).length,
+      spikes: openGroups.map(g => ({ fingerprint: g.fingerprint, message: g.message, lastHour: perHour.get(g.fingerprint) || 0 }))
+        .filter(g => g.lastHour >= SPIKE_PER_HOUR).sort((a, b) => b.lastHour - a.lastHour),
+    };
     // Login requests schools are waiting on, per school (the table may not exist yet on an older database).
     const bySchool = new Map<string, { count: number; oldest: string }>();
     for (const r of requests.error ? [] : requests.data || []) {
@@ -39,7 +52,8 @@ export async function GET(req: NextRequest) {
     const totals = (usage.data as { totals?: { cost?: number; calls?: number; failed?: number } } | null)?.totals ?? null;
     return NextResponse.json({
       schools: registry,
-      attention: buildAttention({ schools: registry, health: inv.items, newEnquiries, pendingRequests }),
+      attention: buildAttention({ schools: registry, health: inv.items, newEnquiries, pendingRequests, errors }),
+      errors: { open24h: errors.open24h, new24h: errors.new24h },
       requests: { pending: pendingRequests.reduce((n, p) => n + p.count, 0) },
       health: summarise(inv.items),
       enquiries: {

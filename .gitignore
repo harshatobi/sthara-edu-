@@ -56,3 +56,4 @@ models.txt
 
 # Marketing site: generated from site/ by `node site/build.mjs --app` (prebuild / predev)
 /public/site/
+/public/workers/

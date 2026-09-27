@@ -19,7 +19,7 @@ interface Occurrence {
   school: string | null; user: string | null; user_role: string | null; release: string | null; environment: string | null;
   user_agent: string | null; digest: string | null; repeats: number; context: Record<string, unknown>;
 }
-const KIND: Record<string, string> = { uncaught: 'Uncaught', logged: 'Logged', client: 'Browser', render: 'Page crash', unhandled: 'Unhandled promise' };
+const KIND: Record<string, string> = { uncaught: 'Uncaught', logged: 'Logged', client: 'Script error', render: 'Page crash', unhandled: 'Unhandled promise' };
 const STATUS: Record<Group['status'], { t: string; tone: Tone }> = { open: { t: 'OPEN', tone: 'r' }, resolved: { t: 'RESOLVED', tone: 'g' }, ignored: { t: 'IGNORED', tone: 'n' } };
 const RANGES = [['1h', 'Last hour'], ['24h', 'Last 24 hours'], ['7d', 'Last 7 days'], ['30d', 'Last 30 days']] as const;
 const VIEWS = [['open', 'Open'], ['resolved', 'Resolved'], ['ignored', 'Ignored'], ['', 'All']] as const;
@@ -101,7 +101,7 @@ export default function ErrorsConsole() {
         <select className="cmp-sel" aria-label="Time range" value={range} onChange={e => setRange(e.target.value as typeof range)} style={{ width: 170 }}>
           {RANGES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
-        <select className="cmp-sel" aria-label="Where" value={source} onChange={e => setSource(e.target.value)} style={{ width: 150 }}>
+        <select className="cmp-sel" aria-label="Where" value={source} onChange={e => setSource(e.target.value)} style={{ width: 200 }}>
           <option value="">Server and browser</option><option value="server">Server</option><option value="client">Browser</option>
         </select>
       </div>

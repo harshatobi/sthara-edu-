@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { linkUsable, whatsappConfig } from '@/lib/whatsapp/config';
 import { normClass } from '@/lib/teacher/scope';
+import { isoDay } from '@/lib/admin/format';
 import { shapeFamily, type FamilyRows, type FamilyView, type WhatsAppStatus } from './family';
 
 const DEFAULT_PREFS = { grades: true, homework_due: true, alerts: true, fees: true, messages: true };
@@ -44,6 +45,12 @@ export async function loadFamily(db: SupabaseClient, parent: { id: string; name:
     db.from('notifications').select('id, title, body, type, created_at, read, student_id').eq('user_id', parent.id).order('created_at', { ascending: false }).limit(30),
     db.from('whatsapp_links').select('phone_e164, opted_in, verified_at, verified_mode, otp_expires_at, prefs').eq('user_id', parent.id).maybeSingle(),
   ]);
+  // The timetable in force today names each subject's teacher; users.assignments is the fallback.
+  const { data: version } = await db.from('timetable_versions').select('id').eq('school_id', parent.schoolId).eq('status', 'published')
+    .lte('effective_from', isoDay()).order('effective_from', { ascending: false }).limit(1).maybeSingle();
+  const { data: timetable } = version && classes.length
+    ? await db.from('timetable_slots').select('class, subject, teacher_id, weekday, period_no, combined, group_label').eq('version_id', version.id).in('class_key', classes.map(c => normClass(c)))
+    : empty;
   const invIds = (invoices.data || []).map((i: any) => i.id);
   const threadIds = (threads.data || []).map((t: any) => t.id);
   const [payments, lastMessages] = await Promise.all([
@@ -70,6 +77,7 @@ export async function loadFamily(db: SupabaseClient, parent: { id: string; name:
     links: links || [],
     students: kids,
     teachers: teachers.data || [],
+    timetable: timetable || [],
     assignments: (assignments.data || []).filter((a: any) => classes.some(c => normClass(c) === normClass(a.class))),
     submissions: submissions.data || [],
     tml: tml.data || [],

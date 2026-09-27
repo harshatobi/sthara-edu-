@@ -54,7 +54,7 @@ export function useCourse(cls: string, subject: string) {
   }, [profile?.schoolId, cls, subject, nonce]);
 
   const plan: CoursePlan = useMemo(() => raw?.plan
-    ? { termStart: raw.plan.term_start, termEnd: raw.plan.term_end, periodsPerWeek: raw.plan.periods_per_week, periodMinutes: raw.plan.period_minutes, saved: true }
+    ? { termStart: raw.plan.term_start, termEnd: raw.plan.term_end, periodsPerWeek: raw.plan.periods_per_week, periodMinutes: raw.plan.period_minutes, saved: true, fromTimetable: raw.plan.periods_source === 'timetable' }
     : { ...defaultTerm(), periodsPerWeek: 6, periodMinutes: 40, saved: false }, [raw]);
   const chapters = useMemo(() => (raw ? buildCourse(cls, subject, raw.progress) : []), [raw, cls, subject]);
   const lessons: Lesson[] = useMemo(() => (raw?.lessons ?? []).map(shapeLesson), [raw]);

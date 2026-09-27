@@ -42,8 +42,13 @@ export async function PUT(req: NextRequest) {
     if (!termStart || !termEnd || termEnd <= termStart) return NextResponse.json({ error: 'The term must end after it starts.' }, { status: 400 });
     if (!Number.isInteger(ppw) || ppw < 1 || ppw > 20) return NextResponse.json({ error: 'Periods per week must be between 1 and 20.' }, { status: 400 });
     if (!Number.isInteger(mins) || mins < 20 || mins > 120) return NextResponse.json({ error: 'A period must be 20 to 120 minutes.' }, { status: 400 });
+    // Once a published timetable sets the periods, the teacher changes only the term.
+    const { data: prev } = await db.from('course_plans').select('periods_per_week, period_minutes, periods_source')
+      .eq('school_id', staff.schoolId).eq('class', cls).eq('subject', subject).eq('session', CURRENT_SESSION).maybeSingle();
+    const fromTimetable = prev?.periods_source === 'timetable';
     const { error } = await db.from('course_plans').upsert(
-      { ...base, term_start: termStart, term_end: termEnd, periods_per_week: ppw, period_minutes: mins, updated_by: staff.id },
+      { ...base, term_start: termStart, term_end: termEnd, updated_by: staff.id,
+        periods_per_week: fromTimetable ? prev.periods_per_week : ppw, period_minutes: fromTimetable ? prev.period_minutes : mins },
       { onConflict: 'school_id,class,subject,session' },
     );
     if (error) { console.error('[course PUT plan]', error.message); return NextResponse.json({ error: 'Could not save the term plan.' }, { status: 500 }); }

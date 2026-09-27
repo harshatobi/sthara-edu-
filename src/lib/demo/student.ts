@@ -14,7 +14,7 @@ import { blendFinalTml, calculateTopicTml, evidenceTopicName, getTutorDepthScore
 const DAY = 86_400_000;
 const at = (days: number) => new Date(Date.now() + days * DAY).toISOString();
 
-export const DEMO_STUDENT = { name: 'Ananya Iyer', id: 'STU1042', cls: '10A', school: 'DPS Vasundhara' };
+export const DEMO_STUDENT = { name: 'Ananya Iyer', id: 'STU1042', cls: '10A', school: 'Sthara Demo School' };
 
 type Q = { type: 'short' | 'mcq' | 'upload'; prompt: string };
 const short = (prompt: string): Q => ({ type: 'short', prompt });

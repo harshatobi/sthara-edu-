@@ -21,16 +21,15 @@ type Step = 'code' | 'role' | 'creds';
 
 // The demo school's code (sample desks). Every other code is looked up in the
 // schools table via /api/auth/verify-school, and sign-in then checks the
-// account belongs to that school.
+// account belongs to that school. No code or email is suggested on screen.
 const DEMO_CODE = 'SCH-VSN-2026';
-const DEMO_SCHOOL = 'DPS Vasundhara';
-const DEFAULT_CODE = DEMO_CODE;
+const DEMO_SCHOOL = 'Sthara Demo School';
 
-const ROLE_INFO: Record<Role, { label: string; sub: string; email: string }> = {
-  student: { label: 'Student', sub: 'Honest Desk', email: 'ananya.iyer@student.sthara.in' },
-  teacher: { label: 'Teacher', sub: 'Teaching Copilot', email: 'priya.menon@dpsvasundhara.edu.in' },
-  admin: { label: 'Admin', sub: 'Command Centre', email: 'admin@dpsvasundhara.edu.in' },
-  parent: { label: 'Parent', sub: 'Growth Feed', email: 'parent.iyer@sthara.in' },
+const ROLE_INFO: Record<Role, { label: string; sub: string }> = {
+  student: { label: 'Student', sub: 'Honest Desk' },
+  teacher: { label: 'Teacher', sub: 'Teaching Copilot' },
+  admin: { label: 'Admin', sub: 'Command Centre' },
+  parent: { label: 'Parent', sub: 'Growth Feed' },
 };
 const ROLE_ORDER: Role[] = ['student', 'teacher', 'admin', 'parent'];
 
@@ -80,7 +79,8 @@ export default function LoginPage() {
   const passRef = useRef<HTMLInputElement>(null);
 
   const checkCode = async () => {
-    const code = (schoolCode.trim() || DEFAULT_CODE).toUpperCase();
+    const code = schoolCode.trim().toUpperCase();
+    if (!code) { setCodeError('Enter your school code.'); return; }
     setCodeError('');
     setCodeChecking(true);
     try {
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
   const pickRole = (r: Role) => {
     setRole(r);
-    setEmail(ROLE_INFO[r].email);
+    setEmail('');
     setPassword('');
     setCredsError('');
     setStep('creds');
@@ -272,7 +272,7 @@ export default function LoginPage() {
             <div className="sub">Enter your school code to continue.</div>
             <input
               className="lg-in"
-              placeholder={`E.G. ${DEFAULT_CODE}`}
+              placeholder="School code"
               autoComplete="off"
               autoFocus
               value={schoolCode}
@@ -298,7 +298,7 @@ export default function LoginPage() {
           <div>
             <button className="lg-back" onClick={backToCode} aria-label="Back to school code"><ArrowLeft size={18} weight="bold" /></button>
             <h2 style={{ textAlign: 'center' }}>Select your role</h2>
-            <div className="sub" style={{ textAlign: 'center' }}>School: {schoolName} ({schoolCode})</div>
+            <div className="sub" style={{ textAlign: 'center' }}>{schoolName}</div>
             <div className="lg-role-grid">
               {ROLE_ORDER.map(r => (
                 <button key={r} className="lg-role-card" onClick={() => pickRole(r)}>

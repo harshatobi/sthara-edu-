@@ -7,6 +7,7 @@ import { mapMasteryBand, type MasteryBand } from '@/lib/tml/engine';
 import { shapeInvoice, type Invoice } from '@/lib/admin/fees';
 import { normClass, normSubject } from '@/lib/teacher/scope';
 import { topicKey } from '@/lib/teacher/desk';
+import { subjectTeachers } from '@/lib/schedule/engine';
 
 export const DAY = 86_400_000;
 const ts = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() || 0 : 0);
@@ -144,6 +145,8 @@ export interface FamilyRows {
   links: { student_id: string; relationship: string | null }[];
   students: any[];
   teachers: any[];
+  /** Lessons of the kids' sections in the timetable in force (may be empty). */
+  timetable?: any[];
   assignments: any[];
   submissions: any[];
   tml: any[];
@@ -157,8 +160,8 @@ export interface FamilyRows {
   whatsapp: WhatsAppStatus;
 }
 
-/** The teacher(s) of a class+subject from users.assignments, and the class teacher. */
-function staffIndex(teachers: any[]) {
+/** The teacher of each class+subject (the published timetable first, then users.assignments), and the class teacher. */
+function staffIndex(teachers: any[], timetable: any[] = []) {
   const bySubject = new Map<string, StaffRef>();
   const classTeacher = new Map<string, StaffRef>();
   const byId = new Map<string, StaffRef>();
@@ -171,6 +174,10 @@ function staffIndex(teachers: any[]) {
         bySubject.set(`${normClass(a.class)}::${normSubject(a.subject)}`, ref);
       }
     }
+  }
+  for (const [k, id] of subjectTeachers(timetable)) {
+    const ref = byId.get(id);
+    if (ref) bySubject.set(k, ref);
   }
   return { bySubject, classTeacher, byId };
 }
@@ -188,7 +195,7 @@ const tmlAt = (rows: any[], cutoff: number) => {
 
 export function shapeFamily(rows: FamilyRows, now = Date.now()): FamilyView {
   const today = dayOf(new Date(now));
-  const staff = staffIndex(rows.teachers);
+  const staff = staffIndex(rows.teachers, rows.timetable);
   const rel = new Map(rows.links.map(l => [l.student_id, l.relationship]));
   const children: Child[] = rows.students.map(s => {
     const cls = s.student_class || '';

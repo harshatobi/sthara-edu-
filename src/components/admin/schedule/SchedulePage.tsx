@@ -18,16 +18,20 @@ import CoverTab from './CoverTab';
 import DutiesTab from './DutiesTab';
 import AttendanceTab from './AttendanceTab';
 import ShiftsTab from './ShiftsTab';
+import BuildTab from './BuildTab';
+import LoadTab from './LoadTab';
 import '@/styles/schedule.css';
 
-type Tab = 'mine' | 'cover' | 'duties' | 'attendance' | 'shifts' | 'timetable' | 'setup' | 'calendar' | 'staff';
+type Tab = 'mine' | 'cover' | 'duties' | 'attendance' | 'shifts' | 'load' | 'timetable' | 'build' | 'setup' | 'calendar' | 'staff';
 const TABS: { key: Tab; label: string; see: Perm[] }[] = [
   { key: 'mine', label: 'My schedule', see: [] },
   { key: 'cover', label: 'Cover', see: ['schedule.academic'] },
   { key: 'duties', label: 'Duties', see: ['schedule.workforce', 'schedule.academic'] },
   { key: 'attendance', label: 'Attendance', see: ['schedule.workforce', 'workforce.read'] },
   { key: 'shifts', label: 'Shifts', see: ['schedule.workforce', 'workforce.read'] },
+  { key: 'load', label: 'Load', see: ['schedule.workforce', 'workforce.read'] },
   { key: 'timetable', label: 'Timetable', see: ['schedule.academic', 'academics.read'] },
+  { key: 'build', label: 'Auto-build', see: ['schedule.academic'] },
   { key: 'calendar', label: 'Calendar', see: [] },
   { key: 'setup', label: 'Bells & rooms', see: ['schedule.academic'] },
   { key: 'staff', label: 'Staff register', see: ['schedule.workforce', 'workforce.read'] },
@@ -72,7 +76,9 @@ function Schedule({ desk }: { desk: AdminDesk }) {
               {tab === 'duties' && <DutiesTab {...common} canWorkforce={a.can('schedule.workforce')} canAcademic={a.can('schedule.academic')} />}
               {tab === 'attendance' && <AttendanceTab toast={toast} canEdit={a.can('schedule.workforce')} />}
               {tab === 'shifts' && <ShiftsTab toast={toast} canEdit={a.can('schedule.workforce')} />}
+              {tab === 'load' && <LoadTab rows={common.rows} call={common.call} toast={toast} canEditTargets={a.any('schedule.workforce', 'schedule.academic')} />}
               {tab === 'timetable' && <TimetableTab {...common} canEdit={a.can('schedule.academic')} />}
+              {tab === 'build' && <BuildTab {...common} />}
               {tab === 'calendar' && <CalendarTab {...common} canEdit={a.can('schedule.academic')} />}
               {tab === 'setup' && <SetupTab {...common} canEdit={a.can('schedule.academic')} />}
               {tab === 'staff' && <StaffTab {...common} canEdit={a.can('schedule.workforce')} />}

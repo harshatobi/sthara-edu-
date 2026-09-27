@@ -29,6 +29,8 @@ export type VersionStatus = 'draft' | 'published' | 'archived';
 export interface TimetableVersion {
   id: string; session: string; name: string; status: VersionStatus; effective_from: string | null;
   source: 'manual' | 'import' | 'copy' | 'solver'; notes: string | null; published_at: string | null; created_at: string;
+  /** For a solver-built draft: its score, what it couldn't place, and its warnings. */
+  solver_report?: { score?: { total: number; soft: Record<string, number> }; unplaced?: { cls: string; subject: string; group: string; periods: number; reason: string }[]; warnings?: string[]; stats?: Record<string, number> } | null;
 }
 
 export interface Slot {
@@ -36,6 +38,8 @@ export interface Slot {
   subject: string; teacher_id: string | null; room_id: string | null; combined: boolean;
   /** A register member with no login who teaches this lesson (a visiting dance teacher); never set with teacher_id. */
   staff_member_id?: string | null;
+  /** Kept where it is when the timetable is re-solved. */
+  locked?: boolean;
 }
 
 /**

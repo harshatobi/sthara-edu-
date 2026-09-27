@@ -75,3 +75,12 @@ test('login requests a school is waiting on: warn, critical after three days', (
   assert.deepEqual(out[0].actions, [{ kind: 'open', href: '/ops/requests?school=s1', label: 'Review' }]);
   assert.deepEqual(buildAttention({ schools: [school()], health: [], newEnquiries: 0, pendingRequests: [{ schoolId: 's1', count: 0, oldestDays: 0 }] }), []);
 });
+
+test('the error log: spikes are critical, new errors a warning, known ones information', () => {
+  const spike = buildAttention({ schools: [], health: [], newEnquiries: 0, errors: { open24h: 3, new24h: 1, spikes: [{ fingerprint: 'abc', message: 'boom', lastHour: 42 }] } });
+  assert.deepEqual(spike.map(a => [a.id, a.severity]), [['error-spike:abc', 'crit'], ['errors-new', 'warn']]);
+  assert.match(spike[0].title, /42 in the last hour/);
+  const known = buildAttention({ schools: [], health: [], newEnquiries: 0, errors: { open24h: 2, new24h: 0, spikes: [] } });
+  assert.deepEqual(known.map(a => a.severity), ['info']);
+  assert.deepEqual(buildAttention({ schools: [], health: [], newEnquiries: 0, errors: { open24h: 0, new24h: 0, spikes: [] } }), []);
+});

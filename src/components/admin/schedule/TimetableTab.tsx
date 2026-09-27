@@ -1,6 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { LockSimpleIcon as LockSimple } from '@phosphor-icons/react/dist/ssr/LockSimple';
+import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { CopyIcon as Copy } from '@phosphor-icons/react/dist/ssr/Copy';
 import { UploadSimpleIcon as UploadSimple } from '@phosphor-icons/react/dist/ssr/UploadSimple';
@@ -28,12 +31,15 @@ const STATUS: Record<TimetableVersion['status'], { t: string; tone: Tone }> = {
 const API = '/api/admin/schedule/timetable';
 
 export default function TimetableTab({ rows, call, reload, toast, canEdit }: { rows: ScheduleRows; call: Call; reload: () => void; toast: (m: string) => void; canEdit: boolean }) {
+  const router = useRouter();
+  const wanted = useSearchParams().get('version');
   const today = isoDay();
   const inForce = versionOn(rows.versions, today);
   const sorted = useMemo(() => [...rows.versions].sort((a, b) =>
     (a.status === 'draft' ? 0 : a.status === 'published' ? 1 : 2) - (b.status === 'draft' ? 0 : b.status === 'published' ? 1 : 2)
     || b.created_at.localeCompare(a.created_at)), [rows.versions]);
-  const [picked, setPicked] = useState<string | null>(null);
+  // A link can open a version (the auto-builder sends you to the draft it just saved).
+  const [picked, setPicked] = useState<string | null>(wanted);
   const version = rows.versions.find(v => v.id === picked) ?? rows.versions.find(v => v.status === 'draft') ?? inForce ?? sorted[0] ?? null;
   const slots = useMemo(() => rows.slots.filter(s => s.version_id === version?.id), [rows.slots, version?.id]);
   const names = useMemo(() => namesOf(rows), [rows]);
@@ -120,6 +126,16 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
           <p className="muted" style={{ marginTop: 12 }}>Published timetables are kept as they were. To change this one, copy it to a draft, edit, and publish the draft from the day it should take effect.</p>
         )}
       </div>
+
+      {version?.source === 'solver' && version.solver_report && <SolverReport version={version} locked={slots.filter(s => s.locked).length} />}
+      {draft && (
+        <div className="note info" style={{ marginBottom: 18, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ flex: 1, minWidth: 240 }}>
+            <LockSimple size={13} weight="fill" style={{ verticalAlign: -2 }} /> {plural(slots.filter(s => s.locked).length, 'lesson')} locked. Lock the periods you want to keep (open a period), then let the solver rearrange the rest around them.
+          </span>
+          <button className="btn sm pri" onClick={() => router.replace(`/admin/schedule?tab=build&base=${version!.id}`, { scroll: false })}><Sparkle size={13} weight="fill" /> Re-solve unlocked lessons</button>
+        </div>
+      )}
 
       <div className="kpis">
         <Kpi label="LESSONS A WEEK" value={slots.length} note={`${plural(new Set(slots.map(s => normClass(s.class))).size, 'section')} of ${sections.length}`} />
@@ -344,6 +360,9 @@ function CellEditor({ rows, version, cls, weekday, period, slots, call, onClose,
         {here.length > 0 && <button className="btn" disabled={busy} onClick={async () => {
           if (await run(setBusy, setErr, () => call(API, 'PUT', { action: 'cell', versionId: version.id, class: cls, weekday, period_no: period, lessons: [] }))) onSaved();
         }}>Clear period</button>}
+        {here.length > 0 && <button className="btn" disabled={busy} title="Re-solving keeps a locked period's lessons where they are" onClick={async () => {
+          if (await run(setBusy, setErr, () => call(API, 'PUT', { action: 'lock', versionId: version.id, class: cls, weekday, period_no: period, locked: !here.some(s => s.locked) }))) onSaved();
+        }}><LockSimple size={13} weight={here.some(s => s.locked) ? 'fill' : 'regular'} /> {here.some(s => s.locked) ? 'Unlock' : 'Lock here'}</button>}
         <span style={{ flex: 1 }} />
         <button className="btn" onClick={onClose}>Cancel</button>
         <button className="btn pri" disabled={busy || warnings.length > 0 || (!asSlots.length && !here.length)} onClick={async () => {
@@ -351,5 +370,30 @@ function CellEditor({ rows, version, cls, weekday, period, slots, call, onClose,
         }}>{busy ? 'Saving…' : 'Save'}</button>
       </div>
     </Pop>
+  );
+}
+
+/** What the solver reported for a draft it built: score, what it couldn't place and why, and its warnings. */
+function SolverReport({ version, locked }: { version: TimetableVersion; locked: number }) {
+  const r = version.solver_report!;
+  const unplaced = r.unplaced ?? [];
+  const periods = unplaced.reduce((n, u) => n + u.periods, 0);
+  return (
+    <div className="card" style={{ marginBottom: 18, borderLeft: `4px solid ${periods ? 'var(--amber)' : 'var(--green)'}` }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Sparkle size={18} weight="fill" color="var(--purple)" />
+        <b style={{ fontSize: 15 }}>Built by the auto-solver</b>
+        <Chip tone={periods ? 'a' : 'g'}>{periods ? `${plural(periods, 'PERIOD')} NOT PLACED` : 'EVERYTHING PLACED'}</Chip>
+        {r.score && <span className="muted" style={{ fontSize: 12.5 }}>Score {r.score.total} (lower is better){locked ? ` · ${locked} locked` : ''}</span>}
+      </div>
+      {unplaced.length > 0 && (
+        <div style={{ marginTop: 10 }}>
+          {unplaced.slice(0, 12).map((u, i) => <div key={i} style={{ fontSize: 13, marginTop: 4 }}><b>{u.cls} {u.subject}{u.group ? ` (${u.group})` : ''}</b>: {plural(u.periods, 'period')} short. {u.reason}</div>)}
+          {unplaced.length > 12 && <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>and {unplaced.length - 12} more</div>}
+          <p className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Place these by hand (open a period), or change the requirements or teachers&apos; availability and re-solve.</p>
+        </div>
+      )}
+      {(r.warnings ?? []).length > 0 && <div className="note" style={{ marginTop: 10 }}>{(r.warnings ?? []).slice(0, 6).map((w, i) => <div key={i}>{w}</div>)}</div>}
+    </div>
   );
 }

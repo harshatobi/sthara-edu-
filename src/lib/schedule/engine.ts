@@ -318,8 +318,24 @@ const itemStart = (i: AgendaItem) => (i.kind === 'leave' ? -2 : i.kind === 'even
  * A person's agenda also carries their absences, the lessons they cover, who covers theirs,
  * and their duties (weekly roster and dated duties such as invigilation).
  */
+/** Indexes every agenda over the same rows shares (load analytics asks for one per teacher): built once per load. */
+const agendaIndexes = new WeakMap<ScheduleRows, { names: Map<PersonKey, string>; slotsByVersion: Map<string, Slot[]>; slotById: Map<string, Slot> }>();
+function indexesOf(rows: ScheduleRows) {
+  let ix = agendaIndexes.get(rows);
+  if (!ix) {
+    const slotsByVersion = new Map<string, Slot[]>();
+    for (const s of rows.slots) {
+      const list = slotsByVersion.get(s.version_id || '');
+      if (list) list.push(s); else slotsByVersion.set(s.version_id || '', [s]);
+    }
+    ix = { names: namesOf(rows), slotsByVersion, slotById: new Map(rows.slots.filter(s => s.id).map(s => [s.id!, s])) };
+    agendaIndexes.set(rows, ix);
+  }
+  return ix;
+}
+
 export function agenda(who: Subject, from: string, to: string, rows: ScheduleRows): AgendaDay[] {
-  const names = namesOf(rows);
+  const { names, slotsByVersion, slotById } = indexesOf(rows);
   const wingByClass = (cls: string) => wingOf(cls, rows.wings)?.id ?? null;
   const me = who.kind === 'teacher' || who.kind === 'office' ? who.userId : null;
   const myWings = (() => {
@@ -332,12 +348,6 @@ export function agenda(who: Subject, from: string, to: string, rows: ScheduleRow
     }
     return null; // office and rooms: the whole school
   })();
-  const slotsByVersion = new Map<string, Slot[]>();
-  for (const s of rows.slots) {
-    const list = slotsByVersion.get(s.version_id || '');
-    if (list) list.push(s); else slotsByVersion.set(s.version_id || '', [s]);
-  }
-  const slotById = new Map(rows.slots.filter(s => s.id).map(s => [s.id!, s]));
   const mine = (s: Slot) =>
     who.kind === 'teacher' ? slotPerson(s) === who.userId
       : who.kind === 'class' ? normClass(s.class) === normClass(who.cls)

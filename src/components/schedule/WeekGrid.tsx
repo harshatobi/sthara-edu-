@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
+import { LockSimpleIcon as LockSimple } from '@phosphor-icons/react/dist/ssr/LockSimple';
 import { hhmm, maxPeriods, periodOf, roomOf, teachingDays, weekGrid } from '@/lib/schedule/engine';
 import { DAY_NAMES, DAY_SHORT, slotPerson, type BellSchedule, type Room, type Slot } from '@/lib/schedule/types';
 import type { PrintGrid } from './print';
@@ -97,8 +98,8 @@ export default function WeekGrid({ bells, wingId, slots, mode, names, rooms, cla
                     draggable={editable && !!onSwap && !s.combined}
                     onDragStart={e => { setDrag({ weekday: d, period_no: r.no! }); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', k); }}
                     onDragEnd={() => { setDrag(null); setOver(null); }}
-                    title={clashing?.has(s) ? 'Clash: this teacher or room is also booked elsewhere in this period' : undefined}>
-                    {lessonLines(s, mode, names, rooms).map((line, n) => (n === 0 ? <b key={n}>{line}</b> : <span key={n}>{line}</span>))}
+                    title={clashing?.has(s) ? 'Clash: this teacher or room is also booked elsewhere in this period' : s.locked ? 'Locked: re-solving keeps this lesson here' : undefined}>
+                    {lessonLines(s, mode, names, rooms).map((line, n) => (n === 0 ? <b key={n}>{s.locked && <LockSimple size={10} weight="fill" aria-label="Locked" style={{ marginRight: 3, verticalAlign: -1 }} />}{line}</b> : <span key={n}>{line}</span>))}
                   </div>
                 ));
                 return (

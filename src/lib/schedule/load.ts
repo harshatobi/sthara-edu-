@@ -20,7 +20,7 @@ export async function loadScheduleRows(db: SupabaseClient, schoolId: string, opt
     all((a, b) => s('rooms', 'id, name, kind, capacity, home_class, active').eq('school_id', schoolId).order('name').range(a, b)),
     // Last session's tail too, so a week that spans 1 April still shows its events.
     all((a, b) => s('academic_events', '*').eq('school_id', schoolId).gte('ends_on', `${Number(session.slice(0, 4)) - 1}-12-01`).order('starts_on').range(a, b)),
-    all((a, b) => s('timetable_versions', 'id, session, name, status, effective_from, source, notes, published_at, created_at').eq('school_id', schoolId).order('created_at').range(a, b)),
+    all((a, b) => s('timetable_versions', 'id, session, name, status, effective_from, source, notes, published_at, created_at, solver_report').eq('school_id', schoolId).order('created_at').range(a, b)),
     // '*' so the register still loads whichever columns this database has.
     all((a, b) => s('staff_members', '*').eq('school_id', schoolId).order('name').range(a, b)),
     all((a, b) => s('users', 'id, name, role, email, assignments, teacher_class, teacher_subject').eq('school_id', schoolId).in('role', ['teacher', 'admin']).order('name').range(a, b)),

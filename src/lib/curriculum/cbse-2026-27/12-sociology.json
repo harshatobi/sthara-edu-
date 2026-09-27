@@ -1,0 +1,251 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Sociology",
+  "codes": [
+    "039"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Sociology, Code 039, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Sociology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project: introduction",
+        "marks": 2
+      },
+      {
+        "component": "Project: statement of purpose",
+        "marks": 2
+      },
+      {
+        "component": "Project: research question",
+        "marks": 2
+      },
+      {
+        "component": "Project: methodology",
+        "marks": 3
+      },
+      {
+        "component": "Project: data analysis",
+        "marks": 4
+      },
+      {
+        "component": "Project: conclusion",
+        "marks": 2
+      },
+      {
+        "component": "Viva on the project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Indian Society, Class XII (NCERT)",
+    "Social Change and Development in India, Class XII (NCERT)"
+  ],
+  "notes": [
+    "The document has no learning-outcomes column for Sociology, so chapter outcomes are left empty.",
+    "Unit numbers follow the document, which skips units dropped from the syllabus.",
+    "Part A Indian Society 40 marks; Part B Social Change and Development in India 40.",
+    "Units 1 and 7 are non-evaluative."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Introducing Indian Society",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Introducing Indian Society",
+          "number": 1,
+          "topics": [
+            "Colonialism, nationalism, class and community"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "The Demographic Structure of Indian Society",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "The Demographic Structure of Indian Society",
+          "number": 2,
+          "topics": [
+            "Theories and concepts in demography",
+            "Rural-urban linkages and divisions",
+            "Population policy in India"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Social Institutions: Continuity and Change",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Social Institutions: Continuity and Change",
+          "number": 3,
+          "topics": [
+            "Caste and the caste system",
+            "Tribal communities",
+            "Family and kinship"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Patterns of Social Inequality and Exclusion",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Patterns of Social Inequality and Exclusion",
+          "number": 5,
+          "topics": [
+            "Social inequality and social exclusion",
+            "Systems justifying and perpetuating inequality: caste, tribe, other backward classes",
+            "Adivasi struggles",
+            "The struggle for women's equality and rights",
+            "The struggles of the differently abled"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "The Challenges of Cultural Diversity",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "The Challenges of Cultural Diversity",
+          "number": 6,
+          "topics": [
+            "Cultural communities and the nation state",
+            "Regionalism in the Indian context",
+            "The nation state and religion related issues and identities",
+            "Communalism, secularism and the nation state",
+            "State and civil society"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Suggestions for Project Work",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Suggestions for Project Work",
+          "number": 7,
+          "topics": [
+            "Suggestions for project work"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Structural Change",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Structural Change",
+          "number": 8,
+          "topics": [
+            "Understanding colonialism, industrialisation, urbanisation"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "9",
+      "name": "Cultural Change",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Cultural Change",
+          "number": 9,
+          "topics": [
+            "Social reform movements",
+            "Sanskritisation, westernisation, modernisation, secularisation"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "11",
+      "name": "Change and Development in Rural Society",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Change and Development in Rural Society",
+          "number": 11,
+          "topics": [
+            "Agrarian structure: caste and class in rural India",
+            "Land reforms, green revolution and its social consequences",
+            "Transformation in rural society; circulation of labour",
+            "Globalisation, liberalisation and rural society"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "12",
+      "name": "Change and Development in Industrial Society",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Change and Development in Industrial Society",
+          "number": 12,
+          "topics": [
+            "From planned industrialisation to liberalisation",
+            "How people find jobs",
+            "Work processes: working conditions, home based work, strikes and unions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "15",
+      "name": "Social Movements",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Social Movements",
+          "number": 15,
+          "topics": [
+            "Concept, theories and classification of social movements",
+            "Environmental movements",
+            "Class-based movements: workers, peasants",
+            "Caste-based movements: Dalit movement, backward classes, upper caste responses",
+            "Tribal movements",
+            "Women's movements in independent India"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

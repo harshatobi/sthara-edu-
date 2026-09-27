@@ -1,0 +1,98 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Physical Education and Well-being",
+  "codes": [],
+  "stream": "Wellbeing",
+  "aliases": [
+    "PE",
+    "Physical Education",
+    "PEWB"
+  ],
+  "source": {
+    "title": "Khel Yatra: Physical Education and Well-being, Grade 8 (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/heky1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Khel Yatra: Physical Education and Well-being, Grade 8 (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Foundations of Physical Education and Well-being",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Foundations of Physical Education and Well-being",
+          "topics": [
+            "Warm-up and cool-down",
+            "Healthy habits and well-being"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Physical and Motor Fitness",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Physical and Motor Fitness",
+          "topics": [
+            "Horse vault race; progressive mass drill; Baraf Pani; Char Tali",
+            "Conduction relay; motion-in-action relay; breathing in action",
+            "Flex and react challenge; move like a machine; adapt and achieve",
+            "Crawl to the front; modified triathlon; crab crawl ball relay; kick volleyball; ropeless tug of war; Swasthya Daud"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Fundamental Skills of Sports: Athletics",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Athletics",
+          "topics": [
+            "Crouch or sitting start; reaction games",
+            "Long jump; standing broad jump; hopping; landing",
+            "High jump",
+            "Putting the ball"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Fundamental Skills of Sports: Table Tennis",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Table Tennis",
+          "topics": [
+            "Grip and footwork",
+            "Forehand and backhand push",
+            "Basic, topspin and backspin service",
+            "Forehand and backhand drive and topspin; smash; game play"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

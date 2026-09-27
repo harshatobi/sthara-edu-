@@ -1,0 +1,249 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Telugu (Telangana)",
+  "codes": [
+    "089"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Telugu TS",
+    "Telugu Telangana",
+    "తెలుగు (తెలంగాణ)"
+  ],
+  "source": {
+    "title": "Telugu (Telangana), Code 089, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Telugu_Telangana_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic test (best of 2)",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessments",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Student enrichment activities",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Vennela - V, Telugu Vachakam (Government of Telangana, 2025)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Aparichita Gadyamsam (Class X)",
+          "topics": [
+            "Unseen passages 1A and 1B (5+5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Lekha Rachana (Class X)",
+          "topics": [
+            "Letter to parents and friends (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dina Charya / Sambhashana Rachana",
+          "topics": [
+            "Diary entry or dialogue writing (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Samskrutha Sandhulu",
+          "topics": [
+            "Savarna Deergha, Guna, Vruddhi, Yanadesha (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samaasaalu (Class X)",
+          "topics": [
+            "Dwandva, Dvigu, Bahuvreehi (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vibhaktulu (Class X)",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paryaya Padaalu (Class X)",
+          "topics": [
+            "Only from pages 102-103 of Vennela - V (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paribhashika Padaalu (Class X)",
+          "topics": [
+            "Acchulu / Swaraalu, Hallulu, Poorva Swaram, Para Swaram, Poorva Padam, Para Padam, Uttara Padam, Ubhayaaksharaalu, Attu, Ittu, Uttu, Aagamam, Aadesham, Druthamu, Karmadhaarayam, Drutha Prakrutikamulu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prakriyalu (Class X)",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jatheeyalu",
+          "topics": [
+            "Bhageeratha Prayatnam, Sugreevaagna, Veenula Vindu, Ibbadi Mubbadigaa, Cheppudu Maatalu, Pedachevina Pettu, Sreekaram Chuttu, Kumbhakarna Nidra, Allakallolam, Aranya Rodana, Kabandha Hasthaalu, Shasvata Nidra, Abhayamicchu, Raama Raajyam, Truna Praayam, Nooripoyu (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samethalu",
+          "topics": [
+            "14 prescribed proverbs only, e.g. Athi Rahasyam Battabayalu; Eetaku Lotuledu (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Parichitha Gadyam",
+          "topics": [
+            "Seen prose passage (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Podupu Kathalu",
+          "topics": [
+            "Prose (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhagyodayam",
+          "topics": [
+            "Prose (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Telugu Mahila",
+          "topics": [
+            "Prose (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hasta Kalaa Naipunyam",
+          "topics": [
+            "Prose (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chaldularaginchuta",
+          "topics": [
+            "Poetry (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prapancha Padulu",
+          "topics": [
+            "Poetry (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Neeti Parimalaalu",
+          "topics": [
+            "Poetry (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shrama Jeevi",
+          "topics": [
+            "Poetry (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hamsa Evaridi?",
+          "topics": [
+            "Non-detail (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samayasphoorthi",
+          "topics": [
+            "Non-detail (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ooru - Adavi",
+          "topics": [
+            "Non-detail (Vennela - V)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rikshawala",
+          "topics": [
+            "Non-detail (Vennela - V)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Padya poorana and bhavalu are set from Neeti Parimalaalu only."
+      ]
+    }
+  ]
+}

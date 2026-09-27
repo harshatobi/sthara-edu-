@@ -1,0 +1,223 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Marathi",
+  "codes": [
+    "109"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "मराठी"
+  ],
+  "source": {
+    "title": "Marathi, Code 109, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Marathi_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Activities across speaking, reading, writing and presentation (interview, speech, drama reading, report, essay, wall magazine, PPT)",
+        "marks": 20
+      }
+    ],
+    "total": 100
+  },
+  "textbooks": [
+    "Yuvakbharati, Std XI (Maharashtra State Board of Secondary and Higher Secondary Education, Pune, 2019)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Written paper 80 marks; the document prints no section split for Class XI, so unit marks are not recorded.",
+    "Lessons marked excluded in the document are omitted; they are still recommended reading."
+  ],
+  "units": [
+    {
+      "code": "1-2",
+      "name": "Gadya va Padya (Prose and Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Svatantrateche Stotra",
+          "topics": [
+            "Poem, for reading only: V. D. Savarkar"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "Mamu",
+          "topics": [
+            "Prose: Shivaji Sawant"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Zadanchya Manat Jaau",
+          "topics": [
+            "Poem: Nalesh Patil"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Parimal",
+          "topics": [
+            "Prose: P. K. Atre"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Davant Aalis Bhalya Pahatee",
+          "topics": [
+            "Poem: B. S. Mardhekar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manus Bandhuya",
+          "topics": [
+            "Prose: Praveen Davane"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aisi Akshare Rasike",
+          "topics": [
+            "Sant Dnyaneshwar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vahinincha Susat Salla",
+          "topics": [
+            "Prose: Shobha Bendre"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Wangmayin Lenyacha Shilpkar",
+          "topics": [
+            "Prose: Sumati Devsthale"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Painjan",
+          "topics": [
+            "Poem: Neelam Mangave"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kavitecha Rasagrahan",
+          "topics": [
+            "Appreciation of a poem"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Sahityaprakar: Natak (Drama)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Dhyanimani",
+          "topics": [
+            "Drama: Prashant Dalvi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sundar Mi Honar",
+          "topics": [
+            "Drama: P. L. Deshpande"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Upayojit Marathi (Applied Marathi)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Sutrasanchalan",
+          "topics": [
+            "Compering and anchoring"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mudritshodhan",
+          "topics": [
+            "Proof-reading"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Anuvad",
+          "topics": [
+            "Translation"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Anudini Lekhan",
+          "topics": [
+            "Blog writing"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Radio Jockey",
+          "topics": [
+            "Internal assessment only"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Vyakaran va Lekhan (Grammar and Writing)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vakya Sanshleshan",
+          "topics": [
+            "Sentence synthesis"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaal (Class XI)",
+          "topics": [
+            "Tenses"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shabdabhed",
+          "topics": [
+            "Word classes"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Patra Lekhan",
+          "topics": [
+            "Letter writing"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

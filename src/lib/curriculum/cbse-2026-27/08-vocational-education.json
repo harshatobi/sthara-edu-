@@ -1,0 +1,101 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Vocational Education",
+  "codes": [],
+  "stream": "Skill",
+  "aliases": [
+    "Kaushal Bodh",
+    "Skill Education"
+  ],
+  "source": {
+    "title": "Kaushal Bodh: Vocational Education, Grade 8 (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hekb1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Kaushal Bodh: Vocational Education, Grade 8 (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source.",
+    "Includes planning for a Kaushal Mela and additional projects (annexure)."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Work with Life Forms",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Hydroponics: Growing Plants without Soil",
+          "number": 1,
+          "topics": [
+            "Project 1 (Kaushal Bodh)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Feeding and Caring for Farm Animals",
+          "number": 2,
+          "topics": [
+            "Project 2 (Kaushal Bodh)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Work with Machines and Materials",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Working with Wood and Bamboo",
+          "number": 3,
+          "topics": [
+            "Project 3 (Kaushal Bodh)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Home Automation",
+          "number": 4,
+          "topics": [
+            "Project 4 (Kaushal Bodh)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Work in Human Services",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Water Audit for Water Management",
+          "number": 5,
+          "topics": [
+            "Project 5 (Kaushal Bodh)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Creating Advertisements",
+          "number": 6,
+          "topics": [
+            "Project 6 (Kaushal Bodh)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Bengali",
+  "codes": [
+    "005"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Bangla",
+    "বাংলা"
+  ],
+  "source": {
+    "title": "Bengali, Code 005, Classes IX-X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Bengali_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic tests",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessments",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activities",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Sanchayan Bangla (Pratham Bhasha), Dasam Shreni (WBBSE)",
+    "Golpoguccha (pathya sanskaran), Rabindranath Tagore, Visva-Bharati (supplementary reader)",
+    "Saraswati Bangla Byakaran O Rachana (IX-X)",
+    "Ucchatara Bangla Byakaran (IX-X), Bamandev Chakraborty"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class X)",
+          "topics": [
+            "Two unseen passages of 150-200 words (5+5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Sandhi: Byanjansandhi, Bisargasandhi",
+          "topics": [
+            "6 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samas: Dwandwa, Karmadharay, Abyayibhab",
+          "topics": [
+            "5 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bakya Paribartan: Saral, Jotil, Jougik",
+          "topics": [
+            "5 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sadhu O Chalit Bhashay Rupantar",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Literature",
+      "marks": 38,
+      "chapters": [
+        {
+          "name": "Gyanchakshu",
+          "topics": [
+            "Prose: Ashapurna Devi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Alobabu",
+          "topics": [
+            "Prose: Banaphul"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Adal Badal",
+          "topics": [
+            "Prose: Pannalal Patel"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bohurupi",
+          "topics": [
+            "Prose: Subodh Ghosh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tinpaharer Kole",
+          "topics": [
+            "Poetry: Shakti Chattopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aay Aro Bendhe Bendhe Thaki",
+          "topics": [
+            "Poetry: Shankha Ghosh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ekakare",
+          "topics": [
+            "Poetry: Subhas Mukhopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Astrer Biruddhe Gaan",
+          "topics": [
+            "Poetry: Joy Goswami"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Postmaster",
+          "topics": [
+            "Supplementary reader: Golpoguccha"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kabuliwala",
+          "topics": [
+            "Supplementary reader: Golpoguccha"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Daan Pratidaan",
+          "topics": [
+            "Supplementary reader: Golpoguccha"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose 15, poetry 10, supplementary reader 13."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Creative Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Letter to the Editor",
+          "topics": [
+            "120-150 words (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paragraph Writing",
+          "topics": [
+            "150-180 words (6)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

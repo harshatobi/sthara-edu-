@@ -1,0 +1,120 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Kathakali (Dance)",
+  "codes": [
+    "061"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Kathakali"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "History of Classical and Traditional Dance-Drama",
+          "topics": [
+            "A brief history"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Themes in Kathakali",
+          "topics": [
+            "Ramayana, Mahabharata and Bhagavata Purana"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "History of Kathakali",
+          "topics": [
+            "Origin and development"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kathakali Repertoire",
+          "topics": [
+            "Aattakathas, language, influence of Sopana Sangeetham"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Distinctive Aspects of Kathakali",
+          "topics": [
+            "Distinctive aspects"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hastalakshanadeepika",
+          "topics": [
+            "Slokas on the 24 basic hand gestures"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Salutation and Leaps",
+          "topics": [
+            "Tozhutu kumpital (namaskara panchakam); chattam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Body, Eye and Face Exercises",
+          "topics": [
+            "Meyyarappu; kannu saadhakam and mukha saadhakam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Footwork",
+          "topics": [
+            "Kaal saadhakam, irrativattam, kutthukaal, parinthukaal, dheevattam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chuzhippu, Hand Gestures and Thodayam",
+          "topics": [
+            "Seven chuzhippu; 24 basic hand gestures; thodayam; basic thaalams"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Retail",
+  "codes": [
+    "401"
+  ],
+  "stream": "Skill",
+  "source": {
+    "title": "Retail, Code 401, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/401-RETAIL-IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Project",
+        "marks": 10
+      },
+      {
+        "component": "Viva",
+        "marks": 5
+      },
+      {
+        "component": "Practical file",
+        "marks": 15
+      },
+      {
+        "component": "Skill demonstration via lab activities",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: 2 each."
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Part B: Subject Specific Skills",
+      "marks": 40,
+      "chapters": [
+        {
+          "name": "Introduction to Retail",
+          "number": 1,
+          "topics": [
+            "Basics of retailing: functions and requirements",
+            "Organised and unorganised retailing",
+            "Store and non-store retailing",
+            "Indian and global retailers"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Receiving and Storage of Goods",
+          "number": 2,
+          "topics": [
+            "Classification of goods",
+            "Receiving and dispatching stock; refusal procedure",
+            "Storage techniques and precautions",
+            "Goods handling and material handling equipment"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Stock Levels in Storage",
+          "number": 3,
+          "topics": [
+            "Types of stock levels",
+            "Documents for stock handling; reporting deviations",
+            "Floor plan and allocation of space",
+            "Handling equipment"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Customer Service",
+          "number": 4,
+          "topics": [
+            "Customer service in retail"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "The document prints Part B marks in groups (20 for units 1-2 and 20 for units 3-4 as laid out); recorded as one 40-mark unit."
+      ]
+    }
+  ]
+}

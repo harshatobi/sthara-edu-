@@ -1,0 +1,408 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Political Science",
+  "codes": [
+    "028"
+  ],
+  "stream": "Humanities",
+  "aliases": [
+    "Pol Science",
+    "Pol Sci",
+    "Civics"
+  ],
+  "source": {
+    "title": "Political Science, Code 028, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/PoliticalScience_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project: introduction / overview",
+        "marks": 2
+      },
+      {
+        "component": "Project: variety of contents",
+        "marks": 3
+      },
+      {
+        "component": "Project: presentation",
+        "marks": 3
+      },
+      {
+        "component": "Project: conclusion",
+        "marks": 1
+      },
+      {
+        "component": "Project: bibliography",
+        "marks": 1
+      },
+      {
+        "component": "Viva voce",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Indian Constitution at Work, Class XI (NCERT)",
+    "Political Theory, Class XI (NCERT)",
+    "Additional reference material (annexure to the CBSE document)"
+  ],
+  "notes": [
+    "Part A (Indian Constitution at Work) carries 40 and Part B (Political Theory) 40; the document gives marks for groups of chapters, recorded as units. Unit codes are prefixed A and B.",
+    "Additional reference material (classroom use, not assessed in the board exam): electoral reforms; quasi and competitive federalism; constitution amendments; liberty vs freedom; dimensions of justice; human rights; multiculturalism."
+  ],
+  "units": [
+    {
+      "code": "A-1-2",
+      "name": "Constitution: Why and How?; Rights in the Indian Constitution",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Constitution: Why and How?",
+          "number": 1,
+          "topics": [
+            "Why we need a constitution: coordination and assurance, decision-making powers, limits on government, aspirations and goals, fundamental identity",
+            "Authority of a constitution: mode of promulgation, substantive provisions, balanced institutional design",
+            "Making of the Indian Constitution: Constituent Assembly composition, procedures, inheritance of the nationalist movement, institutional arrangements",
+            "Provisions adapted from constitutions of other countries"
+          ],
+          "outcomes": [
+            "Appreciate the need for a constitution",
+            "Understand the circumstances in which the Indian Constitution was drafted",
+            "Evaluate how constitutions govern the distribution of power",
+            "Analyse how constitutional provisions have worked in real political life"
+          ]
+        },
+        {
+          "name": "Rights in the Indian Constitution",
+          "number": 2,
+          "topics": [
+            "Importance of rights; Bill of Rights",
+            "Fundamental rights: equality, freedom, against exploitation, freedom of religion, cultural and educational rights, constitutional remedies",
+            "Directive principles of state policy",
+            "Relationship between fundamental rights and directive principles"
+          ],
+          "outcomes": [
+            "Identify violations of the rights to equality and freedom",
+            "Justify reasonable restrictions on rights",
+            "Use freedom of expression to advocate for others' rights"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-3",
+      "name": "Election and Representation",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Election and Representation",
+          "number": 3,
+          "topics": [
+            "Elections and democracy",
+            "First past the post and proportional representation; why India adopted FPTP",
+            "Reservation of constituencies",
+            "Free and fair elections: universal franchise, right to contest, independent Election Commission",
+            "Electoral reforms"
+          ],
+          "outcomes": [
+            "Identify types and methods of election",
+            "Think critically about stakeholders in free and fair elections",
+            "Demonstrate the role of the Election Commission",
+            "Compare election systems of different countries"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-4-6",
+      "name": "Executive; Legislature; Judiciary",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Executive",
+          "number": 4,
+          "topics": [
+            "What an executive is; types of executive",
+            "Parliamentary executive in India: power and position of the President, discretionary powers",
+            "Prime Minister and Council of Ministers",
+            "Permanent executive: bureaucracy"
+          ],
+          "outcomes": [
+            "Compare parliamentary and presidential executives",
+            "Analyse the composition and functioning of the executive"
+          ]
+        },
+        {
+          "name": "Legislature",
+          "number": 5,
+          "topics": [
+            "Why we need a parliament and two houses: Rajya Sabha and Lok Sabha",
+            "Powers of Parliament; special powers of Rajya Sabha",
+            "Law making",
+            "Parliamentary control of the executive",
+            "Parliamentary committees; self-regulation"
+          ],
+          "outcomes": [
+            "Describe the law-making process",
+            "Differentiate the powers of Lok Sabha and Rajya Sabha",
+            "Analyse the role of parliamentary committees"
+          ]
+        },
+        {
+          "name": "Judiciary",
+          "number": 6,
+          "topics": [
+            "Independence of the judiciary; appointment and removal of judges",
+            "Structure of the judiciary",
+            "Jurisdiction of the Supreme Court: original, writ, appellate, advisory",
+            "Judicial activism",
+            "Judiciary and rights; judiciary and Parliament"
+          ],
+          "outcomes": [
+            "Identify what makes the judiciary independent",
+            "Compare jurisdictions",
+            "Analyse why the judiciary has become proactive and conflicts with Parliament over amendments"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-7",
+      "name": "Federalism",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Federalism",
+          "number": 7,
+          "topics": [
+            "What federalism is; federalism in the Indian Constitution: division of powers",
+            "Federalism with a strong central government",
+            "Conflicts: centre-state relations, demands for autonomy, governors and President's rule, new states, interstate conflicts",
+            "Special provisions: Jammu and Kashmir"
+          ],
+          "outcomes": [
+            "Explain the features of a federation",
+            "Identify subjects on which the union and states legislate",
+            "Discuss provisions that led to a strong Centre"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-8",
+      "name": "Local Governments",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Local Governments",
+          "number": 8,
+          "topics": [
+            "Why local governments; growth of local government in India",
+            "73rd Amendment: three tier structure, elections, reservations, transfer of subjects, State Election Commissioners, State Finance Commission",
+            "74th Amendment",
+            "Implementation of the 73rd and 74th Amendments"
+          ],
+          "outcomes": [
+            "Understand the Panchayati Raj system and its significance",
+            "Justify the significance of the 73rd and 74th amendments",
+            "Examine the significance of decentralisation"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A-9-10",
+      "name": "Constitution as a Living Document; The Philosophy of the Constitution",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Constitution as a Living Document",
+          "number": 9,
+          "topics": [
+            "Are constitutions static? How to amend the constitution",
+            "Why so many amendments: differing interpretations, political consensus, controversial amendments",
+            "Basic structure and evolution of the constitution",
+            "Contribution of the judiciary; maturity of political leadership"
+          ],
+          "outcomes": [
+            "Appreciate why the Constitution is called a living document",
+            "Know the major amendments and the controversies raised"
+          ]
+        },
+        {
+          "name": "The Philosophy of the Constitution",
+          "number": 10,
+          "topics": [
+            "Constitution as a means of democratic transformation",
+            "Why go back to the Constituent Assembly",
+            "Political philosophy: individual freedom, social justice, respect for diversity and minority rights, secularism, universal franchise, federalism, national identity",
+            "Procedural achievements; criticisms and limitations"
+          ],
+          "outcomes": [
+            "Appreciate the philosophical vision of the Constitution",
+            "Evaluate its strengths and limitations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-1",
+      "name": "Political Theory: An Introduction",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Political Theory: An Introduction",
+          "number": 1,
+          "topics": [
+            "What politics is",
+            "What we study in political theory",
+            "Putting political theory into practice",
+            "Why study political theory"
+          ],
+          "outcomes": [
+            "Define politics and identify political principles",
+            "Appreciate the contribution of political thinkers"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-2-3",
+      "name": "Freedom; Equality",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Freedom",
+          "number": 2,
+          "topics": [
+            "The ideal of freedom",
+            "Sources of constraints and why we need them",
+            "The harm principle",
+            "Negative and positive liberty"
+          ],
+          "outcomes": [
+            "Evaluate negative and positive liberty",
+            "Explain J.S. Mill's harm principle",
+            "Assess limits on freedom from social and economic structures"
+          ]
+        },
+        {
+          "name": "Equality",
+          "number": 3,
+          "topics": [
+            "Why equality matters: equality of opportunity; natural and social inequalities",
+            "Three dimensions of equality",
+            "Feminism, socialism",
+            "Promoting equality"
+          ],
+          "outcomes": [
+            "Assess how different ideologies perceive equality",
+            "Recognise ways to promote equality"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-4",
+      "name": "Social Justice",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Social Justice",
+          "number": 4,
+          "topics": [
+            "What justice is: equal treatment for equals, proportionate justice, special needs",
+            "Just distribution",
+            "John Rawls' theory of justice",
+            "Pursuing social justice; free markets versus state intervention"
+          ],
+          "outcomes": [
+            "Classify dimensions of justice",
+            "State Rawls' veil of ignorance",
+            "Appreciate government measures to secure social justice"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-5",
+      "name": "Rights",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Rights",
+          "number": 5,
+          "topics": [
+            "What rights are and where they come from",
+            "Legal rights and the state",
+            "Kinds of rights",
+            "Rights and responsibilities"
+          ],
+          "outcomes": [
+            "Explain why rights need legal sanction",
+            "Describe kinds of rights"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-6-7",
+      "name": "Citizenship; Nationalism",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Citizenship",
+          "number": 6,
+          "topics": [
+            "Full and equal membership; equal rights",
+            "Citizen and nation",
+            "Universal and global citizenship"
+          ],
+          "outcomes": [
+            "Explain the meaning of citizenship",
+            "Discuss solutions to citizenship issues"
+          ]
+        },
+        {
+          "name": "Nationalism",
+          "number": 7,
+          "topics": [
+            "Nations and nationalism: shared beliefs, history and identity",
+            "National self-determination",
+            "Nationalism and pluralism"
+          ],
+          "outcomes": [
+            "Assess the strengths and limitations of nationalism",
+            "Examine national self-determination"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B-8",
+      "name": "Secularism",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Secularism",
+          "number": 8,
+          "topics": [
+            "What secularism is; inter-religious and intra-religious domination",
+            "Secular state: western and Indian models",
+            "Criticisms of Indian secularism: western import and minoritism, interventionist, vote bank politics"
+          ],
+          "outcomes": [
+            "Differentiate inter- and intra-religious domination",
+            "Compare western and Indian models of secularism"
+          ]
+        }
+      ]
+    }
+  ]
+}

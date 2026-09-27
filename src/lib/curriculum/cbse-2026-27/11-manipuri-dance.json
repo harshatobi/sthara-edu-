@@ -1,0 +1,113 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Manipuri (Dance)",
+  "codes": [
+    "060"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Manipuri"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "History of Indian and Traditional Dance",
+          "topics": [
+            "Brief history of Indian dance and traditional dance-drama"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Themes in Manipuri",
+          "topics": [
+            "Ramayana, Bhagavata, Gita Govinda; Nongpok Ningthou and Panthoibi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "History of Manipuri Dance",
+          "topics": [
+            "Lai Haraoba; Vaishnavite compositions from the 15th century; Ras Leela and Sankirtana under Maharaja Bhagyachandra; Goshtha Leela under Maharaja Chandrakirti"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manipuri Repertoire",
+          "topics": [
+            "Rasleelas, Krishna and Radha Abhisar and Nartan, Punglon Jagoi, Dashavatar, Gita Govinda songs, Pung Cholom, Kartal Cholom"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Distinctive Aspects of Manipuri",
+          "topics": [
+            "Lasya and tandava; footwork; sarvanga abhinaya"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Postures and Footwork",
+          "topics": [
+            "Basic postures, movements and footwork in tanchap tala"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hand Movements and Chali",
+          "topics": [
+            "Wrist flexibility, chali, champra okpi, khujeng leibi; chali for feminine and masculine, chali areibi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Talas of the Pung",
+          "topics": [
+            "Matras and talas: tanchap, menkup"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lai Haraoba and Folk Dances",
+          "topics": [
+            "Lasya and tandava; Thougal Jagoi, Maibi Jagoi; Thabal Chongbi, Keetlam, Chaplam"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

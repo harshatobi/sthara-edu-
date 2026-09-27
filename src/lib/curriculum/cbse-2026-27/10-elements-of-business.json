@@ -1,0 +1,122 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Elements of Business",
+  "codes": [
+    "154"
+  ],
+  "stream": "Commerce",
+  "source": {
+    "title": "Elements of Business, Code 154, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Elements_of_Business_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Chart or project on a syllabus topic",
+        "marks": 20
+      },
+      {
+        "component": "Viva",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Joint Stock Company",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Joint Stock Company",
+          "topics": [
+            "Private and public company: meaning and features"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Sources of Business Finance (Class X)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Sources of Business Finance (Class X)",
+          "topics": [
+            "Owned and borrowed funds"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Communication in Business Organisations",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Communication in Business Organisations",
+          "topics": [
+            "Meaning and methods: letter, e-mail, video conferencing, telephone"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Selling and Distribution",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Selling and Distribution",
+          "topics": [
+            "Purchase and sale",
+            "Cash, credit, hire purchase and instalment systems"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Large Scale Retail Trade",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Large Scale Retail Trade",
+          "topics": [
+            "Departmental stores and multiple shops",
+            "Non-store retailing: mail order, tele-shopping, vending machines, internet selling"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Selling",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Selling",
+          "topics": [
+            "Personal selling",
+            "Sales promotion techniques",
+            "Advertising: importance and media"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,308 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Applied Mathematics",
+  "codes": [
+    "241"
+  ],
+  "stream": "Mathematics",
+  "aliases": [
+    "Applied Maths",
+    "Maths Applied"
+  ],
+  "source": {
+    "title": "Applied Mathematics, Code 241, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Applied_Mathematics_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment: spreadsheet practicals and project",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "No NCERT textbook is prescribed; content as per the CBSE document"
+  ],
+  "notes": [
+    "The document does not break down the 20 internal marks; suggested practicals use spreadsheets or GeoGebra, plus a project."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Numbers, Quantification and Numerical Applications",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "Modulo Arithmetic and Congruence Modulo",
+          "number": 1,
+          "topics": [
+            "Modulus of an integer; modulo operator; modular addition and subtraction",
+            "Congruence modulo; equivalence class"
+          ],
+          "outcomes": [
+            "Apply modular arithmetic"
+          ]
+        },
+        {
+          "name": "Alligation and Mixture",
+          "number": 2,
+          "topics": [
+            "Rule of alligation",
+            "Mean price of a mixture"
+          ],
+          "outcomes": [
+            "Apply the rule of alligation"
+          ]
+        },
+        {
+          "name": "Numerical Problems",
+          "number": 3,
+          "topics": [
+            "Boats and streams",
+            "Pipes and cisterns",
+            "Races and games"
+          ],
+          "outcomes": [
+            "Solve real life problems mathematically"
+          ]
+        },
+        {
+          "name": "Numerical Inequalities",
+          "number": 4,
+          "topics": [
+            "Writing and comparing numerical inequalities",
+            "Numerical solution of algebraic inequations"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Algebra",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Matrices",
+          "number": 5,
+          "topics": [
+            "Types and order of matrices; data in matrix form",
+            "Equality, transpose, symmetric and skew symmetric matrices",
+            "Addition, subtraction, scalar and matrix multiplication"
+          ],
+          "outcomes": [
+            "Perform operations on matrices"
+          ]
+        },
+        {
+          "name": "Determinants and Inverse of a Matrix",
+          "number": 6,
+          "topics": [
+            "Determinant of a square matrix; singular and non-singular; |AB| = |A||B|",
+            "Inverse using cofactors; properties of inverse",
+            "Solving simultaneous equations (up to three variables) by Cramer's rule and matrix inverse"
+          ],
+          "outcomes": [
+            "Formulate and solve real problems as linear systems"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Calculus",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Differentiation and its Applications",
+          "number": 7,
+          "topics": [
+            "Derivatives up to second order; parametric and implicit functions",
+            "Rate of change of quantities",
+            "Marginal cost and marginal revenue",
+            "Increasing and decreasing functions",
+            "Maxima and minima by first and second derivative tests; optimisation of cost, revenue and profit"
+          ],
+          "outcomes": [
+            "Solve optimisation problems in cost, revenue and profit"
+          ]
+        },
+        {
+          "name": "Integration and its Applications",
+          "number": 8,
+          "topics": [
+            "Integration as anti-derivative",
+            "Indefinite integrals by substitution, partial fractions and by parts (non-trigonometric)",
+            "Definite integral as area under curves up to degree 2",
+            "Consumer and producer surplus; total cost and revenue from marginal functions"
+          ],
+          "outcomes": [
+            "Apply definite integrals to find consumer and producer surplus"
+          ]
+        },
+        {
+          "name": "Differential Equations and Modelling",
+          "number": 9,
+          "topics": [
+            "Order and degree",
+            "Formation by eliminating arbitrary constants",
+            "Solution by variable separable method"
+          ],
+          "outcomes": [
+            "Formulate and solve simple differential equations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Probability Distributions",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Probability Distributions",
+          "number": 10,
+          "topics": [
+            "Discrete and continuous random variables and their distributions",
+            "Mathematical expectation; variance and standard deviation of a random variable",
+            "Binomial distribution: mean, variance, SD",
+            "Poisson distribution: mean = variance = lambda",
+            "Normal distribution; standard normal variate"
+          ],
+          "outcomes": [
+            "Find the expected value and variance of a random variable",
+            "Apply binomial, Poisson and normal distributions"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Inferential Statistics",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Inferential Statistics",
+          "number": 11,
+          "topics": [
+            "Population and sample; representative samples; simple and systematic random sampling",
+            "Parameter and statistic; statistical significance and inference (conceptual); central limit theorem",
+            "Hypotheses: null and alternate; degrees of freedom",
+            "One sample t-test for small samples"
+          ],
+          "outcomes": [
+            "Test a null hypothesis using a one-sample t-test"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Time-based Data",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Time Series",
+          "number": 12,
+          "topics": [
+            "Time series as chronological data",
+            "Components: secular trend, seasonal, cyclical and irregular variation",
+            "Fitting a straight-line trend",
+            "Moving average and least squares methods"
+          ],
+          "outcomes": [
+            "Measure trend and interpret time series"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "VII",
+      "name": "Financial Mathematics",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Perpetuity and Sinking Funds",
+          "number": 13,
+          "topics": [
+            "Perpetuity",
+            "Sinking fund vs savings account"
+          ],
+          "outcomes": [
+            "Calculate perpetuity"
+          ]
+        },
+        {
+          "name": "Valuation of Bonds",
+          "number": 14,
+          "topics": [
+            "Coupon rate, maturity rate, current price",
+            "Present value approach"
+          ],
+          "outcomes": [
+            "Value a bond"
+          ]
+        },
+        {
+          "name": "Calculation of EMI",
+          "number": 15,
+          "topics": [
+            "Flat-rate method",
+            "Reducing-balance method"
+          ],
+          "outcomes": [
+            "Calculate EMI for loans"
+          ]
+        },
+        {
+          "name": "Compound Annual Growth Rate",
+          "number": 16,
+          "topics": [
+            "CAGR vs annual growth rate",
+            "CAGR formula"
+          ],
+          "outcomes": [
+            "Calculate CAGR"
+          ]
+        },
+        {
+          "name": "Linear Method of Depreciation",
+          "number": 17,
+          "topics": [
+            "Cost, residual value and useful life",
+            "Advantages and disadvantages"
+          ],
+          "outcomes": [
+            "Calculate linear depreciation"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "VIII",
+      "name": "Linear Programming",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Linear Programming",
+          "number": 18,
+          "topics": [
+            "Decision variables, constraints, objective function, non-negativity",
+            "Formulating LPPs with up to 3 non-trivial constraints; manufacturing and diet problems",
+            "Graphical solution; corner point method",
+            "Feasible, infeasible, bounded and unbounded regions; optimal feasible solution"
+          ],
+          "outcomes": [
+            "Formulate and solve LPPs graphically"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Introduction to Tourism",
+  "codes": [
+    "406"
+  ],
+  "stream": "Skill",
+  "aliases": [
+    "Tourism"
+  ],
+  "source": {
+    "title": "Introduction to Tourism, Code 406, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/406-INTRODUCTION_TOURISM-IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Project",
+        "marks": 20
+      },
+      {
+        "component": "Viva based on project",
+        "marks": 5
+      },
+      {
+        "component": "Practical file / report / portfolio / presentation",
+        "marks": 15
+      },
+      {
+        "component": "Skill demonstration via lab activities",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: 2 each."
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Part B: Subject Specific Skills",
+      "marks": 40,
+      "chapters": [
+        {
+          "name": "Introduction to Tourism I",
+          "number": 1,
+          "topics": [
+            "Defining tourism; traveller typology",
+            "Purpose, components and forms of tourism"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tourism Business I",
+          "number": 2,
+          "topics": [
+            "Tourism as a business; evolution",
+            "Distribution channels",
+            "Tourism in modern India"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tourism Product I",
+          "number": 3,
+          "topics": [
+            "Tourism products and resources",
+            "Components and characteristics of tourism products",
+            "Classification; responsible tourism"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Part B carries 40 marks for the three units together."
+      ]
+    }
+  ]
+}

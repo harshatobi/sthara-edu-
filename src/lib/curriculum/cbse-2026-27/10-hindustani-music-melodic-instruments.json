@@ -1,0 +1,147 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Hindustani Music (Melodic Instruments)",
+  "codes": [
+    "035"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Melodic Instruments), Code 035, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Hindustani_Music_Melodic_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Masitkhani gat",
+        "marks": 14
+      },
+      {
+        "component": "Drut gats",
+        "marks": 24
+      },
+      {
+        "component": "Raga identification",
+        "marks": 4
+      },
+      {
+        "component": "Dhun",
+        "marks": 4
+      },
+      {
+        "component": "Recitation of thekas",
+        "marks": 4
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "units": [
+    {
+      "code": "1",
+      "name": "Musical Terms (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Musical Terms (Class X)",
+          "topics": [
+            "Aalap, taan, meend, kan",
+            "Dhrupad, Masitkhani gat, Razakhani gat"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "The Instrument",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "The Instrument",
+          "topics": [
+            "Structure and tuning of sitar, sarod, violin, dilruba or esraj, flute, mandolin or guitar"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Ragas and Talas (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Ragas and Talas (Class X)",
+          "topics": [
+            "Khamaj, Brindavani Sarang, Bhupali",
+            "Tilwada, Rupak with thah, dugun, tigun, chaugun"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Notation and Raga Identification (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Notation and Raga Identification (Class X)",
+          "topics": [
+            "Notation of compositions",
+            "Identifying ragas from phrases"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Musicians (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Musicians (Class X)",
+          "topics": [
+            "Tansen, Alauddin Khan, Inayat Khan",
+            "Omkarnath Thakur"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Gats (Class X)",
+          "topics": [
+            "Masitkhani gat with todas in one prescribed raga",
+            "Drut gat with tana and jhala in each raga"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dhun, Recognition and Thekas",
+          "topics": [
+            "One dhun",
+            "Raga recognition",
+            "Thekas of Tilwada, Rupak"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

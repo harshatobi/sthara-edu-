@@ -1,0 +1,127 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Carnatic Music (Melodic Instruments)",
+  "codes": [
+    "032"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Carnatic Music (Melodic Instruments), Code 032, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Carnatic_Melodic_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Ragas prescribed",
+        "marks": 10
+      },
+      {
+        "component": "Varnams",
+        "marks": 8
+      },
+      {
+        "component": "Kriti / kirtana",
+        "marks": 8
+      },
+      {
+        "component": "Alapana",
+        "marks": 10
+      },
+      {
+        "component": "Kalpana swaras",
+        "marks": 6
+      },
+      {
+        "component": "Gamakas",
+        "marks": 8
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) without a unit-wise split; practical 50 (external examiner); internal assessment 20."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory: History and Theory of Indian Music",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Lakshana Granthas (Class XI)",
+          "topics": [
+            "Natyasastra",
+            "Chaturdandi Prakasika"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musicians and Composers (Class XI)",
+          "topics": [
+            "Veena Dhanammal, Rajamanikkam Pillai, Tirukkodikaval Krishna Iyer, Tyagaraja, Syama Sastri, Muthuswami Dikshitar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musical Forms (Class XI)",
+          "topics": [
+            "Geetam and its varieties; varnam; swarajati; kriti/kirtana"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Terms (Class XI)",
+          "topics": [
+            "Nada, sruti, swara, vadi, vivadi, samvadi, anuvadi, amsa, nyasa, jaati, raga, tala, jati, yati, suladi sapta talas, nadai, arohana, avarohana"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ragas, Varnam Notation and Talas (Class XI)",
+          "topics": [
+            "Adi tala varnam notation",
+            "Lakshanas of prescribed ragas",
+            "Adi, Roopaka, Misra and Khanda chapu; suladi sapta talas",
+            "Manodharma sangitam"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Ragas and Compositions (Class XI)",
+          "topics": [
+            "Mayamalavagowla, Sankarabharanam, Kharaharapriya, Kalyani, Madhyamavati, Arabhi, Pantuvarali, Kedaragaula, Vasanta, Kanada",
+            "Kritis in Adi, Rupakam, Chapu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Varnams, Alapana and Gamakas (Class XI)",
+          "topics": [
+            "Two Adi tala varnams in two speeds",
+            "Brief alapana",
+            "Kalpana swaras",
+            "Gamakas of the chosen instrument"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Sanskrit",
+  "codes": [],
+  "stream": "Language",
+  "aliases": [
+    "संस्कृतम्"
+  ],
+  "source": {
+    "title": "दीपकम्: अष्टमकक्षायाः संस्कृत-पाठ्यपुस्तकम् (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hsde1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "दीपकम्: अष्टमकक्षायाः संस्कृत-पाठ्यपुस्तकम् (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source.",
+    "Appendices: व्याकरणम्, शब्दरूपाणि, धातुरूपाणि."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "दीपकम्",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "सङ्गच्छध्वं संवदध्वम्",
+          "number": 1,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अल्पानामपि वस्तूनां संहतिः कार्यसाधिका",
+          "number": 2,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सुभाषितरसं पीत्वा जीवनं सफलं कुरु",
+          "number": 3,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "प्रणम्यो देशभक्तोऽयं गोपबन्धुर्महामनाः",
+          "number": 4,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "गीता सुगीता कर्तव्या",
+          "number": 5,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "डिजिभारतम् - युगपरिवर्तनम्",
+          "number": 6,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मञ्जुलमञ्जूषा सुन्दरसुरभाषा",
+          "number": 7,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पश्यत कोणमैशान्यं भारतस्य मनोहरम्",
+          "number": 8,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कोऽरुक्? कोऽरुक्? कोऽरुक्?",
+          "number": 9,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सन्निमित्ते वरं त्यागः (क-भागः)",
+          "number": 10,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सन्निमित्ते वरं त्यागः (ख-भागः)",
+          "number": 11,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सम्यग्वर्णप्रयोगेण ब्रह्मलोके महीयते",
+          "number": 12,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "वर्णोच्चारण-शिक्षा १",
+          "number": 13,
+          "topics": [
+            "दीपकम्"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

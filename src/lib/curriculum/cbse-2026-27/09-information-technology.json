@@ -1,0 +1,187 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Information Technology",
+  "codes": [
+    "402"
+  ],
+  "stream": "Skill",
+  "aliases": [
+    "IT",
+    "Information Technology (402)"
+  ],
+  "source": {
+    "title": "Information Technology, Code 402, Class IX (2026-27) - CBSE Skill Education",
+    "url": "https://cbseacademic.nic.in/web_material/Curriculum27/sec/402-IT-IX.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 50,
+    "internal": 50,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 15
+      },
+      {
+        "component": "Written test",
+        "marks": 10
+      },
+      {
+        "component": "Viva voce",
+        "marks": 10
+      },
+      {
+        "component": "Practical file / student portfolio",
+        "marks": 10
+      },
+      {
+        "component": "Viva on project",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "CBSE skill education textbook / PSSCIVE material for the job role"
+  ],
+  "notes": [
+    "Skill subject: Part A employability skills (10) and Part B subject skills (40) form the theory; practical and project carry 50."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Part A: Employability Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Communication Skills-I",
+          "number": 1,
+          "topics": [
+            "Communication Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Self-Management Skills-I",
+          "number": 2,
+          "topics": [
+            "Self-Management Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Information and Communication Technology Skills-I",
+          "number": 3,
+          "topics": [
+            "Information and Communication Technology Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Entrepreneurial Skills-I",
+          "number": 4,
+          "topics": [
+            "Entrepreneurial Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Green Skills-I",
+          "number": 5,
+          "topics": [
+            "Green Skills-I (detailed topics published separately by CBSE)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unit marks: Communication 2, Self-management 3, ICT 1, Entrepreneurial 3, Green 1."
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Introduction to IT-ITeS Industry",
+      "marks": 4,
+      "chapters": [
+        {
+          "name": "Introduction to IT-ITeS Industry",
+          "number": 1,
+          "topics": [
+            "IT, ITeS and BPO services; BPM industry in India",
+            "Applications of IT in home, workplace, education, banking, health care, government"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Data Entry and Keyboarding Skills",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Data Entry and Keyboarding Skills",
+          "number": 2,
+          "topics": [
+            "Keyboard keys, home and guide keys; typing ergonomics; finger positions",
+            "Mouse operations",
+            "Typing tutor, touch typing, typing speed"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B3",
+      "name": "Digital Documentation",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Digital Documentation",
+          "number": 3,
+          "topics": [
+            "Word processor: create, open, save documents; views",
+            "Editing and formatting text and paragraphs",
+            "Page styles, lists, tables, images"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B4",
+      "name": "Electronic Spreadsheet",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Electronic Spreadsheet",
+          "number": 4,
+          "topics": [
+            "Worksheet, rows, columns, cells, ranges",
+            "Entering labels, values and formulas; functions",
+            "Formatting and charts"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B5",
+      "name": "Digital Presentation",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Digital Presentation",
+          "number": 5,
+          "topics": [
+            "Elements of an effective presentation",
+            "Creating presentations with templates and layouts",
+            "Formatting slides, images, transitions"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Malayalam",
+  "codes": [
+    "112"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "മലയാളം",
+    "Malyalam"
+  ],
+  "source": {
+    "title": "Malayalam, Code 112, Class XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Malyalam_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Pen-paper tests, art integration projects, portfolio and subject enrichment activities",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Higher Secondary Malayalam Plus Two, 2015 (SCERT Kerala)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Literature: MCQ 20, short answers from prose and poetry 32. Page numbers refer to the textbook."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Class XII)",
+          "topics": [
+            "10 of 12 very short answer questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Creative Writing",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Essay Writing (Class XII)",
+          "topics": [
+            "One of two topics in 300 words (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter Writing (Class XII)",
+          "topics": [
+            "Applications, letter to the editor, commercial correspondence (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paraphrasing (Class XII)",
+          "topics": [
+            "Simple type (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sentence Making and Correction (Class XII)",
+          "topics": [
+            "Idioms and proverbs; sentence correction (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Literature and Grammar",
+      "marks": 52,
+      "chapters": [
+        {
+          "name": "Prakasham Jalam Poley Anu (p. 15)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Avakashangalude Prasnam (p. 27)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gowli Janmam (p. 77)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Badriyum Parisarangalum (p. 85)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vangadeyude Hridayathudippukal (p. 100)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kannadi Kaanmolavum (p. 10)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kiraatha Vritham (p. 22)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kesineemozhi (p. 40)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kollivakkallathonnum (p. 74)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thenga (p. 83)",
+          "topics": [
+            "Poem"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Carnatic Music (Percussion Instruments)",
+  "codes": [
+    "033"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Carnatic Music (Percussion Instruments), Code 033, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Carnatic_Percussion_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Talas with elaboration",
+        "marks": 15
+      },
+      {
+        "component": "Thekas and mohras",
+        "marks": 15
+      },
+      {
+        "component": "Tuning of instrument",
+        "marks": 5
+      },
+      {
+        "component": "Sollukattus",
+        "marks": 15
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) without a unit-wise split; practical 50 (external examiner); internal assessment 20."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory: History and Theory of Indian Music",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Lakshana Granthas (Class XI)",
+          "topics": [
+            "Natya Sastra, Brihaddesi, Sangita Sampradaya Pradarshini with reference to laya and percussion"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Composers and Luminaries (Class XI)",
+          "topics": [
+            "Patnam Subramanya Iyer, Syama Sastri, Tyagaraja",
+            "Narayanaswamy Appa, Mamundiya Pillai, Dakshinamurti Pillai, Alagunambi Pillai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Terms (Class XI)",
+          "topics": [
+            "Nada, laya, tala, jati, gati, suladi sapta talas, karani, vettu, thattu, hechchu, taggu, mohra, korvai, meettu, chapu, arachapu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Korvai Notation and Instruments (Class XI)",
+          "topics": [
+            "Notation of korvais in Adi and Rupaka",
+            "Construction of the chosen instrument; mridangam technique; kanjira, tavil, ghatam"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tattakarams (Class XI)",
+          "topics": [
+            "Tattakarams or konnakkol of the talas learnt"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Talas with Elaboration (Class XI)",
+          "topics": [
+            "Adi and Rupaka talas in at least two nadais"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thekas, Mohras and Sollukattus (Class XI)",
+          "topics": [
+            "Thekas and mohras with teermanam and korvais",
+            "Tuning the instrument",
+            "Oral rendering of sollukattus"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

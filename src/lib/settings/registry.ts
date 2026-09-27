@@ -126,9 +126,24 @@ export function annualValue(p: Pick<SchoolPolicy, 'plan' | 'pricePerStudent' | '
 }
 export const CURRICULA = ['CBSE', 'ICSE', 'State Board', 'IB', 'Cambridge IGCSE', 'Other'] as const;
 
+/**
+ * Competitive exam tracks a school can switch on (ids of src/lib/curriculum/exams).
+ * Kept here as plain ids so settings stay independent of the curriculum bundle.
+ */
+export const EXAM_TRACKS = [
+  { id: 'jee-main', label: 'JEE Main' },
+  { id: 'jee-advanced', label: 'JEE Advanced' },
+  { id: 'neet-ug', label: 'NEET-UG' },
+  // AP / TS EAPCET: add here once their syllabus files exist in src/lib/curriculum/exams.
+  { id: 'nsejs', label: 'NSEJS (Junior Science Olympiad)' },
+  { id: 'math-olympiad', label: 'Mathematical Olympiad' },
+] as const;
+const EXAM_IDS = EXAM_TRACKS.map(e => e.id) as readonly string[];
+export const examTrackLabel = (id: string) => EXAM_TRACKS.find(e => e.id === id)?.label ?? id;
+
 /** The keys of schools.settings the product reads. Stored as jsonb, so every field is checked on read. */
 export interface SchoolSettings {
-  code?: unknown; plan?: unknown; active?: unknown; aiEnabled?: unknown; curriculum?: unknown; testSchool?: unknown;
+  code?: unknown; plan?: unknown; active?: unknown; aiEnabled?: unknown; curriculum?: unknown; testSchool?: unknown; examTracks?: unknown;
   contractStudents?: unknown; pricePerStudent?: unknown;
   suspension?: { at?: unknown; reason?: unknown } | null;
   [k: string]: unknown;
@@ -163,6 +178,8 @@ export interface SchoolPolicy {
   contractStudents: number | null;
   /** Agreed INR per student per year; null = the tier's list price. Required for Mandala. */
   pricePerStudent: number | null;
+  /** Competitive exam tracks enabled for this school (students opt in from these). */
+  examTracks: string[];
 }
 
 const posInt = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null);
@@ -190,6 +207,8 @@ export function schoolPolicy(s: SchoolRow, now = Date.now()): SchoolPolicy {
     suspension: st.active === false && st.suspension ? { at: String(st.suspension.at || ''), reason: String(st.suspension.reason || '') } : null,
     contractStudents: posInt(st.contractStudents),
     pricePerStudent: posInt(st.pricePerStudent),
+    // Canonical order, known ids only, so an edit compares like for like.
+    examTracks: Array.isArray(st.examTracks) ? EXAM_IDS.filter(id => (st.examTracks as unknown[]).includes(id)) : [],
   };
 }
 
@@ -213,6 +232,7 @@ export interface SchoolPatch {
   institutionType?: 'school' | 'college';
   contractStudents?: number | null;
   pricePerStudent?: number | null;
+  examTracks?: string[];
 }
 
 /**
@@ -277,6 +297,11 @@ export function parseSchoolPatch(current: SchoolPolicy, raw: Record<string, unkn
     if (raw.institutionType !== 'school' && raw.institutionType !== 'college') return { error: 'Pick school or college.' };
     if (raw.institutionType !== current.institutionType) patch.institutionType = raw.institutionType;
   }
+  if (raw.examTracks !== undefined) {
+    if (!Array.isArray(raw.examTracks) || raw.examTracks.some(x => typeof x !== 'string' || !EXAM_IDS.includes(x))) return { error: 'Pick valid exam tracks.' };
+    const next = EXAM_IDS.filter(id => (raw.examTracks as string[]).includes(id));
+    if (next.join() !== current.examTracks.join()) patch.examTracks = next;
+  }
   return { patch };
 }
 
@@ -284,7 +309,7 @@ export function parseSchoolPatch(current: SchoolPolicy, raw: Record<string, unkn
 export const SCHOOL_FIELD_LABELS: Record<keyof SchoolPatch, string> = {
   name: 'School name', code: 'School code', plan: 'Tier', trialEndsAt: 'Pilot ends', active: 'Status',
   aiEnabled: 'AI features', curriculum: 'Curriculum', institutionType: 'Institution type',
-  contractStudents: 'Contracted students', pricePerStudent: 'Price per student',
+  contractStudents: 'Contracted students', pricePerStudent: 'Price per student', examTracks: 'Exam tracks',
 };
 
 export const REASON_MIN = 4;

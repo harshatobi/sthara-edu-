@@ -1,0 +1,106 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Manipuri (Dance)",
+  "codes": [
+    "060"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Manipuri"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Exponents of Manipuri",
+          "topics": [
+            "Chief exponents past and present"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Abhinaya Darpana",
+          "topics": [
+            "Contents"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Terms",
+          "topics": [
+            "Nritta, nritya, natya, tandava, lasya, lokadharmi, natyadharmi; abhinaya; sangeet, tala, laya; rasa, sthayi and sanchari bhava"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manipuri Technical Terms",
+          "topics": [
+            "Chali, bhangi, longlei, uplei; kartal, khubak isei and pung cholom; sankirtan; rajmel, menkup, tanchap; kinds of raas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manipuri Costume and Make-up",
+          "topics": [
+            "Potloi for Radha and gopis; Krishna's costume; Vaishnava tilak"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Choloms",
+          "topics": [
+            "Pung and kartal cholom in rajmel, menkup and tanchap"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhangi Pareng",
+          "topics": [
+            "Achouba and Goshtha Bhangi Pareng; Punglon Jagoi, Isei Jagoi; Khurumba Bhangi Pareng; Krishna and Radha Abhisar and Nartan; advanced cholom in char tal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Background Knowledge",
+          "topics": [
+            "Nata Sankirtan, Ariba Pala, Lai Haraoba, the raas forms, Goshtha and Udukhal Leela; Gurus Amubi Singh, Atomba Singh, Amudon Sharma; Khamba and Thoibi"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

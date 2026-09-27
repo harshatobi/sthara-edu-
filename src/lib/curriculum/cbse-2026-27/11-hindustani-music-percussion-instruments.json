@@ -1,0 +1,154 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Hindustani Music (Percussion Instruments)",
+  "codes": [
+    "036"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Percussion Instruments), Code 036, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindustani_Percussion_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Solo performance",
+        "marks": 10
+      },
+      {
+        "component": "Talas of examiner's choice",
+        "marks": 10
+      },
+      {
+        "component": "Kayada, rela, tukra, paran in Jhaptala or Sultala",
+        "marks": 10
+      },
+      {
+        "component": "Kayada or rela with palta",
+        "marks": 10
+      },
+      {
+        "component": "Damdar and bedamdar tihai",
+        "marks": 10
+      },
+      {
+        "component": "Accompaniment",
+        "marks": 10
+      },
+      {
+        "component": "Reciting tala and compositions",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Unlike other music subjects, the Class XI percussion practical marking has no practical file component.",
+    "Theory 30 marks (2 hours) in five units of 6 marks; practical 70 marks."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Talas, Kala and Laya",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Talas, Kala and Laya",
+          "topics": [
+            "Description of the prescribed talas",
+            "Kala, laya, sangeet"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Natyashastra and Avanaddha Vadya",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Natyashastra and Avanaddha Vadya",
+          "topics": [
+            "Natyashastra with reference to avanaddha (percussion) instruments"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Great Percussionists",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Great Percussionists",
+          "topics": [
+            "Kudau Singh, Nana Panse"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Gharanas",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Gharanas",
+          "topics": [
+            "Banaras gharana",
+            "Kudau Singh gharana of pakhawaj"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Tala Notation (Class XI)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Tala Notation (Class XI)",
+          "topics": [
+            "Notation of Teentala or Adi tala, Jhaptala or Sultala in thah, dugun, chaugun",
+            "Notation of compositions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Thekas and Compositions",
+          "topics": [
+            "Thekas of Teentala/Aditala, Jhaptala/Sultala, Ektala/Chautala",
+            "Kayada, rela, chakradar and sadharan tukras or parans",
+            "Bedam tihai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Accompaniment and Solo",
+          "topics": [
+            "Accompanying vocal or instrumental music in Ektala or Chautala",
+            "Solo of 10-15 minutes in Teentala/Aditala"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

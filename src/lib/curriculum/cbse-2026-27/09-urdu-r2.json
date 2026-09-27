@@ -1,0 +1,244 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Urdu (R2)",
+  "codes": [
+    "303"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Urdu Course B"
+  ],
+  "source": {
+    "title": "Urdu as R2, Grade 9 (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Urdu_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Jamuna (NCERT)",
+    "Urdu Qawaid aur Insha, for secondary and senior secondary classes (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in Urdu as printed in the NCERT textbook.",
+    "Urdu as second language (R2) under the NCF three-language scheme; passages are shorter (100-125 words). Subject code not printed; 303 is the Class X Course B code."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading and Comprehension",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Unseen and Seen Passages (R2)",
+          "topics": [
+            "Prose passages of 100-125 words and poetry extracts, five questions each"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing Skill",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Mazmoon (R2)",
+          "topics": [
+            "Essay of 100-150 words on one of four topics"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Maktoob (R2)",
+          "topics": [
+            "Application or letter"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ittila / Elaan",
+          "topics": [
+            "Notice or announcement of about 50 words"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Notes on Textbook Lessons (R2)",
+          "topics": [
+            "Prose and poetry lessons, 100 words"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Functional Grammar",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Words (R2)",
+          "topics": [
+            "Singular and plural, antonyms and synonyms, masculine and feminine, prefixes and suffixes"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Parts of Speech (R2)",
+          "topics": [
+            "Ism, zameer, sifat, fel; present, past and future tense"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ilm-e-Bayan (R2)",
+          "topics": [
+            "Tashbeeh, talmeeh, tazaad"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muhavre aur Kahawatein (R2)",
+          "topics": [
+            "Used in sentences"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "پنچایت (R2)",
+          "topics": [
+            "Afsana: Munshi Premchand"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مانوس اجنبی (R2)",
+          "topics": [
+            "Afsana: Intizar Husain"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "غالب کے خطوط (R2)",
+          "topics": [
+            "Maktoob: Mirza Ghalib"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اجنتا اور ایلورا (R2)",
+          "topics": [
+            "Mazmoon: Syed Mubarizuddin Rifat"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مالی خواندگی (R2)",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "میاں نصیر الدین (R2)",
+          "topics": [
+            "Mazmoon: Krishna Sobti"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جگ میں آکر ادھر ادھر دیکھا (R2)",
+          "topics": [
+            "Ghazal: Khwaja Mir Dard"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اشک آنکھوں میں کب نہیں آتا (R2)",
+          "topics": [
+            "Ghazal: Mir Taqi Mir"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "تیر کھانے کی ہوس ہے تو جگر پیدا کر (R2)",
+          "topics": [
+            "Ghazal: Ameer Minai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اللہ اگر توفیق نہ دے انسان کے بس (R2)",
+          "topics": [
+            "Ghazal: Jigar Moradabadi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "رامائن کا ایک سین (R2)",
+          "topics": [
+            "Nazm: Brij Narayan Chakbast"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اعتماد (R2)",
+          "topics": [
+            "Nazm: Akhtarul Iman"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "عورت (R2)",
+          "topics": [
+            "Nazm: Kaifi Azmi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "آغازِ داستان (سحر البیان) (R2)",
+          "topics": [
+            "Masnavi: Mir Hasan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "قطعات (R2)",
+          "topics": [
+            "Qita: Naresh Kumar Shad"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Asnaf (R2)",
+          "topics": [
+            "Afsana, ghazal, nazm (3)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose 6, poetry 6, literary forms 3."
+      ]
+    }
+  ]
+}

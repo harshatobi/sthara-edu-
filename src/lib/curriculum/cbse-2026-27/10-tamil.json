@@ -1,0 +1,348 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Tamil",
+  "codes": [
+    "006"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "தமிழ்"
+  ],
+  "source": {
+    "title": "Tamil, Code 006, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Tamil_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Tamil Textbook, Class X, Revised Edition 2025 (SCERT Tamil Nadu; Tamil Nadu Textbook and Educational Services Corporation)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Iyal 1-7 of the textbook. The document gives the internal assessment total only."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class X)",
+          "topics": [
+            "Two unseen passages on language, literature, history or science: MCQ (5) and short answer (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Sol",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thogaanilai Thodargal",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thogainilai Thodargal",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ilakkanam: Podhu",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Agapporul Ilakkanam",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Purapporul Ilakkanam",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paavagai, Alagidudhal",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Main Course Book",
+      "marks": 31,
+      "chapters": [
+        {
+          "name": "Paavaanar Paarvaiyil Thamizh Solvalam",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaetkirathaa En Kural",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Virunthu Poatrudhum",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mozhipeyarppu Kalvi",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Panmuga Kalaignar",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sittragal Oli",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sanga Ilakkiyaththil Aram",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Annai Mozhiye",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaalak Kanitham",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paripaadal",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Maegam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaasi Kaandam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muthukumaarasami Pillaithamizh",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 3)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thiruvilaiyadal Puraanam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kamba Ramayanam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 5)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Silappathigaram",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muththollaayiram",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thaembaavani",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Akkarai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Thirukkural fill-ups 3, poetry comprehension 5, poetry short answer 8, prose long answer 15."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Non-detail",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Puyalilae Oru Thoani",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Brummam",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Goballapuratthu Makkal",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Puthiya Nambikkai",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paaichal",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mangaiyaraai Pirappadharkae",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ramanusar (Naadagam)",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "E",
+      "name": "Creative Writing",
+      "marks": 17,
+      "chapters": [
+        {
+          "name": "Letter Writing (Class X)",
+          "topics": [
+            "Official or informal letter (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Essay Writing (Class X)",
+          "topics": [
+            "General essay (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Picture Description (Class X)",
+          "topics": [
+            "3 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

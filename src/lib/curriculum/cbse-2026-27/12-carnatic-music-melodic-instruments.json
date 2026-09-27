@@ -1,0 +1,140 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Carnatic Music (Melodic Instruments)",
+  "codes": [
+    "032"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Carnatic Music (Melodic Instruments), Code 032, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Carnatic_Melodic_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Instrument tuning and questions",
+        "marks": 5
+      },
+      {
+        "component": "Ata tala varnam",
+        "marks": 5
+      },
+      {
+        "component": "Candidate's choice kriti",
+        "marks": 5
+      },
+      {
+        "component": "Examiner's choice kriti",
+        "marks": 10
+      },
+      {
+        "component": "Features of the instrument",
+        "marks": 4
+      },
+      {
+        "component": "Raga lakshanas",
+        "marks": 4
+      },
+      {
+        "component": "Talas",
+        "marks": 4
+      },
+      {
+        "component": "Musical forms",
+        "marks": 4
+      },
+      {
+        "component": "Playing techniques",
+        "marks": 3
+      },
+      {
+        "component": "Simple pallavi",
+        "marks": 6
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) without a unit-wise split; practical 50 (external examiner); internal assessment 20."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory: History and Theory of Indian Music",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Lakshana Granthas (Class XII)",
+          "topics": [
+            "Sangita Saramrita, Sangita Sampradaya Pradarsini, Swaramelakalanidhi, Ragavibodha, Brihaddesi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musicians and Composers (Class XII)",
+          "topics": [
+            "Annamacharya, Swati Tirunal, Kshetrajna, Maha Vaidyanatha Iyer, Patnam Subramanya Iyer, Ramnad Srinivasa Iyengar, Mysore Doraiswamy Iyengar, Dwaram Venkataswamy Naidu, Karaikudi Brothers, Mysore Vasudevachar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musical Forms and Manodharma (Class XII)",
+          "topics": [
+            "Kriti, tiruppugazh, javali",
+            "Manodharma sangita"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Terms (Class XII)",
+          "topics": [
+            "Janaka-janya system, bhashanga, upanga, varja, vakra ragas, arudi, eduppu, jati, grama, murchchana, jaati"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ragas and the Instrument (Class XII)",
+          "topics": [
+            "Brief description of prescribed ragas; kirtana notation",
+            "Construction and playing technique of the instrument; classification and history"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Ragas and Compositions (Class XII)",
+          "topics": [
+            "Purvikalyani, Todi, Sri, Simhendramadhyamam, Bhairavi, Shanmukhapriya, Keeravani, Nata, Ritigaula, Saveri",
+            "Kirtanas, kritis, tillanas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Varnam, Manodharma and Pallavi (Class XII)",
+          "topics": [
+            "Ata tala varnam in two speeds",
+            "Alapana and kalpana swaras in Adi, Rupaka, Chapu",
+            "Simple pallavi in Adi or Khanda Triputa"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

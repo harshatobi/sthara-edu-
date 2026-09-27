@@ -1,0 +1,149 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Painting (Fine Arts)",
+  "codes": [
+    "049"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Fine Arts (Painting, Graphics, Sculpture, Applied Art), Codes 049-052, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Fine_Arts_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Nature and object study",
+        "marks": 25
+      },
+      {
+        "component": "Painting composition",
+        "marks": 25
+      },
+      {
+        "component": "Portfolio assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "History of Indian Art (NCERT / CBSE)"
+  ],
+  "notes": [
+    "Theory (History of Indian Art, 30 marks, 2 hours) is common to Painting, Graphics, Sculpture and Applied Art. The practical paper (70 marks, 6 hours) is specific to each.",
+    "Questions are set only from the artworks listed."
+  ],
+  "units": [
+    {
+      "code": "T1",
+      "name": "Pre-Historic Rock Paintings, Indus Civilisation; Buddhist, Jain and Hindu Art",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Pre-Historic Rock Paintings and Art of the Indus Valley Civilisation",
+          "topics": [
+            "Period and location; Wizard's Dance, Bhimbetka",
+            "Indus sites: Harappa, Mohenjo-daro, Ropar, Lothal, Rangpur, Alamgirpur, Kalibangan, Banawali, Dholavira",
+            "Bronze casting; Dancing Girl, Male Torso, Mother Goddess",
+            "Bull seal; painted earthenware jar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Buddhist, Jain and Hindu Art (3rd century BCE to 8th century CE)",
+          "topics": [
+            "Mauryan polish, Shunga, Kushana (Gandhara, Mathura) and Gupta styles",
+            "Lion Capital from Sarnath; Chauri Bearer from Didarganj; Seated Buddha from Katra Mound; Jain Tirthankara (Gupta)",
+            "Ajanta: location, period, chaitya and vihara caves, Bodhisattva Padmapani; rock-cut architecture, sculpture, fresco"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "T2",
+      "name": "Temple Sculptures, Bronzes and Indo-Islamic Architecture",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Indian Temple Sculpture (6th to 13th century CE)",
+          "topics": [
+            "Descent of Ganga, Mahabalipuram (Pallava)",
+            "Trimurti, Elephanta",
+            "Lakshmi Narayana, Kandariya Mahadev Temple, Khajuraho (Chandela)",
+            "Cymbal Player, Konark Sun Temple (Ganga)",
+            "Mother and Child, Vimal Shah Temple, Dilwara (Solanki)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Indian Bronzes",
+          "topics": [
+            "Introduction; solid and hollow casting",
+            "Nataraja (Chola), Thanjavur"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Artistic Aspects of Indo-Islamic Architecture",
+          "topics": [
+            "Qutub Minar, Delhi",
+            "Gol Gumbaz, Bijapur"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P1",
+      "name": "Nature and Object Study",
+      "marks": 25,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Nature and Object Study",
+          "topics": [
+            "Two or three natural and geometric forms in pencil with light and shade from a fixed point of view"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P2",
+      "name": "Painting Composition",
+      "marks": 25,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Painting Composition",
+          "topics": [
+            "Drawing and colouring human figures in visual compositions",
+            "Sketches from life and nature"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P3",
+      "name": "Portfolio Assessment",
+      "marks": 20,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Painting Portfolio",
+          "topics": [
+            "Year's record from sketch to finished product (10)",
+            "Five nature and object studies (5), one composition (2), two paintings (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

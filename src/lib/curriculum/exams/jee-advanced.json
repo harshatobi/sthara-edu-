@@ -1,0 +1,1300 @@
+{
+  "id": "jee-advanced",
+  "exam": "JEE (Advanced)",
+  "conductingBody": "Indian Institutes of Technology (organising IIT for the cycle)",
+  "cycle": "2026",
+  "track": "Engineering",
+  "classes": [
+    "11",
+    "12"
+  ],
+  "source": {
+    "title": "JEE (Advanced) 2026 Information Brochure, Annexure-I: Syllabi",
+    "url": "https://jeeadv.ac.in/documents/IBEnglish_2026.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "subjects": [
+    {
+      "subject": "Chemistry",
+      "units": [
+        {
+          "code": "C1",
+          "name": "General Topics",
+          "topics": [
+            "Atoms and molecules",
+            "Dalton's theory",
+            "mole concept",
+            "chemical formulae",
+            "balanced equations",
+            "stoichiometric calculations for redox, neutralisation and displacement reactions",
+            "concentration: mole fraction, molarity, molality, normality"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Some Basic Concepts of Chemistry"
+            },
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Redox Reactions"
+            }
+          ],
+          "beyondBoard": [
+            "Normality and equivalent-based calculations"
+          ]
+        },
+        {
+          "code": "C2",
+          "name": "States of Matter: Gases and Liquids",
+          "topics": [
+            "Gas laws, ideal gas equation, absolute temperature",
+            "deviation from ideality, van der Waals equation",
+            "kinetic theory: average, rms and most probable speeds",
+            "partial pressures",
+            "diffusion",
+            "intermolecular interactions",
+            "liquids: vapour pressure, surface tension, viscosity"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "The Gaseous State"
+            }
+          ],
+          "beyondBoard": [
+            "The Gaseous State chapter is formative-only in the CBSE 2026-27 syllabus (not in the board theory paper)",
+            "Liquids: vapour pressure, surface tension, viscosity"
+          ]
+        },
+        {
+          "code": "C3",
+          "name": "Atomic Structure",
+          "topics": [
+            "Bohr model, hydrogen spectrum",
+            "wave-particle duality, de Broglie",
+            "uncertainty principle",
+            "quantum mechanical picture of hydrogen: energies, quantum numbers, wave function and probability density plots",
+            "orbital shapes",
+            "Aufbau, Pauli, Hund"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Structure of Atom"
+            }
+          ]
+        },
+        {
+          "code": "C4",
+          "name": "Chemical Bonding and Molecular Structure",
+          "topics": [
+            "Orbital overlap",
+            "hybridisation (s, p, d)",
+            "MO diagrams for homonuclear diatomics up to Ne2",
+            "hydrogen bond",
+            "polarity and dipole moment",
+            "VSEPR shapes"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Chemical Bonding and Molecular Structure"
+            }
+          ]
+        },
+        {
+          "code": "C5",
+          "name": "Chemical Thermodynamics",
+          "topics": [
+            "Intensive and extensive properties",
+            "state functions",
+            "first law",
+            "internal energy, PV work, heat",
+            "enthalpy, heat capacity, Hess's law",
+            "enthalpies of reaction, fusion, vaporisation, lattice enthalpy",
+            "second law",
+            "entropy",
+            "Gibbs energy",
+            "criteria of equilibrium and spontaneity"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Chemical Thermodynamics"
+            }
+          ]
+        },
+        {
+          "code": "C6",
+          "name": "Chemical and Ionic Equilibrium",
+          "topics": [
+            "Law of mass action",
+            "ΔG and ΔG°",
+            "Kp, Kc, reaction quotient",
+            "Le Chatelier",
+            "solubility product",
+            "common ion effect",
+            "pH and buffers",
+            "Brønsted and Lewis acids and bases",
+            "hydrolysis of salts"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Equilibrium"
+            }
+          ]
+        },
+        {
+          "code": "C7",
+          "name": "Electrochemistry",
+          "topics": [
+            "Electrochemical cells",
+            "standard electrode potentials",
+            "Nernst equation",
+            "electrochemical series",
+            "Faraday's laws",
+            "specific, equivalent and molar conductivity",
+            "Kohlrausch's law",
+            "batteries",
+            "fuel cells",
+            "corrosion"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Electrochemistry"
+            }
+          ],
+          "beyondBoard": [
+            "Equivalent conductivity"
+          ]
+        },
+        {
+          "code": "C8",
+          "name": "Chemical Kinetics",
+          "topics": [
+            "Rates",
+            "order and molecularity",
+            "rate law and half-life",
+            "integrated rate expressions for zero and first order",
+            "Arrhenius equation",
+            "homogeneous and heterogeneous catalysis",
+            "solid catalysts",
+            "enzyme catalysis"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Chemical Kinetics"
+            }
+          ],
+          "beyondBoard": [
+            "Catalysis: activity and selectivity of solid catalysts, enzyme catalysis mechanism"
+          ]
+        },
+        {
+          "code": "C9",
+          "name": "Solid State",
+          "topics": [
+            "Classification of solids",
+            "crystal systems",
+            "close packing (cubic and hexagonal)",
+            "fcc, bcc, hcp packing",
+            "nearest neighbours",
+            "ionic radii and radius ratio",
+            "point defects"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Solid State is not part of the CBSE 2026-27 Chemistry syllabus"
+          ]
+        },
+        {
+          "code": "C10",
+          "name": "Solutions",
+          "topics": [
+            "Henry's law",
+            "Raoult's law",
+            "ideal solutions",
+            "colligative properties",
+            "van't Hoff factor"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Solutions"
+            }
+          ]
+        },
+        {
+          "code": "C11",
+          "name": "Surface Chemistry",
+          "topics": [
+            "Physisorption and chemisorption",
+            "Freundlich isotherm",
+            "colloids: types, preparation, properties",
+            "emulsions, surfactants, micelles"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Surface Chemistry"
+            }
+          ],
+          "beyondBoard": [
+            "Surface Chemistry is formative-only in the CBSE 2026-27 syllabus (not in the board theory paper)"
+          ]
+        },
+        {
+          "code": "C12",
+          "name": "Classification of Elements and Periodicity in Properties",
+          "topics": [
+            "Modern periodic law and table",
+            "electronic configuration",
+            "trends in radii, ionisation enthalpy, electron gain enthalpy, valence, oxidation states, electronegativity, reactivity"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Classification of Elements and Periodicity in Properties"
+            }
+          ]
+        },
+        {
+          "code": "C13",
+          "name": "Hydrogen",
+          "topics": [
+            "Position, isotopes, preparation, properties",
+            "hydrides",
+            "water, heavy water",
+            "hydrogen peroxide",
+            "hydrogen as fuel"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Hydrogen is not part of the CBSE 2026-27 Chemistry syllabus"
+          ]
+        },
+        {
+          "code": "C14",
+          "name": "s-Block Elements",
+          "topics": [
+            "Alkali and alkaline earth metals: reactivity, reducing nature, compounds",
+            "anomalous Li and Be",
+            "sodium and calcium compounds"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "s- and p-Block Elements"
+            }
+          ],
+          "beyondBoard": [
+            "s-Block elements are formative-only in the CBSE 2026-27 syllabus (not in the board theory paper)"
+          ]
+        },
+        {
+          "code": "C15",
+          "name": "p-Block Elements",
+          "topics": [
+            "Groups 13-17 trends and anomalous behaviour",
+            "borax, boric acid, diborane, BF3, AlCl3, alums",
+            "carbon allotropes, CO, CO2, SiO2, silicones, silicates, zeolites",
+            "dinitrogen, ammonia, nitric acid, phosphine, PCl3, PCl5, oxides of nitrogen, oxoacids of phosphorus",
+            "dioxygen, ozone, SO2, H2SO4, oxoacids of sulphur",
+            "chlorine, HCl, interhalogens, oxoacids of halogens, bleaching powder",
+            "group 18, xenon compounds"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "s- and p-Block Elements"
+            }
+          ],
+          "beyondBoard": [
+            "p-Block elements are formative-only in the CBSE 2026-27 syllabus (not in the board theory paper); Class XII p-block is not in the syllabus"
+          ]
+        },
+        {
+          "code": "C16",
+          "name": "d- and f-Block Elements",
+          "topics": [
+            "Oxidation states and stability",
+            "electrode potentials",
+            "interstitial compounds",
+            "alloys",
+            "catalysis",
+            "oxoanions of chromium and manganese",
+            "lanthanoid and actinoid contraction"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "d- and f-Block Elements"
+            }
+          ]
+        },
+        {
+          "code": "C17",
+          "name": "Coordination Compounds",
+          "topics": [
+            "Werner's theory",
+            "nomenclature",
+            "cis-trans and ionisation isomerism",
+            "hybridisation and geometries",
+            "VBT and CFT (octahedral, tetrahedral)",
+            "spin-only magnetism and colour",
+            "spectrochemical series",
+            "stability",
+            "metal carbonyls"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Coordination Compounds"
+            }
+          ]
+        },
+        {
+          "code": "C18",
+          "name": "Isolation of Metals",
+          "topics": [
+            "Ores and concentration",
+            "thermodynamic (Fe, Cu, Zn) and electrochemical (Al) principles",
+            "cyanide process",
+            "refining"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "General Principles and Processes of Isolation of Elements"
+            }
+          ],
+          "beyondBoard": [
+            "Isolation of elements is formative-only in the CBSE 2026-27 syllabus (not in the board theory paper)"
+          ]
+        },
+        {
+          "code": "C19",
+          "name": "Principles of Qualitative Analysis",
+          "topics": [
+            "Groups I-V cations (Ag+, Hg2+, Cu2+, Pb2+, Fe3+, Cr3+, Al3+, Ca2+, Ba2+, Zn2+, Mn2+, Mg2+)",
+            "nitrate, halides, carbonate, bicarbonate, sulphate, sulphide"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Board covers this in the practical examination, not the theory paper."
+          ]
+        },
+        {
+          "code": "C20",
+          "name": "Environmental Chemistry",
+          "topics": [
+            "Atmospheric, water and soil pollution",
+            "industrial waste",
+            "control strategies",
+            "green chemistry"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Environmental Chemistry is not part of the CBSE 2026-27 Chemistry syllabus"
+          ]
+        },
+        {
+          "code": "C21",
+          "name": "Basic Principles of Organic Chemistry",
+          "topics": [
+            "Hybridisation",
+            "sigma and pi bonds",
+            "aromaticity",
+            "structural and geometrical isomerism",
+            "enantiomers, diastereomers, meso (up to two centres)",
+            "empirical formula by combustion",
+            "IUPAC nomenclature",
+            "hydrogen bonding, inductive, resonance and hyperconjugative effects",
+            "acidity and basicity",
+            "reactive intermediates"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Organic Chemistry: Some Basic Principles and Techniques"
+            }
+          ]
+        },
+        {
+          "code": "C22",
+          "name": "Alkanes",
+          "topics": [
+            "Homologous series",
+            "physical properties and branching",
+            "conformations of ethane and butane",
+            "preparation",
+            "combustion, halogenation (incl. allylic and benzylic), oxidation"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Hydrocarbons"
+            }
+          ]
+        },
+        {
+          "code": "C23",
+          "name": "Alkenes and Alkynes",
+          "topics": [
+            "Physical properties",
+            "elimination",
+            "acid catalysed hydration",
+            "metal acetylides",
+            "KMnO4 and ozone",
+            "reduction",
+            "electrophilic addition of X2, HX, HOX",
+            "peroxide effect",
+            "cyclic polymerisation of alkynes"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Hydrocarbons"
+            }
+          ]
+        },
+        {
+          "code": "C24",
+          "name": "Benzene",
+          "topics": [
+            "Structure",
+            "halogenation, nitration, sulphonation, Friedel-Crafts",
+            "directing groups"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Hydrocarbons"
+            }
+          ]
+        },
+        {
+          "code": "C25",
+          "name": "Phenols",
+          "topics": [
+            "Preparation",
+            "electrophilic substitution",
+            "Reimer-Tiemann, Kolbe",
+            "esterification, etherification",
+            "aspirin synthesis",
+            "oxidation and reduction"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Alcohols, Phenols and Ethers"
+            }
+          ]
+        },
+        {
+          "code": "C26",
+          "name": "Alkyl Halides",
+          "topics": [
+            "Carbocation rearrangements",
+            "Grignard reactions",
+            "nucleophilic substitution and stereochemistry"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Haloalkanes and Haloarenes"
+            }
+          ]
+        },
+        {
+          "code": "C27",
+          "name": "Alcohols",
+          "topics": [
+            "Esterification",
+            "dehydration to alkenes and ethers",
+            "reactions with Na, PX, ZnCl2/HCl, SOCl2",
+            "oxidation to aldehydes, ketones, acids"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Alcohols, Phenols and Ethers"
+            }
+          ]
+        },
+        {
+          "code": "C28",
+          "name": "Ethers",
+          "topics": [
+            "Williamson synthesis",
+            "C-O bond cleavage"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Alcohols, Phenols and Ethers"
+            }
+          ]
+        },
+        {
+          "code": "C29",
+          "name": "Aldehydes and Ketones",
+          "topics": [
+            "Preparation from acid chlorides, nitriles, esters",
+            "benzaldehyde from toluene and benzene",
+            "oxidation, reduction, oxime and hydrazone",
+            "aldol, Cannizzaro, haloform",
+            "addition of RMgX, NaHSO3, HCN, alcohol, amine"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Aldehydes, Ketones and Carboxylic Acids"
+            }
+          ]
+        },
+        {
+          "code": "C30",
+          "name": "Carboxylic Acids",
+          "topics": [
+            "Preparation from nitriles, Grignard reagents, esters and amides",
+            "benzoic acid from alkylbenzenes",
+            "reduction, halogenation, esters, acid chlorides, amides"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Aldehydes, Ketones and Carboxylic Acids"
+            }
+          ]
+        },
+        {
+          "code": "C31",
+          "name": "Amines",
+          "topics": [
+            "Preparation from nitro compounds, nitriles, amides",
+            "Hoffmann bromamide, Gabriel synthesis",
+            "nitrous acid",
+            "azo coupling",
+            "Sandmeyer",
+            "carbylamine",
+            "Hinsberg test",
+            "alkylation and acylation"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Amines"
+            }
+          ]
+        },
+        {
+          "code": "C32",
+          "name": "Haloarenes",
+          "topics": [
+            "Fittig, Wurtz-Fittig",
+            "nucleophilic aromatic substitution (excluding benzyne)"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Haloalkanes and Haloarenes"
+            }
+          ]
+        },
+        {
+          "code": "C33",
+          "name": "Biomolecules",
+          "topics": [
+            "Glucose and sucrose",
+            "oxidation, reduction, glycosides, hydrolysis of disaccharides, anomers",
+            "amino acids, peptide linkage, primary and secondary structure, fibrous and globular proteins",
+            "DNA and RNA"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Biomolecules"
+            }
+          ]
+        },
+        {
+          "code": "C34",
+          "name": "Polymers",
+          "topics": [
+            "Addition and condensation",
+            "homo and copolymers",
+            "natural rubber, cellulose, nylon, Teflon, Bakelite, PVC",
+            "biodegradable polymers"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Polymers"
+            }
+          ],
+          "beyondBoard": [
+            "Polymers is formative-only in the CBSE 2026-27 syllabus (not in the board theory paper)"
+          ]
+        },
+        {
+          "code": "C35",
+          "name": "Chemistry in Everyday Life",
+          "topics": [
+            "Drug-target interaction",
+            "antacids, antihistamines, tranquilisers, analgesics, antimicrobials, antifertility drugs",
+            "artificial sweeteners",
+            "soaps, detergents"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Chemistry in Everyday Life"
+            }
+          ],
+          "beyondBoard": [
+            "Chemistry in Everyday Life is formative-only in the CBSE 2026-27 syllabus (not in the board theory paper)"
+          ]
+        },
+        {
+          "code": "C36",
+          "name": "Practical Organic Chemistry",
+          "topics": [
+            "Detection of N, S, halogens",
+            "identification of hydroxyl, carbonyl, carboxyl, amino and nitro groups"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Board covers this in the practical examination, not the theory paper."
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "Mathematics",
+      "units": [
+        {
+          "code": "M1",
+          "name": "Sets, Relations and Functions",
+          "topics": [
+            "Kinds of sets",
+            "algebra of sets",
+            "symmetric difference",
+            "De Morgan's laws",
+            "Cartesian product",
+            "relations",
+            "equivalence relation",
+            "functions as mappings",
+            "invertible, even and odd, into, onto, one-one functions",
+            "special functions",
+            "composition"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Sets"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Relations and Functions"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Relations and Functions"
+            }
+          ],
+          "beyondBoard": [
+            "Symmetric difference of sets; even and odd functions (not in the board topics)",
+            "Composition of functions is formative-only in Class XI"
+          ]
+        },
+        {
+          "code": "M2",
+          "name": "Algebra",
+          "topics": [
+            "Complex numbers: conjugation, polar form, modulus and principal argument, triangle inequality, cube roots of unity",
+            "fundamental theorem of algebra",
+            "quadratic equations, symmetric functions of roots",
+            "AP, GP, means, infinite GP",
+            "sums of n, n², n³",
+            "logarithms",
+            "permutations and combinations",
+            "binomial theorem and coefficients"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Complex Numbers and Quadratic Equations"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Sequence and Series"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Permutations and Combinations"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Binomial Theorem"
+            }
+          ],
+          "beyondBoard": [
+            "Polar form, modulus-argument properties and quadratic equations in the complex system are formative-only in Class XI",
+            "Cube roots of unity; symmetric functions of roots; logarithms (not in the board syllabus)",
+            "Sums of n, n² and n³ and general/middle terms of the binomial expansion are formative-only; properties of binomial coefficients are not in the board topics"
+          ]
+        },
+        {
+          "code": "M3",
+          "name": "Matrices",
+          "topics": [
+            "Equality, addition, scalar and matrix product, transpose",
+            "elementary row and column transformations",
+            "determinants up to order 3",
+            "adjoint and inverse",
+            "diagonal, symmetric and skew-symmetric matrices",
+            "simultaneous linear equations"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Matrices"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Determinants"
+            }
+          ],
+          "beyondBoard": [
+            "Elementary row and column transformations (not in the board Matrices topics)"
+          ]
+        },
+        {
+          "code": "M4",
+          "name": "Probability and Statistics",
+          "topics": [
+            "Sample space, events",
+            "addition and multiplication rules",
+            "conditional probability",
+            "independence",
+            "total probability",
+            "Bayes' theorem",
+            "counting-based probability",
+            "mean, median, mode, mean deviation, standard deviation, variance",
+            "frequency distributions with same mean and different variance",
+            "random variable, its mean and variance"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Statistics"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Probability"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Probability"
+            }
+          ],
+          "beyondBoard": [
+            "Random variable, its mean and variance (not in the Class XII board Probability topics)"
+          ]
+        },
+        {
+          "code": "M5",
+          "name": "Trigonometry",
+          "topics": [
+            "Trigonometric functions, periodicity, graphs",
+            "addition and subtraction formulae",
+            "multiple and sub-multiple angles",
+            "general solution of trigonometric equations",
+            "inverse trigonometric functions (principal value)"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Trigonometric Functions"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Inverse Trigonometric Functions"
+            }
+          ],
+          "beyondBoard": [
+            "General solution of trigonometric equations is formative-only in Class XI"
+          ]
+        },
+        {
+          "code": "M6",
+          "name": "Analytical Geometry",
+          "topics": [
+            "Distance, section formula, shift of origin",
+            "lines: forms, angle, distance, lines through intersection, angle bisectors, concurrency",
+            "centroid, orthocentre, incentre, circumcentre",
+            "circle: forms, tangent, normal, chord, parametric equations, intersections, family of circles",
+            "parabola, ellipse, hyperbola: foci, directrices, eccentricity, parametric equations, tangents and normals",
+            "locus",
+            "3D: direction cosines and ratios, lines, skew lines, shortest distance, plane, distance of a point from a plane, angles between lines and planes, coplanar lines"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Straight Lines"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Conic Sections"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Three-dimensional Geometry"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Three-dimensional Geometry"
+            }
+          ],
+          "beyondBoard": [
+            "Shift of origin; lines through the intersection of two lines; angle bisectors; concurrency; centroid, orthocentre, incentre, circumcentre",
+            "Circle: tangent, normal, chord, parametric equations, families of circles; tangents and normals and parametric equations of conics; locus problems",
+            "Planes in 3D: equation of a plane, distance of a point from a plane, angles with planes, coplanar lines (the board covers lines only)"
+          ]
+        },
+        {
+          "code": "M7",
+          "name": "Differential Calculus",
+          "topics": [
+            "Limits and continuity",
+            "L'Hospital's rule",
+            "continuity of composite functions",
+            "intermediate value property",
+            "derivatives and chain rule",
+            "tangents and normals",
+            "monotonicity",
+            "second derivatives",
+            "maxima and minima",
+            "Rolle's and Lagrange's mean value theorems",
+            "implicit functions"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Limits and Derivatives"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Continuity and Differentiability"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Applications of Derivatives"
+            }
+          ],
+          "beyondBoard": [
+            "L'Hospital's rule; intermediate value property; Rolle's theorem and Lagrange's mean value theorem; tangents and normals (not in the board topics)"
+          ]
+        },
+        {
+          "code": "M8",
+          "name": "Integral Calculus",
+          "topics": [
+            "Indefinite integrals",
+            "definite integral as the limit of a sum",
+            "properties",
+            "fundamental theorem",
+            "by parts, substitution, partial fractions",
+            "areas bounded by simple curves",
+            "formation of differential equations",
+            "homogeneous, variables separable and linear first order equations"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Integrals"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Application of the Integrals"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Differential Equations"
+            }
+          ],
+          "beyondBoard": [
+            "Definite integral as the limit of a sum (not in the board topics)"
+          ]
+        },
+        {
+          "code": "M9",
+          "name": "Vectors",
+          "topics": [
+            "Addition, scalar multiplication",
+            "dot and cross products",
+            "scalar and vector triple products and their geometric interpretation"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Vectors"
+            }
+          ],
+          "beyondBoard": [
+            "Scalar and vector triple products (not in the board Vectors topics)"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "Physics",
+      "units": [
+        {
+          "code": "P1",
+          "name": "General (Units, Errors and Experiments)",
+          "topics": [
+            "Units and dimensions",
+            "least count, significant figures",
+            "error analysis for experiments: Vernier callipers and screw gauge, g by simple pendulum, Young's modulus, surface tension by capillary rise, specific heat by calorimeter, focal length by u-v method, speed of sound by resonance column, Ohm's law, meter bridge and post office box"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Units and Measurements"
+            }
+          ],
+          "beyondBoard": [
+            "Error analysis of the listed experiments: board covers these in practicals"
+          ]
+        },
+        {
+          "code": "P2",
+          "name": "Mechanics",
+          "topics": [
+            "Kinematics in 1D and 2D",
+            "projectiles",
+            "circular motion",
+            "relative velocity",
+            "Newton's laws",
+            "inertial and accelerated frames",
+            "friction",
+            "work, energy, power",
+            "momentum and energy conservation",
+            "centre of mass",
+            "impulse",
+            "collisions",
+            "moment of inertia, parallel and perpendicular axes",
+            "angular momentum, torque",
+            "rigid body dynamics about a fixed axis",
+            "rolling without slipping",
+            "collisions of point masses with rigid bodies",
+            "forced and damped oscillations, resonance",
+            "linear and angular SHM",
+            "Hooke's law, Young's modulus",
+            "gravitation, geostationary orbits, satellites, escape velocity",
+            "fluids: Pascal, buoyancy, surface tension, viscosity, Stokes' law, continuity, Bernoulli",
+            "waves: superposition, progressive and stationary waves, strings and air columns, resonance, beats, speed of sound, Doppler effect"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Motion in a Straight Line"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Motion in a Plane"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Laws of Motion"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Work, Energy and Power"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "System of Particles and Rotational Motion"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Gravitation"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Mechanical Properties of Solids"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Mechanical Properties of Fluids"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Oscillations"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Waves"
+            }
+          ],
+          "beyondBoard": [
+            "Parallel and perpendicular axes theorems; rolling without slipping; collision of point masses with rigid bodies",
+            "Forced and damped oscillations, resonance; angular SHM",
+            "Geostationary orbits; buoyancy; equation of continuity; Doppler effect (not in the board topics)"
+          ]
+        },
+        {
+          "code": "P3",
+          "name": "Thermal Physics",
+          "topics": [
+            "Thermal expansion",
+            "calorimetry, latent heat",
+            "conduction",
+            "convection and radiation",
+            "Newton's law of cooling",
+            "ideal gas laws",
+            "Cv and Cp",
+            "isothermal and adiabatic processes",
+            "first and second laws",
+            "Carnot engine",
+            "blackbody radiation, Kirchhoff's law, Wien's law, Stefan's law"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Thermal Properties of Matter"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Thermodynamics"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Kinetic Theory"
+            }
+          ],
+          "beyondBoard": [
+            "Newton's law of cooling; Carnot engine; Kirchhoff's law of radiation (not in the board topics)",
+            "Blackbody radiation, Wien's and Stefan's laws are qualitative only in the board"
+          ]
+        },
+        {
+          "code": "P4",
+          "name": "Electricity and Magnetism",
+          "topics": [
+            "Coulomb's law",
+            "field and potential",
+            "potential energy of charges and dipoles",
+            "field lines",
+            "Gauss's law",
+            "capacitance, dielectrics, combinations, energy",
+            "current, Ohm's law, combinations, Kirchhoff's laws, heating effect",
+            "Biot-Savart and Ampere's laws",
+            "force on charges and currents",
+            "magnetic moment of a loop",
+            "galvanometer conversions",
+            "Faraday's and Lenz's laws",
+            "self and mutual inductance",
+            "RC, LR, LC and LCR circuits with dc and ac"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electric Charges and Fields"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electrostatic Potential and Capacitance"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Current Electricity"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Moving Charges and Magnetism"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electromagnetic Induction"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Alternating Current"
+            }
+          ],
+          "beyondBoard": [
+            "RC, LR and LC circuits with dc sources (transients) are not in the board topics"
+          ]
+        },
+        {
+          "code": "P5",
+          "name": "Electromagnetic Waves",
+          "topics": [
+            "Characteristics",
+            "spectrum and uses"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electromagnetic Waves"
+            }
+          ]
+        },
+        {
+          "code": "P6",
+          "name": "Optics",
+          "topics": [
+            "Rectilinear propagation",
+            "reflection and refraction at plane and spherical surfaces",
+            "TIR",
+            "prism deviation and dispersion",
+            "thin lenses",
+            "mirror-lens combinations",
+            "Huygens' principle",
+            "Young's double slit",
+            "single slit diffraction",
+            "polarisation, Brewster's law, Polaroids"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Ray Optics and Optical Instruments"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Wave Optics"
+            }
+          ],
+          "beyondBoard": [
+            "Polarisation, Brewster's law, Polaroids (not in the board Wave Optics topics)"
+          ]
+        },
+        {
+          "code": "P7",
+          "name": "Modern Physics",
+          "topics": [
+            "Nucleus",
+            "alpha, beta, gamma radiation",
+            "radioactive decay law, decay constant, half-life, mean life",
+            "binding energy",
+            "fission and fusion energetics",
+            "photoelectric effect",
+            "Bohr theory of hydrogen-like atoms",
+            "characteristic and continuous X-rays, Moseley's law",
+            "de Broglie wavelength"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Dual Nature of Radiation and Matter"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Atoms"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Nuclei"
+            }
+          ],
+          "beyondBoard": [
+            "Radioactivity: alpha, beta, gamma, decay law, half-life, mean life; characteristic and continuous X-rays, Moseley's law (not in the board Atoms and Nuclei topics)"
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Syllabus as printed in the JEE (Advanced) 2026 information brochure; the 2027 brochure is not yet published.",
+    "The Architecture Aptitude Test syllabus is not ingested."
+  ]
+}

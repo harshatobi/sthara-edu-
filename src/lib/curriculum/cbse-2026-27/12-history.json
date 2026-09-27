@@ -1,0 +1,91 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "12", "subject": "History", "codes": ["027"], "stream": "Humanities",
+  "source": { "title": "History, Code 027, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/History_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [
+    { "component": "Project: initiation / synopsis (April-July)", "marks": 6 },
+    { "component": "Project: planning, organisation and data collection (August-October)", "marks": 5 },
+    { "component": "Project: analysis, conclusion and presentation (November-January)", "marks": 5 },
+    { "component": "Project: viva by internal and external examiners", "marks": 4 }
+  ] },
+  "textbooks": ["Themes in Indian History, Part I (NCERT)", "Themes in Indian History, Part II (NCERT)", "Themes in Indian History, Part III (NCERT)"],
+  "notes": [
+    "Each theme introduces one type of source; the document lists only theme titles and learning outcomes, so topics are the theme's own subtitle and focus.",
+    "Question paper per part: 7 MCQ (1), 2 SA (3), 1 LA (8), 1 source-based (4) = 25.",
+    "Maps from the Survey of India website may be used."
+  ],
+  "units": [
+    { "code": "I", "name": "Themes in Indian History Part I", "marks": 25, "chapters": [
+      { "name": "Bricks, Beads and Bones: The Harappan Civilisation", "number": 1, "topics": ["Early urban centres and social institutions", "Aspects of the Harappan civilisation", "Archaeological sources: viewpoints of the ASI and historians on Harappa"], "outcomes": [
+        "Investigate and interpret early urban centres and social institutions",
+        "Deduce the multi-lateral aspects of the Harappan civilisation",
+        "Interpret historical and contemporary sources and viewpoints of the ASI and historians on Harappa"
+      ] },
+      { "name": "Kings, Farmers and Towns: Early States and Economies (c. 600 BCE-600 CE)", "number": 2, "topics": ["Political and economic history of the subcontinent", "Inscriptional evidence"], "outcomes": [
+        "Evaluate major trends in the political and economic history of the subcontinent",
+        "Decode inscriptional evidence and how it shapes understanding of political and economic processes"
+      ] },
+      { "name": "Kinship, Caste and Class: Early Societies (c. 600 BCE-600 CE)", "number": 3, "topics": ["Social history", "Social norms in the scriptures of ancient India", "The Mahabharata as a source"], "outcomes": [
+        "Analyse social norms to understand the perspectives of society in the scriptures of ancient India",
+        "Examine the dimensions historians have explored in the Mahabharata"
+      ] },
+      { "name": "Thinkers, Beliefs and Buildings: Cultural Developments (c. 600 BCE-600 CE)", "number": 4, "topics": ["Major religious developments in early India", "Religious sculpture, especially Buddhist sculpture"], "outcomes": [
+        "Compare the major religious developments in early India",
+        "Interpret religious sculpture and the stories in it",
+        "Create a picture album of Buddhist sculpture"
+      ] }
+    ] },
+    { "code": "II", "name": "Themes in Indian History Part II", "marks": 25, "chapters": [
+      { "name": "Through the Eyes of Travellers: Perceptions of Society (c. tenth to seventeenth centuries)", "number": 5, "topics": ["Accounts of foreign travellers", "Social, political and economic life under different rulers in the medieval period"], "outcomes": [
+        "Understand the features of social histories described by travellers",
+        "Use foreign travellers' accounts to understand social, political and economic life in the medieval period"
+      ] },
+      { "name": "Bhakti-Sufi Traditions: Changes in Religious Beliefs and Devotional Texts (c. eighth to eighteenth centuries)", "number": 6, "topics": ["Religious developments", "Philosophies of Bhakti and Sufi saints", "Devotional texts"], "outcomes": [
+        "Summarise the philosophies of Bhakti and Sufi saints",
+        "Comprehend how religious movements sought unity, peace and harmony"
+      ] },
+      { "name": "An Imperial Capital: Vijayanagara (c. fourteenth to sixteenth centuries)", "number": 7, "topics": ["Architecture of the Vijayanagara empire", "Foreign travellers' accounts of Vijayanagara", "City planning, water management and administration"], "outcomes": [
+        "Classify the architectural contributions of the Vijayanagara empire",
+        "Interpret political, social and cultural life of the city from travellers' accounts",
+        "Assess city planning, water management and administration"
+      ] },
+      { "name": "Peasants, Zamindars and the State: Agrarian Society and the Mughal Empire (c. sixteenth-seventeenth centuries)", "number": 8, "topics": ["Agrarian developments", "Relationship between the state and agriculture in the Mughal period", "Agrarian change in the sixteenth and seventeenth centuries"], "outcomes": [
+        "Understand the relationship between the state and agriculture in the Mughal period",
+        "Compare agrarian changes of the sixteenth and seventeenth centuries"
+      ] }
+    ] },
+    { "code": "III", "name": "Themes in Indian History Part III", "marks": 25, "chapters": [
+      { "name": "Colonialism and the Countryside: Exploring Official Archives", "number": 9, "topics": ["Revenue systems introduced by the British", "Colonial official records and reports"], "outcomes": [
+        "Evaluate British revenue systems to understand the economics of colonisation",
+        "Analyse colonial records to understand divergent British and Indian interests"
+      ] },
+      { "name": "Rebels and the Raj: The Revolt of 1857 and its Representations", "number": 10, "topics": ["Events of 1857", "Planning and coordination of the rebels", "Spread of the revolt and the vision of unity", "Visual representations"], "outcomes": [
+        "Examine the events of 1857 and the planning and coordination of the rebels",
+        "Analyse how the revolt created a vision of unity",
+        "Interpret nationalist and British visual images"
+      ] },
+      { "name": "Mahatma Gandhi and the Nationalist Movement: Civil Disobedience and Beyond", "number": 11, "topics": ["The nationalist movement in chronological order", "Ideas, individuals and institutions under Gandhian leadership", "Sources: newspapers, biographies, autobiographies, diaries, letters"], "outcomes": [
+        "Correlate the elements of the nationalist movement under Gandhian leadership",
+        "Debate Gandhi's contributions and mass appeal",
+        "Interpret sources such as newspapers, autobiographies and letters"
+      ] },
+      { "name": "Framing the Constitution: The Beginning of a New Era", "number": 12, "topics": ["Role of the Constituent Assembly", "Debates on important issues in the Constituent Assembly"], "outcomes": [
+        "Highlight the role of the Constituent Assembly in framing the Constitution",
+        "Analyse how Constituent Assembly debates shaped the Constitution"
+      ] }
+    ] },
+    { "code": "Map", "name": "Map Work", "marks": 5, "chapters": [
+      { "name": "Map Work (Indian History)", "topics": [
+        "Mature Harappan sites: Harappa, Banawali, Kalibangan, Balakot, Rakhigarhi, Dholavira, Nageshwar, Lothal, Mohenjodaro, Chanhudaro, Kot Diji",
+        "Mahajanapadas and cities: Vajji, Magadha, Kosala, Kuru, Panchala, Gandhara, Avanti, Rajgir, Ujjain, Taxila, Varanasi",
+        "Ashokan pillar inscriptions (Sanchi, Topra, Meerut, Kaushambi); kingdoms of the Cholas, Cheras and Pandyas",
+        "Kushanas, Shakas, Satavahanas, Vakatakas, Guptas; Mathura, Kanauj, Puhar, Bharukachchha, Shravasti, Rajgir, Vaishali, Varanasi, Vidisha",
+        "Major Buddhist sites: Nagarjunakonda, Sanchi, Amaravati, Lumbini, Bharhut, Bodh Gaya, Ajanta",
+        "Bidar, Golconda, Bijapur, Vijayanagar, Chandragiri, Kanchipuram, Mysore, Thanjavur, Kolar, Tirunelveli",
+        "Territories under Babur, Akbar and Aurangzeb: Delhi, Agra, Panipat, Amber, Ajmer, Lahore, Goa",
+        "Territories under British control in 1857: Punjab, Sindh, Bombay, Madras, Berar, Bengal, Bihar, Orissa, Surat, Calcutta, Patna, Allahabad",
+        "Main centres of the Revolt of 1857: Delhi, Meerut, Jhansi, Lucknow, Kanpur, Azamgarh, Calcutta, Benaras, Gwalior, Jabalpur, Agra, Awadh",
+        "Centres of the National Movement: Champaran, Kheda, Ahmedabad, Benaras, Amritsar, Chauri Chaura, Lahore, Bardoli, Dandi, Bombay, Karachi"
+      ], "outcomes": [] }
+    ] }
+  ]
+}

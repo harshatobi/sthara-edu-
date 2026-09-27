@@ -1,0 +1,147 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Hindustani Music (Vocal)",
+  "codes": [
+    "034"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Vocal), Code 034, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Hindustani_Music_Vocal_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Vilambit khayal",
+        "marks": 12
+      },
+      {
+        "component": "Drut khayal in each raga",
+        "marks": 24
+      },
+      {
+        "component": "Devotional song",
+        "marks": 4
+      },
+      {
+        "component": "Raga identification",
+        "marks": 4
+      },
+      {
+        "component": "Recitation of thekas",
+        "marks": 6
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "units": [
+    {
+      "code": "1",
+      "name": "Musical Terms (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Musical Terms (Class X)",
+          "topics": [
+            "Aalap, taan, meend, kan",
+            "Dhrupad, dhamar, tarana"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "The Tanpura",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "The Tanpura",
+          "topics": [
+            "Structure and tuning of the tanpura"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Ragas and Talas (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Ragas and Talas (Class X)",
+          "topics": [
+            "Bhupali, Khamaj, Brindavani Sarang",
+            "Tilwada, Chautala, Rupak with thah, dugun, tigun, chaugun"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Notation and Raga Identification (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Notation and Raga Identification (Class X)",
+          "topics": [
+            "Notation of compositions in the prescribed ragas",
+            "Identifying ragas from phrases"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Musicians (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Musicians (Class X)",
+          "topics": [
+            "Tansen, Sadarang, Faiyaz Khan",
+            "Omkarnath Thakur"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Khayal (Class X)",
+          "topics": [
+            "Vilambit khayal in one prescribed raga",
+            "Aroha, avaroha, pakad and drut khayal with tanas in each raga"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Devotional Song, Recognition and Thekas",
+          "topics": [
+            "Devotional song",
+            "Raga recognition",
+            "Thekas of Tilwada, Chautala, Rupak with dugun"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

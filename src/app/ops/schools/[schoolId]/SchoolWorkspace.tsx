@@ -17,7 +17,7 @@ import { normClass } from '@/lib/ops/people';
 import { journalLabel, journalValue } from '@/lib/ops/journal';
 import { USD_TO_INR } from '@/lib/ai/pricing';
 import {
-  CURRICULA, PLANS, PLAN_INFO, REASON_MIN, SCHOOL_FIELD_LABELS, annualValue, effectivePrice,
+  CURRICULA, EXAM_TRACKS, PLANS, PLAN_INFO, REASON_MIN, SCHOOL_FIELD_LABELS, annualValue, effectivePrice, examTrackLabel,
   type Plan, type SchoolPatch,
 } from '@/lib/settings/registry';
 import { Facts, PlanChip, Section, StatusChip, Table, dayIST, downloadCsv, errText, fmtDate, fmtDateTime, inr, num, plural } from '../../_ui';
@@ -220,15 +220,17 @@ function OverviewTab({ d, go }: { d: Data; go: (t: Tab) => void }) {
 
 interface Draft {
   name: string; code: string; plan: Plan; trialEndsAt: string; curriculum: string; institutionType: 'school' | 'college';
-  contractStudents: string; pricePerStudent: string; aiEnabled: boolean; active: boolean;
+  contractStudents: string; pricePerStudent: string; aiEnabled: boolean; active: boolean; examTracks: string[];
 }
 const draftOf = (f: RegistrySchool): Draft => ({
   name: f.name, code: f.code ?? '', plan: f.plan, trialEndsAt: dayIST(f.trialEndsAt), curriculum: f.curriculum ?? '',
   institutionType: f.institutionType, contractStudents: f.contractStudents ? String(f.contractStudents) : '',
   pricePerStudent: f.pricePerStudent ? String(f.pricePerStudent) : '', aiEnabled: f.aiEnabled, active: f.active,
+  examTracks: f.examTracks ?? [],
 });
 const text = (k: keyof Draft, v: unknown) =>
   k === 'active' ? (v ? 'Active' : 'Suspended') : k === 'aiEnabled' ? (v ? 'On' : 'Off')
+    : k === 'examTracks' ? ((v as string[]).length ? (v as string[]).map(examTrackLabel).join(', ') : 'None')
     : k === 'plan' ? PLAN_INFO[v as Plan].label : k === 'trialEndsAt' ? (v ? fmtDate(`${v}T12:00:00+05:30`) : 'None')
     : k === 'pricePerStudent' ? (v ? inr(Number(v), true) : 'List price') : k === 'contractStudents' ? (v ? num(Number(v)) : 'Actual students')
     : String(v || 'None');
@@ -247,6 +249,7 @@ function AccessTab({ f, onSaved, onDeleted }: { f: RegistrySchool; onSaved: (msg
   const changes = (Object.keys(d) as (keyof Draft)[]).filter(k => {
     if (k === 'trialEndsAt' && d.plan !== 'pilot') return false;
     if (k === 'curriculum' && !d.curriculum) return false;
+    if (k === 'examTracks') return d.examTracks.join() !== base.examTracks.join();
     return (k === 'code' ? d.code.toUpperCase() : d[k]) !== base[k];
   });
   const suspending = base.active && !d.active;
@@ -338,6 +341,20 @@ function AccessTab({ f, onSaved, onDeleted }: { f: RegistrySchool; onSaved: (msg
               <option value="school">School</option><option value="college">College</option>
             </select>
           </div>
+        </div>
+      </Section>
+
+      <Section title="Exam tracks" sub="Competitive exams this school prepares students for. Students then opt in to the ones they are targeting; the tutor links each chapter to these exams and adds what lies beyond the board syllabus.">
+        <div className="chips" role="group" aria-label="Exam tracks" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {EXAM_TRACKS.map(t => {
+            const on = d.examTracks.includes(t.id);
+            return (
+              <button key={t.id} type="button" className={`ch ${on ? 'b' : ''}`} aria-pressed={on}
+                onClick={() => set('examTracks', on ? d.examTracks.filter(x => x !== t.id) : EXAM_TRACKS.map(e => e.id).filter(x => x === t.id || d.examTracks.includes(x)))}>
+                {t.label}
+              </button>
+            );
+          })}
         </div>
       </Section>
 

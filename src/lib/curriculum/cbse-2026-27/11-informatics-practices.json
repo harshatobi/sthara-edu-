@@ -1,0 +1,160 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Informatics Practices",
+  "codes": [
+    "065"
+  ],
+  "stream": "Computer",
+  "aliases": [
+    "IP"
+  ],
+  "source": {
+    "title": "Informatics Practices, Code 065, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Informatics_Practices_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Problem solving using Python",
+        "marks": 11
+      },
+      {
+        "component": "Creating a MySQL database and performing queries",
+        "marks": 7
+      },
+      {
+        "component": "Practical file (14 Python programs, 14 SQL queries)",
+        "marks": 7
+      },
+      {
+        "component": "Viva voce",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Informatics Practices, Class XI (NCERT)"
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Introduction to Computer System",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Introduction to Computer System",
+          "topics": [
+            "Evolution of computing devices; components of a computer system and their interconnections; input and output devices",
+            "Units and types of memory: primary and secondary; data deletion, recovery and security concerns",
+            "Software: system and application, generic and specific purpose"
+          ],
+          "outcomes": [
+            "Identify the components of a computer system"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Introduction to Python",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Python Basics",
+          "topics": [
+            "Execution modes; program structure, indentation, identifiers, keywords, constants, variables",
+            "Operators and precedence; data types, mutable and immutable; statements, expressions, comments",
+            "Input and output; type conversion; debugging"
+          ],
+          "outcomes": [
+            "Create Python programs using different data types, lists and dictionaries"
+          ]
+        },
+        {
+          "name": "Control Statements",
+          "topics": [
+            "if-else, if-elif-else",
+            "while loop, for loop"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lists",
+          "topics": [
+            "Creating, initialising, traversing and manipulating lists",
+            "len, list, append, insert, count, index, remove, pop, reverse, sort, min, max, sum"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dictionary",
+          "topics": [
+            "Key-value pairs: creating, initialising, traversing, updating and deleting",
+            "dict, len, keys, values, items, update, del, clear"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Introduction to NumPy",
+          "topics": [
+            "Creating NumPy arrays from lists"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Database Concepts and the Structured Query Language",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Database Concepts",
+          "topics": [
+            "Need for databases; database management system",
+            "Relational model: domain, tuple, relation, candidate, primary and alternate key"
+          ],
+          "outcomes": [
+            "Understand database concepts and RDBMS"
+          ]
+        },
+        {
+          "name": "Structured Query Language",
+          "topics": [
+            "Advantages of SQL; DDL, DQL, DML; MySQL; data types",
+            "CREATE DATABASE, CREATE TABLE, DROP, ALTER",
+            "SELECT, FROM, WHERE with relational operators, BETWEEN, logical operators, IS NULL, IS NOT NULL",
+            "INSERT, DELETE, UPDATE"
+          ],
+          "outcomes": [
+            "Retrieve and manipulate data in an RDBMS using SQL"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Introduction to Emerging Trends",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Emerging Trends",
+          "topics": [
+            "Artificial intelligence, machine learning, natural language processing",
+            "Immersive experience: AR, VR; robotics",
+            "Big data and its characteristics; Internet of Things, sensors, smart cities",
+            "Cloud computing and services (SaaS, IaaS, PaaS); grid computing; blockchain"
+          ],
+          "outcomes": [
+            "Identify emerging trends in information technology"
+          ]
+        }
+      ]
+    }
+  ]
+}

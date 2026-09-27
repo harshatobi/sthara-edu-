@@ -1,0 +1,165 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Home Science",
+  "codes": [
+    "064"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Home Science, Code 064, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Home_Science_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Observation of physical or motor development (birth to 3 years)",
+        "marks": 3
+      },
+      {
+        "component": "Dish using germination or fermentation",
+        "marks": 7
+      },
+      {
+        "component": "Fibre identification",
+        "marks": 3
+      },
+      {
+        "component": "First aid kit",
+        "marks": 5
+      },
+      {
+        "component": "File work",
+        "marks": 10
+      },
+      {
+        "component": "Viva",
+        "marks": 2
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Concept and Scope of Home Science and Recent Trends",
+      "marks": 3,
+      "chapters": [
+        {
+          "name": "Concept and Scope of Home Science and Recent Trends",
+          "topics": [
+            "Definition, importance and interdisciplinary nature",
+            "Fields: human development, foods and nutrition, resource management, fabric and apparel, extension",
+            "Higher education and careers",
+            "Recent trends: entrepreneurship, sustainable products"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Human Growth and Development I",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Human Growth and Development I",
+          "topics": [
+            "Growth vs development; principles (cephalocaudal, proximodistal, sequential)",
+            "Heredity and environmental factors",
+            "Milestones from birth to 3 years: physical, motor, social, emotional, cognitive, language"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Family and Values",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Family and Values",
+          "topics": [
+            "Meaning, characteristics and types of family",
+            "Family's role in holistic development",
+            "Ethical and value-based society; dignity of labour; importance of the girl child",
+            "Globalisation, urbanisation, migration, technology and media"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Food, Nutrition and Health",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Food, Nutrition and Health",
+          "topics": [
+            "Food, nutrition, nutrient, health, nutritional status",
+            "Physiological, social and psychological functions of food",
+            "Macro and micro nutrients: sources and functions",
+            "Malnutrition: under and over nutrition",
+            "Balanced diet"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Fibre and Fabric",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Fibre and Fabric",
+          "topics": [
+            "Fibre and yarn; natural and man-made fibres; staple and filament",
+            "Characteristics: feel, appearance, colour fastness, strength, absorbency, shrinkage, elasticity, effect of heat and sunlight"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Resource Management (Class IX)",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Resource Management (Class IX)",
+          "topics": [
+            "Resources: definition, characteristics, human and non-human",
+            "Waste management: refuse, reduce, reuse, repair, recycle",
+            "Kitchen waste: composting, vermicomposting, biogas; incineration, landfills"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Measures of Safety and Management of Emergencies",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Measures of Safety and Management of Emergencies",
+          "topics": [
+            "Unsafe zones at home",
+            "Safety against burns, electric shocks, cuts, fractures, bites, poisoning",
+            "First aid: concept and importance"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Telugu (AP)",
+  "codes": [
+    "107"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Telugu",
+    "తెలుగు",
+    "Telugu AP",
+    "తెలుగు (ఆంధ్రప్రదేశ్)"
+  ],
+  "source": {
+    "title": "Telugu-AP, Code 107, Class XI (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Telugu_AP_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodical tests",
+        "marks": 10
+      },
+      {
+        "component": "Note books",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment: padya pathanam, short speech, pusthaka sameeksha, quiz",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Telugu Amara Dhamam, Intermediate First Year (Intermediate Vidya Mandali AP, 2018)",
+    "Kathanandanam (non-detail, 2018)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Reference: Andhra Vangmaya Charita (D.V. Avadhani); Telugu Sahitya Sameeksha Vol. I (G. Nagaiah); Telugu Sahitya Charitra (Dwa.Na. Sastry)."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Grammar and Translation",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Samaasalu",
+          "topics": [
+            "Tatpurusha, Dwigu, Dwandwa, Bahuvreehi (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chandassu",
+          "topics": [
+            "Utpalamala, Champakamala, Shardulam, Mattebham, Aataveladi (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Alankaras",
+          "topics": [
+            "Upama, Rupaka, Utpreksha, Drushtaantha, Swabhaavokthi (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Translation",
+          "topics": [
+            "English passage of up to 10 sentences into Telugu (7)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Unseen Reading Comprehension",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Class XI)",
+          "topics": [
+            "Unseen reading comprehension"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Composition",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Essay",
+          "topics": [
+            "Composition / essay"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D1",
+      "name": "Prose",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Hasamu - Hasyamu",
+          "topics": [
+            "Prose (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Appudu Putti Unte",
+          "topics": [
+            "Prose (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Maata Theeru",
+          "topics": [
+            "Prose (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mahilodyama Janakudu Kandukuri",
+          "topics": [
+            "Prose (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Reference to context 2x3, questions 2x4."
+      ]
+    },
+    {
+      "code": "D2",
+      "name": "Poetry",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Dharma Pariksha",
+          "topics": [
+            "Poetry (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thinnani Mugdha Bhakti",
+          "topics": [
+            "Poetry (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Smashana Vaati",
+          "topics": [
+            "Poetry (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Cheyyathi Jayakottu",
+          "topics": [
+            "Poetry (Telugu Amara Dhamam)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Meaning of verse 6, reference to context 2x3, question 4."
+      ]
+    },
+    {
+      "code": "D3",
+      "name": "Non-Detailed Text",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Kumkudaaku",
+          "topics": [
+            "Story (Kathanandanam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ootha Karra",
+          "topics": [
+            "Story (Kathanandanam)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Soundaryam",
+          "topics": [
+            "Story (Kathanandanam)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D4",
+      "name": "History of Literature",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "History of Telugu Literature to the Age of Srinatha",
+          "topics": [
+            "Nannaya, Tikkana, Errana, Palkuriki Somanatha, Srinatha, Potana, Ananthamatya, Molla"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Kannada",
+  "codes": [
+    "015"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ಕನ್ನಡ"
+  ],
+  "source": {
+    "title": "Kannada, Code 015, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Kannada_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening, speaking (pick and speak, elocution) and project work",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Siri Kannada 10, Prathama Bhasha Kannada Pathyapustaka (Parishkrutha 2024), Karnataka Pathya Pustaka Sangha, Bengaluru"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "The CBSE document prints the course structure without marks, so the theory paper and unit marks are not recorded. Internal assessment 20 follows the CBSE scheme for every Class IX-XII language; the document lists the activities but not the split."
+  ],
+  "units": [
+    {
+      "code": "P",
+      "name": "Gadya (Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vyaghrageete",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhagya Shilpigalu (Nalvadi Krishnaraja Wadeyar, Sir M. Visvesvaraya)",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Edege Bidda Akshara",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Yuddha",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shabari",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "Q",
+      "name": "Padya (Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Sankalpa Geete",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kouravendrana Konde Neenu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hasuru",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Halagali Bedaru",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Veera Lava",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "N",
+      "name": "Pathya Pooraka Adhyayana (Non-detailed)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vasantha Mukha Toralilla",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhagat Singh",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Udatta Chintanegalu",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vachanagalu",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "W",
+      "name": "Creative Writing",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Prabandha (Class X)",
+          "topics": [
+            "Two essays from the textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Patra Lekhana (Class X)",
+          "topics": [
+            "Job application or official letter"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Varadi (Class X)",
+          "topics": [
+            "Report"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "Grammar and Comprehension",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vyakarana (MCQ, Class X)",
+          "topics": [
+            "Samaasagalu: tatpurusha, karmadharaya, kriya, dvandva, dvigu",
+            "Sandhigalu: lopa, aagama, aadesha, savarna, guna, yan, vruddhi",
+            "Tatsama-Tadbhava",
+            "Samanarthaka pada",
+            "Viruddha pada",
+            "Jodi pada",
+            "Dvirukti / Anukaranaavyaya",
+            "Dhatu / Kriyapada",
+            "Arthavyatyaasa",
+            "Vibhakti pratyaya",
+            "Vasthuvachakagalu",
+            "Gunavachaka / Digvachaka"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vyakarana Barahavanige (Class X)",
+          "topics": [
+            "Sentence types, tenses, kartari-karmani prayoga, graamya-graanthika roopa, own sentences, gadegalu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen Comprehension Passage (Class X)",
+          "topics": [
+            "One unseen passage on a Karnataka context"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Comprehension Passage (Class X)",
+          "topics": [
+            "From the textbook"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

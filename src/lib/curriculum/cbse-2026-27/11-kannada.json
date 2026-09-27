@@ -1,0 +1,268 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Kannada",
+  "codes": [
+    "115"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ಕನ್ನಡ"
+  ],
+  "source": {
+    "title": "Kannada, Code 115, Class XI (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Kannada_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening, speaking (pick and speak, elocution) and project work",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Sampada",
+    "Pallava (Abhyasa Pustaka)",
+    "Kannada Sahitya Charitre, R. S. Mugali",
+    "Kannada Sahityada Itihasa, R. S. Mugali (Sahitya Akademi)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "The CBSE document prints the course structure without marks, so the theory paper and unit marks are not recorded. Internal assessment 20 follows the CBSE scheme for every Class IX-XII language; the document lists the activities but not the split."
+  ],
+  "units": [
+    {
+      "code": "Q",
+      "name": "Padya (Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Duryodhana Vilapa",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vachanagalu (Allamaprabhu, Ghattivalayya, Akkamahadevi)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Halubidalu Kalmaram Maruguvante",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tallanisadiru Kandya Taalu Manave",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shishumakkaligolida Madeva",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Akhanda Karnataka",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Endige",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Naa Baribhrunavalla",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Holige Yantrada Ammi",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Devarigondu Arji",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Gadya (Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Gandhi",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jyotishya Arthapoornavo; Artharahitavo",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shaastri Mastar Mattu Makkalu",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nirakarane",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chaturana Chaaturya",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Deergha Gadya (Long Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Boleshankara",
+          "topics": [
+            "Dr. Chandrashekhar Kambar"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "H",
+      "name": "History of Kannada Literature",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Poets in the Class XI Textbook",
+          "topics": [
+            "Lakshmeesha",
+            "Kuvempu",
+            "Kanakadasa",
+            "Ranna",
+            "Akkamahadevi",
+            "Dr. Chandrashekhar Kambar",
+            "Dr. H. Narasimhaiah",
+            "Dr. Veena Shanteshwar"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "W",
+      "name": "Creative Writing",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Essay (Class XI)",
+          "topics": [
+            "Essay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter (Class XI)",
+          "topics": [
+            "Letter to the editor or official letter"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "Grammar and Comprehension",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vyakarana (MCQ, Class XI)",
+          "topics": [
+            "Vibhakti pratyaya",
+            "Opposite words",
+            "Meaning of words",
+            "Granthika roopa",
+            "Pada vichchedana",
+            "Sandhi",
+            "Samaasa",
+            "Tatsama-Tadbhava",
+            "Dhatu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vyakarana Barahavanige (Class XI)",
+          "topics": [
+            "Sentences into questions and negation",
+            "Compound to simple sentences and back",
+            "Changing tenses",
+            "Translating a sentence from English to Kannada",
+            "Kartari-Karmani",
+            "Roopa nishpatti",
+            "Different meanings",
+            "Proverbs"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chhandassu (Class XI)",
+          "topics": [
+            "Kanda padya",
+            "Champakamala",
+            "Tripadi",
+            "Sangatya"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen and Seen Comprehension (Class XI)",
+          "topics": [
+            "Unseen passage and seen passage"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

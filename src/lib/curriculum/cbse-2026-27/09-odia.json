@@ -1,0 +1,247 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Odia",
+  "codes": [
+    "013"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Oriya",
+    "ଓଡ଼ିଆ"
+  ],
+  "source": {
+    "title": "Odia, Code 013, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Odia_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic tests (best 2 of 3)",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activity",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessments",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Dhara, Class IX, 2023 revised (Board of Secondary Education, Odisha)",
+    "Madhyamika Byakarana, Class IX, 2023 revised (BSE Odisha)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Prose: explanation 5, short answers 6, MCQ 10; poetry: explanation 5, short answers 6, MCQ 10; non-detailed short answers 6."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Prose Passage (Class IX)",
+          "topics": [
+            "130-150 words, five 2-mark questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Essay (Class IX)",
+          "topics": [
+            "Contemporary issues (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Official Letter (Class IX)",
+          "topics": [
+            "6 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Sandhi",
+          "topics": [
+            "Swara, Byanjana, Bisarga (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samasa",
+          "topics": [
+            "Tatpurusa, Dwandwa, Dwigu, Karmadharaya, Bahubrihi, Abyayibhaba (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Taddhita",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Krudanta",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 48,
+      "chapters": [
+        {
+          "name": "Bande Utkala Janani",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaha Mukha Anai Banchibi",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Padma",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "He Mora Kalama",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manisha Bhai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gopa Prayana",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paikabadhura Udbodhana",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jatiya Jibana",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhasa O Jatiyata",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bamanara Hata O Akasara Chandra",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prakruta Bandhu",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samuha Drusti",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Budha Sankhari",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pataka Uttolana",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Laxmira Abhisara",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dalabehera",
+          "topics": [
+            "Non-detailed: one-act play"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Durapahada",
+          "topics": [
+            "Non-detailed: one-act play"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

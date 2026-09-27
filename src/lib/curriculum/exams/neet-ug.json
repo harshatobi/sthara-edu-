@@ -1,0 +1,1221 @@
+{
+  "id": "neet-ug",
+  "exam": "NEET-UG",
+  "conductingBody": "National Medical Commission (syllabus); National Testing Agency (exam)",
+  "cycle": "2026",
+  "track": "Medical",
+  "classes": [
+    "11",
+    "12"
+  ],
+  "source": {
+    "title": "Syllabus for NEET (UG)-2026 (NMC UGMEB notice dated 22-12-2025)",
+    "url": "https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/01/202601081066816297.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "subjects": [
+    {
+      "subject": "Physics",
+      "units": [
+        {
+          "code": "1",
+          "name": "Physics and Measurement",
+          "topics": [
+            "SI and other systems, fundamental and derived units",
+            "least count, significant figures, errors",
+            "dimensions and dimensional analysis"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Units and Measurements"
+            }
+          ]
+        },
+        {
+          "code": "2",
+          "name": "Kinematics",
+          "topics": [
+            "Frame of reference",
+            "motion in a straight line",
+            "uniform and non-uniform motion",
+            "graphs",
+            "equations of uniformly accelerated motion",
+            "relative velocity",
+            "motion in a plane, projectile, uniform circular motion",
+            "Scalars and vectors; addition, subtraction, scalar and vector products; unit vector; resolution of a vector"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Motion in a Straight Line"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Motion in a Plane"
+            }
+          ]
+        },
+        {
+          "code": "3",
+          "name": "Laws of Motion",
+          "topics": [
+            "Newton's laws",
+            "momentum and impulse",
+            "conservation of linear momentum",
+            "equilibrium of concurrent forces",
+            "static, kinetic and rolling friction",
+            "circular motion dynamics, level and banked roads"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Laws of Motion"
+            }
+          ]
+        },
+        {
+          "code": "4",
+          "name": "Work, Energy and Power",
+          "topics": [
+            "Work by constant and variable forces",
+            "kinetic and potential energy",
+            "work-energy theorem",
+            "power",
+            "spring potential energy",
+            "conservation of mechanical energy",
+            "conservative forces",
+            "vertical circle",
+            "elastic and inelastic collisions in 1D and 2D"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Work, Energy and Power"
+            }
+          ]
+        },
+        {
+          "code": "5",
+          "name": "Rotational Motion",
+          "topics": [
+            "Centre of mass",
+            "torque, angular momentum and its conservation",
+            "moment of inertia, radius of gyration",
+            "parallel and perpendicular axes theorems",
+            "rigid body equilibrium and rotation"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "System of Particles and Rotational Motion"
+            }
+          ],
+          "beyondBoard": [
+            "Parallel and perpendicular axes theorems (not in the board topics; board gives moment of inertia values without derivation)"
+          ]
+        },
+        {
+          "code": "6",
+          "name": "Gravitation",
+          "topics": [
+            "Universal law",
+            "variation of g with altitude and depth",
+            "Kepler's laws",
+            "gravitational potential and potential energy",
+            "escape velocity",
+            "satellites: orbital velocity, period, energy"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Gravitation"
+            }
+          ]
+        },
+        {
+          "code": "7",
+          "name": "Properties of Solids and Liquids",
+          "topics": [
+            "Stress-strain, Hooke's law, Young's, bulk and rigidity moduli",
+            "fluid pressure, Pascal's law",
+            "viscosity, Stokes' law, terminal velocity",
+            "streamline and turbulent flow",
+            "Bernoulli",
+            "surface tension, capillarity",
+            "thermal expansion, calorimetry, latent heat",
+            "conduction, convection, radiation"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Mechanical Properties of Solids"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Mechanical Properties of Fluids"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Thermal Properties of Matter"
+            }
+          ]
+        },
+        {
+          "code": "8",
+          "name": "Thermodynamics",
+          "topics": [
+            "Zeroth law",
+            "heat, work, internal energy",
+            "first law",
+            "isothermal and adiabatic processes",
+            "second law, reversible and irreversible processes"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Thermodynamics"
+            }
+          ]
+        },
+        {
+          "code": "9",
+          "name": "Kinetic Theory of Gases",
+          "topics": [
+            "Equation of state",
+            "kinetic theory assumptions",
+            "pressure",
+            "kinetic interpretation of temperature",
+            "rms speed",
+            "degrees of freedom, equipartition, specific heats",
+            "mean free path",
+            "Avogadro's number"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Kinetic Theory"
+            }
+          ]
+        },
+        {
+          "code": "10",
+          "name": "Oscillations and Waves",
+          "topics": [
+            "Periodic motion",
+            "SHM, phase, spring oscillations, energy in SHM",
+            "simple pendulum",
+            "longitudinal and transverse waves",
+            "progressive wave",
+            "superposition",
+            "reflection",
+            "standing waves in strings and pipes",
+            "harmonics",
+            "beats"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Oscillations"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Waves"
+            }
+          ]
+        },
+        {
+          "code": "11",
+          "name": "Electrostatics",
+          "topics": [
+            "Charge conservation",
+            "Coulomb's law",
+            "superposition",
+            "field and field lines",
+            "dipole",
+            "flux and Gauss's law applications",
+            "potential and potential energy",
+            "equipotentials",
+            "conductors, dielectrics",
+            "capacitors in series and parallel",
+            "parallel plate capacitor with dielectric",
+            "energy stored"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electric Charges and Fields"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electrostatic Potential and Capacitance"
+            }
+          ]
+        },
+        {
+          "code": "12",
+          "name": "Current Electricity",
+          "topics": [
+            "Drift velocity, mobility",
+            "Ohm's law",
+            "I-V characteristics",
+            "power",
+            "resistivity and its temperature dependence",
+            "combinations of resistors",
+            "emf and internal resistance",
+            "cells in series and parallel",
+            "Kirchhoff's laws",
+            "Wheatstone bridge",
+            "metre bridge"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Current Electricity"
+            }
+          ]
+        },
+        {
+          "code": "13",
+          "name": "Magnetic Effects of Current and Magnetism",
+          "topics": [
+            "Biot-Savart law",
+            "Ampere's law",
+            "force on moving charges and currents",
+            "force between parallel currents",
+            "torque on a current loop",
+            "moving coil galvanometer and conversion",
+            "magnetic dipole",
+            "bar magnet",
+            "field lines",
+            "para-, dia- and ferromagnetism"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Moving Charges and Magnetism"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Magnetism and Matter"
+            }
+          ]
+        },
+        {
+          "code": "14",
+          "name": "Electromagnetic Induction and Alternating Currents",
+          "topics": [
+            "Faraday's and Lenz's laws",
+            "eddy currents",
+            "self and mutual inductance",
+            "peak and rms values",
+            "reactance, impedance",
+            "LCR circuit and resonance",
+            "power, wattless current",
+            "AC generator and transformer"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electromagnetic Induction"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Alternating Current"
+            }
+          ]
+        },
+        {
+          "code": "15",
+          "name": "Electromagnetic Waves",
+          "topics": [
+            "Displacement current",
+            "EM waves and characteristics",
+            "EM spectrum and applications"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electromagnetic Waves"
+            }
+          ]
+        },
+        {
+          "code": "16",
+          "name": "Optics",
+          "topics": [
+            "Mirrors, refraction, lens and lens maker formula",
+            "TIR",
+            "power",
+            "combination of lenses",
+            "prism",
+            "microscope and telescope",
+            "wavefront, Huygens' principle",
+            "Young's double slit",
+            "single slit diffraction",
+            "polarisation, Brewster's law, Polaroid"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Ray Optics and Optical Instruments"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Wave Optics"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Light - Reflection and Refraction"
+            }
+          ],
+          "beyondBoard": [
+            "Polarisation, Brewster's law and Polaroids (not in the board Wave Optics topics)",
+            "Single-slit diffraction is qualitative only in the board"
+          ]
+        },
+        {
+          "code": "17",
+          "name": "Dual Nature of Matter and Radiation",
+          "topics": [
+            "Photoelectric effect",
+            "Einstein's equation",
+            "particle nature of light",
+            "matter waves, de Broglie relation"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Dual Nature of Radiation and Matter"
+            }
+          ]
+        },
+        {
+          "code": "18",
+          "name": "Atoms and Nuclei",
+          "topics": [
+            "Alpha scattering",
+            "Rutherford and Bohr models",
+            "hydrogen spectrum",
+            "nuclear composition and size",
+            "mass-energy, mass defect, binding energy",
+            "fission and fusion"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Atoms"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Nuclei"
+            }
+          ]
+        },
+        {
+          "code": "19",
+          "name": "Electronic Devices",
+          "topics": [
+            "Semiconductors",
+            "diode I-V in forward and reverse bias",
+            "rectifier",
+            "LED, photodiode, solar cell, Zener diode and voltage regulation",
+            "logic gates (OR, AND, NOT, NAND, NOR)"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Semiconductor Electronics: Materials, Devices and Simple Circuits"
+            }
+          ],
+          "beyondBoard": [
+            "LED, photodiode, solar cell, Zener diode and voltage regulation, logic gates: the board chapter covers only energy bands, p-n junction and the diode as a rectifier"
+          ]
+        },
+        {
+          "code": "20",
+          "name": "Experimental Skills",
+          "topics": [
+            "Vernier calipers",
+            "screw gauge",
+            "simple pendulum",
+            "metre scale moments",
+            "Young's modulus",
+            "surface tension",
+            "viscosity",
+            "resonance tube",
+            "specific heat by mixtures",
+            "metre bridge",
+            "Ohm's law",
+            "galvanometer figure of merit",
+            "focal lengths by parallax",
+            "prism deviation",
+            "refractive index with travelling microscope",
+            "p-n and Zener diode characteristics",
+            "identifying components"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Board covers this in the practical examination, not the theory paper."
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "Chemistry",
+      "units": [
+        {
+          "code": "1",
+          "name": "Some Basic Concepts in Chemistry",
+          "topics": [
+            "Matter",
+            "Dalton's theory",
+            "laws of chemical combination",
+            "atomic and molecular masses",
+            "mole concept",
+            "percentage composition",
+            "empirical and molecular formulae",
+            "stoichiometry"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Some Basic Concepts of Chemistry"
+            }
+          ]
+        },
+        {
+          "code": "2",
+          "name": "Atomic Structure",
+          "topics": [
+            "EM radiation",
+            "photoelectric effect",
+            "hydrogen spectrum",
+            "Bohr model and limitations",
+            "de Broglie",
+            "Heisenberg",
+            "quantum mechanical model",
+            "orbitals and quantum numbers",
+            "shapes of s, p, d",
+            "Aufbau, Pauli, Hund",
+            "configurations and extra stability"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Structure of Atom"
+            }
+          ]
+        },
+        {
+          "code": "3",
+          "name": "Chemical Bonding and Molecular Structure",
+          "topics": [
+            "Ionic and covalent bonds",
+            "lattice enthalpy",
+            "electronegativity, Fajans' rule, dipole moment",
+            "VSEPR",
+            "valence bond theory, hybridisation (s, p, d), resonance",
+            "molecular orbital theory, bond order",
+            "metallic and hydrogen bonding"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Chemical Bonding and Molecular Structure"
+            }
+          ]
+        },
+        {
+          "code": "4",
+          "name": "Chemical Thermodynamics",
+          "topics": [
+            "System and surroundings",
+            "state functions",
+            "first law, enthalpy, heat capacity",
+            "Hess's law",
+            "enthalpies of reaction types",
+            "second law",
+            "entropy",
+            "Gibbs energy and spontaneity",
+            "ΔG° and equilibrium constant"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Chemical Thermodynamics"
+            }
+          ]
+        },
+        {
+          "code": "5",
+          "name": "Solutions",
+          "topics": [
+            "Concentration terms",
+            "Raoult's law",
+            "ideal and non-ideal solutions",
+            "colligative properties",
+            "molar mass determination",
+            "van't Hoff factor"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Solutions"
+            }
+          ]
+        },
+        {
+          "code": "6",
+          "name": "Equilibrium",
+          "topics": [
+            "Physical equilibria, Henry's law",
+            "law of chemical equilibrium, Kp and Kc",
+            "ΔG and equilibrium",
+            "Le Chatelier",
+            "ionic equilibrium",
+            "acid-base concepts",
+            "ionisation constants",
+            "pH",
+            "common ion effect",
+            "hydrolysis",
+            "solubility product",
+            "buffers"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Equilibrium"
+            }
+          ]
+        },
+        {
+          "code": "7",
+          "name": "Redox Reactions and Electrochemistry",
+          "topics": [
+            "Oxidation number and balancing redox reactions",
+            "electrolytic conductance",
+            "molar conductivity",
+            "Kohlrausch's law",
+            "galvanic and electrolytic cells",
+            "electrode potentials",
+            "Nernst equation",
+            "cell potential and Gibbs energy",
+            "dry cell, lead accumulator, fuel cells"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Redox Reactions"
+            },
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Electrochemistry"
+            }
+          ]
+        },
+        {
+          "code": "8",
+          "name": "Chemical Kinetics",
+          "topics": [
+            "Rate and factors",
+            "order and molecularity",
+            "rate law and constant",
+            "zero and first order integrated forms and half-lives",
+            "Arrhenius equation, activation energy",
+            "collision theory"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Chemical Kinetics"
+            }
+          ]
+        },
+        {
+          "code": "9",
+          "name": "Classification of Elements and Periodicity in Properties",
+          "topics": [
+            "Modern periodic law and table",
+            "s, p, d, f blocks",
+            "trends in radii, ionisation enthalpy, electron gain enthalpy, valence, oxidation states, reactivity"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Classification of Elements and Periodicity in Properties"
+            }
+          ]
+        },
+        {
+          "code": "10",
+          "name": "p-Block Elements",
+          "topics": [
+            "Groups 13 to 18: configurations, trends in physical and chemical properties, anomalous first elements"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "s- and p-Block Elements"
+            }
+          ],
+          "beyondBoard": [
+            "The CBSE 2026-27 Class XI syllabus keeps s- and p-block elements for formative assessment only; they are not in the board theory paper"
+          ]
+        },
+        {
+          "code": "11",
+          "name": "d- and f-Block Elements",
+          "topics": [
+            "First-row transition elements: configurations, trends, oxidation states, colour, catalysis, magnetism, complexes, interstitial compounds, alloys",
+            "K2Cr2O7 and KMnO4",
+            "lanthanoids and lanthanoid contraction",
+            "actinoids"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "d- and f-Block Elements"
+            }
+          ]
+        },
+        {
+          "code": "12",
+          "name": "Coordination Compounds",
+          "topics": [
+            "Werner's theory",
+            "ligands, coordination number, denticity, chelation",
+            "IUPAC nomenclature",
+            "isomerism",
+            "valence bond approach and crystal field theory",
+            "colour and magnetism",
+            "applications"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Coordination Compounds"
+            }
+          ]
+        },
+        {
+          "code": "13",
+          "name": "Purification and Characterisation of Organic Compounds",
+          "topics": [
+            "Crystallisation, sublimation, distillation, extraction, chromatography",
+            "detection of N, S, P, halogens",
+            "estimation of C, H, N, halogens, S, P",
+            "empirical and molecular formulae"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Organic Chemistry: Some Basic Principles and Techniques"
+            }
+          ]
+        },
+        {
+          "code": "14",
+          "name": "Some Basic Principles of Organic Chemistry",
+          "topics": [
+            "Tetravalency and hybridisation",
+            "functional groups",
+            "isomerism",
+            "IUPAC nomenclature",
+            "bond fission",
+            "carbocations, carbanions, free radicals",
+            "electrophiles and nucleophiles",
+            "inductive, electromeric, resonance, hyperconjugation",
+            "types of reactions"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Organic Chemistry: Some Basic Principles and Techniques"
+            }
+          ]
+        },
+        {
+          "code": "15",
+          "name": "Hydrocarbons",
+          "topics": [
+            "Alkanes: conformations, halogenation mechanism",
+            "alkenes: geometrical isomerism, electrophilic addition, Markovnikov and peroxide effect, ozonolysis",
+            "alkynes",
+            "benzene: aromaticity, electrophilic substitution, Friedel-Crafts, directive influence"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Hydrocarbons"
+            }
+          ]
+        },
+        {
+          "code": "16",
+          "name": "Organic Compounds Containing Halogens",
+          "topics": [
+            "Preparation, properties and reactions",
+            "C-X bond",
+            "substitution mechanisms",
+            "chloroform, iodoform, freons, DDT"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Haloalkanes and Haloarenes"
+            }
+          ]
+        },
+        {
+          "code": "17",
+          "name": "Organic Compounds Containing Oxygen",
+          "topics": [
+            "Alcohols: classification, dehydration",
+            "phenols: acidity, electrophilic substitution, Reimer-Tiemann",
+            "ethers",
+            "aldehydes and ketones: nucleophilic addition, Grignard, Wolff-Kishner and Clemmensen, alpha-hydrogen, aldol, Cannizzaro, haloform",
+            "carboxylic acids: acidity"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Alcohols, Phenols and Ethers"
+            },
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Aldehydes, Ketones and Carboxylic Acids"
+            }
+          ]
+        },
+        {
+          "code": "18",
+          "name": "Organic Compounds Containing Nitrogen",
+          "topics": [
+            "Amines: nomenclature, basicity, identification",
+            "diazonium salts in synthesis"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Amines"
+            }
+          ]
+        },
+        {
+          "code": "19",
+          "name": "Biomolecules",
+          "topics": [
+            "Carbohydrates: glucose, fructose, sucrose, lactose, maltose",
+            "amino acids, peptide bond, protein structure, denaturation, enzymes",
+            "vitamins",
+            "nucleic acids",
+            "hormones"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Biomolecules"
+            }
+          ]
+        },
+        {
+          "code": "20",
+          "name": "Principles Related to Practical Chemistry",
+          "topics": [
+            "Detection of elements and functional groups",
+            "preparation of Mohr's salt, potash alum, acetanilide, p-nitroacetanilide, aniline yellow, iodoform",
+            "titrations",
+            "qualitative salt analysis",
+            "enthalpy of solution and neutralisation",
+            "sols",
+            "kinetics of iodide with H2O2"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Board covers this in the practical examination, not the theory paper."
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "Biology",
+      "units": [
+        {
+          "code": "1",
+          "name": "Diversity in Living World",
+          "topics": [
+            "What is living",
+            "biodiversity",
+            "need for classification",
+            "taxonomy and systematics",
+            "species and taxonomic hierarchy",
+            "binomial nomenclature",
+            "five kingdom classification",
+            "Monera, Protista, Fungi",
+            "lichens",
+            "viruses and viroids",
+            "plant groups: algae, bryophytes, pteridophytes, gymnosperms",
+            "animals: non-chordates to phyla, chordates to classes"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "The Living World"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Biological Classification"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Plant Kingdom"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Animal Kingdom"
+            }
+          ]
+        },
+        {
+          "code": "2",
+          "name": "Structural Organisation in Animals and Plants",
+          "topics": [
+            "Morphology and modifications",
+            "tissues",
+            "anatomy of root, stem, leaf",
+            "inflorescence (cymose, racemose), flower, fruit, seed",
+            "families Malvaceae, Cruciferae, Leguminosae, Compositae, Gramineae",
+            "animal tissues",
+            "systems of the frog (brief)"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Morphology of Flowering Plants"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Anatomy of Flowering Plants"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Structural Organisation in Animals"
+            }
+          ],
+          "beyondBoard": [
+            "Families Malvaceae, Cruciferae, Leguminosae, Compositae and Gramineae: the board describes only Solanaceae",
+            "Animal tissues: the board Structural Organisation in Animals chapter covers only the frog's organ systems"
+          ]
+        },
+        {
+          "code": "3",
+          "name": "Cell Structure and Function",
+          "topics": [
+            "Cell theory",
+            "prokaryotic and eukaryotic cells",
+            "cell envelope, membrane, wall",
+            "organelles and endomembrane system",
+            "cytoskeleton, cilia, flagella, centrioles",
+            "nucleus",
+            "biomolecules: proteins, carbohydrates, lipids, nucleic acids",
+            "enzymes: types, properties, action, classification",
+            "cell cycle, mitosis, meiosis"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Cell: The Unit of Life"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Biomolecules"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Cell Cycle and Cell Division"
+            }
+          ]
+        },
+        {
+          "code": "4",
+          "name": "Plant Physiology",
+          "topics": [
+            "Photosynthesis: site, pigments, photochemical and biosynthetic phases, cyclic and non-cyclic photophosphorylation, chemiosmotic hypothesis, photorespiration, C3 and C4 pathways, factors",
+            "respiration: glycolysis, fermentation, TCA cycle, ETS, ATP yield, amphibolic pathways, respiratory quotient",
+            "plant growth: germination, phases and rate, differentiation, growth regulators (auxin, gibberellin, cytokinin, ethylene, ABA)"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Photosynthesis in Higher Plants"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Respiration in Plants"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Plant Growth and Development"
+            }
+          ]
+        },
+        {
+          "code": "5",
+          "name": "Human Physiology",
+          "topics": [
+            "Breathing: respiratory system, mechanism, gas exchange and transport, volumes, disorders",
+            "body fluids: blood composition, groups, coagulation, lymph, heart, cardiac cycle, ECG, double circulation, disorders",
+            "excretion: modes, human excretory system, urine formation, osmoregulation, RAAS, ANF, ADH, disorders, dialysis",
+            "locomotion: movement types, muscle contraction, skeleton, joints, disorders",
+            "neural control: neuron, CNS, PNS, nerve impulse",
+            "chemical coordination: endocrine glands, hormone action, disorders"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Breathing and Exchange of Gases"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Body Fluids and Circulation"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Excretory Products and their Elimination"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Locomotion and Movement"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Neural Control and Coordination"
+            },
+            {
+              "class": "11",
+              "subject": "Biology",
+              "chapter": "Chemical Coordination and Integration"
+            }
+          ]
+        },
+        {
+          "code": "6",
+          "name": "Reproduction",
+          "topics": [
+            "Sexual reproduction in flowering plants: gametophytes, pollination, outbreeding devices, pollen-pistil interaction, double fertilisation, endosperm and embryo, seed and fruit, apomixis, parthenocarpy, polyembryony",
+            "human reproduction: systems, gametogenesis, menstrual cycle, fertilisation to implantation, pregnancy, parturition, lactation",
+            "reproductive health: STDs, contraception, MTP, amniocentesis, infertility and ART (IVF, ZIFT, GIFT)"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Sexual Reproduction in Flowering Plants"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Human Reproduction"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Reproductive Health"
+            }
+          ]
+        },
+        {
+          "code": "7",
+          "name": "Genetics and Evolution",
+          "topics": [
+            "Mendelian inheritance and deviations",
+            "multiple alleles and blood groups",
+            "pleiotropy",
+            "polygenic inheritance",
+            "chromosome theory",
+            "sex determination",
+            "linkage and crossing over",
+            "sex-linked inheritance",
+            "Mendelian and chromosomal disorders",
+            "DNA as genetic material",
+            "DNA and RNA structure",
+            "packaging",
+            "replication",
+            "central dogma",
+            "transcription, genetic code, translation",
+            "lac operon",
+            "human genome project",
+            "DNA fingerprinting",
+            "evolution: origin of life, evidences, Darwin, modern synthetic theory, natural selection, gene flow, genetic drift, Hardy-Weinberg, adaptive radiation, human evolution"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Principles of Inheritance and Variation"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Molecular Basis of Inheritance"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Evolution"
+            }
+          ]
+        },
+        {
+          "code": "8",
+          "name": "Biology and Human Welfare",
+          "topics": [
+            "Health and disease",
+            "pathogens and parasites (malaria, filariasis, ascariasis, typhoid, pneumonia, common cold, amoebiasis, ringworm, dengue, chikungunya)",
+            "immunology and vaccines",
+            "cancer",
+            "HIV and AIDS",
+            "adolescence, drug, alcohol and tobacco abuse",
+            "microbes in food processing, industry, sewage treatment, energy, biocontrol and biofertilisers"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Human Health and Disease"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Microbes in Human Welfare"
+            }
+          ]
+        },
+        {
+          "code": "9",
+          "name": "Biotechnology and its Applications",
+          "topics": [
+            "Genetic engineering (recombinant DNA technology)",
+            "human insulin and vaccine production",
+            "gene therapy",
+            "GMOs, Bt crops",
+            "transgenic animals",
+            "biosafety, biopiracy and patents"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Biotechnology: Principles and Processes"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Biotechnology and its Applications"
+            }
+          ]
+        },
+        {
+          "code": "10",
+          "name": "Ecology and Environment",
+          "topics": [
+            "Population interactions: mutualism, competition, predation, parasitism",
+            "population attributes",
+            "ecosystem: components, productivity, decomposition, energy flow, ecological pyramids",
+            "biodiversity: patterns, importance, loss, conservation, hotspots, Red Data Book, biosphere reserves, national parks, sanctuaries, sacred groves"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Organisms and Populations"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Ecosystem"
+            },
+            {
+              "class": "12",
+              "subject": "Biology",
+              "chapter": "Biodiversity and its Conservation"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "NMC released the NEET-UG 2026 syllabus on 22 December 2025; a 2027 syllabus has not been published.",
+    "Biology is examined as Botany and Zoology."
+  ]
+}

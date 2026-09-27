@@ -1,0 +1,89 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "11", "subject": "Geography", "codes": ["029"], "stream": "Humanities",
+  "aliases": ["Geo"],
+  "source": { "title": "Geography, Code 029, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Geography_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 70, "internal": 30, "internalBreakdown": [
+    { "component": "Practical: written exam on the practical syllabus", "marks": 25 },
+    { "component": "Practical file", "marks": 3 },
+    { "component": "Viva", "marks": 2 }
+  ] },
+  "textbooks": ["Fundamentals of Physical Geography, Class XI (NCERT)", "India: Physical Environment, Class XI (NCERT)", "Practical Work in Geography Part I, Class XI (NCERT)"],
+  "notes": [
+    "Theory is 35 marks per book (including 5 marks of map work each). Unit codes are prefixed P (Fundamentals of Physical Geography) and I (India: Physical Environment).",
+    "Map items are located and labelled on outline maps from official Government of India websites.",
+    "No learning-outcomes column is given, so chapter outcomes are left empty."
+  ],
+  "units": [
+    { "code": "P-I", "name": "Geography as a Discipline", "marks": 3, "chapters": [
+      { "name": "Geography as a Discipline", "number": 1, "topics": ["Geography as an integrating discipline: spatial and temporal synthesis", "Approaches: systematic and regional", "Branches: physical, human and bio geography", "Physical geography and its importance"], "outcomes": [] }
+    ] },
+    { "code": "P-II", "name": "The Earth", "marks": 9, "chapters": [
+      { "name": "The Origin and Evolution of the Earth", "number": 2, "topics": ["Early theories of the origin of the earth; modern theories of the origin of the universe", "Formation of stars and planets", "Evolution of the earth: lithosphere, atmosphere and hydrosphere", "Origin of life"], "outcomes": [] },
+      { "name": "Interior of the Earth", "number": 3, "topics": ["Direct and indirect sources of information about the interior", "Earthquakes: waves, shadow zones, types, intensity scales, effects, frequency", "Structure of the earth", "Volcanoes and volcanic landforms"], "outcomes": [] },
+      { "name": "Distribution of Oceans and Continents", "number": 4, "topics": ["Continental drift theory, evidence and force for drift", "Post-drift studies; ocean floor configuration; distribution of earthquakes and volcanoes", "Seafloor spreading", "Plate tectonics: plate boundaries, rate and forces of movement", "Movement of the Indian plate"], "outcomes": [] }
+    ] },
+    { "code": "P-III", "name": "Landforms", "marks": 6, "chapters": [
+      { "name": "Geomorphic Processes", "number": 5, "topics": ["Exogenic and endogenic processes", "Endogenic: diastrophism, volcanism", "Exogenic: weathering, landslides", "Soil: processes and factors of soil formation"], "outcomes": [] },
+      { "name": "Landforms and their Evolution", "number": 6, "topics": ["Running water: erosional and depositional landforms", "Wind: erosional and depositional landforms"], "outcomes": [] },
+      { "name": "Minerals and Rocks", "topics": ["Major types of rocks and their characteristics"], "outcomes": [], "formativeOnly": true }
+    ] },
+    { "code": "P-IV", "name": "Climate", "marks": 8, "chapters": [
+      { "name": "Composition and Structure of Atmosphere", "number": 7, "topics": ["Composition and structure of the atmosphere", "Elements of weather and climate"], "outcomes": [] },
+      { "name": "Solar Radiation, Heat Balance and Temperature", "number": 8, "topics": ["Variability of insolation", "Heating and cooling of the atmosphere; terrestrial radiation", "Heat budget of the earth", "Temperature: controlling factors, horizontal distribution, inversion"], "outcomes": [] },
+      { "name": "Atmospheric Circulation and Weather Systems", "number": 9, "topics": ["Horizontal and vertical variation of pressure", "Forces affecting wind velocity and direction", "General circulation: pressure belts; planetary, seasonal and local winds", "Air masses and fronts; tropical and extratropical cyclones; thunderstorms and tornadoes"], "outcomes": [] },
+      { "name": "Water in the Atmosphere", "number": 10, "topics": ["Absolute and relative humidity", "Evaporation and condensation; dew, frost, fog, mist and cloud", "Precipitation; types and world distribution of rainfall"], "outcomes": [] },
+      { "name": "World Climate and Climate Change", "number": 11, "topics": ["World climate and climate change"], "outcomes": [], "formativeOnly": true, "notes": ["Tested through internal assessment: project and presentation."] }
+    ] },
+    { "code": "P-V", "name": "Water (Oceans)", "marks": 4, "chapters": [
+      { "name": "Water (Oceans)", "number": 12, "topics": ["Hydrological cycle", "Major and minor relief features of the ocean floor", "Temperature and salinity of ocean waters: factors, horizontal and vertical distribution"], "outcomes": [] },
+      { "name": "Movements of Ocean Water", "number": 13, "topics": ["Waves", "Tides", "Currents"], "outcomes": [] }
+    ] },
+    { "code": "P-VI", "name": "Life on the Earth", "marks": 0, "chapters": [
+      { "name": "Biodiversity and Conservation", "number": 14, "topics": ["Biodiversity and conservation"], "outcomes": [], "formativeOnly": true, "notes": ["Tested through internal assessment: project and presentation."] }
+    ] },
+    { "code": "P-Map", "name": "Map Work (World)", "marks": 5, "chapters": [
+      { "name": "Map Work: Physical Geography", "topics": [
+        "Political map of all continents; major oceans; major and minor lithospheric plates; Ring of Fire; Mid-Atlantic Ridge",
+        "Major hot deserts: Mojave, Patagonian, Sahara, Gobi, Thar, Great Victoria",
+        "Major seas: Black, Baltic, Caspian, Mediterranean, North, Red; Bay of Fundy",
+        "Cold currents: Humboldt, California, Falkland, Canaries, West Australian, Oyashio, Labrador",
+        "Warm currents: Alaska, Brazilian, Agulhas, Kuroshio, Gulf Stream",
+        "Ecological hotspots: Eastern Himalaya, Western Ghats, Indonesia, Eastern Madagascar, Upper Guinean forests, Atlantic forest, Tropical Andes"
+      ], "outcomes": [] }
+    ] },
+    { "code": "I-I", "name": "Introduction (India)", "marks": 5, "chapters": [
+      { "name": "India: Location", "number": 1, "topics": ["Location, size, latitudinal and longitudinal extent", "Indian Standard Time", "India and its neighbours"], "outcomes": [] }
+    ] },
+    { "code": "I-II", "name": "Physiography", "marks": 13, "chapters": [
+      { "name": "Structure and Physiography", "number": 2, "topics": ["Physiographic divisions: northern and north-eastern mountains, northern plain, peninsular plateau, Indian desert, coastal plains, islands"], "outcomes": [] },
+      { "name": "Drainage System", "number": 3, "topics": ["Drainage patterns", "River basin, catchment area, watershed", "Himalayan and peninsular river systems", "Usability of river water: linking of rivers, problems, water pollution"], "outcomes": [] }
+    ] },
+    { "code": "I-III", "name": "Climate, Vegetation and Soil", "marks": 12, "chapters": [
+      { "name": "Climate", "number": 4, "topics": ["Weather and climate; unity and diversity in the monsoon climate", "Factors determining the climate of India", "Nature and characteristics of the Indian monsoon; rhythm of seasons", "Distribution of rainfall; monsoon and economic life", "Global warming"], "outcomes": [] },
+      { "name": "Natural Vegetation", "number": 5, "topics": ["Forest types and distribution", "Conservation of forests", "Wildlife, conservation, biosphere reserves"], "outcomes": [] }
+    ] },
+    { "code": "I-IV", "name": "Natural Hazards and Disasters: Causes, Consequences and Management", "marks": 0, "chapters": [
+      { "name": "Natural Hazards and Disasters", "number": 6, "topics": ["Natural hazards and disasters: causes, consequences and management"], "outcomes": [], "formativeOnly": true, "notes": ["Tested through internal assessment: project and presentation."] }
+    ] },
+    { "code": "I-Map", "name": "Map Work (India)", "marks": 5, "chapters": [
+      { "name": "Map Work: India Physical Environment", "topics": [
+        "Latitudinal and longitudinal extent; Standard Meridian; Tropic of Cancer; Kanyakumari",
+        "Ranges: Karakoram, Garo-Khasi-Jaintia, Aravalli, Vindhya, Satpura, Western and Eastern Ghats; peaks: K2, Kanchenjunga, Nanda Devi, Nanga Parbat, Namcha Barwa, Anaimudi",
+        "Passes: Shipki La, Nathu La, Palghat, Bhor Ghat, Thal Ghat; plateaus: Malwa, Chhotanagpur, Meghalaya, Deccan",
+        "Coastal plains: Saurashtra, Konkan, North and South Kanara, Malabar, Coromandel, Northern Circars; Andaman and Nicobar, Lakshadweep",
+        "Rivers: Brahmaputra, Indus, Satluj, Ganga, Yamuna, Chambal, Damodar, Mahanadi, Krishna, Kaveri, Godavari, Narmada, Tapti, Luni",
+        "Lakes: Wular, Sambhar, Chilika, Kolleru, Pulicat, Vembanad; Palk Strait, Rann of Kachchh, Gulfs of Kachchh, Mannar and Khambhat",
+        "Areas of highest and lowest temperature and rainfall",
+        "Forest types; national parks: Corbett, Kaziranga, Ranthambore, Shivpuri, Simlipal; bird sanctuaries: Keoladeo Ghana, Ranganathittu; wildlife sanctuaries: Periyar, Rajaji, Mudumalai, Dachigam"
+      ], "outcomes": [] }
+    ] },
+    { "code": "Pr", "name": "Practical Work in Geography Part I", "marks": 25, "practical": true, "chapters": [
+      { "name": "Introduction to Maps", "number": 1, "topics": ["Essentials and history of map making", "Types and uses of maps"], "outcomes": [] },
+      { "name": "Map Scale", "number": 2, "topics": ["Methods and construction of scales", "Conversion of scale"], "outcomes": [] },
+      { "name": "Latitude, Longitude and Time", "number": 3, "topics": ["Drawing parallels and meridians", "Longitude and time", "International date line"], "outcomes": [] },
+      { "name": "Map Projections", "number": 4, "topics": ["Typology, construction and properties: conical with one standard parallel and Mercator's (only two projections)"], "outcomes": [] },
+      { "name": "Topographical Maps", "number": 5, "topics": ["Survey of India maps (1:50,000 or 1:25,000)", "Conventional symbols, contour cross section", "Identification of landforms and distribution of settlements"], "outcomes": [] },
+      { "name": "Introduction to Remote Sensing", "number": 6, "topics": ["Satellite imageries; stages in remote sensing data acquisition", "Platforms, sensors and data products (photographic and digital)"], "outcomes": [] }
+    ] }
+  ]
+}

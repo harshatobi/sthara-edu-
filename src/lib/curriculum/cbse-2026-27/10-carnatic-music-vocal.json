@@ -1,0 +1,117 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Carnatic Music (Vocal)",
+  "codes": [
+    "031"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Carnatic Music (Vocal), Code 031, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Carnatic_Vocal_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Alankaras",
+        "marks": 8
+      },
+      {
+        "component": "Varnam",
+        "marks": 10
+      },
+      {
+        "component": "Kriti and swarajnanam",
+        "marks": 12
+      },
+      {
+        "component": "Kalpana swaras",
+        "marks": 8
+      },
+      {
+        "component": "Musical form item",
+        "marks": 7
+      },
+      {
+        "component": "Tanpura tuning",
+        "marks": 5
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory is 30 marks without a unit-wise split."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Raga Classification and Melakarta (Class X)",
+          "topics": [
+            "Raga classification",
+            "Scheme of 72 melakartas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prescribed Ragas (Class X Vocal)",
+          "topics": [
+            "Suddha Dhanyasi, Sriranjani, Suddha Saveri, Bhairavi, Keeravani, Kambhoji, Ananda Bhairavi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musical Forms and Notation (Class X Vocal)",
+          "topics": [
+            "Kriti with decorative angas; tana varnam and pada varnam",
+            "Notation of varnams and geetams"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "20th Century Composers",
+          "topics": [
+            "Koteeswara Iyer, Papanasam Sivan, G.N. Balasubramaniam"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Alankaras and Varnams (Class X)",
+          "topics": [
+            "Alankaras in three speeds",
+            "Varnam in two speeds"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kritis and Kalpana Swaras (Class X)",
+          "topics": [
+            "Kritis in Adi, Roopaka and Chapu",
+            "Kalpana swaras in first speed",
+            "Tuning the tanpura"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "English Core",
+  "codes": [
+    "301"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "English"
+  ],
+  "source": {
+    "title": "English Core, Code 301, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/English_core_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Assessment of listening skills",
+        "marks": 5
+      },
+      {
+        "component": "Assessment of speaking skills",
+        "marks": 5
+      },
+      {
+        "component": "Project work",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Flamingo, Class XII (NCERT)",
+    "Vistas, Supplementary Reader, Class XII (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections; literature chapters are the prescribed lessons.",
+    "Reading project: one book read independently, assessed by the teacher."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension through Unseen Passages",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "Unseen Passages",
+          "topics": [
+            "One unseen passage (factual, descriptive or literary); vocabulary assessed via inference",
+            "One unseen case-based factual passage with verbal or visual inputs",
+            "Combined word limit 700-750; MCQ, objective and short answer (40-50 words) questions"
+          ],
+          "outcomes": [
+            "Comprehend, interpret, analyse and infer from unseen texts"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Creative Writing Skills",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Notice",
+          "topics": [
+            "Up to 50 words (4 marks: format 1, content 2, accuracy 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Formal and Informal Invitation and Reply",
+          "topics": [
+            "Up to 50 words (4 marks: format 1, content 2, accuracy 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter Writing",
+          "topics": [
+            "120-150 words on verbal or visual input (5 marks)",
+            "Job application with bio data or resume",
+            "Letters to the editor on issues of public interest"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Article and Report Writing",
+          "topics": [
+            "Descriptive and analytical, 120-150 words on verbal inputs (5 marks)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "Literature: Flamingo",
+      "marks": 27,
+      "chapters": [
+        {
+          "name": "The Last Lesson",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lost Spring",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Deep Water",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Rattrap",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Indigo",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Poets and Pancakes",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Interview",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Going Places",
+          "topics": [
+            "Prose (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "My Mother at Sixty-Six",
+          "topics": [
+            "Poem (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Keeping Quiet",
+          "topics": [
+            "Poem (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Thing of Beauty",
+          "topics": [
+            "Poem (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Roadside Stand",
+          "topics": [
+            "Poem (Flamingo)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aunt Jennifer's Tigers",
+          "topics": [
+            "Poem (Flamingo)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Poetry extract 6, prose extract 6, five short answers 10, one long answer 5."
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "Supplementary Reader: Vistas",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "The Third Level",
+          "topics": [
+            "Prose (Vistas)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Tiger King",
+          "topics": [
+            "Prose (Vistas)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Journey to the End of the Earth",
+          "topics": [
+            "Prose (Vistas)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Enemy",
+          "topics": [
+            "Prose (Vistas)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "On the Face of It",
+          "topics": [
+            "Play (Vistas)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Memories of Childhood",
+          "topics": [
+            "Prose: The Cutting of My Long Hair; We Too are Human Beings (Vistas)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose extract 4, two short answers 4, one long answer 5."
+      ]
+    }
+  ]
+}

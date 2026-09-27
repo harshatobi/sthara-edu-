@@ -1,0 +1,348 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Tamil",
+  "codes": [
+    "006"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "தமிழ்"
+  ],
+  "source": {
+    "title": "Tamil, Code 006, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Tamil_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Tamil Textbook, Class IX, Revised Edition 2025 (SCERT Tamil Nadu; Tamil Nadu Textbook and Educational Services Corporation)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Iyal 1-7 of the textbook. The document gives the internal assessment total only."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class IX)",
+          "topics": [
+            "Two unseen passages on language, literature, history or science: MCQ (5) and short answer (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Ezhutthu, Alabedai",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pagubatha Uruppilakkanam",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thodar Ilakkanam, Aagupeyar",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thunai Vinaigal",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vallinam Migum Idangal",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vallinam Migaa Idangal",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Yappilakkanam",
+          "topics": [
+            "Grammar (MCQ)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Main Course Book",
+      "marks": 31,
+      "chapters": [
+        {
+          "name": "Dravida Mozhi Kudumbam",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Neerindri Amaiyaathu Ulagu",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Eru Thazhuvuthal",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kalviyil Sirantha Pengal",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sirpakalai",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Inthiya Dhesiya Ranuvaththil Thamizhar Pangu",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Periyarin Sinthanaigal",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tamizh Vidu Thoothu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tamil Oviyam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Periya Puraanam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Puranaanooru",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Manimegalai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Markazhi Peruvizha",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 3)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kudumba Vilakku",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Uyir Vagai",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Raavana Kaaviyam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thirukkural (Iyal 5)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seevaga Sinthamani",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "O En Samakaala Thozharkale",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Yasodhara Kaaviyam",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Thirukkural fill-ups 3, poetry comprehension 5, poetry short answer 8, prose long answer 15."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Non-detail",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Aaraam Thinai",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thanneer",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thaaimaikku Varatchi Ellai",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Veetirkoar Puththaga Saalai",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seithi",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vinnaiyum Saaduvoam",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Maganukku Ezhuthiya Kaditham",
+          "topics": [
+            "Non-detail"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "E",
+      "name": "Creative Writing",
+      "marks": 17,
+      "chapters": [
+        {
+          "name": "Letter Writing (Class IX)",
+          "topics": [
+            "Official or informal letter (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Essay Writing (Class IX)",
+          "topics": [
+            "General essay (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Picture Description (Class IX)",
+          "topics": [
+            "3 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

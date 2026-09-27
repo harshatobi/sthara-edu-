@@ -1,0 +1,223 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Computer Science",
+  "codes": [
+    "083"
+  ],
+  "stream": "Computer",
+  "aliases": [
+    "CS",
+    "Computer Science (Python)"
+  ],
+  "source": {
+    "title": "Computer Science, Code 083, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Computer_Science_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Lab test: Python program (60% logic, 20% documentation, 20% code quality)",
+        "marks": 12
+      },
+      {
+        "component": "Report file (minimum 20 Python programs)",
+        "marks": 7
+      },
+      {
+        "component": "Viva voce",
+        "marks": 3
+      },
+      {
+        "component": "Project",
+        "marks": 8
+      }
+    ]
+  },
+  "textbooks": [
+    "Computer Science, Class XI (NCERT)",
+    "Support material on the CBSE website"
+  ],
+  "notes": [
+    "The document states learning outcomes for the whole course, recorded on the first chapter of each unit."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Computer Systems and Organisation",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Computer System and Software",
+          "topics": [
+            "Basic computer organisation: hardware, software, input and output devices, CPU",
+            "Memory: primary, cache, secondary; units of memory (bit to PB)",
+            "Types of software: system software (OS, utilities, device drivers), programming tools and language translators (assembler, compiler, interpreter), application software",
+            "Operating system: functions and user interface"
+          ],
+          "outcomes": [
+            "Develop a basic understanding of computer systems: architecture and operating system"
+          ]
+        },
+        {
+          "name": "Boolean Logic",
+          "topics": [
+            "NOT, AND, OR, NAND, NOR, XOR",
+            "Truth tables and De Morgan's laws",
+            "Logic circuits"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Number Systems and Encoding",
+          "topics": [
+            "Binary, octal, decimal and hexadecimal; conversion between number systems",
+            "Encoding schemes: ASCII, ISCII, Unicode (UTF8, UTF32)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Computational Thinking and Programming - 1",
+      "marks": 45,
+      "chapters": [
+        {
+          "name": "Introduction to Problem Solving",
+          "topics": [
+            "Steps: analysing the problem, developing an algorithm, coding, testing and debugging",
+            "Algorithms as flowchart and pseudocode",
+            "Decomposition"
+          ],
+          "outcomes": [
+            "Develop basic computational thinking",
+            "Appreciate the notion of algorithms"
+          ]
+        },
+        {
+          "name": "Getting Started with Python",
+          "topics": [
+            "Features of Python; hello world; interactive and script mode",
+            "Character set; tokens: keyword, identifier, literal, operator, punctuator",
+            "Variables, l-value and r-value, comments"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Data Types, Operators and Expressions",
+          "topics": [
+            "Number (integer, float, complex), boolean, sequence (string, list, tuple), None, mapping (dictionary); mutable and immutable types",
+            "Arithmetic, relational, logical, assignment, augmented assignment, identity and membership operators",
+            "Precedence, expression evaluation, explicit and implicit type conversion, console input and output",
+            "Syntax, logical and run-time errors"
+          ],
+          "outcomes": [
+            "Explain and use data types"
+          ]
+        },
+        {
+          "name": "Flow of Control",
+          "topics": [
+            "Indentation; sequential, conditional and iterative flow",
+            "if, if-else, if-elif-else with flowcharts: absolute value, sort 3 numbers, divisibility",
+            "for loop, range(), while loop, break and continue, nested loops: patterns, series, factorial"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Strings",
+          "topics": [
+            "Concatenation, repetition, membership and slicing; traversal",
+            "Built-in methods: len, capitalize, title, lower, upper, count, find, index, endswith, startswith, isalnum, isalpha, isdigit, islower, isupper, isspace, lstrip, rstrip, strip, replace, join, partition, split"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lists",
+          "topics": [
+            "Indexing, list operations, traversal",
+            "Methods: len, list, append, extend, insert, count, index, remove, pop, reverse, sort, sorted, min, max, sum",
+            "Nested lists; programs: max, min, mean; linear search; frequency of elements"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tuples",
+          "topics": [
+            "Indexing, tuple operations; len, tuple, count, index, sorted, min, max, sum",
+            "Tuple assignment, nested tuple; programs: min, max, mean, linear search, frequency"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dictionaries",
+          "topics": [
+            "Accessing items by key; mutability; traversal",
+            "Methods: len, dict, keys, values, items, get, update, del, clear, fromkeys, copy, pop, popitem, setdefault, max, min, sorted",
+            "Programs: character frequency in a string; employee salary dictionary"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Python Modules",
+          "topics": [
+            "import and from statements",
+            "math: pi, e, sqrt, ceil, floor, pow, fabs, sin, cos, tan",
+            "random: random, randint, randrange",
+            "statistics: mean, median, mode"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Society, Law and Ethics",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Digital Footprints and Digital Society",
+          "topics": [
+            "Digital footprints",
+            "Netizen etiquettes: net, communication and social media"
+          ],
+          "outcomes": [
+            "Explain cyber ethics, cyber safety and cybercrime",
+            "Understand the value of technology in societies, with consideration of gender and disability issues"
+          ]
+        },
+        {
+          "name": "Data Protection and Intellectual Property",
+          "topics": [
+            "IPR: copyright, patent, trademark; violations: plagiarism, copyright and trademark infringement",
+            "Open source software and licensing: Creative Commons, GPL, Apache"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Cyber Crime and Cyber Safety",
+          "topics": [
+            "Hacking, eavesdropping, phishing and fraud emails, ransomware, cyber trolls, cyber bullying",
+            "Safe browsing, identity protection, confidentiality",
+            "Malware: viruses, trojans, adware",
+            "Information Technology Act"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Technology and Society",
+          "topics": [
+            "E-waste management",
+            "Gender and disability issues while teaching and using computers"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

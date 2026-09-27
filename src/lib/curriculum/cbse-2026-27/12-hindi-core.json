@@ -1,0 +1,286 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Hindi Core",
+  "codes": [
+    "302"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Hindi",
+    "Hindi (Core)",
+    "Hindi Aadhar",
+    "हिंदी (आधार)"
+  ],
+  "source": {
+    "title": "Hindi (Core), Code 302, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindi_Core_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "श्रवण (listening)",
+        "marks": 5
+      },
+      {
+        "component": "वाचन (speaking)",
+        "marks": 5
+      },
+      {
+        "component": "परियोजना कार्य (project)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "आरोह भाग 2 (NCERT)",
+    "वितान भाग 2 (NCERT)",
+    "अभिव्यक्ति और माध्यम (NCERT)"
+  ],
+  "notes": [
+    "Lesson lists are the 2026-27 NCERT reprints (textbook contents pages), less the lessons the CBSE document says are dropped.",
+    "Units are the question paper's sections (खंड क, ख, ग).",
+    "Dropped for 2026-27: Muktibodh (Sahrsh Sweekara Hai), Firaq Gorakhpuri (Ghazal; Rubaiyan remain), Vishnu Khare (Charlie Chaplin Yani Hum Sab), Razia Sajjad Zaheer (Namak), Anne Frank (Diary ke Panne)."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठित बोध (Unseen Comprehension)",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "अपठित गद्यांश",
+          "topics": [
+            "लगभग 250 शब्दों का अपठित गद्यांश: बोध, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (10 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अपठित पद्यांश",
+          "topics": [
+            "लगभग 100 शब्दों का अपठित पद्यांश: बोध, सराहना, सौंदर्य, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (8 अंक)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "अभिव्यक्ति और माध्यम (Expression and Media)",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "रचनात्मक लेखन",
+          "topics": [
+            "तीन अप्रत्याशित विषयों में से एक पर लगभग 120 शब्दों में रचनात्मक लेखन (6 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विभिन्न माध्यमों के लिए लेखन",
+          "number": 3,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पत्रकारीय लेखन के विभिन्न रूप और लेखन प्रक्रिया",
+          "number": 4,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विशेष लेखन: स्वरूप और प्रकार",
+          "number": 5,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कैसे करें कहानी का नाट्य रूपांतरण",
+          "number": 11,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कैसे बनता है रेडियो नाटक",
+          "number": 12,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "नए और अप्रत्याशित विषयों पर लेखन",
+          "number": 13,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Questions on lessons 3, 4, 5, 11 and 13: four 2-mark (40 words) and two 4-mark (80 words), 16 marks."
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "आरोह भाग 2: काव्य खंड (Poetry)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "हरिवंश राय बच्चन: आत्मपरिचय; एक गीत",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आलोक धन्वा: पतंग",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कुँवर नारायण: कविता के बहाने; बात सीधी थी पर",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रघुवीर सहाय: कैमरे में बंद अपाहिज",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "शमशेर बहादुर सिंह: उषा",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सूर्यकांत त्रिपाठी 'निराला': बादल राग",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "तुलसीदास: कवितावली (उत्तर कांड से); लक्ष्मण-मूर्च्छा और राम का विलाप",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "फ़िराक गोरखपुरी: रुबाइयाँ",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "उमाशंकर जोशी: छोटा मेरा खेत; बगुलों के पंख",
+          "topics": [
+            "काव्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "आरोह भाग 2: गद्य खंड (Prose)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "महादेवी वर्मा: भक्तिन",
+          "topics": [
+            "गद्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "जैनेन्द्र कुमार: बाज़ार दर्शन",
+          "topics": [
+            "गद्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "धर्मवीर भारती: काले मेघा पानी दे",
+          "topics": [
+            "गद्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "फणीश्वर नाथ रेणु: पहलवान की ढोलक",
+          "topics": [
+            "गद्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "हजारी प्रसाद द्विवेदी: शिरीष के फूल",
+          "topics": [
+            "गद्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "बाबा साहेब भीमराव आंबेडकर: श्रम विभाजन और जाति-प्रथा; मेरी कल्पना का आदर्श समाज",
+          "topics": [
+            "गद्य खंड (आरोह भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C3",
+      "name": "वितान भाग 2 (Supplementary Reader)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "सिल्वर वैडिंग (मनोहर श्याम जोशी)",
+          "topics": [
+            "वितान भाग 2"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "जूझ (आनंद यादव)",
+          "topics": [
+            "वितान भाग 2"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अतीत में दबे पाँव (ओम थानवी)",
+          "topics": [
+            "वितान भाग 2"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

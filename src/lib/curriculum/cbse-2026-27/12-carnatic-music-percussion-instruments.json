@@ -1,0 +1,127 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Carnatic Music (Percussion Instruments)",
+  "codes": [
+    "033"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Carnatic Music (Percussion Instruments), Code 033, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Carnatic_Percussion_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Tuning and questions",
+        "marks": 5
+      },
+      {
+        "component": "Tani avartanam of choice tala",
+        "marks": 6
+      },
+      {
+        "component": "Tala of examiner's choice",
+        "marks": 10
+      },
+      {
+        "component": "Reciting sollukattu",
+        "marks": 6
+      },
+      {
+        "component": "Accompaniment for vocal and instrumental",
+        "marks": 10
+      },
+      {
+        "component": "Accompanying trikalam in pallavi",
+        "marks": 10
+      },
+      {
+        "component": "Laya and tala questions",
+        "marks": 3
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) without a unit-wise split; practical 50 (external examiner); internal assessment 20."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory: History and Theory of Indian Music",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Lakshana Granthas (Class XII)",
+          "topics": [
+            "Chaturdandi Prakashika, Sangita Ratnakara, Ragavibodha, Svaramela Kalanidhi with reference to tala and percussion"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Percussion Luminaries (Class XII)",
+          "topics": [
+            "Needamangalam Meenakshi Sundaram Pillai, Tanjore Vaidyanatha Iyer, Palghat Mani Iyer, Umayalpuram Kodanda Rama Iyer, Palani Subramania Pillai, Vilvadri Iyer"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musical Forms and Terms (Class XII)",
+          "topics": [
+            "Pallavi, sollukattu, tillana, padam, javali",
+            "Arudi, eduppu, gati bheda, anuloma, pratiloma, tisram, trikalam, theka, shadangas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Technical Terms (Class XII)",
+          "topics": [
+            "Vilamba, madhya, druta, atitam, anagatam, pharan, kalapramanam, ghumki, konnakkol, choru, varu, toppi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Percussion Instruments (Class XII)",
+          "topics": [
+            "Classification of percussion instruments; history of the chosen instrument",
+            "Morsing, tabla, chenda, edakka, gettu vadyam"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Mohra, Korvai and Gumki (Class XII)",
+          "topics": [
+            "Mohra and korvai for Khanda jati Ata and Triputa talas",
+            "Types and uses of gumki"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tani Avartanam and Accompaniment (Class XII)",
+          "topics": [
+            "Tani avartanam in Misra and Khanda Chapu",
+            "Accompanying vocal and instrumental music"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

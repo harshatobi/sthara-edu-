@@ -1,0 +1,181 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Bengali",
+  "codes": [
+    "105"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Bangla",
+    "বাংলা"
+  ],
+  "source": {
+    "title": "Bengali, Code 105, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Bengali_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project (file and viva)",
+        "marks": 10
+      },
+      {
+        "component": "ASL: speaking",
+        "marks": 5
+      },
+      {
+        "component": "ASL: listening",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahityanushilan: Bangla 'Ka', Class XII (WBCHSE)",
+    "Daakghar, Rabindranath Thakur (supplementary reader)",
+    "Ucchataro Bangla Byakoron (IX-X), Bamandeb Chakraborty"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Section C has no printed split between prose, poetry, drama and the supplementary reader."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Class XII)",
+          "topics": [
+            "Two unseen passages of about 200 words"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Grammar",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Dhwanitatwa",
+          "topics": [
+            "Apinihiti, Abhishruti, Swarasangati, Swarabhakti: definition with one example"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shabdarthatatwa",
+          "topics": [
+            "Arther Utkarsha, Apakarsha, Sankochan, Prasaran: definition with two examples"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Proverbs and Idioms",
+          "topics": [
+            "Meaning and sentence making from the 50 listed in Annexure 1"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Literature",
+      "marks": 43,
+      "chapters": [
+        {
+          "name": "Aadoroni",
+          "topics": [
+            "Prose: Provat Kumar Mukhopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Holud Pora",
+          "topics": [
+            "Prose: Manik Bandyopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Haroon Salemer Mashi",
+          "topics": [
+            "Prose: Mahasweta Devi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nana Ranger Din",
+          "topics": [
+            "Drama: Ajitesh Bandyopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prarthona",
+          "topics": [
+            "Poetry: Rabindranath Thakur"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Keno Elo Na",
+          "topics": [
+            "Poetry: Subhash Mukhopadhyay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dhormo",
+          "topics": [
+            "Poetry: Srijato"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Taar Sange",
+          "topics": [
+            "International poetry in translation: Pablo Neruda"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Daakghar",
+          "topics": [
+            "Supplementary reader: Rabindranath Thakur"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Creative Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Report Reading",
+          "topics": [
+            "Headline or focus in three sentences and one direct question on the report"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Advertisement Writing",
+          "topics": [
+            "Non-classified only"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

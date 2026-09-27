@@ -1,0 +1,103 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "11", "subject": "Accountancy", "codes": ["055"], "stream": "Commerce",
+  "aliases": ["Accounts", "Accounting"],
+  "source": { "title": "Accountancy, Code 055, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Accountancy_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [{ "component": "Project work", "marks": 20 }] },
+  "textbooks": ["Financial Accounting - I, Class XI (NCERT)", "Accountancy - II, Class XI (NCERT)"],
+  "notes": ["Question paper design: remembering and understanding 32 marks, applying 24, analysing, evaluating and creating 24."],
+  "units": [
+    { "code": "1", "name": "Theoretical Framework", "marks": 12, "chapters": [
+      { "name": "Introduction to Accounting", "topics": [
+        "Accounting: concept, meaning, as a source of information, objectives, advantages and limitations",
+        "Types of accounting information; users of accounting information and their needs",
+        "Qualitative characteristics of accounting information; role of accounting in business",
+        "Basic accounting terms: entity, business transaction, capital, drawings, liabilities (non-current and current), assets (non-current and current)",
+        "Expenditure (capital and revenue), expense, revenue, income, profit, gain, loss, purchase, sales, goods, stock, debtor, creditor, voucher, discount (trade and cash)"
+      ], "outcomes": [
+        "Describe the meaning, significance, objectives, advantages and limitations of accounting in the modern economic environment",
+        "Identify the individuals and entities that use accounting information for decision making",
+        "Explain the terms used in accounting and differentiate related terms like current and non-current, capital and revenue",
+        "Give examples of business transactions, liabilities, assets, expenditure and purchases",
+        "Explain that sales and purchases include both cash and credit transactions of the accounting year",
+        "Differentiate among income, profits and gains"
+      ] },
+      { "name": "Theory Base of Accounting", "topics": [
+        "Fundamental accounting assumptions; GAAP: concept",
+        "Basic accounting concepts: business entity, money measurement, going concern, accounting period, cost concept, dual aspect, revenue recognition, matching, full disclosure, consistency, conservatism, materiality and objectivity",
+        "System of accounting; basis of accounting: cash basis and accrual basis",
+        "Accounting Standards: applicability of Accounting Standards (AS) and Indian Accounting Standards (Ind AS)",
+        "Goods and Services Tax (GST): characteristics and advantages"
+      ], "outcomes": [
+        "State the meaning of fundamental accounting assumptions and their relevance in accounting",
+        "Describe accounting assumptions and the situations in which each applies during the accounting process",
+        "Explain the meaning, applicability, objectives, advantages and limitations of accounting standards",
+        "Appreciate that recording of accounting transactions follows the double entry system",
+        "Explain the bases of recording transactions and why accrual basis better depicts financial position",
+        "Explain the meaning, advantages and characteristics of GST"
+      ] }
+    ] },
+    { "code": "2", "name": "Accounting Process", "marks": 44, "chapters": [
+      { "name": "Recording of Business Transactions", "topics": [
+        "Vouchers and transactions: source documents and vouchers, preparation of vouchers",
+        "Accounting equation approach: meaning and analysis; rules of debit and credit",
+        "Books of original entry: journal",
+        "Special purpose books: simple cash book, cash book with bank column, petty cash book",
+        "Purchases book, sales book, purchases return book, sales return book, journal proper",
+        "Ledger: format, posting from journal and subsidiary books, balancing of accounts"
+      ], "outcomes": [
+        "Explain the accounting equation and the effect of a transaction on assets, liabilities, capital, revenue and expenses",
+        "Appreciate that vouchers are prepared from source documents for recording transactions",
+        "Record transactions in the journal, including simple GST calculation",
+        "Prepare different types of cash book and record cash transactions",
+        "Record non-cash transactions in the appropriate subsidiary books",
+        "Post transactions from subsidiary books and journal proper into ledger accounts"
+      ], "notes": ["Including trade discount, freight and cartage expenses for simple GST calculation."] },
+      { "name": "Bank Reconciliation Statement", "topics": ["Need for and preparation of bank reconciliation statement"], "outcomes": [
+        "Appreciate why the cash book bank balance can differ from the pass book or bank statement",
+        "Prepare a bank reconciliation statement"
+      ] },
+      { "name": "Depreciation, Provisions and Reserves", "topics": [
+        "Depreciation: meaning, features, need, causes, factors; depletion and amortisation",
+        "Methods of depreciation: straight line method (SLM) and written down value method (WDV); difference and advantages",
+        "Recording depreciation: charging to asset account; creating provision for depreciation / accumulated depreciation account",
+        "Treatment of disposal of asset",
+        "Provisions and reserves and the difference between them",
+        "Types of reserves: revenue, capital, general, specific and secret reserve; difference between capital and revenue reserve"
+      ], "outcomes": [
+        "Explain the need for depreciation and compute it by different methods",
+        "Record depreciation directly in the asset account or through a provision for depreciation account",
+        "Record asset disposal through the asset account or an asset disposal account",
+        "Appreciate the need for reserves and provisions, and the difference between reserve and reserve fund"
+      ], "notes": ["Excluding change of method of depreciation."] },
+      { "name": "Trial Balance and Rectification of Errors", "topics": [
+        "Trial balance: objectives, meaning and preparation",
+        "Errors: omission, commission, principle and compensating; their effect on trial balance",
+        "Detection and rectification of errors that do and do not affect the trial balance",
+        "Preparation of suspense account"
+      ], "outcomes": [
+        "State the need and objectives of a trial balance and prepare one",
+        "Understand the types of errors and their effect on the trial balance",
+        "Locate and rectify errors and prepare a suspense account"
+      ], "notes": ["Trial balance with balance method only."] }
+    ] },
+    { "code": "3", "name": "Financial Statements of Sole Proprietorship", "marks": 24, "chapters": [
+      { "name": "Financial Statements", "topics": [
+        "Meaning, objectives and importance; revenue and capital receipts; revenue and capital expenditure; deferred revenue expenditure",
+        "Opening journal entry",
+        "Trading and profit and loss account: gross profit, operating profit and net profit",
+        "Balance sheet: need, grouping and marshalling of assets and liabilities",
+        "Adjustments: closing stock, outstanding and prepaid expenses, accrued income, income received in advance, depreciation, bad debts, provision for doubtful debts, provision for discount on debtors, abnormal loss, goods taken for personal use or staff welfare, interest on capital, manager's commission",
+        "Preparation of trading and profit and loss account and balance sheet of a sole proprietorship with adjustments"
+      ], "outcomes": [
+        "State the meaning and purpose of financial statements",
+        "Prepare a trading and profit and loss account showing gross, operating and net profit",
+        "Group and marshal assets and liabilities in a balance sheet",
+        "Make adjustments for items outside the trial balance and present them in the financial statements"
+      ] },
+      { "name": "Incomplete Records", "topics": [
+        "Features, reasons and limitations",
+        "Ascertainment of profit or loss by statement of affairs method"
+      ], "outcomes": ["Ascertain profit or loss from incomplete records using the statement of affairs method"], "notes": ["Excluding conversion method."] }
+    ] }
+  ]
+}

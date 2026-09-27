@@ -1,0 +1,197 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Assamese",
+  "codes": [
+    "114"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Asamiya",
+    "অসমীয়া"
+  ],
+  "source": {
+    "title": "Assamese, Code 114, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Assamese_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Assignment",
+        "marks": 10
+      },
+      {
+        "component": "Speaking and listening",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Sourav (Assam State Textbook Production and Publication Corporation, Guwahati)",
+    "Rachana Bichitra, Dharma Singha Deka (Assam Book Depot, Guwahati)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Unit marks for reading, writing and grammar follow the Class XI table in the same document; the Class XII table prints only prose 10 and poetry 10."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Reading",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Bodh Parikshyan (Class XII)",
+          "topics": [
+            "One unseen passage of at least 500 words: 6 general questions of 2 marks and 3 grammar-based questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Likhan Kala (Writing)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Galpa Likhan / Rachana (Class XII)",
+          "topics": [
+            "Story or essay (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pratibedan Prastutkaran (Class XII)",
+          "topics": [
+            "Report on current topics (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Phakara Jojana (Class XII)",
+          "topics": [
+            "Proverbs, serial numbers 31-40 (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhab Samprasaran (Class XII)",
+          "topics": [
+            "5 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bakya Rachana: Jatuwa Khandabakya (Class XII)",
+          "topics": [
+            "Bhat, bat, mati, mat, har (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Byakaran (Grammar)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Samochcharan Sabda",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Anuroop Aru Anukar Sabda",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Satwa Bidhi, Natwa Bidhi",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pratyay",
+          "topics": [
+            "Krit and Taddhit (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ukti",
+          "topics": [
+            "Pratyaksha, Paroksha (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Gadya (Prose)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Mor Matrimukh Darshan",
+          "topics": [
+            "Lakshminath Bezbaruah"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ananda Ram Barua",
+          "topics": [
+            "Upendra Chandra Lekharu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bharatiya Adarsat Bairagya",
+          "topics": [
+            "Tirthanath Sarma"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Padya (Poetry)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Bargeet: Uthare Utha Bapu",
+          "topics": [
+            "Sri Sri Madhabdev"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Janatar Ahban",
+          "topics": [
+            "Jyoti Prasad Agarwala"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ubhati Nahar Kabita",
+          "topics": [
+            "Nabakanta Barua"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

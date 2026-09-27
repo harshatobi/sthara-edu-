@@ -1,0 +1,246 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Sanskrit Communicative",
+  "codes": [
+    "119"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "संस्कृतम् (सम्प्रेषणात्मकम्)"
+  ],
+  "source": {
+    "title": "Sanskrit (Communicative), Code 119, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Sanskrit_Communiucative_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "आवधिक-परीक्षा (periodic test)",
+        "marks": 5
+      },
+      {
+        "component": "बहुविधमूल्याङ्कनम् (multiple assessment)",
+        "marks": 5
+      },
+      {
+        "component": "निवेशसूचिका (portfolio)",
+        "marks": 5
+      },
+      {
+        "component": "भाषा-संवर्धनाय गतिविधयः (language enrichment)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "मणिका द्वितीयो भागः (CBSE)",
+    "मणिका-अभ्यासपुस्तकम् द्वितीयो भागः (CBSE)"
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठितावबोधनम् (Unseen Comprehension)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "अपठितः गद्यांशः",
+          "topics": [
+            "80-100 शब्दपरिमितः गद्यांशः",
+            "एकपदेन पूर्णवाक्येन च अवबोधनम्; शीर्षकलेखनम्; भाषिककार्यम्"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "रचनात्मककार्यम् (Composition)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "पत्रलेखनम्",
+          "topics": [
+            "औपचारिकम् अथवा अनौपचारिकं पत्रम् (मञ्जूषायाः सहायतया)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "चित्रवर्णनम् अथवा अनुच्छेदलेखनम्",
+          "topics": [
+            "5 अङ्काः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कथापूर्तिः / संवादपूर्तिः",
+          "topics": [
+            "मञ्जूषायाः सहायतया"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "अनुप्रयुक्तव्याकरणम् (Applied Grammar)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "सन्धयः",
+          "topics": [
+            "4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "समासाः",
+          "topics": [
+            "अव्ययीभावः आदयः, 4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "प्रत्ययाः",
+          "topics": [
+            "कृत्: तव्यत्, अनीयर्; तद्धितः: मतुप्, ठक्, त्व, तल्; स्त्री: टाप्, ङीप् (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "वाच्यपरिवर्तनम्",
+          "topics": [
+            "केवलं लट्लकारे, कर्तृ-कर्म-क्रिया (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "समयः",
+          "topics": [
+            "सामान्य-सपाद-सार्ध-पादोन (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अव्ययानि",
+          "topics": [
+            "4"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अशुद्धि-संशोधनम्",
+          "topics": [
+            "वचन-लिङ्ग-पुरुष-लकार (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "पठितावबोधनम् (Prescribed Text)",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "वाङ्मयं तपः",
+          "number": 1,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "नास्ति त्यागसमं सुखम्",
+          "number": 2,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रमणीया हि सृष्टिः एषा",
+          "number": 3,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आज्ञा गुरूणां हि अविचारणीया",
+          "number": 4,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अभ्यासवशगं मनः",
+          "number": 5,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "राष्ट्रं संरक्ष्यमेव हि",
+          "number": 6,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "साधुवृत्तिं समाचरेत्",
+          "number": 7,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "तिरुक्कुरल्-सूक्ति-सौरभम्",
+          "number": 8,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सुस्वागतं भोः! अरुणाचलेऽस्मिन्",
+          "number": 9,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कालोऽहम्",
+          "number": 10,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "किं किम् उपादेयम्",
+          "number": 11,
+          "topics": [
+            "मणिका द्वितीयो भागः (CBSE)"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ],
+      "notes": [
+        "Lessons 10 and 11 are for internal assessment only.",
+        "गद्यांशः, पद्यम्, नाट्यांशः (5 each); प्रश्ननिर्माणम् 5; अन्वयः/भावार्थः 2; अर्थचयनम् 4; कथापूर्तिः 4."
+      ]
+    }
+  ]
+}

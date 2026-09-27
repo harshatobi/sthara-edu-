@@ -1,0 +1,239 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Urdu Core",
+  "codes": [
+    "303"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Urdu",
+    "اردو"
+  ],
+  "source": {
+    "title": "Urdu Core, Code 303, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/URDU_CORE_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Speaking and listening skills",
+        "marks": 10
+      },
+      {
+        "component": "Project work",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Nai Awaaz, Urdu Core, Class XI (NCERT, 2011)",
+    "Urdu Qawaid (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in Urdu as printed in the NCERT textbook.",
+    "Deleted: Robot, Khan-e-Khanan ki Fayyazi, Khwahish, Kaljug.",
+    "Five marks of value-based questions."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Reading",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Urdu Core, Class XI)",
+          "topics": [
+            "Factual passage of about 150 words, five questions (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Writing",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Paragraph Writing (Urdu Core)",
+          "topics": [
+            "10 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter Writing (Urdu Core, Class XI)",
+          "topics": [
+            "Personal, formal or professional (10)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Advertisements (Urdu Core)",
+          "topics": [
+            "5 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Grammar",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Parts of Speech (Urdu Core)",
+          "topics": [
+            "Ism: marifa, nakira; zameer: mutakallim, haazir, ghaib; sifat: zaati, nisbati, adadi, miqdari (10)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sentence Completion (Urdu Core)",
+          "topics": [
+            "Suitable words, phrases and idioms (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Prose",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "خواجہ معین الدین چشتی",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مسجد کا قیدی",
+          "topics": [
+            "Inshaiya: Rasheed Ahmad Siddiqui"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ہزاروں سال لمبی رات",
+          "topics": [
+            "Afsana: Ratan Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "میاں نصیر الدین (Class XI)",
+          "topics": [
+            "Mazmoon: Krishna Sobti"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "کولکتہ",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "خالا نے خط لکھوایا",
+          "topics": [
+            "Humorous essay: Abdul Ahad Khan Takhallus Bhopali"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "کھدر کا کفن",
+          "topics": [
+            "Afsana: Khwaja Ahmad Abbas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "سچی زندگی، روحانی خوشی",
+          "topics": [
+            "Translation: Syed Abid Husain"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مغرور جوتا",
+          "topics": [
+            "Inshaiya: Abdul Haleem Sharar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "صیدِ ہوس",
+          "topics": [
+            "Drama: Agha Hashr Kashmiri"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اجنتا اور ایلورا (Class XI)",
+          "topics": [
+            "Mazmoon: Syed Mubarizuddin Rifat"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جامن کا پیڑ",
+          "topics": [
+            "Afsana: Krishan Chander"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Extract with questions 7, essay-type question 5, four short answers 8."
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Poetry",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "کمر باندھے ہوئے",
+          "topics": [
+            "Ghazal: Insha Allah Khan Insha"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "لو پھر بسنت آئی",
+          "topics": [
+            "Geet: Hafeez Jalandhari"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "دنیا میری بلا جانے (Class XI)",
+          "topics": [
+            "Ghazal: Fani Badayuni"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ترانۂ اردو",
+          "topics": [
+            "Nazm: Ali Sardar Jafri"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Extract with questions 5, essay-type question 5, five very short answers 5."
+      ]
+    }
+  ]
+}

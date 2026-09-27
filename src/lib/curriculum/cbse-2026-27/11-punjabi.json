@@ -1,0 +1,153 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Punjabi",
+  "codes": [
+    "104"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ਪੰਜਾਬੀ"
+  ],
+  "source": {
+    "title": "Punjabi, Code 104, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Punjabi_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Project",
+        "marks": 10
+      },
+      {
+        "component": "Listening and speaking activities",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Lazmi Punjabi 11, Punjab School Education Board"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Project: 10-15 pages with pictures on one of two topics; the document suggests topics."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Advanced Reading Skill",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Unseen Passage (Class XI)",
+          "topics": [
+            "Information-rich passage with 8 MCQs"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Effective Writing Skill",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Letter to the Editor (Class XI)",
+          "topics": [
+            "7 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Essay (Class XI)",
+          "topics": [
+            "Social, cultural and entertainment topics, 200-225 words (8)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Translation and Grammar",
+      "marks": 28,
+      "chapters": [
+        {
+          "name": "Daftari Shabdavali",
+          "topics": [
+            "Office terminology (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Subject Terminology",
+          "topics": [
+            "Terms from different subjects (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Everyday Service Sentences",
+          "topics": [
+            "Bank, railway, post, insurance and computer sentences, English to Punjabi (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muhavre (Class XI)",
+          "topics": [
+            "Idioms from the textbook used in sentences (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ishtihar / Sadda-Pattar",
+          "topics": [
+            "Advertisement or invitation, 50 words (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Punjabi Lok-Sahit (Folk Literature)",
+      "marks": 29,
+      "chapters": [
+        {
+          "name": "Lok-Geet: Suhag, Ghoriyan, Sithniyan, Tappe",
+          "topics": [
+            "MCQs on selected lines (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lok-Geet: Boliyan, Dhola, Mahiya, Bujharatan",
+          "topics": [
+            "MCQs on selected lines (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lok-Geet Short Answers",
+          "topics": [
+            "40-50 words (9)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dant-Kathavan and Preet-Kathavan",
+          "topics": [
+            "Legends and love tales, short answers of 25-30 words (8)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,268 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Hindi Course A",
+  "codes": [
+    "002"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Hindi A",
+    "Hindi",
+    "हिंदी (अ)"
+  ],
+  "source": {
+    "title": "Hindi Course A, Code 002, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Hindi_A_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "सामयिक आकलन (periodic assessment)",
+        "marks": 5
+      },
+      {
+        "component": "बहुविध आकलन (multiple assessment)",
+        "marks": 5
+      },
+      {
+        "component": "पोर्टफ़ोलियो (portfolio)",
+        "marks": 5
+      },
+      {
+        "component": "श्रवण एवं वाचन (listening and speaking)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "क्षितिज भाग 2 (NCERT)",
+    "कृतिका भाग 2 (NCERT)"
+  ],
+  "notes": [
+    "Not examined: Dev (Savaiya, Kavitt), Girija Kumar Mathur (Chhaya Mat Chhoona), Rituraj (Kanyadan), Mahavir Prasad Dwivedi, Sarveshwar Dayal Saxena (Kshitij); Ehi Thaiyan Jhulni Herani Ho Rama, George Pancham ki Naak (Kritika). Lesson lists from the current NCERT reprints."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठित बोध (Unseen Comprehension)",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "अपठित गद्यांश",
+          "topics": [
+            "लगभग 250 शब्द (7)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अपठित काव्यांश",
+          "topics": [
+            "लगभग 120 शब्द (7)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "व्यावहारिक व्याकरण (Applied Grammar)",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "रचना के आधार पर वाक्य भेद",
+          "topics": [
+            "4 अंक"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "वाच्य",
+          "topics": [
+            "4 अंक"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पद परिचय",
+          "topics": [
+            "4 अंक"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अलंकार (अर्थालंकार)",
+          "topics": [
+            "उपमा, रूपक, उत्प्रेक्षा, अतिशयोक्ति, मानवीकरण (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "क्षितिज भाग 2: काव्य खंड (Poetry)",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "सूरदास: पद (ऊधौ, तुम हौ अति बड़भागी; मन की मन ही माँझ रही; हमारैं हरि हारिल की लकरी; हरि हैं राजनीति पढ़ि आए)",
+          "topics": [
+            "काव्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "तुलसीदास: राम-लक्ष्मण-परशुराम संवाद",
+          "topics": [
+            "काव्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "जयशंकर प्रसाद: आत्मकथ्य",
+          "topics": [
+            "काव्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सूर्यकांत त्रिपाठी 'निराला': उत्साह; अट नहीं रही है",
+          "topics": [
+            "काव्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "नागार्जुन: यह दंतुरित मुसकान; फसल",
+          "topics": [
+            "काव्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मंगलेश डबराल: संगतकार",
+          "topics": [
+            "काव्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "क्षितिज भाग 2: गद्य खंड (Prose)",
+      "marks": 11,
+      "chapters": [
+        {
+          "name": "स्वयं प्रकाश: नेताजी का चश्मा",
+          "topics": [
+            "गद्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रामवृक्ष बेनीपुरी: बालगोबिन भगत",
+          "topics": [
+            "गद्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "यशपाल: लखनवी अंदाज़",
+          "topics": [
+            "गद्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मन्नू भंडारी: एक कहानी यह भी",
+          "topics": [
+            "गद्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "यतींद्र मिश्र: नौबतखाने में इबादत",
+          "topics": [
+            "गद्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "भदंत आनंद कौसल्यायन: संस्कृति",
+          "topics": [
+            "गद्य खंड (क्षितिज भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C3",
+      "name": "कृतिका भाग 2 (Supplementary Reader)",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "माता का अँचल (शिवपूजन सहाय)",
+          "topics": [
+            "पूरक पाठ (कृतिका भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "साना-साना हाथ जोड़ि... (मधु कांकरिया)",
+          "topics": [
+            "पूरक पाठ (कृतिका भाग 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मैं क्यों लिखता हूँ? (अज्ञेय)",
+          "topics": [
+            "पूरक पाठ (कृतिका भाग 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "रचनात्मक लेखन (Writing)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "अनुच्छेद लेखन",
+          "topics": [
+            "लगभग 120 शब्द (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पत्र लेखन",
+          "topics": [
+            "औपचारिक अथवा अनौपचारिक, लगभग 100 शब्द (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "स्ववृत्त लेखन अथवा ई-मेल लेखन",
+          "topics": [
+            "लगभग 80 शब्द (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विज्ञापन लेखन अथवा संदेश लेखन",
+          "topics": [
+            "लगभग 40 शब्द (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

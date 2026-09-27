@@ -1,0 +1,214 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Odia",
+  "codes": [
+    "113"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Oriya",
+    "ଓଡ଼ିଆ"
+  ],
+  "source": {
+    "title": "Odia, Code 113, Class XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Odia_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening skill",
+        "marks": 5
+      },
+      {
+        "component": "Speaking skill",
+        "marks": 5
+      },
+      {
+        "component": "Project",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Jyoti Part II, Class XII, 2022 revised (Odisha State Bureau of Textbook Preparation and Production)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Prose: explanation 5, short answers 6, MCQ 10; poetry: explanation 5, short answers 6, MCQ 10; non-detailed short answers 6."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Unseen Prose Passage (Class XII)",
+          "topics": [
+            "130-150 words, five 2-mark questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Essay (Class XII)",
+          "topics": [
+            "Contemporary issues (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Official Letter (Class XII)",
+          "topics": [
+            "6 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Antonyms (Class XII)",
+          "topics": [
+            "3 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Correction of Common Errors in Words (Class XII)",
+          "topics": [
+            "3 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Similar Words with Different Meanings",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Answer in One Word",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 48,
+      "chapters": [
+        {
+          "name": "Itihasa",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Puspapurare Barshabarana",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tini Tundare",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Swadhina Deshare Sikshya Chinta",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Badapana",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tapaswinira Patra",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bandira Biraha Byatha",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pingalara Abhisara",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bartta",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sabhya Jamindar",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pataka Uttolana (Class XII)",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Roop Narayana Saha",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Akasha Kainchha",
+          "topics": [
+            "Non-detailed: short story"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

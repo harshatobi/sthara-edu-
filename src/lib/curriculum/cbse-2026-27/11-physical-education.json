@@ -1,0 +1,244 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Physical Education",
+  "codes": [
+    "048"
+  ],
+  "stream": "Wellbeing",
+  "aliases": [
+    "PE",
+    "Phy Ed",
+    "Physical Ed"
+  ],
+  "source": {
+    "title": "Physical Education, Code 048, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/PhysicalEducation_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Physical fitness test (SAI Khelo India)",
+        "marks": 6
+      },
+      {
+        "component": "Proficiency in games and sports (one IOA recognised sport)",
+        "marks": 7
+      },
+      {
+        "component": "Yogic practices",
+        "marks": 7
+      },
+      {
+        "component": "Record file",
+        "marks": 5
+      },
+      {
+        "component": "Viva voce (health, games and sports, yoga)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Physical Education, Class XI (as per CBSE curriculum)"
+  ],
+  "notes": [
+    "Unit marks include the concept-based alternative questions (tactile diagrams, data interpretation, case studies) set for visually impaired candidates.",
+    "Record file practicals: fitness test administration; procedure, benefits and contraindications of two asanas; one IOA recognised sport."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Changing Trends and Careers in Physical Education",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Changing Trends and Careers in Physical Education",
+          "number": 1,
+          "topics": [
+            "Concept, aims and objectives of physical education",
+            "Development of physical education in India after independence",
+            "Changing trends in sports: playing surfaces, wearable gear, equipment, technology",
+            "Career options in physical education",
+            "Khelo India and Fit India programmes"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Olympism Value Education",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Olympism Value Education",
+          "number": 2,
+          "topics": [
+            "Olympism: concept and Olympic values (excellence, friendship, respect)",
+            "Olympic value education: joy of effort, fair play, respect for others, pursuit of excellence, balance of body, will and mind",
+            "Ancient and modern Olympics",
+            "Olympic symbols, motto, flag, oath and anthem",
+            "Olympic movement structure: IOC, NOC, IFs, other members"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Yoga",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Yoga",
+          "number": 3,
+          "topics": [
+            "Meaning and importance of yoga",
+            "Introduction to Ashtanga yoga",
+            "Yogic kriyas (shat karma)",
+            "Pranayama and its types",
+            "Active lifestyle and stress management through yoga"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Physical Education and Sports for Children with Special Needs",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Physical Education and Sports for Children with Special Needs",
+          "number": 4,
+          "topics": [
+            "Concept of disability and disorder",
+            "Types, causes and nature of disability (intellectual, physical)",
+            "Disability etiquette",
+            "Aims and objectives of adaptive physical education",
+            "Role of professionals: counsellor, occupational therapist, physiotherapist, PE teacher, speech therapist, special educator"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Physical Fitness, Wellness and Lifestyle",
+      "marks": 5,
+      "chapters": [
+        {
+          "name": "Physical Fitness, Wellness and Lifestyle",
+          "number": 5,
+          "topics": [
+            "Meaning and importance of wellness, health and physical fitness",
+            "Components and dimensions of wellness, health and fitness",
+            "Traditional sports and regional games for promoting wellness",
+            "Leadership through physical activity and sports",
+            "Introduction to first aid: PRICE"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Test, Measurement and Evaluation",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Test, Measurement and Evaluation",
+          "number": 6,
+          "topics": [
+            "Test, measurement and evaluation: definitions and importance in sports",
+            "BMI, waist-hip ratio, skinfold measurement (3-site)",
+            "Somatotypes: endomorphy, mesomorphy, ectomorphy",
+            "Measurement of health related fitness"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Fundamentals of Anatomy and Physiology in Sports",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Fundamentals of Anatomy and Physiology in Sports",
+          "number": 7,
+          "topics": [
+            "Importance of anatomy and physiology in exercise and sports",
+            "Skeletal system: functions, classification of bones, types of joints",
+            "Properties and functions of muscles",
+            "Structure and functions of the circulatory system and heart",
+            "Structure and functions of the respiratory system"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Fundamentals of Kinesiology and Biomechanics in Sports",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Fundamentals of Kinesiology and Biomechanics in Sports",
+          "number": 8,
+          "topics": [
+            "Importance of kinesiology and biomechanics in sports",
+            "Principles of biomechanics",
+            "Kinetics and kinematics in sports",
+            "Body movements: flexion, extension, abduction, adduction, rotation, circumduction, supination, pronation",
+            "Axes and planes and their application in body movements"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "9",
+      "name": "Psychology and Sports",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Psychology and Sports",
+          "number": 9,
+          "topics": [
+            "Importance of psychology in physical education and sports",
+            "Growth and development at different stages",
+            "Adolescent problems and their management",
+            "Team cohesion and sports",
+            "Psychological attributes: attention, resilience, mental toughness"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "10",
+      "name": "Training and Doping in Sports",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Training and Doping in Sports",
+          "number": 10,
+          "topics": [
+            "Concept and principles of sports training",
+            "Training load: overload, adaptation and recovery",
+            "Warming up and limbering down: types, methods, importance",
+            "Skill, technique, tactics and strategy",
+            "Concept of doping and its disadvantages"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

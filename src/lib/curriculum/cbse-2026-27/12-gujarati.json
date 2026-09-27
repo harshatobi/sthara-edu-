@@ -1,0 +1,242 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Gujarati",
+  "codes": [
+    "110"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ગુજરાતી"
+  ],
+  "source": {
+    "title": "Gujarati, Code 110, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Gujarati_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening skill (supplementary lessons)",
+        "marks": 10
+      },
+      {
+        "component": "Speaking skill",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Gujarati (Dwitiya Bhasha), Class XII, Ed. 2016/2017 (Gujarat Rajya Shala Pathya Pustak Mandal, Gandhinagar)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Author introductions (Umashankar Joshi, Govardhanram Tripathi, Dalpatram) carry 4 marks within literature."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Vachan (Reading)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Apathit Gadyansh-Padyansh (Class XII)",
+          "topics": [
+            "Unseen prose passage (5) and unseen poem (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Vyakaran (Applied Grammar)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Rudhiprayog (Class XII)",
+          "topics": [
+            "Idioms from the textbook (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sanyojak (Class XII)",
+          "topics": [
+            "Conjunctions (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vakyo Sudharo (Class XII)",
+          "topics": [
+            "Correct the sentences (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kriyana Kaal (Class XII)",
+          "topics": [
+            "Transformation of sentences by tense (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Sahitya (Literature)",
+      "marks": 37,
+      "chapters": [
+        {
+          "name": "ક્રોધી સ્વભાવને",
+          "topics": [
+            "Pad: Gangasati"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "એકસરખા દિવસ",
+          "topics": [
+            "Song: Prabhulal Dwivedi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "હંકારી જા",
+          "topics": [
+            "Poetry: Sundaram"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "વડલો ને પંખીડા",
+          "topics": [
+            "Pad: Dula Bhaya Kag"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "વતનનો તલસાટ",
+          "topics": [
+            "Sonnet: Ramnik Aralwala"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "બેટા મને પાછી જવા દે",
+          "topics": [
+            "Translated poem: Uma Maheshwaran, tr. Nita Ramaiya"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "કુસુમનું કઠણ તપ",
+          "topics": [
+            "Novel extract: Govardhanram Tripathi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "નારાયણ હેમચંદ્ર",
+          "topics": [
+            "Autobiography extract: Gandhiji"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "થીંગડું",
+          "topics": [
+            "Short story: Suresh Joshi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "અખાનો સંસારત્યાગ",
+          "topics": [
+            "Short play: Chandravadan Mehta"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પૂંજા મેજરની લગની",
+          "topics": [
+            "Character sketch: Joseph Macwan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "મોરના ઈંડાં",
+          "topics": [
+            "Short story: Ishwar Petlikar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "સત્યવીર સોક્રેટિસ",
+          "topics": [
+            "Character essay, compiled"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "બે લઘુકથાઓ",
+          "topics": [
+            "Short stories: Ishwar Parmar, Naren Barad"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Author Introductions (Class XII)",
+          "topics": [
+            "Umashankar Joshi",
+            "Govardhanram Tripathi",
+            "Dalpatram"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Passages (Class XII)",
+          "topics": [
+            "From Path 10 Jalnagari Venice, Path 16 Sukhno Kaal Balpanno, Kavya 15 Aa Rastao, Kavya 17 Melo Aapo To"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Part A 15, Part B 22 (poetry 9, prose 9, history of modern literature 4)."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Lekhan (Effective Writing)",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Nibandh Lekhan (Class XII)",
+          "topics": [
+            "Essay of at least 200 words on contemporary issues (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aheval Lekhan (Class XII)",
+          "topics": [
+            "Report writing (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aupcharik Patra Lekhan (Class XII)",
+          "topics": [
+            "Official letter (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

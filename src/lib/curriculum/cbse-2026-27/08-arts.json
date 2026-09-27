@@ -1,0 +1,211 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "8",
+  "subject": "Arts",
+  "codes": [],
+  "stream": "Arts",
+  "aliases": [
+    "Art Education",
+    "Art"
+  ],
+  "source": {
+    "title": "Kriti: Textbook of Arts for Grade 8 (NCERT, Grade 8), contents",
+    "url": "https://ncert.nic.in/textbook/pdf/hekr1ps.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Kriti: Textbook of Arts for Grade 8 (NCERT)"
+  ],
+  "notes": [
+    "Class 8 has no board examination; assessment is school-based. Chapters are those of the NCERT NCF 2023 textbook (2026-27 reprint) CBSE prescribes for the middle stage.",
+    "CBSE publishes no separate middle-stage syllabus; the textbook contents page is the source."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Theatre",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Bringing Words Alive: Play Reading",
+          "number": 1,
+          "topics": [
+            "Theatre (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "One Stage, Many Scripts",
+          "number": 2,
+          "topics": [
+            "Theatre (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "From Page to Stage",
+          "number": 3,
+          "topics": [
+            "Theatre (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Applause and Advice",
+          "number": 4,
+          "topics": [
+            "Theatre (Kriti)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Music",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Discovering the Elements of Music",
+          "number": 5,
+          "topics": [
+            "Music (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musical Instruments",
+          "number": 6,
+          "topics": [
+            "Music (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Indian Classical Music",
+          "number": 7,
+          "topics": [
+            "Music (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Inspiration and Imagination",
+          "number": 8,
+          "topics": [
+            "Music (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "My World of Music",
+          "number": 9,
+          "topics": [
+            "Music (Kriti)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Dance and Movement",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Inner Dynamics of Dance",
+          "number": 10,
+          "topics": [
+            "Dance and Movement (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pan Indian Dance Forms",
+          "number": 11,
+          "topics": [
+            "Dance and Movement (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dance for Well-being",
+          "number": 12,
+          "topics": [
+            "Dance and Movement (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Innovation, Inclusivity and Inspiring Change",
+          "number": 13,
+          "topics": [
+            "Dance and Movement (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Presentation of Dance and Choreography",
+          "number": 14,
+          "topics": [
+            "Dance and Movement (Kriti)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Visual Arts",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Elements and Principles of Visual Art and Design",
+          "number": 15,
+          "topics": [
+            "Visual Arts (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Still Life in Colour",
+          "number": 16,
+          "topics": [
+            "Visual Arts (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "People in Places",
+          "number": 17,
+          "topics": [
+            "Visual Arts (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Arts of the People, With the People, For the People",
+          "number": 18,
+          "topics": [
+            "Visual Arts (Kriti)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Campaign for Art Awareness",
+          "number": 19,
+          "topics": [
+            "Visual Arts (Kriti)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

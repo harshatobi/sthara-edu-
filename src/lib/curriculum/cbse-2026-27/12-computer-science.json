@@ -1,0 +1,172 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Computer Science",
+  "codes": [
+    "083"
+  ],
+  "stream": "Computer",
+  "aliases": [
+    "CS",
+    "Computer Science (Python)"
+  ],
+  "source": {
+    "title": "Computer Science, Code 083, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Computer_Science_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Lab test: Python program",
+        "marks": 8
+      },
+      {
+        "component": "Lab test: SQL queries (4 queries on one or two tables)",
+        "marks": 4
+      },
+      {
+        "component": "Report file (15 Python programs, 5 SQL sets, 4 Python-SQL programs)",
+        "marks": 7
+      },
+      {
+        "component": "Project (using concepts from Classes 11 and 12)",
+        "marks": 8
+      },
+      {
+        "component": "Viva voce",
+        "marks": 3
+      }
+    ]
+  },
+  "textbooks": [
+    "Computer Science, Class XII (NCERT)",
+    "Support material on the CBSE website"
+  ],
+  "notes": [
+    "The document states learning outcomes for the whole course, recorded on the first chapter of each unit.",
+    "Prerequisite: Computer Science, Class XI.",
+    "Project: groups of two to three, using Python file handling or Python-SQL connectivity to solve a real problem."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Computational Thinking and Programming - 2",
+      "marks": 40,
+      "chapters": [
+        {
+          "name": "Revision of Python",
+          "topics": [
+            "Revision of Python topics covered in Class XI"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Functions",
+          "topics": [
+            "Built-in, module-defined and user defined functions",
+            "Arguments and parameters: default and positional; returning values",
+            "Flow of execution; global and local scope"
+          ],
+          "outcomes": [
+            "Apply the concept of function"
+          ]
+        },
+        {
+          "name": "Exception Handling",
+          "topics": [
+            "Handling exceptions using try-except-finally"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "File Handling",
+          "topics": [
+            "Text, binary and CSV files; relative and absolute paths",
+            "Text files: open modes r, r+, w, w+, a, a+; with clause; write, writelines, read, readline, readlines; seek and tell",
+            "Binary files: modes rb to ab+; pickle dump and load; read, write, search, append, update",
+            "CSV files: csv module, writer, writerow, writerows, reader"
+          ],
+          "outcomes": [
+            "Explain and use the concept of file handling"
+          ]
+        },
+        {
+          "name": "Data Structure: Stack",
+          "topics": [
+            "Stack operations push and pop",
+            "Implementation of a stack using a list"
+          ],
+          "outcomes": [
+            "Use the stack data structure"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Computer Networks",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Computer Networks",
+          "topics": [
+            "Evolution: ARPANET, NSFNET, Internet",
+            "Data communication: components, bandwidth, data transfer rate, IP address, circuit and packet switching",
+            "Transmission media: twisted pair, co-axial, fibre-optic; radio waves, microwaves, infrared",
+            "Devices: modem, Ethernet card, RJ45, repeater, hub, switch, router, gateway, Wi-Fi card",
+            "Network types (PAN, LAN, MAN, WAN) and topologies (bus, star, tree)",
+            "Protocols: HTTP, FTP, PPP, SMTP, TCP/IP, POP3, HTTPS, TELNET, VoIP",
+            "Web services: WWW, HTML, XML, domain names, URL, website, browser, web servers, web hosting"
+          ],
+          "outcomes": [
+            "Explain the basics of computer networks"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Database Management",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Database Concepts and the Relational Model",
+          "topics": [
+            "Need for databases",
+            "Relation, attribute, tuple, domain, degree, cardinality",
+            "Keys: candidate, primary, alternate, foreign"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Structured Query Language",
+          "topics": [
+            "DDL and DML; data types char, varchar, int, float, date; constraints not null, unique, primary key",
+            "create, use, show and drop database; show, create, describe, alter and drop table",
+            "insert, delete, select, update; operators, aliasing, distinct, where, in, between, order by, null, like",
+            "Aggregate functions max, min, avg, sum, count; group by, having",
+            "Joins: cartesian product, equi-join, natural join"
+          ],
+          "outcomes": [
+            "Use database concepts and SQL"
+          ]
+        },
+        {
+          "name": "Interface of Python with an SQL Database",
+          "topics": [
+            "Connecting SQL with Python",
+            "insert, update, delete via cursor; connect, cursor, execute, commit, fetchone, fetchall, rowcount",
+            "%s format specifier or format() in queries"
+          ],
+          "outcomes": [
+            "Connect Python with SQL"
+          ]
+        }
+      ]
+    }
+  ]
+}

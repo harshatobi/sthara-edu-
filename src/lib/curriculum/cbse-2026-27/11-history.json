@@ -1,0 +1,68 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "11", "subject": "History", "codes": ["027"], "stream": "Humanities",
+  "source": { "title": "History, Code 027, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/History_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [
+    { "component": "Project: initiation / synopsis (April-July)", "marks": 6 },
+    { "component": "Project: planning, organisation and data collection (August-October)", "marks": 5 },
+    { "component": "Project: analysis, conclusion and presentation (November-January)", "marks": 5 },
+    { "component": "Project: viva", "marks": 4 }
+  ] },
+  "textbooks": ["Themes in World History, Class XI (NCERT)"],
+  "notes": [
+    "Each theme opens with a timeline introduction: Timeline I (6 MYA to 1 BCE), II (c. 100 BCE to 1300 CE), III (c. 1300 to 1700), IV (c. 1700 to 2000).",
+    "Theme topics are summarised from the document's learning-outcome column, which is the only content column it gives for most themes.",
+    "Maps from official Government of India websites may be used."
+  ],
+  "units": [
+    { "code": "I", "name": "Early Societies", "marks": 10, "chapters": [
+      { "name": "Writing and City Life", "number": 1, "topics": ["Focus: Iraq, 3rd millennium BCE", "Growth of towns", "Nature of early urban societies", "Historians' debate on uses of writing"], "outcomes": [
+        "Elucidate the social and cultural aspects of civilisation to connect city life with the culture of contemporary civilisations through their writings",
+        "Analyse the outcomes of a sustained tradition of writing",
+        "Explain the connection between the growth of civilisation and the tradition of writing"
+      ] }
+    ] },
+    { "code": "II", "name": "Empires", "marks": 20, "chapters": [
+      { "name": "An Empire Across Three Continents", "number": 2, "topics": ["The Roman Empire: polity, economy, society and culture", "Roman contacts with the subcontinent's empires", "Slavery", "Cultural transformation"], "outcomes": [
+        "Explain the dynamics of the Roman Empire to understand its polity, economy, society and culture",
+        "Analyse the implications of Roman contacts with the subcontinent and discuss slavery",
+        "Examine the cultural transformation of the period and the impact of slavery"
+      ] },
+      { "name": "Nomadic Empires", "number": 3, "topics": ["Living patterns of nomadic pastoralist society", "Rise of Genghis Khan", "Socio-political and economic change under his descendants", "Mongol and world perspectives on Genghis Khan"], "outcomes": [
+        "Identify the living patterns of nomadic pastoralist society",
+        "Trace the rise and growth of Genghis Khan",
+        "Analyse socio-political and economic changes under the descendants of Genghis Khan",
+        "Distinguish between the Mongol perspective and the world's opinion of Genghis Khan"
+      ] }
+    ] },
+    { "code": "III", "name": "Changing Traditions", "marks": 20, "chapters": [
+      { "name": "The Three Orders", "number": 4, "topics": ["Feudalism: first, second, third and fourth orders of society", "Ancient slavery and serfdom", "The fourteenth century crisis and the rise of nation states"], "outcomes": [
+        "Explain aspects of feudalism with reference to the orders of society",
+        "Relate ancient slavery and serfdom",
+        "Assess the fourteenth century crisis and the rise of nation states"
+      ] },
+      { "name": "Changing Cultural Traditions", "number": 5, "topics": ["Renaissance, humanism and realism in the Italian cities", "Women in the Renaissance period", "Architecture, art and literature", "Reformation and the Catholic Church's response", "Scientific Revolution and Age of Exploration"], "outcomes": [
+        "Analyse the causes, events and effects of the Renaissance, Reformation, Scientific Revolution and Age of Exploration",
+        "Relate the facets of Italian cities to the characteristics of Renaissance, humanism and realism",
+        "Compare the condition of women in the Renaissance period",
+        "Recognise major influences on architectural, artistic and literary developments",
+        "Evaluate the Roman Catholic Church's response to the Protestant Reformation"
+      ] }
+    ] },
+    { "code": "IV", "name": "Towards Modernisation", "marks": 25, "chapters": [
+      { "name": "Displacing Indigenous Peoples", "number": 6, "topics": ["Displacement of native peoples in America and Australia", "European settlement in Australia and America", "Lives and roles of indigenous peoples"], "outcomes": [
+        "Evaluate the displacement of native peoples in the development of America and Australia",
+        "Analyse European settlement in Australia and America",
+        "Compare the lives and roles of indigenous peoples in these continents"
+      ] },
+      { "name": "Paths to Modernisation", "number": 7, "topics": ["Japan: from imperialism to modernisation; nationalism before and after the Second World War", "China: nationalist upsurge from Sun Yat-sen to Mao Zedong", "China's path to modernisation under Deng Xiaoping and Zhou Enlai", "Korea"], "outcomes": [
+        "Summarise the nationalist upsurge in China from Sun Yat-sen to Mao Zedong",
+        "Analyse China's path to modernisation under Deng Xiaoping and Zhou Enlai",
+        "Deduce the histories of China and Japan from imperialism to modernisation",
+        "Analyse Japanese nationalism before and after the Second World War"
+      ], "notes": ["All three (Japan, China and Korea) must be taught."] }
+    ] },
+    { "code": "Map", "name": "Map Work", "marks": 5, "chapters": [
+      { "name": "Map Work (World History)", "topics": ["Map work of the related themes"], "outcomes": [] }
+    ] }
+  ]
+}

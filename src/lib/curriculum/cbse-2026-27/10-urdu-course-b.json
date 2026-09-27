@@ -1,0 +1,271 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Urdu Course B",
+  "codes": [
+    "303"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Urdu B"
+  ],
+  "source": {
+    "title": "Urdu Course B, Code 303, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/UrduB_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Jaan Pehchan, Part 5, Class X (NCERT)",
+    "Urdu Qawaid aur Insha (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in Urdu as printed in the NCERT textbook."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading and Comprehension",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Course B)",
+          "topics": [
+            "One prose (100-150 words) and one poetry extract (5+5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Passages (Course B)",
+          "topics": [
+            "One prose and one poetry extract from the textbook (5+5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing Skill",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Mazmoon Nigari (Course B)",
+          "topics": [
+            "Essay of 250 words: first day after the holidays, festivals, a match or fair, historical places, school function, favourite personality (10)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Darkhwast / Khutoot (Course B)",
+          "topics": [
+            "Fee waiver, change of section, leave; personal or office letters (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Notes on Textbook Lessons (Course B)",
+          "topics": [
+            "Prose lessons and writers (5), poetry lessons and poets (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Grammar Questions (Course B)",
+          "topics": [
+            "Past, present and future tense; active and passive; ism-e-nakira, ism-e-marifa; punctuation; antonyms and synonyms; singular and plural; prefixes and suffixes; masculine and feminine (16)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Words, Idioms and Proverbs in Sentences (Course B)",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "حمد",
+          "topics": [
+            "Nazm: Ismail Merathi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "بے تکلفی",
+          "topics": [
+            "Inshaiya: Kanhaiya Lal Kapoor"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "نیکی اور بدی",
+          "topics": [
+            "Nazm: Nazeer Akbarabadi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "قول کا پاس",
+          "topics": [
+            "Kahani: Munshi Premchand"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ہستی اپنی حباب کی سی ہے",
+          "topics": [
+            "Ghazal: Mir Taqi Mir"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "پانی کی آلودگی",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "زبانوں کا گھر ہندوستان",
+          "topics": [
+            "Mazmoon: Syed Ehtesham Husain"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "رباعیات",
+          "topics": [
+            "Rubai: Mir Anees"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "خدا کے نام خط",
+          "topics": [
+            "Translated Spanish folk tale: Gregorio Lopez y Fuentes"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ڈاکٹر بھیم راؤ امبیڈکر",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "لائی حیات، آئے، قضا لے چلی، چلے (Course B)",
+          "topics": [
+            "Ghazal: Sheikh Muhammad Ibrahim Zauq"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "آدمی کی کہانی",
+          "topics": [
+            "Mazmoon: Muhammad Mujeeb"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "کوئی امید بر نہیں آتی",
+          "topics": [
+            "Ghazal: Mirza Ghalib"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "انٹرنیٹ",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "نئی روشنی",
+          "topics": [
+            "Dialogue"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "پہاڑ اور گلہری",
+          "topics": [
+            "Nazm: Iqbal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "رضیہ سلطان",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "کاٹھ کا گھوڑا",
+          "topics": [
+            "Kahani: Ratan Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اے شریف انسانو!",
+          "topics": [
+            "Nazm: Sahir Ludhianvi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اونچی",
+          "topics": [
+            "Translated Japanese folk tale"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "کارتوس",
+          "topics": [
+            "Drama: Habib Tanvir"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "قدم بڑھاؤ دوستو!",
+          "topics": [
+            "Nazm: Bashar Nawaz"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose 8, poetry 7."
+      ]
+    }
+  ]
+}

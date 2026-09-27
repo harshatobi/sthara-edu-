@@ -1,0 +1,107 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Odissi (Dance)",
+  "codes": [
+    "059"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Odissi"
+  ],
+  "source": {
+    "title": "Dance (Indian Classical), Codes 056-061, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Indian_Classical_Dances_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 70
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Schools offer one style. Theory (30 marks, 2 hours) has no unit-wise split; practical is 70 marks.",
+    "Students are presumed to have preliminary training in the style."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "History of Indian Dance",
+          "topics": [
+            "A brief history of Indian dance"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Myths in Odissi",
+          "topics": [
+            "Kaliya daman, Dashavatar, vastra haran, Nataraja, Draupadi cheer haran, Neuni Chura"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Odissi Terms (Class XI)",
+          "topics": [
+            "Nritta, nritya, natya; matra, laya, taal, avartana, vibhaga; tandava, lasya; natyadharmi, lokadharmi; devadasi and mahari"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Odissi Repertoire",
+          "topics": [
+            "Mangalacharan, batu or sthayi, pallavi, abhinaya, moksha or tandav dance"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Elementary Steps",
+          "topics": [
+            "Ten steps each in chauk and tribhanga set to ektali in ekgun, dugun, chaugun"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Arasa",
+          "topics": [
+            "One arasa in chaturasra jaati; recitation of the sthayi ukuta"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mangalacharan",
+          "topics": [
+            "Demonstration and recitation of ukutas; raga and tala; hastas",
+            "Mancha pravesha, pushpanjali, bhumi pranam, ishta deva vandana, trikhandi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Asamyuta Mudras",
+          "topics": [
+            "Asamyuta mudras from the Abhinaya Darpana"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

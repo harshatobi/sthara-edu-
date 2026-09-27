@@ -1,0 +1,216 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Marathi",
+  "codes": [
+    "109"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "मराठी"
+  ],
+  "source": {
+    "title": "Marathi, Code 109, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Marathi_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Activities across speaking, reading, writing and presentation (interview, speech, drama reading, report, essay, wall magazine, PPT)",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Yuvakbharati, Std XII (Maharashtra State Board of Secondary and Higher Secondary Education, Pune, 2020)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Lessons marked excluded in the document are omitted; they are still recommended reading."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Vachan va Aakalan (Reading)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Apathit Gadyansh (Class XII)",
+          "topics": [
+            "Unseen passage of about 250-300 words (10)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Apathit Padya (Class XII)",
+          "topics": [
+            "Unseen poem (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Lekhan (Writing)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Nibandh Lekhan",
+          "topics": [
+            "Autobiographical, descriptive, imaginative or reflective essay, 300-325 words (10)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Patra Lekhan (Class XII)",
+          "topics": [
+            "Demand letter or complaint letter (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Vyakaran (Grammar)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Samanarthi Shabd",
+          "topics": [
+            "Synonyms (3)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samas Olakhane",
+          "topics": [
+            "Avyayibhav, Tatpurush, Dvandva (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prayog",
+          "topics": [
+            "Kartari, Karmani, Bhave (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vakya Prakar va Rupantar",
+          "topics": [
+            "Vidhanarthi, Prashnarthi, Adnyarthi, Udgararthi: identification and change (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vakprachar",
+          "topics": [
+            "Meaning or use, textbook based (6)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Sahitya va Upayojit Marathi (Literature and Applied Marathi)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Bahu Asot Sundar",
+          "topics": [
+            "Poem, for reading only: S. K. Kolhatkar"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        },
+        {
+          "name": "Roj Matit",
+          "topics": [
+            "Poem: Kalpana Dudhal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aayushya... Aanandacha Utsav",
+          "topics": [
+            "Prose: Shivraj Gorle"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Re Thamb Jara Aashadh Ghana",
+          "topics": [
+            "Poem: B. B. Borkar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Veeranna Salami",
+          "topics": [
+            "Prose: Anuradha Prabhudesai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rang Maza Vegala",
+          "topics": [
+            "Poem: Suresh Bhat"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vinchu Chavla",
+          "topics": [
+            "Bharud: Sant Eknath"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Reshimbandh",
+          "topics": [
+            "Prose: Y. M. Pathan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dantkatha",
+          "topics": [
+            "Prose: Vasant Sabnis"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aarshatil Stri",
+          "topics": [
+            "Poem: Hira Bansode"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gadhi",
+          "topics": [
+            "Story: Pratima Ingole"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Upayojit Lekhan",
+          "topics": [
+            "Interview, brochure, report, feature writing, 60-70 words (3)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose 12, poetry 10, applied Marathi 3."
+      ]
+    }
+  ]
+}

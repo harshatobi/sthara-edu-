@@ -1,0 +1,294 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Urdu Elective",
+  "codes": [
+    "003"
+  ],
+  "stream": "Language",
+  "source": {
+    "title": "Urdu Elective, Code 003, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/URDU_Elective_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Speaking and listening skills",
+        "marks": 10
+      },
+      {
+        "component": "Project work",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Gulistan-e-Adab, Class XII (NCERT)",
+    "Khayaban-e-Urdu, supplementary reader, Class XII (NCERT)",
+    "Urdu Adab ki Tareekh (NCERT, reference)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in Urdu as printed in the NCERT textbook.",
+    "Deleted from Gulistan-e-Adab: Maktoob-e-Ghalib Haqeer ke Naam, Umrao Jan Ada, Bijuka, Main-Woh, Bani's ghazal, Mulk-e-be Sahar-o-Sham; from Khayaban-e-Urdu: Bewa, Yahudi ki Ladki, Marhoom ki Yaad Mein."
+  ],
+  "units": [
+    {
+      "code": "A1",
+      "name": "Prose",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "منشی ہرگوپال تفتہ کے نام",
+          "topics": [
+            "Maktoob: Mirza Ghalib"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "خوجی: ایک مطالعہ",
+          "topics": [
+            "Critical essay: Ehtesham Husain"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "لمحے",
+          "topics": [
+            "Afsana: Balwant Singh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "فوٹوگرافر",
+          "topics": [
+            "Afsana: Qurratulain Hyder"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "سکون کی نیند",
+          "topics": [
+            "Afsana: Iqbal Majeed"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "روشنائی (انتخاب)",
+          "topics": [
+            "Yaadein: Sajjad Zaheer"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اس آباد خرابے میں (انتخاب)",
+          "topics": [
+            "Aap beeti: Akhtarul Iman"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "پودے (انتخاب)",
+          "topics": [
+            "Reportage: Krishan Chander"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مچھر",
+          "topics": [
+            "Inshaiya: Khwaja Hasan Nizami"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "غالب جدید شعرا کی ایک مجلس میں",
+          "topics": [
+            "Tanz o mizah: Kanhaiya Lal Kapoor"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "زرد پتوں کی بہار (انتخاب)",
+          "topics": [
+            "Safarnama: Ram Lal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "کلیم الدین احمد",
+          "topics": [
+            "Khaka: Ahmad Jamal Pasha"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unseen and seen extracts 10, essay-type 5, short answers 5."
+      ]
+    },
+    {
+      "code": "A2",
+      "name": "Poetry",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "اب بھاگتے ہیں سایۂ عشقِ بتاں سے ہم",
+          "topics": [
+            "Ghazal: Altaf Husain Hali"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اول شب وہ بزم کی رونق",
+          "topics": [
+            "Ghazal: Arzoo Lakhnavi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "زندگی ہے تو بہرحال بسر بھی ہوگی",
+          "topics": [
+            "Ghazal: Moin Ahsan Jazbi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جب لگیں زخم تو قاتل کو دعا دی جائے",
+          "topics": [
+            "Ghazal: Jan Nisar Akhtar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "یہ شب، یہ خیال و خواب تیرے",
+          "topics": [
+            "Ghazal: Nasir Kazmi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "گورِ غریباں",
+          "topics": [
+            "Nazm: Nazm Tabatabai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "روحِ ارضی آدم کا استقبال کرتی ہے",
+          "topics": [
+            "Nazm: Iqbal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ارتقا",
+          "topics": [
+            "Nazm: Jamil Mazhari"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "زندگی سے ڈرتے ہو",
+          "topics": [
+            "Nazm: N. M. Rashid"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "یادنگر",
+          "topics": [
+            "Nazm: Shafiq Fatima Shera"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "وقت کا ترانہ",
+          "topics": [
+            "Long poem: Ali Sardar Jafri"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Unseen and seen extracts 10, essay-type 5, short answers 5."
+      ]
+    },
+    {
+      "code": "A3",
+      "name": "Supplementary Reader",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "کلرک کی موت",
+          "topics": [
+            "Translated Russian story: Chekhov"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جنم دن",
+          "topics": [
+            "Translated Malayalam story: Vaikom Muhammad Basheer, tr. Ziaur Rahman Siddiqui"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جلتی جھاڑی",
+          "topics": [
+            "Hindi story (summary): Nirmal Verma"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "History of Urdu Literature",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Origin and Development of Urdu",
+          "topics": [
+            "Fort William College, the Delhi school and the Lucknow school"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lives of Prescribed Authors and Poets (Class XII)",
+          "topics": [
+            "Writers and poets of Gulistan-e-Adab"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Adabi Tehreekat",
+          "topics": [
+            "Sir Syed movement and the Progressive Writers' movement"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Three of five long answers 15, five objective questions 5."
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Sanaye o Badaye",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Poetic Terms and Figures of Speech",
+          "topics": [
+            "Matla, maqta, qafiya, radeef, husn-e-matla, tashbeeh, isteara, tazaad, talmeeh, taalli, husn-e-taleel, muraat-un-nazeer"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

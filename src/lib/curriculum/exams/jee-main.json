@@ -1,0 +1,1259 @@
+{
+  "id": "jee-main",
+  "exam": "JEE Main (Paper 1, B.E./B.Tech.)",
+  "conductingBody": "National Testing Agency (NTA)",
+  "cycle": "2026",
+  "track": "Engineering",
+  "classes": [
+    "11",
+    "12"
+  ],
+  "source": {
+    "title": "Syllabus for JEE (Main) - 2026",
+    "url": "https://cdnbbsr.s3waas.gov.in/s3f8e59f4b2fe7c5705bf878bbd494ccdf/uploads/2025/10/202510311323551056.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "subjects": [
+    {
+      "subject": "Mathematics",
+      "units": [
+        {
+          "code": "1",
+          "name": "Sets, Relations and Functions",
+          "topics": [
+            "Sets and representation",
+            "union, intersection, complement and algebraic properties",
+            "power set",
+            "relations, types, equivalence relations",
+            "functions: one-one, into, onto",
+            "composition"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Sets"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Relations and Functions"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Relations and Functions"
+            }
+          ],
+          "beyondBoard": [
+            "Power set (not in the CBSE 2026-27 Sets topics)",
+            "Composition of functions is formative-only in Class XI"
+          ]
+        },
+        {
+          "code": "2",
+          "name": "Complex Numbers and Quadratic Equations",
+          "topics": [
+            "Complex numbers as ordered pairs",
+            "a+ib form, Argand plane",
+            "algebra, modulus and argument",
+            "quadratic equations in real and complex systems",
+            "relations between roots and coefficients",
+            "nature of roots",
+            "forming equations from roots"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Complex Numbers and Quadratic Equations"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Quadratic Equations"
+            }
+          ],
+          "beyondBoard": [
+            "Modulus-argument (polar) form and quadratic equations in the complex number system are formative-only in Class XI"
+          ]
+        },
+        {
+          "code": "3",
+          "name": "Matrices and Determinants",
+          "topics": [
+            "Algebra and types of matrices",
+            "determinants of order 2 and 3",
+            "area of triangles",
+            "adjoint and inverse",
+            "consistency and solution of linear equations in 2 or 3 variables"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Matrices"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Determinants"
+            }
+          ]
+        },
+        {
+          "code": "4",
+          "name": "Permutations and Combinations",
+          "topics": [
+            "Fundamental principle of counting",
+            "permutations and combinations",
+            "P(n,r), C(n,r)",
+            "simple applications"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Permutations and Combinations"
+            }
+          ]
+        },
+        {
+          "code": "5",
+          "name": "Binomial Theorem and its Simple Applications",
+          "topics": [
+            "Binomial theorem for positive integral index",
+            "general and middle term",
+            "applications"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Binomial Theorem"
+            }
+          ]
+        },
+        {
+          "code": "6",
+          "name": "Sequence and Series",
+          "topics": [
+            "AP and GP",
+            "inserting arithmetic and geometric means",
+            "relation between AM and GM"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Sequence and Series"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Arithmetic Progressions"
+            }
+          ]
+        },
+        {
+          "code": "7",
+          "name": "Limit, Continuity and Differentiability",
+          "topics": [
+            "Real-valued functions, algebra of functions",
+            "polynomial, rational, trigonometric, logarithmic, exponential and inverse functions",
+            "graphs",
+            "limits, continuity, differentiability",
+            "differentiation rules including composite and implicit functions",
+            "derivatives up to order two",
+            "rate of change, monotonicity, maxima and minima"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Limits and Derivatives"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Continuity and Differentiability"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Applications of Derivatives"
+            }
+          ]
+        },
+        {
+          "code": "8",
+          "name": "Integral Calculus",
+          "topics": [
+            "Anti-derivatives",
+            "fundamental integrals",
+            "substitution, by parts, partial fractions",
+            "trigonometric identities",
+            "standard forms",
+            "fundamental theorem of calculus",
+            "properties and evaluation of definite integrals",
+            "areas bounded by simple curves"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Integrals"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Application of the Integrals"
+            }
+          ]
+        },
+        {
+          "code": "9",
+          "name": "Differential Equations",
+          "topics": [
+            "Order and degree",
+            "variables separable",
+            "homogeneous and linear equations dy/dx + p(x)y = q(x)"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Differential Equations"
+            }
+          ]
+        },
+        {
+          "code": "10",
+          "name": "Coordinate Geometry",
+          "topics": [
+            "Distance and section formula",
+            "locus",
+            "slope, parallel and perpendicular lines",
+            "intercepts",
+            "forms of a line, intersection, angles, concurrency, distance of a point from a line",
+            "centroid, orthocentre, circumcentre",
+            "circles",
+            "conic sections (parabola, ellipse, hyperbola) in standard form"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Straight Lines"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Conic Sections"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Coordinate Geometry"
+            }
+          ],
+          "beyondBoard": [
+            "Concurrency of lines; centroid, orthocentre and circumcentre (not in the board Straight Lines topics)",
+            "General equation of a line is formative-only in Class XI"
+          ]
+        },
+        {
+          "code": "11",
+          "name": "Three Dimensional Geometry",
+          "topics": [
+            "Coordinates in space",
+            "distance and section formula",
+            "direction ratios and cosines",
+            "angle between lines",
+            "equation of a line",
+            "skew lines and shortest distance"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Three-dimensional Geometry"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Three-dimensional Geometry"
+            }
+          ]
+        },
+        {
+          "code": "12",
+          "name": "Vector Algebra",
+          "topics": [
+            "Vectors and scalars",
+            "addition",
+            "components in 2D and 3D",
+            "scalar and vector products"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Vectors"
+            }
+          ]
+        },
+        {
+          "code": "13",
+          "name": "Statistics and Probability",
+          "topics": [
+            "Measures of dispersion",
+            "mean, median, mode",
+            "standard deviation, variance, mean deviation for grouped and ungrouped data",
+            "probability",
+            "addition and multiplication theorems",
+            "Bayes' theorem",
+            "probability distribution of a random variable"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Statistics"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Probability"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Probability"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Statistics"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Probability"
+            }
+          ],
+          "beyondBoard": [
+            "Probability distribution of a random variable (not in the Class XII board Probability topics)"
+          ]
+        },
+        {
+          "code": "14",
+          "name": "Trigonometry",
+          "topics": [
+            "Trigonometric identities and functions",
+            "inverse trigonometric functions and properties"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Trigonometric Functions"
+            },
+            {
+              "class": "12",
+              "subject": "Mathematics",
+              "chapter": "Inverse Trigonometric Functions"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Trigonometry"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Trigonometric Identities"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "Physics",
+      "units": [
+        {
+          "code": "1",
+          "name": "Units and Measurements",
+          "topics": [
+            "SI and other systems, fundamental and derived units",
+            "least count, significant figures, errors",
+            "dimensions and dimensional analysis"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Units and Measurements"
+            }
+          ]
+        },
+        {
+          "code": "2",
+          "name": "Kinematics",
+          "topics": [
+            "Frame of reference",
+            "motion in a straight line",
+            "uniform and non-uniform motion",
+            "graphs",
+            "equations of uniformly accelerated motion",
+            "relative velocity",
+            "motion in a plane, projectile, uniform circular motion"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Motion in a Straight Line"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Motion in a Plane"
+            }
+          ]
+        },
+        {
+          "code": "3",
+          "name": "Laws of Motion",
+          "topics": [
+            "Newton's laws",
+            "momentum and impulse",
+            "conservation of linear momentum",
+            "equilibrium of concurrent forces",
+            "static, kinetic and rolling friction",
+            "circular motion dynamics, level and banked roads"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Laws of Motion"
+            }
+          ]
+        },
+        {
+          "code": "4",
+          "name": "Work, Energy and Power",
+          "topics": [
+            "Work by constant and variable forces",
+            "kinetic and potential energy",
+            "work-energy theorem",
+            "power",
+            "spring potential energy",
+            "conservation of mechanical energy",
+            "conservative forces",
+            "vertical circle",
+            "elastic and inelastic collisions in 1D and 2D"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Work, Energy and Power"
+            }
+          ]
+        },
+        {
+          "code": "5",
+          "name": "Rotational Motion",
+          "topics": [
+            "Centre of mass",
+            "torque, angular momentum and its conservation",
+            "moment of inertia, radius of gyration",
+            "parallel and perpendicular axes theorems",
+            "rigid body equilibrium and rotation"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "System of Particles and Rotational Motion"
+            }
+          ],
+          "beyondBoard": [
+            "Parallel and perpendicular axes theorems (not in the board topics; board gives moment of inertia values without derivation)"
+          ]
+        },
+        {
+          "code": "6",
+          "name": "Gravitation",
+          "topics": [
+            "Universal law",
+            "variation of g with altitude and depth",
+            "Kepler's laws",
+            "gravitational potential and potential energy",
+            "escape velocity",
+            "satellites: orbital velocity, period, energy"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Gravitation"
+            }
+          ]
+        },
+        {
+          "code": "7",
+          "name": "Properties of Solids and Liquids",
+          "topics": [
+            "Stress-strain, Hooke's law, Young's, bulk and rigidity moduli",
+            "fluid pressure, Pascal's law",
+            "viscosity, Stokes' law, terminal velocity",
+            "streamline and turbulent flow",
+            "Bernoulli",
+            "surface tension, capillarity",
+            "thermal expansion, calorimetry, latent heat",
+            "conduction, convection, radiation"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Mechanical Properties of Solids"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Mechanical Properties of Fluids"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Thermal Properties of Matter"
+            }
+          ]
+        },
+        {
+          "code": "8",
+          "name": "Thermodynamics",
+          "topics": [
+            "Zeroth law",
+            "heat, work, internal energy",
+            "first law",
+            "isothermal and adiabatic processes",
+            "second law, reversible and irreversible processes"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Thermodynamics"
+            }
+          ]
+        },
+        {
+          "code": "9",
+          "name": "Kinetic Theory of Gases",
+          "topics": [
+            "Equation of state",
+            "kinetic theory assumptions",
+            "pressure",
+            "kinetic interpretation of temperature",
+            "rms speed",
+            "degrees of freedom, equipartition, specific heats",
+            "mean free path",
+            "Avogadro's number"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Kinetic Theory"
+            }
+          ]
+        },
+        {
+          "code": "10",
+          "name": "Oscillations and Waves",
+          "topics": [
+            "Periodic motion",
+            "SHM, phase, spring oscillations, energy in SHM",
+            "simple pendulum",
+            "longitudinal and transverse waves",
+            "progressive wave",
+            "superposition",
+            "reflection",
+            "standing waves in strings and pipes",
+            "harmonics",
+            "beats"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Oscillations"
+            },
+            {
+              "class": "11",
+              "subject": "Physics",
+              "chapter": "Waves"
+            }
+          ]
+        },
+        {
+          "code": "11",
+          "name": "Electrostatics",
+          "topics": [
+            "Charge conservation",
+            "Coulomb's law",
+            "superposition",
+            "field and field lines",
+            "dipole",
+            "flux and Gauss's law applications",
+            "potential and potential energy",
+            "equipotentials",
+            "conductors, dielectrics",
+            "capacitors in series and parallel",
+            "parallel plate capacitor with dielectric",
+            "energy stored"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electric Charges and Fields"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electrostatic Potential and Capacitance"
+            }
+          ]
+        },
+        {
+          "code": "12",
+          "name": "Current Electricity",
+          "topics": [
+            "Drift velocity, mobility",
+            "Ohm's law",
+            "I-V characteristics",
+            "power",
+            "resistivity and its temperature dependence",
+            "combinations of resistors",
+            "emf and internal resistance",
+            "cells in series and parallel",
+            "Kirchhoff's laws",
+            "Wheatstone bridge",
+            "metre bridge"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Current Electricity"
+            }
+          ]
+        },
+        {
+          "code": "13",
+          "name": "Magnetic Effects of Current and Magnetism",
+          "topics": [
+            "Biot-Savart law",
+            "Ampere's law",
+            "force on moving charges and currents",
+            "force between parallel currents",
+            "torque on a current loop",
+            "moving coil galvanometer and conversion",
+            "magnetic dipole",
+            "bar magnet",
+            "field lines",
+            "para-, dia- and ferromagnetism"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Moving Charges and Magnetism"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Magnetism and Matter"
+            }
+          ]
+        },
+        {
+          "code": "14",
+          "name": "Electromagnetic Induction and Alternating Currents",
+          "topics": [
+            "Faraday's and Lenz's laws",
+            "eddy currents",
+            "self and mutual inductance",
+            "peak and rms values",
+            "reactance, impedance",
+            "LCR circuit and resonance",
+            "power, wattless current",
+            "AC generator and transformer"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electromagnetic Induction"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Alternating Current"
+            }
+          ]
+        },
+        {
+          "code": "15",
+          "name": "Electromagnetic Waves",
+          "topics": [
+            "Displacement current",
+            "EM waves and characteristics",
+            "EM spectrum and applications"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Electromagnetic Waves"
+            }
+          ]
+        },
+        {
+          "code": "16",
+          "name": "Optics",
+          "topics": [
+            "Mirrors, refraction, lens and lens maker formula",
+            "TIR",
+            "power",
+            "combination of lenses",
+            "prism",
+            "microscope and telescope",
+            "wavefront, Huygens' principle",
+            "Young's double slit",
+            "single slit diffraction",
+            "polarisation, Brewster's law, Polaroid"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Ray Optics and Optical Instruments"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Wave Optics"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Light - Reflection and Refraction"
+            }
+          ],
+          "beyondBoard": [
+            "Polarisation, Brewster's law and Polaroids (not in the board Wave Optics topics)",
+            "Single-slit diffraction is qualitative only in the board"
+          ]
+        },
+        {
+          "code": "17",
+          "name": "Dual Nature of Matter and Radiation",
+          "topics": [
+            "Photoelectric effect",
+            "Einstein's equation",
+            "particle nature of light",
+            "matter waves, de Broglie relation"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Dual Nature of Radiation and Matter"
+            }
+          ]
+        },
+        {
+          "code": "18",
+          "name": "Atoms and Nuclei",
+          "topics": [
+            "Alpha scattering",
+            "Rutherford and Bohr models",
+            "hydrogen spectrum",
+            "nuclear composition and size",
+            "mass-energy, mass defect, binding energy",
+            "fission and fusion"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Atoms"
+            },
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Nuclei"
+            }
+          ]
+        },
+        {
+          "code": "19",
+          "name": "Electronic Devices",
+          "topics": [
+            "Semiconductors",
+            "diode I-V in forward and reverse bias",
+            "rectifier",
+            "LED, photodiode, solar cell, Zener diode and voltage regulation",
+            "logic gates (OR, AND, NOT, NAND, NOR)"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Physics",
+              "chapter": "Semiconductor Electronics: Materials, Devices and Simple Circuits"
+            }
+          ],
+          "beyondBoard": [
+            "LED, photodiode, solar cell, Zener diode and voltage regulation, logic gates: the board chapter covers only energy bands, p-n junction and the diode as a rectifier"
+          ]
+        },
+        {
+          "code": "20",
+          "name": "Experimental Skills",
+          "topics": [
+            "Vernier calipers",
+            "screw gauge",
+            "simple pendulum",
+            "metre scale moments",
+            "Young's modulus",
+            "surface tension",
+            "viscosity",
+            "resonance tube",
+            "specific heat by mixtures",
+            "metre bridge",
+            "Ohm's law",
+            "galvanometer figure of merit",
+            "focal lengths by parallax",
+            "prism deviation",
+            "refractive index with travelling microscope",
+            "p-n and Zener diode characteristics",
+            "identifying components"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Board covers this in the practical examination, not the theory paper."
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "Chemistry",
+      "units": [
+        {
+          "code": "1",
+          "name": "Some Basic Concepts in Chemistry",
+          "topics": [
+            "Matter",
+            "Dalton's theory",
+            "laws of chemical combination",
+            "atomic and molecular masses",
+            "mole concept",
+            "percentage composition",
+            "empirical and molecular formulae",
+            "stoichiometry"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Some Basic Concepts of Chemistry"
+            }
+          ]
+        },
+        {
+          "code": "2",
+          "name": "Atomic Structure",
+          "topics": [
+            "EM radiation",
+            "photoelectric effect",
+            "hydrogen spectrum",
+            "Bohr model and limitations",
+            "de Broglie",
+            "Heisenberg",
+            "quantum mechanical model",
+            "orbitals and quantum numbers",
+            "shapes of s, p, d",
+            "Aufbau, Pauli, Hund",
+            "configurations and extra stability"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Structure of Atom"
+            }
+          ]
+        },
+        {
+          "code": "3",
+          "name": "Chemical Bonding and Molecular Structure",
+          "topics": [
+            "Ionic and covalent bonds",
+            "lattice enthalpy",
+            "electronegativity, Fajans' rule, dipole moment",
+            "VSEPR",
+            "valence bond theory, hybridisation (s, p, d), resonance",
+            "molecular orbital theory, bond order",
+            "metallic and hydrogen bonding"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Chemical Bonding and Molecular Structure"
+            }
+          ]
+        },
+        {
+          "code": "4",
+          "name": "Chemical Thermodynamics",
+          "topics": [
+            "System and surroundings",
+            "state functions",
+            "first law, enthalpy, heat capacity",
+            "Hess's law",
+            "enthalpies of reaction types",
+            "second law",
+            "entropy",
+            "Gibbs energy and spontaneity",
+            "ΔG° and equilibrium constant"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Chemical Thermodynamics"
+            }
+          ]
+        },
+        {
+          "code": "5",
+          "name": "Solutions",
+          "topics": [
+            "Concentration terms",
+            "Raoult's law",
+            "ideal and non-ideal solutions",
+            "colligative properties",
+            "molar mass determination",
+            "van't Hoff factor"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Solutions"
+            }
+          ]
+        },
+        {
+          "code": "6",
+          "name": "Equilibrium",
+          "topics": [
+            "Physical equilibria, Henry's law",
+            "law of chemical equilibrium, Kp and Kc",
+            "ΔG and equilibrium",
+            "Le Chatelier",
+            "ionic equilibrium",
+            "acid-base concepts",
+            "ionisation constants",
+            "pH",
+            "common ion effect",
+            "hydrolysis",
+            "solubility product",
+            "buffers"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Equilibrium"
+            }
+          ]
+        },
+        {
+          "code": "7",
+          "name": "Redox Reactions and Electrochemistry",
+          "topics": [
+            "Oxidation number and balancing redox reactions",
+            "electrolytic conductance",
+            "molar conductivity",
+            "Kohlrausch's law",
+            "galvanic and electrolytic cells",
+            "electrode potentials",
+            "Nernst equation",
+            "cell potential and Gibbs energy",
+            "dry cell, lead accumulator, fuel cells"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Redox Reactions"
+            },
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Electrochemistry"
+            }
+          ]
+        },
+        {
+          "code": "8",
+          "name": "Chemical Kinetics",
+          "topics": [
+            "Rate and factors",
+            "order and molecularity",
+            "rate law and constant",
+            "zero and first order integrated forms and half-lives",
+            "Arrhenius equation, activation energy",
+            "collision theory"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Chemical Kinetics"
+            }
+          ]
+        },
+        {
+          "code": "9",
+          "name": "Classification of Elements and Periodicity in Properties",
+          "topics": [
+            "Modern periodic law and table",
+            "s, p, d, f blocks",
+            "trends in radii, ionisation enthalpy, electron gain enthalpy, valence, oxidation states, reactivity"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Classification of Elements and Periodicity in Properties"
+            }
+          ]
+        },
+        {
+          "code": "10",
+          "name": "p-Block Elements",
+          "topics": [
+            "Groups 13 to 18: configurations, trends in physical and chemical properties, anomalous first elements"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "s- and p-Block Elements"
+            }
+          ],
+          "beyondBoard": [
+            "The CBSE 2026-27 Class XI syllabus keeps s- and p-block elements for formative assessment only; they are not in the board theory paper"
+          ]
+        },
+        {
+          "code": "11",
+          "name": "d- and f-Block Elements",
+          "topics": [
+            "First-row transition elements: configurations, trends, oxidation states, colour, catalysis, magnetism, complexes, interstitial compounds, alloys",
+            "K2Cr2O7 and KMnO4",
+            "lanthanoids and lanthanoid contraction",
+            "actinoids"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "d- and f-Block Elements"
+            }
+          ]
+        },
+        {
+          "code": "12",
+          "name": "Coordination Compounds",
+          "topics": [
+            "Werner's theory",
+            "ligands, coordination number, denticity, chelation",
+            "IUPAC nomenclature",
+            "isomerism",
+            "valence bond approach and crystal field theory",
+            "colour and magnetism",
+            "applications"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Coordination Compounds"
+            }
+          ]
+        },
+        {
+          "code": "13",
+          "name": "Purification and Characterisation of Organic Compounds",
+          "topics": [
+            "Crystallisation, sublimation, distillation, extraction, chromatography",
+            "detection of N, S, P, halogens",
+            "estimation of C, H, N, halogens, S, P",
+            "empirical and molecular formulae"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Organic Chemistry: Some Basic Principles and Techniques"
+            }
+          ]
+        },
+        {
+          "code": "14",
+          "name": "Some Basic Principles of Organic Chemistry",
+          "topics": [
+            "Tetravalency and hybridisation",
+            "functional groups",
+            "isomerism",
+            "IUPAC nomenclature",
+            "bond fission",
+            "carbocations, carbanions, free radicals",
+            "electrophiles and nucleophiles",
+            "inductive, electromeric, resonance, hyperconjugation",
+            "types of reactions"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Organic Chemistry: Some Basic Principles and Techniques"
+            }
+          ]
+        },
+        {
+          "code": "15",
+          "name": "Hydrocarbons",
+          "topics": [
+            "Alkanes: conformations, halogenation mechanism",
+            "alkenes: geometrical isomerism, electrophilic addition, Markovnikov and peroxide effect, ozonolysis",
+            "alkynes",
+            "benzene: aromaticity, electrophilic substitution, Friedel-Crafts, directive influence"
+          ],
+          "mapsTo": [
+            {
+              "class": "11",
+              "subject": "Chemistry",
+              "chapter": "Hydrocarbons"
+            }
+          ]
+        },
+        {
+          "code": "16",
+          "name": "Organic Compounds Containing Halogens",
+          "topics": [
+            "Preparation, properties and reactions",
+            "C-X bond",
+            "substitution mechanisms",
+            "chloroform, iodoform, freons, DDT"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Haloalkanes and Haloarenes"
+            }
+          ]
+        },
+        {
+          "code": "17",
+          "name": "Organic Compounds Containing Oxygen",
+          "topics": [
+            "Alcohols: classification, dehydration",
+            "phenols: acidity, electrophilic substitution, Reimer-Tiemann",
+            "ethers",
+            "aldehydes and ketones: nucleophilic addition, Grignard, Wolff-Kishner and Clemmensen, alpha-hydrogen, aldol, Cannizzaro, haloform",
+            "carboxylic acids: acidity"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Alcohols, Phenols and Ethers"
+            },
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Aldehydes, Ketones and Carboxylic Acids"
+            }
+          ]
+        },
+        {
+          "code": "18",
+          "name": "Organic Compounds Containing Nitrogen",
+          "topics": [
+            "Amines: nomenclature, basicity, identification",
+            "diazonium salts in synthesis"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Amines"
+            }
+          ]
+        },
+        {
+          "code": "19",
+          "name": "Biomolecules",
+          "topics": [
+            "Carbohydrates: glucose, fructose, sucrose, lactose, maltose",
+            "amino acids, peptide bond, protein structure, denaturation, enzymes",
+            "vitamins",
+            "nucleic acids",
+            "hormones"
+          ],
+          "mapsTo": [
+            {
+              "class": "12",
+              "subject": "Chemistry",
+              "chapter": "Biomolecules"
+            }
+          ]
+        },
+        {
+          "code": "20",
+          "name": "Principles Related to Practical Chemistry",
+          "topics": [
+            "Detection of elements and functional groups",
+            "preparation of Mohr's salt, potash alum, acetanilide, p-nitroacetanilide, aniline yellow, iodoform",
+            "titrations",
+            "qualitative salt analysis",
+            "enthalpy of solution and neutralisation",
+            "sols",
+            "kinetics of iodide with H2O2"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Board covers this in the practical examination, not the theory paper."
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "NTA has not published a separate 2027 syllabus; the 2026 syllabus is the current official document.",
+    "Paper 2A (B.Arch.) and 2B (B.Planning) share the Mathematics syllabus and add aptitude, drawing and planning parts, not ingested here."
+  ]
+}

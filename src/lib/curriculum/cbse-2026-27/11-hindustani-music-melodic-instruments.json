@@ -1,0 +1,160 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Hindustani Music (Melodic Instruments)",
+  "codes": [
+    "035"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Melodic Instruments), Code 035, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindustani_Melodic_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Parts and tuning of instrument",
+        "marks": 5
+      },
+      {
+        "component": "Alap, jor, jhala",
+        "marks": 10
+      },
+      {
+        "component": "Choice raga (Masitkhani and Razakhani gat)",
+        "marks": 18
+      },
+      {
+        "component": "Razakhani gat of examiner's choice",
+        "marks": 12
+      },
+      {
+        "component": "Raga identification",
+        "marks": 10
+      },
+      {
+        "component": "Reciting thekas",
+        "marks": 10
+      },
+      {
+        "component": "Practical file",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory 30 marks (2 hours) in five units of 6 marks; practical 70 marks."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Basic Concepts of Music",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Basic Concepts of Music",
+          "topics": [
+            "Nada, shruti, swara, saptak, thaat, jati, laya, tala",
+            "Margi and desi sangeet, raga, gat"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "History of Dhrupad and Gats",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "History of Dhrupad and Gats",
+          "topics": [
+            "Dhrupad, Masitkhani and Razakhani gat"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Natya Shastra and Great Musicians",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Natya Shastra and Great Musicians",
+          "topics": [
+            "Musical elements in Natya Shastra",
+            "Tansen, V.N. Bhatkhande, V.D. Paluskar"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Talas and the Instrument",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Talas and the Instrument",
+          "topics": [
+            "Teentala, Ektala, Chautala in thah, dugun, chaugun",
+            "Structure of the instrument opted for"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Prescribed Ragas (Class XI)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Prescribed Ragas (Class XI)",
+          "topics": [
+            "Bihag, Bhimpalasi, Bhairavi: study, recognition and notation"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 70,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Gats",
+          "topics": [
+            "Razakhani gat with alap, tala-baddha tana and jhala in Bihag, Bhimpalasi, Bhairavi",
+            "One Masitkhani gat with tanas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Alap, Jor, Jhala",
+          "topics": [
+            "In one prescribed raga, with meend"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Instrument, Recognition and Thekas",
+          "topics": [
+            "Parts and tuning of the instrument",
+            "Raga recognition",
+            "Thekas of Teentala, Chautala, Ektala"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

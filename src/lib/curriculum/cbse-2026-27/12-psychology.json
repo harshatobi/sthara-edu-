@@ -1,0 +1,168 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Psychology",
+  "codes": [
+    "037"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Psychology, Code 037, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Psychology_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Practical file and case profile",
+        "marks": 10
+      },
+      {
+        "component": "Viva voce (case profile and two tests)",
+        "marks": 5
+      },
+      {
+        "component": "Two psychological tests: conduct 5, reporting 10",
+        "marks": 15
+      }
+    ]
+  },
+  "textbooks": [
+    "Psychology, Class XII (NCERT)"
+  ],
+  "notes": [
+    "The document has no learning-outcomes column for Psychology, so chapter outcomes are left empty.",
+    "Practical: develop a case profile and administer and interpret five psychological tests during the year."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Variations in Psychological Attributes",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Variations in Psychological Attributes",
+          "number": 1,
+          "topics": [
+            "Individual differences in human functioning; assessment of psychological attributes",
+            "Intelligence: psychometric theories, PASS model, triarchic theory, multiple intelligences",
+            "Individual differences in intelligence; culture and intelligence",
+            "Emotional intelligence",
+            "Special abilities: aptitude, nature and measurement; creativity"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Self and Personality",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Self and Personality",
+          "number": 2,
+          "topics": [
+            "Concept of self; cognitive and behavioural aspects; culture and self",
+            "Concept of personality",
+            "Approaches: type, trait, psychodynamic and post-Freudian, behavioural, cultural, humanistic",
+            "Assessment: self-report measures, projective techniques, behavioural analysis"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "III",
+      "name": "Meeting Life Challenges",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Meeting Life Challenges",
+          "number": 3,
+          "topics": [
+            "Nature, types and sources of stress",
+            "Effects on psychological functioning and health: general adaptation syndrome, immune system, lifestyle",
+            "Coping with stress; stress management techniques",
+            "Promoting positive health and well-being: life skills, positive health"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "IV",
+      "name": "Psychological Disorders",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Psychological Disorders",
+          "number": 4,
+          "topics": [
+            "Concepts of abnormality; historical background",
+            "Classification of disorders; factors underlying abnormal behaviour",
+            "Anxiety, obsessive-compulsive, trauma- and stressor-related, somatic symptom and dissociative disorders",
+            "Depressive and bipolar disorders; schizophrenia spectrum",
+            "Neurodevelopmental; disruptive, impulse-control and conduct; feeding and eating; substance related and addictive disorders"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "V",
+      "name": "Therapeutic Approaches",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Therapeutic Approaches",
+          "number": 5,
+          "topics": [
+            "Nature and process of psychotherapy; therapeutic relationship",
+            "Behaviour, cognitive, humanistic-existential and alternative therapies",
+            "Factors contributing to healing; ethics in psychotherapy",
+            "Rehabilitation of the mentally ill"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "name": "Attitude and Social Cognition",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Attitude and Social Cognition",
+          "number": 6,
+          "topics": [
+            "Explaining social behaviour",
+            "Nature and components of attitudes",
+            "Attitude formation, change and the attitude-behaviour relationship",
+            "Prejudice and discrimination; strategies for handling prejudice"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "VII",
+      "name": "Social Influence and Group Processes",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Social Influence and Group Processes",
+          "number": 7,
+          "topics": [
+            "Nature and formation of groups; types of groups",
+            "Influence of group on individual behaviour: social loafing, group polarisation"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

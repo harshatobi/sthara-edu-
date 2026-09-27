@@ -1,0 +1,262 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "English Core",
+  "codes": [
+    "301"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "English"
+  ],
+  "source": {
+    "title": "English Core, Code 301, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/English_core_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Assessment of listening skills",
+        "marks": 5
+      },
+      {
+        "component": "Assessment of speaking skills",
+        "marks": 5
+      },
+      {
+        "component": "Project work",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Hornbill, Class XI (NCERT)",
+    "Snapshots, Supplementary Reader, Class XI (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections; literature chapters are the prescribed lessons.",
+    "Reading project: one book read independently, assessed by the teacher."
+  ],
+  "units": [
+    {
+      "code": "A1",
+      "name": "Reading Comprehension through Unseen Passages",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "Unseen Passages",
+          "topics": [
+            "One unseen passage (factual, descriptive or literary) for comprehension, interpretation, analysis, inference and vocabulary",
+            "One unseen case-based factual passage with verbal or visual inputs (statistical data, charts)",
+            "Combined word limit 600-750; MCQ and objective questions"
+          ],
+          "outcomes": [
+            "Skim for main ideas and scan for details",
+            "Understand the writer's purpose and tone",
+            "Differentiate facts from opinions"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "A2",
+      "name": "Note Making and Summarisation",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Note Making and Summarisation",
+          "topics": [
+            "Passage of 200-250 words",
+            "Note making (5): title, numbering and indenting, key/glossary, notes",
+            "Summary up to 50 words (3): content, expression"
+          ],
+          "outcomes": [
+            "Make notes from a text and summarise it"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Grammar",
+      "marks": 7,
+      "chapters": [
+        {
+          "name": "Grammar",
+          "topics": [
+            "Gap filling: tenses, clauses",
+            "Re-ordering and transformation of sentences",
+            "Seven of eight questions"
+          ],
+          "outcomes": [
+            "Use grammatical structures accurately"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Creative Writing Skills",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Classified Advertisements",
+          "topics": [
+            "Up to 50 words (3 marks: format, content, expression)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Poster",
+          "topics": [
+            "Up to 50 words (3 marks: format, content, expression)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Speech",
+          "topics": [
+            "120-150 words on verbal or visual cues (5 marks: format 1, content 2, expression 2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Debate",
+          "topics": [
+            "120-150 words on contemporary issues (5 marks: format 1, content 2, expression 2)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "Literature: Hornbill",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "The Portrait of a Lady",
+          "topics": [
+            "Prose (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Photograph",
+          "topics": [
+            "Poem (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "We're Not Afraid to Die... if We Can Be Together",
+          "topics": [
+            "Prose (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Discovering Tut: The Saga Continues",
+          "topics": [
+            "Prose (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Laburnum Top",
+          "topics": [
+            "Poem (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Voice of the Rain",
+          "topics": [
+            "Poem (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Childhood",
+          "topics": [
+            "Poem (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Adventure",
+          "topics": [
+            "Prose (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Silk Road",
+          "topics": [
+            "Prose (Hornbill)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Father to Son",
+          "topics": [
+            "Poem (Hornbill)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Poetry extract 3, prose extract 3, two short answers 6, one long answer 6."
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "Supplementary Reader: Snapshots",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "The Summer of the Beautiful White Horse",
+          "topics": [
+            "Prose (Snapshots)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Address",
+          "topics": [
+            "Prose (Snapshots)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mother's Day",
+          "topics": [
+            "Play (Snapshots)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Birth",
+          "topics": [
+            "Prose (Snapshots)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Tale of Melon City",
+          "topics": [
+            "Poem (Snapshots)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose extract 4, one short answer 3, one long answer 6."
+      ]
+    }
+  ]
+}

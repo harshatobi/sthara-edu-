@@ -1,0 +1,236 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Kannada",
+  "codes": [
+    "015"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ಕನ್ನಡ"
+  ],
+  "source": {
+    "title": "Kannada, Code 015, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Kannada_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening, speaking (pick and speak, elocution) and project work",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Siri Kannada 9, Prathama Bhasha Kannada Pathyapustaka (Parishkrutha 2024), Karnataka Pathya Pustaka Sangha, Bengaluru"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "The CBSE document prints the course structure without marks, so the theory paper and unit marks are not recorded. Internal assessment 20 follows the CBSE scheme for every Class IX-XII language; the document lists the activities but not the split."
+  ],
+  "units": [
+    {
+      "code": "P",
+      "name": "Gadya (Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Prajanisthe",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bedagina Tana Jaipur",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aadarsha Shikshaka Sarvepalli Radhakrishnan",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Janapada Kalegala Vaibhava",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Haraleele",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "Q",
+      "name": "Padya (Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Hosa Haadu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Parivala",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Hemanta",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ninna Muttina Sattigeyanittu Salahu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kannada Naadu Nudi",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "N",
+      "name": "Pathya Pooraka Adhyayana (Non-detailed)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Putta Hakki",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nannase",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Urida Baduku",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gunasagari Pandari Bai",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "W",
+      "name": "Creative Writing",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Prabandha (Class IX)",
+          "topics": [
+            "Two essays from the textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Patra Lekhana (Class IX)",
+          "topics": [
+            "Application or official letter"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Varadi (Class IX)",
+          "topics": [
+            "Report"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "Grammar and Comprehension",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vyakarana (MCQ)",
+          "topics": [
+            "Samaasagalu",
+            "Sandhigalu",
+            "Tatsama-Tadbhava",
+            "Samanarthaka pada / Viruddha pada",
+            "Jodi pada",
+            "Dvirukti / Anukaranaavyaya",
+            "Dhatu / Kriyapada",
+            "Arthavyatyaasa",
+            "Vibhakti pratyaya",
+            "Vasthuvachakagalu: roodhanama, ankitanama, anvarthanama",
+            "Gunavachaka / Digvachaka",
+            "Sankhyavachaka / Sankhyeyavachaka",
+            "Sarvanama"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vyakarana Barahavanige (Grammar Writing)",
+          "topics": [
+            "Vidhyarthaka / Nishedhaarthaka / Sambhavanaarthaka",
+            "Kaalagalu: bhoota, vartamana, bhavishyat",
+            "Kartari-Karmani prayoga",
+            "Graamya-Graanthika roopa",
+            "Swanta vakya rachane",
+            "Gadegalu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen Comprehension Passage (Class IX)",
+          "topics": [
+            "One unseen passage on a Karnataka context"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Comprehension Passage (Class IX)",
+          "topics": [
+            "From the textbook"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

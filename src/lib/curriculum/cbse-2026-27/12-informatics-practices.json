@@ -1,0 +1,147 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Informatics Practices",
+  "codes": [
+    "065"
+  ],
+  "stream": "Computer",
+  "aliases": [
+    "IP"
+  ],
+  "source": {
+    "title": "Informatics Practices, Code 065, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Informatics_Practices_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Programs using Pandas and Matplotlib",
+        "marks": 8
+      },
+      {
+        "component": "SQL queries",
+        "marks": 7
+      },
+      {
+        "component": "Practical file (15 Pandas, 4 Matplotlib programs, 15 SQL queries)",
+        "marks": 5
+      },
+      {
+        "component": "Project work",
+        "marks": 5
+      },
+      {
+        "component": "Viva voce",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Informatics Practices, Class XII (NCERT)"
+  ],
+  "notes": [
+    "Prerequisite: Informatics Practices, Class XI."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Data Handling using Pandas and Data Visualisation",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Data Handling using Pandas",
+          "topics": [
+            "Python libraries: Pandas, Matplotlib; Series and DataFrames",
+            "Series: creation from ndarray, dictionary, scalar; mathematical operations; head and tail; selection, indexing, slicing",
+            "DataFrames: creation from dictionary of Series, list of dictionaries, text/CSV files; iteration",
+            "Operations on rows and columns: add, select, delete, rename; label and Boolean indexing",
+            "Importing and exporting data between CSV files and DataFrames"
+          ],
+          "outcomes": [
+            "Create Series and DataFrames and apply operations"
+          ]
+        },
+        {
+          "name": "Data Visualisation",
+          "topics": [
+            "Purpose of plotting",
+            "Line plot, bar graph, histogram with Matplotlib; saving plots",
+            "Customising: label, title, legend"
+          ],
+          "outcomes": [
+            "Visualise data using relevant graphs"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Database Query using SQL",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Database Query using SQL",
+          "topics": [
+            "Revision of Class XI database concepts and SQL",
+            "Math functions: POWER, ROUND, MOD",
+            "Text functions: UCASE/UPPER, LCASE/LOWER, MID/SUBSTRING/SUBSTR, LENGTH, LEFT, RIGHT, INSTR, LTRIM, RTRIM, TRIM",
+            "Date functions: NOW, DATE, MONTH, MONTHNAME, YEAR, DAY, DAYNAME",
+            "Aggregate functions MAX, MIN, AVG, SUM, COUNT, COUNT(*); GROUP BY, HAVING, ORDER BY",
+            "Equi-join on two tables"
+          ],
+          "outcomes": [
+            "Design SQL queries using aggregate functions",
+            "Import and export data between an SQL database and Pandas"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Introduction to Computer Networks",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Introduction to Computer Networks",
+          "topics": [
+            "PAN, LAN, MAN, WAN",
+            "Devices: modem, hub, switch, repeater, router, gateway",
+            "Topologies: star, bus, tree, mesh",
+            "Internet, URL, WWW; web, email, chat, VoIP",
+            "Website vs webpage; static vs dynamic pages; web server and hosting",
+            "Web browsers: settings, add-ons and plug-ins, cookies"
+          ],
+          "outcomes": [
+            "Learn networking and internet terminology",
+            "Identify internet security issues and configure browser settings"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Societal Impacts",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Societal Impacts",
+          "topics": [
+            "Digital footprint; net and communication etiquettes",
+            "Data protection, IPR, plagiarism, licensing and copyright, FOSS",
+            "Cybercrime and cyber laws: hacking, phishing, cyber bullying; Indian IT Act",
+            "E-waste: hazards and management",
+            "Health concerns related to technology use"
+          ],
+          "outcomes": [
+            "Understand the impact of technology on society, including gender and disability issues"
+          ]
+        }
+      ]
+    }
+  ]
+}

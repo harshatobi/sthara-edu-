@@ -1,0 +1,260 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Urdu (R1)",
+  "codes": [
+    "003"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Urdu",
+    "اردو",
+    "Urdu Course A"
+  ],
+  "source": {
+    "title": "Urdu as R1, Grade 9 (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Urdu_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Jamuna (NCERT)",
+    "Urdu Qawaid aur Insha, for secondary and senior secondary classes (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in Urdu as printed in the NCERT textbook.",
+    "Urdu as first language (R1) under the NCF three-language scheme. Subject code not printed in the document; 003 is the Class X Course A code."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading and Comprehension",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Unseen Prose Passage (Urdu, Class IX)",
+          "topics": [
+            "150-200 words, five questions (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen Poetry Extract (Urdu, Class IX)",
+          "topics": [
+            "Two stanzas or five to seven couplets, five questions (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Passages (Urdu, Class IX)",
+          "topics": [
+            "Prose and poetry extracts from the textbook (10)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing Skill",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Mazmoon (Class IX)",
+          "topics": [
+            "Essay of 150-200 words on one of three social or everyday topics (8)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Maktoob (Class IX)",
+          "topics": [
+            "Application (complaint, invitation, permission) or personal, office or business letter (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ishtehar / Aankhon Dekha Haal",
+          "topics": [
+            "Advertisement of 50-60 words or eyewitness account of 80-100 words (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Notes on Textbook Lessons (Class IX)",
+          "topics": [
+            "Summary, theme and characters of prose lessons; lives of writers and poets, 100 words (8)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Functional Grammar",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Ism, Zameer aur Sifat",
+          "topics": [
+            "Ism-e-khaas (laqab, khitab, kunniyat); ism-e-aam (mukabbar, musaggar, aala, saut, zarf); sifat (zaati, nisbati, adadi, miqdari); zameer (mutakallim, haazir, ghaib) (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Fel ki Aqsaam (R1)",
+          "topics": [
+            "Present, past, future, active and passive (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ilm-e-Bayan aur Badi (R1)",
+          "topics": [
+            "Tashbeeh, talmeeh, riayat-e-lafzi, tazaad, takraar, tajseem, muraat-un-nazeer (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muhavre aur Kahawatein (R1)",
+          "topics": [
+            "Four of six used in sentences (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "پنچایت",
+          "topics": [
+            "Afsana: Munshi Premchand"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مانوس اجنبی",
+          "topics": [
+            "Afsana: Intizar Husain"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "غالب کے خطوط",
+          "topics": [
+            "Maktoob: Mirza Ghalib"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اجنتا اور ایلورا",
+          "topics": [
+            "Mazmoon: Syed Mubarizuddin Rifat"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مالی خواندگی",
+          "topics": [
+            "Mazmoon"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "میاں نصیر الدین",
+          "topics": [
+            "Mazmoon: Krishna Sobti"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جگ میں آکر ادھر ادھر دیکھا",
+          "topics": [
+            "Ghazal: Khwaja Mir Dard"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اشک آنکھوں میں کب نہیں آتا",
+          "topics": [
+            "Ghazal: Mir Taqi Mir"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "تیر کھانے کی ہوس ہے تو جگر پیدا کر",
+          "topics": [
+            "Ghazal: Ameer Minai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اللہ اگر توفیق نہ دے انسان کے بس",
+          "topics": [
+            "Ghazal: Jigar Moradabadi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "رامائن کا ایک سین",
+          "topics": [
+            "Nazm: Brij Narayan Chakbast"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "اعتماد",
+          "topics": [
+            "Nazm: Akhtarul Iman"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "عورت",
+          "topics": [
+            "Nazm: Kaifi Azmi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "آغازِ داستان (سحر البیان)",
+          "topics": [
+            "Masnavi: Mir Hasan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "قطعات",
+          "topics": [
+            "Qita: Naresh Kumar Shad"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Asnaf (R1)",
+          "topics": [
+            "Afsana, maktoob, mazmoon, ghazal, nazm, masnavi, qita (3)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose short answers 6, poetry short answers 6, literary forms 3."
+      ]
+    }
+  ]
+}

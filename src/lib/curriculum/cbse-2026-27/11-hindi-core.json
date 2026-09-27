@@ -1,0 +1,315 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Hindi Core",
+  "codes": [
+    "302"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Hindi",
+    "Hindi (Core)",
+    "Hindi Aadhar",
+    "हिंदी (आधार)"
+  ],
+  "source": {
+    "title": "Hindi (Core), Code 302, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Hindi_Core_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "श्रवण (listening)",
+        "marks": 5
+      },
+      {
+        "component": "वाचन (speaking)",
+        "marks": 5
+      },
+      {
+        "component": "परियोजना कार्य (project)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "आरोह भाग 1 (NCERT)",
+    "वितान भाग 1 (NCERT)",
+    "अभिव्यक्ति और माध्यम (NCERT)"
+  ],
+  "notes": [
+    "Lesson lists are the 2026-27 NCERT reprints (textbook contents pages), less the lessons the CBSE document says are dropped.",
+    "Units are the question paper's sections (खंड क, ख, ग).",
+    "Dropped for 2026-27: Kabir pad 2, Meera pad 2, Ramnaresh Tripathi (Pathik), Sumitranandan Pant (Ve Aankhen), Krishnanath (Spiti Mein Barish), Syed Haider Raza (Atma ka Taap)."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठित बोध (Unseen Comprehension)",
+      "marks": 18,
+      "chapters": [
+        {
+          "name": "अपठित गद्यांश",
+          "topics": [
+            "लगभग 250 शब्दों का अपठित गद्यांश: बोध, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (10 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अपठित पद्यांश",
+          "topics": [
+            "लगभग 100 शब्दों का अपठित पद्यांश: बोध, सराहना, सौंदर्य, चिंतन, विश्लेषण",
+            "बहुविकल्पीय, अतिलघूत्तरात्मक और लघूत्तरात्मक प्रश्न (8 अंक)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "अभिव्यक्ति और माध्यम (Expression and Media)",
+      "marks": 22,
+      "chapters": [
+        {
+          "name": "रचनात्मक लेखन",
+          "topics": [
+            "तीन अप्रत्याशित विषयों में से एक पर लगभग 120 शब्दों में रचनात्मक लेखन (6 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "औपचारिक पत्र लेखन",
+          "topics": [
+            "औपचारिक पत्र (5 अंक)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "जनसंचार माध्यम",
+          "number": 1,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पत्रकारिता के विविध आयाम",
+          "number": 2,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "डायरी लिखने की कला",
+          "number": 9,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कथा-पटकथा",
+          "number": 10,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कार्यालयी लेखन और प्रक्रिया",
+          "number": 14,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "स्ववृत्त (बायोडेटा) लेखन और रोज़गार संबंधी आवेदन पत्र",
+          "number": 15,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कोश: एक परिचय",
+          "number": 16,
+          "topics": [
+            "अभिव्यक्ति और माध्यम"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Questions on lessons 1, 2, 9, 10, 14, 15 and 16: four 2-mark (40 words) and one 3-mark (60 words), 11 marks."
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "आरोह भाग 1: काव्य खंड (Poetry)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "कबीर: हम तौ एक एक करि जांनां",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मीरा: मेरे तो गिरधर गोपाल, दूसरो न कोई",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "भवानी प्रसाद मिश्र: घर की याद",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "त्रिलोचन: चंपा काले काले अच्छर नहीं चीन्हती",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "दुष्यंत कुमार: ग़ज़ल",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अक्कमहादेवी: हे भूख! मत मचल; हे मेरे जूही के फूल जैसे ईश्वर",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अवतार सिंह पाश: सबसे खतरनाक",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "निर्मला पुतुल: आओ, मिलकर बचाएँ",
+          "topics": [
+            "काव्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "आरोह भाग 1: गद्य खंड (Prose)",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "प्रेमचंद: नमक का दारोगा",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कृष्णा सोबती: मियाँ नसीरुद्दीन",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सत्यजित राय: अपू के साथ ढाई साल",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "बालमुकुंद गुप्त: विदाई-संभाषण",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "शेखर जोशी: गलता लोहा",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मन्नू भंडारी: रजनी",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कृश्नचंदर: जामुन का पेड़",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "जवाहरलाल नेहरू: भारत माता",
+          "topics": [
+            "गद्य खंड (आरोह भाग 1)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C3",
+      "name": "वितान भाग 1 (Supplementary Reader)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "भारतीय गायिकाओं में बेजोड़: लता मंगेशकर (कुमार गंधर्व)",
+          "topics": [
+            "वितान भाग 1"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "राजस्थान की रजत बूँदें (अनुपम मिश्र)",
+          "topics": [
+            "वितान भाग 1"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आलो-आँधारि (बेबी हालदार)",
+          "topics": [
+            "वितान भाग 1"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "भारतीय कलाएँ",
+          "topics": [
+            "वितान भाग 1"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

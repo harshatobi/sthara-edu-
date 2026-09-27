@@ -1,0 +1,225 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Telugu (Telangana)",
+  "codes": [
+    "089"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Telugu TS",
+    "Telugu Telangana",
+    "తెలుగు (తెలంగాణ)"
+  ],
+  "source": {
+    "title": "Telugu (Telangana), Code 089, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Telugu_Telangana_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic tests",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessments",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Vennela - 4, Telugu Vachakam (Government of Telangana, 2025)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Comprehension",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Aparichita Gadyamsham (Class IX)",
+          "topics": [
+            "Two unseen prose passages (5+5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Parichita Gadyamsham / Padyamsham",
+          "topics": [
+            "Seen prose passage or poem (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Lekha Rachana (Class IX)",
+          "topics": [
+            "Letter writing (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sambhashana Rachana",
+          "topics": [
+            "Dialogue writing (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dina Charya",
+          "topics": [
+            "Diary entry (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 28,
+      "chapters": [
+        {
+          "name": "Bhasha Bhagamulu",
+          "topics": [
+            "Parts of speech (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kaalaalu",
+          "topics": [
+            "Tenses (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vibhaktulu",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sandhulu",
+          "topics": [
+            "Akaara, Ikaara, Ukaara, Savarna Deergha, Guna (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samaasaalu (Class IX)",
+          "topics": [
+            "Dwandva, Dvigu (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paryayapadaalu",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prakriyalu",
+          "topics": [
+            "2 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Paaribhaashika Padaalu",
+          "topics": [
+            "Acchulu / Swaraalu, Hallulu, Poorva Swaram, Para Swaram, Poorva Padam, Para Padam, Uttara Padam, Ubhayaaksharaalu, Attu, Ittu, Uttu, Aagamam, Aadesham, Druthamu, Karmadhaarayam, Drutha Prakrutikamulu"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 26,
+      "chapters": [
+        {
+          "name": "Manishi Maaraali",
+          "topics": [
+            "Poetry (Vennela - 4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Batukamma Panduga",
+          "topics": [
+            "Poetry (Vennela - 4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Madhura Vachanamulu",
+          "topics": [
+            "Poetry (Vennela - 4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mrodu Mora",
+          "topics": [
+            "Poetry (Vennela - 4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Edi Goppa Daanam",
+          "topics": [
+            "Prose (Vennela - 4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aikamatyam",
+          "topics": [
+            "Prose (Vennela - 4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Alampuram",
+          "topics": [
+            "Prose (Vennela - 4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Naa Baalyam",
+          "topics": [
+            "Prose (Vennela - 4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

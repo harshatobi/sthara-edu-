@@ -1,0 +1,345 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Urdu Course A",
+  "codes": [
+    "003"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Urdu",
+    "اردو",
+    "Urdu A"
+  ],
+  "source": {
+    "title": "Urdu Course A, Code 003, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/UrduA_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Nawa-e-Urdu, Class X (NCERT)",
+    "Gulzar-e-Urdu, supplementary reader, Class X (NCERT)",
+    "Urdu Qawaid aur Insha (NCERT)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in Urdu as printed in the NCERT textbook.",
+    "Excluded: Chori aur us ka kaffara, Chakbast Lucknowi, Ishtiharat zaroorat nahin hai ke, Aandhi, Firaq's rubai; from the reader Sakhi, Man ka tota, Doshala, Mirza Chapati. Reader lesson list is taken from the book's acknowledgements."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading and Comprehension",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Unseen Passages (Course A)",
+          "topics": [
+            "One prose (100-150 words) and one poetry extract (5+5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Passages (Course A)",
+          "topics": [
+            "One prose and one poetry extract from the textbook (5+5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Writing Skill",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Mazmoon Nigari (Course A)",
+          "topics": [
+            "Essay of 250-300 words: unemployment, pollution, media, population, national unity, global warming, terrorism (10)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Darkhwast / Khutoot (Course A)",
+          "topics": [
+            "Complaint, invitation, permission; personal or business letter (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Notes on Textbook Lessons (Course A)",
+          "topics": [
+            "Prose lessons and writers (4), poetry lessons and poets (3), supplementary reader (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Grammar",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Fel aur Fel ki Aqsaam",
+          "topics": [
+            "Lazim, mutaddi, murakkab, naqis, majhool, maroof, haal, maazi, mustaqbil (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ilm-e-Bayan aur Ilm-e-Badi (Class X)",
+          "topics": [
+            "Tashbeeh (mufrad, murakkab), isteara, kinaya, tazaad, husn-e-taleel, talmeeh (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Muhavre, Zarb-ul-Amsaal aur Kahawatein",
+          "topics": [
+            "Definition, meaning, use in sentences (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rumooz-e-Auqaf",
+          "topics": [
+            "Punctuation: khatma, sakta, raabta, sawaliya, fajaiya (2)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Sheri Istilahat",
+          "topics": [
+            "Misra, sher, band, qafiya, radeef, maqta, matla, husn-e-matla (3)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Literature",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "بھولا",
+          "topics": [
+            "Afsana: Rajinder Singh Bedi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "نیا قانون",
+          "topics": [
+            "Afsana: Saadat Hasan Manto"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "بھیک",
+          "topics": [
+            "Afsana: Hayatullah Ansari"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "سرسید کا بچپن",
+          "topics": [
+            "Sawaneh: Altaf Husain Hali"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "آزمائش",
+          "topics": [
+            "Drama: Muhammad Mujeeb"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "عورتوں کے حقوق",
+          "topics": [
+            "Mazmoon: Sir Syed Ahmad Khan"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "مخلوط زبان",
+          "topics": [
+            "Mazmoon: Maulvi Abdul Haq"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ماحول بچائیے",
+          "topics": [
+            "Mazmoon: Muhammad Aslam Parvez"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "بہار بے سپر جام و یار گزرے ہے",
+          "topics": [
+            "Ghazal: Sauda"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "لائی حیات، آئے، قضا لے چلی، چلے",
+          "topics": [
+            "Ghazal: Zauq"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ڈھونڈو گے اگر ملکوں ملکوں",
+          "topics": [
+            "Ghazal: Shad Azimabadi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "دنیا میری بلا جانے",
+          "topics": [
+            "Ghazal: Fani"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "آلامِ روزگار کو آساں بنا دیا",
+          "topics": [
+            "Ghazal: Asghar Gondvi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ادب نے دل کے تقاضے اٹھائے ہیں کیا کیا",
+          "topics": [
+            "Ghazal: Yas Yagana Changezi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جلوۂ دربارِ دہلی",
+          "topics": [
+            "Nazm: Akbar Allahabadi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "حقیقتِ حسن",
+          "topics": [
+            "Nazm: Iqbal"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "گرمی اور دیہاتی بازار",
+          "topics": [
+            "Nazm: Josh"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "او دیس سے آنے والے بتا!",
+          "topics": [
+            "Nazm: Akhtar Sheerani"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "رباعیات: انیس",
+          "topics": [
+            "Rubai: Anees"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "رباعیات: تلوک چند محروم",
+          "topics": [
+            "Rubai: Tilok Chand Mehroom"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "گلی ڈنڈا",
+          "topics": [
+            "Supplementary reader: Premchand"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "فقیر",
+          "topics": [
+            "Supplementary reader: Azim Beg Chughtai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "آئی سی ایس",
+          "topics": [
+            "Supplementary reader: Ali Abbas Husaini"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "دو فرلانگ لمبی سڑک",
+          "topics": [
+            "Supplementary reader: Krishan Chander"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ان دیوتا",
+          "topics": [
+            "Supplementary reader: Devendra Satyarthi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "سلطان",
+          "topics": [
+            "Supplementary reader: Ahmad Nadeem Qasmi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "گدڑی کا لال: نور خاں",
+          "topics": [
+            "Khaka: Maulvi Abdul Haq"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "جگر صاحب",
+          "topics": [
+            "Khaka: Muhammad Tufail"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Asnaf (Course A)",
+          "topics": [
+            "Afsana, sawaneh, ghazal, nazm, drama, aap beeti (3)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Prose 4, poetry 4, supplementary reader 4, literary forms 3."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Elements of Book-keeping and Accountancy",
+  "codes": [
+    "254"
+  ],
+  "stream": "Commerce",
+  "aliases": [
+    "Book-keeping",
+    "Accountancy (Elements)"
+  ],
+  "source": {
+    "title": "Elements of Book-keeping and Accountancy, Code 254, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Elements_of_BK_Acc_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Project I",
+        "marks": 15
+      },
+      {
+        "component": "Project II",
+        "marks": 15
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Capital and Revenue",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Capital and Revenue",
+          "topics": [
+            "Capital and revenue receipts and expenditure",
+            "Deferred revenue expenditure"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Depreciation (Class X)",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Depreciation (Class X)",
+          "topics": [
+            "Need for depreciation",
+            "Straight line and diminishing balance methods (no change of method)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Bank Reconciliation Statement (Class X)",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Bank Reconciliation Statement (Class X)",
+          "topics": [
+            "Meaning and preparation from cash book or pass book balance"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Bills of Exchange",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Bills of Exchange",
+          "topics": [
+            "Nature, use and terms",
+            "Simple transactions (no dishonour, retiring or renewal)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Final Accounts",
+      "marks": 14,
+      "chapters": [
+        {
+          "name": "Final Accounts",
+          "topics": [
+            "Trading and profit and loss account and balance sheet of a sole trader",
+            "Adjustment for closing stock only"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Accounting from Incomplete Records",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Accounting from Incomplete Records",
+          "topics": [
+            "Meaning; statement of profit; statement of affairs method"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

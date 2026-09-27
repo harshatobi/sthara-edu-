@@ -1,0 +1,255 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Gujarati",
+  "codes": [
+    "010"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ગુજરાતી"
+  ],
+  "source": {
+    "title": "Gujarati, Code 010, Classes IX-X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Gujarati_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic written test (best 2 of 3)",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessment: listening and speaking",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment activities",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Gujarati (Dwitiya Bhasha), Class X (Gujarat Rajya Shala Pathya Pustak Mandal, Gandhinagar)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "One of the prescribed poems is taken for poetry appreciation (padyasamiksha)."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Vachan (Reading)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Apathit Gadyansh (Class X)",
+          "topics": [
+            "Unseen prose passage: MCQ (5) and very short answers (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Vyakaran (Applied Grammar)",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Rudhiprayog (Class X)",
+          "topics": [
+            "Idioms from the textbook (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shabdasamuh Maate Ek Shabd",
+          "topics": [
+            "One word for many (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samanarthi - Virodhi Shabdo (Class X)",
+          "topics": [
+            "Synonyms and antonyms from the textbook (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shuddh Vakya, Anug - Namyogi",
+          "topics": [
+            "Correct the sentences; postpositions (4)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Sahitya (Literature)",
+      "marks": 38,
+      "chapters": [
+        {
+          "name": "મોરલી",
+          "topics": [
+            "Pad: Mirabai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "જીવન અંજલિ થાજો",
+          "topics": [
+            "Prayer: Karsandas Manek"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "જીવમાં જીવ આવ્યો",
+          "topics": [
+            "Sonnet: Harikrishna Pathak"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "હાથ મેળવીએ",
+          "topics": [
+            "Poetry: Niranjan Bhagat"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "દીવાનખાનામાં",
+          "topics": [
+            "Free verse: Panna Naik"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "તે બેસે અહીં",
+          "topics": [
+            "Ghazal: Snehi Parmar"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "લઘુકાવ્યો (Class X)",
+          "topics": [
+            "Duha, muktak, haiku"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "શરણાઈના સૂર",
+          "topics": [
+            "Short story: Chunilal Madia"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "સામગ્રી તો સમાજની જ છે ને?",
+          "topics": [
+            "Anecdote: Vikas Sharma"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "સૂરજ તો બધે જ સરખો",
+          "topics": [
+            "Humorous essay: Vinod Bhatt"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "નથી",
+          "topics": [
+            "Short story: Mohammad Mankad"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ઝબક જ્યોત",
+          "topics": [
+            "One-act play: Krishnalal Shridharani"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "જેઠીબાઈ",
+          "topics": [
+            "Folk tale: Dulerai Karani"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "પ્રાણનો મિત્ર",
+          "topics": [
+            "Translated story: Rabindranath Tagore"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ટિફિન",
+          "topics": [
+            "Short story: Premji Patel"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ભારતીય સંસ્કૃતિના જ્યોતિર્ધર",
+          "topics": [
+            "Supplementary reader: Kumarpal Desai"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "સત્યવ્રત",
+          "topics": [
+            "Supplementary reader: Umashankar Joshi"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Part A 8 (poetry 4, prose 4), Part B 30."
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Lekhan (Effective Writing)",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Anuchchhed Lekhan",
+          "topics": [
+            "Paragraph of at least 120 words on contemporary issues (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Varta Lekhan",
+          "topics": [
+            "Story building from given points (6)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Patra / Jaherat Lekhan",
+          "topics": [
+            "Official letter (application, complaint) or advertisement on cleanliness, health, education, rules in public places or environment (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

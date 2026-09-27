@@ -1,0 +1,313 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "National Cadet Corps",
+  "codes": [
+    "076"
+  ],
+  "stream": "Wellbeing",
+  "aliases": [
+    "NCC"
+  ],
+  "source": {
+    "title": "National Cadet Corps, Code 076, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/NCC_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Practical and internal assessment",
+        "marks": 30
+      }
+    ]
+  },
+  "textbooks": [
+    "NCC Cadet Handbook (common and specialised subjects)"
+  ],
+  "notes": [
+    "The theory paper is 70 marks, but the document gives no unit-wise split, so unit marks are left unpublished.",
+    "Cadets study the common subjects plus the specialised subject of their wing (Army, Navy or Air Force)."
+  ],
+  "units": [
+    {
+      "code": "C",
+      "name": "Common Subjects",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "The NCC",
+          "topics": [
+            "Aims and objectives",
+            "Organisation, training and NCC song",
+            "Incentives"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "National Integration and Awareness (Class XI)",
+          "topics": [
+            "National integration: importance and necessity",
+            "Freedom struggle and nationalist movement"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Drill (Class XI)",
+          "topics": [
+            "Foot drill",
+            "Arm drill"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Weapon Training (Class XI)",
+          "topics": [
+            "Characteristics of a rifle and its ammunition",
+            "Stripping, assembling, care and cleaning of .22 rifle",
+            "Loading, cocking, unloading; holding and aiming positions"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Personality Development and Leadership (Class XI)",
+          "topics": [
+            "Personality development",
+            "Communication skills",
+            "Leadership traits",
+            "Time management"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Disaster Management and Civil Affairs",
+          "topics": [
+            "Types of emergencies and natural disasters",
+            "Assistance during floods, cyclones, earthquakes, accidents"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Social Awareness and Community Development (Class XI)",
+          "topics": [
+            "Basics of social service",
+            "Youth and social welfare",
+            "Civic responsibilities"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Health and Hygiene (Class XI)",
+          "topics": [
+            "Hygiene and sanitation",
+            "Infectious and contagious diseases and prevention"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Adventure and Obstacle Training (Class XI)",
+          "topics": [
+            "Obstacle training"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Environment Awareness and Conservation (Class XI)",
+          "topics": [
+            "Natural resources: conservation and management",
+            "Water conservation and rainwater harvesting"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "A",
+      "name": "Specialised Subject: Army",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Armed Forces (Class XI)",
+          "topics": [
+            "Basic organisation of the armed forces",
+            "Organisation of the Army"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Map Reading (Class XI)",
+          "topics": [
+            "Types of maps and conventional signs",
+            "Scales and grid system",
+            "Topographical forms",
+            "Bearings, service protractor, prismatic compass, GPS"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Field Craft and Battle Craft (Class XI)",
+          "topics": [
+            "Judging distance",
+            "Description of ground"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Infantry Weapons and Equipment (Class XI)",
+          "topics": [
+            "5.56 INSAS rifle",
+            "Organisation of an infantry battalion"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Military History (Class XI)",
+          "topics": [
+            "Biographies of renowned generals: Cariappa, Manekshaw"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Communication (Army, Class XI)",
+          "topics": [
+            "Types of communication",
+            "Wireless technology: mobile, Wi-Fi"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "N",
+      "name": "Specialised Subject: Navy",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Naval Orientation (Class XI)",
+          "topics": [
+            "History of the Navy; gallantry award winners",
+            "Organisation: NHQ, commands, fleets",
+            "Types of warships; ranks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Naval Communication (Class XI)",
+          "topics": [
+            "Modern naval communication: purpose and principles"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seamanship (Class XI)",
+          "topics": [
+            "Parts of anchor and cable"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rigging",
+          "topics": [
+            "Types of ropes and breaking strength",
+            "Bends and hitches"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Boat Work (Class XI)",
+          "topics": [
+            "Parts of a boat and an oar",
+            "Boat pulling"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ship and Boat Modelling (Class XI)",
+          "topics": [
+            "Principles of ship modelling"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Search and Rescue",
+          "topics": [
+            "SAR organisation in the Indian Ocean"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "F",
+      "name": "Specialised Subject: Air Force",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "General Service Knowledge (Class XI)",
+          "topics": [
+            "Development of aviation",
+            "History of the IAF"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Principles of Flight (Class XI)",
+          "topics": [
+            "Laws of motion",
+            "Glossary of terms"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Airmanship (Class XI)",
+          "topics": [
+            "Airfield layout",
+            "Rules of the air",
+            "Circuit procedure"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aero Engines",
+          "topics": [
+            "Introduction to aero engines"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Air Frames",
+          "topics": [
+            "Aircraft controls",
+            "Landing gear"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Instruments (Class XI)",
+          "topics": [
+            "Basic flight instruments"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aircraft Particulars",
+          "topics": [
+            "Type-specific aircraft particulars"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aero-modelling (Class XI)",
+          "topics": [
+            "History of aero-modelling",
+            "Types of aero-models"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

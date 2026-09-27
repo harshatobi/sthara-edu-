@@ -1,0 +1,424 @@
+{
+  "id": "nsejs",
+  "exam": "National Standard Examination in Junior Science (NSEJS) / INJSO",
+  "conductingBody": "IAPT (NSEJS) and HBCSE-TIFR (INJSO)",
+  "cycle": "2026-27",
+  "track": "Olympiad",
+  "classes": [
+    "9",
+    "10"
+  ],
+  "source": {
+    "title": "HBCSE Olympiad syllabus: Junior Science",
+    "url": "https://olympiads.hbcse.tifr.res.in/how-to-prepare/syllabus/",
+    "retrievedOn": "2026-09-26"
+  },
+  "subjects": [
+    {
+      "subject": "Science",
+      "units": [
+        {
+          "code": "I",
+          "name": "Matter: Nature and Behaviour",
+          "topics": [
+            "States of matter and change of state",
+            "elements, compounds, mixtures",
+            "colloids and suspensions",
+            "solutions and concentration",
+            "separation of mixtures",
+            "atoms and molecules, law of constant proportions, atomic and molecular masses, mole concept",
+            "electrons, protons, neutrons",
+            "valency",
+            "isotopes and isobars"
+          ],
+          "mapsTo": [
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Exploring Mixtures and their Separation"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Structure of an Atom"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Atoms and Molecules"
+            }
+          ],
+          "beyondBoard": [
+            "States of matter and change of state (not in the NCF 2023 Class 9 Science chapters)"
+          ]
+        },
+        {
+          "code": "II",
+          "name": "Chemical Substances: Nature and Behaviour",
+          "topics": [
+            "Balanced chemical equations and types of reactions",
+            "acids, bases, salts, pH, common compounds (NaOH, bleaching powder, baking and washing soda, Plaster of Paris)",
+            "metals and non-metals, reactivity series, ionic compounds, metallurgy, corrosion",
+            "carbon compounds: bonding, homologous series, nomenclature, reactions, ethanol and ethanoic acid, soaps and detergents",
+            "periodic classification: Döbereiner, Newlands, Mendeleev, modern table and trends"
+          ],
+          "mapsTo": [
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Chemical Reactions and Equations"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Acids, Bases and Salts"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Metals and Non-metals"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Carbon and its Compounds"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Periodic Classification of Elements"
+            }
+          ],
+          "beyondBoard": [
+            "Periodic Classification of Elements is formative-only in the CBSE 2026-27 Class 10 syllabus"
+          ]
+        },
+        {
+          "code": "III",
+          "name": "Organisation in the Living World",
+          "topics": [
+            "Cell and organelles",
+            "plant and animal tissues",
+            "biological diversity and classification of plants and animals",
+            "health and disease, infectious and non-infectious diseases, prevention, Pulse Polio"
+          ],
+          "mapsTo": [
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Cell"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Tissues"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Diversity"
+            }
+          ],
+          "beyondBoard": [
+            "Health and diseases: Not in the CBSE 2026-27 Class 9-10 Science syllabus"
+          ]
+        },
+        {
+          "code": "IV",
+          "name": "Life Processes",
+          "topics": [
+            "Nutrition, respiration, transport, excretion",
+            "control and coordination in plants and animals",
+            "reproduction and reproductive health",
+            "heredity, Mendel's laws, sex determination, evolution"
+          ],
+          "mapsTo": [
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Life Processes"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Control and Coordination"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "How do Organisms Reproduce?"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Heredity"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Evolution"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Reproduction"
+            }
+          ],
+          "beyondBoard": [
+            "Evolution is formative-only in the CBSE 2026-27 Class 10 syllabus"
+          ]
+        },
+        {
+          "code": "V",
+          "name": "Motion, Force and Work",
+          "topics": [
+            "Motion graphs and equations of motion",
+            "uniform circular motion",
+            "Newton's laws, inertia, momentum, conservation of momentum",
+            "gravitation, g, mass and weight, free fall",
+            "thrust, pressure, Archimedes' principle, buoyancy, relative density",
+            "work, energy, power, conservation of energy",
+            "sound: propagation, speed, hearing range, ultrasound, echo, SONAR, human ear"
+          ],
+          "mapsTo": [
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Motion"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Force and Laws of Motion"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Work, Energy and Simple Machines"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Sound"
+            }
+          ],
+          "beyondBoard": [
+            "Gravitation (g, mass and weight, free fall) and floatation (thrust, pressure, Archimedes' principle, buoyancy, relative density): Not in the CBSE 2026-27 Class 9-10 Science syllabus",
+            "Inertia, momentum and its conservation are not in the Class 9 Force and Laws of Motion topics",
+            "Ultrasound, SONAR and the human ear are not in the Class 9 Sound topics"
+          ]
+        },
+        {
+          "code": "VI",
+          "name": "Effects of Current",
+          "topics": [
+            "Current, potential difference, Ohm's law, resistivity, series and parallel resistors",
+            "heating effect",
+            "electric power",
+            "magnetic field of conductors, coils and solenoids",
+            "force on a conductor, Fleming's rules",
+            "motor, electromagnetic induction, generator",
+            "AC and DC"
+          ],
+          "mapsTo": [
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Electricity"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Magnetic Effects of Electric Current"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Motor, Electromagnetic Induction and Electric Generator"
+            }
+          ],
+          "beyondBoard": [
+            "Electric motor, electromagnetic induction and generator are formative-only in Class 10"
+          ]
+        },
+        {
+          "code": "VII",
+          "name": "Light",
+          "topics": [
+            "Spherical mirrors, mirror formula, magnification",
+            "refraction, refractive index",
+            "lenses, lens formula, power",
+            "the human eye and defects",
+            "prism, dispersion, scattering"
+          ],
+          "mapsTo": [
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Light - Reflection and Refraction"
+            },
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "The Human Eye and the Colourful World"
+            }
+          ]
+        },
+        {
+          "code": "VIII",
+          "name": "Our Environment",
+          "topics": [
+            "Air, water and soil and their pollution",
+            "ozone depletion",
+            "biogeochemical cycles (water, oxygen, carbon, nitrogen)",
+            "ecosystems",
+            "biodegradable and non-biodegradable waste"
+          ],
+          "mapsTo": [
+            {
+              "class": "10",
+              "subject": "Science",
+              "chapter": "Our Environment"
+            },
+            {
+              "class": "9",
+              "subject": "Science",
+              "chapter": "Earth as a System: Energy, Matter & Life"
+            }
+          ]
+        },
+        {
+          "code": "IX",
+          "name": "Natural Resources",
+          "topics": [
+            "Conventional and non-conventional energy sources",
+            "renewable versus non-renewable",
+            "management and conservation of forests, wildlife, coal and petroleum",
+            "big dams",
+            "water harvesting",
+            "sustainability"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Sources of energy and management of natural resources: Not in the CBSE 2026-27 Class 9-10 Science syllabus"
+          ]
+        },
+        {
+          "code": "X",
+          "name": "Food Production",
+          "topics": [
+            "Plant and animal breeding and selection",
+            "fertilisers and manures",
+            "protection from pests and diseases",
+            "organic farming"
+          ],
+          "mapsTo": [],
+          "beyondBoard": [
+            "Food production: Not in the CBSE 2026-27 Class 9-10 Science syllabus"
+          ]
+        }
+      ]
+    },
+    {
+      "subject": "Mathematics",
+      "units": [
+        {
+          "code": "M",
+          "name": "Mathematics (for NSEJS)",
+          "topics": [
+            "Polynomials",
+            "linear and quadratic equations",
+            "number systems",
+            "triangles",
+            "trigonometry",
+            "circles",
+            "surface areas and volumes",
+            "statistics"
+          ],
+          "mapsTo": [
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Number System"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Polynomials"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Linear Equations in Two Variables"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Triangles: Congruence Theorems"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Circles"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Surface Area and Volume"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Statistics"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Real Numbers"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Polynomials"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Quadratic Equations"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Triangles"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Trigonometry"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Circles"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Surface Areas and Volumes"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Statistics"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Broadly equivalent to CBSE Class 10 Science and Mathematics; general Class 8 knowledge is assumed.",
+    "Olympiad questions are non-conventional and of high difficulty even within the syllabus.",
+    "The HBCSE syllabus page does not carry a cycle year; retrieved for the 2026-27 olympiad cycle."
+  ]
+}

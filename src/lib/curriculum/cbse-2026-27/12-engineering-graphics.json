@@ -1,0 +1,111 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Engineering Graphics",
+  "codes": [
+    "046"
+  ],
+  "stream": "Science",
+  "aliases": [
+    "EG",
+    "Engg Graphics"
+  ],
+  "source": {
+    "title": "Engineering Graphics, Code 046, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Engineering_Graphics_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Machine block task: copy views, missing view, isometric sketch, 3D model",
+        "marks": 15
+      },
+      {
+        "component": "CAD project",
+        "marks": 10
+      },
+      {
+        "component": "Sessional work",
+        "marks": 3
+      },
+      {
+        "component": "Viva voce",
+        "marks": 2
+      }
+    ]
+  },
+  "textbooks": [
+    "Engineering Graphics, Class XII (CBSE / NCERT)"
+  ],
+  "notes": [
+    "No chapter-level learning outcomes are given.",
+    "Dimensioning and conventions strictly as per SP 46:2003 (Revised).",
+    "Activity: two industrial visits."
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Isometric Projections of Solids",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Isometric Projections of Solids",
+          "number": 1,
+          "topics": [
+            "Isometric scale with leading angles; helping views",
+            "Isometric projection of cubes, prisms, pyramids, cone, cylinder, sphere, hemisphere with axis perpendicular to HP/VP or parallel to both",
+            "Combination of two solids placed centrally",
+            "No hidden lines; indicate the direction of viewing"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Machine Drawing",
+      "marks": 45,
+      "chapters": [
+        {
+          "name": "Drawing of Machine Parts",
+          "topics": [
+            "Screw thread profiles: square, knuckle, BSW, metric; bolts and nuts (square and hexagonal head); washers; nut and bolt assemblies",
+            "Free-hand sketches: thread conventions; studs; screws; rivets"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bearings",
+          "topics": [
+            "Open bearing",
+            "Bush bearing"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Rod Joints",
+          "topics": [
+            "Sleeve and cotter joint for round rods",
+            "Gib and cotter joint for square rods"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tie-rod and Pipe Joint",
+          "topics": [
+            "Turnbuckle",
+            "Flange pipe joint"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Assembly drawings ask a half sectional front view; disassembly drawings ask two orthographic views of two parts."
+      ]
+    }
+  ]
+}

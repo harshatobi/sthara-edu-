@@ -1,0 +1,145 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Hindustani Music (Percussion Instruments)",
+  "codes": [
+    "036"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Hindustani Music (Percussion Instruments), Code 036, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Hindustani_Music_Percussion_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Kayadas, paltas, tihai in Ektala/Chautala",
+        "marks": 8
+      },
+      {
+        "component": "Laggi in Keharwa and Dadra",
+        "marks": 5
+      },
+      {
+        "component": "Compositions in Jhaptala/Sultala",
+        "marks": 6
+      },
+      {
+        "component": "Teentala demonstrations",
+        "marks": 8
+      },
+      {
+        "component": "Thekas",
+        "marks": 5
+      },
+      {
+        "component": "Compositions in prescribed talas",
+        "marks": 5
+      },
+      {
+        "component": "Accompaniment",
+        "marks": 5
+      },
+      {
+        "component": "Solo performance",
+        "marks": 8
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "units": [
+    {
+      "code": "1",
+      "name": "Terms and Tripushkar Vadya",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Terms and Tripushkar Vadya",
+          "topics": [
+            "Farmaishi chakradar tukra or paran",
+            "Tripushkar vadya"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Gharanas (Class X)",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Gharanas (Class X)",
+          "topics": [
+            "Delhi gharana of tabla; Nana Panse gharana of pakhawaj",
+            "Farukhabad gharana of tabla or Nathdwara gharana of pakhawaj"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Notation of Compositions (Class X)",
+      "marks": 9,
+      "chapters": [
+        {
+          "name": "Notation of Compositions (Class X)",
+          "topics": [
+            "Kayada, rela, tukra or paran in Teentala/Adi and Jhaptala/Sultala",
+            "A traditional kayada or rela of a gharana"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Notation of Thekas (Class X)",
+      "marks": 6,
+      "chapters": [
+        {
+          "name": "Notation of Thekas (Class X)",
+          "topics": [
+            "Kayada or rela in Ektala or Chautala",
+            "Thekas of Jhaptala/Sultala and Ektala/Chautala in thah, dugun, chaugun"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Compositions in Prescribed Talas (Class X)",
+          "topics": [
+            "Kayada or rela with paltas and tihai in Ektala or Chautala; chakradar; laggi in Keharwa",
+            "Kayadas in Jhaptala or Sultala",
+            "Adalaya kayada, farmaishi chakradar, stuti paran in Teentala or Adi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Accompaniment and Solo (Class X)",
+          "topics": [
+            "Accompanying bhajan and geet",
+            "Solo with lehara: 8-10 minutes in Teentala, 5-7 in Jhaptala"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

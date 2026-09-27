@@ -1,0 +1,220 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Tili Kannada",
+  "codes": [
+    "171"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Kannada (Second Language)",
+    "ತಿಳಿ ಕನ್ನಡ"
+  ],
+  "source": {
+    "title": "Tili Kannada, Code 171, Class IX (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Kannada_SecP1IX_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening, speaking (pick and speak, elocution) and project work",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Tili Kannada 9, Dvitiya Bhasha Kannada Pathyapustaka (Parishkrutha 2025), Karnataka Pathya Pustaka Sangha, Bengaluru"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "Kannada for learners who are not native speakers; the document covers Class IX only.",
+    "The document gives periods (prose 45, poetry 45, non-detailed 12, writing 18, grammar and comprehension 60) and internal assessment 20, but no theory marks."
+  ],
+  "units": [
+    {
+      "code": "P",
+      "name": "Gadya (Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Avare Rajaratnam!",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aralikatte",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Urusugalalli Bhavaikyate",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Einstein Mattu Devaru",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bheeshma Pratijnye",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "Q",
+      "name": "Padya (Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Atta Hatta Beda",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shabari (Tili Kannada)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Thottilu Thooguva Haadu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Honne Marada Neralu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Aacharavillada Naalage",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "N",
+      "name": "Pooraka Odu (Non-detailed)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Kuvempu Avara Vishva Manava Sandesha",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Neerina Mahatva Mattu Maalinya",
+          "topics": [
+            "Non-detailed, same textbook"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "W",
+      "name": "Creative Writing",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Tippani",
+          "topics": [
+            "Short notes"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Khasagi Patra",
+          "topics": [
+            "Personal letter"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jaahiraatu",
+          "topics": [
+            "Advertisement"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "Grammar and Comprehension",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vyakarana (MCQ, Tili Kannada)",
+          "topics": [
+            "Kannada varnamale",
+            "Vastuvachaka: roodhanama, ankitanama, anvarthanama",
+            "Hosagannada vibhakti pratyayagalu",
+            "Anukaranaavyaya",
+            "Dvirukti",
+            "Jodi pada",
+            "Tatsama-Tadbhava",
+            "Kartru, karma, kriyapada",
+            "Padagala artha",
+            "Viruddha pada"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vyakarana Barahavanige (Tili Kannada)",
+          "topics": [
+            "Split and join words",
+            "Lingagalu",
+            "Vachanagalu",
+            "Own sentences",
+            "Gadegalu"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen Passages (Tili Kannada)",
+          "topics": [
+            "Two unseen passages, one on Karnataka's land, language, history or culture"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Seen Passages (Tili Kannada)",
+          "topics": [
+            "Seen prose and seen poem"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

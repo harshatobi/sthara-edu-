@@ -1,0 +1,90 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Painting",
+  "codes": [
+    "049"
+  ],
+  "stream": "Arts",
+  "aliases": [
+    "Art",
+    "Drawing"
+  ],
+  "source": {
+    "title": "Painting, Code 049, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Painting_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Practical examination",
+        "marks": 50
+      },
+      {
+        "component": "Periodic tests (best two of three)",
+        "marks": 10
+      },
+      {
+        "component": "Portfolio / project work (10 best works)",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "I",
+      "name": "Fundamentals of Visual Arts; Methods and Materials of Painting",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Fundamentals of Visual Arts and Painting Materials",
+          "topics": [
+            "Elements and principles of visual art",
+            "Tools; poster colours, water colours, oil pastels, pencils"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "II",
+      "name": "Story of Indian Art",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Story of Indian Art (Class X)",
+          "topics": [
+            "Bodhisattva Padmapani, Ajanta (painting)",
+            "Ashokan Lion Capital, Mauryan period (sculpture)",
+            "Kailashnatha Temple, Ellora (architecture)",
+            "Folk art: Madhubani and Warli"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Painting Composition",
+          "topics": [
+            "Painting from memory in water, poster or pastel colours on subjects from life and nature; abstract, semi-abstract or folk forms",
+            "Composition (15), colour treatment (15), originality (10), overall impression (10)"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

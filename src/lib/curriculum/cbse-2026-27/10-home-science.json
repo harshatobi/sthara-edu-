@@ -1,0 +1,148 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Home Science",
+  "codes": [
+    "064"
+  ],
+  "stream": "Humanities",
+  "source": {
+    "title": "Home Science, Code 064, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Home_Science_SecP1X_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Plan a balanced meal",
+        "marks": 5
+      },
+      {
+        "component": "Time plan for a day",
+        "marks": 5
+      },
+      {
+        "component": "Stain removal",
+        "marks": 5
+      },
+      {
+        "component": "Play material",
+        "marks": 8
+      },
+      {
+        "component": "File work",
+        "marks": 5
+      },
+      {
+        "component": "Viva",
+        "marks": 2
+      }
+    ]
+  },
+  "textbooks": [
+    "As per CBSE curriculum"
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Human Growth and Development II",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Human Growth and Development II",
+          "topics": [
+            "Play (birth to 5 years): role in development, types, play material",
+            "Early and middle childhood (3-11 years): milestones",
+            "Adolescence: special features"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Management of Resources: Time and Energy",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Management of Resources: Time and Energy",
+          "topics": [
+            "Time management and time plans",
+            "Energy management",
+            "Fatigue: physiological and psychological; ways to reduce",
+            "Work simplification"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Food and Personal Hygiene",
+      "marks": 8,
+      "chapters": [
+        {
+          "name": "Food and Personal Hygiene",
+          "topics": [
+            "Hygienic selection, cooking and serving of food",
+            "Kitchen hygiene; personal hygiene of food handlers",
+            "Storage: leftovers, refrigerator"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Meal Planning",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Meal Planning",
+          "topics": [
+            "Concept and importance",
+            "Factors: age, sex, climate, occupation, cost, family size, occasion, availability, traditions, preferences",
+            "ICMR basic food groups",
+            "Planning balanced meals for self and family"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Food Safety and Consumer Education",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "Food Safety and Consumer Education",
+          "topics": [
+            "Consumer problems: price, quality, weights, availability, misleading information",
+            "Food adulteration: metanil yellow, argemone, kesari dal",
+            "FSSAI (2006): unsafe, substandard, contaminated food; hazards; functions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Care and Maintenance of Fabrics and Apparel",
+      "marks": 13,
+      "chapters": [
+        {
+          "name": "Care and Maintenance of Fabrics and Apparel",
+          "topics": [
+            "Soaps, detergents, blues, stiffening agents, bleaches, stain removers",
+            "Stain removal: classification, identification, methods, precautions",
+            "Storage of cotton, silk, wool, synthetics"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

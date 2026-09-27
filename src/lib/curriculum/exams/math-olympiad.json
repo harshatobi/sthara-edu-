@@ -1,0 +1,277 @@
+{
+  "id": "math-olympiad",
+  "exam": "Mathematical Olympiad (IOQM / RMO / INMO)",
+  "conductingBody": "HBCSE-TIFR with the Mathematics Teachers' Association (India)",
+  "cycle": "2026-27",
+  "track": "Olympiad",
+  "classes": [
+    "8",
+    "9",
+    "10",
+    "11",
+    "12"
+  ],
+  "source": {
+    "title": "HBCSE Olympiad syllabus: Mathematical Olympiad",
+    "url": "https://olympiads.hbcse.tifr.res.in/how-to-prepare/syllabus/",
+    "retrievedOn": "2026-09-26"
+  },
+  "subjects": [
+    {
+      "subject": "Mathematics",
+      "units": [
+        {
+          "code": "A",
+          "name": "Algebra",
+          "topics": [
+            "Inequalities",
+            "progressions (AP, GP, HP)",
+            "theory of indices",
+            "systems of linear equations",
+            "theory of equations",
+            "binomial theorem and binomial coefficients",
+            "complex numbers",
+            "polynomials in one and two variables",
+            "functional equations",
+            "sequences"
+          ],
+          "mapsTo": [
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "Power Play"
+            },
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "We Distribute, Yet Things Multiply"
+            },
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "Algebra Play"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Polynomials"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Sequences and Progressions"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Exploring Algebraic Identities"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Polynomials"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Quadratic Equations"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Arithmetic Progressions"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Complex Numbers and Quadratic Equations"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Binomial Theorem"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Sequence and Series"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Linear Inequalities"
+            }
+          ],
+          "beyondBoard": [
+            "Olympiad inequalities (AM-GM, Cauchy-Schwarz style), harmonic progressions, theory of equations, polynomials in two variables and functional equations go well beyond the board"
+          ]
+        },
+        {
+          "code": "G",
+          "name": "Plane Geometry",
+          "topics": [
+            "Triangles, quadrilaterals, circles and their properties",
+            "Euclidean constructions",
+            "concurrency and collinearity (Ceva, Menelaus)",
+            "trigonometric identities, compound, multiple and sub-multiple angles, general solutions",
+            "sine and cosine rules",
+            "properties of triangles and polygons",
+            "coordinate geometry (lines, circles, conics, 3D)",
+            "vectors"
+          ],
+          "mapsTo": [
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "Quadrilaterals"
+            },
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "The Baudhayana-Pythagoras Theorem"
+            },
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "Exploring Some Geometric Themes"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Euclid's Geometry: Axioms and Postulates"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Lines and Angles"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Triangles: Congruence Theorems"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "4-gons (Quadrilaterals)"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Circles"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Triangles"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Circles"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Introduction to Trigonometry"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Trigonometric Identities"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Trigonometric Functions"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Straight Lines"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Conic Sections"
+            }
+          ],
+          "beyondBoard": [
+            "Ceva's and Menelaus' theorems; sine and cosine rules and properties of triangles; olympiad synthetic geometry (not in the board syllabus)"
+          ]
+        },
+        {
+          "code": "C",
+          "name": "Combinatorics",
+          "topics": [
+            "Basic enumeration",
+            "pigeonhole principle",
+            "recursion",
+            "elementary graph theory"
+          ],
+          "mapsTo": [
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "Tales by Dots and Lines"
+            },
+            {
+              "class": "11",
+              "subject": "Mathematics",
+              "chapter": "Permutations and Combinations"
+            }
+          ],
+          "beyondBoard": [
+            "Pigeonhole principle, recursion and graph theory (not in the board syllabus)"
+          ]
+        },
+        {
+          "code": "N",
+          "name": "Number Theory",
+          "topics": [
+            "Divisibility, division algorithm, GCD, Euclidean algorithm, ax + by = c",
+            "fundamental theorem of arithmetic",
+            "congruences, linear congruences, Chinese remainder theorem",
+            "Fermat's little theorem, Wilson's theorem, Euler's phi function and theorem",
+            "Pythagorean triples",
+            "Diophantine equations"
+          ],
+          "mapsTo": [
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "A Square and A Cube"
+            },
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "A Story of Numbers"
+            },
+            {
+              "class": "8",
+              "subject": "Mathematics",
+              "chapter": "Number Play"
+            },
+            {
+              "class": "9",
+              "subject": "Mathematics",
+              "chapter": "Number System"
+            },
+            {
+              "class": "10",
+              "subject": "Mathematics",
+              "chapter": "Real Numbers"
+            }
+          ],
+          "beyondBoard": [
+            "Modular arithmetic, CRT, Fermat, Wilson and Euler theorems, Diophantine equations (not in the board syllabus)"
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Aspirants are expected to know all NCERT Mathematics of Classes 8-10; the listed areas carry most problems and the list is not exhaustive.",
+    "Class 8 links point to the NCERT Ganita Prakash chapters."
+  ]
+}

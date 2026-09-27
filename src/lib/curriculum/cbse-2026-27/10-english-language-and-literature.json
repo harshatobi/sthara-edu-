@@ -1,0 +1,319 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "English Language and Literature",
+  "codes": [
+    "184"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "English",
+    "English LL"
+  ],
+  "source": {
+    "title": "English Language and Literature, Code 184, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/English_LL_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Periodic assessment",
+        "marks": 5
+      },
+      {
+        "component": "Multiple assessment",
+        "marks": 5
+      },
+      {
+        "component": "Portfolio",
+        "marks": 5
+      },
+      {
+        "component": "Subject enrichment: assessment of listening and speaking skills",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "First Flight (NCERT)",
+    "Footprints without Feet (NCERT)",
+    "Words and Expressions II (workbook): units 1-4 and 7-11"
+  ],
+  "notes": [
+    "Internal assessment as per CBSE circular Acad-11/2019."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "Reading Skills",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Unseen Passages",
+          "topics": [
+            "Discursive passage of 400-450 words (10)",
+            "Case-based factual passage with visual input, 200-250 words (10)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B1",
+      "name": "Grammar",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Grammar",
+          "topics": [
+            "Determiners, tenses, modals, subject-verb concord",
+            "Reported speech: commands and requests, statements, questions",
+            "Gap filling, editing, transformation: 10 of 12"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B2",
+      "name": "Writing Skills",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Formal Letter",
+          "topics": [
+            "Based on a given situation, 100-120 words (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Analytical Paragraph",
+          "topics": [
+            "On a map, chart, graph or cues, 100-120 words (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C1",
+      "name": "Literature: First Flight",
+      "marks": 28,
+      "chapters": [
+        {
+          "name": "A Letter to God",
+          "topics": [
+            "Prose (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Nelson Mandela: Long Walk to Freedom",
+          "topics": [
+            "Prose (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Two Stories about Flying",
+          "topics": [
+            "Prose: His First Flight; Black Aeroplane (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "From the Diary of Anne Frank",
+          "topics": [
+            "Prose (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Glimpses of India",
+          "topics": [
+            "Prose: A Baker from Goa; Coorg; Tea from Assam (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mijbil the Otter",
+          "topics": [
+            "Prose (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Madam Rides the Bus",
+          "topics": [
+            "Prose (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Sermon at Benares",
+          "topics": [
+            "Prose (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Proposal",
+          "topics": [
+            "Play (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dust of Snow",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Fire and Ice",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Tiger in the Zoo",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "How to Tell Wild Animals",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Ball Poem",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Amanda!",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Trees",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Fog",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Tale of Custard the Dragon",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "For Anne Gregory",
+          "topics": [
+            "Poem (First Flight)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Extracts 10, four short answers 12, one long answer 6."
+      ]
+    },
+    {
+      "code": "C2",
+      "name": "Supplementary Reader: Footprints without Feet",
+      "marks": 12,
+      "chapters": [
+        {
+          "name": "A Triumph of Surgery",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Thief's Story",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Midnight Visitor",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "A Question of Trust",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Footprints without Feet",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Making of a Scientist",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Necklace",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bholi",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Book That Saved the Earth",
+          "topics": [
+            "Story (Footprints without Feet)"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "Two short answers 6, one long answer 6."
+      ]
+    }
+  ]
+}

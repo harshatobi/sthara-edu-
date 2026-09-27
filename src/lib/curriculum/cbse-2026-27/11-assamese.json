@@ -1,0 +1,196 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Assamese",
+  "codes": [
+    "114"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Asamiya",
+    "অসমীয়া"
+  ],
+  "source": {
+    "title": "Assamese, Code 114, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Assamese_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Assignment",
+        "marks": 10
+      },
+      {
+        "component": "Speaking and listening",
+        "marks": 10
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Sourav (Assam State Textbook Production and Publication Corporation, Guwahati)",
+    "Rachana Bichitra, Dharma Singha Deka (Assam Book Depot, Guwahati)"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Reading",
+      "marks": 15,
+      "chapters": [
+        {
+          "name": "Bodh Parikshyan (Class XI)",
+          "topics": [
+            "One unseen passage of at least 500 words: 6 general questions of 2 marks and 3 grammar-based questions"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Likhan Kala (Writing)",
+      "marks": 25,
+      "chapters": [
+        {
+          "name": "Galpa Likhan / Rachana (Class XI)",
+          "topics": [
+            "Story or essay (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pratibedan Prastutkaran (Class XI)",
+          "topics": [
+            "Report on current topics (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Phakara Jojana (Class XI)",
+          "topics": [
+            "Proverbs, serial numbers 21-30 (5)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bhab Samprasaran (Class XI)",
+          "topics": [
+            "5 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bakya Rachana: Jatuwa Khandabakya (Class XI)",
+          "topics": [
+            "Hat, mur, mon, pet, pani (5)"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Byakaran (Grammar)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Bachya",
+          "topics": [
+            "Voice (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Samas (Class XI)",
+          "topics": [
+            "Dwandwa, Dwigu, Bahubrihi, Karmadharay, Tatpurush, Abyayibhab (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bibhakti",
+          "topics": [
+            "Kriya and Nam Bibhakti (4)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Karak",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Bak Sanhati",
+          "topics": [
+            "4 marks"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Gadya (Prose)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Kitapar Katha",
+          "topics": [
+            "Prafulla Dutta Goswami"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Gaurav",
+          "topics": [
+            "Kaliram Medhi"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Biyar Present",
+          "topics": [
+            "Sayad Abdul Malik"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Padya (Poetry)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Bargeet: Jai Jai Jadawa",
+          "topics": [
+            "Sri Sri Shankardev"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dhanbar Aru Ratani",
+          "topics": [
+            "Lakshminath Bezbaruah"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Lachit Phukan",
+          "topics": [
+            "Debakanta Baruah"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

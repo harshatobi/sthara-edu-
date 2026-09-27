@@ -1,0 +1,145 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Entrepreneurship",
+  "codes": [
+    "066"
+  ],
+  "stream": "Commerce",
+  "source": {
+    "title": "Entrepreneurship, Code 066, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Enterprenuership_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Project 1",
+        "marks": 10
+      },
+      {
+        "component": "Project 2",
+        "marks": 10
+      },
+      {
+        "component": "Numerical assessment",
+        "marks": 5
+      },
+      {
+        "component": "Viva voce",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "Entrepreneurship, Class XII (CBSE textbook)"
+  ],
+  "notes": [
+    "The document gives marks for groups of units; each group is recorded as one unit carrying the group's marks.",
+    "Projects: a business plan and a market survey."
+  ],
+  "units": [
+    {
+      "code": "1-2",
+      "name": "Entrepreneurial Opportunity; Entrepreneurial Planning",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Entrepreneurial Opportunity",
+          "number": 1,
+          "topics": [
+            "Sensing opportunities; environment scanning",
+            "Problem identification; idea fields; spotting trends",
+            "Creativity and innovation",
+            "Selecting the right opportunity"
+          ],
+          "outcomes": [
+            "Discuss the process of sensing opportunities",
+            "Transform ideas into business opportunities"
+          ]
+        },
+        {
+          "name": "Entrepreneurial Planning",
+          "number": 2,
+          "topics": [
+            "Forms of business organisation: sole proprietorship, partnership, company",
+            "Business plan: concept and format",
+            "Components: organisational, operational, production, financial, marketing, human resource plans"
+          ],
+          "outcomes": [
+            "Differentiate public and private companies",
+            "Develop a business plan"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "3-4",
+      "name": "Enterprise Marketing; Enterprise Growth Strategies",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Enterprise Marketing",
+          "number": 3,
+          "topics": [
+            "Marketing and sales strategy",
+            "Branding, logo, tagline",
+            "Promotion strategy"
+          ],
+          "outcomes": [
+            "Explain the marketing mix, pricing methods and channels of distribution",
+            "Discuss tools of promotion and sales promotion techniques"
+          ]
+        },
+        {
+          "name": "Enterprise Growth Strategies",
+          "number": 4,
+          "topics": [
+            "Franchising: concept, types, advantages and limitations",
+            "Mergers and acquisitions: concept, types and reasons"
+          ],
+          "outcomes": [
+            "Appreciate growth through franchising, mergers and acquisitions"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "5-6",
+      "name": "Business Arithmetic; Resource Mobilisation",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "Business Arithmetic",
+          "number": 5,
+          "topics": [
+            "Unit of sale and unit cost for multiple products or services",
+            "Break-even analysis for multiple products or services",
+            "Working capital",
+            "Inventory control and EOQ",
+            "Return on investment and return on equity"
+          ],
+          "outcomes": [
+            "Calculate break-even, working capital, ROI, ROE and EOQ"
+          ]
+        },
+        {
+          "name": "Resource Mobilisation (Class XII)",
+          "number": 6,
+          "topics": [
+            "Capital market: concept",
+            "Primary market: concept and methods of issue",
+            "Angel investors: features",
+            "Venture capital: features and funding"
+          ],
+          "outcomes": [
+            "Understand ways of raising funds"
+          ]
+        }
+      ]
+    }
+  ]
+}

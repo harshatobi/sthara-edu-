@@ -1,0 +1,74 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "12", "subject": "Economics", "codes": ["030"], "stream": "Humanities",
+  "aliases": ["Eco"],
+  "source": { "title": "Economics, Code 030, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Economics_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [
+    { "component": "Project: relevance of the topic", "marks": 3 },
+    { "component": "Project: knowledge content / research work", "marks": 6 },
+    { "component": "Project: presentation technique", "marks": 3 },
+    { "component": "Project: viva voce", "marks": 8 }
+  ] },
+  "textbooks": ["Introductory Macroeconomics (NCERT)", "Indian Economic Development (NCERT)", "Supplementary Reading Material in Economics (CBSE)"],
+  "notes": ["The document has no learning-outcomes column for Economics, so chapter outcomes are left empty.", "One project of 3,500-4,000 words per session."],
+  "units": [
+    { "code": "1", "name": "National Income and Related Aggregates", "marks": 10, "chapters": [
+      { "name": "National Income Accounting", "topics": [
+        "What is macroeconomics? Consumption goods, capital goods, final and intermediate goods; stocks and flows; gross investment and depreciation",
+        "Circular flow of income (two sector model)",
+        "Methods of calculating national income: value added (product), expenditure and income methods",
+        "GNP, NNP, GDP and NDP at market price and at factor cost; real and nominal GDP",
+        "GDP deflator; GDP and welfare"
+      ], "outcomes": [] }
+    ] },
+    { "code": "2", "name": "Money and Banking", "marks": 6, "chapters": [
+      { "name": "Money and Banking", "topics": [
+        "Money: meaning and functions; supply of money: currency held by the public and net demand deposits of commercial banks",
+        "Money creation by the commercial banking system",
+        "Central bank and its functions (RBI): bank of issue, government's bank, bankers' bank",
+        "Credit control: bank rate, CRR, SLR, repo and reverse repo rate, open market operations, margin requirement"
+      ], "outcomes": [] }
+    ] },
+    { "code": "3", "name": "Determination of Income and Employment", "marks": 12, "chapters": [
+      { "name": "Determination of Income and Employment", "topics": [
+        "Aggregate demand and its components",
+        "Average and marginal propensity to consume and to save",
+        "Short-run equilibrium output; investment multiplier and its mechanism",
+        "Full employment and involuntary unemployment",
+        "Excess and deficient demand; correction through government spending, taxes and money supply"
+      ], "outcomes": [] }
+    ] },
+    { "code": "4", "name": "Government Budget and the Economy", "marks": 6, "chapters": [
+      { "name": "Government Budget and the Economy", "topics": [
+        "Government budget: meaning, objectives and components",
+        "Revenue and capital receipts; revenue and capital expenditure",
+        "Balanced, surplus and deficit budget; measures of government deficit"
+      ], "outcomes": [] }
+    ] },
+    { "code": "5", "name": "Balance of Payments", "marks": 6, "chapters": [
+      { "name": "Open Economy Macroeconomics", "topics": [
+        "Balance of payments account: meaning and components; surplus and deficit",
+        "Foreign exchange rate: fixed, flexible and managed floating",
+        "Determination of exchange rate in a free market; merits and demerits of flexible and fixed rates"
+      ], "outcomes": [] }
+    ] },
+    { "code": "6", "name": "Development Experience (1947-90) and Economic Reforms since 1991", "marks": 12, "chapters": [
+      { "name": "Indian Economy on the Eve of Independence", "topics": ["State of the Indian economy on the eve of independence"], "outcomes": [] },
+      { "name": "Indian Economy 1950-1990", "topics": [
+        "Indian economic system and common goals of Five Year Plans",
+        "Agriculture: features, problems and policies (institutional aspects and new agricultural strategy)",
+        "Industry: IPR 1956; small scale industry, role and importance",
+        "Foreign trade"
+      ], "outcomes": [] },
+      { "name": "Liberalisation, Privatisation and Globalisation: An Appraisal", "topics": ["Features and appraisal of the LPG policy since 1991", "Concepts of demonetisation and GST"], "outcomes": [] }
+    ] },
+    { "code": "7", "name": "Current Challenges facing Indian Economy", "marks": 20, "chapters": [
+      { "name": "Human Capital Formation in India", "topics": ["How people become a resource", "Role of human capital in economic development", "Growth of the education sector in India"], "outcomes": [] },
+      { "name": "Rural Development", "topics": ["Key issues: credit and marketing; role of cooperatives", "Agricultural diversification", "Alternative farming: organic farming"], "outcomes": [] },
+      { "name": "Employment: Growth, Informalisation and Other Issues", "topics": ["Growth and changes in work force participation in formal and informal sectors", "Problems and policies"], "outcomes": [] },
+      { "name": "Environment and Sustainable Development", "topics": ["Sustainable economic development: meaning", "Effects of economic development on resources and environment, including global warming"], "outcomes": [] }
+    ] },
+    { "code": "8", "name": "Development Experience of India: A Comparison with Neighbours", "marks": 8, "chapters": [
+      { "name": "Comparative Development Experiences of India and its Neighbours", "topics": ["India and Pakistan", "India and China", "Issues: economic growth, population, sectoral development and other human development indicators"], "outcomes": [] }
+    ] }
+  ]
+}

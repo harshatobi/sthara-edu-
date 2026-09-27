@@ -1,0 +1,186 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Knowledge Traditions and Practices of India",
+  "codes": [
+    "073"
+  ],
+  "stream": "Humanities",
+  "aliases": [
+    "KTPI"
+  ],
+  "source": {
+    "title": "Knowledge Traditions and Practices of India, Code 073, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/KTPI_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 70,
+    "internal": 30,
+    "internalBreakdown": [
+      {
+        "component": "Internal assessment: projects on internal-assessment chapters",
+        "marks": 30
+      }
+    ]
+  },
+  "textbooks": [
+    "Knowledge Traditions and Practices of India, Class XII (CBSE)"
+  ],
+  "notes": [
+    "The document lists chapters with learning objectives and outcomes; topics here summarise those objectives.",
+    "Chapters marked formative are assessed only through internal projects."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Agriculture: A Survey",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Agriculture: A Survey",
+          "number": 1,
+          "topics": [
+            "Aspects of traditional Indian agriculture",
+            "Current practices and data",
+            "Relationship between agriculture, environment and society",
+            "Ways to address present challenges"
+          ],
+          "outcomes": [
+            "Analyse data on agricultural practices",
+            "Suggest ways to address current issues"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "2",
+      "name": "Architecture: A Survey",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Architecture: A Survey",
+          "number": 2,
+          "topics": [
+            "Architecture: a survey"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "3",
+      "name": "Dance: A Survey",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Dance: A Survey",
+          "number": 3,
+          "topics": [
+            "Dance: a survey"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "4",
+      "name": "Education Systems and Practices: A Survey",
+      "marks": 16,
+      "chapters": [
+        {
+          "name": "Education Systems and Practices: A Survey",
+          "number": 4,
+          "topics": [
+            "Processes and uniqueness of traditional Indian education",
+            "Stages of education and their evolution",
+            "Educational institutions",
+            "Comparison with modern systems"
+          ],
+          "outcomes": [
+            "Compare traditional and modern education systems"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "5",
+      "name": "Ethics: Individual and Social",
+      "marks": 17,
+      "chapters": [
+        {
+          "name": "Ethics: Individual and Social",
+          "number": 5,
+          "topics": [
+            "Origin of ethics in Indian thought",
+            "The four ends of life",
+            "Ethics in ancient texts",
+            "Comparison of ethical traditions"
+          ],
+          "outcomes": [
+            "Apply readings of ancient texts to present situations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "6",
+      "name": "Martial Arts Traditions: A Survey",
+      "marks": 17,
+      "chapters": [
+        {
+          "name": "Martial Arts Traditions: A Survey",
+          "number": 6,
+          "topics": [
+            "Varied Indian martial arts traditions",
+            "Physical fitness and discipline",
+            "Demonstration of one form"
+          ],
+          "outcomes": [
+            "Summarise martial arts traditions",
+            "Demonstrate at least one form"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "7",
+      "name": "Language and Grammar",
+      "marks": 0,
+      "chapters": [
+        {
+          "name": "Language and Grammar",
+          "number": 7,
+          "topics": [
+            "Language and grammar"
+          ],
+          "outcomes": [],
+          "formativeOnly": true
+        }
+      ]
+    },
+    {
+      "code": "8",
+      "name": "Other Technologies: A Survey",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "Other Technologies: A Survey",
+          "number": 8,
+          "topics": [
+            "Historical context of Indian technologies",
+            "Water management; textile technology",
+            "Writing materials; gemmology",
+            "Production technologies and evidence"
+          ],
+          "outcomes": [
+            "Evaluate the evolution of traditional technologies"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "9",
+  "subject": "Science at Advanced Level",
+  "codes": [],
+  "stream": "Science",
+  "aliases": [
+    "Science Advanced",
+    "Advanced Science"
+  ],
+  "source": {
+    "title": "Science at Advanced Level (Optional), Grade 9 (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/ScienceAd_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 0,
+    "internalBreakdown": []
+  },
+  "textbooks": [
+    "Science at Advanced Level, Grade 9 (CBSE, 2026-27)"
+  ],
+  "notes": [
+    "Optional advanced-level course under NCF 2023 for Grade 9. The CBSE document is the textbook itself and gives no assessment scheme, so no marks are recorded.",
+    "Topics are the section headings found in each chapter; chapters without clear headings list the chapter theme."
+  ],
+  "units": [
+    {
+      "code": "1",
+      "name": "Science at Advanced Level",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Measurement: Foundation of Science",
+          "number": 1,
+          "topics": [
+            "Different Systems of Units",
+            "Conversion of Units between different Systems"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Understanding Motion through Experience",
+          "number": 2,
+          "topics": [
+            "Frame of Reference",
+            "Vector Addition (Graphical Method)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Newton's Laws of Motion (Advanced)",
+          "number": 3,
+          "topics": [
+            "Limitations of Newton’s Laws in Accelerating Frames",
+            "Gravitation",
+            "Turning Forces (Moment of Force/Torque)"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "The Geometry of Power: Advanced Simple Machines",
+          "number": 4,
+          "topics": [
+            "Wheel and Axle – The Steering Mastery",
+            "Tension"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Work and Energy (Advanced)",
+          "number": 5,
+          "topics": [
+            "Conservative and non-conservative forces",
+            "Potential Energy of a Spring"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Structure of Atom (Advanced)",
+          "number": 6,
+          "topics": [
+            "Discovery of Subatomic Particles",
+            "Line Spectrum of Hydrogen",
+            "Limitation of Rutheford Model of Atom",
+            "Bohr’s model"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chemical Bonding",
+          "number": 7,
+          "topics": [
+            "Octet Rule",
+            "Metallic Bonding"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Mixtures and Separation of Mixtures",
+          "number": 8,
+          "topics": [
+            "Chromatography"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Microscope and Microscopy",
+          "number": 9,
+          "topics": [
+            "Microscope and microscopy"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Engineering Life: Miracles in Biotechnology",
+          "number": 10,
+          "topics": [
+            "Introduction to Biotechnology",
+            "Traditional vs Modern Biotechnology",
+            "Microbes as Tools in Biotechnology",
+            "Applications of Biotechnology in Daily Life",
+            "Ethical Issues in Biotechnology"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

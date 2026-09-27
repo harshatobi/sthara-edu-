@@ -1,0 +1,254 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "12",
+  "subject": "Kannada",
+  "codes": [
+    "115"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "ಕನ್ನಡ"
+  ],
+  "source": {
+    "title": "Kannada, Code 115, Class XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Kannada_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": null,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "Listening, speaking (pick and speak, elocution) and project work",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [
+    "Sahitya Sampada",
+    "Pallava (Abhyasa Pustaka)",
+    "Kannada Sahitya Charitre, R. S. Mugali"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections. Lesson names are given in the document's own transliteration.",
+    "The CBSE document prints the course structure without marks, so the theory paper and unit marks are not recorded. Internal assessment 20 follows the CBSE scheme for every Class IX-XII language; the document lists the activities but not the split."
+  ],
+  "units": [
+    {
+      "code": "Q",
+      "name": "Padya (Poetry)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vachanagalu (Basavanna and Urilingapeddi)",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Innu Huttade Irali Naariyarennavolu",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Pageyam Baalakanembare?",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Jaaliya Maradante",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Habbale Avara Rasaballi",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Shilube Eriddaane",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ondu Hoo Hechchige Iduttini",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Omme Nagutteve",
+          "topics": [
+            "Poetry"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Gadya (Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Aaykeyide Namma Kaiyalli",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Kannadavannu Kattuva Kelasa",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Dhanigala Belli Lota",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Badukannu Preetisida Santa",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Tirulgannadada Belnudi",
+          "topics": [
+            "Prose"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D",
+      "name": "Deergha Gadya (Long Prose)",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Krishnegowdana Aane",
+          "topics": [
+            "K. P. Poornachandra Tejasvi"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "H",
+      "name": "History of Kannada Literature",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Poets in the Class XII Textbook",
+          "topics": [
+            "Basavanna",
+            "Kumaravyasa",
+            "Purandara Dasa",
+            "D. R. Bendre",
+            "K. S. Nisar Ahmed",
+            "Ha. Ma. Nayak",
+            "Muddana",
+            "Puligere Somanatha"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "W",
+      "name": "Creative Writing",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Essay (Class XII)",
+          "topics": [
+            "Essay"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Letter (Class XII)",
+          "topics": [
+            "Letter to the editor or official letter"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "Grammar and Comprehension",
+      "marks": null,
+      "chapters": [
+        {
+          "name": "Vyakarana (MCQ, Class XII)",
+          "topics": [
+            "Vibhakti pratyaya",
+            "Opposite words",
+            "Meaning of words",
+            "Different meanings",
+            "Granthika roopa",
+            "Pada vichchedana",
+            "Sandhi",
+            "Samaasa",
+            "Tatsama-Tadbhava",
+            "Dhatu",
+            "Roopa nishpatti",
+            "Translation from English to Kannada",
+            "Changing tenses"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Vyakarana Barahavanige (Class XII)",
+          "topics": [
+            "Kartari-Karmani",
+            "Sentences into questions and negation",
+            "Compound to simple sentences and back",
+            "Proverbs"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Chhandassu (Class XII)",
+          "topics": [
+            "Champakamala",
+            "Kanda padya",
+            "Bhamini shatpadi",
+            "Tripadi",
+            "Sangatya"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Unseen and Seen Comprehension (Class XII)",
+          "topics": [
+            "Unseen passage and seen passage"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

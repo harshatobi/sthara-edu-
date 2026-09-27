@@ -18,7 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudentDesk } from '@/lib/student/useStudentDesk';
 import { DEMO_TUTOR } from '@/lib/demo/student';
 import { getTutorDepthScore } from '@/lib/tml/engine';
-import { flattenChapters, getCurriculum, subjectsForClass } from '@/lib/curriculum';
+import { coreSubjectsForClass, flattenChapters, getCurriculum, subjectsForClass } from '@/lib/curriculum';
+import { examsForChapter } from '@/lib/curriculum/exams';
 
 type Line = { who: 'ai' | 'me' | 'done'; text: string; good?: boolean };
 interface Topic { subject: string; name: string; start: number | null }
@@ -61,27 +62,75 @@ function Tutor() {
       {demo && <DemoNote />}
       {topic
         ? <Session key={`${topic.subject}:${topic.name}`} topic={topic} demo={demo} onNew={reset} />
-        : <Picker desk={desk} onPick={choose} />}
+        : <Picker desk={desk} onPick={choose} demo={demo} />}
     </>
   );
 }
 
 // ── Topic picker: weakest micro-topics first, or any topic typed in ─────────
-function Picker({ desk, onPick }: { desk: NonNullable<ReturnType<typeof useStudentDesk>['desk']>; onPick: (t: Topic) => void }) {
+interface ExamOption { id: string; exam: string; cycle: string; track: string }
+
+/** The student's exam track: exams the school has switched on, and which the student picked. */
+function useExamTrack(demo: boolean) {
+  const { getAuthToken } = useAuth();
+  // getAuthToken is a new function each render; keep the load effect from re-running on it.
+  const tokenRef = useRef(getAuthToken);
+  useEffect(() => { tokenRef.current = getAuthToken; });
+  const [available, setAvailable] = useState<ExamOption[]>([]);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (demo) return;
+    let live = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/student/exam-track', { headers: { Authorization: `Bearer ${await tokenRef.current()}` } });
+        const d = await res.json().catch(() => ({}));
+        if (live && res.ok) { setAvailable(d.available ?? []); setChosen(d.chosen ?? []); }
+      } catch { /* the picker works without an exam track */ }
+    })();
+    return () => { live = false; };
+  }, [demo]);
+  const toggle = async (id: string) => {
+    const next = chosen.includes(id) ? chosen.filter(x => x !== id) : [...chosen, id];
+    const before = chosen;
+    setChosen(next); setErr(null);
+    try {
+      const res = await fetch('/api/student/exam-track', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getAuthToken()}` }, body: JSON.stringify({ exams: next }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Could not save your exam track.');
+      setChosen(d.chosen ?? next);
+    } catch (e) { setChosen(before); setErr(e instanceof Error ? e.message : 'Could not save your exam track.'); }
+  };
+  return { available, chosen, toggle, err };
+}
+
+function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof useStudentDesk>['desk']>; onPick: (t: Topic) => void; demo: boolean }) {
+  const track = useExamTrack(demo);
   const weakest = desk.subjects
     .flatMap(s => s.topics.filter(t => t.score !== null).map(t => ({ subject: s.subject, name: t.name, start: t.score })))
     .sort((a, b) => (a.start ?? 0) - (b.start ?? 0))
     .slice(0, 5);
-  // Subjects offered: the official 2026-27 curriculum for the student's class
-  // first, then anything the student already has graded work in.
-  const official = subjectsForClass(desk.me.cls);
-  const subjectOptions = [...new Set([...official, ...desk.subjects.map(s => s.subject)])];
+  // Subjects offered: what the student already has graded work in, then the
+  // compulsory subjects of their class; every other CBSE subject of the class
+  // sits in a second group (Classes 11-12 have 40+ electives).
+  const mine = [...new Set([...desk.subjects.map(s => s.subject), ...coreSubjectsForClass(desk.me.cls)])];
+  const others = subjectsForClass(desk.me.cls).filter(s => !mine.includes(s) && !getCurriculum(desk.me.cls, s)?.aliases?.some(a => mine.includes(a)));
+  const subjectOptions = [...mine, ...others];
   const [subject, setSubject] = useState(subjectOptions[0] || 'Mathematics');
   const curriculum = getCurriculum(desk.me.cls, subject);
   const chapters = curriculum ? flattenChapters(curriculum) : [];
   const [chapter, setChapter] = useState('');
   const [custom, setCustom] = useState('');
   const OTHER = '__other__';
+  // "· JEE Main, NEET-UG" after chapters that feed the student's chosen exams.
+  const examTag = (chapterName: string) => {
+    if (!curriculum || !track.chosen.length) return '';
+    const names = [...new Set(examsForChapter(curriculum.class, curriculum.subject, chapterName, track.chosen).map(h => h.exam.exam.replace(/ \(.*\)$/, '')))];
+    return names.length ? ` · ${names.join(', ')}` : '';
+  };
   const topicName = chapter === OTHER || !curriculum ? custom.trim() : chapter;
 
   return (
@@ -114,7 +163,8 @@ function Picker({ desk, onPick }: { desk: NonNullable<ReturnType<typeof useStude
             <label className="lbl" htmlFor="tp-subj">SUBJECT</label>
             <select id="tp-subj" className="tin" style={{ width: '100%', marginBottom: 14 }} value={subject}
               onChange={e => { setSubject(e.target.value); setChapter(''); }}>
-              {subjectOptions.map(s => <option key={s}>{s}</option>)}
+              <optgroup label="Your subjects">{mine.map(s => <option key={s}>{s}</option>)}</optgroup>
+              {others.length > 0 && <optgroup label="Other CBSE subjects">{others.map(s => <option key={s}>{s}</option>)}</optgroup>}
             </select>
             {curriculum && (
               <>
@@ -124,7 +174,7 @@ function Picker({ desk, onPick }: { desk: NonNullable<ReturnType<typeof useStude
                   {curriculum.units.map(u => (
                     <optgroup key={u.code} label={u.marks !== null ? `${u.name} (${u.marks} marks)` : u.name}>
                       {chapters.filter(c => c.unitCode === u.code).map(c => (
-                        <option key={c.name} value={c.name}>{c.name}{c.formativeOnly ? ' (not in board exam)' : ''}</option>
+                        <option key={c.name} value={c.name}>{c.name}{c.formativeOnly ? ' (not in board exam)' : ''}{examTag(c.name)}</option>
                       ))}
                     </optgroup>
                   ))}
@@ -142,6 +192,20 @@ function Picker({ desk, onPick }: { desk: NonNullable<ReturnType<typeof useStude
           </form>
         </div>
       </div>
+      {track.available.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Exam track</h3>
+          <p className="muted" style={{ marginBottom: 12 }}>Preparing for an entrance exam? Pick it and the tutor marks the chapters that feed it and takes sessions to exam depth, including topics beyond the board syllabus.</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} role="group" aria-label="Exam track">
+            {track.available.map(e => (
+              <button key={e.id} type="button" className={`ch ${track.chosen.includes(e.id) ? 'b' : ''}`} aria-pressed={track.chosen.includes(e.id)} onClick={() => track.toggle(e.id)}>
+                {e.exam.replace(/ \(.*\)$/, '')} <span className="muted" style={{ fontSize: 11 }}>{e.cycle}</span>
+              </button>
+            ))}
+          </div>
+          {track.err && <p className="muted" style={{ marginTop: 8, color: '#E11D48' }}>{track.err}</p>}
+        </div>
+      )}
     </>
   );
 }

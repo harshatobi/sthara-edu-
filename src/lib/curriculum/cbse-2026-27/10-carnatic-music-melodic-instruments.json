@@ -1,0 +1,114 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "10",
+  "subject": "Carnatic Music (Melodic Instruments)",
+  "codes": [
+    "032"
+  ],
+  "stream": "Arts",
+  "source": {
+    "title": "Carnatic Music (Melodic Instruments), Code 032, Class X (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Carnatic_Melodic_SecP1_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 30,
+    "internal": 70,
+    "internalBreakdown": [
+      {
+        "component": "Adi tala varnam",
+        "marks": 8
+      },
+      {
+        "component": "Three kritis",
+        "marks": 12
+      },
+      {
+        "component": "Jatiswaram and swarajati",
+        "marks": 8
+      },
+      {
+        "component": "Raga details",
+        "marks": 14
+      },
+      {
+        "component": "Tuning",
+        "marks": 8
+      },
+      {
+        "component": "Internal assessment: project file 5, project work 5, periodic practical tests 10",
+        "marks": 20
+      }
+    ]
+  },
+  "textbooks": [],
+  "notes": [
+    "Theory is 30 marks without a unit-wise split."
+  ],
+  "units": [
+    {
+      "code": "T",
+      "name": "Theory",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "Raga Classification and Melakarta (Class X)",
+          "topics": [
+            "Raga classification in general",
+            "Outline of 72 melakartas"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Prescribed Ragas (Class X Melodic)",
+          "topics": [
+            "Suddha Saveri, Sriranjani, Kambhoji, Abhogi, Nata, Hindolam, Harikambhoji"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musical Forms and Notation (Class X Melodic)",
+          "topics": [
+            "Kriti, jatiswaram, varnam",
+            "Notation of Adi tala varnam and Roopaka tala geetams"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Musicians and the Instrument (Class X)",
+          "topics": [
+            "Lalgudi Jayaraman, M.S. Gopalakrishnan, S. Balachander, T.R. Mahalingam",
+            "Basic knowledge of the opted instrument"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "P",
+      "name": "Practical",
+      "marks": 50,
+      "practical": true,
+      "chapters": [
+        {
+          "name": "Varnam, Kritis and Jatiswaram (Class X)",
+          "topics": [
+            "Adi tala varnam in two speeds",
+            "Three kritis in prescribed ragas",
+            "Jatiswaram and swarajati"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "Ragas and Tuning (Class X)",
+          "topics": [
+            "Explaining the prescribed ragas",
+            "Tuning the instrument"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

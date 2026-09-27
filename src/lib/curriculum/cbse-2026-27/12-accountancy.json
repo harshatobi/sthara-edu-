@@ -1,0 +1,150 @@
+{
+  "board": "CBSE", "session": "2026-27", "class": "12", "subject": "Accountancy", "codes": ["055"], "stream": "Commerce",
+  "aliases": ["Accounts", "Accounting"],
+  "source": { "title": "Accountancy, Code 055, Classes XI-XII (2026-27)", "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Accountancy_SecP2_2026-27.pdf", "retrievedOn": "2026-09-26" },
+  "assessment": { "theory": 80, "internal": 20, "internalBreakdown": [{ "component": "Project file (or practical file with Computerised Accounting)", "marks": 12 }, { "component": "Viva voce", "marks": 8 }] },
+  "textbooks": ["Accountancy - I, Class XII (NCERT)", "Accountancy - II, Class XII (NCERT)", "Accountancy - Computerised Accounting System, Class XII (NCERT)"],
+  "notes": [
+    "Part B is either Financial Statement Analysis (units 3 and 4) or Computerised Accounting (unit CA), 20 marks either way.",
+    "Question paper design: remembering and understanding 32 marks, applying 24, analysing, evaluating and creating 24."
+  ],
+  "units": [
+    { "code": "1", "name": "Accounting for Partnership Firms", "marks": 36, "chapters": [
+      { "name": "Accounting for Partnership: Basic Concepts", "topics": [
+        "Partnership: features, partnership deed",
+        "Provisions of the Indian Partnership Act 1932 in the absence of a partnership deed",
+        "Fixed versus fluctuating capital accounts",
+        "Profit and loss appropriation account: division of profit among partners, guarantee of profits",
+        "Past adjustments relating to interest on capital, interest on drawings, salary and profit sharing ratio"
+      ], "outcomes": [
+        "State the meaning of partnership, partnership firm and partnership deed, and the contents of the deed",
+        "Discuss the provisions of the Partnership Act that apply in the absence of a deed",
+        "Differentiate fixed and fluctuating capital and prepare the profit and loss appropriation account, including guarantee of profits",
+        "Make past adjustments"
+      ], "notes": ["Interest on partner's loan is treated as a charge against profits."] },
+      { "name": "Goodwill: Nature and Valuation", "topics": [
+        "Goodwill: meaning, nature, factors affecting, need for valuation",
+        "Methods of valuation: average profit, super profit and capitalisation",
+        "Adjustment through partners' capital or current account"
+      ], "outcomes": ["State the meaning, nature and factors affecting goodwill", "Value goodwill by different methods"] },
+      { "name": "Change in Profit Sharing Ratio among Existing Partners", "topics": [
+        "Sacrificing ratio and gaining ratio",
+        "Revaluation of assets and reassessment of liabilities; treatment of reserves, accumulated profits and losses",
+        "Preparation of revaluation account and balance sheet"
+      ], "outcomes": [
+        "State the meaning of sacrificing ratio, gaining ratio and change in profit sharing ratio",
+        "Prepare the revaluation account and balance sheet on a change in profit sharing ratio"
+      ] },
+      { "name": "Admission of a Partner", "topics": [
+        "Effect of admission on profit sharing ratio",
+        "Treatment of goodwill as per AS 26",
+        "Revaluation of assets and reassessment of liabilities; treatment of reserves, accumulated profits and losses",
+        "Adjustment of capital accounts; preparation of capital, current account and balance sheet"
+      ], "outcomes": [
+        "Explain the effect of admission of a new partner on profit sharing ratio",
+        "Account for goodwill, revaluation, reserves and capital adjustment and prepare the new firm's balance sheet"
+      ] },
+      { "name": "Retirement and Death of a Partner", "topics": [
+        "Effect of retirement or death on profit sharing ratio",
+        "Treatment of goodwill as per AS 26; revaluation of assets and reassessment of liabilities",
+        "Adjustment of accumulated profits, losses and reserves; adjustment of capital accounts",
+        "Preparation of capital, current account and balance sheet; loan account of the retiring partner",
+        "Deceased partner's share of profit till the date of death; deceased partner's capital account and executor's account"
+      ], "outcomes": [
+        "Explain the effect of retirement or death of a partner on profit sharing ratio",
+        "Account for goodwill, revaluation, reserves and capital adjustment on retirement or death",
+        "Calculate a deceased partner's share till death and prepare the deceased partner's and executor's accounts",
+        "Prepare remaining partners' capital accounts and the firm's balance sheet"
+      ] },
+      { "name": "Dissolution of Partnership Firm", "topics": [
+        "Meaning of dissolution of partnership and of partnership firm; types of dissolution",
+        "Settlement of accounts: realisation account, partners' capital accounts and cash or bank account"
+      ], "outcomes": [
+        "Understand the situations under which a partnership firm can be dissolved",
+        "Prepare the realisation account and related accounts"
+      ], "notes": [
+        "Excluding piecemeal distribution, sale to a company and insolvency of partners.",
+        "Tangible assets with no realised value given are taken at book value; intangible assets at nil.",
+        "Where realisation expenses are borne by a partner, the question must say how they were paid."
+      ] }
+    ] },
+    { "code": "2", "name": "Accounting for Companies", "marks": 24, "chapters": [
+      { "name": "Accounting for Share Capital", "topics": [
+        "Features and types of companies; share and share capital: nature and types",
+        "Issue and allotment of equity and preference shares; over and under subscription",
+        "Issue at par and at premium; calls in advance and calls in arrears (excluding interest); issue for consideration other than cash",
+        "Private placement, Employee Stock Option Plan (ESOP), sweat equity",
+        "Forfeiture and re-issue of shares",
+        "Disclosure of share capital in the company balance sheet"
+      ], "outcomes": [
+        "Differentiate equity and preference shares and types of share capital",
+        "Account for the issue, forfeiture and re-issue of shares",
+        "Present share capital in the balance sheet as per Schedule III Part I of the Companies Act 2013"
+      ] },
+      { "name": "Issue and Redemption of Debentures", "topics": [
+        "Debentures: meaning, types",
+        "Issue at par, at a premium and at a discount; issue for consideration other than cash; issue with terms of redemption",
+        "Debentures as collateral security: concept",
+        "Interest on debentures",
+        "Writing off discount or loss on issue of debentures"
+      ], "outcomes": [
+        "Account for the different categories of debenture issue",
+        "Write off discount or loss on issue of debentures",
+        "Understand collateral security and its presentation in the balance sheet",
+        "Calculate interest on debentures and state the meaning of redemption"
+      ], "notes": [
+        "Concept of TDS on debenture interest is excluded.",
+        "Discount or loss on issue is written off in the year of allotment from Securities Premium (if any), then from the Statement of Profit and Loss as finance cost (AS 16)."
+      ] }
+    ] },
+    { "code": "3", "name": "Analysis of Financial Statements", "marks": 12, "chapters": [
+      { "name": "Financial Statements of a Company", "topics": [
+        "Meaning, nature, uses and importance of financial statements",
+        "Statement of profit and loss and balance sheet in the prescribed form with major headings and sub-headings as per Schedule III to the Companies Act 2013"
+      ], "outcomes": ["Present the balance sheet with major headings and sub-headings as per Schedule III"], "notes": ["Exceptional items, extraordinary items and profit or loss from discontinued operations are excluded."] },
+      { "name": "Tools for Financial Statement Analysis", "topics": [
+        "Financial statement analysis: meaning, significance, objectives, importance and limitations",
+        "Tools: comparative statements, common size statements, ratio analysis, cash flow analysis"
+      ], "outcomes": [
+        "State the meaning, objectives and limitations of financial statement analysis",
+        "Prepare comparative and common size statements and explain their uses and differences"
+      ] },
+      { "name": "Accounting Ratios", "topics": [
+        "Meaning, objectives, advantages, classification and computation",
+        "Liquidity ratios: current ratio and quick ratio",
+        "Solvency ratios: debt to equity, total asset to debt, proprietary, interest coverage, debt to capital employed",
+        "Activity ratios: inventory turnover, trade receivables turnover, trade payables turnover, fixed asset turnover, net asset turnover, working capital turnover",
+        "Profitability ratios: gross profit, operating, operating profit, net profit, return on investment"
+      ], "outcomes": ["Compute and interpret liquidity, solvency, activity and profitability ratios"], "notes": ["Net profit ratio is calculated on profit both before and after tax."] }
+    ] },
+    { "code": "4", "name": "Cash Flow Statement", "marks": 8, "chapters": [
+      { "name": "Cash Flow Statement", "topics": [
+        "Meaning, objectives, benefits; cash and cash equivalents",
+        "Classification of activities",
+        "Preparation as per AS 3 (Revised), indirect method only"
+      ], "outcomes": ["State the meaning and objectives of a cash flow statement", "Prepare a cash flow statement by the indirect method as per AS 3"], "notes": [
+        "Adjustments relating to depreciation and amortisation, profit or loss on sale of assets including investments, dividend (final and interim) and tax.",
+        "Bank overdraft and cash credit are short-term borrowings; current investments are marketable securities unless otherwise specified.",
+        "Previous year's proposed dividend is given effect as per AS 4."
+      ] }
+    ] },
+    { "code": "CA", "name": "Computerised Accounting", "marks": 20, "alternativeTo": ["3", "4"], "chapters": [
+      { "name": "Overview of Computerised Accounting System", "topics": [
+        "Application in accounting; features of computerised accounting system",
+        "Structure of CAS",
+        "Software packages: generic, specific, tailored"
+      ], "outcomes": [] },
+      { "name": "Accounting Application of Electronic Spreadsheet", "topics": [
+        "Concept and features of electronic spreadsheet",
+        "Generating accounting information: bank reconciliation statement, asset accounting, loan repayment schedule, ratio analysis",
+        "Data representation: graphs, charts and diagrams"
+      ], "outcomes": [] },
+      { "name": "Using Computerised Accounting System", "topics": [
+        "Installation of CAS, codification and hierarchy of account heads, creation of accounts",
+        "Data entry, validation and verification",
+        "Adjusting entries, preparation of balance sheet and profit and loss account with closing and opening entries",
+        "Need for and security features of the system"
+      ], "outcomes": [] }
+    ] }
+  ]
+}

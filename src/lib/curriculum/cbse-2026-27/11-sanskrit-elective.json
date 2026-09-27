@@ -1,0 +1,254 @@
+{
+  "board": "CBSE",
+  "session": "2026-27",
+  "class": "11",
+  "subject": "Sanskrit Elective",
+  "codes": [
+    "022"
+  ],
+  "stream": "Language",
+  "aliases": [
+    "Sanskrit (Elective)",
+    "संस्कृतम् (ऐच्छिकम्)"
+  ],
+  "source": {
+    "title": "Sanskrit (Elective), Code 022, Classes XI-XII (2026-27)",
+    "url": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Sanskrit_Elective_SecP2_2026-27.pdf",
+    "retrievedOn": "2026-09-26"
+  },
+  "assessment": {
+    "theory": 80,
+    "internal": 20,
+    "internalBreakdown": [
+      {
+        "component": "आवधिक-परीक्षा (periodic test)",
+        "marks": 5
+      },
+      {
+        "component": "बहुविधमूल्याङ्कनम् (multiple assessment)",
+        "marks": 5
+      },
+      {
+        "component": "निवेशसूचिका (portfolio)",
+        "marks": 5
+      },
+      {
+        "component": "भाषा-संवर्धनाय गतिविधयः (language enrichment activities)",
+        "marks": 5
+      }
+    ]
+  },
+  "textbooks": [
+    "शाश्वती प्रथमो भागः",
+    "संस्कृत-साहित्य-परिचय",
+    "व्याकरणसौरभम्",
+    "हायर संस्कृत ग्रामर (एम. आर. काले)",
+    "रचनानुवादकौमुदी",
+    "वेदपारिजात"
+  ],
+  "notes": [
+    "Language subject: units are the question paper's sections (भागः क-ङ). Lessons are those the CBSE document prescribes for the examination."
+  ],
+  "units": [
+    {
+      "code": "A",
+      "name": "अपठितावबोधनम् (Unseen Comprehension)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "अपठितः गद्यांशः",
+          "topics": [
+            "100-120 शब्दपरिमितः गद्यांशः",
+            "एकपदेन पूर्णवाक्येन च अवबोधनात्मकं कार्यम्; शीर्षकलेखनम्",
+            "भाषिककार्यम्: कर्तृ-क्रियापदचयनम्, विशेषण-विशेष्यचयनम्, पर्याय-विलोमपदचयनम्, सर्वनामस्थाने संज्ञाप्रयोगः"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "B",
+      "name": "रचनात्मककार्यम् (Composition)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "पत्रलेखनम्",
+          "topics": [
+            "पत्रलेखनम्"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अनुच्छेदलेखनम् अथवा संस्कृतभाषया अनुवादः",
+          "topics": [
+            "अनुच्छेदलेखनम् अथवा अनुवादः"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "अनुप्रयुक्तव्याकरणम् (Applied Grammar)",
+      "marks": 20,
+      "chapters": [
+        {
+          "name": "सन्धिः",
+          "topics": [
+            "सन्धिः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "शब्दरूपाणि",
+          "topics": [
+            "शब्दरूपाणि"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "धातुरूपाणि",
+          "topics": [
+            "धातुरूपाणि"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "प्रत्ययाः",
+          "topics": [
+            "प्रत्ययाः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "अव्ययानि",
+          "topics": [
+            "अव्ययानि"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कारकोपपदविभक्तयः",
+          "topics": [
+            "कारकोपपदविभक्तयः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "पठितपाठ्यांशेषु सरलसमस्तपदानां विग्रहाः",
+          "topics": [
+            "पठितपाठ्यांशेषु सरलसमस्तपदानां विग्रहाः"
+          ],
+          "outcomes": []
+        }
+      ]
+    },
+    {
+      "code": "D1",
+      "name": "पठितावबोधनम्: शाश्वती प्रथमो भागः (Prescribed Text)",
+      "marks": 30,
+      "chapters": [
+        {
+          "name": "वेदामृतम्",
+          "number": 1,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "परोपकाराय सतां विभूतयः",
+          "number": 2,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "मानो हि महतां धनम्",
+          "number": 3,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सौवर्णशकटिका",
+          "number": 4,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "आहारविचारः",
+          "number": 5,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "विज्ञाननौका",
+          "number": 7,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "कन्यामाणिक्यम्",
+          "number": 8,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "ईशः कुत्रास्ति",
+          "number": 9,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "सत्त्वमाहो रजस्तमः",
+          "number": 10,
+          "topics": [
+            "शाश्वती प्रथमो भागः"
+          ],
+          "outcomes": []
+        }
+      ],
+      "notes": [
+        "गद्यांशः, पद्यांशः, नाट्यांशः (5 each); प्रश्ननिर्माणम् 4; अन्वयः 3; भावार्थलेखनम्/चरित्रचित्रणम् 3.",
+        "सप्रसङ्गव्याख्या 5 अङ्काः।"
+      ]
+    },
+    {
+      "code": "D2",
+      "name": "संस्कृत-साहित्येतिहासस्य सामान्यः परिचयः (History of Sanskrit Literature)",
+      "marks": 10,
+      "chapters": [
+        {
+          "name": "संस्कृत भाषा उद्भव एवं विकास, वैदिक साहित्य",
+          "number": 1,
+          "topics": [
+            "संस्कृतभाषोद्भवविकासौ; वैदिक-साहित्यस्य परिचयः",
+            "पाठ्यपुस्तके सङ्कलित-अंशानां प्रमुखलेखकानां परिचयः"
+          ],
+          "outcomes": []
+        },
+        {
+          "name": "रामायण, महाभारत एवं पुराण",
+          "number": 3,
+          "topics": [
+            "लौकिक-साहित्यस्य परिचयः"
+          ],
+          "outcomes": []
+        }
+      ]
+    }
+  ]
+}

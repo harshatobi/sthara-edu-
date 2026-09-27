@@ -12,6 +12,7 @@ import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
 import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
 import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
 import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
+import { CalendarDotsIcon as CalendarDots } from '@phosphor-icons/react/dist/ssr/CalendarDots';
 import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
@@ -25,6 +26,7 @@ import { TeacherDeskProvider } from '@/lib/teacher/useTeacherDesk';
 // Canon teacher nav (mockup ROLES.teacher).
 const NAV: CanonNavItem[] = [
   { href: '/teacher', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true },
+  { href: '/teacher/schedule', label: 'My Schedule', short: 'Schedule', icon: CalendarDots },
   { href: '/teacher/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle },
   { href: '/teacher/attendance', label: 'Attendance', short: 'Register', icon: CalendarCheck },
   { href: '/teacher/homework', label: 'Homework', icon: FileText },

@@ -63,12 +63,13 @@ export default function PacingView({ course, today, onToast }: { course: Course;
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800 }}>Term &amp; timetable</h3>
           {!course.plan.saved && <Chip tone="a">NOT SAVED YET · SHOWING THE DEFAULT APRIL–FEBRUARY TERM</Chip>}
+          {course.plan.fromTimetable && <Chip tone="g">PERIODS FROM THE PUBLISHED TIMETABLE</Chip>}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
           <div className="cmp-fld"><label htmlFor="p-start">TERM STARTS</label><input id="p-start" type="date" className="cmp-in" value={plan.termStart} onChange={e => setPlan(p => ({ ...p, termStart: e.target.value }))} /></div>
           <div className="cmp-fld"><label htmlFor="p-end">TERM ENDS</label><input id="p-end" type="date" className="cmp-in" value={plan.termEnd} onChange={e => setPlan(p => ({ ...p, termEnd: e.target.value }))} /></div>
-          <div className="cmp-fld"><label htmlFor="p-ppw">PERIODS PER WEEK</label><input id="p-ppw" type="number" min={1} max={20} className="cmp-in" value={plan.periodsPerWeek} onChange={e => setPlan(p => ({ ...p, periodsPerWeek: Math.round(Number(e.target.value) || 1) }))} /></div>
-          <div className="cmp-fld"><label htmlFor="p-min">MINUTES PER PERIOD</label><input id="p-min" type="number" min={20} max={120} step={5} className="cmp-in" value={plan.periodMinutes} onChange={e => setPlan(p => ({ ...p, periodMinutes: Math.round(Number(e.target.value) || 40) }))} /></div>
+          <div className="cmp-fld"><label htmlFor="p-ppw">PERIODS PER WEEK</label><input id="p-ppw" type="number" min={1} max={20} className="cmp-in" disabled={course.plan.fromTimetable} value={plan.periodsPerWeek} onChange={e => setPlan(p => ({ ...p, periodsPerWeek: Math.round(Number(e.target.value) || 1) }))} /></div>
+          <div className="cmp-fld"><label htmlFor="p-min">MINUTES PER PERIOD</label><input id="p-min" type="number" min={20} max={120} step={5} className="cmp-in" disabled={course.plan.fromTimetable} value={plan.periodMinutes} onChange={e => setPlan(p => ({ ...p, periodMinutes: Math.round(Number(e.target.value) || 40) }))} /></div>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <button className="btn pri" disabled={!!busy || (!dirty && course.plan.saved)} onClick={saveTerm}>{busy === 'term' ? 'Saving…' : 'Save term'}</button>

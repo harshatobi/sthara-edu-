@@ -42,7 +42,11 @@ export function teachingDays(start: string, end: string): number {
 }
 
 // ── Model ───────────────────────────────────────────────────────────────────
-export interface CoursePlan { termStart: string; termEnd: string; periodsPerWeek: number; periodMinutes: number; saved: boolean }
+export interface CoursePlan {
+  termStart: string; termEnd: string; periodsPerWeek: number; periodMinutes: number; saved: boolean;
+  /** Periods per week and minutes come from the published timetable, not the teacher. */
+  fromTimetable?: boolean;
+}
 
 export interface TopicRow { topic: string; status: TopicStatus; taughtOn: string | null; note: string | null }
 

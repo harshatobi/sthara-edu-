@@ -1,0 +1,90 @@
+/* Scheduling additions to canon (src/styles/canon.css). Scoped under .canon, prefixed sch-. No print rules here:
+   printing opens its own window (src/components/schedule/print.ts), so nothing leaks into other pages' print. */
+
+/* segmented control */
+.canon .sch-seg { display:inline-flex; background:#EEF2F7; border-radius:11px; padding:4px; gap:2px; }
+.canon .sch-seg button { padding:7px 14px; border-radius:8px; font-size:12.5px; font-weight:700; color:var(--mut); }
+.canon .sch-seg button.on { background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,33,71,.08); }
+.canon .sch-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+.canon .sch-bar .sp { flex:1; }
+.canon .sch-sel { border:1.5px solid var(--line); border-radius:11px; padding:8px 12px; font-family:inherit; font-size:13.5px; color:var(--ink); background:#fff; max-width:100%; }
+.canon .sch-sel:focus-visible { outline:2px solid var(--blue); outline-offset:1px; }
+
+/* week grid */
+.canon .sch-grid-wrap { overflow-x:auto; border-radius:14px; border:1px solid var(--line); background:#fff; }
+.canon .sch-grid { border-collapse:separate; border-spacing:0; width:100%; min-width:760px; font-size:13px; table-layout:fixed; }
+.canon .sch-grid th { background:#F7F9FB; font-size:11px; font-weight:800; letter-spacing:.07em; color:var(--mut); text-transform:uppercase; padding:10px 8px; border-bottom:1px solid var(--line); text-align:center; }
+.canon .sch-grid th.p { width:88px; text-align:left; padding-left:14px; position:sticky; left:0; z-index:1; }
+.canon .sch-grid th.p small { display:block; font-weight:600; letter-spacing:0; text-transform:none; color:var(--mut2); margin-top:2px; }
+.canon .sch-grid td { border-bottom:1px solid var(--line); border-left:1px solid var(--line); padding:4px; vertical-align:top; height:64px; }
+.canon .sch-grid tr:last-child td { border-bottom:0; }
+.canon .sch-grid tr.brk td, .canon .sch-grid tr.brk th { height:auto; background:#FAFBFD; padding:5px 8px; font-size:11px; color:var(--mut2); font-weight:700; letter-spacing:.06em; text-transform:uppercase; text-align:center; }
+.canon .sch-grid td.today { background:#F6FAFF; }
+.canon .sch-cell { width:100%; height:100%; min-height:56px; border-radius:9px; display:flex; flex-direction:column; gap:3px; text-align:left; background:none; padding:0; }
+.canon .sch-cell.edit { cursor:pointer; }
+.canon .sch-cell.edit:hover .sch-add { opacity:1; }
+.canon .sch-cell.drop { outline:2px dashed var(--blue); outline-offset:-2px; background:#F2F7FF; }
+.canon .sch-add { opacity:0; margin:auto; font-size:11.5px; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:4px; transition:opacity .15s; }
+.canon .sch-cell:focus-visible .sch-add { opacity:1; }
+.canon .sch-l { border-radius:8px; padding:6px 8px; background:var(--pale); border-left:3px solid var(--blue); line-height:1.3; min-width:0; }
+.canon .sch-l b { display:block; font-size:12.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.canon .sch-l span { display:block; font-size:11px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.canon .sch-l.clash { background:#FFF1F4; border-left-color:var(--red); }
+.canon .sch-l.clash b { color:#9F1239; }
+.canon .sch-l.off { opacity:.45; text-decoration:line-through; }
+.canon .sch-l[draggable="true"] { cursor:grab; }
+
+/* agenda (day and week lists) */
+.canon .sch-day { display:grid; grid-template-columns:92px 1fr; gap:0 16px; }
+.canon .sch-day .t { font-size:12px; font-weight:700; color:var(--mut); padding-top:12px; font-variant-numeric:tabular-nums; }
+.canon .sch-item { border-radius:12px; padding:11px 14px; margin:5px 0; background:#fff; border:1px solid var(--line); display:flex; gap:12px; align-items:center; }
+.canon .sch-item.lesson { border-left:4px solid var(--blue); }
+.canon .sch-item.bell { background:#FAFBFD; border-style:dashed; color:var(--mut); font-size:12.5px; padding:7px 14px; }
+.canon .sch-item.event { border-left:4px solid var(--purple); }
+.canon .sch-item.event.req { border-left-color:var(--amber); }
+.canon .sch-item.leave { background:#FFFBEB; border-color:#F7E3AE; border-left:4px solid var(--amber); }
+.canon .sch-item.covered { opacity:.55; }
+.canon .sch-item .m { flex:1; min-width:0; }
+.canon .sch-item .m b { font-size:14px; }
+.canon .sch-item .m div { font-size:12.5px; color:var(--mut); margin-top:2px; }
+.canon .sch-now { border-top:2px solid var(--red); position:relative; margin:4px 0; grid-column:1 / -1; }
+.canon .sch-now::before { content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--red); }
+
+/* month */
+.canon .sch-month { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#fff; }
+.canon .sch-month .h { background:#F7F9FB; font-size:11px; font-weight:800; letter-spacing:.07em; color:var(--mut); text-transform:uppercase; padding:9px 10px; border-bottom:1px solid var(--line); }
+.canon .sch-month .d { min-height:96px; padding:7px 8px; border-top:1px solid var(--line); border-left:1px solid var(--line); text-align:left; background:#fff; display:flex; flex-direction:column; gap:3px; min-width:0; }
+.canon .sch-month .d:nth-child(7n+1) { border-left:0; }
+.canon .sch-month .d.out { background:#FAFBFD; color:var(--mut2); }
+.canon .sch-month .d.today .n { background:var(--ink); color:#fff; }
+.canon .sch-month .d.off { background:#FFF8F8; }
+.canon .sch-month .n { font-size:12px; font-weight:800; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; }
+.canon .sch-month .tag { font-size:10.5px; font-weight:700; border-radius:6px; padding:2px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:var(--pale); color:var(--blue); }
+.canon .sch-month .tag.holiday { background:#FFE4EA; color:#9F1239; }
+.canon .sch-month .tag.exam { background:#F1ECFF; color:#5B3FD6; }
+.canon .sch-month .tag.ptm, .canon .sch-month .tag.meeting { background:#FFF3D6; color:#8A5A00; }
+.canon .sch-month .tag.leave { background:#FFFBEB; color:#8A5A00; }
+.canon .sch-month .cnt { font-size:11px; color:var(--mut); font-weight:600; }
+
+/* editors */
+.canon .sch-pop { position:fixed; inset:0; background:rgba(0,33,71,.28); display:grid; place-items:center; z-index:60; padding:16px; }
+.canon .sch-pop > div { background:#fff; border-radius:18px; box-shadow:0 20px 60px rgba(0,33,71,.25); width:min(560px,100%); max-height:calc(100vh - 32px); overflow:auto; padding:22px; }
+.canon .sch-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px 12px; }
+.canon .sch-periods .r { display:grid; grid-template-columns:120px 1fr 70px 96px 96px 34px; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); }
+.canon .sch-periods .r.hd { font-size:11px; font-weight:800; letter-spacing:.07em; color:var(--mut); text-transform:uppercase; border-bottom:0; }
+.canon .sch-periods input, .canon .sch-periods select { width:100%; border:1.5px solid var(--line); border-radius:9px; padding:7px 9px; font-family:inherit; font-size:13px; background:#fff; color:var(--ink); }
+.canon .sch-icon { width:34px; height:34px; border-radius:9px; display:grid; place-items:center; color:var(--mut); }
+.canon .sch-icon:hover { background:#F1F4F9; color:var(--red); }
+.canon .sch-load { display:grid; grid-template-columns:minmax(0,1fr) 150px 44px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; }
+.canon .sch-load:last-child { border-bottom:0; }
+.canon .sch-days { display:flex; gap:6px; flex-wrap:wrap; }
+.canon .sch-days button { width:44px; height:34px; border-radius:9px; border:1.5px solid var(--line); font-size:12px; font-weight:700; color:var(--mut); background:#fff; }
+.canon .sch-days button.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+
+@media (max-width:680px) {
+  .canon .sch-day { grid-template-columns:62px 1fr; gap:0 10px; }
+  .canon .sch-month .d { min-height:64px; padding:5px; }
+  .canon .sch-month .tag { display:none; }
+  .canon .sch-periods .r { grid-template-columns:1fr 1fr; }
+  .canon .sch-periods .r.hd { display:none; }
+}

@@ -106,6 +106,7 @@ export function solve(input: SolverInput): SolverResult {
   const rand = rng(input.seed ?? 1);
   const warnings: string[] = [];
   const sectionByKey = new Map(input.sections.map(s => [norm(s.cls), s]));
+  const reqById = new Map(input.requirements.map(r => [r.id, r]));
   const ruleOf = new Map(input.rules.map(r => [r.person, r]));
   const maxDay = (p: PersonKey) => ruleOf.get(p)?.maxPerDay ?? input.defaults.maxPerDay;
   const maxWeek = (p: PersonKey) => ruleOf.get(p)?.maxPerWeek ?? Infinity;
@@ -124,8 +125,9 @@ export function solve(input: SolverInput): SolverResult {
   const lockedReqCount = new Map<string, number>();
 
   // Locked lessons: they occupy their places and count towards their requirement.
-  const reqFor = (cls: string, subject: string, group: string) =>
-    input.requirements.find(r => norm(r.cls) === norm(cls) && subj(r.subject) === subj(subject) && r.group.toLowerCase() === group.toLowerCase());
+  const reqKey = (cls: string, subject: string, group: string) => `${norm(cls)}|${subj(subject)}|${group.toLowerCase()}`;
+  const reqByLesson = new Map(input.requirements.map(r => [reqKey(r.cls, r.subject, r.group), r]));
+  const reqFor = (cls: string, subject: string, group: string) => reqByLesson.get(reqKey(cls, subject, group));
   const lockedSeen = new Set<string>();
   for (const l of input.locked) {
     const ck = norm(l.cls);
@@ -251,7 +253,7 @@ export function solve(input: SolverInput): SolverResult {
     // Caps that depend on the placed load (these don't name a unit to move).
     const counted = (u.day === pos.day ? 0 : 1);
     for (const id of u.reqIds) {
-      const r = input.requirements.find(x => x.id === id)!;
+      const r = reqById.get(id)!;
       if ((reqDay.get(`${id}|${pos.day}`) || 0) + counted > r.maxPerDay) return { ok: false, conflicts, hard: 'per day' };
     }
     if (u.teacher) {
@@ -477,7 +479,7 @@ export function solve(input: SolverInput): SolverResult {
   for (const u of units) {
     if (u.day === null) continue;
     for (const p of u.periods) for (const sk of u.sections) {
-      const r = input.requirements.find(x => u.reqIds.includes(x.id) && norm(x.cls) === sk) ?? u.req;
+      const r = u.reqIds.map(id => reqById.get(id)!).find(x => norm(x.cls) === sk) ?? u.req;
       lessons.push({ cls: displayOf.get(sk) ?? r.cls, group: r.group, subject: u.req.subject, weekday: u.day, period: p, teacher: u.teacher, roomId: u.room, combined: u.sections.length > 1 });
     }
   }

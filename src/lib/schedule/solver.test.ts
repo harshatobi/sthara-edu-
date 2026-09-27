@@ -130,3 +130,25 @@ test('solver: what cannot be placed is reported with a reason', () => {
   assert.ok(hindi.every(u => /off|as often as allowed|elsewhere|busy|clashes/.test(u.reason)), hindi.map(u => u.reason).join(' | '));
   assert.equal(findClashes(toSlots(r.lessons), rooms).length, 0, 'still no clashes');
 });
+
+test('re-solving: one locked copy of a combined lesson keeps every copy; lessons the sheet lacks are kept, not dropped', async () => {
+  const { keptLessons } = await import('./solverInput');
+  const pe = (cls: string, locked: boolean) => ({ class: cls, group_label: '', weekday: 1, period_no: 3, subject: 'PE', teacher_id: 'T8', staff_member_id: null, room_id: 'ground', combined: true, locked });
+  const art = { class: 'Class 8-A', group_label: '', weekday: 2, period_no: 1, subject: 'Art', teacher_id: 'T9', staff_member_id: null, room_id: null, combined: false, locked: false };
+  const maths = { class: 'Class 9-A', group_label: '', weekday: 2, period_no: 2, subject: 'Mathematics', teacher_id: 'T1', staff_member_id: null, room_id: null, combined: false, locked: false };
+  const slots = [pe('Class 9-A', true), pe('Class 9-B', false), art, maths];
+  const reqs = [{ class: 'Class 9-A', subject: 'PE', group_label: '' }, { class: 'Class 9-B', subject: 'PE', group_label: '' }, { class: 'Class 9-A', subject: 'Mathematics', group_label: '' }];
+  const kept = keptLessons(slots, reqs);
+  assert.ok(kept.has(slots[0]) && kept.has(slots[1]), 'both copies of the locked combined PE');
+  assert.ok(kept.has(art), 'Art has no row on the sheet: kept where it is');
+  assert.ok(!kept.has(maths), 'Mathematics is on the sheet and unlocked: free to move');
+
+  // Solving with both PE copies kept places no extra PE (the week's two periods: one kept, one new).
+  const input = school();
+  const peReqs = input.requirements.filter(r => r.subject === 'Physical Education');
+  const r = solve({ ...input, locked: [
+    { cls: 'Class 9-A', group: '', subject: 'Physical Education', weekday: 1, period: 3, teacher: 'T8', roomId: 'ground', combined: true, locked: true },
+    { cls: 'Class 9-B', group: '', subject: 'Physical Education', weekday: 1, period: 3, teacher: 'T8', roomId: 'ground', combined: true, locked: true },
+  ], timeLimitMs: 400 });
+  for (const q of peReqs) assert.equal(r.lessons.filter(l => l.cls === q.cls && l.subject === 'Physical Education').length, 2, `${q.cls} PE stays at 2`);
+});

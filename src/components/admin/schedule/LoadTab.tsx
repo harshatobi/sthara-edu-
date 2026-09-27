@@ -12,7 +12,7 @@ import { useSolverData } from '@/lib/schedule/useSolverData';
 import { useAttendance } from '@/lib/attendance/useAttendance';
 import { dayOf } from '@/lib/attendance/engine';
 import { datesBetween } from '@/lib/schedule/engine';
-import type { PersonKey, ScheduleRows } from '@/lib/schedule/types';
+import { personKey, type PersonKey, type ScheduleRows } from '@/lib/schedule/types';
 import TeacherRules from './TeacherRules';
 
 type Call = <T = unknown>(path: string, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', body: unknown) => Promise<T>;
@@ -26,9 +26,10 @@ const FLAG: Record<LoadFlag, { t: string; tone: Tone; about: string }> = {
 type Range = 'week' | 'last4' | 'month' | 'term';
 const RANGES: [Range, string][] = [['week', 'This week'], ['last4', 'Last 4 weeks'], ['month', 'This month'], ['term', 'This session so far']];
 
+/** Every range ends today: what was taught, not what the timetable still has planned for later this week. */
 function rangeOf(r: Range, today: string) {
-  if (r === 'week') return { from: weekStart(today), to: addDays(weekStart(today), 6) };
-  if (r === 'last4') return { from: addDays(weekStart(today), -21), to: addDays(weekStart(today), 6) };
+  if (r === 'week') return { from: weekStart(today), to: today };
+  if (r === 'last4') return { from: addDays(weekStart(today), -21), to: today };
   if (r === 'month') return { from: monthStart(today), to: today };
   return { from: sessionStart(sessionOf()), to: today };
 }
@@ -52,18 +53,23 @@ export default function LoadTab({ rows, call, toast, canEditTargets }: { rows: S
   const [dept, setDept] = useState('');
   const { from, to } = rangeOf(range, today);
   const { data, error, reload } = useSolverData();
-  const att = useAttendance(from, to < today ? to : today);
+  const att = useAttendance(from, to);
 
   // Late days from the staff attendance register (finished days only).
   const lateDays = useMemo(() => {
     const a = att.data;
     if (!a) return undefined;
-    const end = to < today ? to : addDays(today, -1);
+    const end = to < today ? to : addDays(today, -1);  // today isn't finished
     if (end < from) return new Map<PersonKey, number>();
+    // Each person's punches once, rather than every punch scanned for every person and day.
+    const punchesOf = new Map<PersonKey, typeof a.rows.punches>();
+    for (const x of a.rows.punches) { const k = personKey(x.user_id, x.staff_member_id); if (!k) continue; const list = punchesOf.get(k); if (list) list.push(x); else punchesOf.set(k, [x]); }
+    const days = datesBetween(from, end);
     const m = new Map<PersonKey, number>();
     for (const p of a.people) {
+      const punches = punchesOf.get(p.key) ?? [];
       let n = 0;
-      for (const d of datesBetween(from, end)) if (dayOf(d, p, a.rows, null).status === 'late') n++;
+      for (const d of days) if (dayOf(d, p, a.rows, null, { punches }).status === 'late') n++;
       m.set(p.key, n);
     }
     return m;

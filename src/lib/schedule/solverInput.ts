@@ -71,8 +71,9 @@ export function buildInput(rows: ScheduleRows, reqs: RequirementRow[], rules: Lo
   const sections: SolverSection[] = sectionKeys.map(k => ({ cls: displayByKey.get(k)!, classTeacher: classTeacher.get(k) ?? null, days: gridFor(displayByKey.get(k)!, rows) }))
     .filter(s => s.days.length);
   const baseSlots = opts.base?.slots ?? [];
-  const locked = opts.base ? baseSlots.filter(s => (s as Slot & { locked?: boolean }).locked).map(s => asLesson(s, true)) : [];
-  const start = opts.base?.mode === 'repair' ? baseSlots.filter(s => !(s as Slot & { locked?: boolean }).locked).map(s => asLesson(s, false)) : undefined;
+  const keep = keptLessons(baseSlots, reqs);
+  const locked = opts.base ? baseSlots.filter(s => keep.has(s)).map(s => asLesson(s, true)) : [];
+  const start = opts.base?.mode === 'repair' ? baseSlots.filter(s => !keep.has(s)).map(s => asLesson(s, false)) : undefined;
   return {
     sections,
     requirements: reqs.map<SolverRequirement>(r => ({
@@ -87,6 +88,22 @@ export function buildInput(rows: ScheduleRows, reqs: RequirementRow[], rules: Lo
     rooms: rows.rooms.map(r => ({ id: r.id, kind: r.kind, active: r.active, homeClass: r.home_class })),
     locked, start, seed: opts.seed, timeLimitMs: opts.timeLimitMs,
   };
+}
+
+/**
+ * The base timetable's lessons the solver must keep where they are:
+ *  - locked lessons, and every section's copy of a locked combined lesson (one lesson taught to several sections is
+ *    locked as a whole, even if only one section's copy was ticked);
+ *  - lessons the requirements sheet doesn't cover (a section or subject with no row): the solver can't place those
+ *    again, so re-solving keeps them rather than dropping them.
+ */
+export function keptLessons(slots: Slot[], reqs: Pick<RequirementRow, 'class' | 'subject' | 'group_label'>[]): Set<Slot> {
+  const covered = new Set(reqs.map(r => `${normClass(r.class)}|${normSubject(r.subject)}|${(r.group_label || '').toLowerCase()}`));
+  const cell = (s: Slot) => `${s.weekday}|${s.period_no}|${slotPerson(s) ?? ''}|${normSubject(s.subject)}`;
+  const lockedCombined = new Set(slots.filter(s => s.locked && s.combined).map(cell));
+  return new Set(slots.filter(s => s.locked
+    || (s.combined && lockedCombined.has(cell(s)))
+    || !covered.has(`${normClass(s.class)}|${normSubject(s.subject)}|${(s.group_label || '').toLowerCase()}`)));
 }
 
 /** The solver's lessons as timetable slots (for saving as a draft and for the clash check). */

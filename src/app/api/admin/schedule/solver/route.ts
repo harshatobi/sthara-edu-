@@ -135,7 +135,12 @@ export async function POST(req: NextRequest) {
       seen.add(k);
       rows.push({ school_id: admin.schoolId, session, ...asRow(r), updated_by: admin.id });
     }
+    // Replacing: keep a copy of the sheet so a failure part-way puts it back rather than leaving it empty or partial.
+    let backup: Record<string, unknown>[] | null = null;
     if (b.replace) {
+      const { data: old, error: readErr } = await db.from('sched_requirements').select('*').eq('school_id', admin.schoolId).eq('session', session);
+      if (readErr) return dbError(readErr, 'Could not read the sheet.');
+      backup = (old || []).map(r => { const x: Record<string, unknown> = { ...r }; delete x.class_key; return x; });
       const { error } = await db.from('sched_requirements').delete().eq('school_id', admin.schoolId).eq('session', session);
       if (error) return dbError(error, 'Could not clear the sheet.');
     } else {
@@ -146,7 +151,16 @@ export async function POST(req: NextRequest) {
     }
     for (let i = 0; i < rows.length; i += 500) {
       const { error } = await db.from('sched_requirements').insert(rows.slice(i, i + 500));
-      if (error) return dbError(error, 'Could not save the requirements.');
+      if (error) {
+        if (backup) {
+          await db.from('sched_requirements').delete().eq('school_id', admin.schoolId).eq('session', session);
+          for (let j = 0; j < backup.length; j += 500) {
+            const { error: e } = await db.from('sched_requirements').insert(backup.slice(j, j + 500));
+            if (e) console.error('[solver] could not restore the requirements sheet after a failed replace:', e.message);
+          }
+        }
+        return dbError(error, backup ? 'Could not save the requirements. The sheet is as it was.' : 'Could not save the requirements.');
+      }
     }
     return NextResponse.json({ ok: true, added: rows.length });
   }

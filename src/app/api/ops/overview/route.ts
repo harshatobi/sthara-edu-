@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const mtd = usageWindow({ range: 'mtd' });
     const dayAgo = new Date(Date.now() - 86_400_000).toISOString(), hourAgo = new Date(Date.now() - 3_600_000).toISOString();
-    const [registry, inv, enquiries, journal, usage, operators, requests, errorGroups, lastHour] = await Promise.all([
+    const [registry, inv, enquiries, journal, usage, operators, requests, errorGroups] = await Promise.all([
       loadRegistry(db),
       collectInventory(db),
       db.from('enquiries').select('status'),
@@ -27,12 +27,15 @@ export async function GET(req: NextRequest) {
       db.from('users').select('id', { count: 'exact', head: true }).eq('role', 'superadmin'),
       db.from('account_requests').select('school_id, created_at').eq('status', 'pending'),
       db.from('app_error_groups').select('fingerprint, message, first_seen').eq('status', 'open').gte('last_seen', dayAgo).limit(1000),
-      db.from('app_errors').select('fingerprint, repeats').gte('at', hourAgo).limit(20000),
     ]);
     // The error log's pulse (tables may not exist yet on an older database: then no error items).
     const openGroups = errorGroups.error ? [] : errorGroups.data || [];
+    // Occurrences in the last hour per open group, counted in the database.
     const perHour = new Map<string, number>();
-    for (const e of lastHour.error ? [] : lastHour.data || []) perHour.set(e.fingerprint, (perHour.get(e.fingerprint) || 0) + e.repeats);
+    if (openGroups.length) {
+      const { data: st } = await db.rpc('ops_error_stats', { p_fingerprints: openGroups.map(g => g.fingerprint), p_since: hourAgo });
+      for (const [fp, v] of Object.entries((st as { groups?: Record<string, { inRange: number }> } | null)?.groups ?? {})) perHour.set(fp, Number(v.inRange));
+    }
     const errors = {
       open24h: openGroups.length,
       new24h: openGroups.filter(g => g.first_seen >= dayAgo).length,

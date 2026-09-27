@@ -52,24 +52,17 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const fps = (groups || []).map(g => g.fingerprint);
-  // Occurrences in the range for these groups (capped): hourly buckets for the last day, schools and people reached.
-  const { data: events } = fps.length
-    ? await db.from('app_errors').select('fingerprint, at, repeats, school_id, user_id').in('fingerprint', fps).gte('at', since).order('at', { ascending: false }).limit(20000)
-    : { data: [] as { fingerprint: string; at: string; repeats: number; school_id: string | null; user_id: string | null }[] };
-  const now = Date.now();
-  const stats = new Map<string, { inRange: number; hours: number[]; schools: Set<string>; users: Set<string> }>();
-  for (const e of events || []) {
-    const s = stats.get(e.fingerprint) ?? { inRange: 0, hours: Array(24).fill(0), schools: new Set<string>(), users: new Set<string>() };
-    s.inRange += e.repeats;
-    const h = Math.floor((now - Date.parse(e.at)) / 3_600_000);
-    if (h >= 0 && h < 24) s.hours[23 - h] += e.repeats;
-    if (e.school_id) s.schools.add(e.school_id);
-    if (e.user_id) s.users.add(e.user_id);
-    stats.set(e.fingerprint, s);
-  }
+  // Counted in the database (every occurrence, not a sample): in range, schools and people reached, and the last
+  // 24 hours by hour whatever the range.
+  type Stat = { inRange: number; schools: number; users: number; hours: number[] };
+  const { data: stats, error: statsErr } = fps.length
+    ? await db.rpc('ops_error_stats', { p_fingerprints: fps, p_since: since })
+    : { data: { groups: {}, schools: 0 }, error: null };
+  if (statsErr) return NextResponse.json({ error: statsErr.message }, { status: 500 });
+  const per = ((stats as { groups?: Record<string, Stat> } | null)?.groups ?? {});
   const rows = (groups || []).map(g => {
-    const s = stats.get(g.fingerprint);
-    return { ...g, inRange: s?.inRange ?? 0, hours: s?.hours ?? Array(24).fill(0), schools: s?.schools.size ?? 0, users: s?.users.size ?? 0 };
+    const s = per[g.fingerprint];
+    return { ...g, inRange: Number(s?.inRange ?? 0), hours: s?.hours ?? Array(24).fill(0), schools: Number(s?.schools ?? 0), users: Number(s?.users ?? 0) };
   }).sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || b.inRange - a.inRange);
   return NextResponse.json({
     groups: rows,
@@ -77,7 +70,7 @@ export async function GET(req: NextRequest) {
       events: rows.reduce((n, r) => n + r.inRange, 0),
       open: rows.filter(r => r.status === 'open').length,
       newGroups: rows.filter(r => Date.parse(r.first_seen) >= Date.parse(since)).length,
-      schools: new Set((events || []).map(e => e.school_id).filter(Boolean)).size,
+      schools: Number((stats as { schools?: number } | null)?.schools ?? 0),
     },
   });
 }

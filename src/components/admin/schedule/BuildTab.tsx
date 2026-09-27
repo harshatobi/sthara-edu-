@@ -11,7 +11,7 @@ import { Chip, Empty, Skeleton } from '@/components/canon/ui';
 import { CardHead, Kpi } from '@/components/admin/kit';
 import { plural } from '@/lib/admin/format';
 import { classOrder, findClashes, namesOf, sectionsOf, wingOf } from '@/lib/schedule/engine';
-import { buildInput, gridFor, reqTeacher, suggestRequirements, toSlots, type RequirementRow, type SolverSettingsRow } from '@/lib/schedule/solverInput';
+import { buildInput, gridFor, keptLessons, reqTeacher, suggestRequirements, toSlots, type RequirementRow, type SolverSettingsRow } from '@/lib/schedule/solverInput';
 import type { SolverResult } from '@/lib/schedule/solver';
 import { runSolver } from '@/lib/schedule/runSolver';
 import { useSolverData } from '@/lib/schedule/useSolverData';
@@ -88,6 +88,10 @@ function Solve({ rows, data, sections, call, toast, reload }: {
       });
       if (!input.sections.length) throw new Error('No section with requirements has bells set up yet.');
       const r = await runSolver(input);
+      if (mode === 'repair' && base) {
+        const off = [...keptLessons(baseSlots, data.requirements)].filter(s => !s.locked).length;
+        if (off) r.warnings.unshift(`${plural(off, 'lesson')} of ${base.name} ${off === 1 ? 'is' : 'are'} kept where ${off === 1 ? 'it is' : 'they are'}: the requirements sheet has no row for ${off === 1 ? 'its' : 'their'} section and subject (or ${off === 1 ? 'it is' : 'they are'} part of a locked combined lesson).`);
+      }
       // The server refuses a timetable with clashes; check before offering to save.
       const clashes = findClashes(toSlots(r.lessons), rows.rooms);
       if (clashes.length) throw new Error(`The solver's result has ${plural(clashes.length, 'clash', 'clashes')}. Run it again.`);
@@ -102,8 +106,9 @@ function Solve({ rows, data, sections, call, toast, reload }: {
   const changed = useMemo(() => {
     if (!result || !base) return null;
     const key = (s: { class: string; weekday: number; period_no: number; subject: string; group_label: string }) => `${normClass(s.class)}|${s.weekday}|${s.period_no}|${s.subject.toLowerCase()}|${s.group_label.toLowerCase()}`;
-    const before = new Set(baseSlots.map(key));
-    return resultSlots.filter(s => !before.has(key(s))).length;
+    // Lessons added or moved, and lessons of the old timetable that are gone.
+    const before = new Set(baseSlots.map(key)), after = new Set(resultSlots.map(key));
+    return resultSlots.filter(s => !before.has(key(s))).length + baseSlots.filter(s => !after.has(key(s))).length;
   }, [result, base, baseSlots, resultSlots]);
 
   return (
@@ -143,7 +148,7 @@ function Solve({ rows, data, sections, call, toast, reload }: {
             <Kpi label="LESSONS PLACED" value={`${result.stats.placed} / ${result.stats.units}`} valueColor={result.unplaced.length ? 'var(--amber)' : 'var(--green)'} note={unplacedPeriods ? `${plural(unplacedPeriods, 'period')} could not be placed` : 'Every period placed'} />
             <Kpi label="CLASH CHECK" value="0" valueColor="var(--green)" note="No teacher, room or section double-booked" />
             <Kpi label="SCORE" value={result.score.total} note={`Class teacher ${result.score.soft.classTeacher} · spread ${result.score.soft.spread} · teachers' days ${result.score.soft.teachers}`} />
-            {changed !== null && <Kpi label="CHANGED" value={changed} note={`lessons differ from ${base?.name}`} />}
+            {changed !== null && <Kpi label="CHANGED" value={changed} note={`lessons added, moved or removed against ${base?.name}`} />}
           </div>
           {result.unplaced.length > 0 && (
             <div className="note" style={{ marginBottom: 12 }}>

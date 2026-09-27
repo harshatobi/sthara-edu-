@@ -273,9 +273,17 @@ export async function PUT(req: NextRequest) {
   if (b.action === 'lock') {
     const weekday = Number(b.weekday), period = Number(b.period_no);
     if (!Number.isInteger(weekday) || !Number.isInteger(period)) return bad('Pick a day and period.');
-    const { data, error } = await db.from('timetable_slots').update({ locked: !!b.locked }).eq('version_id', v.id).eq('class_key', ck).eq('weekday', weekday).eq('period_no', period).select('id');
+    const { data, error } = await db.from('timetable_slots').update({ locked: !!b.locked }).eq('version_id', v.id).eq('class_key', ck).eq('weekday', weekday).eq('period_no', period)
+      .select('id, combined, subject, teacher_id, staff_member_id');
     if (error) return dbError(error, 'Could not change the lock.');
     if (!data?.length) return bad('There is no lesson there to lock.', 404);
+    // A combined lesson is one lesson for several sections: lock or unlock every section's copy together.
+    for (const s of data.filter(x => x.combined)) {
+      let q = db.from('timetable_slots').update({ locked: !!b.locked }).eq('version_id', v.id).eq('weekday', weekday).eq('period_no', period).eq('combined', true).eq('subject', s.subject);
+      q = s.teacher_id ? q.eq('teacher_id', s.teacher_id) : s.staff_member_id ? q.eq('staff_member_id', s.staff_member_id) : q.is('teacher_id', null).is('staff_member_id', null);
+      const { error: e } = await q;
+      if (e) return dbError(e, 'Could not lock the combined lesson in every section.');
+    }
     return NextResponse.json({ ok: true, locked: !!b.locked });
   }
 

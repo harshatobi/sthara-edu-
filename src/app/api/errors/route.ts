@@ -21,7 +21,11 @@ export async function POST(req: NextRequest) {
   if (origin && origin !== req.nextUrl.origin) return new NextResponse(null, { status: 204 });
   if (!checkRateLimit(`errors:${getClientIp(req)}`, ...limitOf('clientErrors')).allowed) return new NextResponse(null, { status: 204 });
   if (Number(req.headers.get('content-length') || 0) > MAX_BODY) return new NextResponse(null, { status: 204 });
-  const b = await req.json().catch(() => null) as Record<string, unknown> | null;
+  // Read at most MAX_BODY bytes whatever the headers claim (a chunked body has no Content-Length).
+  const text = await readCapped(req, MAX_BODY);
+  if (text === null) return new NextResponse(null, { status: 204 });
+  let b: Record<string, unknown> | null = null;
+  try { b = JSON.parse(text) as Record<string, unknown>; } catch { b = null; }
   if (!b || typeof b.message !== 'string' || !b.message.trim()) return new NextResponse(null, { status: 204 });
   const kind = KINDS.includes(b.kind as (typeof KINDS)[number]) ? (b.kind as (typeof KINDS)[number]) : 'client';
   const message = b.message.slice(0, 2000);
@@ -48,4 +52,23 @@ export async function POST(req: NextRequest) {
     userAgent: req.headers.get('user-agent'), ...who,
   });
   return new NextResponse(null, { status: 204 });
+}
+
+/** The request body as text, or null if it is longer than `max` bytes (reading stops there). */
+async function readCapped(req: NextRequest, max: number): Promise<string | null> {
+  if (!req.body) return '';
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) { await reader.cancel().catch(() => {}); return null; }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) { all.set(c, at); at += c.byteLength; }
+  return new TextDecoder().decode(all);
 }

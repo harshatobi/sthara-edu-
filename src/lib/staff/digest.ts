@@ -6,6 +6,11 @@ import { displayClass, normClass } from '@/lib/teacher/scope';
 import { linkUsable } from '@/lib/whatsapp/config';
 import { sendWhatsApp } from '@/lib/whatsapp/send';
 
+/** Morning / afternoon / evening by the school's clock (IST). */
+const greeting = () => {
+  const h = new Date(Date.now() + 330 * 60_000).getUTCHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+};
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /**
@@ -25,7 +30,7 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
   const lines: string[] = [];
 
   if (me.role === 'teacher') {
-    lines.push(`*Good morning, ${me.name.split(' ')[0]}.* Here's your day.`);
+    lines.push(`*${greeting()}, ${me.name.split(' ')[0]}.* Here's your day.`);
     lines.push(`• Feed: ${plural(open.length, 'open item')}${crit.length ? `, ${crit.length} critical` : ''}${esc.length ? `, ${esc.length} escalated` : ''}`);
     const { data: threads } = await db.from('school_threads').select('id, staff_read_at, last_message_at').eq('staff_id', me.id).eq('status', 'open');
     const unread = (threads || []).filter(t => !t.staff_read_at || t.staff_read_at < t.last_message_at).length;
@@ -42,7 +47,7 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
       lines.push(count ? `• ${displayClass(me.classTeacherOf)} register: marked` : `• ${displayClass(me.classTeacherOf)} register: *not marked yet*. Reply e.g. *ABSENT 4, 12* (everyone else present) or *ALL PRESENT*.`);
     }
   } else {
-    lines.push(`*Good morning, ${me.name.split(' ')[0]}.* The school today:`);
+    lines.push(`*${greeting()}, ${me.name.split(' ')[0]}.* The school today:`);
     lines.push(`• Feed: ${plural(open.length, 'open item')}, ${crit.length} critical, *${esc.length} escalated to you*`);
     const a = me.access!;
     if (a.can('incidents.manage')) {

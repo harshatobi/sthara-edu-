@@ -11,6 +11,7 @@ import { CONSENT_TYPES } from '@/lib/admin/constants';
 import { useFamily } from '@/lib/parent/useFamily';
 import type { FamilyView } from '@/lib/parent/family';
 import { FamilyGate } from './common';
+import WhatsAppSimulator from '@/components/whatsapp/Simulator';
 
 const POLICY_VERSION = '2026-09';
 const PREFS: { key: string; label: string; hint: string }[] = [
@@ -82,6 +83,7 @@ function WhatsAppCard({ view }: { view: FamilyView }) {
             <button className="btn sm" disabled={busy} onClick={() => void act({ action: wa.optedIn ? 'optout' : 'optin' })}>{wa.optedIn ? 'Pause updates' : 'Resume updates'}</button>
             <button className="btn sm" disabled={busy} onClick={async () => { setBusy(true); try { await call('/api/parent/whatsapp', 'DELETE'); reload(); setStage('enter'); } catch (e: any) { setErr(e.message); } setBusy(false); }}>Unlink</button>
           </div>
+          {wa.mode === 'simulated' && <WhatsAppSimulator hints={['How is my child doing this week?', 'What homework is due?', 'HELP']} />}
           <div className="lbl" style={{ marginTop: 20 }}>SEND ME</div>
           <div className="pa-prefs">
             {PREFS.map(p => (

@@ -18,6 +18,9 @@ import { personToken, tokenize, type Book } from './ask';
  * where their office roles allow (the same permissions as the /admin screens).
  */
 
+/** Sunday in IST: no school, so no register is expected today. */
+const isSunday = (day: string) => new Date(`${day}T00:00:00Z`).getUTCDay() === 0;
+
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? '—' : `${Math.round(v)}%`);
 const ageDays = (iso: string) => Math.max(0, Math.round((Date.now() - Date.parse(iso)) / DAY_MS));
 
@@ -90,7 +93,8 @@ export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Boo
     }).join('\n')}`);
   } else out.push('YOUR WORK: nothing published in the last two weeks.');
 
-  if (me.classTeacherOf) {
+  if (me.classTeacherOf && isSunday(today)) out.push('ATTENDANCE TODAY: it is Sunday, no school and no register today.');
+  else if (me.classTeacherOf) {
     const { data: att } = await db.from('attendance').select('student_id, status').eq('school_id', me.schoolId).eq('day', today);
     const roster = desk.classes.find(c => normClass(c.cls) === me.classTeacherOf)?.students || [];
     const ids = new Set(roster.map(s => s.id));
@@ -191,7 +195,8 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
     const waiting = (inc || []).filter(i => i.parent_notice === 'principal_decides');
     out.push(`INCIDENTS: ${(inc || []).length} open; waiting for your decision on parents: ${waiting.map(i => `${i.category} "${i.summary}" (${i.class_name || 'no class'}, ${ageDays(i.created_at)} days)`).join('; ') || 'none'}.`);
   }
-  if (a.can('attendance.read')) {
+  if (a.can('attendance.read') && isSunday(today)) out.push('ATTENDANCE TODAY: it is Sunday, no school and no registers today.');
+  else if (a.can('attendance.read')) {
     const { data: att } = await db.from('attendance').select('class_name, status').eq('school_id', me.schoolId).eq('day', today);
     const classes = [...new Set(d.students.map(s => normClass(s.cls)).filter(Boolean))];
     const marked = new Set((att || []).map(r => normClass(r.class_name)));
@@ -202,6 +207,6 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
     const threads = await threadLines(db, me, book, true);
     out.push(threads.length ? `PARENT MESSAGES TO THE OFFICE:\n${threads.join('\n')}` : 'PARENT MESSAGES TO THE OFFICE: none open.');
   }
-  if (cannot.length) out.push(`NOT IN YOUR ROLE (say so if asked): ${cannot.join(', ')}.`);
+  if (cannot.length) out.push(`OUTSIDE THIS PERSON'S OFFICE ROLE (if asked, tell them it is outside their role and who can see it, e.g. the finance head or principal): ${cannot.join(', ')}.`);
   return tokenize(out.join('\n\n'), book);
 }

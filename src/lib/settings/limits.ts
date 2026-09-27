@@ -27,7 +27,6 @@ export const RATE_LIMITS = {
   quizGrade:       { limit: 15,  windowMs: 5 * MIN,  per: 'user',    route: '/api/quiz/grade',              label: 'Quiz grading' },
   quizGenerate:    { limit: 10,  windowMs: 5 * MIN,  per: 'user',    route: '/api/quiz/generate',           label: 'Quiz generation (student)' },
   homeworkGrade:   { limit: 10,  windowMs: 5 * MIN,  per: 'user',    route: '/api/homework/grade',          label: 'Homework grading' },
-  homeworkGenerate:{ limit: 5,   windowMs: 10 * MIN, per: 'user',    route: '/api/homework/generate',       label: 'Homework generation (student)' },
   verifySchool:    { limit: 30,  windowMs: 10 * MIN, per: 'ip',      route: '/api/auth/verify-school',      label: 'School code lookup (sign-in)' },
   onboard:         { limit: 5,   windowMs: 60 * MIN, per: 'ip',      route: '/api/onboard',                 label: 'Self-serve school sign-up' },
   tutor:           { limit: 30,  windowMs: 5 * MIN,  per: 'user',    route: '/api/tutor',                   label: 'AI tutor (legacy chat)' },

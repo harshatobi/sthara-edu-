@@ -19,6 +19,7 @@ import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { PageBar, Skeleton, type Tone } from '@/components/canon/ui';
+import WhatsAppSimulator from '@/components/whatsapp/Simulator';
 import { useAuth } from '@/contexts/AuthContext';
 import type { StaffAction, StaffReply, StaffTurn } from '@/lib/staff/ask';
 
@@ -299,6 +300,9 @@ function WhatsAppCard({ role }: { role: 'teacher' | 'leadership' }) {
                 <button className="btn sm" disabled={busy} onClick={() => void act({ action: st.optedIn ? 'optout' : 'optin' })}>{st.optedIn ? 'Pause' : 'Resume'}</button>
                 <button className="btn sm" disabled={busy} onClick={() => void act(null, () => setStage('enter'))}>Unlink</button>
               </div>
+              {st.mode === 'simulated' && (
+                <WhatsAppSimulator hints={role === 'teacher' ? ['TODAY', 'What needs me today?', 'ABSENT 2', 'ACK', 'HELP'] : ['TODAY', 'What needs my attention?', 'ACK', 'HELP']} />
+              )}
             </>
           ) : view === 'enter' ? (
             <form onSubmit={e => { e.preventDefault(); void act({ action: 'start', phone, consent: agree }, r => { setStage('code'); setTestCode(r.testCode ?? null); }); }}>

@@ -35,7 +35,7 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
       const { count } = await db.from('submissions').select('id', { count: 'exact', head: true }).in('assignment_id', mine.map(a => a.id)).or('teacher_approved.is.null,teacher_approved.eq.false');
       if (count) lines.push(`• Work to review: ${count}`);
     }
-    if (me.classTeacherOf) {
+    if (me.classTeacherOf && new Date(`${today}T00:00:00Z`).getUTCDay() !== 0) {
       const { data: roster } = await db.from('users').select('id, student_class').eq('school_id', me.schoolId).eq('role', 'student');
       const ids = (roster || []).filter(s => normClass(s.student_class) === me.classTeacherOf).map(s => s.id);
       const { count } = ids.length ? await db.from('attendance').select('id', { count: 'exact', head: true }).in('student_id', ids).eq('day', today) : { count: 0 };
@@ -49,7 +49,7 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
       const { count } = await db.from('incidents').select('id', { count: 'exact', head: true }).eq('school_id', me.schoolId).eq('parent_notice', 'principal_decides');
       if (count) lines.push(`• Incidents waiting for your decision: ${count}`);
     }
-    if (a.can('attendance.read')) {
+    if (a.can('attendance.read') && new Date(`${today}T00:00:00Z`).getUTCDay() !== 0) {
       const { data: kids } = await db.from('users').select('student_class').eq('school_id', me.schoolId).eq('role', 'student');
       const classes = new Set((kids || []).map(k => normClass(k.student_class)).filter(Boolean));
       const { data: att } = await db.from('attendance').select('class_name').eq('school_id', me.schoolId).eq('day', today);

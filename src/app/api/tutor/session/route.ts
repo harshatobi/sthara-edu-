@@ -7,7 +7,7 @@ import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { computeStudentTml, getTutorDepthScore } from '@/lib/tml/engine';
 import { containsFoulLanguage, safetySignals } from '@/lib/tutor/safety';
 import {
-  NO_SUBJECTS, REFUSAL, parseModelJson, SAFETY_REPLY, TEACHABLE, WELLBEING_REPLY, isEnrolled, matchPicked, needsTurnCheck, redirectTo, suggestions,
+  NO_SUBJECTS, QUOTA_REPLY, REFUSAL, isQuotaError, parseModelJson, SAFETY_REPLY, TEACHABLE, WELLBEING_REPLY, isEnrolled, matchPicked, needsTurnCheck, redirectTo, suggestions,
 } from '@/lib/tutor/grounding';
 import { classifyTopic, classifyTurn, loadContext, onOffTopic, onProfanity, onSafety } from '@/lib/tutor/groundingServer';
 import { flattenChapters, getCurriculum } from '@/lib/curriculum';
@@ -63,11 +63,17 @@ async function ask(prompt: string, cls: string, userId: string, schoolId: string
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw Object.assign(new Error('The AI tutor is offline right now.'), { status: 503 });
   const ai = new GoogleGenAI({ apiKey });
-  const res = await generateMetered(ai, {
-    model: MODEL,
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: { systemInstruction: SYSTEM(cls), responseMimeType: 'application/json', temperature: 0.4 },
-  }, { feature: 'tutorSession', userId, schoolId });
+  let res;
+  try {
+    res = await generateMetered(ai, {
+      model: MODEL,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: { systemInstruction: SYSTEM(cls), responseMimeType: 'application/json', temperature: 0.4 },
+    }, { feature: 'tutorSession', userId, schoolId });
+  } catch (e) {
+    if (isQuotaError(e)) throw Object.assign(new Error(QUOTA_REPLY), { status: 503 });
+    throw e;
+  }
   const parsed = parseModelJson(res.text ?? '{}');
   const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';
   if (!text) throw new Error('Empty tutor response');
@@ -156,7 +162,8 @@ export async function POST(req: NextRequest) {
       }
 
       // A chapter or micro-topic picked from the list needs no classifier; anything typed does.
-      const g = (asked && matchPicked(ctx.scope, asked, topic)) || await classifyTopic(ctx, asked ? `${asked}: ${topic}` : topic);
+      const chosen = asked ? ctx.scope.subjects.find(s => s.name.toLowerCase() === asked.toLowerCase()) : undefined;
+      const g = (asked && matchPicked(ctx.scope, asked, topic)) || await classifyTopic(ctx, topic, chosen?.key);
       if (g.kind === 'safety') {
         await onSafety(supabase, ctx.me, topic, g.subjectKey);
         return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY });

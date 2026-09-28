@@ -128,18 +128,19 @@ export const isEnrolled = (scope: StudentScope, subject: string) =>
  * Reference codes: S<n> subject, S<n>.C<m> chapter, S<n>.C<m>.t<k> micro-topic,
  * S<n>.P<level>.C<m> an earlier-class chapter. Earlier classes list chapter names only.
  */
-export function scopeDigest(scope: StudentScope, only?: { subjectKey: string; chapter: string }): string {
+export function scopeDigest(scope: StudentScope, only?: { subjectKey: string; chapter?: string }): string {
   const lines: string[] = [];
+  // Codes keep their place in the whole scope, so a focused digest validates the same way.
   scope.subjects.forEach((s, i) => {
     if (only && s.key !== only.subjectKey) return;
     const S = `S${i + 1}`;
     lines.push(`${S} ${s.name} (Class ${s.level}${s.source === 'elective' ? ', elective' : ''})`);
     s.chapters.forEach((c, j) => {
-      if (only && key(c.name) !== key(only.chapter)) return;
+      if (only?.chapter && key(c.name) !== key(only.chapter)) return;
       const tps = c.topics.map((t, k) => `t${k + 1} ${t}`).join('; ');
       lines.push(`  ${S}.C${j + 1} ${c.name}${c.exams.length ? ` [exam: ${c.exams.join(', ')}]` : ''}${tps ? `: ${tps}` : ''}`);
     });
-    if (!only) {
+    if (!only?.chapter) {
       for (const p of s.prereqs) {
         lines.push(`  earlier, Class ${p.level} ${p.name}:`);
         p.chapters.forEach((c, j) => lines.push(`    ${S}.P${p.level}.C${j + 1} ${c.name}${c.topics.length ? `: ${c.topics.slice(0, 6).join('; ')}` : ''}`));
@@ -210,6 +211,12 @@ export function suggestions(scope: StudentScope, weak: { subject: string; topic:
 export const REFUSAL = 'I can only help with your school subjects. That one is outside your syllabus, so I will leave it.';
 export const WELLBEING_REPLY = 'That sounds important, and it deserves more than a maths tutor. The Wellness Centre is the place for how you are feeling, and your school counsellor is there to listen.';
 export const SAFETY_REPLY = 'Thank you for telling me. You do not have to deal with this alone. Someone you trust at school will reach out to you soon. If you feel unsafe right now, please talk to a teacher or a family member, or call Tele-MANAS on 14416 (free, any time).';
+/** Gemini's quota ran out (HTTP 429): an honest message, not "something went wrong". */
+export const QUOTA_REPLY = 'The AI tutor has reached its limit for now. Please try again in a little while.';
+export const isQuotaError = (e: unknown) => {
+  const x = e as { status?: unknown; code?: unknown; message?: unknown } | null;
+  return x?.status === 429 || x?.code === 429 || /\b429\b|RESOURCE_EXHAUSTED|quota/i.test(String(x?.message ?? ''));
+};
 export const NO_SUBJECTS = 'Your school has not set up your subjects in Sthara yet, so the tutor cannot start. Please tell your class teacher.';
 export const redirectTo = (g: { chapter: string | null; microTopic: string | null }) =>
   `Let's stay with ${g.microTopic ?? g.chapter ?? 'this topic'}. Try the question again, or ask for a hint.`;

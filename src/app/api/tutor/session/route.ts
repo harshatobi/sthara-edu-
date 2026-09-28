@@ -7,7 +7,7 @@ import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { computeStudentTml, getTutorDepthScore } from '@/lib/tml/engine';
 import { containsFoulLanguage, safetySignals } from '@/lib/tutor/safety';
 import {
-  NO_SUBJECTS, REFUSAL, SAFETY_REPLY, TEACHABLE, WELLBEING_REPLY, isEnrolled, matchPicked, needsTurnCheck, redirectTo, suggestions,
+  NO_SUBJECTS, REFUSAL, parseModelJson, SAFETY_REPLY, TEACHABLE, WELLBEING_REPLY, isEnrolled, matchPicked, needsTurnCheck, redirectTo, suggestions,
 } from '@/lib/tutor/grounding';
 import { classifyTopic, classifyTurn, loadContext, onOffTopic, onProfanity, onSafety } from '@/lib/tutor/groundingServer';
 import { flattenChapters, getCurriculum } from '@/lib/curriculum';
@@ -68,7 +68,7 @@ async function ask(prompt: string, cls: string, userId: string, schoolId: string
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { systemInstruction: SYSTEM(cls), responseMimeType: 'application/json', temperature: 0.4 },
   }, { feature: 'tutorSession', userId, schoolId });
-  const parsed = JSON.parse(res.text ?? '{}');
+  const parsed = parseModelJson(res.text ?? '{}');
   const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';
   if (!text) throw new Error('Empty tutor response');
   if (containsFoulLanguage(text)) throw new Error('Tutor output failed the safety filter');
@@ -146,7 +146,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY });
       }
       if (containsFoulLanguage(topic)) {
-        await onProfanity(supabase, ctx.me, { key: null, name: asked || null });
+        const picked = asked ? ctx.scope.subjects.find(s => s.name.toLowerCase() === asked.toLowerCase()) : undefined;
+        await onProfanity(supabase, ctx.me, { key: picked?.key ?? null, name: picked?.name ?? (asked || null) });
         return NextResponse.json({ verdict: 'warning', text: 'Please keep the topic about your school work.' });
       }
       if (!ctx.scope.subjects.length) return NextResponse.json({ verdict: 'refused', text: NO_SUBJECTS, suggestions: [] });

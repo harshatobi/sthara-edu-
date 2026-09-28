@@ -98,3 +98,10 @@ test('profanity: syllabus words are not flagged, abuse still is', () => {
   }
   for (const t of ['this is shit', 'you are an asshole', 'chutiya question']) assert.ok(containsFoulLanguage(t), t);
 });
+
+test('model JSON with raw line breaks inside strings still parses', async () => {
+  const { parseModelJson } = await import('./grounding');
+  assert.deepEqual(parseModelJson('{"text": "Step 1:\nwhat is pH?\tthink"}'), { text: 'Step 1:\nwhat is pH?\tthink' });
+  assert.deepEqual(parseModelJson('{"a": "say \\"hi\\"\n"}'), { a: 'say "hi"\n' });
+  assert.deepEqual(parseModelJson('{\n  "correct": true,\n  "text": "ok"\n}'), { correct: true, text: 'ok' });
+});

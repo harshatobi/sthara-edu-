@@ -140,7 +140,10 @@ export function scopeDigest(scope: StudentScope, only?: { subjectKey: string; ch
       lines.push(`  ${S}.C${j + 1} ${c.name}${c.exams.length ? ` [exam: ${c.exams.join(', ')}]` : ''}${tps ? `: ${tps}` : ''}`);
     });
     if (!only) {
-      for (const p of s.prereqs) lines.push(`  earlier, Class ${p.level} ${p.name}: ${p.chapters.map((c, j) => `${S}.P${p.level}.C${j + 1} ${c.name}`).join('; ')}`);
+      for (const p of s.prereqs) {
+        lines.push(`  earlier, Class ${p.level} ${p.name}:`);
+        p.chapters.forEach((c, j) => lines.push(`    ${S}.P${p.level}.C${j + 1} ${c.name}${c.topics.length ? `: ${c.topics.slice(0, 6).join('; ')}` : ''}`));
+      }
     }
   });
   return lines.join('\n');
@@ -232,3 +235,26 @@ export function needsTurnCheck(text: string, chapterWords: string[] = []): boole
   const vocab = new Set(chapterWords.flatMap(w => key(w).split(' ')).filter(w => w.length >= 2 && !STOP.has(w)));
   return !words.some(w => vocab.has(w));
 }
+
+/**
+ * The model's JSON, even when it puts a raw line break or tab inside a string
+ * (Gemini does this with multi-line tutor text; strict JSON.parse refuses it).
+ */
+export function parseModelJson(text: string): Record<string, unknown> {
+  try { return JSON.parse(text); } catch { /* repair below */ }
+  let out = '', inStr = false, esc = false;
+  for (const ch of text) {
+    if (inStr) {
+      if (esc) { esc = false; out += ch; continue; }
+      if (ch === '\\') { esc = true; out += ch; continue; }
+      if (ch === '"') { inStr = false; out += ch; continue; }
+      const code = ch.charCodeAt(0);
+      out += code < 0x20 ? (ch === '\n' ? '\\n' : ch === '\t' ? '\\t' : ch === '\r' ? '' : ' ') : ch;
+    } else {
+      if (ch === '"') inStr = true;
+      out += ch;
+    }
+  }
+  return JSON.parse(out);
+}
+

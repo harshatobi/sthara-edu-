@@ -10,7 +10,7 @@ import { enrolledSubjects } from '@/lib/subjects/server';
 import { alertStaff, classTeachersOf, raise } from '@/lib/feed/raise';
 import { istAt, istDay } from '@/lib/feed/rules';
 import { normClass } from '@/lib/teacher/scope';
-import { buildScope, scopeDigest, validate, type GroundKind, type Grounding, type StudentScope } from './grounding';
+import { buildScope, parseModelJson, scopeDigest, validate, type GroundKind, type Grounding, type StudentScope } from './grounding';
 
 /**
  * The tutor's grounding engine, server part: the student's scope from the
@@ -60,7 +60,7 @@ Always reply with one JSON object and nothing else.`;
 const KINDS_HELP = `Kinds:
 - "syllabus": about a chapter or micro-topic listed above. ref = the most specific code (S#.C# or S#.C#.t#).
 - "exam": as syllabus, but the chapter is tagged [exam: ...] and the message is at entrance-exam depth.
-- "prerequisite": needs a concept from an earlier class listed under "earlier". ref = S#.P<class>.C#.
+- "prerequisite": a basic concept taught in an earlier class (listed under "earlier") and not itself a chapter of the current class. ref = S#.P<class>.C#: the chapter whose name or topics teach that concept, in the class where it is first taught (e.g. fractions -> the earlier chapter about fractions).
 - "study_skills": how to study, revise, take notes, plan time or handle exams.
 - "wellbeing": feelings, stress, sleep, friendships, with no danger.
 - "safety": self-harm, wanting to die, being hurt or abused, being bullied or threatened. When in doubt about danger, choose this.
@@ -77,7 +77,7 @@ async function callClassifier(prompt: string, userId: string, schoolId: string |
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { systemInstruction: SYSTEM, responseMimeType: 'application/json', temperature: 0 },
   }, { feature: 'tutorGuard', userId, schoolId });
-  try { return JSON.parse(res.text ?? '{}'); } catch { return {}; }
+  try { return parseModelJson(res.text ?? '{}'); } catch { return {}; }
 }
 
 /** Where a new topic belongs in the student's syllabus (or why it doesn't). */

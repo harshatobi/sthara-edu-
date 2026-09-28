@@ -32,13 +32,21 @@ export const principalsOf = (db: SupabaseClient, schoolId: string) => grantHolde
 /** Office staff who hold safeguarding.read (counsellor, principal, school admin). */
 export const safeguardingOf = (db: SupabaseClient, schoolId: string) => grantHolders(db, schoolId, SAFEGUARDING_ROLES);
 
+/**
+ * Office accounts holding any of these roles today. Two plain queries: role_grants
+ * has three foreign keys to users (holder, granted_by, revoked_by), so an embedded
+ * users(...) select is ambiguous and PostgREST refuses it (which left principals
+ * and escalations with no recipients).
+ */
 async function grantHolders(db: SupabaseClient, schoolId: string, roles: RoleKey[]): Promise<string[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const { data } = await db.from('role_grants').select('user_id, expires_on, users!inner(role, school_id)')
+  const { data: grants, error } = await db.from('role_grants').select('user_id, expires_on')
     .eq('school_id', schoolId).is('revoked_at', null).in('role_key', roles);
-  return [...new Set((data || [])
-    .filter((g: any) => (!g.expires_on || g.expires_on >= today) && (Array.isArray(g.users) ? g.users[0] : g.users)?.role === 'admin')
-    .map((g: any) => g.user_id as string))];
+  if (error) { console.warn('[feed] role holders:', error.message); return []; }
+  const ids = [...new Set((grants || []).filter(g => !g.expires_on || g.expires_on >= today).map(g => g.user_id as string))];
+  if (!ids.length) return [];
+  const { data: users } = await db.from('users').select('id, role, school_id').in('id', ids);
+  return (users || []).filter(u => u.role === 'admin' && u.school_id === schoolId).map(u => u.id as string);
 }
 
 /** Who should hear about an item: the addressed teacher, else the student's/class's teachers; principal items go to principals. */

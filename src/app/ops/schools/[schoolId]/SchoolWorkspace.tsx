@@ -36,6 +36,7 @@ interface Data {
   journal: JournalRow[] | null;
   audit: AuditRow[] | null;
   ai: { calls: number; failed: number; tokens: number; costUsd: number } | null;
+  guardians: { studentsWithParent: string[]; parentsWithChild: string[] } | null;
 }
 
 const TABS = [
@@ -136,7 +137,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
                     <div className="acts" style={{ marginTop: 10 }}><button className="btn sm" onClick={() => setAdding(false)}>Close add people</button></div>
                   </div>
                 : null}
-              <RosterStep schoolId={schoolId} people={data.people} onIssued={i => addIssued([i])} onDeleted={msg => { toast(msg); void load(); }} />
+              <RosterStep schoolId={schoolId} people={data.people} guardians={data.guardians} openSupport={() => setTab('support')} onIssued={i => addIssued([i])} onDeleted={msg => { toast(msg); void load(); }} />
             </>
           )}
           {tab === 'teaching' && <TeachingStep schoolId={schoolId} classes={data.classes} people={data.people} onSaved={load} />}

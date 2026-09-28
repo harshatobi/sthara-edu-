@@ -36,6 +36,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const facts = registry.find(s => s.id === id);
   if (!school || !facts) return NextResponse.json({ error: 'School not found' }, { status: 404 });
 
+  // Guardian links, so the roster can flag students no verified parent can see (and parents with no child).
+  const studentIds = (people || []).filter(p => p.role === 'student').map(p => p.id);
+  const { data: links, error: linkErr } = studentIds.length
+    ? await db.from('guardians').select('parent_id, student_id, verified').in('student_id', studentIds)
+    : { data: [], error: null };
+  const leftIds = new Set((people || []).filter(p => (p.metadata as { left?: unknown } | null)?.left).map(p => p.id));
+  const verifiedLinks = (links || []).filter(l => l.verified && !leftIds.has(l.parent_id));
+
   // Names for the audit trail's actors.
   const actorIds = [...new Set((audit.data || []).map(a => a.actor_id).filter(Boolean))] as string[];
   const { data: actors } = actorIds.length ? await db.from('users').select('id, name, email').in('id', actorIds) : { data: [] };
@@ -47,6 +55,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     facts,
     classes: classes || [],
     people: people || [],
+    guardians: linkErr ? null : {
+      studentsWithParent: [...new Set(verifiedLinks.map(l => l.student_id))],
+      parentsWithChild: [...new Set(verifiedLinks.map(l => l.parent_id))],
+    },
     journal: journal.error ? null : journal.data,
     audit: audit.error ? null : (audit.data || []).map(a => ({ ...a, actor: a.actor_id ? who.get(a.actor_id) ?? null : null })),
     ai: usage.error ? null : {

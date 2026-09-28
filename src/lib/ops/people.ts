@@ -99,7 +99,7 @@ export const CSV_TEMPLATE = [
   'parent,Lakshmi Iyer,lakshmi.iyer@gmail.com,,,,,1042',
 ].join('\n');
 
-function splitCsvLine(line: string): string[] {
+export function splitCsvLine(line: string): string[] {
   const out: string[] = [];
   let cur = '', q = false;
   for (let i = 0; i < line.length; i++) {

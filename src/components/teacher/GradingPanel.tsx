@@ -1,21 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
-import { Chip, scoreTone } from '@/components/canon/ui';
+import { Chip, Skeleton, scoreTone } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { marksOf, mcqCorrect, TYPE_LABEL, type Question } from '@/lib/teacher/questions';
 import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
+import { isCapturePath } from '@/lib/grading/handwritten';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
+import { useAuth } from '@/contexts/AuthContext';
 import Reversals from './capture/Reversals';
 
 const LETTERS = 'ABCDEF';
 
-function Answer({ q, value }: { q: Question; value: unknown }) {
+function Answer({ q, value, link }: { q: Question; value: unknown; link?: string | null }) {
   if (value === undefined || value === null || value === '') return <div className="ans muted">No answer</div>;
   if (q.type === 'mcq') {
     const idx = Number(value);
@@ -28,7 +30,12 @@ function Answer({ q, value }: { q: Question; value: unknown }) {
       </div>
     );
   }
-  const file = typeof value === 'object' && value && 'file' in value ? String((value as { file: unknown }).file) : null;
+  const stored = typeof value === 'object' && value && 'file' in value ? String((value as { file: unknown }).file) : null;
+  // Photos in private storage come through a short-lived link; older answers are plain URLs.
+  const file = stored && isCapturePath(stored) ? link : stored;
+  if (stored && !file) {
+    return link === null ? <div className="ans muted">The photo couldn’t be loaded.</div> : <Skeleton h={120} />;
+  }
   if (file) {
     return (
       <a href={file} target="_blank" rel="noreferrer" className="ans" style={{ display: 'block' }}>
@@ -38,6 +45,31 @@ function Answer({ q, value }: { q: Question; value: unknown }) {
     );
   }
   return <div className="ans">{String(value)}</div>;
+}
+
+/**
+ * Short-lived links to the submission's photo answers, by question index.
+ * undefined while loading (or when there are none to load), null on failure.
+ */
+function useAnswerLinks(sub: TSubmission): Record<string, string> | null | undefined {
+  const { getAuthToken } = useAuth();
+  const [links, setLinks] = useState<Record<string, string> | null | undefined>(undefined);
+  const hasPrivate = Object.values(sub.answers).some(v => typeof v === 'object' && v && isCapturePath(String((v as { file?: unknown }).file ?? '')));
+  useEffect(() => {
+    if (!hasPrivate) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getAuthToken();
+        const res = await fetch(`/api/grading/pages?submission=${sub.id}`, { headers: { Authorization: `Bearer ${token}` } });
+        const d = await res.json().catch(() => ({}));
+        if (!cancelled) setLinks(res.ok ? d.answers || {} : null);
+      } catch { if (!cancelled) setLinks(null); }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sub.id, hasPrivate]);
+  return links;
 }
 
 /**
@@ -54,6 +86,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
   onBack: () => void;
 }) {
   const { call, reload } = useTeacherDesk();
+  const links = useAnswerLinks(sub);
   const [toast, toastEl] = useToast();
   const perQuestion = sub.kind === 'typed' && a.questions.length > 0;
   const max = perQuestion ? a.questions.reduce((n, q) => n + marksOf(q), 0) : (sub.max ?? a.totalMarks ?? 10);
@@ -136,7 +169,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
                       </label>
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 6, fontWeight: 600 }}>{q.questionText}</div>
-                    <Answer q={q} value={sub.answers[i]} />
+                    <Answer q={q} value={sub.answers[i]} link={links === undefined ? undefined : links?.[i] ?? null} />
                   </div>
                 ))}
               </div>

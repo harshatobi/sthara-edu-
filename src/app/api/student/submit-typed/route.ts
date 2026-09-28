@@ -4,6 +4,8 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
 import { computeStudentTml, normalizeComponentType } from '@/lib/tml/engine';
+import { studentOnRoster } from '@/lib/grading/server';
+import { CAPTURE_PREFIX, pathBelongs } from '@/lib/grading/handwritten';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,13 +35,25 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const [{ data: me }, { data: a }] = await Promise.all([
     supabase.from('users').select('school_id').eq('id', user.id).maybeSingle(),
-    supabase.from('assignments').select('id, school_id, subject, type, status, questions, total_marks').eq('id', assignmentId).maybeSingle(),
+    supabase.from('assignments').select('id, school_id, subject, type, class, status, questions, total_marks, assigned_student_ids').eq('id', assignmentId).maybeSingle(),
   ]);
   if (!a || a.status === 'draft') return NextResponse.json({ error: 'Assignment not found.' }, { status: 404 });
   if (!me?.school_id || me.school_id !== a.school_id) return NextResponse.json({ error: 'This assignment is not in your school.' }, { status: 403 });
+  // Same roster rule as the handwritten flow: the student's class, and the
+  // targeted group when the teacher set one.
+  if (!(await studentOnRoster(supabase, a, user.id))) return NextResponse.json({ error: 'This assignment was not set for you.' }, { status: 403 });
 
   const { data: existing } = await supabase.from('submissions').select('id').eq('assignment_id', assignmentId).eq('student_id', user.id).maybeSingle();
   if (existing) return NextResponse.json({ error: 'You have already submitted this assignment.' }, { status: 409 });
+
+  // A photo answer must be one this student uploaded for this assignment
+  // (/api/student/upload-submission); any other file reference is dropped.
+  for (const [k, v] of Object.entries(answers)) {
+    if (!v || typeof v !== 'object') continue;
+    const f = (v as { file?: unknown }).file;
+    if (typeof f !== 'string' || !f.startsWith(CAPTURE_PREFIX) || !pathBelongs(f.slice(CAPTURE_PREFIX.length), a.school_id, a.id, user.id)) delete answers[k];
+    else answers[k] = { file: f };
+  }
 
   const questions: any[] = Array.isArray(a.questions) ? a.questions : [];
   const mcq = questions.map((q, i) => ({ q, i })).filter(({ q }) => q?.type === 'mcq');

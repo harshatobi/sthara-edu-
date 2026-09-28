@@ -21,7 +21,7 @@ const STATUSES = ['not_started', 'in_progress', 'taught', 'revisit'];
  * teacher of the class + subject; each write records who made it.
  */
 export async function PUT(req: NextRequest) {
-  const auth = await requireStaff(req);
+  const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
   if (!checkRateLimit(`course:${staff.id}`, ...limitOf('course')).allowed) {

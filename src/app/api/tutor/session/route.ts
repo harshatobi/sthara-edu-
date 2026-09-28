@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -130,7 +131,12 @@ export async function POST(req: NextRequest) {
         `Start a ${STEPS}-step Socratic session. Subject: ${subject}. Micro-topic: ${topic}.
 Briefly set up one concrete problem on this topic, then ask step 1 of ${STEPS}: the first guiding question.${syllabusScope(cls, subject, topic, exams)}
 Reply as {"text": "<setup + question 1>"}`, cls, user.id, me?.school_id ?? null);
-      const state: TutorSessionState = { uid: user.id, subject, topic, step: 1, hints: 0, revealed: false, done: false, iat: Date.now() };
+      const sid = randomUUID();
+      // Sessions left open past the token lifetime are dead; clear them as new ones start.
+      await supabase.from('tutor_session_turns').delete().eq('student_id', user.id).lt('created_at', new Date(Date.now() - 3 * 3600_000).toISOString());
+      const { error: turnErr } = await supabase.from('tutor_session_turns').insert({ sid, student_id: user.id, seq: 0 });
+      if (turnErr) throw new Error(`tutor_session_turns: ${turnErr.message}`);
+      const state: TutorSessionState = { uid: user.id, subject, topic, step: 1, hints: 0, revealed: false, done: false, sid, seq: 0, iat: Date.now() };
       return NextResponse.json({ verdict: 'question', text: out.text, step: 1, steps: STEPS, hints: 0, token: signSession({ ...state, question: out.text as string }) });
     }
 
@@ -186,6 +192,13 @@ Reply {"text": "<explanation + answer>"}`, cls, user.id, me?.school_id ?? null);
     } else {
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
+
+    // One use per token: claim this turn. A stale or replayed token (an older
+    // one from before a hint, or the final one again) finds seq already moved.
+    next = { ...next, seq: state.seq + 1 };
+    const { data: claimed } = await supabase.from('tutor_session_turns').update({ seq: next.seq, updated_at: new Date().toISOString() })
+      .eq('sid', state.sid).eq('student_id', user.id).eq('seq', state.seq).select('sid');
+    if (!claimed?.length) return NextResponse.json({ error: 'This step was already answered. Carry on from your latest turn, or start a new session.' }, { status: 409 });
 
     // ── session over: record evidence + recompute TML ──────────────────────
     let result: { depth: number; topicScore: number | null; band: string | null } | null = null;

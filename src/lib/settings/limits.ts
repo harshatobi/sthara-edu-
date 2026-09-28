@@ -22,7 +22,6 @@ const MIN = 60_000;
 
 export const RATE_LIMITS = {
   admin:           { limit: 120, windowMs: MIN,      per: 'user+ip', route: '/api/admin/*',                 label: 'School office APIs' },
-  gradeImage:      { limit: 10,  windowMs: MIN,      per: 'ip',      route: '/api/grade-image',             label: 'Photo grading' },
   submitTyped:     { limit: 20,  windowMs: 5 * MIN,  per: 'user',    route: '/api/student/submit-typed',    label: 'Typed homework submission' },
   quizGrade:       { limit: 15,  windowMs: 5 * MIN,  per: 'user',    route: '/api/quiz/grade',              label: 'Quiz grading' },
   quizGenerate:    { limit: 10,  windowMs: 5 * MIN,  per: 'user',    route: '/api/quiz/generate',           label: 'Quiz generation (student)' },
@@ -33,6 +32,7 @@ export const RATE_LIMITS = {
   examTrack:       { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/student/exam-track',      label: 'Exam track choice' },
   quizGen:         { limit: 15,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/quiz-gen',        label: 'Quiz creator' },
   homeworkGen:     { limit: 15,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/homework-gen',    label: 'Homework creator' },
+  paperGen:        { limit: 10,  windowMs: 10 * MIN, per: 'user',    route: '/api/paper-gen',               label: 'Question paper generator' },
   assignments:     { limit: 60,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/assignments',     label: 'Assignment writes' },
   course:          { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/course',          label: 'Course plan writes' },
   feed:            { limit: 120, windowMs: MIN,      per: 'user',    route: '/api/feed',                    label: 'Situational feed, attendance and incidents' },

@@ -22,7 +22,7 @@ const str = (v: unknown, n = 500) => (typeof v === 'string' ? v.trim().slice(0, 
  * nothing is saved — the teacher edits and saves.
  */
 export async function POST(req: NextRequest) {
-  const auth = await requireStaff(req);
+  const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth.res;
   const { staff } = auth;
   if (!checkRateLimit(`lesson-draft:${staff.id}`, ...limitOf('lessonDraft')).allowed) {

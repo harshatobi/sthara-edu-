@@ -25,6 +25,7 @@ import { useOpsApi } from '../../useOpsApi';
 import { extendedEnd, useSchoolPatch, type AccessResult } from '../../useSchoolPatch';
 import { ClassesStep, PeopleStep, RosterStep, TeachingStep, type ClassRow, type Issued, type Person } from './parts';
 import { SupportTab } from './support';
+import { HealthCard, HealthTab, healthOf, type SchoolMetrics } from '../../health';
 
 interface JournalRow { id: number; at: string; actor_email: string | null; key: string; old_value: unknown; new_value: unknown; reason: string }
 interface AuditRow { id: number; at: string; actor: string | null; actor_role: string | null; action: string; table_name: string; row_id: string | null }
@@ -37,10 +38,12 @@ interface Data {
   audit: AuditRow[] | null;
   ai: { calls: number; failed: number; tokens: number; costUsd: number } | null;
   guardians: { studentsWithParent: string[]; parentsWithChild: string[] } | null;
+  metrics: SchoolMetrics | null;
+  usdToInr: number;
 }
 
 const TABS = [
-  ['overview', 'Overview'], ['access', 'Subscription & access'], ['classes', 'Classes & subjects'],
+  ['overview', 'Overview'], ['health', 'Health'], ['access', 'Subscription & access'], ['classes', 'Classes & subjects'],
   ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['activity', 'Activity'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -127,6 +130,9 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
       {!data || !f ? (err ? null : <Skeleton h={360} style={{ borderRadius: 20 }} />) : (
         <>
           {tab === 'overview' && <OverviewTab d={data} go={setTab} />}
+          {tab === 'health' && (data.metrics
+            ? <HealthTab health={healthOf(f, data.metrics, data.usdToInr)} metrics={data.metrics} go={setTab} />
+            : <div className="note err">School health isn&apos;t available: the ops_school_metrics function is missing from the database.</div>)}
           {tab === 'access' && <AccessTab key={`${f.id}:${f.updatedAt}`} f={f} onSaved={msg => { toast(msg); void load(); }} onDeleted={() => router.push('/ops/schools')} />}
           {tab === 'classes' && <ClassesStep schoolId={schoolId} classes={data.classes} onSaved={load} next={() => setTab('people')} />}
           {tab === 'people' && (
@@ -191,6 +197,7 @@ function OverviewTab({ d, go }: { d: Data; go: (t: Tab) => void }) {
         </Section>
       </div>
       <div>
+        {d.metrics && <HealthCard health={healthOf(f, d.metrics, d.usdToInr)} open={() => go('health')} />}
         <Section title="Setup" sub={`${done} of ${checklist.length} done`}>
           <div className="ops-bar" style={{ marginBottom: 12 }}><i style={{ width: `${(done / checklist.length) * 100}%` }} /></div>
           <div className="ops-check">

@@ -17,6 +17,7 @@ import { CURRICULA, PLANS, PLAN_INFO, annualValue, effectivePrice } from '@/lib/
 import { journalLabel, journalValue } from '@/lib/ops/journal';
 import { Kpi, PlanChip, ReasonAction, Section, StatusChip, Table, errText, fmtDate, fmtDateTime, inr, num, plural } from './_ui';
 import { useOpsApi } from './useOpsApi';
+import { SchoolHealthSection, type SchoolMetrics } from './health';
 import { extendedEnd, useSchoolPatch } from './useSchoolPatch';
 
 interface JournalRow { id: number; at: string; actor_email: string | null; scope: 'platform' | 'school'; school_id: string | null; key: string; old_value: unknown; new_value: unknown; reason: string }
@@ -27,6 +28,7 @@ interface Data {
   enquiries: { new: number; open: number; total: number };
   ai: { costUsd: number; calls: number; failed: number; days: number } | null;
   usdToInr: number;
+  metrics: Record<string, SchoolMetrics> | null;
   journal: JournalRow[];
   operators: number | null;
   checkedAt: string;
@@ -115,6 +117,8 @@ export default function OverviewConsole() {
               ? <Empty icon={<CheckCircle size={28} weight="duotone" />} title="Nothing needs you right now">Every school is set up, no pilot is ending and every check is healthy.</Empty>
               : <div>{data.attention.map(a => <AttentionRow key={a.id} a={a} schools={data.schools} onDone={msg => { toast(msg); reload(); }} />)}</div>}
           </Section>
+
+          <SchoolHealthSection schools={data.schools} metrics={data.metrics} usdToInr={data.usdToInr} />
 
           <div className="g2">
             <Section title="Revenue by tier" sub="Per student per year. Seats are the contracted student count, else the students on the platform.">

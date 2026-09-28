@@ -5,6 +5,7 @@ import { loadRegistry } from '@/lib/ops/registry';
 import { deleteSchool } from '@/lib/ops/deletions';
 import { normaliseCode, parseReason } from '@/lib/settings/registry';
 import { invalidateSettings } from '@/lib/settings/server';
+import { USD_TO_INR } from '@/lib/ai/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   const db = createAdminClient();
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
-  const [registry, { data: school }, { data: classes }, { data: people }, journal, audit, usage] = await Promise.all([
+  const [registry, { data: school }, { data: classes }, { data: people }, journal, audit, usage, metrics] = await Promise.all([
     loadRegistry(db),
     db.from('schools').select('id, name, settings, trial_expires_at, created_at, updated_at').eq('id', id).maybeSingle(),
     db.from('classes').select('id, name, metadata').eq('school_id', id).order('name'),
@@ -32,6 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     db.from('audit_log').select('id, at, actor_id, actor_role, action, table_name, row_id')
       .eq('school_id', id).order('at', { ascending: false }).limit(100),
     db.from('ai_usage').select('cost_usd, input_tokens, output_tokens, thinking_tokens, ok').eq('school_id', id).gte('at', since).limit(50_000),
+    db.rpc('ops_school_metrics', { p_school: id }),
   ]);
   const facts = registry.find(s => s.id === id);
   if (!school || !facts) return NextResponse.json({ error: 'School not found' }, { status: 404 });
@@ -55,6 +57,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     facts,
     classes: classes || [],
     people: people || [],
+    // School health counts (null until the ops_school_metrics migration is applied).
+    metrics: metrics.error ? null : ((metrics.data || []) as { metrics: unknown }[])[0]?.metrics ?? null,
+    usdToInr: USD_TO_INR,
     guardians: linkErr ? null : {
       studentsWithParent: [...new Set(verifiedLinks.map(l => l.student_id))],
       parentsWithChild: [...new Set(verifiedLinks.map(l => l.parent_id))],

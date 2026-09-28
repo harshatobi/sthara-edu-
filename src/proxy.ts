@@ -55,7 +55,7 @@ export function proxy(request: NextRequest) {
   const roleCookie = request.cookies.get('__role')?.value;
   if (!sessionCookie && !(isDev && roleCookie)) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
+    loginUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 

@@ -60,6 +60,17 @@ function RoleIcon({ role }: { role: Role }) {
   return <InteractiveIcon icon={Icon} color={colorForIcon(Icon)} size={30} />;
 }
 
+/**
+ * A ?redirect= target is followed only when it is a path inside the signed-in
+ * role's own area: never another site ("//evil", "/\\evil"), never a portal the
+ * proxy would bounce them out of again.
+ */
+function safeRedirect(target: string | null, home: string): string | null {
+  if (!target || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) return null;
+  const path = target.split(/[?#]/)[0];
+  return path === home || path.startsWith(`${home}/`) ? target : null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { startDemo } = useAuth();
@@ -140,8 +151,10 @@ export default function LoginPage() {
       }
       document.cookie = `__role=${account.role}; path=/; max-age=43200; SameSite=Lax`;
       document.cookie = `__session=${data.session.access_token}; path=/; max-age=43200; SameSite=Lax`;
-      // Operators land in the Platform Manager; everyone else in their portal.
-      router.replace(account.role === 'superadmin' ? '/ops' : `/${account.role}`);
+      // Back to the page that sent them here (the proxy adds ?redirect=), else
+      // operators land in the Platform Manager and everyone else in their portal.
+      const home = account.role === 'superadmin' ? '/ops' : `/${account.role}`;
+      router.replace(safeRedirect(new URLSearchParams(window.location.search).get('redirect'), home) ?? home);
     } catch (err) {
       setCredsError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
     } finally {

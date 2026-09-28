@@ -10,7 +10,6 @@ import { Chip, Skeleton, scoreTone } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { marksOf, mcqCorrect, TYPE_LABEL, type Question } from '@/lib/teacher/questions';
 import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
-import { isCapturePath } from '@/lib/grading/handwritten';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { useAuth } from '@/contexts/AuthContext';
 import Reversals from './capture/Reversals';
@@ -31,8 +30,8 @@ function Answer({ q, value, link }: { q: Question; value: unknown; link?: string
     );
   }
   const stored = typeof value === 'object' && value && 'file' in value ? String((value as { file: unknown }).file) : null;
-  // Photos in private storage come through a short-lived link; older answers are plain URLs.
-  const file = stored && isCapturePath(stored) ? link : stored;
+  // Photos are in private storage: shown through a short-lived link, never the stored reference.
+  const file = stored ? link : null;
   if (stored && !file) {
     return link === null ? <div className="ans muted">The photo couldn’t be loaded.</div> : <Skeleton h={120} />;
   }
@@ -48,27 +47,29 @@ function Answer({ q, value, link }: { q: Question; value: unknown; link?: string
 }
 
 /**
- * Short-lived links to the submission's photo answers, by question index.
- * undefined while loading (or when there are none to load), null on failure.
+ * Short-lived links to the submission's stored photos: page scans and photo
+ * answers by question index. Every bucket is private, so nothing renders a
+ * stored reference directly. undefined while loading, null on failure.
  */
-function useAnswerLinks(sub: TSubmission): Record<string, string> | null | undefined {
+type Links = { pages: string[]; answers: Record<string, string> };
+function useStoredLinks(sub: TSubmission): Links | null | undefined {
   const { getAuthToken } = useAuth();
-  const [links, setLinks] = useState<Record<string, string> | null | undefined>(undefined);
-  const hasPrivate = Object.values(sub.answers).some(v => typeof v === 'object' && v && isCapturePath(String((v as { file?: unknown }).file ?? '')));
+  const [links, setLinks] = useState<Links | null | undefined>(undefined);
+  const hasFiles = sub.imageUrls.length > 0 || Object.values(sub.answers).some(v => typeof v === 'object' && v && 'file' in v);
   useEffect(() => {
-    if (!hasPrivate) return;
+    if (!hasFiles) return;
     let cancelled = false;
     (async () => {
       try {
         const token = await getAuthToken();
         const res = await fetch(`/api/grading/pages?submission=${sub.id}`, { headers: { Authorization: `Bearer ${token}` } });
         const d = await res.json().catch(() => ({}));
-        if (!cancelled) setLinks(res.ok ? d.answers || {} : null);
+        if (!cancelled) setLinks(res.ok ? { pages: d.pages || [], answers: d.answers || {} } : null);
       } catch { if (!cancelled) setLinks(null); }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sub.id, hasPrivate]);
+  }, [sub.id, hasFiles]);
   return links;
 }
 
@@ -86,7 +87,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
   onBack: () => void;
 }) {
   const { call, reload } = useTeacherDesk();
-  const links = useAnswerLinks(sub);
+  const links = useStoredLinks(sub);
   const [toast, toastEl] = useToast();
   const perQuestion = sub.kind === 'typed' && a.questions.length > 0;
   const max = perQuestion ? a.questions.reduce((n, q) => n + marksOf(q), 0) : (sub.max ?? a.totalMarks ?? 10);
@@ -139,7 +140,9 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
             <b style={{ fontSize: 12.5, letterSpacing: '.06em', color: 'var(--mut)' }}>{sub.studentName.toUpperCase()} · SUBMITTED {dmy(sub.submittedAt).toUpperCase()}</b>
             {sub.kind === 'handwritten' ? (
               <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {sub.imageUrls.length ? sub.imageUrls.map((u, i) => (
+                {sub.imageUrls.length && links === undefined ? <Skeleton h={360} />
+                  : sub.imageUrls.length && !links?.pages.length ? <p className="muted" style={{ fontSize: 13 }}>The pages couldn’t be loaded. Reload to try again.</p>
+                  : links?.pages.length ? links.pages.map((u, i) => (
                   <a key={u + i} href={u} target="_blank" rel="noreferrer">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={u} alt={`Page ${i + 1} of ${sub.studentName}'s work`} style={{ width: '100%', borderRadius: 12, boxShadow: '0 10px 30px rgba(15,30,60,.14)' }} />
@@ -169,7 +172,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
                       </label>
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 6, fontWeight: 600 }}>{q.questionText}</div>
-                    <Answer q={q} value={sub.answers[i]} link={links === undefined ? undefined : links?.[i] ?? null} />
+                    <Answer q={q} value={sub.answers[i]} link={links === undefined ? undefined : links?.answers[i] ?? null} />
                   </div>
                 ))}
               </div>

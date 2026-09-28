@@ -25,15 +25,37 @@ export async function ensureBucket(db: SupabaseClient) {
   bucketReady = true;
 }
 
-/** Short-lived links for a submission's pages; legacy public URLs pass through. */
+/**
+ * Photo answers uploaded before 2026-09-28 went to the "submissions" bucket,
+ * which was public; it is private now, so their stored public URLs are signed
+ * like everything else. Returns the object path, or null for any other URL.
+ */
+const LEGACY_BUCKET = 'submissions';
+export function legacyPath(u: string): string | null {
+  const m = /\/storage\/v1\/object\/public\/submissions\/([^?#]+)$/.exec(u);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+/** Short-lived links for stored references, index for index (null when one can't be signed). */
+export async function signRefs(db: SupabaseClient, refs: string[]): Promise<(string | null)[]> {
+  const sign = async (bucket: string, paths: string[]) => {
+    if (!paths.length) return new Map<string, string>();
+    const { data } = await db.storage.from(bucket).createSignedUrls(paths, 3600);
+    return new Map((data || []).flatMap(x => (x.signedUrl && x.path ? [[x.path, x.signedUrl] as [string, string]] : [])));
+  };
+  const captures = refs.filter(isCapturePath).map(u => u.slice(CAPTURE_PREFIX.length));
+  const legacy = refs.map(legacyPath).filter((p): p is string => !!p);
+  const [c, l] = await Promise.all([sign(BUCKET, captures), sign(LEGACY_BUCKET, legacy)]);
+  return refs.map(u => {
+    if (isCapturePath(u)) return c.get(u.slice(CAPTURE_PREFIX.length)) ?? null;
+    const lp = legacyPath(u);
+    return lp ? l.get(lp) ?? null : u;
+  });
+}
+
+/** Short-lived links for a submission's pages (pages that can't be signed are left out). */
 export async function pageLinks(db: SupabaseClient, imageUrls: string[]): Promise<string[]> {
-  const paths = imageUrls.filter(isCapturePath).map(u => u.slice(CAPTURE_PREFIX.length));
-  const signed = new Map<string, string>();
-  if (paths.length) {
-    const { data } = await db.storage.from(BUCKET).createSignedUrls(paths, 3600);
-    for (const x of data || []) if (x.signedUrl && x.path) signed.set(x.path, x.signedUrl);
-  }
-  return imageUrls.map(u => (isCapturePath(u) ? signed.get(u.slice(CAPTURE_PREFIX.length)) ?? '' : u)).filter(Boolean);
+  return (await signRefs(db, imageUrls)).filter((u): u is string => !!u);
 }
 
 /** The student is on this assignment's roster (class, school, and the target list if it has one). */

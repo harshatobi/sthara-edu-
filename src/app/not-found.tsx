@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import StaleSessionRetry from './StaleSessionRetry';
 
 export const metadata: Metadata = { title: 'Page not found', robots: { index: false, follow: false } };
 
@@ -7,6 +8,7 @@ export const metadata: Metadata = { title: 'Page not found', robots: { index: fa
 export default function NotFound() {
   return (
     <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: '#07142b', color: '#eef2fb', fontFamily: 'system-ui, sans-serif' }}>
+      <StaleSessionRetry />
       <div style={{ maxWidth: 520 }}>
         <a href="/" style={{ color: '#eef2fb', fontWeight: 800, letterSpacing: '.28em', textDecoration: 'none', fontSize: 15 }}>STHARA</a>
         <h1 style={{ fontSize: 'clamp(34px, 6vw, 52px)', fontWeight: 800, letterSpacing: '-.03em', margin: '28px 0 10px', lineHeight: 1.05 }}>Page not found.</h1>

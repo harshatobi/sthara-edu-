@@ -24,6 +24,7 @@ import { Facts, PlanChip, Section, StatusChip, Table, dayIST, downloadCsv, errTe
 import { useOpsApi } from '../../useOpsApi';
 import { extendedEnd, useSchoolPatch, type AccessResult } from '../../useSchoolPatch';
 import { ClassesStep, PeopleStep, RosterStep, TeachingStep, type ClassRow, type Issued, type Person } from './parts';
+import { SupportTab } from './support';
 
 interface JournalRow { id: number; at: string; actor_email: string | null; key: string; old_value: unknown; new_value: unknown; reason: string }
 interface AuditRow { id: number; at: string; actor: string | null; actor_role: string | null; action: string; table_name: string; row_id: string | null }
@@ -39,7 +40,7 @@ interface Data {
 
 const TABS = [
   ['overview', 'Overview'], ['access', 'Subscription & access'], ['classes', 'Classes & subjects'],
-  ['people', 'People'], ['teaching', 'Teaching'], ['activity', 'Activity'],
+  ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['activity', 'Activity'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
@@ -139,6 +140,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
             </>
           )}
           {tab === 'teaching' && <TeachingStep schoolId={schoolId} classes={data.classes} people={data.people} onSaved={load} />}
+          {tab === 'support' && <SupportTab schoolId={schoolId} classes={data.classes} people={data.people} onChanged={async msg => { toast(msg); await load(); }} />}
           {tab === 'activity' && <ActivityTab d={data} />}
         </>
       )}

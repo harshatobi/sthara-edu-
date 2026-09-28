@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Chip } from '@/components/canon/ui';
 import { reminderMessage, type Family } from '@/lib/admin/fees';
 import { ago, fmtDate, inr, plural } from '@/lib/admin/format';
@@ -29,7 +30,12 @@ export default function ReminderPanel({ families, school, guardianCount, call, o
     return reminderMessage(shown.tone, shown.name, inr(shown.outstanding), fmtDate(oldest), school);
   }, [shown, school]);
 
+  const blockedWhy = (f: Family) => f.outstanding <= 0 ? 'Nothing due' : !guardianCount(f.studentId) ? 'No verified parent linked' : recent(f) ? 'Reminded in the last 3 days' : '';
+  const blocked = families.filter(f => !eligible(f)).length;
+
   const toggle = (id: string) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  // A row click previews the family and, when it can be reminded, toggles it too.
+  const clickRow = (f: Family) => { setPreview(f.studentId); if (eligible(f)) toggle(f.studentId); };
   const send = async () => {
     setBusy(true); setErr(null);
     try {
@@ -39,7 +45,7 @@ export default function ReminderPanel({ families, school, guardianCount, call, o
   };
 
   return (
-    <Workspace wide title="Stage fee reminders" sub={`${plural(families.length, 'family', 'families')} with a balance · sent in-app to each verified parent`} onClose={onClose}
+    <Workspace wide title="Stage fee reminders" sub={`${plural(families.length, 'family', 'families')} with a balance${blocked ? ` · ${blocked} can't be reminded yet` : ''} · sent in-app to each verified parent`} onClose={onClose}
       actions={<button className="btn red" disabled={busy || !picked.size} onClick={send}>{busy ? 'Sending…' : `Send ${plural(picked.size, 'reminder')}`}</button>}>
       {err && <div className="err" role="alert" style={{ marginBottom: 14 }}>{err}</div>}
       <div className="g2" style={{ gridTemplateColumns: '1fr 360px', alignItems: 'start' }}>
@@ -49,13 +55,13 @@ export default function ReminderPanel({ families, school, guardianCount, call, o
               <thead><tr><th /><th>Family</th><th className="r">Outstanding</th><th className="c">Overdue</th><th className="c">Tone</th><th>Last reminder</th></tr></thead>
               <tbody>{families.map(f => {
                 const can = eligible(f);
-                const why = f.outstanding <= 0 ? 'Nothing due' : !guardianCount(f.studentId) ? 'No verified parent linked' : recent(f) ? 'Reminded in the last 3 days' : '';
+                const why = blockedWhy(f);
                 return (
-                  <tr key={f.studentId} className={`click${preview === f.studentId ? ' sel' : ''}`} onClick={() => setPreview(f.studentId)}>
+                  <tr key={f.studentId} className={`click${preview === f.studentId ? ' sel' : ''}`} onClick={() => clickRow(f)}>
                     <td onClick={e => e.stopPropagation()}>
-                      <input type="checkbox" aria-label={`Remind ${f.name}'s family`} disabled={!can} checked={picked.has(f.studentId)} onChange={() => toggle(f.studentId)} />
+                      <input type="checkbox" aria-label={`Remind ${f.name}'s family`} title={why || undefined} disabled={!can} checked={picked.has(f.studentId)} onChange={() => toggle(f.studentId)} />
                     </td>
-                    <td><b style={{ fontSize: 14 }}>{f.name}</b><div className="muted" style={{ fontSize: 12 }}>{f.cls}{why ? ` · ${why}` : ''}</div></td>
+                    <td><b style={{ fontSize: 14 }}>{f.name}</b><div className="muted" style={{ fontSize: 12 }}>{f.cls}{why ? <> · <span style={{ color: 'var(--red)', fontWeight: 600 }}>{why}</span></> : ''}</div></td>
                     <td className="r num">{inr(f.outstanding)}</td>
                     <td className="c num" style={{ color: f.maxDaysOverdue ? 'var(--red)' : 'var(--mut)' }}>{f.maxDaysOverdue ? `${f.maxDaysOverdue} d` : '—'}</td>
                     <td className="c"><Chip tone={TONE_CHIP[f.tone]}>{f.tone.toUpperCase()}</Chip></td>
@@ -68,6 +74,13 @@ export default function ReminderPanel({ families, school, guardianCount, call, o
         </div>
         <div className="card" style={{ position: 'sticky', top: 90 }}>
           <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em', marginBottom: 12 }}>WHAT THE PARENT SEES</div>
+          {shown && !eligible(shown) && (
+            <div className="err" role="status" style={{ marginBottom: 12, fontSize: 13, lineHeight: 1.55 }}>
+              {blockedWhy(shown) === 'No verified parent linked'
+                ? <>{shown.name}&apos;s family can&apos;t be reminded: no verified parent is linked to this student. Request a parent login linked to {shown.name} from the <Link href="/admin/directory" style={{ textDecoration: 'underline' }}>Directory</Link>; once it is set up and verified, stage again.</>
+                : <>{shown.name}&apos;s family can&apos;t be reminded right now: {blockedWhy(shown).toLowerCase()}.</>}
+            </div>
+          )}
           {msg && shown ? (
             <>
               <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 16, background: '#FCFDFE' }}>

@@ -447,12 +447,24 @@ export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId:
 }
 
 // ── Step 4: roster & credentials ─────────────────────────────────────────────
-export function RosterStep({ schoolId, people, onIssued, onDeleted }: { schoolId: string; people: Person[]; onIssued: (i: Issued) => void; onDeleted?: (msg: string) => void }) {
+export function RosterStep({ schoolId, people, guardians, openSupport, onIssued, onDeleted }: {
+  schoolId: string; people: Person[];
+  /** Verified guardian links (null when they couldn't be loaded: no flags are shown then). */
+  guardians?: { studentsWithParent: string[]; parentsWithChild: string[] } | null;
+  openSupport?: () => void;
+  onIssued: (i: Issued) => void; onDeleted?: (msg: string) => void;
+}) {
   const api = useOpsApi();
   const [filter, setFilter] = useState<'all' | PersonRole>('all');
   const [shown, setShown] = useState<Record<string, string>>({});
   const [q, setQ] = useState('');
   const rollToName = useMemo(() => new Map(people.filter(p => p.custom_student_id).map(p => [String(p.custom_student_id), p.name])), [people]);
+  const withParent = useMemo(() => new Set(guardians?.studentsWithParent ?? []), [guardians]);
+  const withChild = useMemo(() => new Set(guardians?.parentsWithChild ?? []), [guardians]);
+  const isLeft = (p: Person) => !!p.metadata?.left;
+  const noParent = (p: Person) => !!guardians && p.role === 'student' && !isLeft(p) && !withParent.has(p.id);
+  const noChild = (p: Person) => !!guardians && p.role === 'parent' && !isLeft(p) && !withChild.has(p.id);
+  const unlinked = people.filter(noParent).length, childless = people.filter(noChild).length, leftCount = people.filter(isLeft).length;
   const needle = q.trim().toLowerCase();
   const list = people.filter(p => (filter === 'all' || p.role === filter)
     && (!needle || `${p.name} ${p.email} ${p.custom_student_id ?? ''} ${p.student_class ?? ''}`.toLowerCase().includes(needle)));
@@ -477,6 +489,16 @@ export function RosterStep({ schoolId, people, onIssued, onDeleted }: { schoolId
           </button>
         ))}
       </div>
+      {(unlinked > 0 || childless > 0 || leftCount > 0) && (
+        <div className="note" role="status" style={{ margin: '4px 0 8px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ flex: 1, minWidth: 200 }}>
+            {[unlinked && `${unlinked} student${unlinked === 1 ? ' has' : 's have'} no verified parent`,
+              childless && `${childless} parent${childless === 1 ? ' is' : 's are'} not linked to a child`,
+              leftCount && `${leftCount} marked as left`].filter(Boolean).join(' · ')}
+          </span>
+          {openSupport && (unlinked > 0 || childless > 0) && <button type="button" className="btn sm" onClick={openSupport}>Fix in Support</button>}
+        </div>
+      )}
       <input className="cmp-in" style={{ margin: '4px 0 8px' }} placeholder="Search by name, email, class or roll number" aria-label="Search the roster" value={q} onChange={e => setQ(e.target.value)} />
       {list.length === 0 ? <Empty icon={<UsersThree size={30} weight="duotone" />} title={people.length ? 'Nobody matches' : 'Nobody here yet'}>{people.length ? 'Try another search or role.' : 'Use Add people above.'}</Empty> : list.map(p => (
         <div key={p.id} className="row">
@@ -485,8 +507,13 @@ export function RosterStep({ schoolId, people, onIssued, onDeleted }: { schoolId
             <div style={{ fontWeight: 700, fontSize: 14 }}>{p.name} <span className="muted" style={{ fontWeight: 500 }}>{p.email}</span></div>
             <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{detail(p)}</div>
           </div>
-          {p.metadata?.mustChangePassword && <Chip tone="a" title="Still on the temporary password">TEMP PASSWORD</Chip>}
-          {shown[p.id]
+          {isLeft(p) && <Chip tone="n" title={(p.metadata?.left as { reason?: string } | undefined)?.reason ?? 'Sign-in blocked'}>LEFT</Chip>}
+          {noParent(p) && (openSupport
+            ? <button type="button" onClick={openSupport} style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }} title="No verified parent can see this student. Fix in Support."><Chip tone="r">NO VERIFIED PARENT</Chip></button>
+            : <Chip tone="r">NO VERIFIED PARENT</Chip>)}
+          {noChild(p) && <Chip tone="a" title="This parent account can't see any child yet">NO CHILD LINKED</Chip>}
+          {!isLeft(p) && p.metadata?.mustChangePassword && <Chip tone="a" title="Still on the temporary password">TEMP PASSWORD</Chip>}
+          {isLeft(p) ? null : shown[p.id]
             ? <span className="mono" style={{ fontSize: 13, fontWeight: 700 }}>{shown[p.id]}</span>
             : p.role !== 'superadmin' && <button className="btn sm" onClick={() => reset(p)}><Key size={13} weight="bold" /> New password</button>}
           {p.role !== 'superadmin' && onDeleted && (

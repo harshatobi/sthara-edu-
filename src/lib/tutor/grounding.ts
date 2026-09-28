@@ -132,7 +132,12 @@ export function scopeDigest(scope: StudentScope, only?: { subjectKey: string; ch
   const lines: string[] = [];
   // Codes keep their place in the whole scope, so a focused digest validates the same way.
   scope.subjects.forEach((s, i) => {
-    if (only && s.key !== only.subjectKey) return;
+    if (only && s.key !== only.subjectKey) {
+      // Focused on one subject: the others show chapter names only, so a topic from another
+      // subject the student takes can still be placed there.
+      if (!only.chapter) lines.push(`S${i + 1} ${s.name} (Class ${s.level}): ${s.chapters.map((c, j) => `S${i + 1}.C${j + 1} ${c.name}`).join('; ')}`);
+      return;
+    }
     const S = `S${i + 1}`;
     lines.push(`${S} ${s.name} (Class ${s.level}${s.source === 'elective' ? ', elective' : ''})`);
     s.chapters.forEach((c, j) => {

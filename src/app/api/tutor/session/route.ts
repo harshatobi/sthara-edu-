@@ -182,13 +182,21 @@ export async function POST(req: NextRequest) {
         step: 1, hints: 0, revealed: false, done: false, iat: Date.now(),
         ground: { kind: g.kind as Ground['kind'], subjectKey: g.subjectKey, level: g.level, microTopic: g.microTopic, angle: g.angle },
       };
-      const out = await ask(
+      const grounded = { subject: state.subject, chapter: state.topic, microTopic: g.microTopic, level: g.level, kind: g.kind, angle: g.angle };
+      let out: Record<string, unknown>;
+      try {
+        out = await ask(
         `Start a ${STEPS}-step Socratic session. ${lessonLine(state)}
 Briefly set up one concrete problem on this, then ask step 1 of ${STEPS}: the first guiding question.${studySkills ? '' : syllabusScope(g.level ?? ctx.me.cls, state.subject, state.topic, exams)}
 Reply as {"text": "<setup + question 1>"}`, g.level ?? ctx.me.cls, user.id, ctx.me.schoolId);
+      } catch (e) {
+        // The topic was recognised; say so, so the student can come back to it.
+        if ((e as { status?: number }).status === 503) return NextResponse.json({ error: (e as Error).message, grounded }, { status: 503 });
+        throw e;
+      }
       return NextResponse.json({
         verdict: 'question', text: out.text, step: 1, steps: STEPS, hints: 0,
-        grounded: { subject: state.subject, chapter: state.topic, microTopic: g.microTopic, level: g.level, kind: g.kind, angle: g.angle },
+        grounded,
         token: signSession({ ...state, question: out.text as string }),
       });
     }

@@ -7,6 +7,8 @@ import { escalateAt, higher, type Draft, type Severity } from './rules';
 
 /** Office roles that receive escalations: whoever may decide on incidents. */
 const PRINCIPAL_ROLES = (Object.keys(ROLES) as RoleKey[]).filter(r => ROLES[r].perms.includes('incidents.manage'));
+/** Office roles that receive students' safety alerts: counsellor, principal, school admin. */
+const SAFEGUARDING_ROLES = (Object.keys(ROLES) as RoleKey[]).filter(r => ROLES[r].perms.includes('safeguarding.read'));
 
 /** Teachers of a class (class teacher or any subject in it). */
 export async function teachersOf(db: SupabaseClient, schoolId: string, className: string | null | undefined): Promise<string[]> {
@@ -25,10 +27,15 @@ export async function classTeachersOf(db: SupabaseClient, schoolId: string, clas
 }
 
 /** Office staff who hold incidents.manage (principal, VP, school admin). */
-export async function principalsOf(db: SupabaseClient, schoolId: string): Promise<string[]> {
+export const principalsOf = (db: SupabaseClient, schoolId: string) => grantHolders(db, schoolId, PRINCIPAL_ROLES);
+
+/** Office staff who hold safeguarding.read (counsellor, principal, school admin). */
+export const safeguardingOf = (db: SupabaseClient, schoolId: string) => grantHolders(db, schoolId, SAFEGUARDING_ROLES);
+
+async function grantHolders(db: SupabaseClient, schoolId: string, roles: RoleKey[]): Promise<string[]> {
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await db.from('role_grants').select('user_id, expires_on, users!inner(role, school_id)')
-    .eq('school_id', schoolId).is('revoked_at', null).in('role_key', PRINCIPAL_ROLES);
+    .eq('school_id', schoolId).is('revoked_at', null).in('role_key', roles);
   return [...new Set((data || [])
     .filter((g: any) => (!g.expires_on || g.expires_on >= today) && (Array.isArray(g.users) ? g.users[0] : g.users)?.role === 'admin')
     .map((g: any) => g.user_id as string))];
@@ -37,6 +44,7 @@ export async function principalsOf(db: SupabaseClient, schoolId: string): Promis
 /** Who should hear about an item: the addressed teacher, else the student's/class's teachers; principal items go to principals. */
 async function recipients(db: SupabaseClient, schoolId: string, row: any): Promise<string[]> {
   if (row.audience === 'principal') return principalsOf(db, schoolId);
+  if (row.audience === 'safeguarding') return safeguardingOf(db, schoolId);
   if (row.teacher_id) return [row.teacher_id];
   return teachersOf(db, schoolId, row.class_name);
 }
@@ -121,7 +129,7 @@ export async function raise(db: SupabaseClient, schoolId: string, drafts: Draft[
  * running); this only stamps escalated_at once and sends the alert.
  */
 export async function escalate(db: SupabaseClient, schoolId: string, now = new Date()): Promise<number> {
-  const { data, error } = await db.from('situations').select('id, title, message, severity, student_name, class_name')
+  const { data, error } = await db.from('situations').select('id, title, message, severity, student_name, class_name, audience')
     .eq('school_id', schoolId).is('acknowledged_at', null).is('escalated_at', null).lte('escalate_at', now.toISOString()).limit(100);
   if (error || !data?.length) return 0;
   const ids = data.map(r => r.id);
@@ -130,9 +138,11 @@ export async function escalate(db: SupabaseClient, schoolId: string, now = new D
     .in('id', ids).is('escalated_at', null).select('id');
   const won = new Set((stamped || []).map(r => r.id));
   const principals = await principalsOf(db, schoolId);
+  // A safety disclosure escalates within the safeguarding circle, never wider.
+  const safeguarding = data.some(r => r.audience === 'safeguarding') ? await safeguardingOf(db, schoolId) : [];
   for (const r of data) {
     if (!won.has(r.id)) continue;
-    await alertStaff(db, schoolId, principals, {
+    await alertStaff(db, schoolId, r.audience === 'safeguarding' ? safeguarding : principals, {
       title: `Escalated: ${r.title}`, body: `${r.message} Not acknowledged in time.`, critical: true, situationId: r.id,
     });
   }

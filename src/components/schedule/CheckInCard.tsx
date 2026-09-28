@@ -34,8 +34,8 @@ export default function CheckInCard() {
       navigator.geolocation.getCurrentPosition(p => res(p), () => res(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 });
     });
     try {
-      const r = await call<{ onCampus: boolean | null; distance: number | null }>('/api/me/attendance', 'POST', { direction, lat: pos?.coords.latitude, lng: pos?.coords.longitude });
-      setMsg(r.onCampus === false ? `Recorded, but you look ${r.distance} m from school, so it's marked off campus.` : r.onCampus === null && data.rows.settings.geofence_lat !== null ? 'Recorded. Location wasn\'t shared, so on-campus is unknown.' : direction === 'in' ? 'Checked in.' : 'Checked out.');
+      const r = await call<{ onCampus: boolean | null; distance: number | null }>('/api/me/attendance', 'POST', { direction, lat: pos?.coords.latitude, lng: pos?.coords.longitude, accuracy: pos?.coords.accuracy });
+      setMsg(r.onCampus === false ? `Recorded, but you look ${r.distance} m from school, so it's marked off campus.` : direction === 'in' ? 'Checked in.' : 'Checked out.');
       reload();
     } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   };

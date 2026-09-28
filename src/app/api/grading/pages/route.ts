@@ -4,7 +4,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
 import { CAPTURE_PREFIX, capturePath, pathBelongs } from '@/lib/grading/handwritten';
-import { BUCKET, MAX_PAGE_BYTES, MAX_PAGES, ensureBucket, pageLinks, studentOnRoster, GradingError } from '@/lib/grading/server';
+import { BUCKET, MAX_PAGE_BYTES, MAX_PAGES, ensureBucket, legacyPath, pageLinks, signRefs, studentOnRoster, GradingError } from '@/lib/grading/server';
 import { callerOf, staffCanGrade } from '@/lib/grading/access';
 
 export const dynamic = 'force-dynamic';
@@ -68,14 +68,18 @@ export async function GET(req: NextRequest) {
     ok = !!g;
   }
   if (!ok) return bad('Unknown submission.', 404);
-  // Photo answers to typed questions: only paths filed under this submission.
+  // Photo answers to typed questions: only files filed under this submission
+  // (private captures, or the old submissions bucket's <student>/<assignment>/ folder).
+  const mine = (f: string) => f.startsWith(CAPTURE_PREFIX)
+    ? pathBelongs(f.slice(CAPTURE_PREFIX.length), a!.school_id, sub.assignment_id, sub.student_id)
+    : !!legacyPath(f)?.startsWith(`${sub.student_id}/${sub.assignment_id}/`);
   const files = Object.entries(sub.answers && typeof sub.answers === 'object' ? sub.answers : {})
     .map(([k, v]: [string, any]) => [k, typeof v?.file === 'string' ? v.file : ''] as const)
-    .filter(([, f]) => f.startsWith(CAPTURE_PREFIX) && pathBelongs(f.slice(CAPTURE_PREFIX.length), a!.school_id, sub.assignment_id, sub.student_id));
+    .filter(([, f]) => mine(f));
   const [pages, signed] = await Promise.all([
     pageLinks(db, Array.isArray(sub.image_urls) ? sub.image_urls : []),
-    files.length ? db.storage.from(BUCKET).createSignedUrls(files.map(([, f]) => f.slice(CAPTURE_PREFIX.length)), 3600) : { data: [] },
+    signRefs(db, files.map(([, f]) => f)),
   ]);
-  const answers = Object.fromEntries(files.map(([k], i) => [k, signed.data?.[i]?.signedUrl]).filter(([, u]) => u));
+  const answers = Object.fromEntries(files.map(([k], i) => [k, signed[i]]).filter(([, u]) => u));
   return NextResponse.json({ pages, answers });
 }

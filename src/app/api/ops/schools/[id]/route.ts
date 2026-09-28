@@ -9,6 +9,10 @@ import { USD_TO_INR } from '@/lib/ai/pricing';
 
 export const dynamic = 'force-dynamic';
 
+type SchoolMetricsJson = { data?: Record<string, unknown> } & Record<string, unknown>;
+/** Subject-link counts sit with the other data-quality counts. */
+const withSubjects = (m: SchoolMetricsJson | null, s: Record<string, number> | null) => (m && s ? { ...m, data: { ...(m.data || {}), ...s } } : m);
+
 const UUID = /^[0-9a-f-]{36}$/i;
 
 /**
@@ -22,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   const db = createAdminClient();
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
-  const [registry, { data: school }, { data: classes }, { data: people }, journal, audit, usage, metrics] = await Promise.all([
+  const [registry, { data: school }, { data: classes }, { data: people }, journal, audit, usage, metrics, subjectMetrics] = await Promise.all([
     loadRegistry(db),
     db.from('schools').select('id, name, settings, trial_expires_at, created_at, updated_at').eq('id', id).maybeSingle(),
     db.from('classes').select('id, name, metadata').eq('school_id', id).order('name'),
@@ -34,6 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .eq('school_id', id).order('at', { ascending: false }).limit(100),
     db.from('ai_usage').select('cost_usd, input_tokens, output_tokens, thinking_tokens, ok').eq('school_id', id).gte('at', since).limit(50_000),
     db.rpc('ops_school_metrics', { p_school: id }),
+    db.rpc('ops_subject_metrics', { p_school: id }),
   ]);
   const facts = registry.find(s => s.id === id);
   if (!school || !facts) return NextResponse.json({ error: 'School not found' }, { status: 404 });
@@ -58,7 +63,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     classes: classes || [],
     people: people || [],
     // School health counts (null until the ops_school_metrics migration is applied).
-    metrics: metrics.error ? null : ((metrics.data || []) as { metrics: unknown }[])[0]?.metrics ?? null,
+    metrics: metrics.error ? null : withSubjects(((metrics.data || []) as { metrics: SchoolMetricsJson }[])[0]?.metrics ?? null,
+      subjectMetrics.error ? null : ((subjectMetrics.data || []) as { metrics: Record<string, number> }[])[0]?.metrics ?? null),
     usdToInr: USD_TO_INR,
     guardians: linkErr ? null : {
       studentsWithParent: [...new Set(verifiedLinks.map(l => l.student_id))],

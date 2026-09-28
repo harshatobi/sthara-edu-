@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const mtd = usageWindow({ range: 'mtd' });
     const dayAgo = new Date(Date.now() - 86_400_000).toISOString(), hourAgo = new Date(Date.now() - 3_600_000).toISOString();
-    const [registry, inv, enquiries, journal, usage, operators, requests, errorGroups, schoolMetrics] = await Promise.all([
+    const [registry, inv, enquiries, journal, usage, operators, requests, errorGroups, schoolMetrics, subjectMetrics] = await Promise.all([
       loadRegistry(db),
       collectInventory(db),
       db.from('enquiries').select('status'),
@@ -28,7 +28,9 @@ export async function GET(req: NextRequest) {
       db.from('account_requests').select('school_id, created_at').eq('status', 'pending'),
       db.from('app_error_groups').select('fingerprint, message, first_seen').eq('status', 'open').gte('last_seen', dayAgo).limit(1000),
       db.rpc('ops_school_metrics', { p_school: null }),
+      db.rpc('ops_subject_metrics', { p_school: null }),
     ]);
+    const subjectsBySchool = new Map(subjectMetrics.error ? [] : ((subjectMetrics.data || []) as { school_id: string; metrics: Record<string, number> }[]).map(r => [r.school_id, r.metrics]));
     // The error log's pulse (tables may not exist yet on an older database: then no error items).
     const openGroups = errorGroups.error ? [] : errorGroups.data || [];
     // Occurrences in the last hour per open group, counted in the database.
@@ -69,7 +71,8 @@ export async function GET(req: NextRequest) {
       usdToInr: USD_TO_INR,
       // School health counts per school (null until the ops_school_metrics migration is applied).
       metrics: schoolMetrics.error ? null
-        : Object.fromEntries(((schoolMetrics.data || []) as { school_id: string; metrics: unknown }[]).map(r => [r.school_id, r.metrics])),
+        : Object.fromEntries(((schoolMetrics.data || []) as { school_id: string; metrics: { data?: Record<string, unknown> } }[]).map(r => [r.school_id,
+          subjectsBySchool.has(r.school_id) ? { ...r.metrics, data: { ...(r.metrics.data || {}), ...subjectsBySchool.get(r.school_id) } } : r.metrics])),
       journal: journal.error ? [] : journal.data,
       operators: operators.count ?? null,
       checkedAt: new Date().toISOString(),

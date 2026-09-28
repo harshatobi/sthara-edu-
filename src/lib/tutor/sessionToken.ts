@@ -23,6 +23,18 @@ export interface TutorSessionState {
   done: boolean;
   /** The tutor question currently being answered — signed so the student can't swap in an easier one. */
   question?: string;
+  /**
+   * Where the session sits in the student's syllabus (the grounding engine's verdict),
+   * signed so the student can't move a session onto something else mid-way.
+   * `subject` is the official subject name and `topic` the canonical chapter.
+   */
+  ground?: {
+    kind: 'syllabus' | 'prerequisite' | 'exam' | 'study_skills';
+    subjectKey: string | null;
+    level: string | null;
+    microTopic: string | null;
+    angle: string | null;
+  };
   /** Server-side record of the session (public.tutor_session_turns) and the turn this token is for. */
   sid: string;
   seq: number;

@@ -33,6 +33,7 @@ export const PERMS = {
   'messages.office': 'Read and answer parents\' messages to the school office',
   'feed.read': 'See the school-wide situational feed and escalations',
   'incidents.manage': 'Decide on bullying, safety and child-protection incidents',
+  'safeguarding.read': 'See students\u2019 safety alerts from the tutor (self-harm, abuse, bullying cues)',
   'attendance.read': 'See attendance across the school',
   'os.ask': 'Ask the School OS about the whole school (web and WhatsApp)',
   'schedule.academic': 'Build the timetable and set bells, rooms and the academic calendar',
@@ -66,7 +67,7 @@ export const ROLES: Record<RoleKey, { label: string; summary: string; perms: Per
   admissions_officer: { label: 'Admissions officer', summary: 'The admissions pipeline', perms: ['dashboard.view', 'probe.view', 'admissions.read', 'admissions.manage'] },
   hr_manager: { label: 'HR manager', summary: 'Staff, leave, the staff register and shifts', perms: ['dashboard.view', 'probe.view', 'workforce.read', 'leave.approve', 'leave.policy', 'schedule.workforce'] },
   academic_coordinator: { label: 'Academic coordinator', summary: 'Academic health, teaching staff and the timetable', perms: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic'] },
-  counsellor: { label: 'Counsellor', summary: 'Anonymised wellness and parents\' messages to the office', perms: ['dashboard.view', 'wellness.read', 'messages.office'] },
+  counsellor: { label: 'Counsellor', summary: 'Anonymised wellness, safety alerts and parents\' messages to the office', perms: ['dashboard.view', 'wellness.read', 'messages.office', 'safeguarding.read'] },
   dpo: {
     label: 'Data protection officer', summary: 'Consent, DPDP flags and the audit trail',
     perms: ['dashboard.view', 'probe.view', 'compliance.read', 'compliance.act', 'audit.read', 'wellness.read'],

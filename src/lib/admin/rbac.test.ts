@@ -10,7 +10,7 @@ test('role catalogue matches the database seed', () => {
   const rows = [...seed.matchAll(/\('(\w+)', ARRAY\[([^\]]*)\]\)/g)];
   const db: Record<string, string[]> = Object.fromEntries(rows.map(m => [m[1], m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))]));
   // Permissions added to the catalogue by later migrations (INSERT … ON CONFLICT DO NOTHING).
-  for (const f of ['20260925180000_parent_connect.sql', '20260926200000_situational_feed.sql', '20260926210000_staff_whatsapp.sql', '20260927100000_scheduling.sql']) {
+  for (const f of ['20260925180000_parent_connect.sql', '20260926200000_situational_feed.sql', '20260926210000_staff_whatsapp.sql', '20260927100000_scheduling.sql', '20260928190000_tutor_guard.sql']) {
     const later = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations', f), 'utf8');
     const add = later.slice(later.indexOf('INSERT INTO public.role_permissions'), later.indexOf('ON CONFLICT DO NOTHING'));
     for (const m of add.matchAll(/\('(\w+)',\s+ARRAY\[([^\]]*)\]\)/g)) db[m[1]] = [...(db[m[1]] || []), ...m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))];
@@ -33,6 +33,8 @@ test('separation of duties is built into the roles', () => {
   assert.ok(!ROLES.finance_head.perms.includes('wellness.read'));
   // Ask the School OS about the whole school is for leadership only.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('os.ask')).sort(), ['principal', 'school_admin', 'vice_principal']);
+  // A student's safety disclosure reaches the counsellor and the principal, no one else.
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('safeguarding.read')).sort(), ['counsellor', 'principal', 'school_admin']);
 });
 
 test('access is the union of active roles', () => {

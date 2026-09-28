@@ -27,7 +27,6 @@ export const RATE_LIMITS = {
   quizGenerate:    { limit: 10,  windowMs: 5 * MIN,  per: 'user',    route: '/api/quiz/generate',           label: 'Quiz generation (student)' },
   homeworkGrade:   { limit: 10,  windowMs: 5 * MIN,  per: 'user',    route: '/api/homework/grade',          label: 'Homework grading' },
   verifySchool:    { limit: 30,  windowMs: 10 * MIN, per: 'ip',      route: '/api/auth/verify-school',      label: 'School code lookup (sign-in)' },
-  tutor:           { limit: 30,  windowMs: 5 * MIN,  per: 'user',    route: '/api/tutor',                   label: 'AI tutor (legacy chat)' },
   tutorSession:    { limit: 40,  windowMs: 5 * MIN,  per: 'user',    route: '/api/tutor/session',           label: 'AI tutor session' },
   examTrack:       { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/student/exam-track',      label: 'Exam track choice' },
   quizGen:         { limit: 15,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/quiz-gen',        label: 'Quiz creator' },
@@ -54,7 +53,7 @@ export const RATE_LIMITS = {
 
 export type RateLimitKey = keyof typeof RATE_LIMITS;
 
-/** Arguments for checkRateLimit(key, ...limitOf('tutor')). */
+/** Arguments for checkRateLimit(key, ...limitOf('tutorSession')). */
 export const limitOf = (k: RateLimitKey): [number, number] => [RATE_LIMITS[k].limit, RATE_LIMITS[k].windowMs];
 
 /** AI models by job. Routes pass these to the Gemini SDK. */
@@ -63,4 +62,6 @@ export const AI_MODELS = {
   deep: 'gemini-2.5-pro',
   /** Reading photographed handwriting and suggesting marks (teacher capture and student photo submissions). */
   handwriting: 'gemini-2.5-flash',
+  /** Cheap, fast checks that gate a bigger call: the tutor's grounding check on every message. */
+  fast: 'gemini-2.5-flash-lite',
 } as const;

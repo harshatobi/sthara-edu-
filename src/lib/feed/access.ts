@@ -59,11 +59,13 @@ export const teaches = (me: FeedCaller, className: string | null | undefined) =>
   !!normClass(className) && me.scope.some(e => normClass(e.cls) === normClass(className));
 
 export const canManageIncidents = (me: FeedCaller) => !!me.access?.can('incidents.manage');
-export const canReadSchoolFeed = (me: FeedCaller) => !!me.access?.any('feed.read', 'incidents.manage');
+export const canReadSchoolFeed = (me: FeedCaller) => !!me.access?.any('feed.read', 'incidents.manage', 'safeguarding.read');
 
 /** Mirrors the situations_read RLS policy for server routes. */
 export function canSeeSituation(me: FeedCaller, row: { school_id: string; audience: string; teacher_id: string | null; class_name: string | null }): boolean {
   if (row.school_id !== me.schoolId) return false;
+  // A student's safety disclosure: counsellor and principal only (not other incident managers).
+  if (row.audience === 'safeguarding') return !!me.access?.can('safeguarding.read');
   if (canManageIncidents(me)) return true;
   if (row.audience !== 'staff') return false;
   if (me.role === 'admin') return canReadSchoolFeed(me);

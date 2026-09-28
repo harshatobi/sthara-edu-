@@ -17,7 +17,7 @@ export interface FeedItem {
   className: string | null;
   subject: string | null;
   teacherId: string | null;
-  audience: 'staff' | 'principal';
+  audience: 'staff' | 'principal' | 'safeguarding';
   sourceTable: string | null;
   sourceId: string | null;
   metadata: Record<string, any>;

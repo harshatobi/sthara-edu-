@@ -5,6 +5,7 @@ import { inScope } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
 import { CURRENT_SESSION } from '@/lib/curriculum';
+import { officialName } from '@/lib/subjects/catalog';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,9 +89,10 @@ export async function POST(req: NextRequest) {
   const { staff, db } = auth;
   if (!checkRateLimit(`lessons:${staff.id}`, ...limitOf('lessons')).allowed) return NextResponse.json({ error: 'Too many changes at once.' }, { status: 429 });
   const b = await req.json().catch(() => null);
-  const cls = str(b?.class, 40), subject = str(b?.subject, 60);
-  if (!cls || !subject) return NextResponse.json({ error: 'class and subject are required' }, { status: 400 });
-  if (staff.role === 'teacher' && !inScope(staff.scope, cls, subject)) return NextResponse.json({ error: `You don't teach ${subject} to ${cls}.` }, { status: 403 });
+  const cls = str(b?.class, 40), asked = str(b?.subject, 60);
+  if (!cls || !asked) return NextResponse.json({ error: 'class and subject are required' }, { status: 400 });
+  const subject = officialName(cls, asked);
+  if (staff.role === 'teacher' && !inScope(staff.scope, cls, subject) && !inScope(staff.scope, cls, asked)) return NextResponse.json({ error: `You don't teach ${subject} to ${cls}.` }, { status: 403 });
   const { row, error } = fields(b ?? {});
   if (error) return NextResponse.json({ error }, { status: 400 });
   if (!row.title || !row.chapter_key || !row.chapter_name) return NextResponse.json({ error: 'A lesson needs a title and a chapter.' }, { status: 400 });

@@ -5,6 +5,7 @@ import { inScope } from '@/lib/teacher/scope';
 import { sanitizeQuestions, totalMarks } from '@/lib/teacher/questions';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
+import { officialName } from '@/lib/subjects/catalog';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,10 @@ function toRow(d: Draft, staff: Staff): { row?: Record<string, unknown>; error?:
   if (!d.title) return { error: 'Give it a title.' };
   if (!d.cls) return { error: 'Choose a class.' };
   if (!d.subject) return { error: 'Choose a subject.' };
-  if (staff.role === 'teacher' && !inScope(staff.scope, d.cls, d.subject)) {
+  // Homework is stored under the subject's official name, so it counts towards the same TML.
+  const asked = d.subject;
+  d.subject = officialName(d.cls, d.subject);
+  if (staff.role === 'teacher' && !inScope(staff.scope, d.cls, d.subject) && !inScope(staff.scope, d.cls, asked)) {
     return { error: `You don't teach ${d.subject} to ${d.cls}. Ask your school admin to add it to your classes.` };
   }
   const { questions, error } = sanitizeQuestions(d.questions);

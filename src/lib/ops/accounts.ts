@@ -2,6 +2,7 @@ import 'server-only';
 import { randomInt } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normClass, tempPassword, validatePeople, type PersonInput, type RowIssue } from './people';
+import { setTeacherSubjects } from '@/lib/subjects/server';
 
 /**
  * Creates school accounts (admin / teacher / student / parent) with the
@@ -113,6 +114,11 @@ export async function createPeople(admin: SupabaseClient, schoolId: string, acto
       );
       if (gErr && !missingRelation(gErr)) console.warn('[ops guardians]', gErr.message);
     }
+    // Link the teacher's subjects to the classes' official subjects (unlinked classes keep plain entries).
+    if (r.role === 'teacher' && (subjects.length || r.classTeacherOf)) {
+      const linked = await setTeacherSubjects(admin, schoolId, actorId, 'operator', uid, subjects, canonicalClass(r.classTeacherOf), { allowLegacy: true });
+      if (!linked.ok) console.warn('[ops teacher links]', linked.error);
+    }
     await audit(admin, schoolId, actorId, 'account_created', uid, { role: r.role, email: r.email, class: profile.student_class, subjects });
     results.push({ ...base, status: 'created', userId: uid, tempPassword: password });
   }
@@ -132,25 +138,16 @@ export function parseAssignments(v: unknown): { class: string; subject: string }
   return out;
 }
 
-/** Replace a teacher's subject/class assignments (no password or role changes). Only classes the school has. */
+/**
+ * Replace a teacher's subject/class assignments (no password or role changes). Goes through the subject
+ * links (teacher_subjects), so every subject must be one the class offers; classes whose subjects aren't
+ * linked yet keep plain entries.
+ */
 export async function updateTeacherAssignments(admin: SupabaseClient, schoolId: string, actorId: string, userId: string,
   subjects: { class: string; subject: string }[], classTeacherOf: string | null, actorRole: ActorRole = 'operator') {
-  const { data: t } = await admin.from('users').select('id, role, school_id').eq('id', userId).maybeSingle();
-  if (!t || t.school_id !== schoolId || t.role !== 'teacher') return { error: 'Teacher not found in this school.' };
-  const { classes } = await schoolState(admin, schoolId);
-  const byNorm = new Map(classes.map(c => [normClass(c.name), c]));
-  const bad = subjects.find(s => !byNorm.has(normClass(s.class)) || !s.subject?.trim());
-  if (bad) return { error: `Unknown class or empty subject: ${bad.class} ${bad.subject}` };
-  if (classTeacherOf && !byNorm.has(normClass(classTeacherOf))) return { error: `Unknown class: ${classTeacherOf}` };
-  const clean = subjects.map(s => ({ class: byNorm.get(normClass(s.class))!.name, subject: s.subject.trim() }));
-  const { error } = await admin.from('users').update({
-    assignments: clean,
-    teacher_subject: clean[0]?.subject ?? null,
-    teacher_class: classTeacherOf ? byNorm.get(normClass(classTeacherOf))!.name : null,
-    teaching_subjects: clean.map(s => ({ classId: byNorm.get(normClass(s.class))?.id ?? null, className: s.class, subjectName: s.subject })),
-  }).eq('id', userId);
-  if (error) return { error: error.message };
-  await audit(admin, schoolId, actorId, 'assignments_updated', userId, { subjects: clean, classTeacherOf }, actorRole);
+  const r = await setTeacherSubjects(admin, schoolId, actorId, actorRole, userId, subjects, classTeacherOf, { allowLegacy: true });
+  if (!r.ok) return { error: r.error };
+  await audit(admin, schoolId, actorId, 'assignments_updated', userId, { subjects, classTeacherOf }, actorRole);
   return { error: null };
 }
 

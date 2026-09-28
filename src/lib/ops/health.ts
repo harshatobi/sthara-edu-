@@ -21,6 +21,9 @@ export interface SchoolMetrics {
   data: {
     studentsNoParent: number; studentsNoClass: number; studentsNoRoll: number; parentsNoChild: number;
     teachersNoAssignments: number; staleTempPasswords: number;
+    // Subject links (ops_subject_metrics), merged in by the API; absent on an older database.
+    classSubjectsLinked?: number; classSubjectsUnlinked?: number; classesNoSubjects?: number; classSubjectsNoTeacher?: number;
+    studentsNoSubjects?: number; seniorNoElectives?: number; subjectsNoLead?: number;
   };
   ops: {
     classCount: number; attendanceDays14: number; classesMarked7: number; feeStructures: number;
@@ -45,7 +48,7 @@ export interface CommercialFacts {
 export type PillarKey = 'adoption' | 'operations' | 'data' | 'commercial';
 export type Severity = 'high' | 'medium' | 'low';
 /** Where in the school workspace the fix lives. */
-export type FixTab = 'people' | 'support' | 'teaching' | 'access' | 'classes' | 'overview';
+export type FixTab = 'people' | 'support' | 'teaching' | 'access' | 'classes' | 'subjects' | 'overview';
 export interface Finding { id: string; pillar: PillarKey; severity: Severity; title: string; detail?: string; tab?: FixTab }
 export interface Measure { label: string; score: number; value: string; weight: number }
 export interface Pillar { key: PillarKey; label: string; weight: number; score: number | null; measures: Measure[]; findings: Finding[] }
@@ -236,6 +239,21 @@ function dataQuality(m: SchoolMetrics): Omit<Pillar, 'key' | 'label' | 'weight' 
   if (parents) {
     measures.push({ label: 'Parents linked to a child', score: 1 - d.parentsNoChild / parents, value: `${parents - d.parentsNoChild} of ${parents}`, weight: 10 });
     if (d.parentsNoChild) findings.push({ id: 'data.parent-childless', pillar: 'data', severity: 'medium', title: `${people('parent', d.parentsNoChild)} not linked to any child`, tab: 'support' });
+  }
+  // Subjects: every tracked subject must be an official one, taught, and taken by the right students (TML keys on it).
+  if (d.classSubjectsLinked !== undefined) {
+    const linked = d.classSubjectsLinked, unlinked = d.classSubjectsUnlinked ?? 0;
+    if (linked + unlinked > 0) {
+      measures.push({ label: 'Subjects linked to the curriculum', score: linked / (linked + unlinked), value: `${linked} of ${linked + unlinked}`, weight: 25 });
+    }
+    if (unlinked) findings.push({ id: 'data.subjects-unlinked', pillar: 'data', severity: linked ? 'medium' : 'high', title: `${plural(unlinked, 'subject name')} not linked to the curriculum`, detail: 'TML, the tutor and the planner can\u2019t ground these. Link them in Subjects.', tab: 'subjects' });
+    if (d.classesNoSubjects) findings.push({ id: 'data.class-no-subjects', pillar: 'data', severity: 'high', title: `${plural(d.classesNoSubjects, 'class', 'classes')} with students but no subjects`, tab: 'subjects' });
+    if (d.studentsNoSubjects && students) {
+      findings.push({ id: 'data.students-no-subjects', pillar: 'data', severity: d.studentsNoSubjects / students >= 0.3 ? 'high' : 'medium', title: `${people('student', d.studentsNoSubjects)} not enrolled in any subject`, detail: 'Their mastery has nothing to count towards.', tab: 'subjects' });
+    }
+    if (d.seniorNoElectives) findings.push({ id: 'data.no-electives', pillar: 'data', severity: 'medium', title: `${people('student', d.seniorNoElectives)} in Class 11-12 with no electives chosen`, tab: 'subjects' });
+    if (d.classSubjectsNoTeacher) findings.push({ id: 'data.subject-no-teacher', pillar: 'data', severity: 'medium', title: `${plural(d.classSubjectsNoTeacher, 'class subject')} with no teacher`, tab: 'teaching' });
+    if (d.subjectsNoLead) findings.push({ id: 'data.subject-no-lead', pillar: 'data', severity: 'low', title: `${plural(d.subjectsNoLead, 'subject')} with no subject lead`, tab: 'subjects' });
   }
   if (everyone) {
     measures.push({ label: 'Temporary passwords changed', score: 1 - d.staleTempPasswords / everyone, value: d.staleTempPasswords ? `${d.staleTempPasswords} still temporary after 14 days` : 'All changed', weight: 10 });

@@ -204,12 +204,17 @@ function Electives({ st, post, done }: { st: State; post: Post; done: Done }) {
   const classes = st.classes.filter(c => st.classSubjects.some(x => x.class_id === c.id && x.kind === 'elective'));
   const [cid, setCid] = useState<string>(classes[0]?.id ?? '');
   const cls = classes.find(c => c.id === cid) ?? classes[0];
+  const clsId = cls?.id;
   const electives = cls ? st.classSubjects.filter(x => x.class_id === cls.id && x.kind === 'elective').sort((a, b) => a.subject_name.localeCompare(b.subject_name)) : [];
   const students = cls ? st.people.filter(p => p.role === 'student' && !p.left && norm(p.cls) === norm(cls.name)) : [];
-  const initial = useMemo(() => Object.fromEntries(students.map(s => [s.id, st.enrolments.filter(e => e.student_id === s.id && e.source === 'elective' && electives.some(x => x.id === e.class_subject_id)).map(e => e.class_subject_id)])), [students, st.enrolments, electives]);
+  const initial: Record<string, string[]> = Object.fromEntries(students.map(s => [s.id, st.enrolments
+    .filter(e => e.student_id === s.id && e.source === 'elective' && electives.some(x => x.id === e.class_subject_id)).map(e => e.class_subject_id)]));
   const [draft, setDraft] = useState<Record<string, string[]> | null>(null);
-  const [shownFor, setShownFor] = useState(initial);
-  if (shownFor !== initial) { setShownFor(initial); setDraft(null); }
+  // Fresh server data drops an unsaved draft. Compared by content, not identity: a new object
+  // with the same choices must not reset (identity compare re-rendered forever: React #301).
+  const initialKey = `${clsId}|${JSON.stringify(initial)}`;
+  const [shownFor, setShownFor] = useState(initialKey);
+  if (shownFor !== initialKey) { setShownFor(initialKey); setDraft(null); }
   const picks = draft ?? initial;
   const [msg, setMsg] = useState<string | null>(null);
   if (!classes.length) return null;

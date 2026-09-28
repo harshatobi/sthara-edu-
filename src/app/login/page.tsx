@@ -18,10 +18,14 @@ import { colorForIcon } from '@/lib/iconColors';
 type Role = 'student' | 'teacher' | 'admin' | 'parent';
 type Step = 'code' | 'role' | 'creds';
 
-// The demo school's code (sample desks). Every other code is looked up in the
-// schools table via /api/auth/verify-school, and sign-in then checks the
-// account belongs to that school. No code or email is suggested on screen.
-const DEMO_CODE = 'SCH-VSN-2026';
+// Every school code is looked up in the schools table via /api/auth/verify-school,
+// and sign-in then checks the account belongs to that school. No code or email is
+// suggested on screen.
+//
+// The sample-desk code only exists on a developer's machine (the sample desks run
+// there only). It used to be accepted everywhere, which in production showed a school
+// that doesn't exist and skipped the school check for any account.
+const DEMO_CODE = process.env.NODE_ENV === 'development' ? 'SCH-VSN-2026' : null;
 const DEMO_SCHOOL = 'Sthara Demo School';
 
 const ROLE_INFO: Record<Role, { label: string; sub: string }> = {
@@ -74,6 +78,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [credsError, setCredsError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   const passRef = useRef<HTMLInputElement>(null);
 
@@ -83,7 +88,7 @@ export default function LoginPage() {
     setCodeError('');
     setCodeChecking(true);
     try {
-      if (code === DEMO_CODE) {
+      if (DEMO_CODE && code === DEMO_CODE) {
         setSchoolId(null);
         setSchoolName(DEMO_SCHOOL);
       } else {
@@ -193,6 +198,8 @@ export default function LoginPage() {
           border-radius: 24px; padding: 36px; width: 380px; backdrop-filter: blur(12px);
           box-shadow: 0 20px 60px rgba(0,0,0,.3);
         }
+        .lg-link { background: none; border: 0; padding: 0; color: inherit; font: inherit; opacity: .6; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+        .lg-link:hover { opacity: .9; }
         .lg-card h2 { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 6px; }
         .lg-card .sub { color: #8FA5C4; font-size: 13px; margin-bottom: 24px; }
         .lg-in {
@@ -288,8 +295,9 @@ export default function LoginPage() {
                 <a href="/#pricing">Book a paid pilot <ArrowRight size={13} weight="bold" /></a>
               </b>
               <br />
-              <span style={{ opacity: .6 }}>Privacy Policy</span> <span style={{ opacity: .6 }}>·</span>{' '}
-              <span style={{ opacity: .6 }}>Terms of Service</span>
+              {/* Plain links: /privacy is the static marketing site, /terms an app page. */}
+              <a href="/privacy" style={{ opacity: .6 }}>Privacy Policy</a> <span style={{ opacity: .6 }}>·</span>{' '}
+              <a href="/terms" style={{ opacity: .6 }}>Terms of Service</a>
             </div>
           </div>
         )}
@@ -347,7 +355,13 @@ export default function LoginPage() {
             </button>
             {process.env.NODE_ENV === 'development' && <button className="lg-go" disabled={signingIn} onClick={() => startDemo(role)}>Open local demo</button>}
             <div className="lg-foot">
-              <span style={{ opacity: .6, cursor: 'pointer' }}>Forgot password?</span>
+              {/* Sthara creates every login (schools request them), so a reset goes through the school office, not email. */}
+              <button type="button" className="lg-link" onClick={() => setForgot(f => !f)} aria-expanded={forgot}>Forgot password?</button>
+              {forgot && (
+                <div style={{ marginTop: 8, opacity: .8, lineHeight: 1.5 }}>
+                  Ask your school office. They will ask Sthara to issue you a new temporary password, which you change when you next sign in.
+                </div>
+              )}
             </div>
           </div>
         )}

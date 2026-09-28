@@ -13,7 +13,8 @@ export type Severity = 'critical' | 'high' | 'normal';
 export type Kind =
   | 'proctor_flag' | 'overdue_work' | 'tml_drop' | 'low_scores'
   | 'low_energy' | 'energy_streak' | 'help_request'
-  | 'absence_streak' | 'exam_absence' | 'incident';
+  | 'absence_streak' | 'exam_absence' | 'incident'
+  | 'tutor_conduct' | 'tutor_off_topic';
 
 export interface Draft {
   kind: Kind;
@@ -28,8 +29,12 @@ export interface Draft {
   subject?: string | null;
   /** Addressed to one teacher (e.g. the assignment's owner); null = every teacher of the student/class. */
   teacherId?: string | null;
-  /** 'principal' items (child protection) reach incidents.manage holders only. */
-  audience?: 'staff' | 'principal';
+  /**
+   * 'principal' items (child protection) reach incidents.manage holders only.
+   * 'safeguarding' items (a student's safety cue in the tutor) reach safeguarding.read
+   * holders only: the counsellor and the principal, not teachers.
+   */
+  audience?: 'staff' | 'principal' | 'safeguarding';
   sourceTable?: string | null;
   sourceId?: string | null;
   metadata?: Record<string, unknown>;

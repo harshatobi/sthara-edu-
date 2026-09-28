@@ -18,8 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudentDesk } from '@/lib/student/useStudentDesk';
 import { DEMO_TUTOR } from '@/lib/demo/student';
 import { getTutorDepthScore } from '@/lib/tml/engine';
-import { coreSubjectsForClass, flattenChapters, getCurriculum, subjectsForClass } from '@/lib/curriculum';
-import { examsForChapter } from '@/lib/curriculum/exams';
+import { coreSubjectsForClass, flattenChapters, getCurriculum } from '@/lib/curriculum';
 
 type Line = { who: 'ai' | 'me' | 'done'; text: string; good?: boolean };
 interface Topic { subject: string; name: string; start: number | null }
@@ -61,7 +60,7 @@ function Tutor() {
     <>
       {demo && <DemoNote />}
       {topic
-        ? <Session key={`${topic.subject}:${topic.name}`} topic={topic} demo={demo} onNew={reset} />
+        ? <Session key={`${topic.subject}:${topic.name}`} topic={topic} demo={demo} onNew={reset} onPick={choose} />
         : <Picker desk={desk} onPick={choose} demo={demo} />}
     </>
   );
@@ -107,31 +106,58 @@ function useExamTrack(demo: boolean) {
   return { available, chosen, toggle, err };
 }
 
+interface MyChapter { name: string; unit: string; topics: string[]; exams: string[]; formativeOnly: boolean }
+interface MySubject { key: string; name: string; level: string; source: string; chapters: MyChapter[] }
+
+/**
+ * The subjects the tutor will take for this student: their enrolled subjects from the
+ * server (class core subjects and chosen electives). The demo desk has no enrolment, so
+ * it shows its class's compulsory subjects from the curriculum.
+ */
+function useMySubjects(demo: boolean, cls: string) {
+  const { getAuthToken } = useAuth();
+  const tokenRef = useRef(getAuthToken);
+  useEffect(() => { tokenRef.current = getAuthToken; });
+  const demoSubjects = useMemo<MySubject[]>(() => !demo ? [] : coreSubjectsForClass(cls).flatMap(name => {
+    const c = getCurriculum(cls, name);
+    return c ? [{ key: name.toLowerCase(), name: c.subject, level: c.class, source: 'core', chapters: flattenChapters(c).map(ch => ({ name: ch.name, unit: ch.unitName, topics: ch.topics, exams: [], formativeOnly: !!ch.formativeOnly })) }] : [];
+  }), [demo, cls]);
+  const [live, setLive] = useState<{ subjects: MySubject[]; err: string | null } | null>(null);
+  useEffect(() => {
+    if (demo) return;
+    let on = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/student/subjects', { headers: { Authorization: `Bearer ${await tokenRef.current()}` } });
+        const d = await res.json().catch(() => ({}));
+        if (on) setLive(res.ok ? { subjects: d.subjects ?? [], err: null } : { subjects: [], err: d.error || 'Could not load your subjects.' });
+      } catch { if (on) setLive({ subjects: [], err: 'Could not load your subjects.' }); }
+    })();
+    return () => { on = false; };
+  }, [demo]);
+  return demo ? { subjects: demoSubjects, loading: false, err: null } : { subjects: live?.subjects ?? [], loading: !live, err: live?.err ?? null };
+}
+
 function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof useStudentDesk>['desk']>; onPick: (t: Topic) => void; demo: boolean }) {
   const track = useExamTrack(demo);
+  const mine = useMySubjects(demo, desk.me.cls);
+  const taken = new Set(mine.subjects.map(s => s.name.toLowerCase()));
+  // Weakest micro-topics first, in subjects the student actually takes.
   const weakest = desk.subjects
+    .filter(s => demo || taken.has(s.subject.toLowerCase()))
     .flatMap(s => s.topics.filter(t => t.score !== null).map(t => ({ subject: s.subject, name: t.name, start: t.score })))
     .sort((a, b) => (a.start ?? 0) - (b.start ?? 0))
     .slice(0, 5);
-  // Subjects offered: what the student already has graded work in, then the
-  // compulsory subjects of their class; every other CBSE subject of the class
-  // sits in a second group (Classes 11-12 have 40+ electives).
-  const mine = [...new Set([...desk.subjects.map(s => s.subject), ...coreSubjectsForClass(desk.me.cls)])];
-  const others = subjectsForClass(desk.me.cls).filter(s => !mine.includes(s) && !getCurriculum(desk.me.cls, s)?.aliases?.some(a => mine.includes(a)));
-  const subjectOptions = [...mine, ...others];
-  const [subject, setSubject] = useState(subjectOptions[0] || 'Mathematics');
-  const curriculum = getCurriculum(desk.me.cls, subject);
-  const chapters = curriculum ? flattenChapters(curriculum) : [];
+  const [subjectName, setSubject] = useState('');
+  const subject = mine.subjects.find(s => s.name === subjectName) ?? mine.subjects[0];
   const [chapter, setChapter] = useState('');
+  const [micro, setMicro] = useState('');
   const [custom, setCustom] = useState('');
   const OTHER = '__other__';
-  // "· JEE Main, NEET-UG" after chapters that feed the student's chosen exams.
-  const examTag = (chapterName: string) => {
-    if (!curriculum || !track.chosen.length) return '';
-    const names = [...new Set(examsForChapter(curriculum.class, curriculum.subject, chapterName, track.chosen).map(h => h.exam.exam.replace(/ \(.*\)$/, '')))];
-    return names.length ? ` · ${names.join(', ')}` : '';
-  };
-  const topicName = chapter === OTHER || !curriculum ? custom.trim() : chapter;
+  const ch = subject?.chapters.find(c => c.name === chapter);
+  const units = subject ? [...new Set(subject.chapters.map(c => c.unit))] : [];
+  const examNames = (ids: string[]) => ids.map(id => track.available.find(e => e.id === id)?.exam.replace(/ \(.*\)$/, '') ?? id);
+  const topicName = chapter === OTHER ? custom.trim() : micro || chapter;
 
   return (
     <>
@@ -155,41 +181,48 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
         <div className="card">
           <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>From your syllabus</h3>
           <p className="muted" style={{ marginBottom: 18 }}>
-            {curriculum
-              ? <>Chapters from the CBSE {curriculum.session} curriculum for Class {curriculum.class} {curriculum.subject}. The tutor sticks to what the syllabus prescribes.</>
-              : 'Name a topic from class and the tutor will build a short three-step session around it.'}
+            Your subjects, with the chapters and micro-topics of the official CBSE curriculum. The tutor only takes topics from your syllabus.
           </p>
-          <form onSubmit={e => { e.preventDefault(); if (topicName) onPick({ subject, name: topicName, start: null }); }}>
-            <label className="lbl" htmlFor="tp-subj">SUBJECT</label>
-            <select id="tp-subj" className="tin" style={{ width: '100%', marginBottom: 14 }} value={subject}
-              onChange={e => { setSubject(e.target.value); setChapter(''); }}>
-              <optgroup label="Your subjects">{mine.map(s => <option key={s}>{s}</option>)}</optgroup>
-              {others.length > 0 && <optgroup label="Other CBSE subjects">{others.map(s => <option key={s}>{s}</option>)}</optgroup>}
-            </select>
-            {curriculum && (
-              <>
-                <label className="lbl" htmlFor="tp-ch">CHAPTER</label>
-                <select id="tp-ch" className="tin" style={{ width: '100%', marginBottom: 14 }} value={chapter} onChange={e => setChapter(e.target.value)}>
-                  <option value="" disabled>Choose a chapter</option>
-                  {curriculum.units.map(u => (
-                    <optgroup key={u.code} label={u.marks !== null ? `${u.name} (${u.marks} marks)` : u.name}>
-                      {chapters.filter(c => c.unitCode === u.code).map(c => (
-                        <option key={c.name} value={c.name}>{c.name}{c.formativeOnly ? ' (not in board exam)' : ''}{examTag(c.name)}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                  <option value={OTHER}>Something else…</option>
-                </select>
-              </>
-            )}
-            {(!curriculum || chapter === OTHER) && (
-              <>
-                <label className="lbl" htmlFor="tp-topic">MICRO-TOPIC</label>
-                <input id="tp-topic" className="tin" style={{ width: '100%' }} maxLength={120} placeholder="e.g. Circles — Tangents" value={custom} onChange={e => setCustom(e.target.value)} />
-              </>
-            )}
-            <button className="btn pri" style={{ marginTop: 16 }} disabled={!topicName}>Start session <ArrowRight size={15} weight="bold" /></button>
-          </form>
+          {mine.loading ? <Skeleton h={180} /> : mine.err ? <div className="note err">{mine.err}</div> : !subject ? (
+            <div className="note">Your school hasn&apos;t set up your subjects in Sthara yet, so the tutor can&apos;t start. Please tell your class teacher.</div>
+          ) : (
+            <form onSubmit={e => { e.preventDefault(); if (topicName) onPick({ subject: subject.name, name: topicName, start: null }); }}>
+              <label className="lbl" htmlFor="tp-subj">SUBJECT</label>
+              <select id="tp-subj" className="tin" style={{ width: '100%', marginBottom: 14 }} value={subject.name}
+                onChange={e => { setSubject(e.target.value); setChapter(''); setMicro(''); }}>
+                {mine.subjects.map(s => <option key={s.key} value={s.name}>{s.name}{s.source === 'elective' ? ' (elective)' : ''}</option>)}
+              </select>
+              <label className="lbl" htmlFor="tp-ch">CHAPTER</label>
+              <select id="tp-ch" className="tin" style={{ width: '100%', marginBottom: 14 }} value={chapter} onChange={e => { setChapter(e.target.value); setMicro(''); }}>
+                <option value="" disabled>Choose a chapter</option>
+                {units.map(u => (
+                  <optgroup key={u} label={u}>
+                    {subject.chapters.filter(c => c.unit === u).map(c => (
+                      <option key={c.name} value={c.name}>{c.name}{c.formativeOnly ? ' (not in board exam)' : ''}{c.exams.length ? ` · ${examNames(c.exams).join(', ')}` : ''}</option>
+                    ))}
+                  </optgroup>
+                ))}
+                <option value={OTHER}>Something else from this subject…</option>
+              </select>
+              {ch && ch.topics.length > 1 && (
+                <>
+                  <label className="lbl" htmlFor="tp-micro">MICRO-TOPIC</label>
+                  <select id="tp-micro" className="tin" style={{ width: '100%', marginBottom: 14 }} value={micro} onChange={e => setMicro(e.target.value)}>
+                    <option value="">The whole chapter</option>
+                    {ch.topics.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </>
+              )}
+              {chapter === OTHER && (
+                <>
+                  <label className="lbl" htmlFor="tp-topic">WHAT DO YOU WANT TO WORK ON?</label>
+                  <input id="tp-topic" className="tin" style={{ width: '100%' }} maxLength={120} placeholder="e.g. why pH matters for toothpaste" value={custom} onChange={e => setCustom(e.target.value)} />
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>The tutor checks it belongs to your syllabus first.</p>
+                </>
+              )}
+              <button className="btn pri" style={{ marginTop: 16 }} disabled={!topicName}>Start session <ArrowRight size={15} weight="bold" /></button>
+            </form>
+          )}
         </div>
       </div>
       {track.available.length > 0 && (
@@ -211,7 +244,11 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
 }
 
 // ── One Socratic session ─────────────────────────────────────────────────────
-function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: () => void }) {
+/** Why a session didn't start (or stopped): the grounding engine's verdict, for the student. */
+interface Stopped { kind: 'refused' | 'safety' | 'wellbeing' | 'warning'; text: string; suggestions?: { subject: string; chapter: string }[]; href?: string }
+interface Grounded { subject: string; chapter: string; microTopic: string | null; level: string | null; kind: string; angle: string | null }
+
+function Session({ topic, demo, onNew, onPick }: { topic: Topic; demo: boolean; onNew: () => void; onPick: (t: Topic) => void }) {
   const { getAuthToken } = useAuth();
   const scripted = demo; // no live session to call the model with
   const title = scripted ? DEMO_TUTOR.topic : topic.name;
@@ -229,6 +266,9 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
   const [err, setErr] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [result, setResult] = useState<Result | null>(null);
+  const [stopped, setStopped] = useState<Stopped | null>(null);
+  const [grounded, setGrounded] = useState<Grounded | null>(null);
+  const [safety, setSafety] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const started = useRef(false);
@@ -265,7 +305,10 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
     started.current = true;
     if (scripted) return;
     call({ action: 'start', subject: topic.subject, topic: topic.name })
-      .then(d => { setLog([{ who: 'ai', text: d.text }]); setToken(d.token); setStep(d.step); setSteps(d.steps); })
+      .then(d => {
+        if (d.verdict !== 'question') { setStopped({ kind: d.verdict, text: d.text, suggestions: d.suggestions, href: d.href }); return; }
+        setLog([{ who: 'ai', text: d.text }]); setToken(d.token); setStep(d.step); setSteps(d.steps); setGrounded(d.grounded ?? null);
+      })
       .catch(e => setErr(e.message))
       .finally(() => setBusy(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,6 +337,15 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
     setBusy(true);
     try {
       const d = await call({ action: 'answer', token, answer: text, history: history() });
+      if (d.verdict === 'safety') {
+        // Not answered by the AI: the session stops and the helpline shows.
+        setLog(l => [...l, { who: 'ai', text: d.text }]); setSafety(true); setDone(true);
+        return;
+      }
+      if (d.verdict === 'warning' || d.verdict === 'redirect' || d.verdict === 'wellbeing') {
+        setLog(l => [...l, { who: 'ai', text: d.verdict === 'wellbeing' ? `${d.text} (Open Wellness from the menu.)` : d.text }]);
+        return;
+      }
       setToken(d.token); setStep(d.step); setHints(d.hints);
       setLog(l => [...l, { who: 'ai', text: d.verdict === 'hint' ? `Hint ${Math.min(d.hints, MAX_HINTS_SHOWN)} of ${MAX_HINTS_SHOWN}. ${d.text}` : d.text }]);
       if (d.verdict === 'complete') finish(d.hints, false, d.result);
@@ -327,6 +379,32 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
     }
   };
 
+  if (stopped) {
+    return (
+      <>
+        <PageBar eyebrow="SOCRATIC AI TUTOR" title={stopped.kind === 'safety' ? 'You are not alone' : stopped.kind === 'wellbeing' ? 'Let\u2019s get you to the right place' : 'Let\u2019s pick something from your syllabus'}
+          actions={<button className="btn" onClick={onNew}>Back to topics</button>} />
+        <div className="card">
+          <p style={{ fontSize: 15, lineHeight: 1.6 }}>{stopped.text}</p>
+          {stopped.kind === 'safety' && <SafetyNote />}
+          {stopped.kind === 'wellbeing' && stopped.href && <a className="btn pri" style={{ marginTop: 14 }} href={stopped.href}>Open the Wellness Centre</a>}
+          {!!stopped.suggestions?.length && (
+            <>
+              <h3 style={{ fontSize: 15, fontWeight: 800, margin: '18px 0 8px' }}>Try one of these instead</h3>
+              {stopped.suggestions.map(sg => (
+                <button key={`${sg.subject}:${sg.chapter}`} className="row" onClick={() => onPick({ subject: sg.subject, name: sg.chapter, start: null })}>
+                  <div className="av" style={{ background: `color-mix(in srgb, ${subjectColor(sg.subject)} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(sg.subject)} color={subjectColor(sg.subject)} size={18} /></div>
+                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{sg.chapter}</div><div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sg.subject}</div></div>
+                  <ArrowRight size={15} weight="bold" />
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      </>
+    );
+  }
+
   const after = result?.topicScore ?? null;
   const impact = done ? (after ?? result?.depth ?? 0) : start ?? 0;
   const impactColor = done ? hmColor(impact) : '#CBD5E1';
@@ -349,7 +427,9 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 18 }}>
         <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <b style={{ fontSize: 15 }}>Session · step {Math.min(step, steps)} of {steps}</b>
-          {!scripted && <span className="muted" style={{ fontSize: 12 }}>{topic.subject}</span>}
+          {!scripted && <span className="muted" style={{ fontSize: 12 }}>{grounded
+            ? <>{grounded.kind === 'prerequisite' ? `Basics from Class ${grounded.level} · ` : ''}{grounded.subject} › {grounded.chapter}{grounded.microTopic ? ` › ${grounded.microTopic}` : ''}</>
+            : topic.subject}</span>}
         </div>
         <div className="tlog" ref={logRef} aria-live="polite">
           {log.map((l, i) => l.who === 'me'
@@ -364,6 +444,7 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
         </div>
         <div style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {err && <div className="note err" role="alert">{err}</div>}
+          {safety && <SafetyNote />}
           <form style={{ display: 'flex', gap: 10 }} onSubmit={e => { e.preventDefault(); void send(); }}>
             <input ref={inputRef} className="tin" value={input} onChange={e => setInput(e.target.value)} maxLength={1500}
               aria-label="Your answer" placeholder={done ? 'Session finished — start a new one to keep going' : 'Type your answer…'} disabled={done || (busy && !log.length)} />
@@ -399,5 +480,15 @@ function Session({ topic, demo, onNew }: { topic: Topic; demo: boolean; onNew: (
         </div>
       </div>
     </>
+  );
+}
+
+/** Shown whenever the tutor stops for a safety reason. */
+function SafetyNote() {
+  return (
+    <div className="note" role="status" style={{ marginTop: 14, lineHeight: 1.6 }}>
+      <b>Tele-MANAS: 14416</b> (free, any time, in your language) · <b>Childline: 1098</b><br />
+      Someone at your school whose job is to help has been told, and will reach out to you. You can also talk to any teacher you trust.
+    </div>
   );
 }

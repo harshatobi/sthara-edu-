@@ -18,7 +18,7 @@ import { displayClass, normClass } from '@/lib/teacher/scope';
 import { CardHead, DeskGate, Kpi } from './kit';
 
 export default function AdminFeedPage() {
-  return <DeskGate need={['feed.read', 'incidents.manage']}>{desk => <Command desk={desk} />}</DeskGate>;
+  return <DeskGate need={['feed.read', 'incidents.manage', 'safeguarding.read']}>{desk => <Command desk={desk} />}</DeskGate>;
 }
 
 interface Incident {

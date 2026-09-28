@@ -104,6 +104,7 @@ export function FeedCard({ item, onAck, actions, showTeacherLine }: {
           {item.severity !== 'normal' && <Chip tone={SEVERITY_TONE[item.severity]}>{SEVERITY_LABEL[item.severity].toUpperCase()}</Chip>}
           <Chip tone="b">{CATEGORY_LABEL[item.category]?.toUpperCase() ?? item.category}</Chip>
           {item.audience === 'principal' && <Chip tone="p">PRINCIPAL ONLY</Chip>}
+          {item.audience === 'safeguarding' && <Chip tone="r" title="Only the counsellor and the principal see this">SAFEGUARDING · CONFIDENTIAL</Chip>}
           {escalated && <Chip tone="r">ESCALATED</Chip>}
         </div>
         <div style={{ fontWeight: 700, fontSize: 14.5, lineHeight: 1.4 }}>{item.title}</div>

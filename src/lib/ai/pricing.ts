@@ -24,6 +24,7 @@ export const PRICES_CHECKED = '2026-09-25';
 
 export const MODEL_PRICES: Record<string, ModelPrice> = {
   'gemini-2.5-flash': { input: 0.30, output: 2.50, cached: 0.03 },
+  'gemini-2.5-flash-lite': { input: 0.10, output: 0.40, cached: 0.01 },
   'gemini-2.5-pro': {
     input: 1.25, output: 10.00, cached: 0.125,
     longAbove: 200_000, long: { input: 2.50, output: 15.00, cached: 0.25 },
@@ -37,6 +38,7 @@ export const USD_TO_INR = 95.5;
 export const AI_FEATURES = {
   tutor:            { label: 'AI tutor (legacy chat)', who: 'Student' },
   tutorSession:     { label: 'AI tutor session', who: 'Student' },
+  tutorGuard:       { label: 'Tutor grounding check', who: 'Student' },
   quizGenerate:     { label: 'Quiz generation (student)', who: 'Student' },
   quizGrade:        { label: 'Quiz grading', who: 'Student' },
   homeworkGenerate: { label: 'Homework generation (student)', who: 'Student' },

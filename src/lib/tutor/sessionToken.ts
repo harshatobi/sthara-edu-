@@ -7,6 +7,11 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
  * the client: the server returns this HMAC-signed token every turn and only
  * accepts state it signed itself. Nothing is written until the session ends,
  * so an abandoned session leaves no evidence either way.
+ *
+ * A signature alone would let a student resend an older token (the one from
+ * before a hint) or replay the final one. Each token carries the session id and
+ * turn number; the route claims the turn in tutor_session_turns, so a token
+ * works exactly once.
  */
 export interface TutorSessionState {
   uid: string;
@@ -30,6 +35,9 @@ export interface TutorSessionState {
     microTopic: string | null;
     angle: string | null;
   };
+  /** Server-side record of the session (public.tutor_session_turns) and the turn this token is for. */
+  sid: string;
+  seq: number;
   iat: number;
 }
 
@@ -57,6 +65,7 @@ export function verifySession(token: unknown, uid: string): TutorSessionState | 
   try {
     const state = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as TutorSessionState;
     if (state.uid !== uid || Date.now() - state.iat > MAX_AGE_MS) return null;
+    if (typeof state.sid !== 'string' || !Number.isInteger(state.seq)) return null;
     return state;
   } catch {
     return null;

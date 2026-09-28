@@ -84,7 +84,7 @@ async function markTopicsTaught(db: SupabaseClient, staff: Staff, l: any) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireStaff(req);
+  const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
   if (!checkRateLimit(`lessons:${staff.id}`, ...limitOf('lessons')).allowed) return NextResponse.json({ error: 'Too many changes at once.' }, { status: 429 });
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await requireStaff(req);
+  const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
   const b = await req.json().catch(() => null);
@@ -125,7 +125,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = await requireStaff(req);
+  const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
   const b = await req.json().catch(() => null);

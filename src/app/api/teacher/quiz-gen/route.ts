@@ -10,7 +10,7 @@ export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   // Each call spends model quota: teachers and admins only, rate-limited.
-  const auth = await requireStaff(request);
+  const auth = await requireStaff(request, { academic: true });
   if ('res' in auth) return auth.res;
   if (!checkRateLimit(`quiz-gen:${auth.staff.id}`, ...limitOf('quizGen')).allowed) {
     return NextResponse.json({ error: 'Too many generations. Try again in a few minutes.' }, { status: 429 });

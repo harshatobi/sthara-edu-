@@ -13,7 +13,7 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
 const reasonOf = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 500) : '');
 
 async function load(req: NextRequest, id: unknown) {
-  const auth = await requireStaff(req);
+  const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth;
   const { staff, db } = auth;
   if (!isUuid(id)) return { res: bad('Unknown submission.', 404) };

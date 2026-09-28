@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   // Each call spends model quota: teachers and admins only, rate-limited.
-  const auth = await requireStaff(request);
+  const auth = await requireStaff(request, { academic: true });
   if ('res' in auth) return auth.res;
   if (!checkRateLimit(`homework-gen:${auth.staff.id}`, ...limitOf('homeworkGen')).allowed) {
     return NextResponse.json({ error: 'Too many generations. Try again in a few minutes.' }, { status: 429 });

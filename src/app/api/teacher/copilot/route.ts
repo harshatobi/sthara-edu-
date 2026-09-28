@@ -26,7 +26,7 @@ const str = (v: unknown, n = 4000) => (typeof v === 'string' ? v.trim().slice(0,
  * names are restored in the reply — no student name ever leaves the server.
  */
 export async function POST(req: NextRequest) {
-  const auth = await requireStaff(req);
+  const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth.res;
   const { staff, db } = auth;
   if (!checkRateLimit(`copilot:${staff.id}`, ...limitOf('copilot')).allowed) {

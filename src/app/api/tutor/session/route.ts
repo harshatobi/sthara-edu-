@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -179,7 +180,7 @@ export async function POST(req: NextRequest) {
         uid: user.id,
         subject: studySkills ? 'Study skills' : g.subjectName!,
         topic: studySkills ? (g.angle || topic) : g.chapter!,
-        step: 1, hints: 0, revealed: false, done: false, iat: Date.now(),
+        step: 1, hints: 0, revealed: false, done: false, sid: '', seq: 0, iat: Date.now(),
         ground: { kind: g.kind as Ground['kind'], subjectKey: g.subjectKey, level: g.level, microTopic: g.microTopic, angle: g.angle },
       };
       const grounded = { subject: state.subject, chapter: state.topic, microTopic: g.microTopic, level: g.level, kind: g.kind, angle: g.angle };
@@ -194,6 +195,12 @@ Reply as {"text": "<setup + question 1>"}`, g.level ?? ctx.me.cls, user.id, ctx.
         if ((e as { status?: number }).status === 503) return NextResponse.json({ error: (e as Error).message, grounded }, { status: 503 });
         throw e;
       }
+      // The server-side record that makes each token work once (see the claim below).
+      state.sid = randomUUID();
+      // Sessions left open past the token lifetime are dead; clear them as new ones start.
+      await supabase.from('tutor_session_turns').delete().eq('student_id', user.id).lt('created_at', new Date(Date.now() - 3 * 3600_000).toISOString());
+      const { error: turnErr } = await supabase.from('tutor_session_turns').insert({ sid: state.sid, student_id: user.id, seq: 0 });
+      if (turnErr) throw new Error(`tutor_session_turns: ${turnErr.message}`);
       return NextResponse.json({
         verdict: 'question', text: out.text, step: 1, steps: STEPS, hints: 0,
         grounded,
@@ -283,6 +290,13 @@ Reply {"text": "<explanation + answer>"}`, level, user.id, me.schoolId);
     } else {
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
+
+    // One use per token: claim this turn. A stale or replayed token (an older
+    // one from before a hint, or the final one again) finds seq already moved.
+    next = { ...next, seq: state.seq + 1 };
+    const { data: claimed } = await supabase.from('tutor_session_turns').update({ seq: next.seq, updated_at: new Date().toISOString() })
+      .eq('sid', state.sid).eq('student_id', user.id).eq('seq', state.seq).select('sid');
+    if (!claimed?.length) return NextResponse.json({ error: 'This step was already answered. Carry on from your latest turn, or start a new session.' }, { status: 409 });
 
     // ── session over: record evidence + recompute TML ──────────────────────
     // Study-skills coaching isn't a syllabus chapter, so it carries no mastery evidence.

@@ -108,7 +108,7 @@ export default function HomeworkWorkspace() {
         return;
       }
       try {
-        const { data: a, error: aErr } = await supabase.from('assignments').select('*').eq('id', id).maybeSingle();
+        const { data: a, error: aErr } = await supabase.from('assignments_student').select('*').eq('id', id).maybeSingle();
         if (aErr) throw aErr;
         if (!a) { if (!cancelled) setLoadError('This assignment could not be found.'); return; }
 
@@ -201,13 +201,12 @@ export default function HomeworkWorkspace() {
     // a browser write scores (grade integrity).
     const token = await getAuthToken();
     if (!token) throw new Error('Your session has expired. Sign in again to submit.');
-    // Photo answers go up first; the answer stored for that question is the file's URL.
+    // Photo answers go up first (private storage); the answer stored for that question is its path.
     const uploaded: Record<number, { file: string }> = {};
     for (const [key, file] of Object.entries(questionFiles)) {
       if (!file) continue;
       const form = new FormData();
-      form.append('file', file);
-      form.append('studentId', profile!.uid);
+      form.append('file', new File([await compressPhoto(file)], `answer-${Number(key) + 1}.jpg`, { type: 'image/jpeg' }));
       form.append('assignmentId', String(id));
       form.append('pageIndex', key);
       const up = await fetch('/api/student/upload-submission', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });

@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
-import { capturePath } from '@/lib/grading/handwritten';
+import { CAPTURE_PREFIX, capturePath, pathBelongs } from '@/lib/grading/handwritten';
 import { BUCKET, MAX_PAGE_BYTES, MAX_PAGES, ensureBucket, pageLinks, studentOnRoster, GradingError } from '@/lib/grading/server';
 import { callerOf, staffCanGrade } from '@/lib/grading/access';
 
@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/grading/pages?submission=<id> — short-lived links to a submission's
- * pages, for its student, a verified parent, or staff who can grade it.
+ * pages, and to its photo answers by question index ({ answers }), for its
+ * student, a verified parent, or staff who can grade it.
  */
 export async function GET(req: NextRequest) {
   const { user, error } = await verifyApiToken(req.headers.get('authorization'));
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('submission');
   if (!isUuid(id)) return bad('Unknown submission.', 404);
   const db = createAdminClient();
-  const { data: sub } = await db.from('submissions').select('id, student_id, assignment_id, image_urls').eq('id', id).maybeSingle();
+  const { data: sub } = await db.from('submissions').select('id, student_id, assignment_id, image_urls, answers').eq('id', id).maybeSingle();
   if (!sub) return bad('Unknown submission.', 404);
   const [me, { data: a }] = await Promise.all([callerOf(db, user.id), db.from('assignments').select('id, school_id, class, subject, teacher_id').eq('id', sub.assignment_id).maybeSingle()]);
   let ok = !!me && !!a && (me.id === sub.student_id || (me.role !== 'student' && me.role !== 'parent' && staffCanGrade(me, a)));
@@ -67,5 +68,14 @@ export async function GET(req: NextRequest) {
     ok = !!g;
   }
   if (!ok) return bad('Unknown submission.', 404);
-  return NextResponse.json({ pages: await pageLinks(db, Array.isArray(sub.image_urls) ? sub.image_urls : []) });
+  // Photo answers to typed questions: only paths filed under this submission.
+  const files = Object.entries(sub.answers && typeof sub.answers === 'object' ? sub.answers : {})
+    .map(([k, v]: [string, any]) => [k, typeof v?.file === 'string' ? v.file : ''] as const)
+    .filter(([, f]) => f.startsWith(CAPTURE_PREFIX) && pathBelongs(f.slice(CAPTURE_PREFIX.length), a!.school_id, sub.assignment_id, sub.student_id));
+  const [pages, signed] = await Promise.all([
+    pageLinks(db, Array.isArray(sub.image_urls) ? sub.image_urls : []),
+    files.length ? db.storage.from(BUCKET).createSignedUrls(files.map(([, f]) => f.slice(CAPTURE_PREFIX.length)), 3600) : { data: [] },
+  ]);
+  const answers = Object.fromEntries(files.map(([k], i) => [k, signed.data?.[i]?.signedUrl]).filter(([, u]) => u));
+  return NextResponse.json({ pages, answers });
 }

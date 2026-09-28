@@ -19,7 +19,8 @@ function assemble(rows: Rows, me: StudentDesk['me'], mode: StudentDesk['mode']):
 
 async function loadLive(profile: UserProfile): Promise<Rows> {
   const supabase = createClient();
-  let aq = supabase.from('assignments').select('*');
+  // The student view: same rows, answer keys removed (staff read the table).
+  let aq = supabase.from('assignments_student').select('*');
   if (profile.schoolId) aq = aq.eq('school_id', profile.schoolId);
 
   const [a, s, t, m] = await Promise.all([

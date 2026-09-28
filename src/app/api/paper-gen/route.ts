@@ -1,7 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { AI_MODELS } from '@/lib/settings/limits';
+import { requireStaff } from '@/lib/teacher/serverAuth';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
 
@@ -17,7 +18,7 @@ function buildPrompt(
   paperType: PaperType,
   subject: string,
 ) {
-  const chapterStr = (chapters || ['General']).join(', ');
+  const chapterStr = chapters.length ? chapters.join(', ') : 'General';
 
   if (paperType === 'mcq') {
     return `You are an expert exam paper generator for ${grade}, subject: ${subject}.
@@ -91,19 +92,29 @@ Return ONLY a raw JSON array — NO markdown, NO explanation. Use this schema:
 First output all MCQs, then SAQs, then LAQs. Return pure JSON array only.`;
 }
 
+const MAX_QUESTIONS = 50;
+const PAPER_TYPES: PaperType[] = ['mcq', 'saq', 'laq', 'mixed'];
+const clip = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+
 export async function POST(request: NextRequest) {
-  const { user, error: authErr } = await verifyApiToken(request.headers.get('authorization'));
-  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Each call spends model quota: teachers and academic office roles only, rate-limited.
+  const auth = await requireStaff(request, { academic: true });
+  if ('res' in auth) return auth.res;
+  const user = { id: auth.staff.id };
+  if (!checkRateLimit(`paper-gen:${user.id}`, ...limitOf('paperGen')).allowed) {
+    return NextResponse.json({ error: 'Too many papers in a short time. Try again in a few minutes.' }, { status: 429 });
+  }
 
   try {
-    const {
-      grade,
-      subject,
-      difficulty,
-      chapters,
-      numQuestions = 10,
-      paperType = 'mcq' as PaperType,
-    } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const grade = clip(body?.grade, 40);
+    const subject = clip(body?.subject, 80);
+    const difficulty = clip(body?.difficulty, 20) || 'medium';
+    const chapters = (Array.isArray(body?.chapters) ? body.chapters : []).map((c: unknown) => clip(c, 120)).filter(Boolean).slice(0, 30);
+    const n = Math.trunc(Number(body?.numQuestions ?? 10));
+    if (!Number.isFinite(n) || n < 1 || n > MAX_QUESTIONS) return NextResponse.json({ error: `Ask for between 1 and ${MAX_QUESTIONS} questions.` }, { status: 400 });
+    const numQuestions = n;
+    const paperType: PaperType = PAPER_TYPES.includes(body?.paperType) ? body.paperType : 'mcq';
 
     const aiBlocked = await aiGate(user.id);
     if (aiBlocked) return aiBlocked;
@@ -117,7 +128,7 @@ export async function POST(request: NextRequest) {
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.6 },
-    }, { feature: 'paperGen', userId: user.id });
+    }, { feature: 'paperGen', userId: user.id, schoolId: auth.staff.schoolId });
 
     let jsonStr = (result.text || '[]').trim();
     jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();

@@ -50,7 +50,7 @@ function links(html) {
     .replaceAll('https://www.sthara.in/login', escape(appURL.href))
     .replaceAll('href="#/', 'href="/')
     .replaceAll('href="#contact"', 'href="/contact"')
-    .replace(/href="#(top|platform|product|demo|tml|pricing|trust)"/g, 'href="/#$1"')
+    .replace(/href="#(top|platform|product|demo|tml|pricing|trust|difference|fit|outcomes)"/g, 'href="/#$1"')
     .replace(/href="mailto:sales@sthara\.in\?subject=[^"]*"/g, 'href="/contact"'));
 }
 // Role links (static and in app.js templates) point at the role pages' real URLs.
@@ -71,11 +71,11 @@ template = links(template)
   .replace('<script src="app.js"></script>', '<script src="app.js"></script>\n  <script src="enquiry-form.js"></script>');
 
 function roleHTML(key, info) {
-  const supplied = key === 'teacher' ? ['copilot','class-mastery','curriculum'] : key === 'student' ? ['tutor','mastery','evidence'] : [];
+  const supplied = key === 'teacher' ? ['copilot','class-mastery','curriculum'] : key === 'student' ? ['tutor','mastery','evidence'] : key === 'admin' ? ['command-centre','academic-health'] : key === 'parent' ? ['parent-home','parent-mastery'] : [];
   const images = supplied.length
     ? supplied.map(id => `<figure><button class="role-screen" data-open-capture="${id}"><img src="${BASE}/assets/captures/${id}.png" loading="lazy" alt="Sthara ${id.replaceAll('-', ' ')} sample product screen"><span>Inspect product screen ↗</span></button></figure>`).join('') + '<figcaption>Supplied design captures. Example values, not live student records.</figcaption>'
     : `<div class="capture-placeholder"><svg class="exact-brand" viewBox="0 0 196 316" aria-hidden="true"><use href="#pillar-logo"/></svg><strong>See your school's workflow.</strong><p>Explore the ${info.name.toLowerCase()} experience with the Sthara team during a pilot discussion.</p><a class="text-link" href="/contact">Talk to the team ↗</a></div><figcaption>No identifiable student or family records are displayed here.</figcaption>`;
-  return `<div class="wrap"><section class="role-page-hero"><a class="back-link" href="/#platform">← Back to the platform</a><div class="eyebrow">FOR ${info.plural.toUpperCase()}</div><h1 tabindex="-1">${info.routeTitle}</h1><p>${info.routeDescription}</p><a class="button" href="/contact">Book a pilot ↗</a></section><section class="role-detail-layout"><div class="role-detail-steps"><h2>A day with Sthara.</h2>${info.steps.map(([title,copy])=>`<article><h3>${title}</h3><p>${copy}</p></article>`).join('')}<div class="sample-module">${moduleMarkup(key)}</div></div><figure class="role-capture">${images}</figure></section><nav class="role-related" aria-label="Other school roles"><span>One record connects everyone.</span>${Object.entries(roles).filter(([other])=>other!==key).map(([other,data])=>`<a href="${ROLE_PATH[other]}">${data.plural} ↗</a>`).join('')}</nav></div>`;
+  return `<div class="wrap"><section class="role-page-hero"><a class="back-link" href="/#platform">← Back to the platform</a><div class="eyebrow">FOR ${info.plural.toUpperCase()}</div><h1 tabindex="-1">${info.routeTitle}</h1><p>${info.routeDescription}</p><a class="button" href="/contact">Book a School Pilot ↗</a></section><section class="role-detail-layout"><div class="role-detail-steps"><h2>A day with Sthara.</h2>${info.steps.map(([title,copy])=>`<article><h3>${title}</h3><p>${copy}</p></article>`).join('')}<div class="sample-module">${moduleMarkup(key)}</div></div><figure class="role-capture">${images}</figure></section><nav class="role-related" aria-label="Other school roles"><span>One record connects everyone.</span>${Object.entries(roles).filter(([other])=>other!==key).map(([other,data])=>`<a href="${ROLE_PATH[other]}">${data.plural} ↗</a>`).join('')}</nav></div>`;
 }
 const pages = {
   home: { title: 'Sthara | The Unified School OS', description: 'One connected school platform for students, teachers, administrators and parents. Explore True Mastery Level, teaching support and a paid school pilot.' },
@@ -112,7 +112,7 @@ for (const [key,page] of Object.entries(pages)) {
   await writeFile(resolve(output,filename),html);
   manifest.push({key,path,file:filename,title:page.title,bytes:Buffer.byteLength(html)});
 }
-const notFound = template.replace(/<main id="main"[\s\S]*?<\/main>/, '<main id="main" tabindex="-1"><section class="role-page-hero wrap"><h1>Page not found.</h1><p>The page may have moved.</p><a class="button" href="/">Return to Sthara</a><a class="text-link" href="/contact">Contact the team ↗</a></section></main>').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<header class="site-header">[\s\S]*?<\/header>/, '<header class="site-header"><div class="nav-shell wrap"><a class="brand" href="/">STHARA</a><a class="button small" href="/contact">Book a pilot ↗</a></div></header>').replace(/<button[^>]*class="motion-control"[\s\S]*?<\/button>/g,'').replace(/<title>[^<]*<\/title>/,'<title>Page not found | Sthara</title>').replace(/(src|href)="(assets\/[^"<>]+|[a-z-]+\.(?:js|css))"/g,`$1="${BASE}/$2"`);
+const notFound = template.replace(/<main id="main"[\s\S]*?<\/main>/, '<main id="main" tabindex="-1"><section class="role-page-hero wrap"><h1>Page not found.</h1><p>The page may have moved.</p><a class="button" href="/">Return to Sthara</a><a class="text-link" href="/contact">Contact the team ↗</a></section></main>').replace(/<script[\s\S]*?<\/script>/g,'').replace(/<header class="site-header">[\s\S]*?<\/header>/, '<header class="site-header"><div class="nav-shell wrap"><a class="brand" href="/">STHARA</a><a class="button small" href="/contact">Book a School Pilot ↗</a></div></header>').replace(/<button[^>]*class="motion-control"[\s\S]*?<\/button>/g,'').replace(/<title>[^<]*<\/title>/,'<title>Page not found | Sthara</title>').replace(/(src|href)="(assets\/[^"<>]+|[a-z-]+\.(?:js|css))"/g,`$1="${BASE}/$2"`);
 await writeFile(resolve(output,'404.html'),notFound.replace(/<button id="motion-toggle"[\s\S]*?<\/button>/g, ''));
 // In the app this robots.txt covers the whole domain, so the portals, sign-in and APIs stay out of search.
 const appDisallow = appMode ? ['/login', '/onboard', '/student', '/teacher', '/admin', '/parent', '/superadmin', '/ops', '/api', '/trial-expired'].map(p => `Disallow: ${p}\n`).join('') : '';

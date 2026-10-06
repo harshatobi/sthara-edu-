@@ -9,7 +9,11 @@
     ['mastery','Student mastery','A score with its working shown.','The student view lays out what feeds the score: homework and quizzes at 40% each and tutor depth at 20%, with the evidence behind every topic.','student'],
     ['evidence','Evidence trail','Follow the learning back to the work.','The visual evidence trail connects assignments and quizzes to topics. Ungraded work stays visibly different from scored evidence.','student'],
     ['tutor','Socratic tutor','The next question, not a shortcut.','A tutor session opens with a question about the learner’s reasoning. Hints and a step-by-step conversation give the learning process room to unfold.','student'],
-    ['wellness','Student wellbeing','Make space for the person learning.','The wellbeing design brings an energy check-in, an optional journal and a visibility guide together. The controls shown here are not verification of privacy enforcement.','student']
+    ['wellness','Student wellbeing','Make space for the person learning.','The wellbeing design brings an energy check-in, an optional journal and a visibility guide together. The controls shown here are not verification of privacy enforcement.','student'],
+    ['command-centre','Command centre','The whole school, in one view.','School-wide mastery, fee collection and a wellness filing status sit beside enrolment, staffing and the findings that need a decision.','admin'],
+    ['academic-health','Academic health','See where the school is weak before term-end results.','A grade-by-subject grid shows where learning is strong, where evidence is thin and which cohort to look at first, with the confidence behind each number.','admin'],
+    ['parent-home','Parent home','Know how your child is doing, in one place.','Mastery, schoolwork, wellbeing and fees for each child, with questions answered from the school’s own records.','parent'],
+    ['parent-mastery','Parent mastery report','Progress you can read without waiting for a report card.','Subject-level mastery with the teacher’s name beside it, and an Explain this report option for parents who want the detail.','parent']
   ];
   const items = rows.map(([id,label,title,description,role]) => ({id,label,title,description,role,src:window.STHARA_CAPTURE_IMAGES?.[id] || `assets/captures/${id}.png`}));
   let active = 0, modalIndex = 0, returnTo;
@@ -25,7 +29,7 @@
     const item = items[index], view = document.getElementById('capture-view');
     host.querySelectorAll('[data-capture-select]').forEach((b,i)=>{b.setAttribute('aria-selected',String(i===index));b.tabIndex=i===index?0:-1;});
     view.setAttribute('aria-labelledby',`capture-tab-${item.id}`);
-    view.innerHTML = `<div class="capture-toolbar"><span>${item.role==='teacher'?'TEACHING COPILOT':'THE STUDENT EXPERIENCE'}</span><button class="capture-enlarge" data-open-capture="${item.id}">Inspect screen ↗</button></div><button class="capture-image-button" data-open-capture="${item.id}" aria-label="Enlarge ${item.label} design capture"><img src="${item.src}" alt="Supplied Sthara ${item.label.toLowerCase()} design screen" decoding="async"></button><div class="capture-caption"><div><h3>${item.title}</h3><p>${item.description}</p></div><span class="capture-count">${String(index+1).padStart(2,'0')} / 09</span></div>`;
+    view.innerHTML = `<div class="capture-toolbar"><span>${({teacher:'TEACHING COPILOT',student:'THE STUDENT EXPERIENCE',admin:'THE COMMAND CENTRE',parent:'THE PARENT PORTAL'})[item.role]}</span><button class="capture-enlarge" data-open-capture="${item.id}">Inspect screen ↗</button></div><button class="capture-image-button" data-open-capture="${item.id}" aria-label="Enlarge ${item.label} design capture"><img src="${item.src}" alt="Supplied Sthara ${item.label.toLowerCase()} design screen" decoding="async"></button><div class="capture-caption"><div><h3>${item.title}</h3><p>${item.description}</p></div><span class="capture-count">${String(index+1).padStart(2,'0')} / 09</span></div>`;
   }
   function showModal(index) {
     modalIndex = (index + items.length) % items.length;

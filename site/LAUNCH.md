@@ -51,6 +51,6 @@ wording changed) **before the first real school's data goes in**:
 | Operator named as "Sthara" | Privacy §1 | Add the registered legal entity name and address when available. |
 
 Confirmed true: role-based access enforced in the database; encryption in transit; audit trail; no ads or
-trackers; teacher confirms AI marks; Gemini on a paid (billed) API key, so inputs are not used to improve
+trackers; teacher confirms AI marks; Gemini on a paid (billed) API key (as of 2026-09-28 prod and preview still share a free-tier key; enable billing before real data, or this claim is false), so inputs are not used to improve
 Google's products; grievance channel coo@sthara.in; pricing (Aadhara ₹2,000, Sthamba ₹2,500, Shikhara
 ₹3,500, Mandala custom; paid pilot credited 100%); no real names in product screenshots.

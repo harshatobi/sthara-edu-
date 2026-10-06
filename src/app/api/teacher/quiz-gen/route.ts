@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      mode,
       topics,
       syllabusData,
       numQuestions,
@@ -129,7 +128,7 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
     let parsed: any;
     try {
       parsed = JSON.parse(raw);
-    } catch (parseErr) {
+    } catch {
       console.error('[quiz-gen] JSON parse error. Raw output:', raw.substring(0, 500));
       return NextResponse.json({ error: 'AI returned invalid format. Please try again.' }, { status: 500 });
     }

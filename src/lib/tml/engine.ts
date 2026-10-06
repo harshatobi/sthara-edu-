@@ -92,6 +92,7 @@ function decayWeightedAverage(items: { score: number; ageDays: number }[]): Deca
   let num = 0;
   let den = 0;
   for (const item of items) {
+    if (!Number.isFinite(item.score) || !Number.isFinite(item.ageDays)) continue;
     const w = getRecencyWeight(item.ageDays);
     num += item.score * w;
     den += w;
@@ -182,7 +183,7 @@ export function calculateTopicTml(
 // Final blend: academic composite + student-level engagement signals.
 // ---------------------------------------------------------------------------
 export interface EngagementInputs {
-  teacherEngagement?: number; // 0-100, defaults to neutral 100 if unmeasured
+  teacherEngagement?: number; // 0-100; every field defaults to neutral 100 when unmeasured
   attendance?: number;
   appEngagement?: number;
   tutorVolume?: number;
@@ -250,138 +251,159 @@ export async function computeStudentTml(
   studentId: string,
   subjectFilter?: string
 ) {
-  const { data: studentUser } = await supabase
-    .from('users')
-    .select('id, school_id')
-    .eq('id', studentId)
-    .single();
-
-  if (!studentUser) {
-    throw new Error('Student not found');
-  }
-
-  const now = new Date();
-  const ageInDays = (iso: string) => (now.getTime() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24);
-
-  // ---- 1. Homework/quiz evidence: submission_items, falling back to
-  //         top-level submissions for rows without per-question items. ----
-  const { data: itemsData, error: itemsErr } = await supabase
-    .from('submission_items')
-    .select(`
-      id, score, max_score, component_type, created_at, submission_id,
-      assignments ( id, subject, title, units, type, proctored )
-    `)
-    .eq('student_id', studentId)
+  // The reads are independent of each other, so they run together. Any failed read
+  // aborts the run: a snapshot built from partial evidence would be saved as valid.
+  const [userRes, itemsRes, subsRes, tutorRes, alertsRes, engagementRes] = await Promise.all([
+    supabase.from('users').select('id, school_id').eq('id', studentId).single(),
     // Only marks a teacher has confirmed (or instant MCQ marking) move TML;
     // AI-suggested marks wait for review.
-    .eq('teacher_confirmed', true);
-  if (itemsErr) throw itemsErr;
+    supabase
+      .from('submission_items')
+      .select(`
+        id, score, max_score, component_type, created_at, submission_id,
+        assignments ( id, subject, title, units, type, proctored )
+      `)
+      .eq('student_id', studentId)
+      .eq('teacher_confirmed', true),
+    // Top-level fallback for rows without per-question items; same rule: confirmed only.
+    supabase
+      .from('submissions')
+      .select(`
+        id, score, max_score, teacher_approved, submitted_at, created_at,
+        assignments ( id, subject, title, units, type, proctored )
+      `)
+      .eq('student_id', studentId)
+      .eq('teacher_approved', true),
+    supabase
+      .from('tutor_sessions')
+      .select('id, subject, topic, hint_depth, answer_revealed, created_at')
+      .eq('student_id', studentId),
+    // Integrity violations (assignment-level).
+    supabase
+      .from('proctor_alerts')
+      .select('assignment_id, switch_count')
+      .eq('student_id', studentId)
+      .gt('switch_count', 0),
+    // Student-level engagement signals: latest engagement_scores row.
+    supabase
+      .from('engagement_scores')
+      .select('attendance_score, app_engagement_score, teacher_engagement_score')
+      .eq('student_id', studentId)
+      .order('computed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  const coveredSubmissionIds = new Set<string>((itemsData || []).map((r: any) => r.submission_id).filter(Boolean));
+  for (const [label, res] of [
+    ['users', userRes], ['submission_items', itemsRes], ['submissions', subsRes],
+    ['tutor_sessions', tutorRes], ['proctor_alerts', alertsRes], ['engagement_scores', engagementRes],
+  ] as const) {
+    if (res.error) throw new Error(`[TML Engine] reading ${label} failed: ${res.error.message ?? res.error}`);
+  }
 
-  const { data: subsData, error: subsErr } = await supabase
-    .from('submissions')
-    .select(`
-      id, score, max_score, teacher_approved, submitted_at, created_at,
-      assignments ( id, subject, title, units, type, proctored )
-    `)
-    .eq('student_id', studentId)
-    .neq('teacher_approved', false);
-  if (subsErr) console.warn('[TML Engine] Warning fetching top-level submissions:', subsErr);
+  const studentUser = userRes.data;
+  if (!studentUser) throw new Error('Student not found');
 
-  // ---- 2. Tutor depth evidence: tutor_sessions ----
-  const { data: tutorData, error: tutorErr } = await supabase
-    .from('tutor_sessions')
-    .select('id, subject, topic, hint_depth, answer_revealed, created_at')
-    .eq('student_id', studentId);
-  if (tutorErr) console.warn('[TML Engine] Warning fetching tutor_sessions:', tutorErr);
+  const itemsData: any[] = itemsRes.data || [];
+  const subsData: any[] = subsRes.data || [];
+  const tutorData: any[] = tutorRes.data || [];
+  const engagementRow = engagementRes.data;
 
-  // ---- 3. Integrity violations: proctor_alerts (assignment-level) ----
-  const { data: alertsData } = await supabase
-    .from('proctor_alerts')
-    .select('assignment_id, switch_count')
-    .eq('student_id', studentId)
-    .gt('switch_count', 0);
-  const flaggedAssignmentIds = new Set<string>((alertsData || []).map((a: any) => a.assignment_id).filter(Boolean));
+  const nowMs = Date.now();
+  // Null for a missing or unparseable timestamp, so the row is skipped rather than aged wrongly.
+  const ageInDays = (iso: unknown): number | null => {
+    if (!iso) return null;
+    const t = new Date(iso as string).getTime();
+    return Number.isFinite(t) ? (nowMs - t) / (1000 * 60 * 60 * 24) : null;
+  };
 
-  // ---- 4. Student-level engagement signals: latest engagement_scores row ----
-  const { data: engagementRow } = await supabase
-    .from('engagement_scores')
-    .select('attendance_score, app_engagement_score, teacher_engagement_score')
-    .eq('student_id', studentId)
-    .order('computed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const coveredSubmissionIds = new Set<string>(itemsData.map(r => r.submission_id).filter(Boolean));
+  const flaggedAssignmentIds = new Set<string>((alertsRes.data || []).map((a: any) => a.assignment_id).filter(Boolean));
 
-  const tutorSessionsInWindow = (tutorData || []).filter((s: any) => ageInDays(s.created_at) <= 30).length;
+  const tutorSessionsInWindow = tutorData.filter(s => {
+    const age = ageInDays(s.created_at);
+    return age !== null && age <= 30;
+  }).length;
   const engagement: EngagementInputs = {
     teacherEngagement: engagementRow?.teacher_engagement_score ?? undefined,
     attendance: engagementRow?.attendance_score ?? undefined,
     appEngagement: engagementRow?.app_engagement_score ?? undefined,
-    tutorVolume: normalizeTutorVolume(tutorSessionsInWindow),
+    // No sessions means unmeasured, neutral like the other engagement terms.
+    tutorVolume: tutorSessionsInWindow > 0 ? normalizeTutorVolume(tutorSessionsInWindow) : undefined,
   };
 
-  // ---- 5. Group everything into per-topic evidence buckets ----
-  const topicGroups: Record<string, { items: TmlEvidenceItem[]; subject: string; assignmentIds: Set<string> }> = {};
-
-  const topicNameFor = evidenceTopicName;
+  // ---- Group everything into per-topic evidence buckets. The key is subject + topic,
+  //      case- and spacing-insensitive, so equal topics in different subjects stay
+  //      apart and "heredity " joins "Heredity". ----
+  const topicGroups = new Map<string, { topicName: string; items: TmlEvidenceItem[]; subject: string; assignmentIds: Set<string> }>();
 
   const addItem = (subject: string, topicName: string, item: TmlEvidenceItem, assignmentId?: string) => {
     if (subjectFilter && subject.toLowerCase() !== subjectFilter.toLowerCase()) return;
-    if (!topicGroups[topicName]) topicGroups[topicName] = { items: [], subject, assignmentIds: new Set() };
-    topicGroups[topicName].items.push(item);
-    if (assignmentId) topicGroups[topicName].assignmentIds.add(assignmentId);
+    const key = `${subject.trim().toLowerCase()}::${topicName.trim().replace(/\s+/g, ' ').toLowerCase()}`;
+    let group = topicGroups.get(key);
+    if (!group) {
+      group = { topicName: topicName.trim(), items: [], subject, assignmentIds: new Set() };
+      topicGroups.set(key, group);
+    }
+    group.items.push(item);
+    if (assignmentId) group.assignmentIds.add(assignmentId);
   };
 
-  (itemsData || []).forEach((row: any) => {
+  itemsData.forEach(row => {
+    const ageDays = ageInDays(row.created_at);
+    const maxScore = Number(row.max_score);
+    if (ageDays === null || !(maxScore > 0)) return;
     const assign = row.assignments || {};
-    addItem(assign.subject || 'General', topicNameFor(assign), {
+    addItem(assign.subject || 'General', evidenceTopicName(assign), {
       score: Number(row.score) || 0,
-      maxScore: Number(row.max_score) || 1,
+      maxScore,
       componentType: row.component_type || assign.type,
-      ageDays: ageInDays(row.created_at),
+      ageDays,
     }, assign.id);
   });
 
-  (subsData || []).forEach((row: any) => {
+  subsData.forEach(row => {
     if (coveredSubmissionIds.has(row.id)) return;
+    const ageDays = ageInDays(row.submitted_at || row.created_at);
+    const maxScore = Number(row.max_score);
+    if (ageDays === null || !(maxScore > 0)) return;
     const assign = row.assignments || {};
-    addItem(assign.subject || 'General', topicNameFor(assign), {
+    addItem(assign.subject || 'General', evidenceTopicName(assign), {
       score: Number(row.score) || 0,
-      maxScore: Number(row.max_score) || 10,
+      maxScore,
       componentType: assign.type,
-      ageDays: ageInDays(row.submitted_at || row.created_at),
+      ageDays,
     }, assign.id);
   });
 
-  (tutorData || []).forEach((row: any) => {
-    const subject = row.subject || 'General';
-    if (subjectFilter && subject.toLowerCase() !== subjectFilter.toLowerCase()) return;
-    const topicName = row.topic?.trim() || 'Core Concepts';
-    addItem(subject, topicName, {
+  tutorData.forEach(row => {
+    const ageDays = ageInDays(row.created_at);
+    if (ageDays === null) return;
+    addItem(row.subject || 'General', row.topic?.trim() || 'Core Concepts', {
       score: getTutorDepthScore(row.hint_depth || 0, !!row.answer_revealed),
       maxScore: 100,
       componentType: 'tutor',
-      ageDays: ageInDays(row.created_at),
+      ageDays,
     });
   });
 
-  // ---- 6. Compute + persist per topic ----
+  // ---- Compute per topic, then persist all snapshots in one insert ----
   const results: any[] = [];
+  const snapshots: Record<string, unknown>[] = [];
+  const computedAt = new Date().toISOString();
 
-  for (const [topicName, group] of Object.entries(topicGroups)) {
+  for (const group of topicGroups.values()) {
     const hadIntegrityViolation = [...group.assignmentIds].some(id => flaggedAssignmentIds.has(id));
     const calc = calculateTopicTml(group.items, { hadIntegrityViolation });
     const finalTml = blendFinalTml(calc.academicTml, engagement);
-    const scoreToPersist = finalTml !== null ? finalTml : 0;
     const band = mapMasteryBand(finalTml);
 
-    const { error: insertErr } = await supabase.from('tml_scores').insert({
+    snapshots.push({
       student_id: studentId,
       school_id: studentUser.school_id,
       subject: group.subject,
-      topic_name: topicName,
-      score: scoreToPersist,
+      topic_name: group.topicName,
+      score: finalTml !== null ? finalTml : 0,
       confidence_band: calc.confidenceBand,
       item_count: calc.totalItemCount,
       components: {
@@ -393,17 +415,21 @@ export async function computeStudentTml(
         integrityPenaltyApplied: calc.integrityPenaltyApplied,
         masteryBand: band?.band ?? null,
       },
-      computed_at: new Date().toISOString(),
+      computed_at: computedAt,
     });
-    if (insertErr) console.error('[TML Engine] insert error:', insertErr);
 
     results.push({
-      topicName,
+      topicName: group.topicName,
       subject: group.subject,
       finalTml,
       masteryBand: band,
       ...calc,
     });
+  }
+
+  if (snapshots.length > 0) {
+    const { error: insertErr } = await supabase.from('tml_scores').insert(snapshots);
+    if (insertErr) throw new Error(`[TML Engine] saving tml_scores failed: ${insertErr.message ?? insertErr}`);
   }
 
   return {

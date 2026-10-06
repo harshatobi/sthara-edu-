@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
-import { Download, ShieldCheck, FileCheck2, Users, FileText, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { Download, ShieldCheck } from 'lucide-react';
 
 export default function RegulatoryVaultPage() {
   const { profile } = useAuth();

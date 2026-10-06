@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Heart, Activity, AlertTriangle, ArrowLeft, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';

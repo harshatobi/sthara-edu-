@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { PlayCircle, BookOpen, Star, Loader2, ArrowLeft } from 'lucide-react';
+import { PlayCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 interface VideoFile {

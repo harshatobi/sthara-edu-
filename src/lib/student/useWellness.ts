@@ -4,6 +4,9 @@ import { createContext, createElement, useCallback, useContext, useEffect, useSt
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 
+/** Privacy policy: nothing is recorded until a parent or guardian's consent is on file (also enforced in RLS). */
+const CONSENT_NEEDED = 'Wellness check-ins start once a parent or guardian’s consent is on record. Ask your school office.';
+
 /**
  * Five-step energy scale from the mockup (ENERGY): label + the 0–100 value it
  * plots at on the fortnight curve. Stored as wellness_logs.energy (1–5, the
@@ -161,6 +164,7 @@ function useWellnessStore() {
     const prev = state;
     setState({ ...state, today: level });
     if (demo) { demoSave({ ...state, today: level }); return; }
+    if (state.consent !== 'on-file') { setState(prev); setError(CONSENT_NEEDED); return; }
     const supabase = createClient();
     const payload = { energy: level + 1 };
     const res = state.todayRowId
@@ -176,6 +180,7 @@ function useWellnessStore() {
     const entry: JournalEntry = { id: `local-${Date.now()}`, at: new Date().toISOString(), mood: mood?.label ?? 'Not set', text, shared };
     const done = shared ? 'Saved and shared with your class teacher.' : 'Saved privately. Only you can read this.';
     if (demo) { const next = { ...state, entries: [entry, ...state.entries] }; setState(next); demoSave(next); return done; }
+    if (state.consent !== 'on-file') return CONSENT_NEEDED;
     if (shared && !state.sharingSupported) return 'Sharing with your teacher switches on once your school finishes a database update. Save it privately for now.';
     const row: Record<string, unknown> = { student_id: profile.uid, school_id: profile.schoolId, note: text, energy: state.today !== null ? state.today + 1 : null };
     if (state.sharingSupported) row.shared = shared;

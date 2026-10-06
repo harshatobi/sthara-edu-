@@ -48,12 +48,6 @@ function Chip({ tone, children }: { tone: 'g' | 'a' | 'r' | 'b' | 'p' | 'n'; chi
   );
 }
 
-const scoreChip = (score: number, total: number): 'g' | 'a' | 'r' => {
-  if (!total) return 'n' as any;
-  const pct = (score / total) * 100;
-  return pct >= 70 ? 'g' : pct >= 40 ? 'a' : 'r';
-};
-
 export default function HomeworkWorkspace() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -81,7 +75,7 @@ export default function HomeworkWorkspace() {
   const [justSubmitted, setJustSubmitted] = useState<any>(null);
 
   // ── Proctoring ─────────────────────────────────────────────────────────────
-  const [switchCount, setSwitchCount] = useState(0);
+  const [, setSwitchCount] = useState(0);
   const [proctorWarning, setProctorWarning] = useState<string | null>(null);
   const autoSubmitRef = useRef(false);
   const submitRef = useRef<(auto?: boolean) => void>(() => {});

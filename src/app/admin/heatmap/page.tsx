@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, Users, BookOpen, ChevronRight, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import Link from 'next/link';
 
@@ -23,13 +23,6 @@ interface ClassSummary {
   overallAvg: number | null;
 }
 
-interface StudentDetail {
-  id: string;
-  name: string;
-  subjectScores: Record<string, number | null>;
-  overallAvg: number | null;
-}
-
 interface HeatAssignment { id: string; subject?: string | null }
 interface HeatSubmission {
   assignment_id: string; student_id: string; teacher_approved?: boolean | null;
@@ -44,11 +37,6 @@ export default function AdminHeatmap() {
   const [classSummaries, setClassSummaries] = useState<ClassSummary[]>([]);
   const [allSubjects, setAllSubjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Drill-down state
-  const [drillClass, setDrillClass] = useState<string | null>(null);
-  const [drillStudents, setDrillStudents] = useState<StudentDetail[]>([]);
-  const [drillSubjects, setDrillSubjects] = useState<string[]>([]);
 
   useEffect(() => {
     if (!loading && (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin'))) {
@@ -165,16 +153,6 @@ export default function AdminHeatmap() {
 
     fetchHeatmap();
   }, [profile?.schoolId]);
-
-  const openDrillDown = (summary: ClassSummary) => {
-    setDrillClass(summary.className);
-    setDrillSubjects(allSubjects);
-
-    // Compute student level detail
-    const details: StudentDetail[] = [];
-    // We can show student details using stored data
-    setClassSummaries(prev => prev);
-  };
 
   if (loading || !profile) return <div className="p-10 text-[#002147] text-center font-medium">Loading Heatmap Analytics...</div>;
 

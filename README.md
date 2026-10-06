@@ -31,7 +31,7 @@ UI work runs against the dev role cookie. Environment variables live in Vercel.
 npx tsc --noEmit
 npm run lint
 npx tsx --test src/lib/**/*.test.ts     # unit tests (settings, ops, AI usage)
-npx tsx src/lib/tml/run-test.ts         # TML engine checks
+npm test                                 # TML engine + marketing site
 npx tsx src/lib/curriculum/validate.ts  # curriculum integrity
 npm run test:site                       # marketing site
 ```

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Sparkles, FileText, CheckCircle2, Loader2, Save, ArrowLeft,
-  BookOpen, AlertCircle, Printer, ChevronDown, ChevronUp
+  Sparkles, CheckCircle2, Loader2, Save, ArrowLeft,
+  AlertCircle, Printer, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';

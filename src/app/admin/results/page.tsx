@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
-import { Award, BookOpen, Search, TrendingUp, Users } from 'lucide-react';
-import Link from 'next/link';
+import { Search } from 'lucide-react';
 
 interface StudentSubmission {
   id: string;

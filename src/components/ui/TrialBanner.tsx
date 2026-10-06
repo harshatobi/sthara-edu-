@@ -3,7 +3,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { AlertTriangle, X, Mail } from 'lucide-react';
 import { useState } from 'react';
-import Link from 'next/link';
 
 /**
  * Shows a dismissible warning banner when trial expires in ≤ 7 days.

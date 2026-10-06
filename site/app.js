@@ -302,7 +302,7 @@
       stopStory();
       // Remove the hidden homepage module, avoiding duplicate IDs and hidden control targets.
       $('#role-panel').innerHTML = '';
-      const supplied = role === 'teacher' ? ['copilot','class-mastery','curriculum'] : role === 'student' ? ['tutor','mastery','evidence'] : [];
+      const supplied = role === 'teacher' ? ['copilot','class-mastery','curriculum'] : role === 'student' ? ['tutor','mastery','evidence'] : role === 'admin' ? ['command-centre','academic-health'] : role === 'parent' ? ['parent-home','parent-mastery'] : [];
       const captureMarkup = captures[role]
         ? `<img src="${captures[role]}" alt="Locally supplied anonymised ${info.name.toLowerCase()} product screenshot"><figcaption>Locally supplied product capture. Visible only in this browser session.</figcaption>`
         : supplied.length ? supplied.map(id => {const item=window.StharaCaptures.get(id);return `<button class="role-screen" data-open-capture="${id}"><img src="${item.src}" alt="Supplied ${item.label.toLowerCase()} design capture" loading="lazy"><span>${item.label}<b>Inspect ↗</b></span><small>${item.title}</small></button>`;}).join('')+'<figcaption>Supplied design captures. Example values, not live student records.</figcaption>'

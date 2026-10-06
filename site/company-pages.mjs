@@ -33,7 +33,7 @@ export const companyPages = {
     description: 'Meet the founders of Sthara and the principles behind one living school record for Indian K-12 schools.',
     html: `${hero('About us', 'A child falling behind should never be a surprise.', 'One living record for the student, the teacher, the office and the parent.')}
       <div class="company-layout wrap">
-        ${contents('about', [['ab-why', 'Why Sthara exists'], ['ab-leadership', 'The people behind it'], ['ab-principles', 'What we believe'], ['ab-philosophy', 'Our philosophy'], ['ab-now', 'Working with us']])}
+        ${contents('about', [['ab-why', 'Why Sthara exists'], ['ab-problem', 'We started with a problem'], ['ab-close', 'Close to schools'], ['ab-leadership', 'The people behind it'], ['ab-principles', 'What we believe'], ['ab-philosophy', 'Our philosophy'], ['ab-now', 'Working with us']])}
         <div class="company-prose">
           <section class="company-section" id="ab-why" aria-labelledby="about-why-heading">
             <h2 id="about-why-heading">Why Sthara exists</h2>
@@ -44,6 +44,20 @@ export const companyPages = {
               <h3>What we do, in one line.</h3>
               <p>We replace the spreadsheet, the WhatsApp group, the tutoring app and the paper register with a single living record that every role in the school reads from.</p>
             </div>
+          </section>
+          <section class="company-section" id="ab-problem" aria-labelledby="about-problem-heading">
+            <h2 id="about-problem-heading">We didn't start with AI. We started with a problem.</h2>
+            <p>Schools generate enormous amounts of information every day: attendance, assessments, homework, teacher observations, student activity, parent interactions. Yet much of it remains fragmented across different systems.</p>
+            <p>The result? A school may know what a student scored — without always knowing what the student actually understands. And by the time a learning gap becomes visible on a report card, valuable time may already have been lost.</p>
+            <div class="company-callout">
+              <h3>Sthara was built to change that.</h3>
+              <p>We believe technology should not add another disconnected layer to education. It should bring the right signals together, help teachers make better decisions, give school leaders meaningful visibility and help students get the support they need — when they need it.</p>
+            </div>
+          </section>
+          <section class="company-section" id="ab-close" aria-labelledby="about-close-heading">
+            <h2 id="about-close-heading">Built close to education. Built close to schools.</h2>
+            <p>Sthara is intentionally founder-driven. We believe the best education technology is not built from a distance. It is built by staying close to the people who experience the system every day: students, teachers, school leaders and parents.</p>
+            <p>That is why we want to remain close to schools as we grow — listening to what works, understanding where the real friction lies and continuously improving what we build. We don't want to tell schools what they need. We want to understand what they actually need — and build for it.</p>
           </section>
           <section class="company-section" id="ab-leadership" aria-labelledby="about-leadership-heading">
             <h2 id="about-leadership-heading">The people behind it</h2>

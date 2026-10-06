@@ -50,7 +50,7 @@ function links(html) {
     .replaceAll('https://www.sthara.in/login', escape(appURL.href))
     .replaceAll('href="#/', 'href="/')
     .replaceAll('href="#contact"', 'href="/contact"')
-    .replace(/href="#(top|platform|product|demo|tml|pricing|trust|difference|fit)"/g, 'href="/#$1"')
+    .replace(/href="#(top|platform|product|demo|tml|pricing|trust|difference|fit|outcomes)"/g, 'href="/#$1"')
     .replace(/href="mailto:sales@sthara\.in\?subject=[^"]*"/g, 'href="/contact"'));
 }
 // Role links (static and in app.js templates) point at the role pages' real URLs.
@@ -71,7 +71,7 @@ template = links(template)
   .replace('<script src="app.js"></script>', '<script src="app.js"></script>\n  <script src="enquiry-form.js"></script>');
 
 function roleHTML(key, info) {
-  const supplied = key === 'teacher' ? ['copilot','class-mastery','curriculum'] : key === 'student' ? ['tutor','mastery','evidence'] : [];
+  const supplied = key === 'teacher' ? ['copilot','class-mastery','curriculum'] : key === 'student' ? ['tutor','mastery','evidence'] : key === 'admin' ? ['command-centre','academic-health'] : key === 'parent' ? ['parent-home','parent-mastery'] : [];
   const images = supplied.length
     ? supplied.map(id => `<figure><button class="role-screen" data-open-capture="${id}"><img src="${BASE}/assets/captures/${id}.png" loading="lazy" alt="Sthara ${id.replaceAll('-', ' ')} sample product screen"><span>Inspect product screen ↗</span></button></figure>`).join('') + '<figcaption>Supplied design captures. Example values, not live student records.</figcaption>'
     : `<div class="capture-placeholder"><svg class="exact-brand" viewBox="0 0 196 316" aria-hidden="true"><use href="#pillar-logo"/></svg><strong>See your school's workflow.</strong><p>Explore the ${info.name.toLowerCase()} experience with the Sthara team during a pilot discussion.</p><a class="text-link" href="/contact">Talk to the team ↗</a></div><figcaption>No identifiable student or family records are displayed here.</figcaption>`;

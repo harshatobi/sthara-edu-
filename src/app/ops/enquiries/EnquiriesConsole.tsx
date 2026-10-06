@@ -11,6 +11,7 @@ import { useOpsApi } from '../useOpsApi';
 
 interface Enquiry {
   id: string; name: string; email: string; school: string; role: string; phone: string | null; message: string;
+  designation: string | null; city: string | null; student_count: number | null; board: string | null; improvement_goal: string | null;
   source_origin: string; status: string; note: string | null; created_at: string;
 }
 const ROLE: Record<string, string> = { 'school-leader': 'School leader', administrator: 'Administrator', teacher: 'Teacher', parent: 'Parent', other: 'Other' };
@@ -51,7 +52,7 @@ export default function EnquiriesConsole() {
       <PageBar eyebrow="PLATFORM MANAGER" title="Enquiries"
         sub={rows ? `${counts.new} new · ${counts.open} open · ${num(rows.length)} in total · from the contact form on www.sthara.in` : 'Loading…'}
         actions={<button className="btn" disabled={!shown.length} onClick={() => downloadCsv(`sthara-enquiries-${new Date().toISOString().slice(0, 10)}.csv`,
-          [['Received (IST)', 'Status', 'Name', 'Role', 'School', 'Email', 'Phone', 'Message', 'Note'], ...shown.map(r => [fmtDateTime(r.created_at), r.status, r.name, ROLE[r.role] ?? r.role, r.school, r.email, r.phone, r.message, r.note])])}>
+          [['Received (IST)', 'Status', 'Name', 'Role', 'Designation', 'School', 'City', 'Students', 'Board', 'Wants to improve', 'Email', 'Phone', 'Message', 'Note'], ...shown.map(r => [fmtDateTime(r.created_at), r.status, r.name, ROLE[r.role] ?? r.role, r.designation, r.school, r.city, r.student_count, r.board, r.improvement_goal, r.email, r.phone, r.message, r.note])])}>
           <DownloadSimple size={15} weight="bold" /> Export CSV
         </button>} />
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
@@ -80,6 +81,11 @@ export default function EnquiriesConsole() {
               <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
                 {r.name} · {ROLE[r.role] ?? r.role} · <a href={`mailto:${r.email}`} style={{ color: 'var(--blue)' }}>{r.email}</a>{r.phone ? <> · <a href={`tel:${r.phone}`} style={{ color: 'var(--blue)' }}>{r.phone}</a></> : ''}
               </div>
+              {(r.designation || r.city || r.student_count || r.board || r.improvement_goal) && (
+                <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                  {[r.designation, r.city, r.student_count ? `${num(r.student_count)} students` : null, r.board ? r.board.toUpperCase() : null, r.improvement_goal ? `Wants to: ${r.improvement_goal.replace(/-/g, ' ')}` : null].filter(Boolean).join(' · ')}
+                </div>
+              )}
               <p style={{ fontSize: 14, lineHeight: 1.6, marginTop: 10, whiteSpace: 'pre-wrap' }}>{r.message}</p>
             </div>
             <div style={{ display: 'grid', gap: 8, width: 190 }}>

@@ -18,9 +18,9 @@
 
   const roles = {
     student: {
-      name: 'Student', plural: 'Students', title: 'A little help.<br>A bigger understanding.',
+      name: 'Student', plural: 'Students', title: 'Help me learn.',
       caption: 'A student’s question becomes a new learning signal.',
-      description: 'A personal AI tutor that starts with what a student has already tried, then helps them find the next step.',
+      description: '24×7 AI tutoring that guides students to think, understand and solve, rather than simply giving them the answer.',
       features: ['Socratic questions, not just answers', 'Support across subjects', 'Learning connected to the school record'],
       routeTitle: 'Make room for<br><em>every question.</em>',
       routeDescription: 'When a lesson ends, curiosity does not. Sthara gives students a place to ask, practise and return to the ideas they are still working through.',
@@ -32,9 +32,9 @@
       capture: 'A real tutor conversation, with the question, the student’s attempt and the tutor’s next prompt visible.'
     },
     teacher: {
-      name: 'Teacher', plural: 'Teachers', title: 'More teaching.<br>Less marking.',
+      name: 'Teacher', plural: 'Teachers', title: 'Help me teach.',
       caption: 'A teacher’s review becomes a child’s next step.',
-      description: 'From curriculum coverage to the next worksheet. Plan, assign and review in one teaching workspace, with topic-level evidence close at hand.',
+      description: 'AI-powered assistance for lesson planning, homework review and assessment, while keeping the teacher in control.',
       features: ['Syllabus-linked worksheets and quizzes', 'Drafts, submissions and teacher review', 'Topic-level insight for the next lesson'],
       routeTitle: 'Your judgement.<br><em>Time to teach.</em>',
       routeDescription: 'Sthara brings assignments, handwritten work and learning evidence into one teaching workflow. AI assists with the marking. The teacher stays responsible for the review.',
@@ -46,9 +46,9 @@
       capture: 'The teacher’s grading-review screen, showing handwriting, the suggested mark and the teacher-confirmation control.'
     },
     admin: {
-      name: 'Administrator', plural: 'Administrators', title: 'The whole school.<br>In clearer view.',
+      name: 'Administrator', plural: 'Administrators', title: 'Help me see.',
       caption: 'An office update reaches the people who need it.',
-      description: 'Connect everyday school operations with the academic record. Attendance, fees, admissions and reporting belong in the same conversation.',
+      description: 'Bring academic and operational information together so school leaders can identify patterns, gaps and students who need attention.',
       features: ['Attendance, fees and admissions', 'Shared context across school teams', 'Admin-side AI on selected plans'],
       routeTitle: 'Run the school.<br><em>See it clearly.</em>',
       routeDescription: 'A school is more than a collection of registers. Sthara brings academic and administrative work together so your team can act with the same context.',
@@ -60,9 +60,9 @@
       capture: 'The administrator overview with anonymised attendance, fee and academic information visible together.'
     },
     parent: {
-      name: 'Parent', plural: 'Parents', title: 'Close to the day.<br>Clear on the next step.',
+      name: 'Parent', plural: 'Parents', title: 'Help me know.',
       caption: 'A school update becomes a useful conversation at home.',
-      description: 'Help families understand what is happening at school through connected progress, reminders and WhatsApp communication.',
+      description: 'Meaningful visibility into learning and progress, not just attendance, fees and reminders.',
       features: ['Progress in a parent-friendly view', 'School updates through WhatsApp', 'The next step, not just the final mark'],
       routeTitle: 'Stay close.<br><em>Clarity at home.</em>',
       routeDescription: 'Families should not have to reconstruct a school day from scattered messages. Sthara connects the school record to a clearer parent experience.',
@@ -307,7 +307,7 @@
         ? `<img src="${captures[role]}" alt="Locally supplied anonymised ${info.name.toLowerCase()} product screenshot"><figcaption>Locally supplied product capture. Visible only in this browser session.</figcaption>`
         : supplied.length ? supplied.map(id => {const item=window.StharaCaptures.get(id);return `<button class="role-screen" data-open-capture="${id}"><img src="${item.src}" alt="Supplied ${item.label.toLowerCase()} design capture" loading="lazy"><span>${item.label}<b>Inspect ↗</b></span><small>${item.title}</small></button>`;}).join('')+'<figcaption>Supplied design captures. Example values, not live student records.</figcaption>'
         : `<div class="capture-placeholder"><svg class="exact-brand" viewBox="0 0 196 316" aria-hidden="true"><use href="#pillar-logo"/></svg><strong>See your school's workflow.</strong><p>Explore the ${info.name.toLowerCase()} experience with the Sthara team during a pilot discussion.</p><a class="text-link" href="/contact">Talk to the team <span>↗</span></a></div><figcaption>No identifiable student or family records are displayed here.</figcaption>`;
-      rolePage.innerHTML = `<div class="wrap"><section class="role-page-hero"><a class="back-link" href="#platform">← Back to the platform</a><div class="eyebrow">FOR ${info.plural.toUpperCase()}</div><h1 tabindex="-1">${info.routeTitle}</h1><p>${info.routeDescription}</p><a class="button" href="#contact">Book a pilot <span>↗</span></a></section><section class="role-detail-layout"><div class="role-detail-steps"><h2>A day with Sthara.</h2>${info.steps.map(([title, copy]) => `<article><h3>${title}</h3><p>${copy}</p></article>`).join('')}<div class="sample-module">${moduleMarkup(role)}</div></div><figure class="role-capture">${captureMarkup}</figure></section><nav class="role-related" aria-label="Other school roles"><span>One record connects everyone.</span>${Object.entries(roles).filter(([key]) => key !== role).map(([key, data]) => `<a href="#/${key}">${data.plural} ↗</a>`).join('')}</nav></div>`;
+      rolePage.innerHTML = `<div class="wrap"><section class="role-page-hero"><a class="back-link" href="#platform">← Back to the platform</a><div class="eyebrow">FOR ${info.plural.toUpperCase()}</div><h1 tabindex="-1">${info.routeTitle}</h1><p>${info.routeDescription}</p><a class="button" href="#contact">Book a School Pilot <span>↗</span></a></section><section class="role-detail-layout"><div class="role-detail-steps"><h2>A day with Sthara.</h2>${info.steps.map(([title, copy]) => `<article><h3>${title}</h3><p>${copy}</p></article>`).join('')}<div class="sample-module">${moduleMarkup(role)}</div></div><figure class="role-capture">${captureMarkup}</figure></section><nav class="role-related" aria-label="Other school roles"><span>One record connects everyone.</span>${Object.entries(roles).filter(([key]) => key !== role).map(([key, data]) => `<a href="#/${key}">${data.plural} ↗</a>`).join('')}</nav></div>`;
       document.title = `Sthara for ${info.plural} | The Unified School OS`;
       if (shouldFocus) { $('#role-page h1').focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: 'instant' }); }
     } else {

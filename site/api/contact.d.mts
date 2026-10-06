@@ -10,7 +10,7 @@ export interface NodeLikeResponse {
   setHeader(key: string, value: string): void;
   end(data?: string): void;
 }
-export interface EnquiryFields { name: string; email: string; school: string; role: string; phone: string; message: string }
+export interface EnquiryFields { name: string; email: string; school: string; role: string; phone: string; message: string; designation: string; city: string; studentCount: string; board: string; improvementGoal: string }
 export function createContactHandler(options?: {
   env?: Record<string, string | undefined>; fetchImpl?: typeof fetch; timeoutMs?: number;
   store?: ((fields: EnquiryFields, meta: { submissionId: string; origin: string }) => Promise<void>) | null;

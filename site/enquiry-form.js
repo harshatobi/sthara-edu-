@@ -14,6 +14,7 @@
         <span class="enquiry-field-error" id="${id}-${name}-error" data-enquiry-error="${name}"></span>
       </div>`;
     return `<form class="enquiry-form" action="${ENDPOINT}" method="post" aria-label="School enquiry">
+      <h3 class="enquiry-title">Let’s Explore Sthara For Your School</h3>
       <p class="enquiry-intro">Tell us a little about your school and what you would like to explore.</p>
       <p class="enquiry-required">All fields are required unless marked optional.</p>
       <div class="enquiry-grid">
@@ -29,7 +30,28 @@
           </select>
           <span class="enquiry-field-error" id="${id}-role-error" data-enquiry-error="role"></span>
         </div>
+        ${field('designation', 'Designation', 'text', 'organization-title', 100)}
+        ${field('city', 'City', 'text', 'address-level2', 100)}
+        ${field('studentCount', 'Number of students', 'number', 'off', 6)}
+        <div class="enquiry-field">
+          <label class="enquiry-label" for="${id}-board">Board</label>
+          <select class="enquiry-input" id="${id}-board" name="board" required aria-describedby="${id}-board-error">
+            <option value="">Select your board</option><option value="cbse">CBSE</option><option value="icse">ICSE / ISC</option>
+            <option value="state">State board</option><option value="ib">IB</option><option value="cambridge">Cambridge</option><option value="other">Other</option>
+          </select>
+          <span class="enquiry-field-error" id="${id}-board-error" data-enquiry-error="board"></span>
+        </div>
         ${field('phone', 'Phone number', 'tel', 'tel', 30, false)}
+      </div>
+      <div class="enquiry-field">
+        <label class="enquiry-label" for="${id}-improvementGoal">What would you most like to improve?</label>
+        <select class="enquiry-input" id="${id}-improvementGoal" name="improvementGoal" required aria-describedby="${id}-improvementGoal-error">
+          <option value="">Choose one</option><option value="learning-gaps">Identify learning gaps earlier</option>
+          <option value="learning-outcomes">Improve student learning outcomes</option><option value="teacher-workload">Reduce teacher workload</option>
+          <option value="academic-visibility">Improve academic visibility</option><option value="parent-engagement">Improve parent engagement</option>
+          <option value="explore-ai">Explore AI for our school</option><option value="full-platform">Understand the complete Sthara platform</option>
+        </select>
+        <span class="enquiry-field-error" id="${id}-improvementGoal-error" data-enquiry-error="improvementGoal"></span>
       </div>
       <div class="enquiry-field">
         <label class="enquiry-label" for="${id}-message">How can we help?</label>
@@ -46,7 +68,7 @@
       <div class="enquiry-challenge" data-enquiry-challenge></div>
       <span class="enquiry-field-error" data-enquiry-error="challenge"></span>
       <p class="enquiry-status" data-enquiry-status role="status" aria-live="polite" aria-atomic="true" tabindex="-1">Connecting to the secure enquiry form…</p>
-      <div class="enquiry-actions"><button class="enquiry-submit" type="submit" disabled>Send enquiry <span aria-hidden="true">↗</span></button><button class="enquiry-retry" type="button" data-enquiry-retry hidden>Try connecting again</button></div>
+      <div class="enquiry-actions"><button class="enquiry-submit" type="submit" disabled>Request My School Pilot <span aria-hidden="true">↗</span></button><button class="enquiry-retry" type="button" data-enquiry-retry hidden>Try connecting again</button></div>
     </form>`;
   }
 
@@ -165,7 +187,7 @@
         return;
       }
       const values = new FormData(form);
-      const fields = Object.fromEntries(['name', 'email', 'school', 'role', 'phone', 'message', 'website'].map(name => [name, String(values.get(name) || '').trim()]));
+      const fields = Object.fromEntries(['name', 'email', 'school', 'role', 'phone', 'message', 'website', 'designation', 'city', 'studentCount', 'board', 'improvementGoal'].map(name => [name, String(values.get(name) || '').trim()]));
       fields.consent = values.get('consent') === 'on';
       const serialized = JSON.stringify(fields);
       // Retry an unchanged request with the same provider idempotency key after uncertain delivery.
@@ -185,7 +207,7 @@
           let firstInvalid;
           for (const [name, message] of Object.entries(data.fieldErrors || {})) {
             // Only known static field names may be used as selectors.
-            if (!['name', 'email', 'school', 'role', 'phone', 'message', 'consent', 'challenge'].includes(name)) continue;
+            if (!['name', 'email', 'school', 'role', 'phone', 'message', 'consent', 'challenge', 'designation', 'city', 'studentCount', 'board', 'improvementGoal'].includes(name)) continue;
             const error = form.querySelector(`[data-enquiry-error="${name}"]`);
             if (error && typeof message === 'string') error.textContent = message;
             const control = form.elements.namedItem(name);

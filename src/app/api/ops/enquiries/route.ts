@@ -10,7 +10,7 @@ const STATUSES = ['new', 'contacted', 'qualified', 'closed', 'spam'];
 export async function GET(req: NextRequest) {
   if (!(await operatorFromRequest(req))) return notFoundResponse();
   const { data, error } = await createAdminClient().from('enquiries')
-    .select('id, name, email, school, role, phone, message, source_origin, status, note, handled_by, created_at, updated_at')
+    .select('id, name, email, school, role, phone, designation, city, student_count, board, improvement_goal, message, source_origin, status, note, handled_by, created_at, updated_at')
     .order('created_at', { ascending: false }).limit(500);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data || []);

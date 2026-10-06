@@ -18,7 +18,10 @@ const handler = createContactHandler({
   store: async (fields, { submissionId, origin }) => {
     const { error } = await createAdminClient().from('enquiries').upsert({
       submission_id: submissionId, name: fields.name, email: fields.email.toLowerCase(), school: fields.school,
-      role: fields.role, phone: fields.phone || null, message: fields.message, consent: true, source_origin: origin,
+      role: fields.role, phone: fields.phone || null,
+      designation: fields.designation || null, city: fields.city || null,
+      student_count: fields.studentCount ? Number(fields.studentCount) : null,
+      board: fields.board || null, improvement_goal: fields.improvementGoal || null, message: fields.message, consent: true, source_origin: origin,
     }, { onConflict: 'submission_id', ignoreDuplicates: true });
     if (error) throw new Error('store failed');
   },

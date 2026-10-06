@@ -1,4 +1,6 @@
 const MAX_BODY_BYTES = 16 * 1024;
+const BOARDS = new Set(['cbse', 'icse', 'state', 'ib', 'cambridge', 'other']);
+const GOALS = new Set(['learning-gaps', 'learning-outcomes', 'teacher-workload', 'academic-visibility', 'parent-engagement', 'explore-ai', 'full-platform']);
 const ROLES = new Set(['school-leader', 'administrator', 'teacher', 'parent', 'other']);
 const EMAIL = /^[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -118,6 +120,19 @@ function validate(body, challenge = true) {
     }
     fields[key] = clean;
   }
+  // Pilot-qualification fields: optional so older callers still validate; the website form requires them.
+  for (const [key, max] of [['designation', 100], ['city', 100]]) {
+    const clean = typeof body[key] === 'string' ? body[key].trim() : '';
+    if (clean.length > max || /[\x00-\x1f\x7f]/.test(clean)) errors[key] = `Enter up to ${max} characters.`;
+    fields[key] = clean;
+  }
+  const students = body.studentCount === undefined || body.studentCount === '' ? '' : String(body.studentCount).trim();
+  if (students && (!/^\d{1,6}$/.test(students) || Number(students) < 1)) errors.studentCount = 'Enter the number of students as a whole number.';
+  fields.studentCount = students;
+  fields.board = typeof body.board === 'string' ? body.board.trim() : '';
+  if (fields.board && !BOARDS.has(fields.board)) errors.board = 'Choose your board.';
+  fields.improvementGoal = typeof body.improvementGoal === 'string' ? body.improvementGoal.trim() : '';
+  if (fields.improvementGoal && !GOALS.has(fields.improvementGoal)) errors.improvementGoal = 'Choose an option.';
   if (!EMAIL.test(fields.email)) errors.email = 'Enter a valid email address.';
   if (!ROLES.has(fields.role)) errors.role = 'Choose your role.';
   if (fields.phone && (!/^[+\d().\s-]+$/.test(fields.phone) || fields.phone.replace(/\D/g, '').length < 7)) {
@@ -204,7 +219,7 @@ export function createContactHandler({ env = process.env, fetchImpl = globalThis
         const text = [
           'New Sthara school enquiry', '', `Name: ${fields.name}`, `Email: ${fields.email}`,
           `School / organisation: ${fields.school}`, `Role: ${fields.role}`,
-          `Phone: ${fields.phone || 'Not provided'}`, '', 'Message:', fields.message, '',
+          `Phone: ${fields.phone || 'Not provided'}`, `Designation: ${fields.designation || 'Not provided'}`, `City: ${fields.city || 'Not provided'}`, `Students: ${fields.studentCount || 'Not provided'}`, `Board: ${fields.board || 'Not provided'}`, `Wants to improve: ${fields.improvementGoal || 'Not provided'}`, '', 'Message:', fields.message, '',
           'Consent: Agreed to be contacted about this enquiry.', `Source: ${origin.origin}`,
         ].join('\n');
         const receipt = await providerJson(fetchImpl, 'https://api.resend.com/emails', {

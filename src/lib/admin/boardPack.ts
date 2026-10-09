@@ -2,8 +2,9 @@
 import { BANDS, subjectName, type AdminDesk } from './desk';
 import { STAGE_LABEL } from './admissions';
 import { fmtDate } from './format';
+import type { SchoolAttendance } from '@/lib/attendance/school';
 
-export function boardPackRows(desk: AdminDesk): (string | number | null)[][] {
+export function boardPackRows(desk: AdminDesk, att?: SchoolAttendance | null): (string | number | null)[][] {
   const { academics: ac, fees, workforce: wf, wellness: wl, admissions: adm } = desk;
   return [
     [`${desk.school.name} · board pack`, `Session ${desk.session}`, `Generated ${fmtDate(new Date().toISOString())}`],
@@ -17,6 +18,18 @@ export function boardPackRows(desk: AdminDesk): (string | number | null)[][] {
     ['Students with graded evidence', ac.evidenced],
     ['Students below 40% TML', ac.atRisk.length],
     [],
+    ...(att?.any ? [
+      ['ATTENDANCE', '%'],
+      ['This session', att.session.pct], ['This month', att.month.pct], ['Today', att.today.pct],
+      ['Registers marked today', `${att.classesMarked} of ${att.classes.length}`],
+      ['Students under 75% this session', att.under.length],
+      [],
+      ['ATTENDANCE BY CLASS', 'On roll', 'Month (%)', 'Session (%)', 'Under 75%'],
+      ...att.classes.map(c => [c.cls, c.onRoll, c.month.pct, c.session.pct, c.under]),
+      ['ATTENDANCE BY WEEK', 'Week of', '%'],
+      ...att.weeks.map(w => ['', w.week, w.pct]),
+      [],
+    ] : []),
     ['TML BY GRADE', 'Students', 'With evidence', 'TML (%)', 'Below 40%'],
     ...ac.grades.map(g => [`Grade ${g.grade}`, g.students, g.evidenced, g.tml, g.atRisk]),
     [],

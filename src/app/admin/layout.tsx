@@ -13,6 +13,7 @@ import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist
 import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
 import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { CalendarDotsIcon as CalendarDots } from '@phosphor-icons/react/dist/ssr/CalendarDots';
+import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -34,6 +35,7 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple, need: ['messages.office'] },
   { href: '/admin/staff', label: 'Staff & Leave', short: 'Staff', icon: CalendarBlank, need: ['workforce.read'] },
   { href: '/admin/schedule', label: 'Schedule', icon: CalendarDots, need: ['dashboard.view'] },
+  { href: '/admin/attendance', label: 'Student Attendance', short: 'Attendance', icon: CalendarCheck, need: ['attendance.read'] },
   { href: '/admin/academic', label: 'Academic Health', short: 'Academic', icon: ChartLineUp, need: ['academics.read'] },
   { href: '/admin/wellness', label: 'CBSE Wellness Report', short: 'Wellness', icon: Heart, need: ['wellness.read'] },
   { href: '/admin/compliance', label: 'DPDP & Compliance', short: 'DPDP', icon: ShieldCheck, need: ['compliance.read', 'audit.read'] },

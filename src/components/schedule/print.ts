@@ -2,6 +2,9 @@
  * Prints a timetable from its own window, so no print CSS touches the app's pages
  * (an unscoped print rule once blanked every other page's printout).
  */
+/** The app-wide "Powered by Sthara" page foot (globals.css), for documents printed from their own window. */
+export const POWERED_BY_PAGE_CSS = `@bottom-center { content: "Powered by Sthara  \\00B7  sthara.in"; font: 600 7.5pt 'Plus Jakarta Sans', system-ui, sans-serif; color: #7A8699; }`;
+
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 export interface PrintGrid {
@@ -29,7 +32,7 @@ export function printGrids(grids: PrintGrid[]) {
     </section>`;
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(grids[0]?.title || 'Timetable')}</title>
     <style>
-      @page { size: A4 landscape; margin: 12mm; }
+      @page { size: A4 landscape; margin: 12mm; ${POWERED_BY_PAGE_CSS} }
       * { box-sizing: border-box; }
       body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #002147; margin: 0; }
       section { page-break-after: always; }
@@ -55,7 +58,7 @@ export function printTable(o: { title: string; subtitle: string; school: string;
   if (!w) throw new Error('Allow pop-ups for this site to print.');
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(o.title)}</title>
     <style>
-      @page { size: A4 ${o.landscape ? 'landscape' : 'portrait'}; margin: 12mm; }
+      @page { size: A4 ${o.landscape ? 'landscape' : 'portrait'}; margin: 12mm; ${POWERED_BY_PAGE_CSS} }
       body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #002147; margin: 0; }
       header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
       h1 { font-size: 20px; margin: 0; } header p { margin: 2px 0 0; font-size: 12px; color: #7A8699; } header b { font-size: 12px; }

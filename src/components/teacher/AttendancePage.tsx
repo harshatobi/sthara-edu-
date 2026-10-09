@@ -1,44 +1,32 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
-import { UserListIcon as UserList } from '@phosphor-icons/react/dist/ssr/UserList';
-import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
+import { useCallback, useMemo, useState } from 'react';
+import { FilePdfIcon as FilePdf } from '@phosphor-icons/react/dist/ssr/FilePdf';
+import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
+import { ListChecksIcon as ListChecks } from '@phosphor-icons/react/dist/ssr/ListChecks';
+import { PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { istDay } from '@/lib/feed/rules';
+import { BACKDATE_DAYS, monthDays, recentSchoolDays, schoolDays, addDay } from '@/lib/attendance/register';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { displayClass, normClass } from '@/lib/teacher/scope';
+import DayRegister, { dayLabel, type SavePayload } from './attendance/DayRegister';
+import MonthSheet from './attendance/MonthSheet';
+import RegisterDoc, { printRegister } from './attendance/RegisterDoc';
+import { sessionFrom, useCalendar, useHistory, wingIdOf } from './attendance/useRegister';
 
-type Status = 'present' | 'absent' | 'late' | 'excused';
-const STATUS: { k: Status; short: string; label: string; color: string }[] = [
-  { k: 'present', short: 'P', label: 'Present', color: 'var(--green)' },
-  { k: 'absent', short: 'A', label: 'Absent', color: 'var(--red)' },
-  { k: 'late', short: 'L', label: 'Late', color: 'var(--amber)' },
-  { k: 'excused', short: 'E', label: 'Excused', color: 'var(--blue)' },
-];
-const COLOR = Object.fromEntries(STATUS.map(s => [s.k, s.color])) as Record<Status, string>;
-const DAY = 86_400_000;
+type View = 'day' | 'month';
 
-/** School days from today back (Sundays skipped), newest first. */
-function recentDays(n: number): string[] {
-  const out: string[] = [];
-  for (let i = 0; out.length < n && i < n * 2; i++) {
-    const d = istDay(new Date(Date.now() - i * DAY));
-    if (new Date(`${d}T00:00:00Z`).getUTCDay() !== 0) out.push(d);
-  }
-  return out;
-}
-const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-
-/** Daily register for the class teacher (mockup teacher:attendance). */
+/** The class register: mark a day fast, read the month as the paper register, export either as a PDF. */
 export default function AttendancePage() {
   const { profile } = useAuth();
   const { desk, error: deskErr, call } = useTeacherDesk();
-  const [toast, toastEl] = useToast();
-  const days = useMemo(() => recentDays(7), []);
-  const [day, setDay] = useState(days[0]);
+  const [toast, toastEl] = useToast(3200);
+  const today = useMemo(() => istDay(), []);
+  const sessionStart = sessionFrom(today);
+  const cal = useCalendar(profile?.schoolId);
+
   const ownClass = profile?.teacherClass ? displayClass(profile.teacherClass) : '';
   const classes = useMemo(() => {
     const list = (desk?.classes || []).map(c => c.cls);
@@ -46,127 +34,109 @@ export default function AttendancePage() {
   }, [desk, ownClass]);
   const [picked, setCls] = useState('');
   const cls = picked || ownClass || classes[0] || '';
-
+  const isOwn = !!ownClass && normClass(ownClass) === normClass(cls);
   const roster = useMemo(() => (desk?.classes.find(c => normClass(c.cls) === normClass(cls))?.students || [])
     .slice().sort((a, b) => (a.rollNo || '').localeCompare(b.rollNo || '', 'en', { numeric: true }) || a.name.localeCompare(b.name)), [desk, cls]);
 
-  const [marks, setMarks] = useState<Record<string, Status>>({});
+  const calFor = useMemo(() => (cal ? { workingDays: cal.workingDays, events: cal.events, wingId: wingIdOf(cls, cal) } : null), [cal, cls]);
+  const window_ = useMemo(() => (calFor ? recentSchoolDays(today, 8, BACKDATE_DAYS, calFor) : []), [calFor, today]);
+  const todayOff = useMemo(() => (calFor ? schoolDays([today], calFor)[0].off : null), [calFor, today]);
+
+  const [view, setView] = useState<View>('day');
+  const [pickedDay, setDay] = useState<string | null>(null);
+  const day = pickedDay && window_.some(d => d.date === pickedDay) ? pickedDay : window_[0]?.date ?? today;
+  const [month, setMonth] = useState(today.slice(0, 7));
+  const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
-  const load = useCallback(() => setNonce(n => n + 1), []);
 
-  // The register as stored, for this class, day and load; stale results are ignored by key.
-  const rosterKey = roster.map(s => s.id).join(',');
-  const key = `${normClass(cls)}|${day}|${nonce}|${rosterKey}`;
-  const [reg, setReg] = useState<{ key: string; saved: Record<string, Status>; history: Record<string, Record<string, Status>>; err: string | null } | null>(null);
-  useEffect(() => {
-    if (!rosterKey) return;
-    let alive = true;
-    const ids = rosterKey.split(',');
-    createClient().from('attendance').select('student_id, day, status').in('student_id', ids).gte('day', days[days.length - 1]).lte('day', days[0])
-      .then(({ data, error }) => {
-        if (!alive) return;
-        if (error) {
-          setReg({ key, saved: {}, history: {}, err: /does not exist|schema cache/i.test(error.message) ? 'Attendance is not switched on for this school yet (database update pending).' : error.message });
-          return;
-        }
-        const h: Record<string, Record<string, Status>> = {};
-        for (const r of data || []) (h[r.student_id] ||= {})[r.day] = r.status as Status;
-        const today: Record<string, Status> = {};
-        for (const id of ids) if (h[id]?.[day]) today[id] = h[id][day];
-        setReg({ key, saved: today, history: h, err: null });
-        // New register: everyone present until marked otherwise.
-        setMarks(Object.fromEntries(ids.map(id => [id, today[id] || 'present'])));
-      });
-    return () => { alive = false; };
-  }, [key, rosterKey, day, days]);
-  const saved = !rosterKey ? {} : reg?.key === key ? reg.saved : null;
-  const history = reg?.key === key ? reg.history : {};
-  const loadErr = reg?.key === key ? reg.err : null;
+  const ids = useMemo(() => roster.map(s => s.id), [roster]);
+  const { history, err: loadErr, version } = useHistory(ids, nonce);
+  const monthSheetDays = useMemo(() => (calFor ? schoolDays(monthDays(month), calFor) : []), [calFor, month]);
+  // The days before the chosen day, for each student's trail (oldest first).
+  const trail = useMemo(() => (calFor ? recentSchoolDays(addDay(day, -1), 5, 14, calFor).reverse() : []), [calFor, day]);
+  const canMark = isOwn || !ownClass;
+  const onDirty = useCallback((d: boolean) => setDirty(d), []);
 
-  const marked = saved ? Object.keys(saved).length : 0;
-  const counts = STATUS.map(s => ({ ...s, n: roster.filter(r => marks[r.id] === s.k).length }));
-  const dirty = !!saved && roster.some(s => saved[s.id] !== marks[s.id]);
-  const isOwn = !!ownClass && normClass(ownClass) === normClass(cls);
-
-  const save = async () => {
+  const save = async (p: SavePayload) => {
     setBusy(true); setErr(null);
     try {
-      const r = await call('/api/teacher/attendance', 'POST', { className: cls, day, marks: roster.map(s => ({ studentId: s.id, status: marks[s.id] })) });
+      const r = await call('/api/teacher/attendance', 'POST', { className: cls, day, marks: p.marks });
       const absent = r.counts?.absent || 0;
-      toast(`Register saved · ${absent ? `${absent} absent` : 'everyone in'}${r.raised ? ` · ${r.raised} new in the feed` : ''}`);
-      load();
-    } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
+      toast(`Register saved for ${dayLabel(day)} · ${absent ? `${absent} absent` : 'everyone in'}${p.newlyAbsent ? ` · ${p.newlyAbsent} ${p.newlyAbsent === 1 ? 'family' : 'families'} told` : ''}${r.raised ? ` · ${r.raised} new in the feed` : ''}`);
+      setNonce(n => n + 1);
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save the register.'); } finally { setBusy(false); }
+  };
+  const go = (fn: () => void) => {
+    if (dirty) { setErr('Save or undo your changes first.'); return; }
+    setErr(null); fn();
   };
 
   if (deskErr) return <div className="note err" role="alert">{deskErr}</div>;
+  const ready = !!desk && !!cal && !!history;
+  const dayMarked = history ? roster.filter(s => history.marks[s.id]?.[day]).length : 0;
+
   return (
     <>
       {toastEl}
-      <PageBar eyebrow="ATTENDANCE" title={cls ? `${cls} register` : 'Daily register'}
-        sub={saved === null ? 'Loading…' : marked === roster.length && roster.length ? `Marked for ${dayLabel(day)}` : marked ? `${marked} of ${roster.length} marked for ${dayLabel(day)}` : `Not marked yet for ${dayLabel(day)}`}
-        actions={classes.length > 1 ? (
-          <select className="cmp-sel" aria-label="Class" style={{ margin: 0, minWidth: 150 }} value={cls} onChange={e => setCls(e.target.value)}>
-            {classes.map(c => <option key={c} value={c}>{c}{normClass(c) === normClass(ownClass) ? ' (my class)' : ''}</option>)}
-          </select>
-        ) : undefined} />
-      {!isOwn && cls && <div className="note" style={{ marginBottom: 14, fontSize: 13 }}>You are not the class teacher of {cls}. Only a class without a class teacher can be marked by its other teachers.</div>}
-      {loadErr && <div className="note err" role="alert" style={{ marginBottom: 14 }}>{loadErr}</div>}
-      <div className="seg" role="group" aria-label="Day" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
-        {days.map(d => <button key={d} className={d === day ? 'on' : ''} aria-pressed={d === day} onClick={() => setDay(d)}>{d === days[0] ? 'Today' : dayLabel(d)}</button>)}
-      </div>
-      {!desk ? <div className="card">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} h={48} style={{ margin: '10px 0' }} />)}</div>
-        : !roster.length ? (
-          <div className="card"><Empty icon={<UserList size={26} weight="duotone" />} title="No students in this class">
-            Students appear here once the office adds them to {cls || 'your class'}.
-          </Empty></div>
-        ) : (
-          <div className="card" style={{ paddingTop: 6, paddingBottom: 6 }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '10px 0', alignItems: 'center' }}>
-              {counts.map(c => <Chip key={c.k} tone={c.k === 'present' ? 'g' : c.k === 'absent' ? 'r' : c.k === 'late' ? 'a' : 'b'}>{c.label.toUpperCase()} {c.n}</Chip>)}
-              <button className="btn sm" style={{ marginLeft: 'auto' }} onClick={() => setMarks(Object.fromEntries(roster.map(s => [s.id, 'present' as Status])))}>Mark all present</button>
+      <div className="no-print">
+        <PageBar eyebrow="ATTENDANCE" title={cls ? `${cls} register` : 'Class register'}
+          sub={!ready ? 'Loading the register…' : view === 'day'
+            ? (dayMarked === roster.length && roster.length ? `Marked for ${dayLabel(day)}` : dayMarked ? `${dayMarked} of ${roster.length} marked for ${dayLabel(day)}` : `Not marked yet for ${dayLabel(day)}`)
+            : 'The month as the paper register, with each student’s trend.'}
+          actions={
+            <div className="reg-actions">
+              {classes.length > 1 && (
+                <select className="cmp-sel" aria-label="Class" value={cls} onChange={e => go(() => setCls(e.target.value))}>
+                  {classes.map(c => <option key={c} value={c}>{c}{normClass(c) === normClass(ownClass) ? ' (my class)' : ''}</option>)}
+                </select>
+              )}
+              <div className="seg" role="tablist" aria-label="View">
+                <button role="tab" aria-selected={view === 'day'} className={view === 'day' ? 'on' : ''} onClick={() => go(() => setView('day'))}><ListChecks size={14} weight="bold" /> Day</button>
+                <button role="tab" aria-selected={view === 'month'} className={view === 'month' ? 'on' : ''} onClick={() => go(() => setView('month'))}><CalendarBlank size={14} weight="bold" /> Month</button>
+              </div>
+              {view === 'day' && <button className="btn sm" disabled={!ready || !dayMarked} title={dayMarked ? 'The saved register for this day' : 'Save the register first'} onClick={printRegister}><FilePdf size={14} weight="bold" />PDF</button>}
             </div>
-            {roster.map(s => {
-              const past = days.slice(1, 6).reverse();
-              return (
-                <div className="row" key={s.id} style={{ gap: 12 }}>
-                  <div style={{ width: 34, textAlign: 'center', fontWeight: 800, color: 'var(--mut)', fontSize: 13 }}>{s.rollNo || '—'}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{s.name}</div>
-                    <div style={{ display: 'flex', gap: 4, marginTop: 5 }} aria-label="Last five school days">
-                      {past.map(d => {
-                        const st = history[s.id]?.[d];
-                        return <span key={d} title={`${dayLabel(d)}: ${st || 'not marked'}`}
-                          style={{ width: 9, height: 9, borderRadius: 99, background: st ? COLOR[st] : 'var(--line)' }} />;
-                      })}
-                    </div>
-                  </div>
-                  <div className="seg" role="radiogroup" aria-label={`Attendance for ${s.name}`}>
-                    {STATUS.map(o => (
-                      <button key={o.k} role="radio" aria-checked={marks[s.id] === o.k} title={o.label}
-                        className={marks[s.id] === o.k ? 'on' : ''}
-                        style={marks[s.id] === o.k ? { color: o.color, minWidth: 38 } : { minWidth: 38 }}
-                        onClick={() => setMarks(m => ({ ...m, [s.id]: o.k }))}>{o.short}</button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          } />
+
+        {!canMark && cls && <div className="note" style={{ marginBottom: 14, fontSize: 13 }}>You are not the class teacher of {cls}, so this register is read-only for you. Only a class without a class teacher can be marked by its other teachers.</div>}
+        {loadErr && <div className="note err" role="alert" style={{ marginBottom: 14 }}>{loadErr}</div>}
+        {err && <div className="note err" role="alert" style={{ marginBottom: 14 }}>{err}</div>}
+
+        {!ready ? (
+          <div className="card">{[0, 1, 2, 3, 4, 5].map(i => <Skeleton key={i} h={52} style={{ margin: '10px 0' }} />)}</div>
+        ) : view === 'day' ? (
+          <>
+            {todayOff && day !== today && <div className="note info" style={{ marginBottom: 14 }}>No classes today ({todayOff.label}). Showing the last school day.</div>}
+            <div className="reg-days" role="tablist" aria-label="Day to mark">
+              {window_.map(d => {
+                const n = roster.filter(s => history.marks[s.id]?.[d.date]).length;
+                const state = !roster.length ? 'none' : n === roster.length ? 'done' : n ? 'part' : 'none';
+                return (
+                  <button key={d.date} role="tab" aria-selected={d.date === day} className={`reg-day ${d.date === day ? 'on' : ''} ${state}`}
+                    onClick={() => go(() => setDay(d.date))}>
+                    <span className="wd">{d.date === today ? 'Today' : dayLabel(d.date, { weekday: 'short' })}</span>
+                    <b>{Number(d.date.slice(8))}</b>
+                    <span className="st">{state === 'done' ? 'Marked' : state === 'part' ? `${n}/${roster.length}` : 'Open'}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <DayRegister key={`${cls}|${day}|${version}`} day={day} isToday={day === today} roster={roster} history={history} recent={trail}
+              canMark={canMark} busy={busy} onSave={save} onDirty={onDirty} />
+          </>
+        ) : (
+          <MonthSheet cls={cls} month={month} setMonth={setMonth} minMonth={sessionStart.slice(0, 7)} maxMonth={today.slice(0, 7)}
+            days={monthSheetDays} roster={roster} history={history} today={today} editableFrom={window_[window_.length - 1]?.date ?? today}
+            sessionStart={sessionStart} onPdf={printRegister}
+            onOpenDay={d => { setDay(d); setView('day'); }} />
         )}
-      {err && <div className="err" role="alert" style={{ margin: '12px 0' }}>{err}</div>}
-      {roster.length > 0 && (
-        <div className="card" style={{ position: 'sticky', bottom: 12, marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <CalendarCheck size={22} weight="duotone" color="var(--green)" />
-          <div style={{ flex: 1, fontSize: 13.5 }}>
-            <b>{dayLabel(day)}</b> · {counts.filter(c => c.n).map(c => `${c.n} ${c.label.toLowerCase()}`).join(', ')}
-            <div className="muted" style={{ fontSize: 12 }}>Three absences in a row or a missed quiz shows up in the feed for the class&apos;s teachers.</div>
-          </div>
-          <button className="btn pri" disabled={busy || saved === null || (!dirty && marked === roster.length)} onClick={save}>
-            {busy ? 'Saving…' : marked === roster.length && !dirty ? 'Saved' : marked ? 'Save changes' : 'Save register'}
-          </button>
-        </div>
+      </div>
+
+      {ready && (
+        <RegisterDoc kind={view} school={cal!.schoolName} cls={cls} teacher={isOwn ? profile?.name || desk!.me.name : ''}
+          roster={roster} history={history!} today={today} sessionStart={sessionStart} day={day} month={month} days={monthSheetDays} />
       )}
     </>
   );

@@ -57,7 +57,10 @@ function Attendance({ desk }: { desk: AdminDesk }) {
   const { history } = useHistory(ids, 0);
   const days = useMemo(() => (cal && open ? schoolDays(monthDays(month), { workingDays: cal.workingDays, events: cal.events, wingId: wingIdOf(open, cal) }) : []), [cal, open, month]);
 
-  const pdf = (kind: 'school' | 'class') => { setDoc(kind); printRegister(); };
+  // Print once the chosen document has rendered (an effect runs after the commit), never the one before it.
+  const [printReq, setPrintReq] = useState(0);
+  useEffect(() => { if (printReq) printRegister(); }, [printReq]);
+  const pdf = (kind: 'school' | 'class') => { setDoc(kind); setPrintReq(n => n + 1); };
   const csv = () => att && downloadCsv(`${desk.school.name.replace(/\W+/g, '-')}-attendance-${today}.csv`, [
     ['Class', 'On roll', 'Today marked', 'Today in school %', 'Month %', 'Session %', `Under ${MIN_PCT}%`],
     ...att.classes.map(c => [c.cls, c.onRoll, c.today ? 'yes' : 'no', c.today?.pct ?? '', c.month.pct ?? '', c.session.pct ?? '', c.under]),
@@ -91,7 +94,7 @@ function Attendance({ desk }: { desk: AdminDesk }) {
                 <div className="nt" style={{ color: att.classesMarked < att.classes.length ? '#B26A00' : 'var(--green)' }}>{att.classesMarked} of {att.classes.length} registers marked</div></div>
               <div className="kpi"><div className="lb">THIS MONTH</div><div className="vl">{pctText(att.month.pct)}</div><div className="nt" style={{ color: 'var(--mut)' }}>{att.month.absent} absences, {att.month.late} late</div></div>
               <div className="kpi"><div className="lb">THIS SESSION</div><div className="vl">{pctText(att.session.pct)}</div><div className="nt" style={{ color: 'var(--mut)' }}>Since {new Date(`${sessionStart}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</div></div>
-              <div className="kpi"><div className="lb">UNDER {MIN_PCT}%</div><div className="vl" style={{ color: att.under.length ? 'var(--red)' : undefined }}>{att.under.length}</div><div className="nt" style={{ color: 'var(--mut)' }}>students this session</div></div>
+              <div className="kpi"><div className="lb">UNDER {MIN_PCT}%</div><div className="vl" style={{ color: att.underCount ? 'var(--red)' : undefined }}>{att.underCount}</div><div className="nt" style={{ color: 'var(--mut)' }}>students this session</div></div>
             </div>
 
             <div className="card" style={{ marginBottom: 18 }}>
@@ -185,7 +188,7 @@ function SchoolDoc({ desk, att, today }: { desk: AdminDesk; att: SchoolAttendanc
         <div><span>TODAY</span><b>{pctText(att.today.pct)}</b><em>{att.classesMarked}/{att.classes.length} registers</em></div>
         <div><span>THIS MONTH</span><b>{pctText(att.month.pct)}</b></div>
         <div><span>THIS SESSION</span><b>{pctText(att.session.pct)}</b></div>
-        <div className={att.under.length ? 'warn' : ''}><span>UNDER {MIN_PCT}%</span><b>{att.under.length}</b><em>students</em></div>
+        <div className={att.underCount ? 'warn' : ''}><span>UNDER {MIN_PCT}%</span><b>{att.underCount}</b><em>students</em></div>
       </div>
       <div className="rd-chart"><b>School attendance, week by week</b><TrendChart points={weeklyPts(att.weeks)} title="School weekly attendance" /></div>
       <table className="rd-table" style={{ marginTop: '4mm' }}>

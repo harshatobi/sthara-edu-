@@ -56,7 +56,9 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
     const t = rows.reduce((a, r) => ({ in: a.in + r.month.present + r.month.late, all: a.all + r.month.marked }), { in: 0, all: 0 });
     return t.all ? Math.round((t.in / t.all) * 100) : null;
   })();
-  const unmarked = open.filter(d => !markedDay(d));
+  // Days before the class's first register were before the school kept attendance here: not "missed".
+  const firstMarked = useMemo(() => roster.flatMap(s => Object.keys(history.marks[s.id] || {})).sort()[0] ?? null, [roster, history]);
+  const unmarked = firstMarked ? open.filter(d => d >= firstMarked && !markedDay(d)) : [];
   const monthName = new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 

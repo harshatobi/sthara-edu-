@@ -30,8 +30,9 @@ const PAGES = 5;
 /** One colour scale for the whole pack: the TML specification's mastery bands, matching the key on page 2. */
 const hmColor = (v: number) => BANDS.find(b => b.key === bandOf(v))!.color;
 /** Rows that fit on page 5; the spreadsheet carries everyone. */
-/** Classes that fit on the attendance page. */
-const CLASS_ROWS = 14;
+/** What fits beside the trend chart on the attendance page (one A4 sheet, nothing clipped); the spreadsheet carries the rest. */
+const CLASS_ROWS = 10;
+const GRADE_ROWS = 10;
 const TEACHER_ROWS = 12;
 const concern = (t: TeacherRow) => (t.activity === 'none' ? 0 : 1) * 1000 + (t.delta ?? 0) * 10 - t.backlog;
 
@@ -125,7 +126,7 @@ function Pack({ desk }: { desk: AdminDesk }) {
             <Stat label="FEE COLLECTION" value={L.collectionRate !== null ? `${Math.round(L.collectionRate)}%` : '—'}
               note={L.billed ? `${inrShort(L.collected)} of ${inrShort(L.billed)} billed` : 'Nothing billed yet'} />
             <Stat label="ATTENDANCE THIS SESSION" value={att?.session.pct != null ? `${att.session.pct}%` : '—'} tone={att?.session.pct != null && att.session.pct < MIN_PCT ? '#B4123C' : undefined}
-              note={att ? (att.any ? `${att.under.length} ${att.under.length === 1 ? 'student' : 'students'} under ${MIN_PCT}%` : 'No registers marked yet') : 'Loading'} />
+              note={att ? (att.any ? `${att.underCount} ${att.underCount === 1 ? 'student' : 'students'} under ${MIN_PCT}%` : 'No registers marked yet') : 'Loading'} />
             <Stat label="COMPLIANCE ITEMS OPEN" value={co.flags.length} tone={co.flags.length ? '#B45309' : '#0B7A54'} note={co.flags.length ? 'DPDP, see page 5' : 'None'} />
           </div>
 
@@ -222,23 +223,24 @@ function Pack({ desk }: { desk: AdminDesk }) {
               <Stat label="THIS SESSION" value={att.session.pct !== null ? `${att.session.pct}%` : '—'} tone={att.session.pct !== null && att.session.pct < MIN_PCT ? '#B4123C' : undefined} note={`${att.session.marked.toLocaleString('en-IN')} marks`} />
               <Stat label="THIS MONTH" value={att.month.pct !== null ? `${att.month.pct}%` : '—'} note={`${att.month.absent} absences, ${att.month.late} late`} />
               <Stat label="REGISTERS TODAY" value={`${att.classesMarked}/${att.classes.length}`} tone={att.classesMarked < att.classes.length ? '#B45309' : '#0B7A54'} note={att.today.pct !== null ? `${att.today.pct}% in school` : 'None marked yet'} />
-              <Stat label={`UNDER ${MIN_PCT}%`} value={att.under.length} tone={att.under.length ? '#B4123C' : '#0B7A54'} note="Students, this session" />
+              <Stat label={`UNDER ${MIN_PCT}%`} value={att.underCount} tone={att.underCount ? '#B4123C' : '#0B7A54'} note="Students, this session" />
             </div>
             <h3 className="bp-h3">Week by week</h3>
             <div className="bp-trend"><TrendChart points={weeklyPts(att.weeks)} title="School weekly attendance this session" /></div>
             <div className="bp-cols">
               <div>
                 <h3 className="bp-h3">By grade</h3>
-                {att.grades.map(g => (
+                {att.grades.slice(0, GRADE_ROWS).map(g => (
                   <div className="bp-row" key={g.grade}>
                     <b className="w80">Grade {g.grade}</b>
                     {g.session.pct !== null ? <Meter value={g.session.pct} color={g.session.pct < MIN_PCT ? '#E11D48' : '#2F6BFF'} /> : <div className="bp-bar" />}
                     <b className="w44 r">{g.session.pct !== null ? `${g.session.pct}%` : '—'}</b>
                   </div>
                 ))}
+                {att.grades.length > GRADE_ROWS && <p className="bp-foot-note">Grades {att.grades[0].grade} to {att.grades[GRADE_ROWS - 1].grade} shown; the spreadsheet has all {att.grades.length}.</p>}
               </div>
               <div>
-                <h3 className="bp-h3">Classes</h3>
+                <h3 className="bp-h3">Lowest attendance</h3>
                 <table className="bp-tbl">
                   <thead><tr><th>Class</th><th className="r">Month</th><th className="r">Session</th><th className="r">Under {MIN_PCT}%</th></tr></thead>
                   <tbody>{[...att.classes].sort((a, b) => (a.session.pct ?? 101) - (b.session.pct ?? 101)).slice(0, CLASS_ROWS).map(c => (
@@ -246,7 +248,7 @@ function Pack({ desk }: { desk: AdminDesk }) {
                       <td className="r" style={{ color: c.session.pct !== null && c.session.pct < MIN_PCT ? '#B4123C' : undefined }}>{c.session.pct !== null ? `${c.session.pct}%` : '—'}</td><td className="r">{c.under}</td></tr>
                   ))}</tbody>
                 </table>
-                {att.classes.length > CLASS_ROWS && <p className="bp-foot-note">The {CLASS_ROWS} classes with the lowest attendance of {att.classes.length}; the spreadsheet lists every class.</p>}
+                {att.classes.length > CLASS_ROWS && <p className="bp-foot-note">The {CLASS_ROWS} lowest of {att.classes.length} classes; the spreadsheet lists every class.</p>}
               </div>
             </div>
           </>

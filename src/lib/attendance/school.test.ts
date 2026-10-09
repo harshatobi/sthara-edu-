@@ -34,3 +34,17 @@ test('school attendance: per class today, session, under 75%, weekly trend with 
   assert.equal(s.any, true);
   assert.equal(shapeSchoolAttendance([], students, '2026-09-30', '2026-10-13').any, false);
 });
+
+test('school attendance without student ids (a board-pack reader): totals, grades and the under-75 count, no names', () => {
+  const rows = [
+    row({ bucket: 'student', class_name: 'Class 9-A', present: 9, late: 1 }),
+    row({ bucket: 'student', class_name: 'Class 9-A', present: 5, absent: 5 }),
+    row({ bucket: 'student', class_name: 'Class 10-B', present: 2, absent: 8 }),
+  ];
+  const s = shapeSchoolAttendance(rows, students, '2026-09-30', '2026-10-13');
+  assert.equal(s.session.marked, 30);
+  assert.equal(s.underCount, 2);
+  assert.deepEqual(s.under, []);
+  assert.deepEqual(s.grades.map(g => [g.grade, g.session.pct]), [[9, 75], [10, 20]]);
+  assert.deepEqual(s.classes.map(c => c.under), [1, 1]);
+});

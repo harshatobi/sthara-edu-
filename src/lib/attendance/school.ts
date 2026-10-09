@@ -4,6 +4,7 @@
  * and the students under the CBSE 75%. Pure: the admin Attendance page and the board pack both read it.
  */
 import { displayClass, normClass } from '@/lib/teacher/scope';
+import { gradeOf } from '@/lib/admin/format';
 import { MIN_PCT, addDay, type TrendPoint } from './register';
 
 export interface SummaryRow {
@@ -33,8 +34,10 @@ export interface SchoolAttendance {
   classes: ClassAttendance[];
   grades: { grade: number; session: Counts; students: number }[];
   weeks: TrendPoint[];
-  /** Students under the minimum this session, lowest first. */
+  /** Students under the minimum this session, lowest first (named only for those who may see attendance). */
   under: (SchoolStudent & { session: Counts })[];
+  /** How many students are under the minimum: counted for every reader, named or not. */
+  underCount: number;
   /** Has the school marked any register at all yet. */
   any: boolean;
 }
@@ -63,41 +66,50 @@ function weekly(rows: SummaryRow[], from: string, to: string): TrendPoint[] {
 
 export function shapeSchoolAttendance(rows: SummaryRow[], students: SchoolStudent[], sessionStart: string, today: string): SchoolAttendance {
   const of = (b: SummaryRow['bucket']) => rows.filter(r => r.bucket === b);
-  const perStudent = new Map(of('student').map(r => [r.student_id!, counts([r])]));
-  const perStudentMonth = new Map(of('student_month').map(r => [r.student_id!, counts([r])]));
+  const byId = new Map(students.map(s => [s.id, s]));
+  // Each student's tally in the class they are in now; a row without an id (a board-pack reader) or for a
+  // student no longer on roll falls back to the class it was marked in.
+  const place = (r: SummaryRow) => {
+    const s = r.student_id ? byId.get(r.student_id) : undefined;
+    return { key: normClass(s?.cls ?? r.class_name), grade: s ? s.grade : gradeOf(r.class_name), counts: counts([r]), student: s };
+  };
+  const sess = of('student').map(place), mon = of('student_month').map(place);
   const weekRows = of('class_week'), dayRows = of('class_day');
 
   // Classes: every section with students on roll, plus any class that has register rows.
   const names = new Map<string, string>();
   for (const s of students) if (normClass(s.cls)) names.set(normClass(s.cls), displayClass(s.cls));
-  for (const r of [...weekRows, ...dayRows]) if (r.class_name && !names.has(normClass(r.class_name))) names.set(normClass(r.class_name), displayClass(r.class_name));
+  for (const r of [...weekRows, ...dayRows, ...of('student')]) if (r.class_name && !names.has(normClass(r.class_name))) names.set(normClass(r.class_name), displayClass(r.class_name));
 
+  const pool = (xs: { counts: Counts }[]) => counts(xs.map(x => x.counts));
   const classes: ClassAttendance[] = [...names].map(([key, cls]) => {
     const roll = students.filter(s => normClass(s.cls) === key);
     const day = dayRows.filter(r => normClass(r.class_name) === key);
-    const sess = roll.map(s => perStudent.get(s.id)).filter((c): c is Counts => !!c);
+    const mine = sess.filter(x => x.key === key);
     return {
-      cls, grade: roll[0]?.grade ?? null, onRoll: roll.length,
+      cls, grade: roll[0]?.grade ?? gradeOf(cls), onRoll: roll.length,
       today: day.length ? counts(day) : null,
-      month: counts(roll.map(s => perStudentMonth.get(s.id)).filter((c): c is Counts => !!c)),
-      session: counts(sess),
-      under: sess.filter(below).length,
+      month: pool(mon.filter(x => x.key === key)),
+      session: pool(mine),
+      under: mine.filter(x => below(x.counts)).length,
       weeks: weekly(weekRows.filter(r => normClass(r.class_name) === key), sessionStart, today),
     };
   }).sort((a, b) => (a.grade ?? 99) - (b.grade ?? 99) || a.cls.localeCompare(b.cls, 'en', { numeric: true }));
 
-  const grades = [...new Set(students.map(s => s.grade).filter((g): g is number => g !== null))].sort((a, b) => a - b).map(grade => {
-    const roll = students.filter(s => s.grade === grade);
-    return { grade, students: roll.length, session: counts(roll.map(s => perStudent.get(s.id)).filter((c): c is Counts => !!c)) };
-  });
+  const gradeList = [...new Set([...students.map(s => s.grade), ...sess.map(x => x.grade)].filter((g): g is number => g !== null))].sort((a, b) => a - b);
+  const grades = gradeList.map(grade => ({
+    grade, students: students.filter(s => s.grade === grade).length,
+    session: pool(sess.filter(x => x.grade === grade)),
+  }));
 
-  const under = students.flatMap(s => { const c = perStudent.get(s.id); return c && below(c) ? [{ ...s, session: c }] : []; })
+  const under = sess.flatMap(x => (x.student && below(x.counts) ? [{ ...x.student, session: x.counts }] : []))
     .sort((a, b) => (a.session.pct ?? 0) - (b.session.pct ?? 0));
 
   return {
-    today: counts(dayRows), month: counts(of('student_month')), session: counts(of('student')),
+    today: counts(dayRows), month: pool(mon), session: pool(sess),
     classesMarked: classes.filter(c => c.today).length,
     classes, grades, under,
+    underCount: sess.filter(x => below(x.counts)).length,
     weeks: weekly(weekRows, sessionStart, today),
     any: rows.length > 0,
   };

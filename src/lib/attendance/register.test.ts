@@ -52,6 +52,8 @@ test('roll list: numbers, ranges, prefixed roll numbers and typos', () => {
   assert.deepEqual(parseRollList('1, 3', roster), { ids: ['a', 'c'], unknown: [] });
   assert.deepEqual(parseRollList('1-3', roster).ids, ['a', 'b', 'c']);
   assert.deepEqual(parseRollList('3 to 1', roster).ids, ['a', 'b', 'c']);
+  assert.deepEqual(parseRollList('1 - 3', roster), { ids: ['a', 'b', 'c'], unknown: [] });
+  assert.deepEqual(parseRollList('1 -3, 9a - 07', roster).ids, ['a', 'b', 'c', 'd']);
   assert.deepEqual(parseRollList('7', roster).ids, ['d']);
   assert.deepEqual(parseRollList('9a-07', roster).ids, ['d']);
   assert.deepEqual(parseRollList('2, 44', roster), { ids: ['b'], unknown: ['44'] });

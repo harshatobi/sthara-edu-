@@ -59,11 +59,13 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
 
   const markedBefore = roster.filter(s => saved[s.id]).length;
   const isNew = markedBefore === 0;
-  const changed = roster.filter(s => (saved[s.id] || null) !== (isNew ? null : marks[s.id]) || (savedNotes[s.id] || '') !== (notes[s.id] || '').trim());
-  // A register nobody has saved yet is "dirty" by nature: it still needs saving.
-  const dirty = isNew || changed.length > 0 || markedBefore < roster.length;
-  const editedCount = isNew ? 0 : changed.length;
-  useEffect(() => { onDirty(!isNew && changed.length > 0); }, [isNew, changed.length, onDirty]);
+  // Edits against where each student started (their saved mark, or present on a new register), so marking
+  // absentees on a register that was never saved is guarded like any other unsaved change.
+  const changed = roster.filter(s => marks[s.id] !== (saved[s.id] || 'present') || (savedNotes[s.id] || '') !== (notes[s.id] || '').trim());
+  const editedCount = changed.length;
+  // A register nobody has saved yet still needs saving, even untouched.
+  const dirty = isNew || editedCount > 0 || markedBefore < roster.length;
+  useEffect(() => { onDirty(editedCount > 0); }, [editedCount, onDirty]);
 
   const session = useMemo(() => Object.fromEntries(roster.map(s => [s.id, tally(history.marks[s.id] || {})])), [roster, history]);
   // The last eight weeks for each student's trend line.
@@ -196,7 +198,7 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
             const t = session[s.id];
             const low = belowMin(t);
             const streak = absentStreak({ ...(history.marks[s.id] || {}), [day]: m }, day);
-            const isChanged = !isNew && changed.some(c => c.id === s.id);
+            const isChanged = changed.some(c => c.id === s.id);
             const note = notes[s.id] || '';
             return (
               <div key={s.id} className={`reg-row ${m}`} role="listitem" data-row={i}>
@@ -259,7 +261,7 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
             <b>{dayLabel(day, { weekday: 'long', day: 'numeric', month: 'long' })}</b>
             <span> · {counts.filter(c => c.n).map(c => `${c.n} ${MARK_LABEL[c.k].toLowerCase()}`).join(', ')}</span>
             <div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>
-              {isNew ? 'Not saved yet. Everyone you haven’t changed is saved as present.'
+              {isNew ? `Not saved yet${editedCount ? ` (${editedCount} marked)` : ''}. Everyone you haven’t changed is saved as present.`
                 : editedCount ? `${editedCount} unsaved ${editedCount === 1 ? 'change' : 'changes'}.`
                   : markedBefore < roster.length ? `${roster.length - markedBefore} ${roster.length - markedBefore === 1 ? 'student' : 'students'} not on the saved register yet.` : 'Saved. Change any mark and save again to correct it.'}
             </div>

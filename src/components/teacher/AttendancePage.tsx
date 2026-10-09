@@ -109,12 +109,12 @@ export default function AttendancePage() {
         ) : view === 'day' ? (
           <>
             {todayOff && day !== today && <div className="note info" style={{ marginBottom: 14 }}>No classes today ({todayOff.label}). Showing the last school day.</div>}
-            <div className="reg-days" role="tablist" aria-label="Day to mark">
+            <div className="reg-days" role="group" aria-label="Day to mark">
               {window_.map(d => {
                 const n = roster.filter(s => history.marks[s.id]?.[d.date]).length;
                 const state = !roster.length ? 'none' : n === roster.length ? 'done' : n ? 'part' : 'none';
                 return (
-                  <button key={d.date} role="tab" aria-selected={d.date === day} className={`reg-day ${d.date === day ? 'on' : ''} ${state}`}
+                  <button key={d.date} aria-pressed={d.date === day} aria-label={`${dayLabel(d.date, { weekday: 'long', day: 'numeric', month: 'long' })}: ${state === 'done' ? 'marked' : state === 'part' ? `${n} of ${roster.length} marked` : 'not marked yet'}`} className={`reg-day ${d.date === day ? 'on' : ''} ${state}`}
                     onClick={() => go(() => setDay(d.date))}>
                     <span className="wd">{d.date === today ? 'Today' : dayLabel(d.date, { weekday: 'short' })}</span>
                     <b>{Number(d.date.slice(8))}</b>

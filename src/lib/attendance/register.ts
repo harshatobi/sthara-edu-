@@ -94,7 +94,8 @@ export function parseRollList(text: string, roster: { id: string; rollNo: string
   const find = (tok: string) => byRoll.get(tok.toLowerCase()) ?? (/^\d+$/.test(tok) ? byNum.get(String(Number(tok))) : undefined);
   const ids = new Set<string>();
   const unknown: string[] = [];
-  const parts = text.replace(/\s+(to|till)\s+/gi, '-').split(/[,;\s]+/).map(p => p.trim()).filter(Boolean);
+  // "12 - 14", "12 to 14" and "12-14" are all a range; join them before splitting on spaces.
+  const parts = text.replace(/\s*(?:-|\bto\b|\btill\b)\s*/gi, '-').split(/[,;\s]+/).map(p => p.trim()).filter(Boolean);
   for (const p of parts) {
     const range = p.match(/^(\d+)\s*-\s*(\d+)$/);
     if (range) {

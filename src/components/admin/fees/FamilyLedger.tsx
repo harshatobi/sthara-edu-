@@ -8,6 +8,7 @@ import { PAY_MODES, type Family, type Invoice, type InvoiceStatus } from '@/lib/
 import { fmtDate, inr, isoDay, plural } from '@/lib/admin/format';
 import { Field, Workspace } from '../kit';
 import type { Access } from '@/lib/admin/rbac';
+import { POWERED_BY_PAGE_CSS } from '@/components/schedule/print';
 
 export const STATUS_CHIP: Record<InvoiceStatus, { t: string; tone: Tone }> = {
   paid: { t: 'PAID', tone: 'g' }, partial: { t: 'PART-PAID', tone: 'b' }, due: { t: 'DUE', tone: 'n' },
@@ -63,6 +64,7 @@ export default function FamilyLedger({ family, school, session, call, access, pe
     w.document.write(`<!doctype html><html><head><title>Fee statement · ${esc(family.name)}</title><style>
       body{font-family:system-ui,sans-serif;color:#002147;padding:32px;font-size:13px} h1{font-size:20px;margin:0} .m{color:#64748B;margin:4px 0 20px}
       table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px solid #E2E8F0;text-align:left} th{font-size:11px;color:#64748B;text-transform:uppercase}
+      @page{${POWERED_BY_PAGE_CSS}}
       .r{text-align:right} tr.rc td{color:#64748B;font-size:12px;border-bottom:1px dashed #EEF2F7} tfoot td{font-weight:700;border-top:2px solid #002147}
     </style></head><body><h1>${esc(school)} · Fee statement</h1><div class="m">${esc(family.name)} · ${esc(family.cls)} · AY ${session} · as of ${fmtDate(isoDay())}</div>
     <table><thead><tr><th>Invoice</th><th>For</th><th>Due</th><th class="r">Amount</th><th class="r">Concession</th><th class="r">Paid</th><th class="r">Balance</th></tr></thead>

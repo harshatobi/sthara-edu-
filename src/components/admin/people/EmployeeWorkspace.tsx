@@ -17,6 +17,7 @@ import {
   DOC_KINDS, EVENT_KINDS, EXIT_KINDS, GENDERS, JOB_ACTIONS, MARITAL, QUAL_KINDS, STATUS, ageOn, jobDiff, statusOf, tenure,
   type DocRow, type Employee, type ExitRow, type Job, type JobAction, type ProfileRow, type StatutoryRow,
 } from '@/lib/hr/engine';
+import Pop from '@/components/schedule/Pop';
 import type { Call, PeopleData } from '@/lib/hr/usePeople';
 import { BasicsForm, DocForm, ExitForm, JobForm, NoteForm, ProbationForm, ProfileForm, QualForm, StatutoryForm, type Qual } from './forms';
 
@@ -30,7 +31,7 @@ interface Detail {
 }
 type Open =
   | { k: 'basics' } | { k: 'job'; start?: JobAction } | { k: 'probation' } | { k: 'exit' } | { k: 'withdraw'; exit: ExitRow } | { k: 'rejoin' }
-  | { k: 'profile' } | { k: 'statutory'; full: StatutoryRow | null } | { k: 'doc' } | { k: 'qual'; q: Qual | null };
+  | { k: 'link' } | { k: 'profile' } | { k: 'statutory'; full: StatutoryRow | null } | { k: 'doc' } | { k: 'qual'; q: Qual | null };
 
 export function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   const empty = children === null || children === undefined || children === '';
@@ -46,6 +47,7 @@ export default function EmployeeWorkspace({ id, data, call, onClose, onChanged, 
   const [open, setOpen] = useState<Open | null>(null);
   const [shown, setShown] = useState<StatutoryRow | null>(null);
   const [busy, setBusy] = useState(false);
+  const [moveTo, setMoveTo] = useState('');
   const load = useCallback(() => {
     call<Detail>(`${API}?id=${id}`, 'GET').then(x => { setD(x); setError(null); }).catch(e => setError(e.message));
   }, [call, id]);
@@ -82,6 +84,9 @@ export default function EmployeeWorkspace({ id, data, call, onClose, onChanged, 
   ].sort((a, b) => b.at.localeCompare(a.at));
   const p = d.profile, s = shown ?? d.statutory;
   const lastJob = d.jobs[d.jobs.length - 1];
+  // Logins whose own record is still the bare one made with the account: the only ones that can be joined to this record.
+  const candidates = data.people.filter(x => x.userId && x.active && x.id !== e.id && !x.employeeCode && !x.departmentId && !x.gradeId);
+  const others = data.people.filter(x => x.active && x.id !== e.id);
 
   return (
     <Workspace wide title={e.name} onClose={close}
@@ -96,6 +101,7 @@ export default function EmployeeWorkspace({ id, data, call, onClose, onChanged, 
               <button className="btn sm pri" onClick={() => setOpen({ k: 'job' })}>Change job</button>
               {e.employment !== 'permanent' && <button className="btn sm" onClick={() => setOpen({ k: 'job', start: 'renewal' })}>Renew contract</button>}
               {e.employment === 'permanent' && <button className="btn sm" onClick={() => setOpen({ k: 'probation' })}>{e.probationUntil && !e.confirmedOn ? 'Confirm or extend' : 'Probation'}</button>}
+              {!e.userId && candidates.length > 0 && <button className="btn sm" onClick={() => setOpen({ k: 'link' })}>Link login</button>}
               {!exit && <button className="btn sm" onClick={() => setOpen({ k: 'exit' })}>Start exit</button>}
             </div>
           ) : <button className="btn sm pri" onClick={() => setOpen({ k: 'rejoin' })}>Record as rejoined</button>} />
@@ -121,8 +127,8 @@ export default function EmployeeWorkspace({ id, data, call, onClose, onChanged, 
             sub={`Notice given ${fmtDate(exit.noticeOn)}.${exit.reason ? ` ${exit.reason}` : ''} ${exit.lastDay > today ? `${daysBetween(today, exit.lastDay)} days to go.` : 'The last day has passed: close the exit.'}`}
             right={<div className="hr-acts">
               <button className="btn sm" onClick={() => setOpen({ k: 'withdraw', exit })}>Withdraw</button>
-              <button className="btn sm red" disabled={busy || exit.lastDay > today} title={exit.lastDay > today ? 'Available on the last working day' : undefined}
-                onClick={() => act(() => call(API, 'POST', { action: 'exit_complete', exitId: exit.id }), e.userId ? `${e.name} has left. Whoever manages logins was told to remove the account` : `${e.name} has left the register`)}>Close exit</button>
+              <button className="btn sm red" disabled={busy || exit.lastDay > today || (d.reports.length > 0 && moveTo === '')} title={exit.lastDay > today ? 'Available on the last working day' : undefined}
+                onClick={() => act(() => call(API, 'POST', { action: 'exit_complete', exitId: exit.id, ...(d.reports.length ? { reportsTo: moveTo === 'none' ? null : moveTo } : {}) }), e.userId ? `${e.name} has left. Whoever manages logins was told to remove the account` : `${e.name} has left the register`)}>Close exit</button>
             </div>} />
           {exit.checklist.map(c => (
             <label key={c.key} className="hr-check">
@@ -130,6 +136,16 @@ export default function EmployeeWorkspace({ id, data, call, onClose, onChanged, 
               <span>{c.label}{c.done && c.by && <span className="by"> · {c.by}, {fmtDate(c.at, true)}</span>}</span>
             </label>
           ))}
+          {d.reports.length > 0 && (
+            <div className="cmp-fld" style={{ marginTop: 12, maxWidth: 420 }}>
+              <label htmlFor="x-move">{d.reports.length === 1 ? `${person(d.reports[0])} REPORTS TO THEM. FROM THE LAST DAY, REPORTS TO` : `${d.reports.length} PEOPLE REPORT TO THEM. FROM THE LAST DAY, THEY REPORT TO`}</label>
+              <select id="x-move" className="cmp-sel" value={moveTo} onChange={ev => setMoveTo(ev.target.value)}>
+                <option value="">Choose before closing the exit</option>
+                {others.map(x => <option key={x.id} value={x.id}>{x.name}{x.designation ? ` · ${x.designation}` : ''}</option>)}
+                <option value="none">Nobody for now</option>
+              </select>
+            </div>
+          )}
           {e.userId && <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>Closing the exit doesn&apos;t delete their login. Whoever manages logins at the school is notified to remove it.</p>}
         </div>
       )}
@@ -254,6 +270,7 @@ export default function EmployeeWorkspace({ id, data, call, onClose, onChanged, 
         <NoteForm title={`${e.name}: withdraw the exit`} sub="They stay on the register as before. The exit and this note are kept on their history." label="WHY IT IS BEING WITHDRAWN" required cta="Withdraw exit"
           onClose={() => setOpen(null)} onSubmit={async note => { await call(API, 'POST', { action: 'exit_withdraw', exitId: open.exit.id, note }); saved('Exit withdrawn'); }} />
       )}
+      {open?.k === 'link' && <LinkForm e={e} candidates={candidates} call={call} onClose={() => setOpen(null)} onSaved={saved} />}
       {open?.k === 'rejoin' && <RejoinForm e={e} today={today} call={call} onClose={() => setOpen(null)} onSaved={saved} />}
     </Workspace>
   );
@@ -269,5 +286,34 @@ function RejoinForm({ e, today, call, onClose, onSaved }: { e: Employee; today: 
         {e.employment !== 'permanent' && <div className="cmp-fld"><label htmlFor="rj-to">NEW CONTRACT ENDS</label><input id="rj-to" type="date" className="cmp-in" min={on} value={to} onChange={ev => setTo(ev.target.value)} /></div>}
       </div>}
       onClose={onClose} onSubmit={async note => { await call(API, 'POST', { action: 'rehire', id: e.id, on, contractTo: to || null, note }); onSaved(`${e.name} is back on the register`); }} />
+  );
+}
+
+function LinkForm({ e, candidates, call, onClose, onSaved }: { e: Employee; candidates: Employee[]; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
+  const [userId, setUserId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const link = async () => {
+    setBusy(true); setErr(null);
+    try { await call(API, 'POST', { action: 'link_login', id: e.id, userId }); onSaved(`${e.name} now has their login on this record`); }
+    catch (x: any) { setErr(x.message); } finally { setBusy(false); }
+  };
+  return (
+    <Pop title={`${e.name}: link their login`} onClose={onClose}
+      sub="Use this when someone who was on the register without a login has now been given one. This record keeps its history, and their attendance, shifts, leave, duties and lessons move to the login. The empty record that came with the login is removed.">
+      <div className="cmp-fld">
+        <label htmlFor="lk-u">THEIR LOGIN</label>
+        <select id="lk-u" className="cmp-sel" value={userId} onChange={ev => setUserId(ev.target.value)}>
+          <option value="">Choose the login</option>
+          {candidates.map(c => <option key={c.id} value={c.userId!}>{c.name} · {c.email || (c.login === 'teacher' ? 'teacher' : 'office')}</option>)}
+        </select>
+        <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>Only logins whose own record is still empty are listed. This can&apos;t be undone from here.</div>
+      </div>
+      {err && <div className="note err" role="alert" style={{ marginTop: 12 }}>{err}</div>}
+      <div className="hr-form-acts">
+        <button className="btn" onClick={onClose}>Cancel</button>
+        <button className="btn pri" disabled={busy || !userId} onClick={link}>{busy ? 'Linking…' : 'Link login'}</button>
+      </div>
+    </Pop>
   );
 }

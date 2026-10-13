@@ -83,6 +83,14 @@ export function hrError(e: { code?: string; message?: string } | null, fallback:
       : 'That already exists.';
     return NextResponse.json({ error: msg }, { status: 409 });
   }
+  if (e?.code === 'P0001') {
+    const msg = /no such login/.test(m) ? 'That login isn\'t a teacher or office account in this school.'
+      : /already has a login/.test(m) ? 'They already have a login.'
+      : /already has its own record/.test(m) ? 'That login already has an employee record of its own with details on it, so the two can\'t be joined automatically. Ask Sthara support to merge them.'
+      : /new manager is not on the register/.test(m) ? 'The new manager must be someone currently on the register.'
+      : null;
+    if (msg) return NextResponse.json({ error: msg }, { status: 409 });
+  }
   if (e?.code === '23514') return NextResponse.json({ error: 'Some of those values aren\'t allowed. Check the dates and numbers.' }, { status: 400 });
   console.error('[hr]', e?.code, m);
   return NextResponse.json({ error: fallback }, { status: 500 });

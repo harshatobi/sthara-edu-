@@ -31,7 +31,10 @@ export const dynamic = 'force-dynamic';
  *     exit_start        { id, kind, noticeOn, lastDay, reason }
  *     exit_check        { exitId, key, done }
  *     exit_withdraw     { exitId, note }
- *     exit_complete     { exitId }                             on or after the last day; flags the login for removal
+ *     exit_complete     { exitId, reportsTo? }                 on or after the last day; flags the login for removal.
+ *                                                              With direct reports, reportsTo (an employee id, or null for
+ *                                                              nobody) says who they move to
+ *     link_login        { id, userId }                         someone with no login was given one: join the two
  *     rehire            { id, on }
  *     issue_codes       {}                                     gives every active employee without a code the next one
  *     profile           { id, ...personal fields }             hr.sensitive
@@ -316,6 +319,14 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ ok: true });
         }
         if (x.last_day > today) return bad(`${m.name}'s last working day is ${x.last_day}. Close the exit on or after that day, or change the date by withdrawing and starting again.`);
+        const { data: reports } = await db.from('staff_members').select('id').eq('school_id', school).eq('manager_id', m.id).eq('active', true);
+        if (reports?.length) {
+          if (b.reportsTo === undefined) return bad(`${reports.length} ${reports.length === 1 ? 'person reports' : 'people report'} to ${m.name}. Pick who they report to now.`);
+          const to = b.reportsTo === null ? null : isUuid(b.reportsTo) && b.reportsTo !== m.id ? b.reportsTo : undefined;
+          if (to === undefined) return bad('Pick someone else on the register as the new manager.');
+          const moved = await db.rpc('hr_reassign_reports', { p_school: school, p_from: m.id, p_to: to, p_on: today, p_reason: `${m.name} left the school`, p_by: admin.id });
+          if (moved.error) return hrError(moved.error, 'Could not move their reports.');
+        }
         const flag = m.user_id ? now() : null;
         const { error } = await db.from('staff_exits').update({ status: 'completed', closed_by: admin.id, closed_at: now(), login_flagged_at: flag }).eq('id', x.id);
         if (error) return hrError(error, 'Could not close the exit.');
@@ -358,6 +369,15 @@ export async function POST(req: NextRequest) {
         if (error) return hrError(error, 'Could not record the rejoining.');
         await db.from('staff_members').update({ active: true, exit_on: null, probation_until: null, confirmed_on: null, updated_at: now() }).eq('id', m.id);
         await event(m.id, 'rehired', on, str(b.note, 1000) || null);
+        return NextResponse.json({ ok: true });
+      }
+
+      case 'link_login': {
+        const m = await member(b.id);
+        if (!m) return bad('That employee isn\'t on this school\'s register.', 404);
+        if (!isUuid(b.userId)) return bad('Pick the login.');
+        const r = await db.rpc('hr_link_login', { p_school: school, p_member: m.id, p_user: b.userId });
+        if (r.error) return hrError(r.error, 'Could not link the login. Nothing was changed.');
         return NextResponse.json({ ok: true });
       }
 

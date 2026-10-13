@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimpleIcon as PencilSimple } from '@phosphor-icons/react/dist/ssr/PencilSimple';
@@ -59,7 +60,7 @@ export default function StaffTab({ rows, call, reload, toast, canEdit }: { rows:
         </div>
       )}
       <div className="card">
-        <CardHead title="Staff register" sub="Teachers and office accounts appear automatically. Add support staff here; they get their schedule on WhatsApp and a printed roster, no login needed."
+        <CardHead title="Staff register" sub={<>Teachers and office accounts appear automatically. Add support staff here; they get their schedule on WhatsApp and a printed roster, no login needed. Departments, job history, documents and exits are kept in <Link href="/admin/people" style={{ fontWeight: 700, textDecoration: 'underline' }}>People</Link>.</>}
           right={<div style={{ display: 'flex', gap: 6 }}>
             <button className="btn sm" onClick={() => downloadCsv(`staff-register-${isoDay()}.csv`, [
               ['Name', 'Category', 'Designation', 'Employment', 'Contract to', 'Wing', 'Phone', 'WhatsApp consent', 'Employee code', 'Joined', 'Login', 'Sessions taken', 'Active'],

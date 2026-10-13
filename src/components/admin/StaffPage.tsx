@@ -64,6 +64,7 @@ function Staff({ desk }: { desk: AdminDesk }) {
         sub={`${plural(wf.teachers.length, 'teacher')} · ${plural(wf.admins.length, 'admin')}${wf.ratio ? ` · 1:${wf.ratio} student-teacher ratio` : ''}`}
         actions={<>
           <button className="btn" onClick={exportCsv}><DownloadSimple size={16} /> Export</button>
+          <Link className="btn" href="/admin/people">Employee records</Link>
           <Link className="btn pri" href="/admin/directory"><UserPlus size={16} weight="bold" /> Request logins</Link>
         </>} />
       <MissingNotice desk={desk} tables={['leave_requests', 'lesson_plans']} />

@@ -16,6 +16,7 @@ import { CalendarDotsIcon as CalendarDots } from '@phosphor-icons/react/dist/ssr
 import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
+import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/react/dist/ssr/IdentificationCard';
 import TeacherDemoPortal from '@/components/teacher/TeacherDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +40,7 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher/feed', label: 'Situational Feed', short: 'Feed', icon: Bell },
   { href: '/teacher/wellness', label: 'Student Wellness', short: 'Wellness', icon: Heart },
   { href: '/teacher/leave', label: 'Apply Leave', short: 'Leave', icon: CalendarBlank },
+  { href: '/teacher/record', label: 'My Record', short: 'Record', icon: IdentificationCard },
 ];
 
 const DEMO_VIEWS: Record<string, TeacherView> = {

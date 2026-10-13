@@ -302,6 +302,8 @@ CREATE TRIGGER trg_guard_pay_run_lines BEFORE INSERT OR UPDATE OR DELETE ON publ
 CREATE OR REPLACE FUNCTION app.guard_pay_runs() RETURNS trigger
 LANGUAGE plpgsql SET search_path = public, pg_temp AS $$
 BEGIN
+  -- Removing a whole school takes its payroll with it: by then the school row is already gone.
+  IF TG_OP = 'DELETE' AND NOT EXISTS (SELECT 1 FROM public.schools WHERE id = OLD.school_id) THEN RETURN OLD; END IF;
   IF OLD.status = 'approved' THEN
     RAISE EXCEPTION 'pay run is approved and frozen' USING ERRCODE = '42501';
   END IF;

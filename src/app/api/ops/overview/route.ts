@@ -8,6 +8,7 @@ import { loadRegistry } from '@/lib/ops/registry';
 import { can } from '@/lib/ops/roles';
 import { loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 import { sees } from '@/lib/ops/territories';
+import { pageAll } from '@/lib/ops/page';
 import { inQueue, slaState } from '@/lib/ops/desk';
 import { CASE_COLS, clocked, type CaseRow } from '@/lib/ops/deskServer';
 import { usageWindow } from '@/lib/ai/window';
@@ -33,12 +34,12 @@ export async function GET(req: NextRequest) {
     const [allSchools, inv, enquiries, journal, usage, operators, requests, errorGroups, schoolMetrics, subjectMetrics] = await Promise.all([
       loadRegistry(db),
       collectInventory(db),
-      db.from('enquiries').select('status, territory_id, owner_id'),
+      pageAll((f, t) => db.from('enquiries').select('status, territory_id, owner_id').order('id').range(f, t)),
       db.from('settings_changes').select('id, at, actor_email, scope, school_id, key, old_value, new_value, reason')
         .order('at', { ascending: false }).limit(8),
       'error' in mtd ? Promise.resolve({ data: null, error: null }) : db.rpc('ops_ai_usage', { p_from: mtd.from.toISOString(), p_to: mtd.to.toISOString() }),
-      db.from('users').select('id', { count: 'exact', head: true }).eq('role', 'superadmin'),
-      db.from('account_requests').select('school_id, created_at').eq('status', 'pending'),
+      db.from('ops_operators').select('user_id', { count: 'exact', head: true }).eq('active', true),
+      pageAll((f, t) => db.from('account_requests').select('school_id, created_at').eq('status', 'pending').order('id').range(f, t)),
       db.from('app_error_groups').select('fingerprint, message, first_seen').eq('status', 'open').gte('last_seen', dayAgo).limit(1000),
       db.rpc('ops_school_metrics', { p_school: null }),
       db.rpc('ops_subject_metrics', { p_school: null }),
@@ -47,9 +48,9 @@ export async function GET(req: NextRequest) {
     // The service desk's pulse, for roles that work it (no table on a database older than ops_crm: then nothing).
     let desk: { late: number; soon: number; unassigned: number } | undefined;
     if (can(op.role, 'desk.read')) {
-      const { data: open, error: deskErr } = await db.from('ops_cases').select(CASE_COLS).not('status', 'in', '(resolved,closed)').limit(2000);
+      const { data: open, error: deskErr } = await pageAll<CaseRow>((f, t) => db.from('ops_cases').select(CASE_COLS).not('status', 'in', '(resolved,closed)').order('id').range(f, t));
       if (!deskErr) {
-        const live = ((open || []) as CaseRow[]).filter(c => inSight(c.school_id)).map(clocked);
+        const live = open.filter(c => inSight(c.school_id)).map(clocked);
         const t = Date.now();
         desk = {
           late: live.filter(c => slaState(c, t).level === 'breached').length,
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
     };
     // Login requests schools are waiting on, per school (the table may not exist yet on an older database).
     const bySchool = new Map<string, { count: number; oldest: string }>();
-    for (const r of requests.error || !can(op.role, 'requests.manage') ? [] : requests.data || []) {
+    for (const r of requests.error || !can(op.role, 'requests.manage') ? [] : requests.data) {
       if (!inSight(r.school_id)) continue;
       const cur = bySchool.get(r.school_id);
       bySchool.set(r.school_id, { count: (cur?.count ?? 0) + 1, oldest: !cur || r.created_at < cur.oldest ? r.created_at : cur.oldest });
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
     const now = Date.now();
     const pendingRequests = [...bySchool].map(([schoolId, v]) => ({ schoolId, count: v.count, oldestDays: Math.floor((now - Date.parse(v.oldest)) / 86_400_000) }));
     const enq = can(op.role, 'enquiries.read')
-      ? (enquiries.data || []).filter(e => sees(sight, { territoryId: e.territory_id, ownerId: e.owner_id })) : [];
+      ? enquiries.data.filter(e => sees(sight, { territoryId: e.territory_id, ownerId: e.owner_id })) : [];
     const newEnquiries = enq.filter(e => e.status === 'new').length;
     const healthItems = can(op.role, 'health.read') ? inv.items : [];
     const totals = !can(op.role, 'usage.read') ? null : (usage.data as { totals?: { cost?: number; calls?: number; failed?: number } } | null)?.totals ?? null;

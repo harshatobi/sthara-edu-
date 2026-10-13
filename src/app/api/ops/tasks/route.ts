@@ -4,6 +4,7 @@ import { operatorFor } from '@/lib/ops/auth';
 import { caseRef, taskDue } from '@/lib/ops/desk';
 import { loadOperators } from '@/lib/ops/org';
 import { can, reportsOf } from '@/lib/ops/roles';
+import { pageAll } from '@/lib/ops/page';
 import { loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
   const view = ['mine', 'team', 'all'].includes(req.nextUrl.searchParams.get('view') || '') ? req.nextUrl.searchParams.get('view')! : 'mine';
   const db = createAdminClient();
   const [tasks, visible, ops, schools] = await Promise.all([
-    db.from('ops_tasks').select('id, school_id, case_id, title, note, due_on, priority, status, owner_id, created_by, created_at, done_at').order('created_at', { ascending: false }).limit(3000),
+    pageAll((f, t) => db.from('ops_tasks').select('id, school_id, case_id, title, note, due_on, priority, status, owner_id, created_by, created_at, done_at').order('created_at', { ascending: false }).order('id').range(f, t)),
     visibleSchoolIds(db, await loadSight(db, op)), loadOperators(db), db.from('schools').select('id, name'),
   ]);
   if (tasks.error) return NextResponse.json({ error: tasks.error.message }, { status: 500 });
@@ -29,14 +30,15 @@ export async function GET(req: NextRequest) {
   const nameOf = new Map(names.map(u => [u.id as string, (u.name || u.email) as string]));
   const schoolOf = new Map((schools.data || []).map(s => [s.id as string, s.name as string]));
   const team = reportsOf(ops.filter(o => o.active).map(o => ({ id: o.id, managerId: o.managerId })), op.id);
-  const caseIds = [...new Set((tasks.data || []).map(t => t.case_id).filter(Boolean))] as string[];
-  const cases = caseIds.length ? (await db.from('ops_cases').select('id, number').in('id', caseIds)).data || [] : [];
-  const numberOf = new Map(cases.map(c => [c.id as string, c.number as number]));
+  const caseIds = [...new Set(tasks.data.map(t => t.case_id).filter(Boolean))] as string[];
+  const cases: { id: string; number: number }[] = [];
+  for (let i = 0; i < caseIds.length; i += 150) cases.push(...((await db.from('ops_cases').select('id, number').in('id', caseIds.slice(i, i + 150))).data || []));
+  const numberOf = new Map(cases.map(c => [c.id, c.number]));
   const today = todayIST();
   const rank = { overdue: 0, today: 1, upcoming: 2, no_date: 3 };
   const inSight = (t: { school_id: string | null; owner_id: string | null; created_by: string | null }) =>
     t.school_id ? !visible || visible.has(t.school_id) : t.owner_id === op.id || t.created_by === op.id || !visible;
-  const all = (tasks.data || []).filter(inSight)
+  const all = tasks.data.filter(inSight)
     .filter(t => view === 'all' || (view === 'team' ? !!t.owner_id && team.has(t.owner_id) : t.owner_id === op.id));
   const shape = (t: (typeof all)[number]) => ({
     id: t.id, title: t.title, note: t.note, dueOn: t.due_on, priority: t.priority, status: t.status, doneAt: t.done_at,

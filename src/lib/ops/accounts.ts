@@ -3,6 +3,7 @@ import { randomInt } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normClass, tempPassword, validatePeople, type PersonInput, type RowIssue } from './people';
 import { setTeacherSubjects } from '@/lib/subjects/server';
+import { pageAll } from './page';
 
 /**
  * Creates school accounts (admin / teacher / student / parent) with the
@@ -43,7 +44,7 @@ async function audit(admin: SupabaseClient, schoolId: string, actorId: string, a
 export async function schoolState(admin: SupabaseClient, schoolId: string) {
   const [{ data: classes }, { data: people }] = await Promise.all([
     admin.from('classes').select('id, name, metadata').eq('school_id', schoolId).order('name'),
-    admin.from('users').select('id, email, custom_student_id').eq('school_id', schoolId),
+    pageAll((f, t) => admin.from('users').select('id, email, custom_student_id').eq('school_id', schoolId).order('id').range(f, t)),
   ]);
   return {
     classes: (classes || []) as { id: string; name: string; metadata: Record<string, unknown> | null }[],

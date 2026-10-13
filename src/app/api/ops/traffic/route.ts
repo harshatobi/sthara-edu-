@@ -4,6 +4,7 @@ import { operatorFor } from '@/lib/ops/auth';
 import { featureLabel } from '@/lib/ai/pricing';
 import { SINCE, during, isSince } from '@/lib/debug/route';
 import { getPlatformSettings } from '@/lib/settings/server';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,10 +64,10 @@ export async function GET(req: NextRequest) {
     const lo = new Date(Date.parse(list[list.length - 1].at) - longest - 2000).toISOString();
     const hi = new Date(Date.parse(list[0].at) + 2000).toISOString();
     const [a, e] = await Promise.all([
-      db.from('ai_usage').select('user_id, at, feature, ok, latency_ms, error').in('user_id', users).gte('at', lo).lte('at', hi).limit(5000),
-      db.from('app_errors').select('user_id, at, fingerprint, message, route').in('user_id', users).gte('at', lo).lte('at', hi).limit(2000),
+      pageAll((f, t) => db.from('ai_usage').select('user_id, at, feature, ok, latency_ms, error').in('user_id', users.slice(0, 150)).gte('at', lo).lte('at', hi).order('id').range(f, t), 5000),
+      pageAll((f, t) => db.from('app_errors').select('user_id, at, fingerprint, message, route').in('user_id', users.slice(0, 150)).gte('at', lo).lte('at', hi).order('id').range(f, t), 3000),
     ]);
-    ai = a.data || []; errors = e.data || [];
+    ai = a.data; errors = e.data;
   }
 
   return NextResponse.json({

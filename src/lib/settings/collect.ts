@@ -27,16 +27,29 @@ async function repoMigrations(): Promise<string[] | null> {
   }
 }
 
+/**
+ * Accounts per school, counted in the database (ops_registry_counts). Reading the rows and counting here was cut
+ * short at 1,000 rows. On a database without the function, an exact count per school instead.
+ */
+async function headCounts(db: SupabaseClient): Promise<Map<string, number>> {
+  const { data, error } = await db.rpc('ops_registry_counts', { p_school: null });
+  if (!error) return new Map(((data || []) as { school_id: string; counts: { people?: number } }[]).map(r => [r.school_id, Number(r.counts?.people ?? 0)]));
+  const { data: schools } = await db.from('schools').select('id');
+  const pairs = await Promise.all((schools || []).map(async s => {
+    const { count } = await db.from('users').select('id', { count: 'exact', head: true }).eq('school_id', s.id);
+    return [s.id as string, count ?? 0] as const;
+  }));
+  return new Map(pairs);
+}
+
 /** Every school as the product enforces it, with head counts and school-admin holders. */
-export async function loadSchoolFacts(db: SupabaseClient): Promise<{ schools: SchoolFacts[]; duplicateCodes: string[] }> {
-  const [{ data: schools, error }, { data: people }, { data: grants }] = await Promise.all([
+export async function loadSchoolFacts(db: SupabaseClient, counted?: Map<string, number>): Promise<{ schools: SchoolFacts[]; duplicateCodes: string[] }> {
+  const [{ data: schools, error }, heads, { data: grants }] = await Promise.all([
     db.from('schools').select('id, name, institution_type, trial_expires_at, settings, created_at, updated_at').order('created_at', { ascending: false }),
-    db.from('users').select('school_id'),
+    counted ? Promise.resolve(counted) : headCounts(db),
     db.from('role_grants').select('user_id, school_id, expires_on').eq('role_key', 'school_admin').is('revoked_at', null),
   ]);
   if (error) throw error;
-  const heads = new Map<string, number>();
-  for (const p of people || []) if (p.school_id) heads.set(p.school_id, (heads.get(p.school_id) ?? 0) + 1);
   // Same validity rule as activeGrants() in src/lib/admin/rbac.ts (not revoked, not expired).
   const today = isoDay();
   const admins = new Map<string, number>();

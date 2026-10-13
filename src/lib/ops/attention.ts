@@ -32,6 +32,17 @@ export interface RegistrySchool extends SchoolFacts {
   classes: number;
   /** Classes whose subject list is empty. */
   classesWithoutSubjects: number;
+  /** Where it stands with Sthara: cases, follow-ups, primary contact, last contact, last sign-in. */
+  openCases?: number;
+  lateCases?: number;
+  unassignedCases?: number;
+  openTasks?: number;
+  overdueTasks?: number;
+  lastSignIn?: string | null;
+  lastActivity?: string | null;
+  contact?: { name: string; phone: string | null; email: string | null } | null;
+  /** The health score and band (set by the schools list). */
+  health?: { score: number | null; band: string } | null;
   /** Where the school sits and who owns it (set by the schools list; absent elsewhere). */
   state?: string | null;
   district?: string | null;

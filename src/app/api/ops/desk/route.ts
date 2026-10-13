@@ -5,6 +5,7 @@ import { QUEUES, byUrgency, inQueue, isCaseSource, isPriority, isQueue, slaState
 import { CASE_COLS, clocked, createCase, loadPicklist, type CaseRow } from '@/lib/ops/deskServer';
 import { loadOperators } from '@/lib/ops/org';
 import { can } from '@/lib/ops/roles';
+import { pageAll } from '@/lib/ops/page';
 import { canSeeSchool, loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 
 export const dynamic = 'force-dynamic';
@@ -25,10 +26,11 @@ export async function GET(req: NextRequest) {
   const school = UUID.test(sp.get('school') || '') ? sp.get('school')! : null;
   const q = (sp.get('q') || '').trim().toLowerCase().slice(0, 80);
   const db = createAdminClient();
-  let cq = db.from('ops_cases').select(CASE_COLS).order('created_at', { ascending: false }).limit(2000);
-  if (school) cq = cq.eq('school_id', school);
   const [cases, visible, schools, categories, ops] = await Promise.all([
-    cq, visibleSchoolIds(db, await loadSight(db, op)), db.from('schools').select('id, name, settings'), loadPicklist(db, 'case_category', false), loadOperators(db),
+    pageAll<CaseRow>((f, t) => {
+      const cq = db.from('ops_cases').select(CASE_COLS).order('created_at', { ascending: false }).order('id').range(f, t);
+      return school ? cq.eq('school_id', school) : cq;
+    }), visibleSchoolIds(db, await loadSight(db, op)), db.from('schools').select('id, name, settings'), loadPicklist(db, 'case_category', false), loadOperators(db),
   ]);
   if (cases.error) return NextResponse.json({ error: cases.error.message }, { status: 500 });
   const names = ops.length ? (await db.from('users').select('id, name, email').in('id', ops.map(o => o.id))).data || [] : [];
@@ -36,7 +38,7 @@ export async function GET(req: NextRequest) {
   const schoolOf = new Map((schools.data || []).map(s => [s.id as string, { name: s.name as string, code: (s.settings as { code?: string } | null)?.code ?? null }]));
 
   const now = Date.now();
-  const mine = ((cases.data || []) as CaseRow[]).filter(c => !visible || visible.has(c.school_id));
+  const mine = cases.data.filter(c => !visible || visible.has(c.school_id));
   const counts = Object.fromEntries(QUEUES.map(k => [k, mine.filter(c => inQueue(clocked(c), k, op.id, now)).length]));
   const num = /^(case-)?(\d+)$/.exec(q)?.[2];
   const shown = mine

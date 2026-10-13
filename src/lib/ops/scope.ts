@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { reachOf, reportsOf, type OperatorRole } from './roles';
 import { defaultOwner, matchTerritory, sees, subtree, type Sight, type Territory } from './territories';
+import { pageAll } from './page';
 
 /**
  * What one operator can see, read from the database: the server half of roles.ts and
@@ -21,8 +22,8 @@ export async function loadTerritories(db: Db): Promise<Territory[]> {
 }
 
 export async function loadAccounts(db: Db): Promise<Map<string, AccountRow>> {
-  const { data } = await db.from('ops_accounts').select('school_id, state, district, territory_id, owner_id');
-  return new Map((data || []).map(a => [a.school_id as string, {
+  const { data } = await pageAll((f, t) => db.from('ops_accounts').select('school_id, state, district, territory_id, owner_id').order('school_id').range(f, t));
+  return new Map(data.map(a => [a.school_id as string, {
     schoolId: a.school_id, state: a.state, district: a.district, territoryId: a.territory_id, ownerId: a.owner_id,
   }]));
 }

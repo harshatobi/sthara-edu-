@@ -31,7 +31,8 @@ import { ControlsTab } from './controls';
 import { RelationshipTab } from './crm';
 import { useCan } from '../../OpsShell';
 import { SubjectsTab } from './subjects';
-import { HealthCard, HealthTab, healthOf, type SchoolMetrics } from '../../health';
+import { HealthBadge, HealthCard, HealthTab, healthOf, type SchoolMetrics } from '../../health';
+import type { Health } from '@/lib/ops/health';
 
 interface JournalRow { id: number; at: string; actor_email: string | null; key: string; old_value: unknown; new_value: unknown; reason: string }
 interface AuditRow { id: number; at: string; actor: string | null; actor_role: string | null; action: string; table_name: string; row_id: string | null }
@@ -46,6 +47,8 @@ interface Data {
   guardians: { studentsWithParent: string[]; parentsWithChild: string[] } | null;
   metrics: SchoolMetrics | null;
   usdToInr: number;
+  rosterCapped?: boolean;
+  account?: { state: string | null; district: string | null; territory: string | null; owner: string | null };
 }
 
 /** Tabs that set a school up or fix its accounts: for roles that manage schools. */
@@ -55,6 +58,20 @@ const TABS = [
   ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['activity', 'Activity'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
+
+/**
+ * The tabs in the order a person reaches for them, grouped so the page has seven sections rather than thirteen.
+ * A group with one tab shows no second row.
+ */
+const GROUPS: { key: string; label: string; tabs: [Tab, string][] }[] = [
+  { key: 'overview', label: 'Overview', tabs: [['overview', 'Overview']] },
+  { key: 'crm', label: 'Account 360', tabs: [['crm', 'Account 360']] },
+  { key: 'health', label: 'Health', tabs: [['health', 'Health']] },
+  { key: 'commercial', label: 'Subscription', tabs: [['access', 'Plan and access'], ['account', 'Territory, owner and record access']] },
+  { key: 'setup', label: 'Setup', tabs: [['classes', 'Classes'], ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching']] },
+  { key: 'tools', label: 'Support tools', tabs: [['support', 'Fixes'], ['controls', 'Controls and checks'], ['records', 'Records']] },
+  { key: 'activity', label: 'Activity', tabs: [['activity', 'Activity']] },
+];
 
 /** Platform Manager > Schools > one school: everything about running it. */
 export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
@@ -74,7 +91,9 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
   const can = useCan();
   const [inspect, setInspect] = useState<{ table: string; id: string } | null>(null);
   const manage = can('schools.manage'), breakglass = can('breakglass');
-  const tabs = TABS.filter(([k]) => (manage || !MANAGE_TABS.includes(k)) && (breakglass || k !== 'records') && (can('crm.read') || k !== 'crm'));
+  const allowed = new Set(TABS.filter(([k]) => (manage || !MANAGE_TABS.includes(k)) && (breakglass || k !== 'records') && (can('crm.read') || k !== 'crm')).map(([k]) => k));
+  const groups = GROUPS.map(g => ({ ...g, tabs: g.tabs.filter(([k]) => allowed.has(k)) })).filter(g => g.tabs.length);
+  const group = groups.find(g => g.tabs.some(([k]) => k === tab)) ?? groups[0];
 
   const setTab = (t: Tab) => { setTabState(t); router.replace(`/ops/schools/${schoolId}?tab=${t}`, { scroll: false }); };
 
@@ -135,9 +154,17 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
         <div className="note info" style={{ marginBottom: 18 }}>School created. Set up its classes and subjects next, then add people.</div>
       )}
 
-      <div className="seg" role="tablist" aria-label="School sections" style={{ marginBottom: 18 }}>
-        {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+      {data && f && <Highlights d={data} health={data.metrics ? healthOf(f, data.metrics, data.usdToInr) : null} go={setTab} canCrm={can('crm.read')} />}
+      {data?.rosterCapped && <div className="note" style={{ marginBottom: 18 }}>This school has more than 20,000 accounts: the roster below shows the first 20,000. Counts are exact.</div>}
+
+      <div className="seg" role="tablist" aria-label="School sections" style={{ marginBottom: group && group.tabs.length > 1 ? 10 : 18 }}>
+        {groups.map(g => <button key={g.key} role="tab" aria-selected={g === group} className={g === group ? 'on' : ''} onClick={() => setTab(g.tabs.some(([k]) => k === tab) ? tab : g.tabs[0][0])}>{g.label}</button>)}
       </div>
+      {group && group.tabs.length > 1 && (
+        <div className="seg ops-subseg" role="tablist" aria-label={group.label} style={{ marginBottom: 18 }}>
+          {group.tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+        </div>
+      )}
 
       {!data || !f ? (err ? null : <Skeleton h={360} style={{ borderRadius: 20 }} />) : (
         <>
@@ -176,6 +203,29 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────────
+
+/** The few facts everyone asks about a school first, on every tab. */
+function Highlights({ d, health, go, canCrm }: { d: Data; health: Health | null; go: (t: Tab) => void; canCrm: boolean }) {
+  const f = d.facts;
+  const students = f.roles.student ?? 0;
+  const value = annualValue(f, students);
+  const cell = (label: string, value: React.ReactNode, sub?: React.ReactNode, onClick?: () => void) => (
+    <button type="button" className="ops-hl" onClick={onClick} disabled={!onClick}>
+      <span className="lb">{label}</span><span className="vl">{value}</span>{sub ? <span className="nt">{sub}</span> : null}
+    </button>
+  );
+  return (
+    <div className="ops-hls" role="group" aria-label="School summary">
+      {cell('Health', health ? <HealthBadge h={health} /> : 'Not available', health?.findings[0]?.title, health ? () => go('health') : undefined)}
+      {cell('Students', num(students), f.contractStudents ? `of ${num(f.contractStudents)} contracted` : `${num(f.roles.teacher ?? 0)} teachers`, () => go('overview'))}
+      {cell('Annual value', inr(value), f.plan === 'pilot' ? (f.trialExpired ? 'Pilot ended' : f.trialDaysLeft !== null ? `Pilot: ${f.trialDaysLeft} days left` : 'Pilot') : PLAN_INFO[f.plan].label, () => go('access'))}
+      {cell('Owner', d.account?.owner ?? 'Nobody', d.account?.territory ?? 'Not in a territory', () => go('account'))}
+      {cell('Cases', f.openCases ? `${num(f.openCases)} open` : 'None open', f.lateCases ? <b style={{ color: 'var(--red)' }}>{f.lateCases} past deadline</b> : f.overdueTasks ? `${f.overdueTasks} follow-up${f.overdueTasks === 1 ? '' : 's'} overdue` : f.openTasks ? `${f.openTasks} follow-up${f.openTasks === 1 ? '' : 's'}` : 'No follow-ups', canCrm ? () => go('crm') : undefined)}
+      {cell('Primary contact', f.contact?.name ?? 'Not set', f.contact ? f.contact.phone || f.contact.email || '' : canCrm ? 'Add one in Account 360' : '', canCrm ? () => go('crm') : undefined)}
+      {cell('Last sign-in', f.lastSignIn ? fmtDate(f.lastSignIn) : 'Never', f.lastActivity ? `Last contact ${fmtDate(f.lastActivity)}` : 'No contact logged', () => go('controls'))}
+    </div>
+  );
+}
 
 function OverviewTab({ d, go }: { d: Data; go: (t: Tab) => void }) {
   const f = d.facts;

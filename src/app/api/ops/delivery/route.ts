@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
 import { can } from '@/lib/ops/roles';
+import { pageAll } from '@/lib/ops/page';
 import { featureLabel } from '@/lib/ai/pricing';
 import { APP_JOBS, isAppJob, runJob } from '@/lib/debug/jobs';
 import { SINCE, isRateLimited, isSince, percentile } from '@/lib/debug/route';
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const UUID = /^[0-9a-f-]{36}$/i;
+const AI_MAX = 30_000, NOTE_MAX = 50_000;
 
 /**
  * GET /api/ops/delivery?since=15m|1h|6h|24h|7d&school= — what the platform sent and ran:
@@ -29,17 +31,24 @@ export async function GET(req: NextRequest) {
   const school = UUID.test(sp.get('school') || '') ? sp.get('school')! : null;
   const from = new Date(Date.now() - SINCE[since] * 60_000).toISOString();
   const db = createAdminClient();
-  let aiQ = db.from('ai_usage').select('id, at, feature, model, school_id, ok, latency_ms, error').gte('at', from);
-  let waQ = db.from('whatsapp_log').select('id, created_at, direction, kind, status, error, school_id, phone_e164').gte('created_at', from);
-  let noteQ = db.from('notifications').select('type, read').gte('created_at', from);
-  let remQ = db.from('fee_reminders').select('channel, recipients').gte('sent_at', from);
-  if (school) { aiQ = aiQ.eq('school_id', school); waQ = waQ.eq('school_id', school); noteQ = noteQ.eq('school_id', school); remQ = remQ.eq('school_id', school); }
-
+  // Paged: one request returns at most 1,000 rows.
   const [ai, wa, notes, reminders, jobs, runs, migrations, schools] = await Promise.all([
-    aiQ.order('at', { ascending: false }).limit(10_000),
-    waQ.order('created_at', { ascending: false }).limit(2000),
-    noteQ.limit(20_000),
-    remQ.limit(10_000),
+    pageAll((f, t) => {
+      const q = db.from('ai_usage').select('id, at, feature, model, school_id, ok, latency_ms, error').gte('at', from);
+      return (school ? q.eq('school_id', school) : q).order('at', { ascending: false }).order('id').range(f, t);
+    }, AI_MAX),
+    pageAll((f, t) => {
+      const q = db.from('whatsapp_log').select('id, created_at, direction, kind, status, error, school_id, phone_e164').gte('created_at', from);
+      return (school ? q.eq('school_id', school) : q).order('created_at', { ascending: false }).order('id').range(f, t);
+    }, 5000),
+    pageAll((f, t) => {
+      const q = db.from('notifications').select('type, read').gte('created_at', from);
+      return (school ? q.eq('school_id', school) : q).order('id').range(f, t);
+    }, NOTE_MAX),
+    pageAll((f, t) => {
+      const q = db.from('fee_reminders').select('channel, recipients').gte('sent_at', from);
+      return (school ? q.eq('school_id', school) : q).order('id').range(f, t);
+    }, 20_000),
     db.rpc('ops_jobs'),
     db.from('ops_job_runs').select('id, job, started_at, finished_at, ok, detail, triggered_by').order('started_at', { ascending: false }).limit(100),
     db.rpc('ops_migrations'),
@@ -47,7 +56,7 @@ export async function GET(req: NextRequest) {
   ]);
   const schoolName = Object.fromEntries((schools.data || []).map(s => [s.id, s.name]));
 
-  const aiRows = ai.data || [];
+  const aiRows = ai.data;
   const byFeature = new Map<string, typeof aiRows>();
   for (const r of aiRows) byFeature.set(r.feature, [...(byFeature.get(r.feature) ?? []), r]);
   const aiStats = [...byFeature].map(([feature, rows]) => {
@@ -58,9 +67,9 @@ export async function GET(req: NextRequest) {
     };
   }).sort((a, b) => b.failed - a.failed || b.calls - a.calls);
 
-  const waRows = wa.data || [];
+  const waRows = wa.data;
   const count = <T,>(rows: T[], key: (r: T) => string) => Object.entries(rows.reduce<Record<string, number>>((m, r) => { const k = key(r); m[k] = (m[k] ?? 0) + 1; return m; }, {})).map(([k, n]) => ({ key: k, n })).sort((a, b) => b.n - a.n);
-  const noteRows = notes.data || [];
+  const noteRows = notes.data;
   const byType = new Map<string, { n: number; unread: number }>();
   for (const n of noteRows) { const x = byType.get(n.type || 'general') ?? { n: 0, unread: 0 }; x.n += 1; if (!n.read) x.unread += 1; byType.set(n.type || 'general', x); }
 
@@ -68,7 +77,7 @@ export async function GET(req: NextRequest) {
     since, from, schools: schoolName, canManage: can(op.role, 'debug.manage'),
     ai: {
       calls: aiRows.length, failed: aiRows.filter(r => !r.ok).length, rateLimited: aiRows.filter(r => !r.ok && isRateLimited(r.error)).length,
-      capped: aiRows.length === 10_000, stats: aiStats,
+      capped: ai.capped, stats: aiStats,
       failures: aiRows.filter(r => !r.ok).slice(0, 100).map(r => ({
         id: r.id, at: r.at, feature: r.feature, label: featureLabel(r.feature), model: r.model, schoolId: r.school_id,
         latencyMs: r.latency_ms, error: r.error, rateLimited: isRateLimited(r.error),
@@ -85,8 +94,8 @@ export async function GET(req: NextRequest) {
     },
     inApp: {
       notifications: [...byType].map(([type, v]) => ({ type, ...v })).sort((a, b) => b.n - a.n),
-      notificationsCapped: noteRows.length === 20_000,
-      reminders: reminders.error ? [] : count(reminders.data || [], r => r.channel || 'unknown'),
+      notificationsCapped: notes.capped,
+      reminders: reminders.error ? [] : count(reminders.data, r => r.channel || 'unknown'),
     },
     jobs: {
       scheduler: jobs.error ? null : jobs.data,

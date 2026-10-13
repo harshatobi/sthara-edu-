@@ -6,11 +6,11 @@ import { teaches } from './access';
 import { detectAbsenceStreaks, detectExamAbsences, istDay, DAY_MS } from './rules';
 import { classTeachersOf, raise } from './raise';
 import { notifyGuardians } from '@/lib/parent/notify';
+import { BACKDATE_DAYS } from '@/lib/attendance/register';
 
 export type Mark = 'present' | 'absent' | 'late' | 'excused';
 const STATUSES = new Set<Mark>(['present', 'absent', 'late', 'excused']);
-/** How far back a register can be marked or corrected. */
-export const BACKDATE_DAYS = 7;
+export { BACKDATE_DAYS };
 
 export class RegisterError extends Error { constructor(msg: string, public status = 400) { super(msg); } }
 

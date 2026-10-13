@@ -109,3 +109,20 @@ body {
     transform: none !important;
   }
 }
+
+/*
+ * Every printed or PDF-exported page in the app carries "Powered by Sthara" at the foot, in the page margin so
+ * it never covers content and repeats on every sheet. Documents that print edge to edge (the board pack's
+ * named page with no margin) carry it in their own footer instead. Pages opened in their own print window
+ * (components/schedule/print.ts) add the same rule from POWERED_BY_PAGE_CSS.
+ */
+@media print {
+  @page {
+    @bottom-center {
+      content: "Powered by Sthara  \00B7  sthara.in";
+      font: 600 7.5pt 'Plus Jakarta Sans', system-ui, sans-serif;
+      color: #7A8699;
+      vertical-align: middle;
+    }
+  }
+}

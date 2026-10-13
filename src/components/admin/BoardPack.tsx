@@ -12,9 +12,12 @@ import { boardPackRows } from '@/lib/admin/boardPack';
 import { fmtDate, inr, inrShort, isoDay, pct, plural } from '@/lib/admin/format';
 import { probe } from '@/lib/admin/probe';
 import { DeskGate, PageSkeleton, downloadCsv } from './kit';
+import { useSchoolAttendance } from './AttendanceAdmin';
+import { TrendChart, weeklyPts } from '@/components/canon/TrendLine';
+import { MIN_PCT } from '@/lib/attendance/register';
 
 /**
- * The board pack as a designed A4 document (four pages), printed to PDF from
+ * The board pack as a designed A4 document (five pages), printed to PDF from
  * the browser. Everything is aggregate: it's meant to leave the school, so no
  * student is named (DPDP, minors' data). Staff appear by name on the
  * workforce page, as they would in any board paper.
@@ -23,10 +26,13 @@ export default function BoardPack() {
   return <DeskGate need="boardpack.view" skeleton={<PageSkeleton />}>{desk => <Pack desk={desk} />}</DeskGate>;
 }
 
-const PAGES = 4;
+const PAGES = 5;
 /** One colour scale for the whole pack: the TML specification's mastery bands, matching the key on page 2. */
 const hmColor = (v: number) => BANDS.find(b => b.key === bandOf(v))!.color;
-/** Rows that fit on page 4; the spreadsheet carries everyone. */
+/** Rows that fit on page 5; the spreadsheet carries everyone. */
+/** What fits beside the trend chart on the attendance page (one A4 sheet, nothing clipped); the spreadsheet carries the rest. */
+const CLASS_ROWS = 10;
+const GRADE_ROWS = 10;
 const TEACHER_ROWS = 12;
 const concern = (t: TeacherRow) => (t.activity === 'none' ? 0 : 1) * 1000 + (t.delta ?? 0) * 10 - t.backlog;
 
@@ -73,6 +79,7 @@ function Meter({ value, color }: { value: number; color?: string }) {
 const Nothing = ({ children }: { children: ReactNode }) => <p className="bp-none">{children}</p>;
 
 function Pack({ desk }: { desk: AdminDesk }) {
+  const { att } = useSchoolAttendance(desk);
   const { academics: ac, fees, workforce: wf, wellness: wl, admissions: adm, compliance: co } = desk;
   const L = fees.totals;
   const today = isoDay();
@@ -93,7 +100,7 @@ function Pack({ desk }: { desk: AdminDesk }) {
       <div className="bp-bar-top no-print">
         <Link className="btn" href="/admin"><ArrowLeft size={15} weight="bold" /> Command Centre</Link>
         <div style={{ flex: 1 }} className="muted">Board pack · {PAGES} pages · A4. Use &ldquo;Save as PDF&rdquo; in the print dialog.</div>
-        <button className="btn" onClick={() => downloadCsv(`${desk.school.name.replace(/\W+/g, '-')}-board-pack-${today}.csv`, boardPackRows(desk))}>
+        <button className="btn" onClick={() => downloadCsv(`${desk.school.name.replace(/\W+/g, '-')}-board-pack-${today}.csv`, boardPackRows(desk, att))}>
           <DownloadSimple size={16} /> Spreadsheet
         </button>
         <button className="btn pri" onClick={() => window.print()}><FilePdf size={16} weight="bold" /> Download PDF</button>
@@ -118,8 +125,9 @@ function Pack({ desk }: { desk: AdminDesk }) {
             <Stat label="EVIDENCE COVERAGE" value={evidence !== null ? `${evidence}%` : '—'} note={`${ac.evidenced} of ${desk.students.length} with graded work`} />
             <Stat label="FEE COLLECTION" value={L.collectionRate !== null ? `${Math.round(L.collectionRate)}%` : '—'}
               note={L.billed ? `${inrShort(L.collected)} of ${inrShort(L.billed)} billed` : 'Nothing billed yet'} />
-            <Stat label="TEACHING STAFF" value={wf.teachers.length} note={wf.ratio ? `1:${wf.ratio} student-teacher ratio` : '—'} />
-            <Stat label="COMPLIANCE ITEMS OPEN" value={co.flags.length} tone={co.flags.length ? '#B45309' : '#0B7A54'} note={co.flags.length ? 'DPDP, see page 4' : 'None'} />
+            <Stat label="ATTENDANCE THIS SESSION" value={att?.session.pct != null ? `${att.session.pct}%` : '—'} tone={att?.session.pct != null && att.session.pct < MIN_PCT ? '#B4123C' : undefined}
+              note={att ? (att.any ? `${att.underCount} ${att.underCount === 1 ? 'student' : 'students'} under ${MIN_PCT}%` : 'No registers marked yet') : 'Loading'} />
+            <Stat label="COMPLIANCE ITEMS OPEN" value={co.flags.length} tone={co.flags.length ? '#B45309' : '#0B7A54'} note={co.flags.length ? 'DPDP, see page 5' : 'None'} />
           </div>
 
           <h3 className="bp-h3">For the board&apos;s attention</h3>
@@ -205,8 +213,50 @@ function Pack({ desk }: { desk: AdminDesk }) {
         </p>
       </Page>
 
-      {/* ── 3. Finance & admissions ───────────────────────────────── */}
+      {/* ── 3. Attendance ─────────────────────────────────────────── */}
       <Page n={3} desk={desk}>
+        <Head kicker="ATTENDANCE" title="Who is in school"
+          sub={`From the class registers. Attendance % is days present or late, of days marked. CBSE expects ${MIN_PCT}% for a student to sit the board exams.`} />
+        {!att ? <Nothing>Loading attendance…</Nothing> : !att.any ? <Nothing>No class register has been marked yet this session.</Nothing> : (
+          <>
+            <div className="bp-grid4">
+              <Stat label="THIS SESSION" value={att.session.pct !== null ? `${att.session.pct}%` : '—'} tone={att.session.pct !== null && att.session.pct < MIN_PCT ? '#B4123C' : undefined} note={`${att.session.marked.toLocaleString('en-IN')} marks`} />
+              <Stat label="THIS MONTH" value={att.month.pct !== null ? `${att.month.pct}%` : '—'} note={`${att.month.absent} absences, ${att.month.late} late`} />
+              <Stat label="REGISTERS TODAY" value={`${att.classesMarked}/${att.classes.length}`} tone={att.classesMarked < att.classes.length ? '#B45309' : '#0B7A54'} note={att.today.pct !== null ? `${att.today.pct}% in school` : 'None marked yet'} />
+              <Stat label={`UNDER ${MIN_PCT}%`} value={att.underCount} tone={att.underCount ? '#B4123C' : '#0B7A54'} note="Students, this session" />
+            </div>
+            <h3 className="bp-h3">Week by week</h3>
+            <div className="bp-trend"><TrendChart points={weeklyPts(att.weeks)} title="School weekly attendance this session" /></div>
+            <div className="bp-cols">
+              <div>
+                <h3 className="bp-h3">By grade</h3>
+                {att.grades.slice(0, GRADE_ROWS).map(g => (
+                  <div className="bp-row" key={g.grade}>
+                    <b className="w80">Grade {g.grade}</b>
+                    {g.session.pct !== null ? <Meter value={g.session.pct} color={g.session.pct < MIN_PCT ? '#E11D48' : '#2F6BFF'} /> : <div className="bp-bar" />}
+                    <b className="w44 r">{g.session.pct !== null ? `${g.session.pct}%` : '—'}</b>
+                  </div>
+                ))}
+                {att.grades.length > GRADE_ROWS && <p className="bp-foot-note">Grades {att.grades[0].grade} to {att.grades[GRADE_ROWS - 1].grade} shown; the spreadsheet has all {att.grades.length}.</p>}
+              </div>
+              <div>
+                <h3 className="bp-h3">Lowest attendance</h3>
+                <table className="bp-tbl">
+                  <thead><tr><th>Class</th><th className="r">Month</th><th className="r">Session</th><th className="r">Under {MIN_PCT}%</th></tr></thead>
+                  <tbody>{[...att.classes].sort((a, b) => (a.session.pct ?? 101) - (b.session.pct ?? 101)).slice(0, CLASS_ROWS).map(c => (
+                    <tr key={c.cls}><td>{c.cls}</td><td className="r">{c.month.pct !== null ? `${c.month.pct}%` : '—'}</td>
+                      <td className="r" style={{ color: c.session.pct !== null && c.session.pct < MIN_PCT ? '#B4123C' : undefined }}>{c.session.pct !== null ? `${c.session.pct}%` : '—'}</td><td className="r">{c.under}</td></tr>
+                  ))}</tbody>
+                </table>
+                {att.classes.length > CLASS_ROWS && <p className="bp-foot-note">The {CLASS_ROWS} lowest of {att.classes.length} classes; the spreadsheet lists every class.</p>}
+              </div>
+            </div>
+          </>
+        )}
+      </Page>
+
+      {/* ── 4. Finance & admissions ───────────────────────────────── */}
+      <Page n={4} desk={desk}>
         <Head kicker="FINANCE & ADMISSIONS" title="Fees and the next intake"
           sub={`Fee ledger for AY ${desk.session.replace('-', '–')}, reconciled to issued receipts. Admissions pipeline for AY ${adm.session.replace('-', '–')}.`} />
         <div className="bp-grid4">
@@ -264,8 +314,8 @@ function Pack({ desk }: { desk: AdminDesk }) {
         ) : <Nothing>No applicants recorded for the next intake yet.</Nothing>}
       </Page>
 
-      {/* ── 4. People & compliance ────────────────────────────────── */}
-      <Page n={4} desk={desk}>
+      {/* ── 5. People & compliance ────────────────────────────────── */}
+      <Page n={5} desk={desk}>
         <Head kicker="PEOPLE & COMPLIANCE" title="Staff, wellbeing and data protection"
           sub="Teaching activity is measured from the work teachers do in Sthara. Wellbeing is shown only as anonymised aggregates." />
         <h3 className="bp-h3">Teaching staff</h3>

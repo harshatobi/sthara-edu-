@@ -157,12 +157,14 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
       {data && f && <Highlights d={data} health={data.metrics ? healthOf(f, data.metrics, data.usdToInr) : null} go={setTab} canCrm={can('crm.read')} />}
       {data?.rosterCapped && <div className="note" style={{ marginBottom: 18 }}>This school has more than 20,000 accounts: the roster below shows the first 20,000. Counts are exact.</div>}
 
-      <div className="seg" role="tablist" aria-label="School sections" style={{ marginBottom: group && group.tabs.length > 1 ? 10 : 18 }}>
+      <div style={{ marginBottom: group && group.tabs.length > 1 ? 10 : 18 }}><div className="seg" role="tablist" aria-label="School sections">
         {groups.map(g => <button key={g.key} role="tab" aria-selected={g === group} className={g === group ? 'on' : ''} onClick={() => setTab(g.tabs.some(([k]) => k === tab) ? tab : g.tabs[0][0])}>{g.label}</button>)}
-      </div>
+      </div></div>
       {group && group.tabs.length > 1 && (
-        <div className="seg ops-subseg" role="tablist" aria-label={group.label} style={{ marginBottom: 18 }}>
-          {group.tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+        <div style={{ marginBottom: 18 }}>
+          <div className="seg ops-subseg" role="tablist" aria-label={group.label}>
+            {group.tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+          </div>
         </div>
       )}
 

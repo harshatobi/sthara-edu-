@@ -447,6 +447,9 @@ export function TeachingStep({ schoolId, classes, people, onSaved }: { schoolId:
 }
 
 // ── Step 4: roster & credentials ─────────────────────────────────────────────
+/** Rows drawn at once: a 2,000-account roster in one go freezes the page. */
+const ROSTER_SHOWN = 200;
+
 export function RosterStep({ schoolId, people, guardians, openSupport, onIssued, onDeleted }: {
   schoolId: string; people: Person[];
   /** Verified guardian links (null when they couldn't be loaded: no flags are shown then). */
@@ -500,7 +503,8 @@ export function RosterStep({ schoolId, people, guardians, openSupport, onIssued,
         </div>
       )}
       <input className="cmp-in" style={{ margin: '4px 0 8px' }} placeholder="Search by name, email, class or roll number" aria-label="Search the roster" value={q} onChange={e => setQ(e.target.value)} />
-      {list.length === 0 ? <Empty icon={<UsersThree size={30} weight="duotone" />} title={people.length ? 'Nobody matches' : 'Nobody here yet'}>{people.length ? 'Try another search or role.' : 'Use Add people above.'}</Empty> : list.map(p => (
+      {list.length > ROSTER_SHOWN && <p className="muted" style={{ fontSize: 13, margin: '4px 0 10px' }}>Showing the first {ROSTER_SHOWN} of {list.length.toLocaleString('en-IN')}. Search, or pick a role, to find someone.</p>}
+      {list.length === 0 ? <Empty icon={<UsersThree size={30} weight="duotone" />} title={people.length ? 'Nobody matches' : 'Nobody here yet'}>{people.length ? 'Try another search or role.' : 'Use Add people above.'}</Empty> : list.slice(0, ROSTER_SHOWN).map(p => (
         <div key={p.id} className="row">
           <Chip tone={ROLE_TONE[p.role] ?? 'n'}><span style={{ minWidth: 56, textAlign: 'center' }}>{p.role.toUpperCase()}</span></Chip>
           <div style={{ flex: 1, minWidth: 0 }}>

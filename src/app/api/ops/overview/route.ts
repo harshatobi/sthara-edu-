@@ -8,6 +8,8 @@ import { loadRegistry } from '@/lib/ops/registry';
 import { can } from '@/lib/ops/roles';
 import { loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 import { sees } from '@/lib/ops/territories';
+import { inQueue, slaState } from '@/lib/ops/desk';
+import { CASE_COLS, clocked, type CaseRow } from '@/lib/ops/deskServer';
 import { usageWindow } from '@/lib/ai/window';
 import { USD_TO_INR } from '@/lib/ai/pricing';
 
@@ -42,6 +44,20 @@ export async function GET(req: NextRequest) {
       db.rpc('ops_subject_metrics', { p_school: null }),
     ]);
     const registry = allSchools.filter(s => inSight(s.id));
+    // The service desk's pulse, for roles that work it (no table on a database older than ops_crm: then nothing).
+    let desk: { late: number; soon: number; unassigned: number } | undefined;
+    if (can(op.role, 'desk.read')) {
+      const { data: open, error: deskErr } = await db.from('ops_cases').select(CASE_COLS).not('status', 'in', '(resolved,closed)').limit(2000);
+      if (!deskErr) {
+        const live = ((open || []) as CaseRow[]).filter(c => inSight(c.school_id)).map(clocked);
+        const t = Date.now();
+        desk = {
+          late: live.filter(c => slaState(c, t).level === 'breached').length,
+          soon: live.filter(c => slaState(c, t).level === 'soon').length,
+          unassigned: live.filter(c => inQueue(c, 'unassigned', op.id, t)).length,
+        };
+      }
+    }
     const subjectsBySchool = new Map(subjectMetrics.error ? [] : ((subjectMetrics.data || []) as { school_id: string; metrics: Record<string, number> }[]).map(r => [r.school_id, r.metrics]));
     // The error log's pulse (tables may not exist yet on an older database: then no error items).
     const openGroups = errorGroups.error || !can(op.role, 'errors.read') ? [] : errorGroups.data || [];
@@ -73,7 +89,7 @@ export async function GET(req: NextRequest) {
     const totals = !can(op.role, 'usage.read') ? null : (usage.data as { totals?: { cost?: number; calls?: number; failed?: number } } | null)?.totals ?? null;
     return NextResponse.json({
       schools: registry,
-      attention: buildAttention({ schools: registry, health: healthItems, newEnquiries, pendingRequests, errors }),
+      attention: buildAttention({ schools: registry, health: healthItems, newEnquiries, pendingRequests, errors, desk }),
       errors: { open24h: errors.open24h, new24h: errors.new24h },
       requests: { pending: pendingRequests.reduce((n, p) => n + p.count, 0) },
       health: summarise(healthItems),

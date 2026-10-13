@@ -28,6 +28,7 @@ import { SupportTab } from './support';
 import { AccountTab } from './account';
 import { RecordsTab } from './records';
 import { ControlsTab } from './controls';
+import { RelationshipTab } from './crm';
 import { useCan } from '../../OpsShell';
 import { SubjectsTab } from './subjects';
 import { HealthCard, HealthTab, healthOf, type SchoolMetrics } from '../../health';
@@ -50,7 +51,7 @@ interface Data {
 /** Tabs that set a school up or fix its accounts: for roles that manage schools. */
 const MANAGE_TABS: readonly string[] = ['classes', 'subjects', 'people', 'teaching', 'support'];
 const TABS = [
-  ['overview', 'Overview'], ['health', 'Health'], ['access', 'Subscription & access'], ['account', 'Ownership & access'], ['controls', 'Controls'], ['records', 'Records'], ['classes', 'Classes & subjects'],
+  ['overview', 'Overview'], ['crm', 'Relationship'], ['health', 'Health'], ['access', 'Subscription & access'], ['account', 'Ownership & access'], ['controls', 'Controls'], ['records', 'Records'], ['classes', 'Classes & subjects'],
   ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['activity', 'Activity'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -73,7 +74,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
   const can = useCan();
   const [inspect, setInspect] = useState<{ table: string; id: string } | null>(null);
   const manage = can('schools.manage'), breakglass = can('breakglass');
-  const tabs = TABS.filter(([k]) => (manage || !MANAGE_TABS.includes(k)) && (breakglass || k !== 'records'));
+  const tabs = TABS.filter(([k]) => (manage || !MANAGE_TABS.includes(k)) && (breakglass || k !== 'records') && (can('crm.read') || k !== 'crm'));
 
   const setTab = (t: Tab) => { setTabState(t); router.replace(`/ops/schools/${schoolId}?tab=${t}`, { scroll: false }); };
 
@@ -146,6 +147,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
             : <div className="note err">School health isn&apos;t available: the ops_school_metrics function is missing from the database.</div>)}
           {tab === 'access' && <AccessTab key={`${f.id}:${f.updatedAt}`} f={f} onSaved={msg => { toast(msg); void load(); }} onDeleted={() => router.push('/ops/schools')} />}
           {tab === 'account' && <AccountTab schoolId={schoolId} onChanged={toast} />}
+          {tab === 'crm' && <RelationshipTab schoolId={schoolId} onChanged={toast} />}
           {tab === 'controls' && <ControlsTab schoolId={schoolId} onChanged={toast}
             go={t => setTab(manage ? t : 'overview')}
             inspect={breakglass ? (table, id) => { setInspect({ table, id }); setTab('records'); } : null} />}

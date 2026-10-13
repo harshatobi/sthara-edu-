@@ -46,6 +46,9 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 export interface ErrorPulse { open24h: number; new24h: number; spikes: { fingerprint: string; message: string; lastHour: number }[] }
 export const SPIKE_PER_HOUR = 20;
 
+/** The service desk's pulse: cases past a deadline, close to one, and with nobody on them. */
+export interface DeskPulse { late: number; soon: number; unassigned: number }
+
 /** Login requests a school is waiting on (Sthara creates every login). */
 export interface PendingRequests { schoolId: string; count: number; oldestDays: number }
 
@@ -55,6 +58,7 @@ export function buildAttention(x: {
   newEnquiries: number;
   pendingRequests?: PendingRequests[];
   errors?: ErrorPulse;
+  desk?: DeskPulse;
 }): AttentionItem[] {
   const out: AttentionItem[] = [];
   const log: AttentionAction = { kind: 'open', href: '/ops/errors', label: 'Open error log' };
@@ -156,6 +160,31 @@ export function buildAttention(x: {
         actions: [open('classes', 'Add subjects')],
       });
     }
+  }
+  const desk: AttentionAction = { kind: 'open', href: '/ops/desk', label: 'Open the service desk' };
+  if (x.desk && x.desk.late > 0) {
+    out.push({
+      id: 'desk-late', severity: 'crit',
+      title: `${plural(x.desk.late, 'case')} past ${x.desk.late === 1 ? 'its' : 'their'} deadline`,
+      detail: 'A school is waiting longer than promised for a first reply or a fix.',
+      actions: [desk],
+    });
+  }
+  if (x.desk && x.desk.soon > 0) {
+    out.push({
+      id: 'desk-soon', severity: 'warn',
+      title: `${plural(x.desk.soon, 'case')} close to ${x.desk.soon === 1 ? 'its' : 'their'} deadline`,
+      detail: 'Inside the last hour, or the last fifth of the time allowed.',
+      actions: [desk],
+    });
+  }
+  if (x.desk && x.desk.unassigned > 0) {
+    out.push({
+      id: 'desk-unassigned', severity: x.desk.late || x.desk.soon ? 'info' : 'warn',
+      title: `${plural(x.desk.unassigned, 'open case')} with nobody on ${x.desk.unassigned === 1 ? 'it' : 'them'}`,
+      detail: 'Raised by a school and not yet picked up.',
+      actions: [desk],
+    });
   }
   if (x.newEnquiries > 0) {
     out.push({

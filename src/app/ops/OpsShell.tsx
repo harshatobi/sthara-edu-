@@ -15,6 +15,8 @@ import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/S
 import { MapTrifoldIcon as MapTrifold } from '@phosphor-icons/react/dist/ssr/MapTrifold';
 import { PulseIcon as Pulse } from '@phosphor-icons/react/dist/ssr/Pulse';
 import { UserCircleIcon as UserCircle } from '@phosphor-icons/react/dist/ssr/UserCircle';
+import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuoy';
+import { CheckSquareIcon as CheckSquare } from '@phosphor-icons/react/dist/ssr/CheckSquare';
 import Link from 'next/link';
 import { PaperPlaneTiltIcon as PaperPlaneTilt } from '@phosphor-icons/react/dist/ssr/PaperPlaneTilt';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
@@ -24,6 +26,8 @@ import { can, roleLabel, type Capability, type OperatorRole } from '@/lib/ops/ro
 const NAV: (CanonNavItem & { cap: Capability | null })[] = [
   { href: '/ops', label: 'Overview', icon: SquaresFour, exact: true, cap: null },
   { href: '/ops/schools', label: 'Schools', icon: Buildings, cap: 'schools.read' },
+  { href: '/ops/desk', label: 'Service desk', short: 'Desk', icon: Lifebuoy, cap: 'desk.read' },
+  { href: '/ops/tasks', label: 'Follow-ups', short: 'Tasks', icon: CheckSquare, cap: 'crm.read' },
   { href: '/ops/people', label: 'People', icon: AddressBook, cap: 'people.search' },
   { href: '/ops/requests', label: 'Login requests', short: 'Requests', icon: UserPlus, cap: 'requests.manage' },
   { href: '/ops/enquiries', label: 'Enquiries', icon: EnvelopeSimple, cap: 'enquiries.read' },

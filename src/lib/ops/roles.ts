@@ -35,6 +35,11 @@ export const CAPABILITIES = [
   'operators.manage',  // add, change and deactivate operators; territories
   'breakglass',        // open a timed, reasoned window onto a school's records
   'debug.read',        // request explorer, delivery and jobs monitor
+  'crm.read',          // a school's contacts, timeline, tasks and documents
+  'crm.write',
+  'desk.read',         // the service desk
+  'desk.work',         // reply, assign, resolve
+  'desk.admin',        // deadlines, categories, canned replies
   'debug.manage',      // resend a failed message, run a job now
 ] as const;
 export type Capability = typeof CAPABILITIES[number];
@@ -53,33 +58,34 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
     label: 'Regional lead', reach: 'territory',
     note: 'Runs a region: its schools, enquiries and the people who own them.',
     can: ['schools.read', 'schools.manage', 'schools.policy', 'schools.switches', 'schools.create', 'accounts.delete', 'people.search', 'requests.manage',
-      'enquiries.read', 'enquiries.manage', 'assign', 'operators.read', 'breakglass'],
+      'enquiries.read', 'enquiries.manage', 'assign', 'operators.read', 'breakglass', 'crm.read', 'crm.write', 'desk.read', 'desk.work'],
   },
   sales_rep: {
     label: 'Sales representative', reach: 'territory',
     note: 'Works enquiries in a territory and opens pilot schools from them.',
-    can: ['schools.read', 'schools.create', 'enquiries.read', 'enquiries.manage'],
+    can: ['schools.read', 'schools.create', 'enquiries.read', 'enquiries.manage', 'crm.read', 'crm.write'],
   },
   account_manager: {
     label: 'Account manager', reach: 'territory',
     note: 'Looks after live schools in a territory: setup, logins and fixes.',
-    can: ['schools.read', 'schools.manage', 'requests.manage', 'enquiries.read', 'breakglass'],
+    can: ['schools.read', 'schools.manage', 'requests.manage', 'enquiries.read', 'breakglass', 'crm.read', 'crm.write', 'desk.read', 'desk.work'],
   },
   support_agent: {
     label: 'Support', reach: 'all',
     note: 'Helps any school: accounts, family links, roster fixes, login requests.',
-    can: ['schools.read', 'schools.manage', 'accounts.delete', 'people.search', 'requests.manage', 'errors.read', 'health.read', 'audit.read', 'breakglass', 'debug.read'],
+    can: ['schools.read', 'schools.manage', 'accounts.delete', 'people.search', 'requests.manage', 'errors.read', 'health.read', 'audit.read', 'breakglass', 'debug.read',
+      'crm.read', 'crm.write', 'desk.read', 'desk.work'],
   },
   engineer: {
     label: 'Engineer', reach: 'all',
     note: 'Diagnoses the platform: errors, health, AI usage, requests, jobs. Can switch a feature off for a school; changes nothing else.',
     can: ['schools.read', 'schools.switches', 'people.search', 'errors.read', 'errors.manage', 'health.read', 'usage.read', 'settings.read', 'audit.read', 'breakglass',
-      'debug.read', 'debug.manage'],
+      'debug.read', 'debug.manage', 'crm.read', 'desk.read', 'desk.work'],
   },
   finance: {
     label: 'Finance', reach: 'all',
     note: 'Plans, prices and suspension for every school; AI cost. No school data.',
-    can: ['schools.read', 'schools.policy', 'usage.read', 'audit.read'],
+    can: ['schools.read', 'schools.policy', 'usage.read', 'audit.read', 'crm.read'],
   },
 };
 

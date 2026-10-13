@@ -76,3 +76,14 @@ test('debug tools are for support, engineers and the director; only engineers an
   assert.ok(can('engineer', 'debug.manage') && can('engineer', 'schools.switches'));
   for (const r of ['sales_rep', 'finance', 'account_manager'] as const) assert.equal(can(r, 'debug.read'), false, r);
 });
+
+test('an operator\'s own new password: long, mixed, new, and not guessable from who they are', async () => {
+  const { passwordProblem } = await import('./password');
+  assert.equal(passwordProblem('correct-horse-42-staple', 'old', 'asha@example.in'), null);
+  assert.match(passwordProblem('short1a', 'old', 'asha@example.in')!, /at least 12/);
+  assert.match(passwordProblem('onlylettershere', 'old', 'asha@example.in')!, /digit/);
+  assert.match(passwordProblem('123456789012345', 'old', 'asha@example.in')!, /letters/);
+  assert.match(passwordProblem('same-password-1', 'same-password-1', 'asha@example.in')!, /differ/);
+  assert.match(passwordProblem('Asha-is-great-2026', 'old', 'asha@example.in')!, /email name/);
+  assert.match(passwordProblem('StharaForever@6874', 'old', 'x@example.in')!, /company name/);
+});

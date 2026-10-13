@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { GRANTABLE_ROLES, isOperatorRole, managerProblem, reachOf, type OperatorRole } from './roles';
 import { canonicalState, cleanDistrict, subtree, territoryProblem, type Territory, type TerritoryLevel } from './territories';
 import { loadTerritories, place } from './scope';
+import { passwordProblem } from './password';
 
 /**
  * The operator organisation: who the operators are, the territories they work, and where
@@ -110,6 +111,52 @@ export async function updateOperator(db: Db, actor: Actor, id: string, b: Operat
   if (!active) await db.from('ops_territories').update({ default_owner_id: null }).eq('default_owner_id', id);
   await audit(db, actor, active ? 'operator.changed' : 'operator.deactivated', 'ops_operators', id,
     { role: p.role, was: current.role, managerId: p.managerId, active, territoryIds: p.territoryIds, reason });
+  return { ok: true };
+}
+
+/**
+ * A director gives an operator a new temporary password (returned once, never stored). Not for the director's own
+ * account or any superadmin: that login is managed by its owner and, failing that, in Supabase.
+ */
+export async function resetOperatorPassword(db: Db, actor: Actor, id: string, password: string, reason: string): Promise<Result<{ email: string }>> {
+  if (id === actor.id) return fail('Change your own password under My account.', 409);
+  const [{ data: row }, { data: user }, { data: listed }] = await Promise.all([
+    db.from('ops_operators').select('user_id, role').eq('user_id', id).maybeSingle(),
+    db.from('users').select('id, role, email, metadata').eq('id', id).maybeSingle(),
+    db.from('superadmins').select('user_id').eq('user_id', id).maybeSingle(),
+  ]);
+  if (!row || !user) return fail('That operator no longer exists.', 404);
+  if (row.role === 'director' || user.role === 'superadmin' || listed) return fail('The director\u2019s password is not reset from here.', 409);
+  const { error } = await db.auth.admin.updateUserById(id, { password });
+  if (error) return fail(error.message, 500);
+  await db.from('users').update({ metadata: { ...((user.metadata as Record<string, unknown> | null) ?? {}), mustChangePassword: true } }).eq('id', id);
+  await audit(db, actor, 'operator.password_reset', 'ops_operators', id, { reason });
+  return { ok: true, email: user.email ?? '' };
+}
+
+/** An operator changes their own password, proving the current one first. */
+export async function changeOwnPassword(db: Db, me: { id: string; email: string; role: OperatorRole }, current: string, next: string): Promise<Result> {
+  const bad = passwordProblem(next, current, me.email);
+  if (bad) return fail(bad);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!url || !key) return fail('Sign-in is not configured on this server.', 503);
+  let proved = false;
+  try {
+    const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST', headers: { apikey: key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: me.email, password: current }), signal: AbortSignal.timeout(10_000),
+    });
+    proved = res.ok;
+  } catch { return fail('Could not check your current password. Try again.', 502); }
+  if (!proved) return fail('Your current password is not right.', 403);
+  const { error } = await db.auth.admin.updateUserById(me.id, { password: next });
+  if (error) return fail(error.message, 400);
+  const { data: user } = await db.from('users').select('metadata').eq('id', me.id).maybeSingle();
+  const { mustChangePassword: _was, ...rest } = ((user?.metadata as Record<string, unknown> | null) ?? {});
+  void _was;
+  await db.from('users').update({ metadata: rest }).eq('id', me.id);
+  await audit(db, me, 'operator.password_changed', 'ops_operators', me.id, {});
   return { ok: true };
 }
 

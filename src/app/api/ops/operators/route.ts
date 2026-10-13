@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
-import { addOperator, createOperatorLogin, loadOperators, updateOperator } from '@/lib/ops/org';
+import { addOperator, createOperatorLogin, loadOperators, resetOperatorPassword, updateOperator } from '@/lib/ops/org';
 import { tempPassword } from '@/lib/ops/people';
 import { can } from '@/lib/ops/roles';
 import { parseReason } from '@/lib/settings/registry';
@@ -66,6 +66,9 @@ export async function GET(req: NextRequest) {
  * POST /api/ops/operators — { email, name?, createLogin?, role, managerId?, title?, territoryIds?, reason }
  * Makes an account an operator. With createLogin, the Sthara login is created first and its temporary password
  * comes back once. Director is never given here.
+ *
+ * POST { action: 'reset-password', id, reason } gives an operator (never the director) a new temporary password,
+ * returned once.
  */
 export async function POST(req: NextRequest) {
   const me = await operatorFor(req, 'operators.manage');
@@ -73,6 +76,12 @@ export async function POST(req: NextRequest) {
   const b = await req.json().catch(() => ({}));
   const reason = parseReason(b.reason);
   if (!reason) return noReason();
+  if (b.action === 'reset-password') {
+    if (typeof b.id !== 'string' || !UUID.test(b.id)) return NextResponse.json({ error: 'Pick an operator.' }, { status: 400 });
+    const temp = tempPassword(randomInt);
+    const out = await resetOperatorPassword(createAdminClient(), me, b.id, temp, reason);
+    return out.ok ? NextResponse.json({ ok: true, email: out.email, tempPassword: temp }) : NextResponse.json({ error: out.error }, { status: out.status });
+  }
   const email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';
   if (!EMAIL.test(email) || email.length > 200) return NextResponse.json({ error: 'Enter the operator’s email.' }, { status: 400 });
   const db = createAdminClient();

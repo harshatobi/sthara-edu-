@@ -99,7 +99,7 @@ export default function OperatorsConsole() {
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
       {issued && (
         <div className="note info" style={{ marginBottom: 18 }} role="status">
-          <b>Login created for {issued.email}.</b> Temporary password: <span className="mono" style={{ userSelect: 'all' }}>{issued.password}</span>. It is shown this once and is not stored: pass it on now.
+          <b>Temporary password for {issued.email}.</b> <span className="mono" style={{ userSelect: 'all' }}>{issued.password}</span>. It is shown this once and is not stored: pass it on now. They are asked to change it under My account.
           <button className="btn sm" style={{ marginLeft: 10 }} onClick={() => setIssued(null)}>Done</button>
         </div>
       )}
@@ -112,7 +112,8 @@ export default function OperatorsConsole() {
             empty={!rows.length && <Empty icon={<ShieldCheck size={28} weight="duotone" />} title="No operators" />}>
             {rows.map(o => editing === o.id ? (
               <tr key={o.id}><td colSpan={8}>
-                <EditOperator o={o} operators={rows} territories={territories} onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />
+                <EditOperator o={o} operators={rows} territories={territories} onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }}
+                  onIssued={i => { setEditing(null); setIssued(i); load(); }} />
               </td></tr>
             ) : (
               <tr key={o.id} style={o.active ? undefined : { opacity: .6 }}>
@@ -148,7 +149,7 @@ export default function OperatorsConsole() {
       </Section>
       <Section title="Director access" sub="One account, and no button for it anywhere: no operator session, API route or key held by the app can create another.">
         <p style={{ fontSize: 13.5, lineHeight: 1.6 }}>
-          The director is the platform&apos;s single superadmin. The database refuses a second one, and refuses to name one for anything but the project owner working in the Supabase SQL editor; handing it over means taking it from the current holder and giving it to the next in one transaction. Every other role is given and taken away on this page by the director, with a reason, and recorded in the audit log. Those roles can do only what the table above lists.
+          The director is the platform&apos;s single superadmin. The database refuses a second one, and refuses to name one for anything but the project owner working in the Supabase SQL editor; handing it over means taking it from the current holder and giving it to the next in one transaction. Every other role is given and taken away on this page by the director, with a reason, and recorded in the audit log. Those roles can do only what the table above lists. The director changes their own password under My account; if it is lost, it is reset in Supabase, never here.
         </p>
       </Section>
     </>
@@ -206,7 +207,9 @@ function AddOperator({ operators, territories, onCancel, onAdded }: {
   );
 }
 
-function EditOperator({ o, operators, territories, onCancel, onSaved }: { o: Operator; operators: Operator[]; territories: Territory[]; onCancel: () => void; onSaved: () => void }) {
+function EditOperator({ o, operators, territories, onCancel, onSaved, onIssued }: {
+  o: Operator; operators: Operator[]; territories: Territory[]; onCancel: () => void; onSaved: () => void; onIssued: (i: { email: string; password: string }) => void;
+}) {
   const api = useOpsApi();
   const [d, setD] = useState<Draft>({ role: o.role, title: o.title ?? '', managerId: o.managerId ?? '', territoryIds: o.territoryIds, reason: '' });
   const [busy, setBusy] = useState(false);
@@ -232,7 +235,12 @@ function EditOperator({ o, operators, territories, onCancel, onSaved }: { o: Ope
         <button className="btn pri" disabled={busy || d.reason.trim().length < REASON_MIN}>{busy ? 'Saving…' : 'Save'}</button>
         <button type="button" className="btn" onClick={onCancel}>Cancel</button>
         {!director && (
-          <span style={{ marginLeft: 'auto' }}>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {o.active && <ReasonAction label="Reset password" confirm="Issue a temporary password"
+              run={async reason => {
+                const out = await api<{ email: string; tempPassword: string }>('/operators', { method: 'POST', body: { action: 'reset-password', id: o.id, reason } });
+                onIssued({ email: out.email, password: out.tempPassword });
+              }} />}
             <ReasonAction label={o.active ? 'Remove access' : 'Restore access'} danger={o.active} confirm={o.active ? 'Remove access' : 'Restore access'}
               run={async reason => { await api('/operators', { method: 'PATCH', body: { id: o.id, active: !o.active, reason } }); onSaved(); }} />
           </span>

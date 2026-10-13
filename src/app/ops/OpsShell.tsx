@@ -14,6 +14,8 @@ import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-ic
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import { MapTrifoldIcon as MapTrifold } from '@phosphor-icons/react/dist/ssr/MapTrifold';
 import { PulseIcon as Pulse } from '@phosphor-icons/react/dist/ssr/Pulse';
+import { UserCircleIcon as UserCircle } from '@phosphor-icons/react/dist/ssr/UserCircle';
+import Link from 'next/link';
 import { PaperPlaneTiltIcon as PaperPlaneTilt } from '@phosphor-icons/react/dist/ssr/PaperPlaneTilt';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import { can, roleLabel, type Capability, type OperatorRole } from '@/lib/ops/roles';
@@ -34,6 +36,7 @@ const NAV: (CanonNavItem & { cap: Capability | null })[] = [
   { href: '/ops/audit', label: 'Audit log', short: 'Audit', icon: ClockCounterClockwise, cap: 'audit.read' },
   { href: '/ops/territories', label: 'Territories', icon: MapTrifold, cap: null },
   { href: '/ops/operators', label: 'Operators', icon: ShieldCheck, cap: 'operators.read' },
+  { href: '/ops/account', label: 'My account', short: 'Account', icon: UserCircle, cap: null },
 ];
 
 const OpsContext = createContext<{ operator: string | null; role: OperatorRole; devPreview: boolean }>({ operator: null, role: 'director', devPreview: false });
@@ -45,7 +48,9 @@ export const useCan = () => {
 };
 
 /** Chrome for the unlisted operator console (the Platform Manager). */
-export default function OpsShell({ operator, role, devPreview, children }: { operator: string | null; role: OperatorRole; devPreview: boolean; children: ReactNode }) {
+export default function OpsShell({ operator, role, mustChangePassword, devPreview, children }: {
+  operator: string | null; role: OperatorRole; mustChangePassword: boolean; devPreview: boolean; children: ReactNode;
+}) {
   const nav = useMemo(() => NAV.filter(n => !n.cap || can(role, n.cap)), [role]);
   return (
     <OpsContext.Provider value={{ operator, role, devPreview }}>
@@ -54,6 +59,11 @@ export default function OpsShell({ operator, role, devPreview, children }: { ope
           {devPreview && (
             <div className="note info" style={{ marginBottom: 18 }}>
               <b>Local preview.</b> You&apos;re seeing this through the dev role cookie. Loading or saving anything needs a real operator session against Supabase.
+            </div>
+          )}
+          {mustChangePassword && (
+            <div className="note" style={{ marginBottom: 18 }} role="status">
+              <b>You are on a temporary password.</b> Someone else has seen it. <Link href="/ops/account" style={{ color: 'var(--blue)', fontWeight: 700 }}>Set your own now</Link>.
             </div>
           )}
           {children}

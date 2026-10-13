@@ -20,7 +20,7 @@ import { noteRequest } from '@/lib/debug/requestLog';
  * Everything that fails this check gets a 404, so the console's existence
  * isn't revealed to anyone else.
  */
-export interface Operator { id: string; email: string; role: OperatorRole }
+export interface Operator { id: string; email: string; role: OperatorRole; /** Still on a temporary password someone else issued. */ mustChangePassword: boolean }
 
 export async function operatorFromToken(token: string | null | undefined): Promise<Operator | null> {
   if (!token) return null;
@@ -29,14 +29,14 @@ export async function operatorFromToken(token: string | null | undefined): Promi
     const { data: { user }, error } = await admin.auth.getUser(token);
     if (error || !user) return null;
     const [{ data: row }, { data: listed }, { data: op, error: opErr }] = await Promise.all([
-      admin.from('users').select('role').eq('id', user.id).maybeSingle(),
+      admin.from('users').select('role, metadata').eq('id', user.id).maybeSingle(),
       admin.from('superadmins').select('user_id').eq('user_id', user.id).maybeSingle(),
       // No such table on a database older than the ops_foundation migration: then superadmins are directors, as before.
       admin.from('ops_operators').select('role, active').eq('user_id', user.id).maybeSingle(),
     ]);
     if (opErr && !(opErr.code === '42P01' || opErr.code === 'PGRST205')) return null;
     const superadmin = row?.role === 'superadmin' || !!listed;
-    const me = { id: user.id, email: user.email || '' };
+    const me = { id: user.id, email: user.email || '', mustChangePassword: (row?.metadata as { mustChangePassword?: unknown } | null)?.mustChangePassword === true };
     if (!op) return superadmin ? { ...me, role: 'director' } : null;
     if (!op.active || !isOperatorRole(op.role)) return null;
     if (op.role === 'director' && !superadmin) return null;

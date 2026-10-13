@@ -11,22 +11,30 @@ const MAX_ROWS = 50_000;
 
 type Result = { data: any[]; missing: boolean };
 
+const WAVE = 12;
+
 /**
  * Every row of a query, paged past PostgREST's 1,000-row cap. A table that
  * doesn't exist yet (migration not applied) comes back as missing, not as an error.
+ * The first page goes alone (most tables fit in it); a full page means more, and the rest
+ * are fetched several pages at a time, so a large school doesn't wait on them one by one.
  */
 export async function all(build: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>): Promise<Result> {
   const out: any[] = [];
-  for (let from = 0; from < MAX_ROWS; from += PAGE) {
-    const { data, error } = await build(from, from + PAGE - 1);
-    if (error) {
-      if (error.code === '42P01' || error.code === 'PGRST205' || error.code === 'PGRST202' || /does not exist|schema cache/i.test(error.message || '')) {
-        return { data: [], missing: true };
+  for (let from = 0, wave = 1; from < MAX_ROWS; from += wave * PAGE, wave = WAVE) {
+    const pages = await Promise.all(Array.from({ length: wave }, (_, i) => build(from + i * PAGE, from + (i + 1) * PAGE - 1)));
+    let last = false;
+    for (const { data, error } of pages) {
+      if (error) {
+        if (error.code === '42P01' || error.code === 'PGRST205' || error.code === 'PGRST202' || /does not exist|schema cache/i.test(error.message || '')) {
+          return { data: [], missing: true };
+        }
+        throw new Error(error.message || 'Could not load school data.');
       }
-      throw new Error(error.message || 'Could not load school data.');
+      out.push(...(data || []));
+      if (!data || data.length < PAGE) last = true;
     }
-    out.push(...(data || []));
-    if (!data || data.length < PAGE) break;
+    if (last) break;
   }
   return { data: out, missing: false };
 }
@@ -48,7 +56,7 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
     supabase.from('schools').select('id, name, settings').eq('id', school).maybeSingle(),
     all((a, b) => s('users', 'id, name, email, role, student_class, custom_student_id, teacher_class, teacher_subject, assignments, created_at')
       .eq('school_id', school).order('id').range(a, b)),
-    all((a, b) => s('tml_scores', 'student_id, subject, topic_name, score, confidence_band, components, item_count, computed_at')
+    all((a, b) => s('tml_scores', 'student_id, subject, topic_name, score, confidence_band, tutor:components->tutor, item_count, computed_at')
       .eq('school_id', school).order('id').range(a, b)),
     all((a, b) => s('assignments', 'id, teacher_id, class, subject, type, status, created_at, due_date')
       .eq('school_id', school).order('id').range(a, b)),
@@ -79,16 +87,17 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
   ]);
   if (schoolRow.error || !schoolRow.data) throw new Error(schoolRow.error?.message || 'Your school record could not be found.');
 
+  // (Mastery rows carry only the tutor part of their breakdown: it is all the desk reads, and the rest doubles the download.)
   // Submissions on this school's assignments (the table has no school index for this query shape).
   const asgIds = assignments.data.map(a => a.id);
-  const subs: Result = { data: [], missing: false };
-  for (let i = 0; i < asgIds.length; i += 150) {
-    const chunk = asgIds.slice(i, i + 150);
-    const r = await all((a, b) => s('submissions', 'id, assignment_id, student_id, teacher_approved, score, max_score, submitted_at, updated_at')
-      .in('assignment_id', chunk).order('id').range(a, b));
-    subs.data.push(...r.data);
-  }
-  const wellness = await supabase.rpc('school_wellness_report', { p_since: since });
+  const chunks: string[][] = [];
+  for (let i = 0; i < asgIds.length; i += 150) chunks.push(asgIds.slice(i, i + 150));
+  const [subParts, wellness] = await Promise.all([
+    Promise.all(chunks.map(chunk => all((a, b) => s('submissions', 'id, assignment_id, student_id, teacher_approved, score, max_score, submitted_at, updated_at')
+      .in('assignment_id', chunk).order('id').range(a, b)))),
+    supabase.rpc('school_wellness_report', { p_since: since }),
+  ]);
+  const subs: Result = { data: subParts.flatMap(r => r.data), missing: false };
 
   const named: Record<string, Result> = {
     leave_requests: leave, fee_structures: structures, fee_invoices: invoices, fee_payments: payments, fee_reminders: reminders,
@@ -100,7 +109,7 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
 
   return {
     school: schoolRow.data,
-    users: users.data, tml: tml.data, assignments: assignments.data, submissions: subs.data, lessons: lessons.data,
+    users: users.data, tml: tml.data.map(({ tutor, ...r }) => ({ ...r, components: tutor ? { tutor } : null })), assignments: assignments.data, submissions: subs.data, lessons: lessons.data,
     consents: consents.data, guardians: guardians.data, audit: audit.error ? [] : audit.data || [], leave: leave.data,
     structures: structures.data, invoices: invoices.data, payments: payments.data, reminders: reminders.data,
     applicants: applicants.data, admissionEvents: events.data, filings: filings.data,

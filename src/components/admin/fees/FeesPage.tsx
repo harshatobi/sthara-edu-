@@ -138,9 +138,10 @@ function Fees({ desk }: { desk: AdminDesk }) {
           </button>
         ))}
       </div>
-      {tab === 'counter' && <Counter desk={desk} call={call} onDone={done} openAccount={setStudent} />}
+      {tab === 'counter' && <Counter desk={desk} call={call} onDone={done} openAccount={setStudent}
+        requestConcession={id => router.replace(`/admin/fees?tab=concessions&for=${id}`, { scroll: false })} />}
       {tab === 'daybook' && <DayBook desk={desk} call={call} onDone={done} />}
-      {tab === 'concessions' && <Concessions desk={desk} call={call} onDone={done} />}
+      {tab === 'concessions' && <Concessions desk={desk} call={call} onDone={done} forStudent={params.get('for')} openAccount={setStudent} />}
       {tab === 'forecast' && <Forecast desk={desk} />}
       {tab === 'ledger' && <>
 

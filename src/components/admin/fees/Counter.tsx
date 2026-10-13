@@ -44,8 +44,10 @@ function printReceipts(school: string, session: string, who: { name: string; cls
  * The fee counter: find the student, see what is due, take the money, hand over the receipt.
  * One sum can settle several invoices; it is applied to the oldest first and each invoice gets its own receipt number.
  */
-export default function Counter({ desk, call, onDone, openAccount }: {
+export default function Counter({ desk, call, onDone, openAccount, requestConcession }: {
   desk: AdminDesk; call: Call; onDone: (msg: string) => void; openAccount: (studentId: string) => void;
+  /** Starts a concession request for this student (Concessions tab). */
+  requestConcession: (studentId: string) => void;
 }) {
   const L = desk.fees;
   const today = isoDay();
@@ -68,13 +70,18 @@ export default function Counter({ desk, call, onDone, openAccount }: {
   const amt = Number(amount);
   const plan = allocate(owed, Number.isFinite(amt) ? amt : 0);
   const problem = family ? paymentProblem(amt, owedTotal, mode, ref) : null;
+  // Concessions asked for and not yet decided, by invoice: money the family may not owe after all.
+  const waiting = useMemo(() => new Map(desk.concessions.filter(c => c.status === 'pending').map(c => [c.invoiceId, c.amount])), [desk.concessions]);
+  const waitingTotal = owed.reduce((s, i) => s + Math.min(waiting.get(i.id) ?? 0, i.balance), 0);
+  const canRequest = desk.me.access.can('fees.concession.request');
   const till = useMemo(() => tillFor(L.receipts, today), [L.receipts, today]);
   const todays = useMemo(() => L.receipts.filter(r => r.paidOn === today).slice(0, 25), [L.receipts, today]);
   const who = (f: Family) => ({ name: f.name, cls: f.cls, rollNo: rollOf.get(f.studentId) ?? '' });
 
   const pick = (f: Family) => {
     setPickedId(f.studentId); setQ(''); setErr(null); setRef(''); setPaidOn(today);
-    setAmount(String(dues(f).reduce((s, i) => s + i.balance, 0) || ''));
+    // Start from what is certainly owed: the balance less any concession still awaiting approval.
+    setAmount(String(dues(f).reduce((s, i) => s + i.balance - Math.min(waiting.get(i.id) ?? 0, i.balance), 0) || ''));
   };
   const clear = () => { setPickedId(null); setAmount(''); setRef(''); setErr(null); setTimeout(() => searchRef.current?.focus(), 0); };
 
@@ -146,7 +153,9 @@ export default function Counter({ desk, call, onDone, openAccount }: {
                         return (
                           <tr key={i.id}>
                             <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(i.dueOn)}</td>
-                            <td>{i.label}<div className="muted mono" style={{ fontSize: 12 }}>{i.invoiceNo}</div></td>
+                            <td>{i.label}<div className="muted mono" style={{ fontSize: 12 }}>{i.invoiceNo}</div>
+                              {i.concession > 0 && <div className="muted" style={{ fontSize: 12 }}>{inr(i.concession)} concession applied{i.concessionReason ? ` (${i.concessionReason})` : ''}</div>}
+                              {waiting.has(i.id) && <div style={{ fontSize: 12, color: '#B45309', fontWeight: 600 }}>{inr(waiting.get(i.id)!)} concession awaiting approval</div>}</td>
                             <td><Chip tone={STATUS_CHIP[i.status].tone}>{STATUS_CHIP[i.status].t}</Chip>{i.daysOverdue ? <div className="muted" style={{ fontSize: 12 }}>{plural(i.daysOverdue, 'day')} late</div> : null}</td>
                             <td className="r num">{inr(i.balance)}</td>
                             <td className="r num" style={{ fontWeight: 700, color: part ? 'var(--green)' : 'var(--mut)' }}>{part ? inr(part) : '—'}{part > 0 && part < i.balance ? <div className="muted" style={{ fontSize: 12, fontWeight: 500 }}>part</div> : null}</td>
@@ -157,6 +166,11 @@ export default function Counter({ desk, call, onDone, openAccount }: {
                     </table>
                   </div>
 
+                  {waitingTotal > 0 && (
+                    <div className="note" style={{ marginTop: 14 }} role="status">
+                      A concession of <b>{inr(waitingTotal)}</b> is awaiting approval, so the amount below starts at {inr(owedTotal - waitingTotal)}. If you take the full {inr(owedTotal)} and it is then approved, the family will have overpaid.
+                    </div>
+                  )}
                   <div className="g2" style={{ gap: 14, marginTop: 16 }}>
                     <Field label="AMOUNT RECEIVED (RUPEES)" htmlFor="ct-amt" hint={amt > 0 && amt < owedTotal ? `${inr(owedTotal - amt)} will stay due` : 'Applied to the oldest invoice first'}>
                       <input id="ct-amt" className="cmp-in num" style={{ fontSize: 20, fontWeight: 700 }} inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.]/g, ''))} />
@@ -181,6 +195,9 @@ export default function Counter({ desk, call, onDone, openAccount }: {
                     {[['Full', owedTotal], ['Oldest only', owed[0].balance]].filter(([, v], i, a) => i === 0 || v !== a[0][1]).map(([l, v]) => (
                       <button key={l as string} className="btn sm" onClick={() => setAmount(String(v))}>{l as string}: {inr(v as number)}</button>
                     ))}
+                    {canRequest
+                      ? <button className="btn sm" style={{ marginLeft: 'auto' }} onClick={() => requestConcession(family.studentId)}>Raise a concession</button>
+                      : <span className="muted" style={{ fontSize: 12.5, marginLeft: 'auto' }}>A concession is raised by the accountant or finance head.</span>}
                   </div>
                 </>
               ) : (

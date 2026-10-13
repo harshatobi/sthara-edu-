@@ -27,7 +27,7 @@ const KIND_LABEL: Record<string, string> = { ...ACTIVITY_KINDS, case: 'Case', ac
 const todayIST = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const size = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
-/** A school's Relationship tab: who Sthara deals with there, everything that has passed between us, what we owe them, and the paperwork. */
+/** A school's Account 360 tab: who Sthara deals with there, everything that has passed between us, what we owe them, and the paperwork. */
 export function RelationshipTab({ schoolId, onChanged }: { schoolId: string; onChanged: (msg: string) => void }) {
   const api = useOpsApi();
   const [d, setD] = useState<Data | null>(null);

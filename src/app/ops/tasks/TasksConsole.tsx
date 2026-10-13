@@ -39,7 +39,7 @@ export default function TasksConsole() {
   return (
     <>
       <PageBar eyebrow="PLATFORM MANAGER" title="Follow-ups"
-        sub={d ? `${num(d.open.length)} open · ${num(d.counts.overdue)} overdue · ${num(d.counts.today)} due today. Add one from a school's Relationship tab.` : 'Loading…'} />
+        sub={d ? `${num(d.open.length)} open · ${num(d.counts.overdue)} overdue · ${num(d.counts.today)} due today. Add one from a school's Account 360 tab.` : 'Loading…'} />
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
       <div className="seg" role="tablist" aria-label="Whose" style={{ marginBottom: 18 }}>
         <button role="tab" aria-selected={view === 'mine'} className={view === 'mine' ? 'on' : ''} onClick={() => setView('mine')}>Mine</button>

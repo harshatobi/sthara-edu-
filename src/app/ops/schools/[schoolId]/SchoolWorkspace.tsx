@@ -51,7 +51,7 @@ interface Data {
 /** Tabs that set a school up or fix its accounts: for roles that manage schools. */
 const MANAGE_TABS: readonly string[] = ['classes', 'subjects', 'people', 'teaching', 'support'];
 const TABS = [
-  ['overview', 'Overview'], ['crm', 'Relationship'], ['health', 'Health'], ['access', 'Subscription & access'], ['account', 'Ownership & access'], ['controls', 'Controls'], ['records', 'Records'], ['classes', 'Classes & subjects'],
+  ['overview', 'Overview'], ['crm', 'Account 360'], ['health', 'Health'], ['access', 'Subscription & access'], ['account', 'Ownership & access'], ['controls', 'Controls'], ['records', 'Records'], ['classes', 'Classes & subjects'],
   ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['activity', 'Activity'],
 ] as const;
 type Tab = (typeof TABS)[number][0];

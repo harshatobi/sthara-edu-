@@ -1,0 +1,43 @@
+/* People (the employee master): record facts, the job timeline and the attention list. Canon tokens only. */
+.canon .hr-kv { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px 18px; }
+.canon .hr-kv dt { font-size:11px; font-weight:800; letter-spacing:.07em; color:var(--mut); text-transform:uppercase; margin-bottom:3px; }
+.canon .hr-kv dd { font-size:14px; font-weight:600; color:var(--ink); overflow-wrap:anywhere; }
+.canon .hr-kv dd.none { color:var(--mut); font-weight:500; }
+.canon .hr-tl { position:relative; padding-left:22px; }
+.canon .hr-tl::before { content:''; position:absolute; left:6px; top:6px; bottom:6px; width:2px; background:var(--line); }
+.canon .hr-tl > li { position:relative; padding:0 0 16px; list-style:none; }
+.canon .hr-tl > li:last-child { padding-bottom:0; }
+.canon .hr-tl > li::before { content:''; position:absolute; left:-21px; top:4px; width:12px; height:12px; border-radius:50%; background:#fff; border:2.5px solid var(--ink); }
+.canon .hr-tl > li.ev::before { border-color:var(--green); }
+.canon .hr-tl > li.due::before { border-color:var(--amber); border-style:dashed; }
+.canon .hr-tl .when { font-size:12px; font-weight:700; color:var(--mut); }
+.canon .hr-tl .what { font-size:14px; font-weight:700; }
+.canon .hr-tl .why { font-size:13px; color:var(--mut); margin-top:2px; line-height:1.5; }
+.canon .hr-att { display:flex; gap:12px; align-items:flex-start; padding:13px 0; border-bottom:1px solid var(--line); width:100%; text-align:left; }
+.canon .hr-att:last-child { border-bottom:0; }
+.canon .hr-att .dot { flex:0 0 10px; width:10px; height:10px; border-radius:50%; margin-top:5px; }
+.canon .hr-att .t { font-size:14px; font-weight:700; }
+.canon .hr-att .d { font-size:13px; color:var(--mut); margin-top:2px; }
+.canon .hr-row { cursor:pointer; }
+.canon .hr-row:hover td { background:var(--body); }
+.canon .hr-check { display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:13.5px; }
+.canon .hr-check input { margin-top:3px; }
+.canon .hr-check .by { font-size:12px; color:var(--mut); }
+.canon .hr-search { border:1.5px solid var(--line); border-radius:11px; padding:8px 12px; font-family:inherit; font-size:13.5px; min-width:220px; background:#fff; color:var(--ink); }
+.canon .hr-acts { display:flex; gap:8px; flex-wrap:wrap; }
+.canon .hr-form-acts { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; justify-content:flex-end; }
+.canon .hr-ta { width:100%; border:1.5px solid var(--line); border-radius:11px; padding:10px 12px; font-family:inherit; font-size:13.5px; min-height:72px; resize:vertical; background:#fff; color:var(--ink); }
+@media (max-width:760px) { .canon .hr-search { min-width:0; width:100%; } }
+
+/* Payroll: money columns, the line breakdown inside a run, and editable salary lines. */
+.canon .pay-n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.canon .pay-split { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.canon .pay-split h4 { font-size:11px; font-weight:800; letter-spacing:.08em; color:var(--mut); text-transform:uppercase; margin-bottom:6px; }
+.canon .pay-li { display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px; }
+.canon .pay-li small { display:block; color:var(--mut); font-size:12px; }
+.canon .pay-li.tot { border-bottom:0; font-weight:800; }
+.canon .pay-sal { display:grid; grid-template-columns:1fr 150px 34px; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+.canon .pay-sal input { width:100%; border:1.5px solid var(--line); border-radius:9px; padding:7px 9px; font-family:inherit; font-size:13.5px; text-align:right; background:#fff; color:var(--ink); }
+.canon .pay-sal .u { font-size:12px; color:var(--mut); }
+.canon .pay-open td { background:var(--body); }
+@media (max-width:760px) { .canon .pay-split { grid-template-columns:1fr; } }

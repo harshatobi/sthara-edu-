@@ -457,8 +457,12 @@ const TABLE_LABEL: Record<string, string> = {
   leave_requests: 'Leave request', school_filings: 'Filing', classes: 'Class', account_requests: 'Login request',
   attendance_settings: 'Staff attendance settings', shifts: 'Shift', staff_shift_plans: 'Shift plan', shift_overrides: 'Shift change',
   staff_punches: 'Check-in', staff_day_marks: 'Staff register mark', attendance_devices: 'Biometric device', attendance_month_reviews: 'Month review',
+  staff_members: 'Staff record', staff_jobs: 'Job history', staff_profiles: 'Staff personal details', staff_statutory: 'Staff statutory and bank details',
+  staff_documents: 'Staff document', staff_exits: 'Staff exit', hr_grades: 'Grade and pay band', hr_posts: 'Sanctioned post',
+  staff_salaries: 'Salary', pay_adjustments: 'Pay adjustment', staff_loans: 'Advance or loan', tax_declarations: 'Tax declaration', staff_pay_settings: 'Pay settings',
+  pay_runs: 'Pay run', pay_run_lines: 'Payslip', payroll_settings: 'Payroll settings', statutory_overrides: 'Statutory rate override', pay_items: 'Pay item',
 };
-const VERB: Record<string, string> = { INSERT: 'added', UPDATE: 'changed', DELETE: 'removed' };
+const VERB: Record<string, string> = { INSERT: 'added', UPDATE: 'changed', DELETE: 'removed', VIEW: 'viewed', EXPORT: 'exported' };
 
 export function auditSummary(r: any): string {
   const t = TABLE_LABEL[r.table_name] || r.table_name;

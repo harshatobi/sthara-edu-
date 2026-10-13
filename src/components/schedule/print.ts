@@ -2,8 +2,23 @@
  * Prints a timetable from its own window, so no print CSS touches the app's pages
  * (an unscoped print rule once blanked every other page's printout).
  */
-/** The app-wide "Powered by Sthara" page foot (globals.css), for documents printed from their own window. */
-export const POWERED_BY_PAGE_CSS = `@bottom-center { content: "Powered by Sthara  \\00B7  sthara.in"; font: 600 7.5pt 'Plus Jakarta Sans', system-ui, sans-serif; color: #7A8699; }`;
+/** The tagline every printed or exported page carries. */
+export const POWERED_BY_TEXT = 'Powered by Sthara \u00B7 The Institutional OS';
+/** The app-wide page foot (globals.css), for documents printed from their own window: goes inside their @page rule. */
+export const POWERED_BY_PAGE_CSS = `@bottom-center { content: "Powered by Sthara  \\00B7  The Institutional OS"; font: 600 7.5pt 'Plus Jakarta Sans', system-ui, sans-serif; color: #7A8699; }`;
+const FOOT_FONT = `font: 600 7.5pt 'Plus Jakarta Sans', system-ui, sans-serif; color: #7A8699; text-align: center;`;
+/**
+ * Page-margin boxes (the rule above) print only in Chrome and Edge. Safari and Firefox ignore them, so a print
+ * window also carries this: a script that marks the document when the browser has no margin boxes, and a foot
+ * drawn in the document itself for that case. Goes in the window's <head>.
+ */
+export const POWERED_BY_FALLBACK_HEAD = `<style>
+      @media print { html.no-margin-boxes body::after { content: "Powered by Sthara  \\00B7  The Institutional OS"; position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding-top: 1.5mm; ${FOOT_FONT} } }
+    </style><script>if (!('CSSMarginRule' in window)) document.documentElement.classList.add('no-margin-boxes');<\/script>`;
+/** The same fallback for documents that print one block a page (payslips): the foot sits at the end of each block, so no page is without it. */
+export const POWERED_BY_FALLBACK_PER_SECTION_HEAD = `<style>
+      html.no-margin-boxes section::after { content: "Powered by Sthara  \\00B7  The Institutional OS"; display: block; margin-top: 12mm; border-top: 1px solid #E6EBF2; padding-top: 2mm; ${FOOT_FONT} }
+    </style><script>if (!('CSSMarginRule' in window)) document.documentElement.classList.add('no-margin-boxes');<\/script>`;
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -46,7 +61,7 @@ export function printGrids(grids: PrintGrid[]) {
       th.p small { display: block; font-weight: 500; color: #7A8699; }
       td b { display: block; font-size: 11.5px; } td span { display: block; color: #555F6E; font-size: 10px; }
       tr.brk td { text-align: center; color: #7A8699; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; background: #FAFBFD; }
-    </style></head><body>${grids.map(page).join('')}</body></html>`);
+    </style>${POWERED_BY_FALLBACK_HEAD}</head><body>${grids.map(page).join('')}</body></html>`);
   w.document.close();
   w.focus();
   setTimeout(() => { w.print(); }, 250);
@@ -66,7 +81,7 @@ export function printTable(o: { title: string; subtitle: string; school: string;
       th, td { border: 1px solid #C9D3E1; padding: 6px 7px; text-align: left; vertical-align: top; }
       th { background: #EEF2F7; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
       td.sign { width: 90px; }
-    </style></head><body>
+    </style>${POWERED_BY_FALLBACK_HEAD}</head><body>
     <header><div><h1>${esc(o.title)}</h1><p>${esc(o.subtitle)}</p></div><b>${esc(o.school)}</b></header>
     <table><thead><tr>${o.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
     <tbody>${o.rows.map(r => `<tr>${r.map((c, i) => `<td${i === r.length - 1 && o.head[o.head.length - 1] === 'Signature' ? ' class="sign"' : ''}>${esc(c).replace(/\n/g, '<br>')}</td>`).join('')}</tr>`).join('')}</tbody></table>

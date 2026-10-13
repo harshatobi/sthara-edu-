@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       className,
     } = body;
 
-    const aiBlocked = await aiGate(auth.staff.id);
+    const aiBlocked = await aiGate(auth.staff.id, 'teacherTools');
     if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {

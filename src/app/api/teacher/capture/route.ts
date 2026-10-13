@@ -17,7 +17,7 @@ async function gate(req: NextRequest) {
   const auth = await requireStaff(req, { academic: true });
   if ('res' in auth) return auth;
   if (!checkRateLimit(`capture-grade:${auth.staff.id}`, ...limitOf('captureGrade')).allowed) return { res: bad('That’s a lot of grading in a short time. Give it a few minutes.', 429) };
-  const blocked = await aiGate(auth.staff.id);
+  const blocked = await aiGate(auth.staff.id, 'teacherTools');
   if (blocked) return { res: blocked };
   return auth;
 }

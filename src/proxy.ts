@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { REQ_METHOD, REQ_PATH, REQ_START } from '@/lib/debug/route';
 
 /**
  * Next.js Proxy — Server-side route protection.
@@ -10,6 +11,7 @@ import type { NextRequest } from 'next/server';
  *  1. Redirect unauthenticated users (no __session cookie) to /login
  *  2. Redirect expired-trial users to /trial-expired
  *  3. Enforce role-based access using __role cookie
+ *  4. Stamp /api requests with their path and start time (request explorer)
  *
  * Cookies are set synchronously in login/page.tsx before router.push.
  */
@@ -37,6 +39,16 @@ const DASHBOARD: Record<string, string> = {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── API routes: authenticate themselves; stamped so the request explorer can time them ──
+  // (Set here, so a caller can never supply these headers itself.)
+  if (pathname.startsWith('/api/')) {
+    const headers = new Headers(request.headers);
+    headers.set(REQ_PATH, pathname);
+    headers.set(REQ_METHOD, request.method);
+    headers.set(REQ_START, String(Date.now()));
+    return NextResponse.next({ request: { headers } });
+  }
 
   // ── Public routes — always allowed ─────────────────────────────────────────
   const publicPrefixes = ['/login', '/onboard', '/privacy', '/terms', '/_next', '/api', '/trial-expired'];
@@ -88,5 +100,6 @@ export const config = {
     '/teacher/:path*',
     '/admin/:path*',
     '/parent/:path*',
+    '/api/:path*',
   ],
 };

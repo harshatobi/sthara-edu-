@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const messages = (Array.isArray(b?.messages) ? b.messages : []).slice(-12)
     .map((m: any) => ({ role: m?.role === 'os' ? 'os' as const : 'me' as const, text: str(m?.text, 3000) })).filter((m: any) => m.text);
   if (!messages.length || messages[messages.length - 1].role !== 'me') return NextResponse.json({ error: 'Ask something first.' }, { status: 400 });
-  const blocked = await aiGate(auth.me.id);
+  const blocked = await aiGate(auth.me.id, 'ask');
   if (blocked) return blocked;
   try {
     return NextResponse.json({ reply: await askStaffOS(auth.db, auth.me, messages, 'web') });

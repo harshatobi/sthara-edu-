@@ -29,11 +29,11 @@ const show = (v: unknown) => (v === null || v === undefined ? '' : typeof v === 
  * A school's Records tab: find any of its records, read the raw row, follow it to related rows and see who changed it.
  * Works only while the operator has an access window open on the school; every read is counted under that window.
  */
-export function RecordsTab({ schoolId, openAccess }: { schoolId: string; openAccess: () => void }) {
+export function RecordsTab({ schoolId, openAccess, start }: { schoolId: string; openAccess: () => void; /** A record to open straight away (from a data check). */ start?: { table: string; id: string } | null }) {
   const api = useOpsApi();
   const [state, setState] = useState<'checking' | 'shut' | 'open'>('checking');
   const [meta, setMeta] = useState<Meta[]>([]);
-  const [trail, setTrail] = useState<View[]>([{ kind: 'home' }]);
+  const [trail, setTrail] = useState<View[]>(() => (start ? [{ kind: 'home' }, { kind: 'row', table: start.table, id: start.id }] : [{ kind: 'home' }]));
   const [err, setErr] = useState<string | null>(null);
   const view = trail[trail.length - 1];
   const go = (v: View) => { setErr(null); setTrail(t => [...t, v]); };

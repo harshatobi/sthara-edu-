@@ -163,7 +163,7 @@ export async function handleStaffInbound(db: SupabaseClient, userId: string, pho
   let question = cmd.kind === 'ask' ? cmd.text : '';
   if (cmd.kind === 'option') question = ctx.options[cmd.n - 1] ?? text;
 
-  const gate = await aiGate(me.id);
+  const gate = await aiGate(me.id, 'ask');
   if (gate) { await reply('Answers are paused for a short while. Please try again later.'); return; }
   const { data: hist } = await db.from('whatsapp_log').select('direction, kind, body').eq('user_id', me.id)
     .in('kind', ['ask', 'answer']).gte('created_at', new Date(Date.now() - HISTORY_MS).toISOString())

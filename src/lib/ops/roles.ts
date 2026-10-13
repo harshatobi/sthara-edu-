@@ -15,6 +15,7 @@ export const CAPABILITIES = [
   'schools.read',      // registry, a school's workspace, health
   'schools.manage',    // classes, subjects, accounts, support fixes
   'schools.policy',    // plan, price, pilot dates, suspension, AI switch
+  'schools.switches',  // per-school kill switches for parts of the product
   'schools.create',
   'schools.delete',
   'accounts.delete',
@@ -33,6 +34,8 @@ export const CAPABILITIES = [
   'operators.read',
   'operators.manage',  // add, change and deactivate operators; territories
   'breakglass',        // open a timed, reasoned window onto a school's records
+  'debug.read',        // request explorer, delivery and jobs monitor
+  'debug.manage',      // resend a failed message, run a job now
 ] as const;
 export type Capability = typeof CAPABILITIES[number];
 
@@ -49,7 +52,7 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
   regional_lead: {
     label: 'Regional lead', reach: 'territory',
     note: 'Runs a region: its schools, enquiries and the people who own them.',
-    can: ['schools.read', 'schools.manage', 'schools.policy', 'schools.create', 'accounts.delete', 'people.search', 'requests.manage',
+    can: ['schools.read', 'schools.manage', 'schools.policy', 'schools.switches', 'schools.create', 'accounts.delete', 'people.search', 'requests.manage',
       'enquiries.read', 'enquiries.manage', 'assign', 'operators.read', 'breakglass'],
   },
   sales_rep: {
@@ -65,12 +68,13 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
   support_agent: {
     label: 'Support', reach: 'all',
     note: 'Helps any school: accounts, family links, roster fixes, login requests.',
-    can: ['schools.read', 'schools.manage', 'accounts.delete', 'people.search', 'requests.manage', 'errors.read', 'health.read', 'audit.read', 'breakglass'],
+    can: ['schools.read', 'schools.manage', 'accounts.delete', 'people.search', 'requests.manage', 'errors.read', 'health.read', 'audit.read', 'breakglass', 'debug.read'],
   },
   engineer: {
     label: 'Engineer', reach: 'all',
-    note: 'Diagnoses the platform: errors, health, AI usage. Does not change schools.',
-    can: ['schools.read', 'people.search', 'errors.read', 'errors.manage', 'health.read', 'usage.read', 'settings.read', 'audit.read', 'breakglass'],
+    note: 'Diagnoses the platform: errors, health, AI usage, requests, jobs. Can switch a feature off for a school; changes nothing else.',
+    can: ['schools.read', 'schools.switches', 'people.search', 'errors.read', 'errors.manage', 'health.read', 'usage.read', 'settings.read', 'audit.read', 'breakglass',
+      'debug.read', 'debug.manage'],
   },
   finance: {
     label: 'Finance', reach: 'all',

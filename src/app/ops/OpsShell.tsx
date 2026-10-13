@@ -13,6 +13,8 @@ import { BugIcon as Bug } from '@phosphor-icons/react/dist/ssr/Bug';
 import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import { MapTrifoldIcon as MapTrifold } from '@phosphor-icons/react/dist/ssr/MapTrifold';
+import { PulseIcon as Pulse } from '@phosphor-icons/react/dist/ssr/Pulse';
+import { PaperPlaneTiltIcon as PaperPlaneTilt } from '@phosphor-icons/react/dist/ssr/PaperPlaneTilt';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import { can, roleLabel, type Capability, type OperatorRole } from '@/lib/ops/roles';
 
@@ -26,6 +28,8 @@ const NAV: (CanonNavItem & { cap: Capability | null })[] = [
   { href: '/ops/usage', label: 'AI usage & cost', short: 'AI cost', icon: Coins, cap: 'usage.read' },
   { href: '/ops/settings', label: 'Platform settings', short: 'Settings', icon: SlidersHorizontal, cap: 'settings.read' },
   { href: '/ops/errors', label: 'Error log', short: 'Errors', icon: Bug, cap: 'errors.read' },
+  { href: '/ops/traffic', label: 'Request explorer', short: 'Requests', icon: Pulse, cap: 'debug.read' },
+  { href: '/ops/delivery', label: 'Delivery and jobs', short: 'Delivery', icon: PaperPlaneTilt, cap: 'debug.read' },
   { href: '/ops/health', label: 'System health', short: 'Health', icon: Heartbeat, cap: 'health.read' },
   { href: '/ops/audit', label: 'Audit log', short: 'Audit', icon: ClockCounterClockwise, cap: 'audit.read' },
   { href: '/ops/territories', label: 'Territories', icon: MapTrifold, cap: null },

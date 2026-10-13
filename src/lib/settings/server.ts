@@ -6,6 +6,7 @@ import {
   PLATFORM_DEFAULTS, accessBlock, resolvePlatform, schoolPolicy,
   type PlatformValues, type SchoolPolicy, type SchoolRow,
 } from './registry';
+import { SWITCHES, type SwitchKey } from './switches';
 
 /**
  * Server-side reads and gates for load-bearing settings.
@@ -74,10 +75,10 @@ export async function schoolAccessBlock(role: string | null | undefined, schoolI
 
 /**
  * The AI gate: null when this user may call the model, or the response to send
- * when AI is paused platform-wide or for their school. Call it after
- * authenticating and before creating the model client.
+ * when AI is paused platform-wide or for their school, or when `area` is switched
+ * off for their school. Call it after authenticating and before creating the model client.
  */
-export async function aiGate(userId: string): Promise<NextResponse | null> {
+export async function aiGate(userId: string, area?: SwitchKey): Promise<NextResponse | null> {
   const db = createAdminClient();
   const platform = await getPlatformSettings(db);
   if (!platform['ai.enabled']) {
@@ -88,6 +89,9 @@ export async function aiGate(userId: string): Promise<NextResponse | null> {
     const p = await getSchoolPolicy(u.schoolId, db);
     if (p && !p.aiEnabled) {
       return NextResponse.json({ error: 'AI features are turned off for your school. Ask your school office.', code: 'ai_off_school' }, { status: 403 });
+    }
+    if (p && area && p.off.includes(area)) {
+      return NextResponse.json({ error: `${SWITCHES[area].label} is turned off for your school at the moment. Ask your school office.`, code: 'feature_off_school' }, { status: 403 });
     }
   }
   return null;

@@ -9,6 +9,7 @@ import {
   PLATFORM_SETTINGS, SCHOOL_FIELD_LABELS, isPlatformKey, planLabel, planOf,
   type SchoolPatch, type SettingDef,
 } from '@/lib/settings/registry';
+import { switchJournalLabel } from '@/lib/settings/switches';
 
 export type JournalScope = 'platform' | 'school';
 
@@ -26,7 +27,7 @@ const RETIRED: Record<string, string> = { 'onboarding.self_serve': 'Self-serve s
 export function journalLabel(scope: JournalScope, key: string): string {
   if (Object.hasOwn(EVENTS, key)) return EVENTS[key];
   if (scope === 'platform') return isPlatformKey(key) ? PLATFORM_SETTINGS[key].label : Object.hasOwn(RETIRED, key) ? RETIRED[key] : key;
-  return isSchoolField(key) ? SCHOOL_FIELD_LABELS[key] : key;
+  return isSchoolField(key) ? SCHOOL_FIELD_LABELS[key] : switchJournalLabel(key) ?? key;
 }
 
 /** A platform setting's value as it reads to an operator. */

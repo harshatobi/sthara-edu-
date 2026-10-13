@@ -98,7 +98,7 @@ export async function handleInbound(db: SupabaseClient, msg: { from: string; tex
   const n = /^\s*(\d)\s*[.)]?\s*$/.exec(text);
   if (n && lastMeta.options?.[Number(n[1]) - 1]) question = lastMeta.options[Number(n[1]) - 1];
 
-  const gate = await aiGate(parent.id);
+  const gate = await aiGate(parent.id, 'ask');
   if (gate) { await reply('Answers are paused for a short while. Please try again later, or message the school from the parent portal.'); return; }
 
   // Recent conversation on this channel (last 24 hours), oldest first.

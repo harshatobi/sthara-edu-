@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Slow down a little — try again in a moment.' },
       { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } });
   }
-  const aiBlocked = await aiGate(user.id);
+  const aiBlocked = await aiGate(user.id, 'tutor');
   if (aiBlocked) return aiBlocked;
 
   let body: any;

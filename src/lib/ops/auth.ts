@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { can, isOperatorRole, reachOf, roleLabel, type Capability, type OperatorRole } from './roles';
 import { canSeeSchool } from './scope';
+import { noteRequest } from '@/lib/debug/requestLog';
 
 /**
  * Platform-operator gate for the hidden /ops console and /api/ops/*.
@@ -69,6 +70,7 @@ export const notFoundResponse = () => new Response('Not Found', { status: 404, h
 export async function operatorFor(req: Request, cap: Capability | null, schoolId?: string): Promise<Operator | Response> {
   const op = await operatorFromRequest(req);
   if (!op) return notFoundResponse();
+  void noteRequest({ userId: op.id, role: op.role });
   if (cap && !can(op.role, cap)) return NextResponse.json({ error: `Your role (${roleLabel(op.role)}) cannot do this.` }, { status: 403 });
   if (schoolId !== undefined && reachOf(op.role) !== 'all' && !(await canSeeSchool(createAdminClient(), op, schoolId))) {
     return NextResponse.json({ error: 'School not found' }, { status: 404 });

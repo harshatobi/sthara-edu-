@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/server';
-import { runNoShowCheck } from '@/lib/attendance/server';
+import { runJob } from '@/lib/debug/jobs';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,13 +18,8 @@ async function handle(req: NextRequest) {
   if (!secret || got.length !== secret.length || !timingSafeEqual(Buffer.from(got), Buffer.from(secret))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const db = createAdminClient();
-  const { data: schools } = await db.from('attendance_settings').select('school_id').eq('noshow_alerts', true);
-  let alerted = 0;
-  for (const s of schools || []) {
-    try { alerted += (await runNoShowCheck(db, s.school_id)).alerted; } catch (e: any) { console.warn('[cron attendance]', s.school_id, e?.message); }
-  }
-  return NextResponse.json({ ok: true, schools: (schools || []).length, alerted });
+  const run = await runJob(createAdminClient(), 'attendance-noshow', 'schedule');
+  return NextResponse.json({ ok: run.ok, ...run.detail });
 }
 export const GET = handle;
 export const POST = handle;

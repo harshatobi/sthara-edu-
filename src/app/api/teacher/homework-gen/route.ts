@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const { topic, subject, studentClass, difficulty = 'medium', numQuestions = 5, questionType = 'mixed' } = await request.json();
-    const aiBlocked = await aiGate(auth.staff.id);
+    const aiBlocked = await aiGate(auth.staff.id, 'teacherTools');
     if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });

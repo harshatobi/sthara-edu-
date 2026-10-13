@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { isRole, withTimeout } from '@/lib/auth/roles';
+import { isPlatformRole, isRole, withTimeout } from '@/lib/auth/roles';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { BookOpenIcon as BookOpen } from '@phosphor-icons/react/dist/ssr/BookOpen';
@@ -145,7 +145,7 @@ export default function LoginPage() {
       const { data: account, error: profileError } = await withTimeout(supabase.from('users').select('role, school_id').eq('id', data.user.id).single());
       if (profileError || !isRole(account?.role)) throw new Error('Your school account profile is unavailable. Contact your administrator.');
       // A real school code must match the account's school (operators excepted).
-      if (schoolId && account.role !== 'superadmin' && account.school_id !== schoolId) {
+      if (schoolId && !isPlatformRole(account.role) && account.school_id !== schoolId) {
         await supabase.auth.signOut();
         throw new Error(`This account isn’t registered at ${schoolName}. Check the school code.`);
       }
@@ -153,7 +153,7 @@ export default function LoginPage() {
       document.cookie = `__session=${data.session.access_token}; path=/; max-age=43200; SameSite=Lax`;
       // Back to the page that sent them here (the proxy adds ?redirect=), else
       // operators land in the Platform Manager and everyone else in their portal.
-      const home = account.role === 'superadmin' ? '/ops' : `/${account.role}`;
+      const home = isPlatformRole(account.role) ? '/ops' : `/${account.role}`;
       router.replace(safeRedirect(new URLSearchParams(window.location.search).get('redirect'), home) ?? home);
     } catch (err) {
       setCredsError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');

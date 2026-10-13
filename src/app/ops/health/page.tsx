@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import HealthConsole from './HealthConsole';
+import { requireCapability } from '../gate';
 
 export const metadata: Metadata = { title: 'System health' };
 
-export default function OpsHealthPage() {
+export default async function OpsHealthPage() {
+  await requireCapability('health.read');
   return <HealthConsole />;
 }

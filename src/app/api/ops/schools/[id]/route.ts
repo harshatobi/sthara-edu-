@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { loadRegistry } from '@/lib/ops/registry';
+import { can } from '@/lib/ops/roles';
 import { deleteSchool } from '@/lib/ops/deletions';
 import { normaliseCode, parseReason } from '@/lib/settings/registry';
 import { invalidateSettings } from '@/lib/settings/server';
@@ -21,7 +22,8 @@ const UUID = /^[0-9a-f-]{36}$/i;
  * trail and its AI spend over the last 30 days.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.read', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   const db = createAdminClient();
@@ -61,7 +63,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     school,
     facts,
     classes: classes || [],
-    people: people || [],
+    // Roles that neither manage accounts nor search the directory get the roster for its counts, without who is who.
+    people: can(op.role, 'schools.manage') || can(op.role, 'people.search') ? people || []
+      : (people || []).map(p => ({ ...p, name: null, email: null, custom_student_id: null })),
     // School health counts (null until the ops_school_metrics migration is applied).
     metrics: metrics.error ? null : withSubjects(((metrics.data || []) as { metrics: SchoolMetricsJson }[])[0]?.metrics ?? null,
       subjectMetrics.error ? null : ((subjectMetrics.data || []) as { metrics: Record<string, number> }[])[0]?.metrics ?? null),
@@ -71,7 +75,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       parentsWithChild: [...new Set(verifiedLinks.map(l => l.parent_id))],
     },
     journal: journal.error ? null : journal.data,
-    audit: audit.error ? null : (audit.data || []).map(a => ({ ...a, actor: a.actor_id ? who.get(a.actor_id) ?? null : null })),
+    audit: audit.error ? null : !can(op.role, 'schools.manage') && !can(op.role, 'audit.read') ? []
+      : (audit.data || []).map(a => ({ ...a, actor: a.actor_id ? who.get(a.actor_id) ?? null : null })),
     ai: usage.error ? null : {
       calls: u.length,
       failed: u.filter(r => !r.ok).length,
@@ -87,8 +92,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
  * school has fee records, which are kept: suspend such a school instead.
  */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.delete', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   const b = await req.json().catch(() => ({}));

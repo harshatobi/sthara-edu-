@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { loadRegistry } from '@/lib/ops/registry';
+import { resolvePlacement } from '@/lib/ops/org';
+import { loadAccounts, loadSight, loadTerritories } from '@/lib/ops/scope';
+import { sees, territoryPath } from '@/lib/ops/territories';
 import { getPlatformSettings } from '@/lib/settings/server';
 import { CURRICULA, PLANS, parseSchoolPatch, schoolPolicy, type Plan } from '@/lib/settings/registry';
 
@@ -10,11 +13,34 @@ export const dynamic = 'force-dynamic';
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const UUID = /^[0-9a-f-]{36}$/i;
 
-/** GET /api/ops/schools — the tenant registry: every school's policy, head counts and setup. */
+/**
+ * GET /api/ops/schools — the tenant registry: each school's policy, head counts and setup, with where it sits
+ * and who owns it. Operators with a territory get the schools in it (or owned by them or their reports).
+ */
 export async function GET(req: NextRequest) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.read');
+  if (op instanceof Response) return op;
   try {
-    return NextResponse.json(await loadRegistry(createAdminClient()));
+    const db = createAdminClient();
+    const [registry, accounts, territories, sight, { data: ops }] = await Promise.all([
+      loadRegistry(db), loadAccounts(db), loadTerritories(db), loadSight(db, op),
+      db.from('ops_operators').select('user_id, users:users!ops_operators_user_id_fkey(name, email)'),
+    ]);
+    const ownerName = new Map((ops || []).map(o => {
+      const u = (Array.isArray(o.users) ? o.users[0] : o.users) as { name?: string | null; email?: string | null } | null;
+      return [o.user_id as string, u?.name || u?.email || 'Operator'];
+    }));
+    return NextResponse.json(registry
+      .filter(s => sight.all || (accounts.has(s.id) && sees(sight, accounts.get(s.id)!)))
+      .map(s => {
+        const a = accounts.get(s.id);
+        return {
+          ...s,
+          state: a?.state ?? null, district: a?.district ?? null,
+          territory: a?.territoryId ? territoryPath(territories, a.territoryId) : null,
+          ownerId: a?.ownerId ?? null, owner: a?.ownerId ? ownerName.get(a.ownerId) ?? null : null,
+        };
+      }));
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Could not load schools.' }, { status: 500 });
   }
@@ -22,12 +48,12 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/ops/schools
- *   { name, code, curriculum, board?, city?, plan, pilotDays?, contractStudents?, pricePerStudent?, enquiryId? }
+ *   { name, code, curriculum, board?, city?, state?, district?, plan, pilotDays?, contractStudents?, pricePerStudent?, enquiryId? }
  * Creates a school. With enquiryId, the enquiry is marked qualified and noted as converted.
  */
 export async function POST(req: NextRequest) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.create');
+  if (op instanceof Response) return op;
   const b = await req.json().catch(() => ({}));
   const name = str(b.name, 120);
   const code = str(b.code, 12).toUpperCase().replace(/[^A-Z0-9-]/g, '');
@@ -44,6 +70,13 @@ export async function POST(req: NextRequest) {
   if (plan === 'mandala' && pricePerStudent === null) return NextResponse.json({ error: 'Mandala has no list price: set the agreed price per student.' }, { status: 400 });
 
   const db = createAdminClient();
+  // Where the school sits decides its territory and owner. An operator who works a territory must place it.
+  const placed = await resolvePlacement(db, { state: b.state, district: b.district });
+  if (!placed.ok) return NextResponse.json({ error: placed.error }, { status: placed.status });
+  const sight = await loadSight(db, op);
+  if (!sight.all && !placed.state) return NextResponse.json({ error: 'Pick the school’s state, so it lands in a territory.' }, { status: 400 });
+  // Outside their own territories, the school is theirs until someone reassigns it.
+  const ownerId = sight.all || sees(sight, placed) ? placed.ownerId : op.id;
   const platform = await getPlatformSettings(db);
   const pilotDays = Math.min(365, Math.max(1, Number(b.pilotDays) || platform['trial.default_days']));
 
@@ -66,6 +99,10 @@ export async function POST(req: NextRequest) {
   }).select('id').single();
   if (error?.code === '23505') return NextResponse.json({ error: `School code ${code} is already in use.` }, { status: 409 });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { error: accErr } = await db.from('ops_accounts').insert({
+    school_id: data.id, state: placed.state, district: placed.district, territory_id: placed.territoryId, owner_id: ownerId, updated_by: op.id,
+  });
+  if (accErr) console.warn('[ops schools] placement:', accErr.message);
 
   if (typeof b.enquiryId === 'string' && UUID.test(b.enquiryId)) {
     const { data: enq } = await db.from('enquiries').select('note').eq('id', b.enquiryId).maybeSingle();

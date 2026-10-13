@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { parseAssignments, resetPassword, updateTeacherAssignments } from '@/lib/ops/accounts';
 import { deleteAccount } from '@/lib/ops/deletions';
 import { parseReason } from '@/lib/settings/registry';
@@ -11,8 +11,8 @@ type Ctx = { params: Promise<{ id: string; userId: string }> };
 
 /** PATCH — { subjects: [{class, subject}], classTeacherOf } : replace a teacher's assignments. */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.manage', (await params).id);
+  if (op instanceof Response) return op;
   const { id, userId } = await params;
   const b = await req.json().catch(() => ({}));
   const subjects = parseAssignments(b.subjects ?? []);
@@ -25,8 +25,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
 /** POST — { action: 'reset-password' } : issue a new temporary password (shown once). */
 export async function POST(req: NextRequest, { params }: Ctx) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.manage', (await params).id);
+  if (op instanceof Response) return op;
   const { id, userId } = await params;
   const b = await req.json().catch(() => ({}));
   if (b.action !== 'reset-password') return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
@@ -40,8 +40,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
  * student with fee records, which are kept, and for the school's only school admin.
  */
 export async function DELETE(req: NextRequest, { params }: Ctx) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'accounts.delete', (await params).id);
+  if (op instanceof Response) return op;
   const { id, userId } = await params;
   const b = await req.json().catch(() => ({}));
   const reason = parseReason(b.reason);

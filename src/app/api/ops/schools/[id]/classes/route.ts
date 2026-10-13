@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { normClass } from '@/lib/ops/people';
 import { levelOf, type SubjectKind } from '@/lib/subjects/catalog';
 import { setClassSubjects, type OfferItem } from '@/lib/subjects/server';
@@ -27,8 +27,8 @@ const items = (v: unknown): OfferItem[] => (Array.isArray(v) ? v : []).slice(0, 
  * Never deletes classes: removing a class with students would orphan them.
  */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.manage', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   const b = await req.json().catch(() => ({}));
   const input: ClassInput[] = Array.isArray(b.classes) ? b.classes.slice(0, 200) : [];

@@ -6,14 +6,19 @@ import { BuildingsIcon as Buildings } from '@phosphor-icons/react/dist/ssr/Build
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
+import { roleLabel, type OperatorRole } from '@/lib/ops/roles';
+import { INDIAN_STATES } from '@/lib/ops/territories';
 import { downloadCsv, errText, fmtDateTime, num } from '../_ui';
+import { useCan } from '../OpsShell';
 import { useOpsApi } from '../useOpsApi';
 
 interface Enquiry {
   id: string; name: string; email: string; school: string; role: string; phone: string | null; message: string;
   designation: string | null; city: string | null; student_count: number | null; board: string | null; improvement_goal: string | null;
   source_origin: string; status: string; note: string | null; created_at: string;
+  state: string | null; district: string | null; owner_id: string | null; territory: string | null; owner: string | null;
 }
+interface Owner { id: string; name: string; role: OperatorRole }
 const ROLE: Record<string, string> = { 'school-leader': 'School leader', administrator: 'Administrator', teacher: 'Teacher', parent: 'Parent', other: 'Other' };
 const STATUS: Record<string, { t: string; tone: Tone }> = {
   new: { t: 'New', tone: 'r' }, contacted: { t: 'Contacted', tone: 'a' }, qualified: { t: 'Qualified', tone: 'g' }, closed: { t: 'Closed', tone: 'n' }, spam: { t: 'Spam', tone: 'n' },
@@ -31,6 +36,10 @@ export default function EnquiriesConsole() {
   const [q, setQ] = useState('');
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [nonce, setNonce] = useState(0);
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const can = useCan();
+  const manage = can('enquiries.manage'), assign = can('assign');
+  useEffect(() => { api<{ operators: Owner[] }>('/territories').then(d => setOwners(d.operators)).catch(() => {}); }, [api]);
   const load = useCallback(() => setNonce(n => n + 1), []);
   useEffect(() => {
     let cancelled = false;
@@ -40,19 +49,19 @@ export default function EnquiriesConsole() {
     return () => { cancelled = true; };
   }, [api, nonce]);
 
-  const update = async (id: string, body: { status?: string; note?: string }) => {
+  const update = async (id: string, body: { status?: string; note?: string; state?: string | null; district?: string | null; ownerId?: string | null }) => {
     try { await api('/enquiries', { method: 'PATCH', body: { id, ...body } }); load(); } catch (e) { setErr(errText(e)); }
   };
   const counts = useMemo(() => Object.fromEntries(VIEWS.map(([v]) => [v, (rows ?? []).filter(e => inView(e, v)).length])), [rows]);
   const needle = q.trim().toLowerCase();
-  const shown = (rows ?? []).filter(r => inView(r, view) && (!needle || `${r.name} ${r.email} ${r.school} ${r.message}`.toLowerCase().includes(needle)));
+  const shown = (rows ?? []).filter(r => inView(r, view) && (!needle || `${r.name} ${r.email} ${r.school} ${r.message} ${r.state ?? ''} ${r.district ?? ''} ${r.owner ?? ''}`.toLowerCase().includes(needle)));
 
   return (
     <>
       <PageBar eyebrow="PLATFORM MANAGER" title="Enquiries"
         sub={rows ? `${counts.new} new · ${counts.open} open · ${num(rows.length)} in total · from the contact form on www.sthara.in` : 'Loading…'}
         actions={<button className="btn" disabled={!shown.length} onClick={() => downloadCsv(`sthara-enquiries-${new Date().toISOString().slice(0, 10)}.csv`,
-          [['Received (IST)', 'Status', 'Name', 'Role', 'Designation', 'School', 'City', 'Students', 'Board', 'Wants to improve', 'Email', 'Phone', 'Message', 'Note'], ...shown.map(r => [fmtDateTime(r.created_at), r.status, r.name, ROLE[r.role] ?? r.role, r.designation, r.school, r.city, r.student_count, r.board, r.improvement_goal, r.email, r.phone, r.message, r.note])])}>
+          [['Received (IST)', 'Status', 'Name', 'Role', 'Designation', 'School', 'City', 'Students', 'Board', 'Wants to improve', 'Email', 'Phone', 'Message', 'Note', 'State', 'District', 'Territory', 'Owner'], ...shown.map(r => [fmtDateTime(r.created_at), r.status, r.name, ROLE[r.role] ?? r.role, r.designation, r.school, r.city, r.student_count, r.board, r.improvement_goal, r.email, r.phone, r.message, r.note, r.state, r.district, r.territory, r.owner])])}>
           <DownloadSimple size={15} weight="bold" /> Export CSV
         </button>} />
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
@@ -65,7 +74,7 @@ export default function EnquiriesConsole() {
         ))}
       </div>
       <div className="ops-filters">
-        <input className="cmp-in" placeholder="Search name, email, school or message" aria-label="Search enquiries" value={q} onChange={e => setQ(e.target.value)} />
+        <input className="cmp-in" placeholder="Search name, email, school, message, state or owner" aria-label="Search enquiries" value={q} onChange={e => setQ(e.target.value)} />
       </div>
 
       {!rows ? (
@@ -89,16 +98,17 @@ export default function EnquiriesConsole() {
               <p style={{ fontSize: 14, lineHeight: 1.6, marginTop: 10, whiteSpace: 'pre-wrap' }}>{r.message}</p>
             </div>
             <div style={{ display: 'grid', gap: 8, width: 190 }}>
-              <select className="cmp-sel" aria-label={`Stage of ${r.name}'s enquiry`} value={r.status} onChange={e => update(r.id, { status: e.target.value })}>
+              <select className="cmp-sel" aria-label={`Stage of ${r.name}'s enquiry`} value={r.status} disabled={!manage} onChange={e => update(r.id, { status: e.target.value })}>
                 {Object.entries(STATUS).map(([s, x]) => <option key={s} value={s}>{x.t}</option>)}
               </select>
-              {r.status !== 'spam' && r.status !== 'closed' && (
-                <Link className="btn sm pri" href={`/ops/schools?new=1&enquiry=${r.id}&name=${encodeURIComponent(r.school || '')}`}>
+              {r.status !== 'spam' && r.status !== 'closed' && can('schools.create') && (
+                <Link className="btn sm pri" href={`/ops/schools?new=1&enquiry=${r.id}&name=${encodeURIComponent(r.school || '')}&state=${encodeURIComponent(r.state || '')}&district=${encodeURIComponent(r.district || '')}`}>
                   <Buildings size={13} weight="bold" /> Create school
                 </Link>
               )}
             </div>
           </div>
+          <Placing key={`${r.state}|${r.district}|${r.owner_id}`} r={r} owners={owners} manage={manage} assign={assign} save={body => update(r.id, body)} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             <textarea className="cmp-in" rows={2} style={{ flex: '1 1 260px' }} aria-label="Internal note" placeholder="Internal note (not sent to the enquirer)"
               value={notes[r.id] ?? r.note ?? ''} maxLength={2000} onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))} />
@@ -111,5 +121,32 @@ export default function EnquiriesConsole() {
         </Empty></div>
       )}
     </>
+  );
+}
+
+/** Where the enquiry sits: its address decides the territory, and the territory's default owner takes it unless one is picked. */
+function Placing({ r, owners, manage, assign, save }: {
+  r: Enquiry; owners: Owner[]; manage: boolean; assign: boolean;
+  save: (body: { state?: string | null; district?: string | null; ownerId?: string | null }) => Promise<void>;
+}) {
+  const [state, setState] = useState(r.state ?? '');
+  const [district, setDistrict] = useState(r.district ?? '');
+  const addressDirty = state !== (r.state ?? '') || district.trim() !== (r.district ?? '');
+  return (
+    <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+      <select className="cmp-sel" style={{ flex: '1 1 170px', width: 'auto' }} aria-label="State" value={state} disabled={!manage} onChange={e => setState(e.target.value)}>
+        <option value="">{r.city ? `State not set (${r.city})` : 'State not set'}</option>
+        {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+      </select>
+      <input className="cmp-in" style={{ flex: '1 1 150px', width: 'auto' }} aria-label="District" placeholder="District" maxLength={80} disabled={!manage || !state} value={district} onChange={e => setDistrict(e.target.value)} />
+      {addressDirty && <button className="btn sm pri" onClick={() => save({ state: state || null, district: district || null })}>Place</button>}
+      {assign ? (
+        <select className="cmp-sel" style={{ flex: '1 1 200px', width: 'auto' }} aria-label="Owner" value={r.owner_id ?? ''} onChange={e => save({ ownerId: e.target.value || null })}>
+          <option value="">{r.owner_id ? 'Territory default owner' : 'No owner'}</option>
+          {owners.map(o => <option key={o.id} value={o.id}>{o.name} ({roleLabel(o.role)})</option>)}
+        </select>
+      ) : <span className="muted" style={{ fontSize: 13 }}>Owner: {r.owner ?? 'nobody yet'}</span>}
+      <span className="muted" style={{ fontSize: 12.5, flexBasis: '100%' }}>{r.territory ? `Territory: ${r.territory}` : 'Not in a territory yet: only roles that see everything can find it. Set the state to route it.'}</span>
+    </div>
   );
 }

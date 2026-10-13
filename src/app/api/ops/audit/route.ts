@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,8 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  * Newest first, at most 1,000 rows. Dates are IST days, inclusive.
  */
 export async function GET(req: NextRequest) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'audit.read');
+  if (op instanceof Response) return op;
   const sp = req.nextUrl.searchParams;
   const source = sp.get('source') === 'data' ? 'data' : 'console';
   const school = sp.get('school') || '';

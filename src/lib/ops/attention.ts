@@ -32,6 +32,11 @@ export interface RegistrySchool extends SchoolFacts {
   classes: number;
   /** Classes whose subject list is empty. */
   classesWithoutSubjects: number;
+  /** Where the school sits and who owns it (set by the schools list; absent elsewhere). */
+  state?: string | null;
+  district?: string | null;
+  territory?: string | null;
+  owner?: string | null;
 }
 
 const RANK: Record<Severity, number> = { crit: 0, warn: 1, info: 2 };

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
+import { loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,8 @@ const UUID = /^[0-9a-f-]{36}$/i;
  * find any account by name, email or roll number. At most 200 rows.
  */
 export async function GET(req: NextRequest) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'people.search');
+  if (op instanceof Response) return op;
   const sp = req.nextUrl.searchParams;
   // Keep only characters that can appear in a name, email or roll number: nothing that means anything to PostgREST's or() syntax.
   const q = (sp.get('q') || '').replace(/[^\p{L}\p{N}@._\- ]/gu, '').trim().slice(0, 80);
@@ -38,6 +40,12 @@ export async function GET(req: NextRequest) {
   if (q) query = query.or(`name.ilike.%${q}%,email.ilike.%${q}%,custom_student_id.ilike.%${q}%`);
   if (ROLES.includes(role)) query = query.eq('role', role);
   if (UUID.test(school)) query = query.eq('school_id', school);
+  // An operator who works a territory finds accounts in its schools only.
+  const visible = await visibleSchoolIds(db, await loadSight(db, op));
+  if (visible) {
+    if (!visible.size) return NextResponse.json({ people: [], capped: false });
+    query = query.in('school_id', [...visible]);
+  }
   const [{ data, error }, { data: schools }] = await Promise.all([query, db.from('schools').select('id, name, settings')]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const names = new Map((schools || []).map(s => [s.id, { name: s.name as string, code: (s.settings as { code?: string } | null)?.code ?? null }]));

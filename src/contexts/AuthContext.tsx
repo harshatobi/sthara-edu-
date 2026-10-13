@@ -11,7 +11,7 @@ export interface UserProfile {
   uid: string;
   id: string;           // alias for uid — used by heatmap/mastery pages
   email: string;
-  role: 'student' | 'teacher' | 'admin' | 'parent' | 'superadmin';
+  role: 'student' | 'teacher' | 'admin' | 'parent' | 'superadmin' | 'operator';
   schoolId?: string;
   name?: string;
   subject?: string;     // primary subject (alias for teacherSubject)

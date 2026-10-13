@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { createPeople } from '@/lib/ops/accounts';
 import type { PersonInput } from '@/lib/ops/people';
 
@@ -16,8 +16,8 @@ const MAX_BATCH = 25;
  * then creates accounts and returns each one's temporary password once.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.manage', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   const b = await req.json().catch(() => ({}));
   const people: PersonInput[] = Array.isArray(b.people) ? b.people : [];

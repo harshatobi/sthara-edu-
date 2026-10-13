@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,8 @@ const STATUSES = ['open', 'resolved', 'ignored'];
  * Operators only (404 for everyone else).
  */
 export async function GET(req: NextRequest) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'errors.read');
+  if (op instanceof Response) return op;
   const sp = req.nextUrl.searchParams;
   const db = createAdminClient();
 
@@ -80,8 +81,8 @@ export async function GET(req: NextRequest) {
  * routes use for failures they handle) and then fails uncaught (the path for crashes), so both appear in the log.
  */
 export async function POST(req: NextRequest) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'errors.manage');
+  if (op instanceof Response) return op;
   const b = await req.json().catch(() => ({}));
   if (b.action !== 'test') return NextResponse.json({ error: 'Unknown action.' }, { status: 400 });
   console.error('[ops] Test of the error log (a logged error)');
@@ -90,8 +91,8 @@ export async function POST(req: NextRequest) {
 
 /** PATCH /api/ops/errors — { fingerprint, status?: 'open' | 'resolved' | 'ignored', note? } */
 export async function PATCH(req: NextRequest) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'errors.manage');
+  if (op instanceof Response) return op;
   const b = await req.json().catch(() => ({}));
   if (typeof b.fingerprint !== 'string' || !/^[0-9a-f]{16}$/.test(b.fingerprint)) return NextResponse.json({ error: 'Pick an error.' }, { status: 400 });
   const patch: Record<string, unknown> = {};

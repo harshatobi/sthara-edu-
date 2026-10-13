@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import type { SubjectKind } from '@/lib/subjects/catalog';
 import { dropLegacyClassSubject, linkSchool, loadSubjectState, setClassSubjects, setElectives, setSubjectLeads } from '@/lib/subjects/server';
 
@@ -19,7 +19,8 @@ const reply = (r: Out) => {
 
 /** GET /api/ops/schools/:id/subjects — offerings, teachers, enrolments, leads, and the linking plan for legacy names. */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.read', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   return reply(await loadSubjectState(createAdminClient(), id));
@@ -34,8 +35,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
  *   leads { subjectKey, userIds }
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.manage', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   const db = createAdminClient();

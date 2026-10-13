@@ -10,6 +10,7 @@ import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import type { RegistrySchool } from '@/lib/ops/attention';
+import { INDIAN_STATES } from '@/lib/ops/territories';
 import { CURRICULA, PLANS, PLAN_INFO, annualValue, effectivePrice, type Plan } from '@/lib/settings/registry';
 import { PlanChip, StatusChip, Table, downloadCsv, errText, fmtDate, inr, num, schoolStatus } from '../_ui';
 import { useOpsApi } from '../useOpsApi';
@@ -50,7 +51,7 @@ export default function SchoolsRegistry() {
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = (rows || []).filter(s => matchStatus(s, status) && (tier === 'all' || s.plan === tier)
-      && (!needle || `${s.name} ${s.code ?? ''} ${s.curriculum ?? ''}`.toLowerCase().includes(needle)));
+      && (!needle || `${s.name} ${s.code ?? ''} ${s.curriculum ?? ''} ${s.state ?? ''} ${s.district ?? ''} ${s.owner ?? ''}`.toLowerCase().includes(needle)));
     const val = (s: RegistrySchool): string | number => {
       switch (sort.k) {
         case 'name': return s.name.toLowerCase();
@@ -99,7 +100,7 @@ export default function SchoolsRegistry() {
 
       <div className="card">
         <div className="ops-filters">
-          <input className="cmp-in" placeholder="Search by name, code or curriculum" aria-label="Search schools" value={q} onChange={e => setQ(e.target.value)} />
+          <input className="cmp-in" placeholder="Search by name, code, state, district or owner" aria-label="Search schools" value={q} onChange={e => setQ(e.target.value)} />
           <select className="cmp-sel" aria-label="Status" value={status} onChange={e => setStatus(e.target.value as StatusFilter)}>
             {STATUS_FILTERS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
@@ -110,7 +111,7 @@ export default function SchoolsRegistry() {
         </div>
         {!rows ? <div>{[0, 1, 2].map(i => <Skeleton key={i} h={52} style={{ marginBottom: 10 }} />)}</div> : (
           <Table
-            head={<tr>{th('name', 'School')}{th('plan', 'Tier')}{th('status', 'Status')}{th('ends', 'Pilot ends')}{th('students', 'Students', 'r')}<th className="r">Staff</th><th>Setup</th>{th('value', 'Annual value', 'r')}{th('created', 'Created')}<th aria-label="Open" /></tr>}
+            head={<tr>{th('name', 'School')}{th('plan', 'Tier')}{th('status', 'Status')}<th>Territory and owner</th>{th('ends', 'Pilot ends')}{th('students', 'Students', 'r')}<th className="r">Staff</th><th>Setup</th>{th('value', 'Annual value', 'r')}{th('created', 'Created')}<th aria-label="Open" /></tr>}
             empty={!shown.length && <Empty icon={<Buildings size={28} weight="duotone" />} title={rows.length ? 'No school matches' : 'No schools yet'}>{rows.length ? 'Change the search or filters.' : 'Create the first school to start onboarding.'}</Empty>}>
             {shown.map(s => {
               const gaps = [!s.curriculum && 'curriculum', s.classes === 0 && 'classes', s.schoolAdmins === 0 && 'admin'].filter(Boolean) as string[];
@@ -119,6 +120,7 @@ export default function SchoolsRegistry() {
                   <td style={{ minWidth: 220 }}><div className="nm">{s.name}</div><div className="sub"><span className="mono">{s.code ?? 'NO CODE'}</span> · {s.curriculum ?? 'Curriculum not set'}{s.testSchool ? ' · test' : ''}</div></td>
                   <td><PlanChip plan={s.plan} /></td>
                   <td><StatusChip s={s} />{!s.aiEnabled && <> <Chip tone="n">AI OFF</Chip></>}</td>
+                  <td style={{ fontSize: 12.5, minWidth: 150 }}>{s.territory ?? <span className="muted">Not placed</span>}<div className="sub">{s.owner ?? 'No owner'}</div></td>
                   <td style={{ whiteSpace: 'nowrap' }}>{s.plan === 'pilot' ? <>{fmtDate(s.trialEndsAt)}<div className="sub">{s.trialExpired ? 'Ended' : s.trialDaysLeft !== null ? `${s.trialDaysLeft} days left` : ''}</div></> : '—'}</td>
                   <td className="r">{num(s.roles.student ?? 0)}{s.contractStudents ? <div className="sub">{num(s.contractStudents)} contracted</div> : null}</td>
                   <td className="r">{num((s.roles.teacher ?? 0) + (s.roles.admin ?? 0))}</td>
@@ -144,7 +146,7 @@ function NewSchool({ onCancel, onCreated }: { onCancel: () => void; onCreated: (
   const params = useSearchParams();
   const enquiryId = params.get('enquiry');
   const [f, setF] = useState(() => ({
-    name: params.get('name') ?? '', code: '', curriculum: 'CBSE', city: '', board: '',
+    name: params.get('name') ?? '', code: '', curriculum: 'CBSE', city: '', board: '', state: params.get('state') ?? '', district: params.get('district') ?? '',
     plan: 'pilot' as Plan, pilotDays: 90, contractStudents: '', pricePerStudent: '',
   }));
   const [busy, setBusy] = useState(false);
@@ -199,6 +201,17 @@ function NewSchool({ onCancel, onCreated }: { onCancel: () => void; onCreated: (
         <div>
           <label className="lbl" htmlFor="n-city">CITY</label>
           <input id="n-city" className="cmp-in" maxLength={80} value={f.city} onChange={e => set('city', e.target.value)} />
+        </div>
+        <div>
+          <label className="lbl" htmlFor="n-state">STATE</label>
+          <select id="n-state" className="cmp-sel" value={f.state} onChange={e => set('state', e.target.value)}>
+            <option value="">Not set</option>
+            {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="lbl" htmlFor="n-district">DISTRICT</label>
+          <input id="n-district" className="cmp-in" maxLength={80} disabled={!f.state} placeholder="Decides the territory and owner" value={f.district} onChange={e => set('district', e.target.value)} />
         </div>
       </div>
 

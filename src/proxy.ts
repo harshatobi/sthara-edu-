@@ -18,6 +18,8 @@ import type { NextRequest } from 'next/server';
 const ROLE_ROUTES: Record<string, string[]> = {
   // Operators work in /ops (gated by its own layout, so not listed here) and may open any portal.
   superadmin: ['/admin', '/teacher', '/student', '/parent'],
+  // Other operator roles work only in /ops: no school portal.
+  operator:   [],
   admin:      ['/admin'],
   teacher:    ['/teacher'],
   student:    ['/student'],
@@ -30,6 +32,7 @@ const DASHBOARD: Record<string, string> = {
   admin:      '/admin',
   parent:     '/parent',
   superadmin: '/ops',
+  operator:   '/ops',
 };
 
 export function proxy(request: NextRequest) {

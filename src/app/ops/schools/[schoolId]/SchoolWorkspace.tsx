@@ -25,6 +25,8 @@ import { useOpsApi } from '../../useOpsApi';
 import { extendedEnd, useSchoolPatch, type AccessResult } from '../../useSchoolPatch';
 import { ClassesStep, PeopleStep, RosterStep, TeachingStep, type ClassRow, type Issued, type Person } from './parts';
 import { SupportTab } from './support';
+import { AccountTab } from './account';
+import { useCan } from '../../OpsShell';
 import { SubjectsTab } from './subjects';
 import { HealthCard, HealthTab, healthOf, type SchoolMetrics } from '../../health';
 
@@ -43,8 +45,10 @@ interface Data {
   usdToInr: number;
 }
 
+/** Tabs that set a school up or fix its accounts: for roles that manage schools. */
+const MANAGE_TABS: readonly string[] = ['classes', 'subjects', 'people', 'teaching', 'support'];
 const TABS = [
-  ['overview', 'Overview'], ['health', 'Health'], ['access', 'Subscription & access'], ['classes', 'Classes & subjects'],
+  ['overview', 'Overview'], ['health', 'Health'], ['access', 'Subscription & access'], ['account', 'Ownership & access'], ['classes', 'Classes & subjects'],
   ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['activity', 'Activity'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -64,6 +68,8 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
   const [downloaded, setDownloaded] = useState(true);
   const [adding, setAdding] = useState(false);
   const [toast, toastEl] = useToast(3200);
+  const manage = useCan()('schools.manage');
+  const tabs = TABS.filter(([k]) => manage || !MANAGE_TABS.includes(k));
 
   const setTab = (t: Tab) => { setTabState(t); router.replace(`/ops/schools/${schoolId}?tab=${t}`, { scroll: false }); };
 
@@ -112,7 +118,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
               <DownloadSimple size={15} weight="bold" /> {downloaded ? 'Download credentials again' : `Download ${issued.length} new credential${issued.length === 1 ? '' : 's'}`}
             </button>
           )}
-          <button className="btn pri" onClick={() => { setTab('people'); setAdding(true); }}><UserPlus size={15} weight="bold" /> Add people</button>
+          {manage && <button className="btn pri" onClick={() => { setTab('people'); setAdding(true); }}><UserPlus size={15} weight="bold" /> Add people</button>}
         </>} />
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
       {!downloaded && (
@@ -125,7 +131,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
       )}
 
       <div className="seg" role="tablist" aria-label="School sections" style={{ marginBottom: 18 }}>
-        {TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+        {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
       </div>
 
       {!data || !f ? (err ? null : <Skeleton h={360} style={{ borderRadius: 20 }} />) : (
@@ -135,6 +141,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
             ? <HealthTab health={healthOf(f, data.metrics, data.usdToInr)} metrics={data.metrics} go={setTab} />
             : <div className="note err">School health isn&apos;t available: the ops_school_metrics function is missing from the database.</div>)}
           {tab === 'access' && <AccessTab key={`${f.id}:${f.updatedAt}`} f={f} onSaved={msg => { toast(msg); void load(); }} onDeleted={() => router.push('/ops/schools')} />}
+          {tab === 'account' && <AccountTab schoolId={schoolId} onChanged={toast} />}
           {tab === 'classes' && <ClassesStep schoolId={schoolId} classes={data.classes} onSaved={load} next={() => setTab('people')} />}
           {tab === 'people' && (
             <>

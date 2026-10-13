@@ -9,6 +9,10 @@ import { CardHead } from '@/components/admin/kit';
 import { fmtDate } from '@/lib/admin/format';
 import { EMPLOYMENT, STAFF_CATEGORIES } from '@/lib/schedule/types';
 import { DOC_KINDS, EVENT_KINDS, GENDERS, JOB_ACTIONS, QUAL_KINDS, ageOn, tenure, type DocRow, type Employee, type Job, type ProfileRow, type StatutoryRow } from '@/lib/hr/engine';
+import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
+import { inr } from '@/lib/admin/format';
+import { monthName } from '@/lib/payroll/engine';
+import { printPayslips } from '@/lib/payroll/payslip';
 import '@/styles/people.css';
 
 interface Mine {
@@ -27,6 +31,19 @@ export default function MyRecord() {
   const { user, loading, getAuthToken } = useAuth();
   const [d, setD] = useState<Mine | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [slips, setSlips] = useState<{ id: string; month: string; net: number; gross: number; kind: 'regular' | 'settlement' }[]>([]);
+  const [printing, setPrinting] = useState<string | null>(null);
+  const [slipError, setSlipError] = useState<string | null>(null);
+  const printSlip = async (id: string) => {
+    setPrinting(id); setSlipError(null);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(`/api/me/payslips?id=${id}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Could not open the payslip.');
+      printPayslips(json.school, [json.line], json.kind);
+    } catch (e: any) { setSlipError(e?.message || 'Could not open the payslip.'); } finally { setPrinting(null); }
+  };
   useEffect(() => {
     if (loading || !user) return;
     let cancelled = false;
@@ -36,6 +53,9 @@ export default function MyRecord() {
       const json = await res.json().catch(() => ({}));
       if (cancelled) return;
       if (res.ok) setD(json); else setError(json?.error || 'Could not load your record.');
+      // Payslips are separate: a school that doesn't run payroll here simply has none.
+      const ps = await fetch('/api/me/payslips', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }).then(r => (r.ok ? r.json() : { payslips: [] })).catch(() => ({ payslips: [] }));
+      if (!cancelled) setSlips(ps.payslips || []);
     })().catch(() => { if (!cancelled) setError('Could not load your record.'); });
     return () => { cancelled = true; };
   }, [loading, user, getAuthToken]);
@@ -97,6 +117,19 @@ export default function MyRecord() {
           </dl>
         </div>
       </div>
+      {slips.length > 0 && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <CardHead title="My payslips" sub="Approved by the school. Print one or save it as a PDF from the print window." />
+          {slipError && <div className="note err" role="alert" style={{ marginBottom: 10 }}>{slipError}</div>}
+          {slips.map(sl => (
+            <div key={sl.id} className="row">
+              <div style={{ flex: 1 }}><b>{sl.kind === 'settlement' ? 'Final settlement' : monthName(sl.month)}</b><div className="muted" style={{ fontSize: 12.5 }}>Gross {inr(sl.gross)}</div></div>
+              <b className="num">{inr(sl.net)}</b>
+              <button className="btn sm" disabled={printing === sl.id} onClick={() => printSlip(sl.id)}><Printer size={13} /> {printing === sl.id ? 'Opening…' : 'Print'}</button>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="g2">
         <div className="card">
           <CardHead title="Qualifications" />

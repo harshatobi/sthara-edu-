@@ -28,3 +28,16 @@
 .canon .hr-form-acts { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; justify-content:flex-end; }
 .canon .hr-ta { width:100%; border:1.5px solid var(--line); border-radius:11px; padding:10px 12px; font-family:inherit; font-size:13.5px; min-height:72px; resize:vertical; background:#fff; color:var(--ink); }
 @media (max-width:760px) { .canon .hr-search { min-width:0; width:100%; } }
+
+/* Payroll: money columns, the line breakdown inside a run, and editable salary lines. */
+.canon .pay-n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.canon .pay-split { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.canon .pay-split h4 { font-size:11px; font-weight:800; letter-spacing:.08em; color:var(--mut); text-transform:uppercase; margin-bottom:6px; }
+.canon .pay-li { display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px; }
+.canon .pay-li small { display:block; color:var(--mut); font-size:12px; }
+.canon .pay-li.tot { border-bottom:0; font-weight:800; }
+.canon .pay-sal { display:grid; grid-template-columns:1fr 150px 34px; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+.canon .pay-sal input { width:100%; border:1.5px solid var(--line); border-radius:9px; padding:7px 9px; font-family:inherit; font-size:13.5px; text-align:right; background:#fff; color:var(--ink); }
+.canon .pay-sal .u { font-size:12px; color:var(--mut); }
+.canon .pay-open td { background:var(--body); }
+@media (max-width:760px) { .canon .pay-split { grid-template-columns:1fr; } }

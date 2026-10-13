@@ -118,6 +118,7 @@ export default function EmployeeWorkspace({ id, data, call, onClose, onChanged, 
           {e.employment === 'permanent' && <Fact label="Probation">{e.confirmedOn ? `Confirmed ${fmtDate(e.confirmedOn)}` : e.probationUntil ? `Until ${fmtDate(e.probationUntil)}` : 'None recorded'}</Fact>}
           {!e.active && <Fact label="Left on">{e.exitOn ? fmtDate(e.exitOn) : 'Date not recorded'}</Fact>}
         </dl>
+        {!e.active && d.exits[0]?.status === 'completed' && <div className="note info" style={{ marginTop: 14 }}>Their final pay is settled in <a href="/admin/payroll?tab=settlements" style={{ fontWeight: 700, textDecoration: 'underline' }}>Payroll, Settlements</a>.</div>}
         {manager && !manager.active && <div className="note" style={{ marginTop: 14 }}>{manager.name} has left the school. Use Change job to set who {e.name} reports to now.</div>}
       </div>
 

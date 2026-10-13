@@ -15,6 +15,7 @@ import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/C
 import { CalendarDotsIcon as CalendarDots } from '@phosphor-icons/react/dist/ssr/CalendarDots';
 import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
 import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/react/dist/ssr/IdentificationCard';
+import { WalletIcon as Wallet } from '@phosphor-icons/react/dist/ssr/Wallet';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -35,6 +36,7 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/admissions', label: 'Admissions', icon: CurrencyInr, need: ['admissions.read'] },
   { href: '/admin/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple, need: ['messages.office'] },
   { href: '/admin/people', label: 'People', icon: IdentificationCard, need: ['dashboard.view'] },
+  { href: '/admin/payroll', label: 'Payroll', icon: Wallet, need: ['payroll.read', 'payroll.prepare', 'payroll.approve'] },
   { href: '/admin/staff', label: 'Staff & Leave', short: 'Staff', icon: CalendarBlank, need: ['workforce.read'] },
   { href: '/admin/schedule', label: 'Schedule', icon: CalendarDots, need: ['dashboard.view'] },
   { href: '/admin/attendance', label: 'Student Attendance', short: 'Attendance', icon: CalendarCheck, need: ['attendance.read'] },

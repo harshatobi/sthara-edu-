@@ -122,7 +122,7 @@ function PersonPayWorkspace({ p, data, call, toast, onChanged, onClose }: { p: P
             <div><dt>Hold</dt><dd className={d.pay.onHold ? undefined : 'none'}>{d.pay.onHold ? d.pay.holdReason : 'No'}</dd></div>
           </dl>
           <div style={{ marginTop: 16 }}>
-            <CardHead title={`Tax declaration ${d.fy}`} sub={decl ? (decl.proofsVerified ? 'Proofs verified.' : 'Declared; proofs not yet verified.') : d.pay.taxRegime === 'old' ? 'Nothing declared: tax is worked with no deductions.' : 'Not needed on the new regime, except other income or a previous employer this year.'}
+            <CardHead title={`Tax declaration ${d.fy}`} sub={decl ? (decl.proofsVerified ? 'Proofs verified.' : 'Declared; proofs not yet verified.') : d.pay.taxRegime === 'old' ? 'Nothing declared: tax is worked with no deductions.' : 'Not needed on the new regime, except other income, or salary paid earlier this year outside Sthara.'}
               right={can && <button className="btn sm" onClick={() => setOpen({ k: 'decl' })}>{decl ? 'Edit' : 'Enter'}</button>} />
           </div>
         </div>
@@ -337,7 +337,7 @@ const DECL: [keyof Declaration, string, string][] = [
   ['home_loan_interest', 'HOME LOAN INTEREST', 'Cap 2,00,000.'], ['nps_80ccd1b', 'NPS, SECTION 80CCD(1B)', 'Cap 50,000.'],
 ];
 const BOTH: [keyof Declaration, string, string][] = [
-  ['other_income', 'OTHER INCOME DECLARED', 'Interest, rent received.'], ['prev_income', 'SALARY FROM A PREVIOUS EMPLOYER THIS YEAR', ''], ['prev_tds', 'TDS DEDUCTED BY THE PREVIOUS EMPLOYER', ''],
+  ['other_income', 'OTHER INCOME DECLARED', 'Interest, rent received.'], ['prev_income', 'SALARY PAID EARLIER THIS YEAR, OUTSIDE STHARA', 'A previous employer, or this school before payroll moved to Sthara.'], ['prev_tds', 'TDS ALREADY DEDUCTED ON THAT', ''],
 ];
 function DeclarationForm({ p, fy, decl, regime, call, onClose, onSaved }: { p: PayPerson; fy: string; decl: Mine['declarations'][number] | null; regime: 'new' | 'old'; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
   const [items, setItems] = useState<Record<string, string>>(Object.fromEntries(Object.entries(decl?.items ?? {}).filter(([, x]) => typeof x === 'number').map(([k, x]) => [k, String(x)])));
@@ -347,7 +347,7 @@ function DeclarationForm({ p, fy, decl, regime, call, onClose, onSaved }: { p: P
   const [err, setErr] = useState<string | null>(null);
   const field = ([k, label, hint]: [keyof Declaration, string, string]) => <In key={k} id={`d-${k}`} label={label} type="number" min={0} value={items[k] ?? ''} onChange={x => setItems({ ...items, [k]: x })} hint={hint || undefined} />;
   return (
-    <Pop wide title={`${p.name}: tax declaration ${fy}`} sub={regime === 'old' ? 'Amounts for the whole year. Monthly tax is worked on these from the next run.' : 'On the new regime only other income and a previous employer change the tax. Switch them to the old regime under Tax and statutory to use deductions.'} onClose={onClose}>
+    <Pop wide title={`${p.name}: tax declaration ${fy}`} sub={regime === 'old' ? 'Amounts for the whole year. Monthly tax is worked on these from the next run.' : 'On the new regime only other income and salary paid earlier this year outside Sthara change the tax. Switch them to the old regime under Tax and statutory to use deductions.'} onClose={onClose}>
       <div className="sch-fields" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
         {regime === 'old' && DECL.map(field)}{BOTH.map(field)}
       </div>

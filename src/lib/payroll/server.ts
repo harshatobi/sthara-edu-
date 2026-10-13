@@ -219,6 +219,10 @@ export async function buildLines(db: SupabaseClient, schoolId: string, month: st
   const open = out.lines.filter(l => l.flags.includes('attendance_open')).length;
   if (open) out.warnings.push(`Attendance for ${open} ${open === 1 ? 'person is' : 'people are'} not confirmed for the month, so no loss of pay was applied to them. Confirm the month in Schedule > Attendance and work the run out again.`);
   if (!school.ptState) out.warnings.push('No professional tax state is set, so none was deducted.');
+  // A school that starts payroll here part-way through the year: tax is worked only on what Sthara knows was paid.
+  if (!only && school.tdsEnabled && month !== fyStart(fy) && out.lines.length && !(past || []).some(h => h.month >= fyStart(fy))) {
+    out.warnings.push(`This is the first run of ${fy} and the year began in April. Tax is worked only on pay Sthara knows about, so for anyone paid earlier this year enter that salary and the TDS already deducted in their tax declaration (Salaries, open the person), then work the run out again. Otherwise too little tax is deducted.`);
+  }
   return out;
 }
 

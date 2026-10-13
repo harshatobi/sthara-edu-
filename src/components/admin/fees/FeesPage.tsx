@@ -17,6 +17,7 @@ import type { AdminDesk } from '@/lib/admin/desk';
 import { ago, fmtDate, inr, inrShort, isoDay, plural } from '@/lib/admin/format';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Kpi, MissingNotice, downloadCsv } from '../kit';
+import Counter from './Counter';
 import FamilyLedger, { STATUS_CHIP, TONE_CHIP } from './FamilyLedger';
 import ReminderPanel from './ReminderPanel';
 import StructureEditor from './StructureEditor';
@@ -38,7 +39,7 @@ export function FinanceTabs() {
   );
 }
 
-const FEE_TABS = [['ledger', 'Ledger'], ['daybook', 'Day book'], ['concessions', 'Concessions'], ['forecast', 'Forecast']] as const;
+const FEE_TABS = [['counter', 'Counter'], ['ledger', 'Ledger'], ['daybook', 'Day book'], ['concessions', 'Concessions'], ['forecast', 'Forecast']] as const;
 type FeeTab = typeof FEE_TABS[number][0];
 
 const FEE_TABLES = ['fee_structures', 'fee_invoices', 'fee_payments', 'fee_reminders'];
@@ -62,8 +63,11 @@ function Fees({ desk }: { desk: AdminDesk }) {
   const [raising, setRaising] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const a = desk.me.access;
-  const tab: FeeTab = (FEE_TABS.map(t => t[0]) as string[]).includes(params.get('tab') || '') ? params.get('tab') as FeeTab : 'ledger';
-  const setTab = (t: FeeTab) => router.replace(t === 'ledger' ? '/admin/fees' : `/admin/fees?tab=${t}`, { scroll: false });
+  // Someone whose job is taking payments (no billing rights) starts at the counter; everyone else at the ledger.
+  const home: FeeTab = a.can('fees.collect') && !a.can('fees.bill') ? 'counter' : 'ledger';
+  const asked = params.get('tab') || '';
+  const tab: FeeTab = (FEE_TABS.map(t => t[0]) as string[]).includes(asked) && (asked !== 'counter' || a.can('fees.collect')) ? asked as FeeTab : home;
+  const setTab = (t: FeeTab) => router.replace(t === home ? '/admin/fees' : `/admin/fees?tab=${t}`, { scroll: false });
   const pendingConcessions = desk.concessions.filter(c => c.status === 'pending').length;
   const openDays = desk.dayBook.filter(d => d.receipts > 0 && d.close?.status !== 'closed' && d.day < isoDay()).length;
   const studentId = params.get('student');
@@ -128,12 +132,13 @@ function Fees({ desk }: { desk: AdminDesk }) {
       <MissingNotice desk={desk} tables={FEE_TABLES} />
       {err && <div className="err" role="alert" style={{ marginBottom: 16 }}>{err}</div>}
       <div className="seg" role="tablist" aria-label="Fee views" style={{ marginBottom: 18 }}>
-        {FEE_TABS.map(([k, l]) => (
+        {FEE_TABS.filter(([k]) => k !== 'counter' || a.can('fees.collect')).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
             {l}{k === 'concessions' && pendingConcessions ? ` · ${pendingConcessions}` : ''}{k === 'daybook' && openDays ? ` · ${openDays} open` : ''}
           </button>
         ))}
       </div>
+      {tab === 'counter' && <Counter desk={desk} call={call} onDone={done} openAccount={setStudent} />}
       {tab === 'daybook' && <DayBook desk={desk} call={call} onDone={done} />}
       {tab === 'concessions' && <Concessions desk={desk} call={call} onDone={done} />}
       {tab === 'forecast' && <Forecast desk={desk} />}

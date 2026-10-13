@@ -50,5 +50,7 @@ test('finding a family: every word must match; those who owe come first', () => 
   assert.deepEqual(findFamilies(list, roll, 'aarav').map(f => f.studentId), ['b', 'a']);
   assert.deepEqual(findFamilies(list, roll, 'rao 9-a').map(f => f.studentId), ['a', 'c']);
   assert.deepEqual(findFamilies(list, roll, 'vn9a02').map(f => f.studentId), ['c']);
+  assert.deepEqual(findFamilies(list, roll, 'diya 9a').map(f => f.studentId), ['c'], 'punctuation and spacing are ignored');
+  assert.deepEqual(findFamilies(list, roll, 'VN-9A-01').map(f => f.studentId), ['a']);
   assert.deepEqual(findFamilies(list, roll, 'a'), []);
 });

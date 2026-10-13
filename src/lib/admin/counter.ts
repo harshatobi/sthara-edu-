@@ -52,9 +52,12 @@ export function tillFor(receipts: Receipt[], day: string): Till {
 export function findFamilies(families: Family[], rollOf: Map<string, string>, q: string, max = 8): Family[] {
   const needle = q.trim().toLowerCase();
   if (needle.length < 2) return [];
-  const words = needle.split(/\s+/);
+  // Punctuation and spacing are ignored, so "9a", "9-a" and "9 A" all find Class 9-A.
+  const squash = (x: string) => x.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  const words = needle.split(/\s+/).map(squash).filter(Boolean);
+  if (!words.length) return [];
   return families
-    .filter(f => { const hay = `${f.name} ${f.cls} ${rollOf.get(f.studentId) ?? ''}`.toLowerCase(); return words.every(w => hay.includes(w)); })
+    .filter(f => { const hay = squash(`${f.name} ${f.cls} ${rollOf.get(f.studentId) ?? ''}`); return words.every(w => hay.includes(w)); })
     .sort((a, b) => Number(b.outstanding > 0) - Number(a.outstanding > 0) || a.name.localeCompare(b.name))
     .slice(0, max);
 }

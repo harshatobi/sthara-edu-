@@ -50,7 +50,7 @@ export default function RegisterDoc(p: {
     const unmarked = rows.filter(r => !r.m).length;
     const inSchool = counts[0].n + counts[2].n;
     return (
-      <div className="reg-doc day" aria-hidden="true">
+      <div className="reg-doc rd-day" aria-hidden="true">
         <header className="rd-head">
           <div>
             <div className="rd-kicker">DAILY ATTENDANCE REGISTER</div>
@@ -97,7 +97,7 @@ export default function RegisterDoc(p: {
     const watch = rows.filter(r => belowMin(r.session) || absentStreak(r.h, p.today) >= 3);
     const monthName = fmt(`${p.month}-01`, { month: 'long', year: 'numeric' });
     return (
-      <div className="reg-doc month" aria-hidden="true">
+      <div className="reg-doc rd-month" aria-hidden="true">
         <header className="rd-head">
           <div>
             <div className="rd-kicker">MONTHLY ATTENDANCE REGISTER</div>

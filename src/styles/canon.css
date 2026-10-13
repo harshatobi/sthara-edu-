@@ -1046,7 +1046,8 @@
   .canon .reg-save { bottom:8px; padding:12px 14px; }
 }
 
-/* The register document: hidden on screen, the only thing printed under body.print-register. */
+/* The register document: hidden on screen, the only thing printed under body.print-register. Its modifiers are
+   rd-day / rd-month: a bare "day" picks up the planner's .canon .day card, which un-hides it on screen. */
 .reg-doc { display:none; }
 @media print {
   @page regday { size:A4 portrait; margin:12mm 12mm 16mm; }
@@ -1055,12 +1056,12 @@
   body.print-register .toast { display:none !important; }
   body.print-register, body.print-register .canon { background:#fff !important; min-height:0 !important; }
   body.print-register .reg-doc { display:block; color:#002147; font-family:'Plus Jakarta Sans',system-ui,sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .reg-doc.day { page:regday; font-size:10pt; }
-  .reg-doc.month { page:regmonth; font-size:8pt; }
+  .reg-doc.rd-day { page:regday; font-size:10pt; }
+  .reg-doc.rd-month { page:regmonth; font-size:8pt; }
   .reg-doc .rd-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12mm; border-bottom:2px solid #002147; padding-bottom:3mm; margin-bottom:4mm; }
   .reg-doc .rd-kicker { font-size:7.5pt; font-weight:800; letter-spacing:.16em; color:#E11D48; }
   .reg-doc h1 { font-size:18pt; font-weight:800; margin:1mm 0 0; line-height:1.15; }
-  .reg-doc.month h1 { font-size:14pt; }
+  .reg-doc.rd-month h1 { font-size:14pt; }
   .reg-doc .rd-head p { margin:1mm 0 0; color:#556378; font-size:9pt; }
   .reg-doc .rd-school { text-align:right; display:flex; flex-direction:column; gap:1mm; font-size:9pt; }
   .reg-doc .rd-school b { font-size:11pt; }

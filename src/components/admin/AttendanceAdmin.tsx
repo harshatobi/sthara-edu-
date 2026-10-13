@@ -176,7 +176,7 @@ function Attendance({ desk }: { desk: AdminDesk }) {
 function SchoolDoc({ desk, att, today }: { desk: AdminDesk; att: SchoolAttendance; today: string }) {
   const printed = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
   return (
-    <div className="reg-doc day" aria-hidden="true">
+    <div className="reg-doc rd-day" aria-hidden="true">
       <header className="rd-head">
         <div>
           <div className="rd-kicker">STUDENT ATTENDANCE REPORT</div>

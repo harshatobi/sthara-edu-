@@ -114,15 +114,31 @@ body {
  * Every printed or PDF-exported page in the app carries "Powered by Sthara" at the foot, in the page margin so
  * it never covers content and repeats on every sheet. Documents that print edge to edge (the board pack's
  * named page with no margin) carry it in their own footer instead. Pages opened in their own print window
- * (components/schedule/print.ts) add the same rule from POWERED_BY_PAGE_CSS.
+ * (components/schedule/print.ts) add the same rule from POWERED_BY_PAGE_CSS, and POWERED_BY_FALLBACK_HEAD.
  */
 @media print {
   @page {
     @bottom-center {
-      content: "Powered by Sthara  \00B7  sthara.in";
+      content: "Powered by Sthara  \00B7  The Institutional OS";
       font: 600 7.5pt 'Plus Jakarta Sans', system-ui, sans-serif;
       color: #7A8699;
       vertical-align: middle;
     }
+  }
+  /*
+   * Page-margin boxes print only in Chrome and Edge. Where the browser has none (Safari, Firefox: PrintFoot marks
+   * the document), the foot is drawn in the page itself. Documents with their own printed foot are left alone.
+   */
+  html.no-margin-boxes body:not(:has(.bp-powered, .lpp-foot))::after {
+    content: "Powered by Sthara  \00B7  The Institutional OS";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    padding-top: 1.5mm;
+    text-align: center;
+    font: 600 7.5pt 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: #7A8699;
   }
 }

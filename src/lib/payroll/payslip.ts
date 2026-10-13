@@ -2,7 +2,7 @@
  * Payslips and settlement statements, printed from their own window (so no print rule touches the app's pages)
  * with the app-wide "Powered by Sthara" page foot.
  */
-import { POWERED_BY_PAGE_CSS } from '@/components/schedule/print';
+import { POWERED_BY_FALLBACK_PER_SECTION_HEAD, POWERED_BY_PAGE_CSS } from '@/components/schedule/print';
 import { monthName } from './engine';
 import type { RunLine } from './outputs';
 
@@ -69,7 +69,7 @@ export function printPayslips(school: string, lines: RunLine[], kind: 'regular' 
       .net { margin-top: 14px; border: 2px solid #002147; border-radius: 6px; padding: 10px 14px; display: flex; align-items: baseline; gap: 14px; }
       .net span { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; } .net b { font-size: 20px; } .net i { color: #555F6E; font-style: normal; text-transform: capitalize; }
       .er { color: #555F6E; margin: 12px 0 0; line-height: 1.5; } .sys { color: #7A8699; font-size: 9.5px; margin-top: 18px; }
-    </style></head><body>${lines.map(slip).join('')}</body></html>`);
+    </style>${POWERED_BY_FALLBACK_PER_SECTION_HEAD}</head><body>${lines.map(slip).join('')}</body></html>`);
   w.document.close();
   w.focus();
   setTimeout(() => { w.print(); }, 250);

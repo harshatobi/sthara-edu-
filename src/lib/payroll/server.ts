@@ -217,7 +217,7 @@ export async function buildLines(db: SupabaseClient, schoolId: string, month: st
   out.lines.sort((a, b) => a.person.name.localeCompare(b.person.name));
   if (out.noSalary.length) out.warnings.push(`${out.noSalary.length} ${out.noSalary.length === 1 ? 'person has' : 'people have'} no salary set and ${out.noSalary.length === 1 ? 'is' : 'are'} not in this run: ${out.noSalary.slice(0, 8).map(p => p.name).join(', ')}${out.noSalary.length > 8 ? ' and others' : ''}.`);
   const open = out.lines.filter(l => l.flags.includes('attendance_open')).length;
-  if (open) out.warnings.push(`Attendance for ${open} ${open === 1 ? 'person is' : 'people are'} not confirmed for the month, so no loss of pay was applied to them. Confirm the month in Schedule > Attendance and work the run out again.`);
+  if (open) out.warnings.push(`The month's attendance is not confirmed for ${open} ${open === 1 ? 'person' : 'people'}, so no loss of pay was applied to them. Confirm the month in Schedule > Attendance and work the run out again.`);
   if (!school.ptState) out.warnings.push('No professional tax state is set, so none was deducted.');
   // A school that starts payroll here part-way through the year: tax is worked only on what Sthara knows was paid.
   if (!only && school.tdsEnabled && month !== fyStart(fy) && out.lines.length && !(past || []).some(h => h.month >= fyStart(fy))) {

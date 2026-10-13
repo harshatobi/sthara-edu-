@@ -8,7 +8,7 @@ import { PAY_MODES, type Family, type Invoice, type InvoiceStatus } from '@/lib/
 import { fmtDate, inr, isoDay, plural } from '@/lib/admin/format';
 import { Field, Workspace } from '../kit';
 import type { Access } from '@/lib/admin/rbac';
-import { POWERED_BY_PAGE_CSS } from '@/components/schedule/print';
+import { POWERED_BY_FALLBACK_HEAD, POWERED_BY_PAGE_CSS } from '@/components/schedule/print';
 
 export const STATUS_CHIP: Record<InvoiceStatus, { t: string; tone: Tone }> = {
   paid: { t: 'PAID', tone: 'g' }, partial: { t: 'PART-PAID', tone: 'b' }, due: { t: 'DUE', tone: 'n' },
@@ -66,7 +66,7 @@ export default function FamilyLedger({ family, school, session, call, access, pe
       table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px solid #E2E8F0;text-align:left} th{font-size:11px;color:#64748B;text-transform:uppercase}
       @page{${POWERED_BY_PAGE_CSS}}
       .r{text-align:right} tr.rc td{color:#64748B;font-size:12px;border-bottom:1px dashed #EEF2F7} tfoot td{font-weight:700;border-top:2px solid #002147}
-    </style></head><body><h1>${esc(school)} · Fee statement</h1><div class="m">${esc(family.name)} · ${esc(family.cls)} · AY ${session} · as of ${fmtDate(isoDay())}</div>
+    </style>${POWERED_BY_FALLBACK_HEAD}</head><body><h1>${esc(school)} · Fee statement</h1><div class="m">${esc(family.name)} · ${esc(family.cls)} · AY ${session} · as of ${fmtDate(isoDay())}</div>
     <table><thead><tr><th>Invoice</th><th>For</th><th>Due</th><th class="r">Amount</th><th class="r">Concession</th><th class="r">Paid</th><th class="r">Balance</th></tr></thead>
     <tbody>${rows}</tbody><tfoot><tr><td colspan="3">Total</td><td class="r">${inr(family.invoices.filter(i => !i.voided).reduce((s, i) => s + i.amount, 0))}</td><td class="r">${inr(family.invoices.filter(i => !i.voided).reduce((s, i) => s + i.concession, 0))}</td><td class="r">${inr(family.paid)}</td><td class="r">${inr(family.outstanding)}</td></tr></tfoot></table>
     <script>window.print()</script></body></html>`);

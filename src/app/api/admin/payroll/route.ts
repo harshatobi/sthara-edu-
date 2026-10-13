@@ -198,7 +198,9 @@ export async function POST(req: NextRequest) {
       case 'seed_items': {
         const { count } = await db.from('pay_items').select('id', { count: 'exact', head: true }).eq('school_id', school);
         if (count) return bad('This school already has pay items.');
-        const { error } = await db.from('pay_items').insert(STANDARD_ITEMS.map(i => ({ ...i, school_id: school, active: i.code !== 'DUTY' && i.code !== 'INVIG' })));
+        // Every row carries every column: a bulk insert needs the same keys on each.
+        const blank = { percent_of: null, count_source: null, role: null, pf_wage: false, esi_wage: true, prorate: true };
+        const { error } = await db.from('pay_items').insert(STANDARD_ITEMS.map(i => ({ ...blank, ...i, school_id: school, active: i.code !== 'DUTY' && i.code !== 'INVIG' })));
         return error ? payrollError(error, 'Could not add the standard items.') : NextResponse.json({ ok: true });
       }
 

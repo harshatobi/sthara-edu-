@@ -11,6 +11,8 @@ import { sees } from '@/lib/ops/territories';
 import { pageAll } from '@/lib/ops/page';
 import { inQueue, slaState } from '@/lib/ops/desk';
 import { CASE_COLS, clocked, type CaseRow } from '@/lib/ops/deskServer';
+import { canDecide } from '@/lib/ops/sales';
+import { loadLimits, loadStages, todayIST } from '@/lib/ops/salesServer';
 import { usageWindow } from '@/lib/ai/window';
 import { USD_TO_INR } from '@/lib/ai/pricing';
 
@@ -83,6 +85,23 @@ export async function GET(req: NextRequest) {
     }
     const now = Date.now();
     const pendingRequests = [...bySchool].map(([schoolId, v]) => ({ schoolId, count: v.count, oldestDays: Math.floor((now - Date.parse(v.oldest)) / 86_400_000) }));
+    // The pipeline's pulse, for roles that see it (no tables on a database older than ops_sales: then nothing).
+    let sales: { approvals: number; overdue: number } | undefined;
+    if (can(op.role, 'sales.read')) {
+      const [dealRows, quoteRows, stages, limits] = await Promise.all([
+        pageAll((f, t) => db.from('ops_opportunities').select('id, stage, expected_close, territory_id, owner_id, school_id').order('id').range(f, t)),
+        db.from('ops_quotes').select('opportunity_id, needs_role, discount_pct, plan, created_by, status').eq('status', 'pending_approval').limit(500),
+        loadStages(db), loadLimits(db),
+      ]);
+      if (!dealRows.error) {
+        const mine = dealRows.data.filter(o => sees(sight, { territoryId: o.territory_id, ownerId: o.owner_id }) || (!!o.school_id && inSight(o.school_id) && !!visible));
+        const ids = new Set(mine.map(o => o.id as string)), openKeys = new Set(stages.filter(s => s.kind === 'open').map(s => s.key)), today = todayIST();
+        sales = {
+          approvals: (quoteRows.data || []).filter(q => ids.has(q.opportunity_id) && canDecide(limits, op, { needsRole: q.needs_role, discountPct: Number(q.discount_pct), plan: q.plan, createdBy: q.created_by, status: q.status })).length,
+          overdue: mine.filter(o => openKeys.has(o.stage) && o.expected_close && o.expected_close < today).length,
+        };
+      }
+    }
     const enq = can(op.role, 'enquiries.read')
       ? enquiries.data.filter(e => sees(sight, { territoryId: e.territory_id, ownerId: e.owner_id })) : [];
     const newEnquiries = enq.filter(e => e.status === 'new').length;
@@ -90,7 +109,7 @@ export async function GET(req: NextRequest) {
     const totals = !can(op.role, 'usage.read') ? null : (usage.data as { totals?: { cost?: number; calls?: number; failed?: number } } | null)?.totals ?? null;
     return NextResponse.json({
       schools: registry,
-      attention: buildAttention({ schools: registry, health: healthItems, newEnquiries, pendingRequests, errors, desk }),
+      attention: buildAttention({ schools: registry, health: healthItems, newEnquiries, pendingRequests, errors, desk, sales }),
       errors: { open24h: errors.open24h, new24h: errors.new24h },
       requests: { pending: pendingRequests.reduce((n, p) => n + p.count, 0) },
       health: summarise(healthItems),

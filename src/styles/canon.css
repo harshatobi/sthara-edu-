@@ -861,6 +861,25 @@
 .canon .ops-hl .vl { font-size:15px; font-weight:800; overflow-wrap:anywhere; }
 .canon .ops-hl .nt { font-size:12px; color:var(--mut); overflow-wrap:anywhere; }
 .canon .seg.ops-subseg button { font-size:12.5px; padding:6px 12px; }
+.canon .ops-board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(236px,1fr); gap:12px; overflow-x:auto; padding-bottom:10px; align-items:start; }
+.canon .ops-col { background:var(--body); border:1px solid var(--line); border-radius:16px; padding:12px; min-width:0; }
+.canon .ops-col[data-kind="won"] { background:#ECFDF5; border-color:#A7F3D0; }
+.canon .ops-col[data-kind="lost"] { background:#FEF2F2; border-color:#FECACA; }
+.canon .ops-col .hd { display:flex; justify-content:space-between; gap:8px; font-size:13.5px; align-items:baseline; }
+.canon .ops-col .hd .muted { font-size:11.5px; white-space:nowrap; }
+.canon .ops-col .tot { font-size:12px; color:var(--mut); margin:2px 0 10px; font-weight:600; }
+.canon .ops-deal { background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px; cursor:pointer; }
+.canon .ops-deal:hover, .canon .ops-deal:focus-visible { border-color:var(--ink); box-shadow:var(--sh); outline:none; }
+.canon .ops-deal .nm { font-size:13.5px; font-weight:800; overflow-wrap:anywhere; }
+.canon .ops-deal .amt { font-size:14px; font-weight:700; margin-top:2px; }
+.canon .ops-deal .sub { font-size:12px; color:var(--mut); margin-top:2px; }
+.canon .ops-path { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:18px; }
+.canon .ops-path button { flex:1 1 120px; padding:9px 10px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-size:12.5px; font-weight:700; color:var(--mut); }
+.canon .ops-path button[data-state="done"] { background:var(--body); color:var(--ink); }
+.canon .ops-path button[data-state="now"] { background:var(--ink); border-color:var(--ink); color:#fff; }
+.canon .ops-path button[data-state="won"] { background:#047857; border-color:#047857; color:#fff; }
+.canon .ops-path button[data-state="lost"] { background:var(--red); border-color:var(--red); color:#fff; }
+.canon .ops-path button:disabled { cursor:default; }
 .canon .ops-checks { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:6px 16px; max-height:220px; overflow-y:auto; padding:12px 14px; border:1.5px solid var(--line); border-radius:12px; background:#fff; }
 .canon .ops-checks label { display:flex; gap:8px; align-items:center; font-size:13.5px; }
 .canon .ops-window { display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:14px 16px; border:1.5px solid #B45309; border-radius:14px; background:#FFFBEB; margin-bottom:18px; }

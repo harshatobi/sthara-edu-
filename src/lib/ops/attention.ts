@@ -70,6 +70,8 @@ export function buildAttention(x: {
   pendingRequests?: PendingRequests[];
   errors?: ErrorPulse;
   desk?: DeskPulse;
+  /** Quotes this operator can approve, and open deals whose close date has passed. */
+  sales?: { approvals: number; overdue: number };
 }): AttentionItem[] {
   const out: AttentionItem[] = [];
   const log: AttentionAction = { kind: 'open', href: '/ops/errors', label: 'Open error log' };
@@ -195,6 +197,23 @@ export function buildAttention(x: {
       title: `${plural(x.desk.unassigned, 'open case')} with nobody on ${x.desk.unassigned === 1 ? 'it' : 'them'}`,
       detail: 'Raised by a school and not yet picked up.',
       actions: [desk],
+    });
+  }
+  const pipeline: AttentionAction = { kind: 'open', href: '/ops/pipeline', label: 'Open the pipeline' };
+  if (x.sales && x.sales.approvals > 0) {
+    out.push({
+      id: 'quote-approvals', severity: 'warn',
+      title: `${plural(x.sales.approvals, 'quote')} waiting for your approval`,
+      detail: 'A discount above what its writer may give alone. The deal cannot go to the school until you decide.',
+      actions: [pipeline],
+    });
+  }
+  if (x.sales && x.sales.overdue > 0) {
+    out.push({
+      id: 'deals-overdue', severity: 'info',
+      title: `${plural(x.sales.overdue, 'open deal')} past ${x.sales.overdue === 1 ? 'its' : 'their'} expected close`,
+      detail: 'Move the date, move the stage, or mark it lost: the forecast counts them in this month.',
+      actions: [pipeline],
     });
   }
   if (x.newEnquiries > 0) {

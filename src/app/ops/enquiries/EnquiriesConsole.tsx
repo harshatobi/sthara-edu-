@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BuildingsIcon as Buildings } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
+import { FunnelIcon as Funnel } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
 import { roleLabel, type OperatorRole } from '@/lib/ops/roles';
 import { INDIAN_STATES } from '@/lib/ops/territories';
@@ -101,8 +102,13 @@ export default function EnquiriesConsole() {
               <select className="cmp-sel" aria-label={`Stage of ${r.name}'s enquiry`} value={r.status} disabled={!manage} onChange={e => update(r.id, { status: e.target.value })}>
                 {Object.entries(STATUS).map(([s, x]) => <option key={s} value={s}>{x.t}</option>)}
               </select>
+              {r.status !== 'spam' && r.status !== 'closed' && can('sales.work') && (
+                <Link className="btn sm pri" href={`/ops/pipeline?new=1&enquiry=${r.id}&name=${encodeURIComponent(r.school || r.name)}&state=${encodeURIComponent(r.state || '')}&district=${encodeURIComponent(r.district || '')}&students=${r.student_count ?? ''}`}>
+                  <Funnel size={13} weight="bold" /> Make it a deal
+                </Link>
+              )}
               {r.status !== 'spam' && r.status !== 'closed' && can('schools.create') && (
-                <Link className="btn sm pri" href={`/ops/schools?new=1&enquiry=${r.id}&name=${encodeURIComponent(r.school || '')}&state=${encodeURIComponent(r.state || '')}&district=${encodeURIComponent(r.district || '')}`}>
+                <Link className="btn sm" href={`/ops/schools?new=1&enquiry=${r.id}&name=${encodeURIComponent(r.school || '')}&state=${encodeURIComponent(r.state || '')}&district=${encodeURIComponent(r.district || '')}`}>
                   <Buildings size={13} weight="bold" /> Create school
                 </Link>
               )}

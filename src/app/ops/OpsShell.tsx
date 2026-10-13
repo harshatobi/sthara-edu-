@@ -16,6 +16,7 @@ import { MapTrifoldIcon as MapTrifold } from '@phosphor-icons/react/dist/ssr/Map
 import { PulseIcon as Pulse } from '@phosphor-icons/react/dist/ssr/Pulse';
 import { UserCircleIcon as UserCircle } from '@phosphor-icons/react/dist/ssr/UserCircle';
 import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuoy';
+import { FunnelIcon as Funnel } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { CheckSquareIcon as CheckSquare } from '@phosphor-icons/react/dist/ssr/CheckSquare';
 import Link from 'next/link';
 import { PaperPlaneTiltIcon as PaperPlaneTilt } from '@phosphor-icons/react/dist/ssr/PaperPlaneTilt';
@@ -26,6 +27,7 @@ import { can, roleLabel, type Capability, type OperatorRole } from '@/lib/ops/ro
 const NAV: (CanonNavItem & { cap: Capability | null })[] = [
   { href: '/ops', label: 'Overview', icon: SquaresFour, exact: true, cap: null },
   { href: '/ops/schools', label: 'Schools', icon: Buildings, cap: 'schools.read' },
+  { href: '/ops/pipeline', label: 'Pipeline', icon: Funnel, cap: 'sales.read' },
   { href: '/ops/desk', label: 'Service desk', short: 'Desk', icon: Lifebuoy, cap: 'desk.read' },
   { href: '/ops/tasks', label: 'Follow-ups', short: 'Tasks', icon: CheckSquare, cap: 'crm.read' },
   { href: '/ops/people', label: 'People', icon: AddressBook, cap: 'people.search' },

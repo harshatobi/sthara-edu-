@@ -40,6 +40,9 @@ export const CAPABILITIES = [
   'desk.read',         // the service desk
   'desk.work',         // reply, assign, resolve
   'desk.admin',        // deadlines, categories, canned replies
+  'sales.read',        // the pipeline, quotes and forecast
+  'sales.work',        // create and move deals, write quotes
+  'sales.admin',       // stages, loss reasons, discount limits
   'debug.manage',      // resend a failed message, run a job now
 ] as const;
 export type Capability = typeof CAPABILITIES[number];
@@ -58,17 +61,17 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
     label: 'Regional lead', reach: 'territory',
     note: 'Runs a region: its schools, enquiries and the people who own them.',
     can: ['schools.read', 'schools.manage', 'schools.policy', 'schools.switches', 'schools.create', 'accounts.delete', 'people.search', 'requests.manage',
-      'enquiries.read', 'enquiries.manage', 'assign', 'operators.read', 'breakglass', 'crm.read', 'crm.write', 'desk.read', 'desk.work'],
+      'enquiries.read', 'enquiries.manage', 'assign', 'operators.read', 'breakglass', 'crm.read', 'crm.write', 'desk.read', 'desk.work', 'sales.read', 'sales.work'],
   },
   sales_rep: {
     label: 'Sales representative', reach: 'territory',
     note: 'Works enquiries in a territory and opens pilot schools from them.',
-    can: ['schools.read', 'schools.create', 'enquiries.read', 'enquiries.manage', 'crm.read', 'crm.write'],
+    can: ['schools.read', 'schools.create', 'enquiries.read', 'enquiries.manage', 'crm.read', 'crm.write', 'sales.read', 'sales.work'],
   },
   account_manager: {
     label: 'Account manager', reach: 'territory',
     note: 'Looks after live schools in a territory: setup, logins and fixes.',
-    can: ['schools.read', 'schools.manage', 'requests.manage', 'enquiries.read', 'breakglass', 'crm.read', 'crm.write', 'desk.read', 'desk.work'],
+    can: ['schools.read', 'schools.manage', 'requests.manage', 'enquiries.read', 'breakglass', 'crm.read', 'crm.write', 'desk.read', 'desk.work', 'sales.read', 'sales.work'],
   },
   support_agent: {
     label: 'Support', reach: 'all',
@@ -85,7 +88,7 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
   finance: {
     label: 'Finance', reach: 'all',
     note: 'Plans, prices and suspension for every school; AI cost. No school data.',
-    can: ['schools.read', 'schools.policy', 'usage.read', 'audit.read', 'crm.read'],
+    can: ['schools.read', 'schools.policy', 'usage.read', 'audit.read', 'crm.read', 'sales.read'],
   },
 };
 

@@ -34,7 +34,7 @@ export async function loadSla(db: Db): Promise<SlaPolicy[]> {
 }
 
 export interface Pick { kind: string; key: string; label: string; sort: number; active: boolean }
-export async function loadPicklist(db: Db, kind: 'case_category' | 'contact_role', activeOnly = true): Promise<Pick[]> {
+export async function loadPicklist(db: Db, kind: 'case_category' | 'contact_role' | 'loss_reason', activeOnly = true): Promise<Pick[]> {
   let q = db.from('ops_picklists').select('kind, key, label, sort, active').eq('kind', kind);
   if (activeOnly) q = q.eq('active', true);
   const { data } = await q.order('sort').order('label');

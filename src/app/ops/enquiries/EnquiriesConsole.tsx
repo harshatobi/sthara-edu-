@@ -8,6 +8,7 @@ import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist
 import { FunnelIcon as Funnel } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
 import { roleLabel, type OperatorRole } from '@/lib/ops/roles';
+import { SOURCES } from '@/lib/ops/revenue';
 import { INDIAN_STATES } from '@/lib/ops/territories';
 import { downloadCsv, errText, fmtDateTime, num } from '../_ui';
 import { useCan } from '../OpsShell';
@@ -18,6 +19,7 @@ interface Enquiry {
   designation: string | null; city: string | null; student_count: number | null; board: string | null; improvement_goal: string | null;
   source_origin: string; status: string; note: string | null; created_at: string;
   state: string | null; district: string | null; owner_id: string | null; territory: string | null; owner: string | null;
+  source: string | null; campaign_id: string | null; utm: { source?: string; medium?: string; campaign?: string } | null; dealId: string | null;
 }
 interface Owner { id: string; name: string; role: OperatorRole }
 const ROLE: Record<string, string> = { 'school-leader': 'School leader', administrator: 'Administrator', teacher: 'Teacher', parent: 'Parent', other: 'Other' };
@@ -38,19 +40,20 @@ export default function EnquiriesConsole() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [nonce, setNonce] = useState(0);
   const [owners, setOwners] = useState<Owner[]>([]);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
   const can = useCan();
   const manage = can('enquiries.manage'), assign = can('assign');
   useEffect(() => { api<{ operators: Owner[] }>('/territories').then(d => setOwners(d.operators)).catch(() => {}); }, [api]);
   const load = useCallback(() => setNonce(n => n + 1), []);
   useEffect(() => {
     let cancelled = false;
-    api<Enquiry[]>('/enquiries')
-      .then(data => { if (!cancelled) { setRows(data); setErr(null); } })
+    api<{ enquiries: Enquiry[]; campaigns: { id: string; name: string }[] }>('/enquiries?shape=list')
+      .then(data => { if (!cancelled) { setRows(data.enquiries); setCampaigns(data.campaigns); setErr(null); } })
       .catch(e => { if (!cancelled) { setErr(errText(e)); setRows([]); } });
     return () => { cancelled = true; };
   }, [api, nonce]);
 
-  const update = async (id: string, body: { status?: string; note?: string; state?: string | null; district?: string | null; ownerId?: string | null }) => {
+  const update = async (id: string, body: { status?: string; note?: string; state?: string | null; district?: string | null; ownerId?: string | null; source?: string | null; campaignId?: string | null }) => {
     try { await api('/enquiries', { method: 'PATCH', body: { id, ...body } }); load(); } catch (e) { setErr(errText(e)); }
   };
   const counts = useMemo(() => Object.fromEntries(VIEWS.map(([v]) => [v, (rows ?? []).filter(e => inView(e, v)).length])), [rows]);
@@ -102,7 +105,8 @@ export default function EnquiriesConsole() {
               <select className="cmp-sel" aria-label={`Stage of ${r.name}'s enquiry`} value={r.status} disabled={!manage} onChange={e => update(r.id, { status: e.target.value })}>
                 {Object.entries(STATUS).map(([s, x]) => <option key={s} value={s}>{x.t}</option>)}
               </select>
-              {r.status !== 'spam' && r.status !== 'closed' && can('sales.work') && (
+              {r.dealId && can('sales.read') && <Link className="btn sm" href={`/ops/pipeline/${r.dealId}`}><Funnel size={13} weight="bold" /> Open its deal</Link>}
+              {!r.dealId && r.status !== 'spam' && r.status !== 'closed' && can('sales.work') && (
                 <Link className="btn sm pri" href={`/ops/pipeline?new=1&enquiry=${r.id}&name=${encodeURIComponent(r.school || r.name)}&state=${encodeURIComponent(r.state || '')}&district=${encodeURIComponent(r.district || '')}&students=${r.student_count ?? ''}`}>
                   <Funnel size={13} weight="bold" /> Make it a deal
                 </Link>
@@ -115,6 +119,17 @@ export default function EnquiriesConsole() {
             </div>
           </div>
           <Placing key={`${r.state}|${r.district}|${r.owner_id}`} r={r} owners={owners} manage={manage} assign={assign} save={body => update(r.id, body)} />
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <select className="cmp-sel" style={{ flex: '1 1 170px', width: 'auto' }} aria-label="Source" value={r.source ?? ''} disabled={!manage} onChange={e => update(r.id, { source: e.target.value || null })}>
+              <option value="">Source: website</option>
+              {Object.entries(SOURCES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+            <select className="cmp-sel" style={{ flex: '1 1 200px', width: 'auto' }} aria-label="Campaign" value={r.campaign_id ?? ''} disabled={!manage} onChange={e => update(r.id, { campaignId: e.target.value || null })}>
+              <option value="">No campaign</option>
+              {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            {r.utm && <span className="muted mono" style={{ fontSize: 12 }}>{[r.utm.source, r.utm.medium, r.utm.campaign].filter(Boolean).join(' / ')}</span>}
+          </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             <textarea className="cmp-in" rows={2} style={{ flex: '1 1 260px' }} aria-label="Internal note" placeholder="Internal note (not sent to the enquirer)"
               value={notes[r.id] ?? r.note ?? ''} maxLength={2000} onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))} />

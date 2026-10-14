@@ -5,6 +5,7 @@ import { loadOperators, resolvePlacement } from '@/lib/ops/org';
 import { can } from '@/lib/ops/roles';
 import { loadSight, loadTerritories } from '@/lib/ops/scope';
 import { sees, territoryPath } from '@/lib/ops/territories';
+import { isSource } from '@/lib/ops/revenue';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,25 +21,34 @@ export async function GET(req: NextRequest) {
   if (op instanceof Response) return op;
   const db = createAdminClient();
   const base = 'id, name, email, school, role, phone, designation, city, student_count, board, improvement_goal, message, source_origin, status, note, handled_by, created_at, updated_at';
-  let { data, error } = await db.from('enquiries').select(`${base}, state, district, territory_id, owner_id`).order('created_at', { ascending: false }).limit(500);
+  let { data, error } = await db.from('enquiries').select(`${base}, state, district, territory_id, owner_id, source, campaign_id, utm`).order('created_at', { ascending: false }).limit(500);
+  // A database with territories but not yet campaigns.
+  if (error?.code === '42703') ({ data, error } = await db.from('enquiries').select(`${base}, state, district, territory_id, owner_id`).order('created_at', { ascending: false }).limit(500) as never);
   // A database older than the ops_foundation migration has no placement columns yet.
   if (error?.code === '42703') ({ data, error } = await db.from('enquiries').select(base).order('created_at', { ascending: false }).limit(500) as never);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const [sight, territories, ops] = await Promise.all([loadSight(db, op), loadTerritories(db), loadOperators(db)]);
+  const { data: campaigns } = await db.from('ops_campaigns').select('id, name, active').order('name');
+  const { data: deals } = await db.from('ops_opportunities').select('id, enquiry_id').not('enquiry_id', 'is', null).limit(1000);
+  const dealOf = new Map((deals || []).map(d => [d.enquiry_id as string, d.id as string]));
   const { data: names } = ops.length ? await db.from('users').select('id, name, email').in('id', ops.map(o => o.id)) : { data: [] };
   const nameOf = new Map((names || []).map(u => [u.id as string, (u.name || u.email) as string]));
-  return NextResponse.json((data || [])
+  const rows = (data || [])
     .filter(e => sees(sight, { territoryId: e.territory_id ?? null, ownerId: e.owner_id ?? null }))
     .map(e => ({
       ...e,
+      source: e.source ?? null, campaign_id: e.campaign_id ?? null, utm: e.utm ?? null, dealId: dealOf.get(e.id) ?? null,
       state: e.state ?? null, district: e.district ?? null, owner_id: e.owner_id ?? null,
       territory: e.territory_id ? territoryPath(territories, e.territory_id) : null,
       owner: e.owner_id ? nameOf.get(e.owner_id) ?? 'Former operator' : null,
-    })));
+    }));
+  // ?shape=list adds what the page's pickers need; the bare array stays for older callers.
+  if (req.nextUrl.searchParams.get('shape') !== 'list') return NextResponse.json(rows);
+  return NextResponse.json({ enquiries: rows, campaigns: (campaigns || []).filter(c => c.active) });
 }
 
 /**
- * PATCH /api/ops/enquiries — { id, status?, note?, state?, district?, ownerId? }
+ * PATCH /api/ops/enquiries — { id, status?, note?, state?, district?, ownerId?, source?, campaignId? }
  * The territory follows the address. Picking the owner by hand needs the 'assign' capability;
  * otherwise the territory's default owner takes it.
  */
@@ -65,6 +75,13 @@ export async function PATCH(req: NextRequest) {
     patch.status = b.status;
   }
   if (b.note !== undefined) patch.note = typeof b.note === 'string' ? b.note.trim().slice(0, 2000) || null : null;
+  if (b.source !== undefined) patch.source = isSource(b.source) ? b.source : null;
+  if (b.campaignId !== undefined) {
+    if (b.campaignId && !(typeof b.campaignId === 'string' && /^[0-9a-f-]{36}$/i.test(b.campaignId) && (await db.from('ops_campaigns').select('id').eq('id', b.campaignId).maybeSingle()).data)) {
+      return NextResponse.json({ error: 'That campaign does not exist.' }, { status: 404 });
+    }
+    patch.campaign_id = b.campaignId || null;
+  }
   if (placing) {
     if (b.ownerId !== undefined && !can(op.role, 'assign')) return NextResponse.json({ error: 'Your role cannot pick the owner. Set the address and the territory’s owner takes it.' }, { status: 403 });
     const p = await resolvePlacement(db, { state: b.state, district: b.district, ownerId: b.ownerId },

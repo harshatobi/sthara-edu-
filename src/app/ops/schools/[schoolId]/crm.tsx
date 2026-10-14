@@ -7,7 +7,7 @@ import { Chip, Empty, Skeleton, type Tone } from '@/components/canon/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { ACTIVITY_KINDS, DOC_KINDS, expiresIn, taskDue, type ActivityKind, type CaseStatus, type Priority, type SlaState } from '@/lib/ops/desk';
 import { roleLabel, type OperatorRole } from '@/lib/ops/roles';
-import { ReasonAction, Section, Table, errText, fmtDate, fmtDateTime } from '../../_ui';
+import { ReasonAction, Section, Table, errText, fmtDate, fmtDateTime, inr } from '../../_ui';
 import { useOpsApi } from '../../useOpsApi';
 import { CaseStatusChip, PriorityChip, SlaChip } from '../../desk/parts';
 
@@ -19,6 +19,8 @@ interface Data {
   contacts: Contact[]; roles: { key: string; label: string; active: boolean }[]; timeline: Item[]; tasks: Task[]; documents: Doc[];
   cases: { id: string; ref: string; subject: string; status: CaseStatus; priority: Priority; createdAt: string; sla: SlaState }[];
   owners: { id: string; name: string; role: OperatorRole }[];
+  deals: { id: string; ref: string; name: string; kind: string; stage: string; stageKind: string; amount: number; source: string | null; closedAt: string | null }[] | null;
+  won: { directSpend: number; commissions: { payee: string; reason: string; amount: number; status: string }[] } | null;
   can: { write: boolean; desk: boolean; deskWork: boolean }; me: string;
 }
 
@@ -89,6 +91,31 @@ export function RelationshipTab({ schoolId, onChanged }: { schoolId: string; onC
           {!d.cases.length && <p className="muted" style={{ fontSize: 13.5 }}>This school has raised no cases.</p>}
         </Section>
       </div>
+
+      {d.deals && (
+        <Section title="Deals, cost and commissions" sub="What Sthara has sold this school, what was spent winning and keeping it, and what is owed on it."
+          actions={<Link className="btn sm" href="/ops/pipeline">Pipeline</Link>}>
+          <div className="g2" style={{ alignItems: 'start' }}>
+            <div>
+              {d.deals.map(x => (
+                <div key={x.id} style={{ marginBottom: 10 }}>
+                  <Link href={`/ops/pipeline/${x.id}`} style={{ color: 'var(--blue)', fontSize: 14 }}><span className="mono">{x.ref}</span> {x.name}</Link>
+                  <div className="acts" style={{ gap: 6, marginTop: 4 }}><Chip tone={x.stageKind === 'won' ? 'g' : x.stageKind === 'lost' ? 'r' : 'b'}>{x.stage.toUpperCase()}</Chip><span className="muted" style={{ fontSize: 12.5 }}>{x.amount ? `${inr(x.amount)} a year` : 'No value yet'}{x.closedAt ? ` · ${fmtDate(x.closedAt)}` : ''}</span></div>
+                </div>
+              ))}
+              {!d.deals.length && <p className="muted" style={{ fontSize: 13.5 }}>No deals recorded for this school. Start a renewal or conversion from the Pipeline.</p>}
+            </div>
+            {d.won && (
+              <div>
+                <div className="muted" style={{ fontSize: 13.5 }}>Spent directly on this school: <b style={{ color: 'var(--ink)' }}>{inr(d.won.directSpend, true)}</b></div>
+                <div className="muted" style={{ fontSize: 13.5, marginTop: 4 }}>Commissions: <b style={{ color: 'var(--ink)' }}>{inr(d.won.commissions.reduce((n, c) => n + c.amount, 0), true)}</b></div>
+                {d.won.commissions.map((c, i) => <div key={i} className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{c.payee} · {c.reason} · {inr(c.amount, true)} · {c.status}</div>)}
+                <p className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Campaign spend shared across leads is shown on each deal.</p>
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
 
       <Section title="Timeline" sub="Logged by hand: calls, meetings, emails, WhatsApp chats, visits and notes. Cases, access windows and changes made in the Platform Manager are woven in."
         actions={<div className="seg" role="tablist" aria-label="Show">

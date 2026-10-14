@@ -64,6 +64,14 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     db.from('ops_access_grants').select('id, operator_email, started_at, reason, case_ref').eq('school_id', id).order('started_at', { ascending: false }).limit(50),
     loadPicklist(db, 'contact_role', false), loadOperators(db),
   ]);
+  // Deals, commissions and spend for this school, for roles that see the pipeline.
+  const sales = can(op.role, 'sales.read');
+  const [deals, commissions, spend, stageRows] = sales ? await Promise.all([
+    db.from('ops_opportunities').select('id, number, name, kind, stage, amount, source, closed_at, created_at').eq('school_id', id).order('created_at', { ascending: false }),
+    db.from('ops_commissions').select('payee_name, reason, amount, status').eq('school_id', id),
+    db.from('ops_marketing_spend').select('amount, opportunity_id, school_id').or(`school_id.eq.${id}`),
+    db.from('ops_opportunity_stages').select('key, label, kind'),
+  ]) : [null, null, null, null];
   if (contacts.error) return bad(contacts.error.code === '42P01' || contacts.error.code === 'PGRST205' ? 'The relationship tables are missing: apply the ops_crm migration.' : contacts.error.message, 500);
   const ids = [...new Set([...ops.map(o => o.id), ...(activities.data || []).map(a => a.created_by), ...(documents.data || []).map(d => d.uploaded_by)].filter(Boolean))] as string[];
   const names = ids.length ? (await db.from('users').select('id, name, email').in('id', ids)).data || [] : [];
@@ -94,6 +102,14 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     documents: (documents.data || []).map(d => ({ ...d, uploadedBy: d.uploaded_by ? nameOf.get(d.uploaded_by) ?? 'Former operator' : null })),
     cases: caseRows.slice(0, 12).map(c => ({ id: c.id, ref: caseRef(c.number), subject: c.subject, status: c.status, priority: c.priority, createdAt: c.created_at, sla: slaState(clocked(c), now) })),
     owners: ops.filter(o => o.active).map(o => ({ id: o.id, name: nameOf.get(o.id) ?? 'Operator', role: o.role })),
+    deals: sales && deals && !deals.error ? (deals.data || []).map(x => {
+      const st = (stageRows?.data || []).find(s => s.key === x.stage);
+      return { id: x.id, ref: `OPP-${x.number}`, name: x.name, kind: x.kind, stage: st?.label ?? x.stage, stageKind: st?.kind ?? 'open', amount: Number(x.amount), source: x.source, closedAt: x.closed_at };
+    }) : null,
+    won: sales && commissions && !commissions.error ? {
+      directSpend: Math.round((spend?.data || []).reduce((n, x) => n + Number(x.amount), 0)),
+      commissions: (commissions.data || []).filter(c => c.status !== 'cancelled').map(c => ({ payee: c.payee_name, reason: c.reason, amount: Number(c.amount), status: c.status })),
+    } : null,
     can: { write: can(op.role, 'crm.write'), desk: can(op.role, 'desk.read'), deskWork: can(op.role, 'desk.work') },
     me: op.id,
   });

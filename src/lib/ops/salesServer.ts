@@ -7,6 +7,8 @@ import {
   type DiscountLimits, type OppKind, type QuotePlan, type QuoteStatus, type Stage,
 } from './sales';
 import { PLANS, type Plan } from '@/lib/settings/registry';
+import { isSource } from './revenue';
+import { accrueCommissions, cancelAccrued } from './revenueServer';
 
 /** The sales pipeline's reads and writes, behind /api/ops/pipeline. */
 
@@ -15,13 +17,14 @@ type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; statu
 const fail = (error: string, status = 400) => ({ ok: false as const, error, status });
 export interface Actor { id: string; email: string; role: OperatorRole; name: string }
 
-export const OPP_COLS = 'id, number, name, kind, stage, enquiry_id, school_id, plan, students, price_per_student, amount, expected_close, next_step, contact_name, contact_phone, contact_email, state, district, territory_id, owner_id, loss_reason, closed_note, closed_at, stage_changed_at, created_by, created_at, updated_at';
+export const OPP_COLS = 'id, number, name, kind, stage, enquiry_id, school_id, plan, students, price_per_student, amount, expected_close, next_step, contact_name, contact_phone, contact_email, state, district, territory_id, owner_id, loss_reason, closed_note, closed_at, stage_changed_at, created_by, created_at, updated_at, source, campaign_id, partner_id';
 export interface OppRow {
   id: string; number: number; name: string; kind: OppKind; stage: string; enquiry_id: string | null; school_id: string | null;
   plan: Plan | null; students: number | null; price_per_student: number | null; amount: number; expected_close: string | null; next_step: string | null;
   contact_name: string | null; contact_phone: string | null; contact_email: string | null; state: string | null; district: string | null;
   territory_id: string | null; owner_id: string | null; loss_reason: string | null; closed_note: string | null; closed_at: string | null;
   stage_changed_at: string; created_by: string | null; created_at: string; updated_at: string;
+  source: string | null; campaign_id: string | null; partner_id: string | null;
 }
 export const QUOTE_COLS = 'id, number, opportunity_id, version, plan, students, list_price, price_per_student, discount_pct, term_months, valid_until, notes, status, needs_role, created_by, created_by_name, created_at, updated_at';
 export interface QuoteRow {
@@ -56,6 +59,28 @@ export async function event(db: Db, oppId: string, by: Actor | null, kind: strin
 export interface OppInput {
   name?: unknown; kind?: unknown; enquiryId?: unknown; schoolId?: unknown; plan?: unknown; students?: unknown; pricePerStudent?: unknown;
   expectedClose?: unknown; nextStep?: unknown; contactName?: unknown; contactPhone?: unknown; contactEmail?: unknown; state?: unknown; district?: unknown; ownerId?: unknown;
+  source?: unknown; campaignId?: unknown; partnerId?: unknown;
+}
+
+const UUID_RE = /^[0-9a-f-]{36}$/i;
+/** Where a deal came from: its source, campaign and partner, each checked to exist. */
+async function attribution(db: Db, b: OppInput): Promise<Result<{ patch: Record<string, unknown> }>> {
+  const patch: Record<string, unknown> = {};
+  if (b.source !== undefined) patch.source = isSource(b.source) ? b.source : null;
+  if (b.campaignId !== undefined) {
+    if (b.campaignId) {
+      if (typeof b.campaignId !== 'string' || !UUID_RE.test(b.campaignId) || !(await db.from('ops_campaigns').select('id').eq('id', b.campaignId).maybeSingle()).data) return fail('That campaign does not exist.', 404);
+      patch.campaign_id = b.campaignId;
+    } else patch.campaign_id = null;
+  }
+  if (b.partnerId !== undefined) {
+    if (b.partnerId) {
+      if (typeof b.partnerId !== 'string' || !UUID_RE.test(b.partnerId) || !(await db.from('ops_partners').select('id').eq('id', b.partnerId).maybeSingle()).data) return fail('That partner does not exist.', 404);
+      patch.partner_id = b.partnerId;
+      if (patch.source === undefined) patch.source = 'partner';
+    } else patch.partner_id = null;
+  }
+  return { ok: true, patch };
 }
 
 /** The priced part of a deal: tier, seats, price and the annual amount they come to. */
@@ -86,11 +111,13 @@ export async function createOpp(db: Db, by: Actor, b: OppInput): Promise<Result<
     state = state || acc?.state; district = district || acc?.district;
   } else if (kind !== 'new') return fail('A conversion, renewal or expansion belongs to a school: pick it.');
   if (typeof b.enquiryId === 'string' && b.enquiryId) {
-    const { data: enq } = await db.from('enquiries').select('id, name, email, phone, state, district').eq('id', b.enquiryId).maybeSingle();
+    const { data: enq } = await db.from('enquiries').select('id, name, email, phone, state, district, source, campaign_id').eq('id', b.enquiryId).maybeSingle();
     if (!enq) return fail('That enquiry does not exist.', 404);
     row.enquiry_id = enq.id;
     row.contact_name = text(b.contactName, 120) || enq.name; row.contact_email = text(b.contactEmail, 200) || enq.email; row.contact_phone = text(b.contactPhone, 30) || enq.phone;
     state = state || enq.state; district = district || enq.district;
+    // The deal keeps what the enquiry knew about where it came from.
+    row.source = isSource(enq.source) ? enq.source : 'website'; row.campaign_id = enq.campaign_id ?? null;
   } else {
     row.contact_name = text(b.contactName, 120) || null; row.contact_email = text(b.contactEmail, 200).toLowerCase() || null; row.contact_phone = text(b.contactPhone, 30) || null;
   }
@@ -98,7 +125,10 @@ export async function createOpp(db: Db, by: Actor, b: OppInput): Promise<Result<
   if (b.expectedClose && !expected) return fail('Check the expected close date.');
   const place = await resolvePlacement(db, { state, district, ownerId: b.ownerId });
   if (!place.ok) return place;
-  Object.assign(row, priced(b), {
+  const from = await attribution(db, b);
+  if (!from.ok) return from;
+  if (kind !== 'new' && from.patch.source === undefined && row.source === undefined) row.source = 'existing';
+  Object.assign(row, from.patch, priced(b), {
     expected_close: expected, state: place.state, district: place.district, territory_id: place.territoryId,
     // The writer owns a deal that lands in no territory with a default owner.
     owner_id: place.ownerId ?? by.id,
@@ -136,6 +166,11 @@ export async function updateOpp(db: Db, by: Actor, o: OppRow, b: OppInput & { st
     if (place.state !== o.state || place.district !== o.district || place.territoryId !== o.territory_id) Object.assign(patch, { state: place.state, district: place.district, territory_id: place.territoryId });
     if ((place.ownerId ?? null) !== o.owner_id) patch.owner_id = place.ownerId;
   }
+  if (b.source !== undefined || b.campaignId !== undefined || b.partnerId !== undefined) {
+    const from = await attribution(db, b);
+    if (!from.ok) return from;
+    for (const [k, v] of Object.entries(from.patch)) if ((v ?? null) !== ((o as unknown as Record<string, unknown>)[k] ?? null)) patch[k] = v;
+  }
   if (b.schoolId !== undefined && (b.schoolId || null) !== o.school_id) {
     if (b.schoolId) {
       const { data: school } = await db.from('schools').select('id').eq('id', String(b.schoolId)).maybeSingle();
@@ -163,6 +198,16 @@ export async function updateOpp(db: Db, by: Actor, o: OppRow, b: OppInput & { st
   const { error } = await db.from('ops_opportunities').update({ ...patch, updated_at: at }).eq('id', o.id);
   if (error) return fail(error.message, 500);
   if (moved) await event(db, o.id, by, 'stage', text(b.closedNote, 1000) || null, moved);
+  // A win accrues what is owed on it; reopening a won deal takes back what had not been approved.
+  if (moved) {
+    const stages = await loadStages(db);
+    const was = stages.find(s => s.key === moved!.from)?.kind, now = stages.find(s => s.key === moved!.to)?.kind;
+    const after = { ...o, ...patch } as OppRow;
+    if (now === 'won') {
+      const n = await accrueCommissions(db, by, { id: o.id, amount: Number(after.amount), school_id: after.school_id, partner_id: after.partner_id, owner_id: after.owner_id });
+      if (n) await event(db, o.id, by, 'change', `${n} commission${n === 1 ? '' : 's'} accrued on the win.`);
+    } else if (was === 'won') await cancelAccrued(db, o.id);
+  }
   if (patch.owner_id !== undefined) await event(db, o.id, by, 'owner', 'Owner changed.');
   if (patch.amount !== undefined) await event(db, o.id, by, 'change', `Value set to ${Number(patch.amount).toLocaleString('en-IN')} a year (${patch.students} students at ${patch.price_per_student}).`);
   return { ok: true, changed };

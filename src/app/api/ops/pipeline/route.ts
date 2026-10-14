@@ -39,6 +39,10 @@ export async function GET(req: NextRequest) {
   const inSight = opps.data.filter(o => oppInSight(sight, o, visible));
   const mine = inSight.filter(o => whose === 'all' || (whose === 'team' ? !!o.owner_id && (team.has(o.owner_id) || o.owner_id === op.id) : o.owner_id === op.id));
 
+  const [partners, campaigns] = await Promise.all([
+    db.from('ops_partners').select('id, name').eq('active', true).order('name'),
+    db.from('ops_campaigns').select('id, name').eq('active', true).order('name'),
+  ]);
   const quotes = await pageAll<QuoteRow>((f, t) => db.from('ops_quotes').select(QUOTE_COLS).order('created_at', { ascending: false }).order('id').range(f, t));
   const today = todayIST(), now = Date.now();
   const latest = new Map<string, QuoteRow>();
@@ -71,6 +75,7 @@ export async function GET(req: NextRequest) {
       .map(q => ({ id: q.id, ref: quoteRef(q.number, q.version), oppId: q.opportunity_id, opp: oppOf.get(q.opportunity_id)!.name, discountPct: Number(q.discount_pct), students: q.students, pricePerStudent: Number(q.price_per_student), listPrice: q.list_price === null ? null : Number(q.list_price), plan: q.plan, by: q.created_by_name, at: q.updated_at })),
     lossReasons: reasons,
     limits,
+    partners: partners.data || [], campaigns: campaigns.data || [],
     owners: ops.filter(o => o.active && can(o.role, 'sales.work')).map(o => ({ id: o.id, name: nameOf.get(o.id) ?? 'Operator', role: o.role })),
     schools: [...schoolOf].filter(([id]) => !visible || visible.has(id)).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)),
     can: { work: can(op.role, 'sales.work'), admin: can(op.role, 'sales.admin'), assign: can(op.role, 'assign') },

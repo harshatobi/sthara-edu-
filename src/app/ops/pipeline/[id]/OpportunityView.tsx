@@ -9,6 +9,7 @@ import { Chip, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
 import { POWERED_BY_FALLBACK_HEAD, POWERED_BY_PAGE_CSS } from '@/components/schedule/print';
 import { roleLabel, type OperatorRole } from '@/lib/ops/roles';
 import { OPP_KINDS, QUOTE_PLANS, QUOTE_STATUS, approvalNeeded, quoteMath, type DiscountLimits, type OppKind, type QuoteMath, type QuotePlan, type QuoteStatus, type Stage } from '@/lib/ops/sales';
+import { COMMISSION_STATUS, SOURCES, SPEND_CATEGORIES, type CommissionStatus, type Source } from '@/lib/ops/revenue';
 import { INDIAN_STATES } from '@/lib/ops/territories';
 import { PLAN_INFO, REASON_MIN, type Plan } from '@/lib/settings/registry';
 import { Facts, ReasonAction, Section, errText, fmtDate, fmtDateTime, inr, num } from '../../_ui';
@@ -20,6 +21,7 @@ interface Opp {
   pricePerStudent: number | null; expectedClose: string | null; nextStep: string | null; contactName: string | null; contactPhone: string | null; contactEmail: string | null;
   state: string | null; district: string | null; territory: string | null; ownerId: string | null; owner: string | null; schoolId: string | null; school: string | null; schoolPlan: string | null;
   enquiryId: string | null; lossReason: string | null; closedNote: string | null; closedAt: string | null; createdAt: string; daysInStage: number;
+  source: Source | null; campaignId: string | null; partnerId: string | null; campaign: string | null; partner: string | null;
 }
 interface Quote extends QuoteMath {
   id: string; ref: string; version: number; plan: QuotePlan; students: number; pricePerStudent: number; termMonths: number; validUntil: string; notes: string | null;
@@ -32,7 +34,11 @@ interface Data {
   quotes: Quote[]; tasks: { id: string; title: string; due_on: string | null; status: string; owner: string | null }[];
   lossReasons: { key: string; label: string; active: boolean }[]; limits: DiscountLimits; myLimit: number | null;
   owners: { id: string; name: string; role: OperatorRole }[]; schools: { id: string; name: string }[];
-  can: { work: boolean; assign: boolean; policy: boolean; createSchool: boolean }; me: string; today: string;
+  partners: { id: string; name: string; pct: number }[]; campaigns: { id: string; name: string }[];
+  commissions: { id: string; payee: string; reason: string; ratePct: number | null; amount: number; status: CommissionStatus; paidOn: string | null }[];
+  spend: { id: string; spentOn: string; amount: number; category: string; note: string | null; on: string }[];
+  cost: { direct: number; share: number; total: number };
+  can: { work: boolean; assign: boolean; policy: boolean; createSchool: boolean; spend: boolean; commissions: boolean }; me: string; today: string;
 }
 const QUOTE_TONE: Record<QuoteStatus, Tone> = { draft: 'n', pending_approval: 'a', approved: 'b', rejected: 'r', sent: 'p', accepted: 'g', declined: 'r', expired: 'n' };
 const EVENT: Record<string, string> = { created: 'Created', stage: 'Stage', note: 'Note', call: 'Call', meeting: 'Meeting', email: 'Email', whatsapp: 'WhatsApp', visit: 'Visit', quote: 'Quote', approval: 'Approval', owner: 'Owner', change: 'Change' };
@@ -180,6 +186,29 @@ export default function OpportunityView({ id }: { id: string }) {
         <div>
           <Section title="Deal">
             <DealForm key={`${o.stage}|${o.amount}|${o.expectedClose}|${o.ownerId}|${o.nextStep}`} d={d} busy={busy} save={body => patch(body, 'Saved.')} />
+          </Section>
+
+          <Section title="Cost and commissions" sub="What this deal has cost to win, and what is owed on it.">
+            <Facts rows={[
+              ['Spent on it directly', inr(d.cost.direct, true)],
+              ['Its share of the campaign', d.opp.campaign ? inr(d.cost.share, true) : 'No campaign'],
+              ['Cost to win', <b key="c">{inr(d.cost.total, true)}</b>],
+              ...(o.amount && d.cost.total ? [['Cost as a share of annual value', `${Math.round((d.cost.total / o.amount) * 1000) / 10}%`] as [string, string]] : []),
+            ]} />
+            {d.spend.map(s => <div key={s.id} className="muted" style={{ fontSize: 12.5, marginTop: 6 }}>{fmtDate(s.spentOn)} · {inr(s.amount, true)} · {(SPEND_CATEGORIES as Record<string, string>)[s.category] ?? s.category} on {s.on}{s.note ? ` · ${s.note}` : ''}</div>)}
+            {d.can.spend && <SpendOnDeal today={d.today} busy={busy} add={body => run(() => api('/marketing', { method: 'POST', body: { action: 'spend', opportunityId: o.id, ...body } }), 'Spend recorded.')} />}
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+              <div className="lbl">COMMISSIONS</div>
+              {d.commissions.map(c => (
+                <div key={c.id} className="acts" style={{ marginBottom: 8, gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 13.5 }}>{c.payee}</b><div className="muted" style={{ fontSize: 12 }}>{c.reason}{c.ratePct !== null ? ` · ${c.ratePct}%` : ''}</div></div>
+                  <b style={{ fontSize: 13.5 }}>{inr(c.amount, true)}</b>
+                  <Chip tone={c.status === 'paid' ? 'g' : c.status === 'approved' ? 'b' : c.status === 'accrued' ? 'a' : 'n'}>{COMMISSION_STATUS[c.status].toUpperCase()}</Chip>
+                </div>
+              ))}
+              {!d.commissions.length && <p className="muted" style={{ fontSize: 13 }}>{open ? (o.partner ? `Accrues for ${o.partner} when the deal is won.` : 'None will accrue: no partner on the deal, and no commission rule is on.') : 'None.'}</p>}
+              {d.can.commissions && d.commissions.length > 0 && <Link className="btn sm" href="/ops/partners" style={{ marginTop: 6, display: 'inline-flex' }}>Commission ledger</Link>}
+            </div>
           </Section>
 
           <Section title="Follow-ups" sub="Also on the Follow-ups page.">
@@ -352,7 +381,7 @@ function DealForm({ d, busy, save }: { d: Data; busy: boolean; save: (body: Reco
   const [f, setF] = useState({
     name: o.name, plan: o.plan ?? '', students: String(o.students ?? ''), pricePerStudent: String(o.pricePerStudent ?? ''), expectedClose: o.expectedClose ?? '', nextStep: o.nextStep ?? '',
     contactName: o.contactName ?? '', contactPhone: o.contactPhone ?? '', contactEmail: o.contactEmail ?? '', state: o.state ?? '', district: o.district ?? '', ownerId: o.ownerId ?? '',
-    schoolId: o.schoolId ?? '',
+    schoolId: o.schoolId ?? '', source: o.source ?? '', campaignId: o.campaignId ?? '', partnerId: o.partnerId ?? '',
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF(x => ({ ...x, [k]: v }));
   if (!edit) {
@@ -367,6 +396,7 @@ function DealForm({ d, busy, save }: { d: Data; busy: boolean; save: (body: Reco
           ['Territory', o.territory ?? ([o.district, o.state].filter(Boolean).join(', ') || 'Not placed')],
           ['Contact', [o.contactName, o.contactPhone, o.contactEmail].filter(Boolean).join(' · ') || 'Not set'],
           ['School on Sthara', o.school ?? 'Not yet'],
+          ['Came from', [o.source ? SOURCES[o.source] : null, o.campaign, o.partner ? `through ${o.partner}` : null].filter(Boolean).join(' · ') || 'Not recorded'],
         ]} />
         {d.can.work && <button className="btn sm" style={{ marginTop: 14 }} onClick={() => setEdit(true)}>Change</button>}
       </>
@@ -381,6 +411,9 @@ function DealForm({ d, busy, save }: { d: Data; busy: boolean; save: (body: Reco
         ...(f.state !== (o.state ?? '') || f.district !== (o.district ?? '') ? { state: f.state || null, district: f.district || null } : {}),
         ...(f.ownerId !== (o.ownerId ?? '') ? { ownerId: f.ownerId || null } : {}),
         ...(f.schoolId !== (o.schoolId ?? '') ? { schoolId: f.schoolId || null } : {}),
+        ...(f.source !== (o.source ?? '') ? { source: f.source || null } : {}),
+        ...(f.campaignId !== (o.campaignId ?? '') ? { campaignId: f.campaignId || null } : {}),
+        ...(f.partnerId !== (o.partnerId ?? '') ? { partnerId: f.partnerId || null } : {}),
       }).then(() => setEdit(false));
     }}>
       <input className="cmp-in" aria-label="Name" required minLength={2} maxLength={160} value={f.name} onChange={e => set('name', e.target.value)} />
@@ -411,11 +444,42 @@ function DealForm({ d, busy, save }: { d: Data; busy: boolean; save: (body: Reco
         <input className="cmp-in" aria-label="Contact phone" placeholder="Phone" maxLength={30} value={f.contactPhone} onChange={e => set('contactPhone', e.target.value)} />
         <input className="cmp-in" type="email" aria-label="Contact email" placeholder="Email" maxLength={200} value={f.contactEmail} onChange={e => set('contactEmail', e.target.value)} />
       </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <select className="cmp-sel" aria-label="Source" value={f.source} onChange={e => set('source', e.target.value)}>
+          <option value="">Source</option>
+          {Object.entries(SOURCES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
+        <select className="cmp-sel" aria-label="Campaign" value={f.campaignId} onChange={e => set('campaignId', e.target.value)}>
+          <option value="">No campaign</option>
+          {d.campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select className="cmp-sel" aria-label="Partner" value={f.partnerId} onChange={e => set('partnerId', e.target.value)}>
+          <option value="">No partner</option>
+          {d.partners.map(p => <option key={p.id} value={p.id}>{p.name} ({p.pct}%)</option>)}
+        </select>
+      </div>
       <select className="cmp-sel" aria-label="School on Sthara" value={f.schoolId} onChange={e => set('schoolId', e.target.value)}>
         <option value="">Not on Sthara yet</option>
         {d.schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
       </select>
       <div className="acts"><button className="btn sm pri" disabled={busy}>Save</button><button type="button" className="btn sm" onClick={() => setEdit(false)}>Cancel</button></div>
+    </form>
+  );
+}
+
+function SpendOnDeal({ today, busy, add }: { today: string; busy: boolean; add: (body: Record<string, unknown>) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ amount: '', spentOn: today, category: 'travel', note: '' });
+  if (!open) return <button className="btn sm" style={{ marginTop: 10 }} onClick={() => setOpen(true)}>Record spend on this deal</button>;
+  return (
+    <form style={{ display: 'grid', gap: 8, marginTop: 10 }} onSubmit={e => { e.preventDefault(); void add({ ...f, amount: Number(f.amount) }).then(() => { setOpen(false); setF(x => ({ ...x, amount: '', note: '' })); }); }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <input className="cmp-in" type="number" min={1} step="0.01" aria-label="Amount" placeholder="Rupees" required value={f.amount} onChange={e => setF(x => ({ ...x, amount: e.target.value }))} />
+        <input className="cmp-in" type="date" max={today} aria-label="Spent on" required value={f.spentOn} onChange={e => setF(x => ({ ...x, spentOn: e.target.value }))} />
+      </div>
+      <select className="cmp-sel" aria-label="Category" value={f.category} onChange={e => setF(x => ({ ...x, category: e.target.value }))}>{Object.entries(SPEND_CATEGORIES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+      <input className="cmp-in" aria-label="Note" placeholder="Note" maxLength={500} value={f.note} onChange={e => setF(x => ({ ...x, note: e.target.value }))} />
+      <div className="acts"><button className="btn sm pri" disabled={busy || !(Number(f.amount) > 0)}>Record</button><button type="button" className="btn sm" onClick={() => setOpen(false)}>Cancel</button></div>
     </form>
   );
 }

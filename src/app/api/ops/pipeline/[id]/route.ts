@@ -9,6 +9,7 @@ import {
   OPP_COLS, QUOTE_COLS, createQuote, decideQuote, event, loadLimits, loadStages, moveQuote, submitQuote, todayIST, updateOpp, type OppRow, type QuoteRow,
 } from '@/lib/ops/salesServer';
 import { loadSight, loadTerritories, visibleSchoolIds } from '@/lib/ops/scope';
+import { acquisitionCost, campaignStats } from '@/lib/ops/revenue';
 import { territoryPath } from '@/lib/ops/territories';
 import { actorOf, oppInSight } from '../shared';
 
@@ -45,6 +46,25 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     o.school_id ? db.from('schools').select('id, name, settings, trial_expires_at').eq('id', o.school_id).maybeSingle() : Promise.resolve({ data: null }),
     o.enquiry_id ? db.from('enquiries').select('id, school, message, student_count, board, improvement_goal, created_at').eq('id', o.enquiry_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  // Where it came from, what is owed on it, and what it cost to win.
+  const [partners, campaigns, commissions, spend] = await Promise.all([
+    db.from('ops_partners').select('id, name, commission_pct, active').order('name'),
+    db.from('ops_campaigns').select('id, name, budget, active').order('name'),
+    db.from('ops_commissions').select('id, payee_name, reason, rate_pct, amount, status, paid_on').eq('opportunity_id', o.id).order('accrued_at'),
+    db.from('ops_marketing_spend').select('id, spent_on, amount, category, note, opportunity_id, enquiry_id, school_id').or([`opportunity_id.eq.${o.id}`, o.enquiry_id ? `enquiry_id.eq.${o.enquiry_id}` : null, o.school_id ? `school_id.eq.${o.school_id}` : null].filter(Boolean).join(',')).order('spent_on', { ascending: false }),
+  ]);
+  let campaignShare = { spend: 0, leads: 0 };
+  if (o.campaign_id) {
+    const [cs, ce, cd] = await Promise.all([
+      db.from('ops_marketing_spend').select('campaign_id, amount').eq('campaign_id', o.campaign_id).limit(1000),
+      db.from('enquiries').select('id, campaign_id').eq('campaign_id', o.campaign_id).neq('status', 'spam').limit(1000),
+      db.from('ops_opportunities').select('campaign_id, enquiry_id, amount').eq('campaign_id', o.campaign_id).limit(1000),
+    ]);
+    const st = campaignStats({ id: o.campaign_id, budget: null }, (cs.data || []).map(x => ({ campaignId: x.campaign_id, amount: Number(x.amount) })),
+      (ce.data || []).map(x => ({ id: x.id, campaignId: x.campaign_id })), (cd.data || []).map(x => ({ campaignId: x.campaign_id, enquiryId: x.enquiry_id, amount: Number(x.amount), outcome: 'open' as const })));
+    campaignShare = { spend: st.spend, leads: st.leads };
+  }
+  const directSpend = (spend.data || []).reduce((n, x) => n + Number(x.amount), 0);
   const quoteRows = (quotes.data || []) as QuoteRow[];
   const { data: approvals } = quoteRows.length ? await db.from('ops_quote_approvals').select('quote_id, decision, by_name, by_role, note, at').in('quote_id', quoteRows.map(q => q.id)).order('at') : { data: [] };
   const names = ops.length ? (await db.from('users').select('id, name, email').in('id', ops.map(x => x.id))).data || [] : [];
@@ -62,7 +82,15 @@ export async function GET(req: NextRequest, { params }: Ctx) {
       schoolId: o.school_id, school: school.data?.name ?? null, schoolPlan: (school.data?.settings as { plan?: string } | null)?.plan ?? null,
       enquiryId: o.enquiry_id, lossReason: o.loss_reason, closedNote: o.closed_note, closedAt: o.closed_at, createdAt: o.created_at,
       daysInStage: daysInStage(o.stage_changed_at, Date.now()),
+      source: o.source, campaignId: o.campaign_id, partnerId: o.partner_id,
+      campaign: (campaigns.data || []).find(c => c.id === o.campaign_id)?.name ?? null,
+      partner: (partners.data || []).find(p => p.id === o.partner_id)?.name ?? null,
     },
+    partners: (partners.data || []).filter(p => p.active || p.id === o.partner_id).map(p => ({ id: p.id, name: p.name, pct: Number(p.commission_pct) })),
+    campaigns: (campaigns.data || []).filter(c => c.active || c.id === o.campaign_id).map(c => ({ id: c.id, name: c.name })),
+    commissions: commissions.error ? [] : (commissions.data || []).map(c => ({ id: c.id, payee: c.payee_name, reason: c.reason, ratePct: c.rate_pct === null ? null : Number(c.rate_pct), amount: Number(c.amount), status: c.status, paidOn: c.paid_on })),
+    spend: spend.error ? [] : (spend.data || []).map(x => ({ id: x.id, spentOn: x.spent_on, amount: Number(x.amount), category: x.category, note: x.note, on: x.opportunity_id ? 'this deal' : x.school_id ? 'the school' : 'the enquiry' })),
+    cost: acquisitionCost(directSpend, campaignShare.spend, campaignShare.leads),
     enquiry: enquiry.data,
     stages,
     events: (events.data || []).map(e => ({ ...e, from: e.from_stage ? stageOf.get(e.from_stage)?.label ?? e.from_stage : null, to: e.to_stage ? stageOf.get(e.to_stage)?.label ?? e.to_stage : null })),
@@ -85,7 +113,10 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     limits,
     myLimit: limits[op.role] ?? null,
     owners: ops.filter(x => x.active && can(x.role, 'sales.work')).map(x => ({ id: x.id, name: nameOf.get(x.id) ?? 'Operator', role: x.role })),
-    can: { work: can(op.role, 'sales.work'), assign: can(op.role, 'assign'), policy: can(op.role, 'schools.policy'), createSchool: can(op.role, 'schools.create') },
+    can: {
+      work: can(op.role, 'sales.work'), assign: can(op.role, 'assign'), policy: can(op.role, 'schools.policy'), createSchool: can(op.role, 'schools.create'),
+      spend: can(op.role, 'marketing.manage'), commissions: can(op.role, 'partners.read'),
+    },
     me: op.id, today,
   });
 }

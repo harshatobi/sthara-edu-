@@ -8,6 +8,7 @@ import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { SlidersHorizontalIcon as SlidersHorizontal } from '@phosphor-icons/react/dist/ssr/SlidersHorizontal';
 import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
 import { OPP_KINDS, QUOTE_STATUS, type Forecast, type OppKind, type QuoteStatus, type Stage } from '@/lib/ops/sales';
+import { SOURCES } from '@/lib/ops/revenue';
 import { INDIAN_STATES } from '@/lib/ops/territories';
 import { PLANS, PLAN_INFO, type Plan } from '@/lib/settings/registry';
 import { Kpi, Section, Table, downloadCsv, errText, fmtDate, inr, num } from '../_ui';
@@ -22,7 +23,7 @@ interface Opp {
 interface Approval { id: string; ref: string; oppId: string; opp: string; discountPct: number; students: number; pricePerStudent: number; listPrice: number | null; plan: string; by: string | null; at: string }
 interface Data {
   whose: string; today: string; me: string; hasTeam: boolean; stages: Stage[]; opps: Opp[]; forecast: Forecast; approvals: Approval[];
-  lossReasons: { key: string; label: string }[]; schools: { id: string; name: string }[];
+  lossReasons: { key: string; label: string }[]; schools: { id: string; name: string }[]; partners: { id: string; name: string }[]; campaigns: { id: string; name: string }[];
   can: { work: boolean; admin: boolean; assign: boolean };
 }
 const QUOTE_TONE: Record<QuoteStatus, Tone> = { draft: 'n', pending_approval: 'a', approved: 'b', rejected: 'r', sent: 'p', accepted: 'g', declined: 'r', expired: 'n' };
@@ -191,7 +192,7 @@ function NewDeal({ d, enquiryId, initial, onCancel, onCreated }: {
   const api = useOpsApi();
   const [f, setF] = useState({
     name: initial.name, kind: 'new' as OppKind, schoolId: '', plan: 'shikhara' as Plan, students: initial.students, pricePerStudent: '', expectedClose: '', nextStep: '',
-    contactName: '', contactPhone: '', contactEmail: '', state: initial.state, district: initial.district,
+    contactName: '', contactPhone: '', contactEmail: '', state: initial.state, district: initial.district, source: '', campaignId: '', partnerId: '',
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -204,6 +205,7 @@ function NewDeal({ d, enquiryId, initial, onCancel, onCreated }: {
     try {
       const out = await api<{ id: string }>('/pipeline', { method: 'POST', body: {
         ...f, enquiryId, schoolId: f.kind === 'new' ? undefined : f.schoolId, students: f.students || undefined, pricePerStudent: f.pricePerStudent || list || undefined,
+        source: f.source || undefined, campaignId: f.campaignId || undefined, partnerId: f.partnerId || undefined,
         expectedClose: f.expectedClose || undefined, name: f.name || d.schools.find(s => s.id === f.schoolId)?.name || '',
       } });
       onCreated(out.id);
@@ -267,6 +269,22 @@ function NewDeal({ d, enquiryId, initial, onCancel, onCreated }: {
             <input className="cmp-in" aria-label="Contact name" placeholder="Contact name" maxLength={120} value={f.contactName} onChange={e => set('contactName', e.target.value)} />
             <input className="cmp-in" aria-label="Contact phone" placeholder="Phone" maxLength={30} value={f.contactPhone} onChange={e => set('contactPhone', e.target.value)} />
             <input className="cmp-in" type="email" aria-label="Contact email" placeholder="Email" maxLength={200} value={f.contactEmail} onChange={e => set('contactEmail', e.target.value)} />
+          </div>
+        )}
+        {!enquiryId && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            <select className="cmp-sel" aria-label="Source" value={f.source} onChange={e => set('source', e.target.value)}>
+              <option value="">Where it came from</option>
+              {Object.entries(SOURCES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+            <select className="cmp-sel" aria-label="Campaign" value={f.campaignId} onChange={e => set('campaignId', e.target.value)}>
+              <option value="">No campaign</option>
+              {d.campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <select className="cmp-sel" aria-label="Partner" value={f.partnerId} onChange={e => set('partnerId', e.target.value)}>
+              <option value="">No partner</option>
+              {d.partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
         )}
         {f.kind === 'new' && (

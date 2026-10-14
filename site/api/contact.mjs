@@ -2,6 +2,7 @@ const MAX_BODY_BYTES = 16 * 1024;
 const BOARDS = new Set(['cbse', 'icse', 'state', 'ib', 'cambridge', 'other']);
 const GOALS = new Set(['learning-gaps', 'learning-outcomes', 'teacher-workload', 'academic-visibility', 'parent-engagement', 'explore-ai', 'full-platform']);
 const ROLES = new Set(['school-leader', 'administrator', 'teacher', 'parent', 'other']);
+const STATES = new Set(['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry']);
 const EMAIL = /^[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const UNAVAILABLE = 'Enquiries are temporarily unavailable. Please try again later.';
@@ -125,6 +126,14 @@ function validate(body, challenge = true) {
     const clean = typeof body[key] === 'string' ? body[key].trim() : '';
     if (clean.length > max || /[\x00-\x1f\x7f]/.test(clean)) errors[key] = `Enter up to ${max} characters.`;
     fields[key] = clean;
+  }
+  // The state routes the enquiry to the right territory. Optional so older callers still validate; the website form requires it.
+  fields.state = typeof body.state === 'string' ? body.state.trim() : '';
+  if (fields.state && !STATES.has(fields.state)) errors.state = 'Choose your state.';
+  // Campaign tags from the landing link: kept if tidy, dropped silently if not (they are never the visitor's fault).
+  for (const key of ['utmSource', 'utmMedium', 'utmCampaign']) {
+    const clean = typeof body[key] === 'string' ? body[key].trim() : '';
+    fields[key] = clean.length <= 80 && !/[\x00-\x1f\x7f<>]/.test(clean) ? clean : '';
   }
   const students = body.studentCount === undefined || body.studentCount === '' ? '' : String(body.studentCount).trim();
   if (students && (!/^\d{1,6}$/.test(students) || Number(students) < 1)) errors.studentCount = 'Enter the number of students as a whole number.';

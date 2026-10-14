@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { isPlatformKey, parsePlatformValue, parseReason } from '@/lib/settings/registry';
 import { getPlatformSettings, invalidateSettings } from '@/lib/settings/server';
 
@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
  * Operators only; 404 for everyone else.
  */
 export async function GET(req: NextRequest) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'settings.read');
+  if (op instanceof Response) return op;
   const db = createAdminClient();
   invalidateSettings(); // the console always shows what's stored right now
   try {
@@ -30,8 +31,8 @@ export async function GET(req: NextRequest) {
 
 /** PATCH /api/ops/settings — { key, value, reason }: change one platform setting. */
 export async function PATCH(req: NextRequest) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'settings.manage');
+  if (op instanceof Response) return op;
   const b = await req.json().catch(() => ({}));
   const key = b.key;
   if (!isPlatformKey(key)) return NextResponse.json({ error: 'Unknown setting.' }, { status: 400 });

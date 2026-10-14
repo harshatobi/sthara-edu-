@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { fulfil, type AccountRequest } from '@/lib/ops/requests';
+import { canSeeSchool, loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -13,7 +14,8 @@ const UUID = /^[0-9a-f-]{36}$/i;
  * Operators only (404 for everyone else).
  */
 export async function GET(req: NextRequest) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'requests.manage');
+  if (op instanceof Response) return op;
   const school = req.nextUrl.searchParams.get('school') || '';
   const db = createAdminClient();
   const cols = 'id, school_id, kind, applicant_id, people, options, note, status, requested_by, created_at, decided_by, decided_at, decision_note, result';
@@ -26,7 +28,8 @@ export async function GET(req: NextRequest) {
     db.from('schools').select('id, name, settings'),
   ]);
   if (pending.error) return NextResponse.json({ error: pending.error.message }, { status: 500 });
-  const rows = [...(pending.data || []), ...(decided.data || [])];
+  const visible = await visibleSchoolIds(db, await loadSight(db, op));
+  const rows = [...(pending.data || []), ...(decided.data || [])].filter(r => !visible || visible.has(r.school_id));
   const userIds = [...new Set(rows.flatMap(r => [r.requested_by, r.decided_by]).filter(Boolean))] as string[];
   const applicantIds = [...new Set(rows.map(r => r.applicant_id).filter(Boolean))] as string[];
   const [{ data: users }, { data: applicants }] = await Promise.all([
@@ -53,15 +56,15 @@ export async function GET(req: NextRequest) {
  * a note the school will see. Whoever asked is told either way.
  */
 export async function PATCH(req: NextRequest) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'requests.manage');
+  if (op instanceof Response) return op;
   const b = await req.json().catch(() => ({}));
   if (typeof b.id !== 'string' || !UUID.test(b.id)) return NextResponse.json({ error: 'Pick a request.' }, { status: 400 });
   if (b.decision !== 'approve' && b.decision !== 'reject') return NextResponse.json({ error: 'Approve or reject.' }, { status: 400 });
   const note = typeof b.note === 'string' ? b.note.trim().slice(0, 1000) : '';
   const db = createAdminClient();
   const { data: r } = await db.from('account_requests').select('*').eq('id', b.id).maybeSingle();
-  if (!r) return NextResponse.json({ error: 'That request no longer exists.' }, { status: 404 });
+  if (!r || !(await canSeeSchool(db, op, r.school_id))) return NextResponse.json({ error: 'That request no longer exists.' }, { status: 404 });
   if (r.status !== 'pending') return NextResponse.json({ error: `That request was already ${r.status}.` }, { status: 409 });
 
   const what = r.kind === 'enrolment'

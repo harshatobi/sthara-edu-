@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   if (!messages.length || messages[messages.length - 1].role !== 'user') return NextResponse.json({ error: 'Ask the Copilot something.' }, { status: 400 });
   const studioKind = STUDIO.some(x => x.kind === b?.studio?.kind) ? (b.studio.kind as StudioKind) : null;
 
-  const aiBlocked = await aiGate(staff.id);
+  const aiBlocked = await aiGate(staff.id, 'teacherTools');
   if (aiBlocked) return aiBlocked;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });

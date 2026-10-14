@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     if (insErr) return bad(insErr.code === '23505' ? 'You have already submitted this assignment.' : 'Could not hand in your work. Try again.', insErr.code === '23505' ? 409 : 500);
     return NextResponse.json({ success: true, pendingReview: true, aiGraded: false });
   };
-  if (await aiGate(user.id)) return handIn();
+  if (await aiGate(user.id, 'practice')) return handIn();
   try {
     const grade = await gradePages(db, a, pages, { source: 'student', capturedBy: null, studentName: me2.name });
     const submissionId = await storeCapture(db, a, user.id, pages, grade);

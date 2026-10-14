@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const { title, description, questions, studentAnswers } = await request.json();
 
-    const aiBlocked = await aiGate(user.id);
+    const aiBlocked = await aiGate(user.id, 'practice');
     if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
 

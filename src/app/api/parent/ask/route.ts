@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const messages = (Array.isArray(b?.messages) ? b.messages : []).slice(-12)
     .map((m: any) => ({ role: m?.role === 'os' ? 'os' as const : 'parent' as const, text: str(m?.text, 3000) })).filter((m: any) => m.text);
   if (!messages.length || messages[messages.length - 1].role !== 'parent') return NextResponse.json({ error: 'Ask something first.' }, { status: 400 });
-  const blocked = await aiGate(auth.parent.id);
+  const blocked = await aiGate(auth.parent.id, 'ask');
   if (blocked) return blocked;
   try {
     const { reply } = await askSchoolOS(auth.db, auth.parent, messages, 'web');

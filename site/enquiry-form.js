@@ -32,6 +32,13 @@
         </div>
         ${field('designation', 'Designation', 'text', 'organization-title', 100)}
         ${field('city', 'City', 'text', 'address-level2', 100)}
+        <div class="enquiry-field">
+          <label class="enquiry-label" for="${id}-state">State</label>
+          <select class="enquiry-input" id="${id}-state" name="state" required autocomplete="address-level1" aria-describedby="${id}-state-error">
+            <option value="">Select your state</option><option>Andhra Pradesh</option><option>Arunachal Pradesh</option><option>Assam</option><option>Bihar</option><option>Chhattisgarh</option><option>Goa</option><option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option><option>Manipur</option><option>Meghalaya</option><option>Mizoram</option><option>Nagaland</option><option>Odisha</option><option>Punjab</option><option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option><option>Telangana</option><option>Tripura</option><option>Uttar Pradesh</option><option>Uttarakhand</option><option>West Bengal</option><option>Andaman and Nicobar Islands</option><option>Chandigarh</option><option>Dadra and Nagar Haveli and Daman and Diu</option><option>Delhi</option><option>Jammu and Kashmir</option><option>Ladakh</option><option>Lakshadweep</option><option>Puducherry</option>
+          </select>
+          <span class="enquiry-field-error" id="${id}-state-error" data-enquiry-error="state"></span>
+        </div>
         ${field('studentCount', 'Number of students', 'number', 'off', 6)}
         <div class="enquiry-field">
           <label class="enquiry-label" for="${id}-board">Board</label>
@@ -187,8 +194,14 @@
         return;
       }
       const values = new FormData(form);
-      const fields = Object.fromEntries(['name', 'email', 'school', 'role', 'phone', 'message', 'website', 'designation', 'city', 'studentCount', 'board', 'improvementGoal'].map(name => [name, String(values.get(name) || '').trim()]));
+      const fields = Object.fromEntries(['name', 'email', 'school', 'role', 'phone', 'message', 'website', 'designation', 'city', 'state', 'studentCount', 'board', 'improvementGoal'].map(name => [name, String(values.get(name) || '').trim()]));
       fields.consent = values.get('consent') === 'on';
+      // Campaign tags from the link that brought the visitor here, so the enquiry can be traced to its campaign.
+      const landed = new URLSearchParams(window.location.search);
+      for (const [key, param] of [['utmSource', 'utm_source'], ['utmMedium', 'utm_medium'], ['utmCampaign', 'utm_campaign']]) {
+        const tag = (landed.get(param) || '').trim().slice(0, 80);
+        if (tag) fields[key] = tag;
+      }
       const serialized = JSON.stringify(fields);
       // Retry an unchanged request with the same provider idempotency key after uncertain delivery.
       if (previousPayload && previousPayload !== serialized) submissionId = crypto.randomUUID();
@@ -207,7 +220,7 @@
           let firstInvalid;
           for (const [name, message] of Object.entries(data.fieldErrors || {})) {
             // Only known static field names may be used as selectors.
-            if (!['name', 'email', 'school', 'role', 'phone', 'message', 'consent', 'challenge', 'designation', 'city', 'studentCount', 'board', 'improvementGoal'].includes(name)) continue;
+            if (!['name', 'email', 'school', 'role', 'phone', 'message', 'consent', 'challenge', 'designation', 'city', 'state', 'studentCount', 'board', 'improvementGoal'].includes(name)) continue;
             const error = form.querySelector(`[data-enquiry-error="${name}"]`);
             if (error && typeof message === 'string') error.textContent = message;
             const control = form.elements.namedItem(name);

@@ -188,6 +188,16 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
         </div>
       </div>
 
+      {a.can('fees.collect') && (
+        <div className="card" style={{ marginTop: 18, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <b style={{ fontSize: 17 }}>Fee counter</b>
+            <div className="muted" style={{ fontSize: 13.5, marginTop: 2 }}>Find a student, take the payment, print the receipt.</div>
+          </div>
+          <Link href="/admin/fees?tab=counter" className="btn pri">Take a payment</Link>
+          {a.can('fees.dayclose') && <Link href="/admin/fees?tab=daybook" className="btn">Day book</Link>}
+        </div>
+      )}
       {((a.can('fees.read') && fees.totals.billed > 0) || (a.can('admissions.read') && adm.total > 0)) && (
         <div className="g2" style={{ marginTop: 18 }}>
           {a.can('fees.read') && fees.totals.billed > 0 && (

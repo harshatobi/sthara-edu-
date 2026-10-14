@@ -1,5 +1,6 @@
 // Supabase token verification — replaces Firebase Admin verifyIdToken
 // Used by all API routes to authenticate requests
+import { noteRequest } from '@/lib/debug/requestLog';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { NextRequest } from 'next/server';
 import { schoolAccessBlock } from '@/lib/settings/server';
@@ -63,6 +64,7 @@ export async function verifyApiToken(
     // authenticated API route, not only the portal UI. Operators are exempt.
     const block = await schoolAccessBlock(role, schoolId, supabase);
     if (block) return { user: null, error: block.message, blocked: block.code };
+    void noteRequest({ userId: user.id, role, schoolId });
 
     return {
       user: { uid: user.id, id: user.id, email: user.email || '', role },

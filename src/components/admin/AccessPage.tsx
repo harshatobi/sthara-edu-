@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { KeyIcon as Key } from '@phosphor-icons/react/dist/ssr/Key';
 import { UserPlusIcon as UserPlus } from '@phosphor-icons/react/dist/ssr/UserPlus';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
@@ -13,6 +13,8 @@ import type { AdminDesk } from '@/lib/admin/desk';
 import { ago, daysBetween, fmtDate, isoDay, plural } from '@/lib/admin/format';
 import { PERMS, ROLES, ROLE_KEYS, type Perm, type RoleKey } from '@/lib/admin/rbac';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
+import { useAuth } from '@/contexts/AuthContext';
+import { roleLabel } from '@/lib/ops/roles';
 import { CardHead, DeskGate, Kpi } from './kit';
 
 export default function AccessPage() {
@@ -157,6 +159,54 @@ function Access({ desk }: { desk: AdminDesk }) {
           </div>
         )) : <p className="muted" style={{ fontSize: 13.5 }}>No roles removed or lapsed yet.</p>}
       </div>
+      <StharaAccess />
     </>
+  );
+}
+
+interface StharaWindow {
+  id: string; by: string; role: string; scope: 'records' | 'view_as'; reason: string; caseRef: string | null;
+  startedAt: string; expiresAt: string; endedAt: string | null; opened: number;
+}
+const timeIST = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+
+/** Every time someone at Sthara opened this school's own records, with their stated reason. */
+function StharaAccess() {
+  const { getAuthToken } = useAuth();
+  const [rows, setRows] = useState<StharaWindow[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [now] = useState(() => Date.now());
+  useEffect(() => {
+    let cancelled = false;
+    getAuthToken()
+      .then(token => fetch('/api/admin/access', { headers: token ? { Authorization: `Bearer ${token}` } : {} }))
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
+      .then((d: { windows: StharaWindow[] }) => { if (!cancelled) setRows(d.windows); })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [getAuthToken]);
+  return (
+    <div className="card" style={{ marginTop: 22 }}>
+      <CardHead title="Access by Sthara" sub="Sthara's team works from counts and findings. To open your school's own records for a support case, a person there must first give a reason; the window is read-only and closes within 30 minutes. Each one is listed here and cannot be edited or removed." />
+      {failed ? <p className="muted" style={{ fontSize: 13.5 }}>This list could not be loaded. Reload the page to try again.</p>
+        : !rows ? <p className="muted" style={{ fontSize: 13.5 }}>Loading…</p>
+        : !rows.length ? <p className="muted" style={{ fontSize: 13.5 }}>Nobody at Sthara has opened your school&apos;s records.</p>
+        : rows.map(w => {
+          const live = !w.endedAt && Date.parse(w.expiresAt) > now;
+          const end = w.endedAt ?? w.expiresAt;
+          return (
+            <div className="row" key={w.id}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <b style={{ fontSize: 13.5, overflowWrap: 'anywhere' }}>{w.by} · {roleLabel(w.role)}, Sthara</b>
+                <div style={{ fontSize: 13.5, marginTop: 3 }}>{w.reason}</div>
+                <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
+                  {timeIST(w.startedAt)} · {live ? 'open now' : `${Math.max(1, Math.round((Date.parse(end) - Date.parse(w.startedAt)) / 60_000))} min`} · {w.scope === 'view_as' ? 'viewed the school as you see it' : `${plural(w.opened, 'record')} opened`}{w.caseRef ? ` · case ${w.caseRef}` : ''}
+                </div>
+              </div>
+              <Chip tone={live ? 'a' : 'n'}>{live ? 'OPEN' : 'CLOSED'}</Chip>
+            </div>
+          );
+        })}
+    </div>
   );
 }

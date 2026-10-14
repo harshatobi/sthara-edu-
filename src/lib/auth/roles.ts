@@ -1,4 +1,7 @@
-export const ROLES = ['student', 'teacher', 'admin', 'parent', 'superadmin'] as const;
+// 'operator' is a Sthara staff account that is not a superadmin: it works only in /ops, through /api/ops.
+export const ROLES = ['student', 'teacher', 'admin', 'parent', 'superadmin', 'operator'] as const;
+/** Sthara's own accounts: they belong to no school and land in the Platform Manager. */
+export const isPlatformRole = (role: unknown) => role === 'superadmin' || role === 'operator';
 export type Role = typeof ROLES[number];
 export function isRole(value: unknown): value is Role {
   return typeof value === 'string' && ROLES.includes(value as Role);

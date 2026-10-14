@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import type { CorrectionInput } from '@/lib/ops/corrections';
 import {
   applyCorrections, linkGuardian, loadFamilies, moveStudents, previewCorrections, promoteClass, setGuardianVerified, setLeft, unlinkGuardian,
@@ -16,7 +16,8 @@ const str = (v: unknown) => (typeof v === 'string' ? v : '');
 
 /** GET /api/ops/schools/:id/support — students with their guardian links, and the school's parents. */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.manage', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   const r = await loadFamilies(createAdminClient(), id);
@@ -30,8 +31,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
  *   corrections-preview { rows } (no reason needed) · corrections-apply { rows }
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.manage', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
   const b = await req.json().catch(() => ({}));

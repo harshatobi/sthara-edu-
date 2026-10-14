@@ -15,5 +15,5 @@ export default async function OpsLayout({ children }: { children: ReactNode }) {
   // Local dev only: lets the UI render with the demo __role cookie (API calls still require a real operator).
   const devPreview = process.env.NODE_ENV !== 'production' && (await cookies()).get('__role')?.value === 'superadmin';
   if (!op && !devPreview) notFound();
-  return <OpsShell operator={op?.email ?? null} devPreview={!op}>{children}</OpsShell>;
+  return <OpsShell operator={op?.email ?? null} role={op?.role ?? 'director'} mustChangePassword={op?.mustChangePassword ?? false} devPreview={!op}>{children}</OpsShell>;
 }

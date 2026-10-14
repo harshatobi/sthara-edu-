@@ -1,3 +1,4 @@
+import { byIds, pageAll } from './page';
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normClass } from './people';
@@ -47,15 +48,14 @@ export interface FamilyRow { studentId: string; name: string; rollNo: string | n
 export interface ParentRow { id: string; name: string; email: string; left: boolean; children: number }
 
 export async function loadFamilies(db: Db, schoolId: string) {
-  const { data: people, error } = await db.from('users').select('id, role, name, email, student_class, custom_student_id, metadata')
-    .eq('school_id', schoolId).in('role', ['student', 'parent']).order('name');
+  const { data: people, error } = await pageAll((f, t) => db.from('users').select('id, role, name, email, student_class, custom_student_id, metadata')
+    .eq('school_id', schoolId).in('role', ['student', 'parent']).order('name').order('id').range(f, t));
   if (error) return fail(error.message, 500);
   const students = (people || []).filter(p => p.role === 'student');
   const parents = (people || []).filter(p => p.role === 'parent');
   const ids = students.map(s => s.id);
-  const { data: links, error: lErr } = ids.length
-    ? await db.from('guardians').select('parent_id, student_id, relationship, verified').in('student_id', ids)
-    : { data: [], error: null };
+  const { data: links, error: lErr } = await byIds<{ parent_id: string; student_id: string; relationship: string | null; verified: boolean }>(ids,
+    (chunk, f, t) => db.from('guardians').select('parent_id, student_id, relationship, verified').in('student_id', chunk).order('id').range(f, t));
   if (lErr) return fail(lErr.message, 500);
   const parentById = new Map(parents.map(p => [p.id, p]));
   const isLeft = (m: unknown) => !!(m as { left?: unknown } | null)?.left;
@@ -125,12 +125,15 @@ export async function moveStudents(db: Db, schoolId: string, actorId: string, st
   if (!ids.length || ids.length > 500) return fail('Pick between 1 and 500 students.');
   const target = await className(db, schoolId, toClass);
   if (!target) return fail(`Class "${toClass}" isn't set up for this school.`);
-  const { data: rows } = await db.from('users').select('id, role, school_id, student_class').in('id', ids);
+  const { data: rows } = await byIds<{ id: string; role: string; school_id: string | null; student_class: string | null }>(ids,
+    (chunk, f, t) => db.from('users').select('id, role, school_id, student_class').in('id', chunk).order('id').range(f, t));
   if ((rows || []).length !== ids.length || rows!.some(r => r.school_id !== schoolId || r.role !== 'student')) return fail('Every id must be a student at this school.', 404);
   const moving = rows!.filter(r => normClass(r.student_class ?? '') !== normClass(target));
   if (!moving.length) return { ok: true, moved: 0 };
-  const { error } = await db.from('users').update({ student_class: target }).in('id', moving.map(r => r.id));
-  if (error) return fail(error.message, 500);
+  for (let i = 0; i < moving.length; i += 150) {
+    const { error } = await db.from('users').update({ student_class: target }).in('id', moving.slice(i, i + 150).map(r => r.id));
+    if (error) return fail(error.message, 500);
+  }
   await Promise.all(moving.map(r => audit(db, schoolId, actorId, 'student_moved', 'users', r.id, { from: r.student_class, to: target, reason })));
   return { ok: true, moved: moving.length };
 }
@@ -140,8 +143,8 @@ export async function promoteClass(db: Db, schoolId: string, actorId: string, fr
   const from = await className(db, schoolId, fromClass);
   if (!from) return fail(`Class "${fromClass}" isn't set up for this school.`);
   if (normClass(from) === normClass(toClass)) return fail('Pick a different class to promote into.');
-  const { data } = await db.from('users').select('id, student_class, metadata').eq('school_id', schoolId).eq('role', 'student');
-  const ids = (data || []).filter(s => normClass(s.student_class ?? '') === normClass(from) && !(s.metadata as { left?: unknown } | null)?.left).map(s => s.id);
+  const { data } = await pageAll((f, t) => db.from('users').select('id, student_class, metadata').eq('school_id', schoolId).eq('role', 'student').order('id').range(f, t));
+  const ids = data.filter(s => normClass(s.student_class ?? '') === normClass(from) && !(s.metadata as { left?: unknown } | null)?.left).map(s => s.id);
   if (!ids.length) return fail(`No current students in ${from}.`);
   return moveStudents(db, schoolId, actorId, ids, toClass, `Promotion ${from} to ${toClass}: ${reason}`);
 }
@@ -185,7 +188,7 @@ export async function setLeft(db: Db, schoolId: string, actorId: string, userId:
 
 async function correctionContext(db: Db, schoolId: string, rows: CorrectionInput[]) {
   const [{ data: people }, { data: classes }] = await Promise.all([
-    db.from('users').select('id, role, name, email, student_class, custom_student_id').eq('school_id', schoolId),
+    pageAll((f, t) => db.from('users').select('id, role, name, email, student_class, custom_student_id').eq('school_id', schoolId).order('id').range(f, t)),
     db.from('classes').select('name').eq('school_id', schoolId),
   ]);
   const wanted = [...new Set(rows.map(r => r.newEmail).filter(Boolean))] as string[];
@@ -235,7 +238,7 @@ export async function applyCorrections(db: Db, schoolId: string, actorId: string
     const roll = p.changes.find(c => c.field === 'rollNo');
     if (roll?.from) {
       const old = roll.from.trim().toLowerCase();
-      const { data: parents } = await db.from('users').select('id, metadata').eq('school_id', schoolId).eq('role', 'parent');
+      const { data: parents } = await pageAll((f, t) => db.from('users').select('id, metadata').eq('school_id', schoolId).eq('role', 'parent').order('id').range(f, t));
       for (const par of parents || []) {
         const rolls = rollsOf(par.metadata);
         if (rolls.some(r => r.trim().toLowerCase() === old)) {

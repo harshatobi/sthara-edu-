@@ -32,6 +32,22 @@ export interface RegistrySchool extends SchoolFacts {
   classes: number;
   /** Classes whose subject list is empty. */
   classesWithoutSubjects: number;
+  /** Where it stands with Sthara: cases, follow-ups, primary contact, last contact, last sign-in. */
+  openCases?: number;
+  lateCases?: number;
+  unassignedCases?: number;
+  openTasks?: number;
+  overdueTasks?: number;
+  lastSignIn?: string | null;
+  lastActivity?: string | null;
+  contact?: { name: string; phone: string | null; email: string | null } | null;
+  /** The health score and band (set by the schools list). */
+  health?: { score: number | null; band: string } | null;
+  /** Where the school sits and who owns it (set by the schools list; absent elsewhere). */
+  state?: string | null;
+  district?: string | null;
+  territory?: string | null;
+  owner?: string | null;
 }
 
 const RANK: Record<Severity, number> = { crit: 0, warn: 1, info: 2 };
@@ -40,6 +56,9 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 /** From the error log: open problems seen in the last day, new ones, and any happening a lot in the last hour. */
 export interface ErrorPulse { open24h: number; new24h: number; spikes: { fingerprint: string; message: string; lastHour: number }[] }
 export const SPIKE_PER_HOUR = 20;
+
+/** The service desk's pulse: cases past a deadline, close to one, and with nobody on them. */
+export interface DeskPulse { late: number; soon: number; unassigned: number }
 
 /** Login requests a school is waiting on (Sthara creates every login). */
 export interface PendingRequests { schoolId: string; count: number; oldestDays: number }
@@ -50,6 +69,9 @@ export function buildAttention(x: {
   newEnquiries: number;
   pendingRequests?: PendingRequests[];
   errors?: ErrorPulse;
+  desk?: DeskPulse;
+  /** Quotes this operator can approve, and open deals whose close date has passed. */
+  sales?: { approvals: number; overdue: number };
 }): AttentionItem[] {
   const out: AttentionItem[] = [];
   const log: AttentionAction = { kind: 'open', href: '/ops/errors', label: 'Open error log' };
@@ -151,6 +173,48 @@ export function buildAttention(x: {
         actions: [open('classes', 'Add subjects')],
       });
     }
+  }
+  const desk: AttentionAction = { kind: 'open', href: '/ops/desk', label: 'Open the service desk' };
+  if (x.desk && x.desk.late > 0) {
+    out.push({
+      id: 'desk-late', severity: 'crit',
+      title: `${plural(x.desk.late, 'case')} past ${x.desk.late === 1 ? 'its' : 'their'} deadline`,
+      detail: 'A school is waiting longer than promised for a first reply or a fix.',
+      actions: [desk],
+    });
+  }
+  if (x.desk && x.desk.soon > 0) {
+    out.push({
+      id: 'desk-soon', severity: 'warn',
+      title: `${plural(x.desk.soon, 'case')} close to ${x.desk.soon === 1 ? 'its' : 'their'} deadline`,
+      detail: 'Inside the last hour, or the last fifth of the time allowed.',
+      actions: [desk],
+    });
+  }
+  if (x.desk && x.desk.unassigned > 0) {
+    out.push({
+      id: 'desk-unassigned', severity: x.desk.late || x.desk.soon ? 'info' : 'warn',
+      title: `${plural(x.desk.unassigned, 'open case')} with nobody on ${x.desk.unassigned === 1 ? 'it' : 'them'}`,
+      detail: 'Raised by a school and not yet picked up.',
+      actions: [desk],
+    });
+  }
+  const pipeline: AttentionAction = { kind: 'open', href: '/ops/pipeline', label: 'Open the pipeline' };
+  if (x.sales && x.sales.approvals > 0) {
+    out.push({
+      id: 'quote-approvals', severity: 'warn',
+      title: `${plural(x.sales.approvals, 'quote')} waiting for your approval`,
+      detail: 'A discount above what its writer may give alone. The deal cannot go to the school until you decide.',
+      actions: [pipeline],
+    });
+  }
+  if (x.sales && x.sales.overdue > 0) {
+    out.push({
+      id: 'deals-overdue', severity: 'info',
+      title: `${plural(x.sales.overdue, 'open deal')} past ${x.sales.overdue === 1 ? 'its' : 'their'} expected close`,
+      detail: 'Move the date, move the stage, or mark it lost: the forecast counts them in this month.',
+      actions: [pipeline],
+    });
   }
   if (x.newEnquiries > 0) {
     out.push({

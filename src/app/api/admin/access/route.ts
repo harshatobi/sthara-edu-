@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { bad, ISO_DAY, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { ROLES, type RoleKey } from '@/lib/admin/rbac';
 import { isoDay } from '@/lib/admin/format';
+import { grantsForSchool } from '@/lib/ops/access';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,25 @@ export const dynamic = 'force-dynamic';
  *   POST  { userId, role, expiresOn?, note? }   give a role, optionally until a date (e.g. acting principal)
  *   PATCH { id }                                 take it away (soft: the grant stays on record as revoked)
  * The database refuses roles for non-office accounts and removing a school's last school admin.
+ *
+ *   GET                                          every time someone at Sthara opened this school's records:
+ *                                                who, when, for how long, why, and how many records
+ */
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req, 'access.manage');
+  if ('res' in auth) return auth.res;
+  const grants = await grantsForSchool(auth.db, auth.admin.schoolId, 100);
+  // The school sees the person's role and Sthara address, not internal ids.
+  return NextResponse.json({
+    windows: grants.map(g => ({
+      id: g.id, by: g.operatorEmail, role: g.operatorRole, scope: g.scope, reason: g.reason, caseRef: g.caseRef,
+      startedAt: g.startedAt, expiresAt: g.expiresAt, endedAt: g.endedAt, opened: g.opened,
+    })),
+  });
+}
+
+/**
+ * POST and PATCH: see above.
  */
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req, 'access.manage');

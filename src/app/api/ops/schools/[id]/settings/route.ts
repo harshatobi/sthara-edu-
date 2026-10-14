@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { examTrackLabel, parseReason, parseSchoolPatch, schoolPolicy, type SchoolPatch, type SchoolPolicy, type SchoolRow } from '@/lib/settings/registry';
 import { invalidateSettings } from '@/lib/settings/server';
 import { syncSchoolAccess } from '@/lib/settings/suspension';
@@ -32,8 +32,8 @@ function journalValue(p: SchoolPolicy, k: keyof SchoolPatch): unknown {
  * Suspension then bans the school's logins in Supabase Auth; reactivation lifts them.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const op = await operatorFromRequest(req);
-  if (!op) return notFoundResponse();
+  const op = await operatorFor(req, 'schools.policy', (await params).id);
+  if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'Pick a school.' }, { status: 400 });
   const b = await req.json().catch(() => ({}));

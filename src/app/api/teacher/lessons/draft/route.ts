@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const duration = Math.min(120, Math.max(20, Math.round(Number(b?.durationMin) || 40)));
   const focus = str(b?.focus, 400);
 
-  const aiBlocked = await aiGate(staff.id);
+  const aiBlocked = await aiGate(staff.id, 'teacherTools');
   if (aiBlocked) return aiBlocked;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'AI drafting isn’t configured on this server.' }, { status: 503 });

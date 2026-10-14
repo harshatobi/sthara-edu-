@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 /** fetch() against /api/ops/* with the operator's bearer token; throws with the server's message. */
 export function useOpsApi() {
   const { getAuthToken } = useAuth();
-  return useCallback(async <T = any>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> => {
+  return useCallback(async <T = unknown>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> => {
     const token = await getAuthToken();
     const res = await fetch(`/api/ops${path}`, {
       method: init.method || 'GET',

@@ -2,10 +2,14 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { GRAPH_VERSION, whatsappConfig } from './config';
+import { getSchoolPolicy } from '@/lib/settings/server';
+
+/** The log's error text for a message not sent because the school's WhatsApp switch is off. */
+export const SWITCHED_OFF = 'WhatsApp is switched off for this school';
 
 export type WaKind = 'ask' | 'answer' | 'notify' | 'otp' | 'message' | 'system';
 
-export interface SendResult { ok: boolean; status: 'sent' | 'simulated' | 'failed'; id: string | null; error?: string }
+export interface SendResult { ok: boolean; status: 'sent' | 'simulated' | 'failed' | 'ignored'; id: string | null; error?: string }
 
 const WINDOW_MS = 24 * 3600_000;
 
@@ -42,7 +46,12 @@ export async function sendWhatsApp(db: SupabaseClient, opts: {
   const body = opts.body.slice(0, 4000);
   let result: { id: string | null; error?: string };
   let status: SendResult['status'];
-  if (cfg.mode === 'simulated') {
+  // A school whose WhatsApp is switched off gets nothing sent; the attempt is still logged, so the monitor shows it.
+  const switchedOff = !!opts.schoolId && !!(await getSchoolPolicy(opts.schoolId, db))?.off.includes('whatsapp');
+  if (switchedOff) {
+    result = { id: null, error: SWITCHED_OFF };
+    status = 'ignored';
+  } else if (cfg.mode === 'simulated') {
     result = { id: null };
     status = 'simulated';
   } else {
@@ -79,7 +88,7 @@ export async function sendWhatsApp(db: SupabaseClient, opts: {
   });
   if (error) console.warn('[whatsapp] log failed:', error.message);
   if (status === 'failed') console.error('[whatsapp] send failed:', result.error);
-  return { ok: status !== 'failed', status, id: result.id, error: result.error };
+  return { ok: status !== 'failed' && status !== 'ignored', status, id: result.id, error: result.error };
 }
 
 /** X-Hub-Signature-256 check on the raw webhook body. */

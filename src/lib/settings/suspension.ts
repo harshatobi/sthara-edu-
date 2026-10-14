@@ -24,10 +24,16 @@ async function pool<T>(items: T[], fn: (t: T) => Promise<void>) {
 }
 
 export async function syncSchoolAccess(db: SupabaseClient, schoolId: string, suspended: boolean, exceptUserId?: string): Promise<SyncResult> {
-  const { data: people, error } = await db.from('users').select('id, role').eq('school_id', schoolId);
-  if (error) throw error;
+  // Every account, a page at a time: a single request stops at 1,000 rows, which left the rest of a large school signed in.
+  const people: { id: string; role: string }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db.from('users').select('id, role').eq('school_id', schoolId).order('id').range(from, from + 999);
+    if (error) throw error;
+    people.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
   // Operators are never locked out, and neither is the operator making the change.
-  const targets = (people || []).filter(p => p.role !== 'superadmin' && p.id !== exceptUserId);
+  const targets = people.filter(p => p.role !== 'superadmin' && p.id !== exceptUserId);
   const out: SyncResult = { changed: 0, skipped: 0, failed: [] };
 
   await pool(targets, async p => {

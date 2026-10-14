@@ -16,6 +16,7 @@ import { CalendarDotsIcon as CalendarDots } from '@phosphor-icons/react/dist/ssr
 import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
 import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/react/dist/ssr/IdentificationCard';
 import { WalletIcon as Wallet } from '@phosphor-icons/react/dist/ssr/Wallet';
+import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuoy';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -45,6 +46,8 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/compliance', label: 'DPDP & Compliance', short: 'DPDP', icon: ShieldCheck, need: ['compliance.read', 'audit.read'] },
   { href: '/admin/access', label: 'Roles & Access', short: 'Access', icon: Key, need: ['access.manage'] },
   { href: '/admin/directory', label: 'User Directory', short: 'Logins', icon: UsersThree, need: ['people.manage', 'access.manage'] },
+  // Every office account can reach Sthara.
+  { href: '/admin/support', label: 'Help & Support', short: 'Help', icon: Lifebuoy, need: [] },
 ];
 
 /** The shell, with nav filtered to what this person's roles allow (just the dashboard until the desk loads). */
@@ -53,7 +56,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   const a = desk?.me.access;
   const nav = NAV.filter(n => {
     if (!a) return n.href === '/admin';
-    if (!a.any(...n.need)) return false;
+    if (n.need.length && !a.any(...n.need)) return false;
     // With fees, admissions is a tab inside "Admissions & Fees"; without fees it gets its own entry.
     if (n.href === '/admin/admissions') return !a.can('fees.read');
     return true;

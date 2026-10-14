@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { notFoundResponse, operatorFromRequest } from '@/lib/ops/auth';
+import { operatorFor } from '@/lib/ops/auth';
 import { AI_FEATURES, MODEL_PRICES, PRICES_CHECKED, USD_TO_INR } from '@/lib/ai/pricing';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { usageWindow } from '@/lib/ai/window';
@@ -13,7 +13,8 @@ export const dynamic = 'force-dynamic';
  * Operators only; 404 for everyone else.
  */
 export async function GET(req: NextRequest) {
-  if (!(await operatorFromRequest(req))) return notFoundResponse();
+  const op = await operatorFor(req, 'usage.read');
+  if (op instanceof Response) return op;
   const q = req.nextUrl.searchParams;
   const win = usageWindow({ range: q.get('range'), from: q.get('from'), to: q.get('to') });
   if ('error' in win) return NextResponse.json({ error: win.error }, { status: 400 });

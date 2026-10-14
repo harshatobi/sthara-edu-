@@ -5,6 +5,7 @@
  * definition. Every entry lists where it is enforced: a setting only belongs
  * here if changing it changes what the product does.
  */
+import { switchesOff, type SwitchKey } from './switches';
 
 export type PlatformKey = keyof typeof PLATFORM_SETTINGS;
 
@@ -40,6 +41,12 @@ export const PLATFORM_SETTINGS = {
     label: 'Notice style',
     help: 'Colour of the sign-in notice.',
     enforcedAt: ['src/components/ui/PlatformNotice.tsx'],
+  },
+  'debug.request_log': {
+    type: 'boolean', default: true, group: 'Diagnostics',
+    label: 'Request log',
+    help: 'Records each signed-in API request (route, who, how long; never the query, body or names) for the request explorer. Kept seven days. Off stops recording; nothing else changes.',
+    enforcedAt: ['src/lib/debug/requestLog.ts noteRequest()'],
   },
 } as const satisfies Record<string, SettingDef>;
 
@@ -174,6 +181,8 @@ export interface SchoolPolicy {
   pricePerStudent: number | null;
   /** Competitive exam tracks enabled for this school (students opt in from these). */
   examTracks: string[];
+  /** Parts of the product switched off for this school (see switches.ts). */
+  off: SwitchKey[];
 }
 
 const posInt = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null);
@@ -203,6 +212,7 @@ export function schoolPolicy(s: SchoolRow, now = Date.now()): SchoolPolicy {
     pricePerStudent: posInt(st.pricePerStudent),
     // Canonical order, known ids only, so an edit compares like for like.
     examTracks: Array.isArray(st.examTracks) ? EXAM_IDS.filter(id => (st.examTracks as unknown[]).includes(id)) : [],
+    off: switchesOff(st),
   };
 }
 

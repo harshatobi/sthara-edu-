@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     const numQuestions = n;
     const paperType: PaperType = PAPER_TYPES.includes(body?.paperType) ? body.paperType : 'mcq';
 
-    const aiBlocked = await aiGate(user.id);
+    const aiBlocked = await aiGate(user.id, 'teacherTools');
     if (aiBlocked) return aiBlocked;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'Gemini API key not configured.' }, { status: 500 });

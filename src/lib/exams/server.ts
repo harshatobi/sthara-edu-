@@ -166,6 +166,12 @@ export const toClassTerm = (r: any): ClassTermRow => (r
 /** Codes a term's result draws on (its own assessments and any earlier ones its components reuse). */
 export const termCodes = (t: Term, as: Assessment[]) => new Set([...t.components.flatMap(c => c.codes), ...as.filter(a => a.termId === t.id).map(a => a.code)]);
 
+/** The mean of a student's subject percentages in one term (null until every subject has one). */
+export function termPctOf(r: ReturnType<typeof studentResult>, termId: string): number | null {
+  const xs = r.subjects.map(x => x.terms[termId]?.pct).filter((v): v is number => typeof v === 'number');
+  return xs.length && xs.length === r.subjects.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100 : null;
+}
+
 export interface ClassTermData {
   scheme: SchemeRow; term: TermRow; terms: TermRow[]; assessments: AssessmentRow[];
   cls: ExamClass; students: ExamStudent[];
@@ -224,7 +230,8 @@ export async function loadClassTerm(db: Db, schoolId: string, b: SchemeBundle, r
     }
     results.set(s.id, studentResult(scheme, terms, assessments, subjectsOf.get(s.id)!.map(x => ({ key: x.key, name: x.name })), per, term.seq));
   }
-  const rankMap = rankBy(students, s => results.get(s.id)?.aggregate?.pct ?? null);
+  // Rank on the year's result once there is one, otherwise on this term (a progress report has no year result).
+  const rankMap = rankBy(students, s => { const r = results.get(s.id); return r?.aggregate?.pct ?? (r ? termPctOf(r, term.id) : null); });
   const ranks = new Map(students.map(s => [s.id, rankMap.get(s) ?? 0]).filter(([, v]) => v) as [string, number][]);
 
   const sheetRows = sheets
@@ -327,7 +334,7 @@ export function summarizeClassTerm(d: ClassTermData) {
       return {
         id: s.id, name: s.name, admissionNo: s.admissionNo, rollNo: s.rollNo, complete: r.complete,
         pct: r.aggregate?.pct ?? null, result: r.result, toClear: r.toClear, rank: d.ranks.get(s.id) ?? null,
-        termPct: (() => { const xs = r.subjects.map(x => x.terms[d.term.id]?.pct).filter((v): v is number => typeof v === 'number'); return xs.length && xs.length === r.subjects.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100 : null; })(),
+        termPct: termPctOf(r, d.term.id),
         subjects: r.subjects.map(x => ({ key: x.key, name: x.name, pct: x.terms[d.term.id]?.pct ?? null, grade: x.terms[d.term.id]?.grade ?? null, missing: x.terms[d.term.id]?.missing ?? [], finalPct: x.final?.pct ?? null, passed: x.passed })),
         remark: ex?.remark ?? '', coscholastic: ex?.coscholastic ?? {},
       };

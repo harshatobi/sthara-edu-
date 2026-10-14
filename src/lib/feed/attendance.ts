@@ -7,6 +7,7 @@ import { detectAbsenceStreaks, detectExamAbsences, istDay, DAY_MS } from './rule
 import { classTeachersOf, raise } from './raise';
 import { notifyGuardians } from '@/lib/parent/notify';
 import { BACKDATE_DAYS } from '@/lib/attendance/register';
+import { byIds, pageAll } from '@/lib/ops/page';
 
 export type Mark = 'present' | 'absent' | 'late' | 'excused';
 const STATUSES = new Set<Mark>(['present', 'absent', 'late', 'excused']);
@@ -18,8 +19,10 @@ export interface RosterStudent { id: string; name: string; rollNo: string; cls: 
 
 /** A class's students in register order: roll number (natural), then name. */
 export async function classRoster(db: SupabaseClient, schoolId: string, cls: string): Promise<RosterStudent[]> {
-  const { data } = await db.from('users').select('id, name, student_class, custom_student_id').eq('school_id', schoolId).eq('role', 'student');
-  return (data || []).filter(s => normClass(s.student_class) === normClass(cls))
+  // The whole roll, paged: one request stops at 1,000 rows, and a class past that point would lose students.
+  const { data, error } = await pageAll<any>((f, t) => db.from('users').select('id, name, student_class, custom_student_id').eq('school_id', schoolId).eq('role', 'student').order('id').range(f, t), 50_000);
+  if (error) throw new RegisterError('Could not load the class list. Try again.', 500);
+  return data.filter(s => normClass(s.student_class) === normClass(cls))
     .map(s => ({ id: s.id, name: s.name || 'Student', rollNo: s.custom_student_id || '', cls: s.student_class || '' }))
     .sort((a, b) => a.rollNo.localeCompare(b.rollNo, 'en', { numeric: true }) || a.name.localeCompare(b.name));
 }
@@ -60,8 +63,9 @@ export async function saveRegister(db: SupabaseClient, me: FeedCaller, cls: stri
   }
   let raised = 0;
   try {
-    const { data: history } = await db.from('attendance').select('student_id, class_name, day, status')
-      .in('student_id', [...inClass.keys()]).gte('day', istDay(new Date(Date.now() - 30 * DAY_MS)));
+    // A class over 30 days passes 1,000 rows: paged, so the absence-streak check sees every day.
+    const { data: history } = await byIds<any>([...inClass.keys()], (c, f, t) => db.from('attendance').select('id, student_id, class_name, day, status')
+      .in('student_id', c).gte('day', istDay(new Date(Date.now() - 30 * DAY_MS))).order('id').range(f, t));
     const { data: due } = await db.from('assignments').select('id, teacher_id, title, type, subject, class, due_date, status, assigned_student_ids, proctored')
       .eq('school_id', me.schoolId).eq('due_date', day);
     const students = roster.map(s => ({ id: s.id, name: s.name, student_class: s.cls }));

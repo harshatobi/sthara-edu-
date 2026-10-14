@@ -1,6 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { defaultKind, levelOf, planLinking, resolveSubject, type LegacyClass, type LegacyTeacher, type SubjectKind } from './catalog';
+import { pageAll } from '@/lib/ops/page';
 
 /**
  * Subject links, server side: the one write path for what a class offers, who
@@ -50,11 +51,12 @@ export async function loadSubjectState(db: Db, schoolId: string) {
     db.from('classes').select('id, name, metadata').eq('school_id', schoolId).order('name'),
     db.from('class_subjects').select('id, class_id, subject_key, subject_name, level, kind').eq('school_id', schoolId),
     db.from('teacher_subjects').select('id, teacher_id, class_subject_id, role').eq('school_id', schoolId),
-    db.from('student_subjects').select('student_id, class_subject_id, source').eq('school_id', schoolId).limit(50_000),
+    // Paged: .limit() above 1,000 is still cut at 1,000 rows by the database.
+    pageAll<any>((f, t) => db.from('student_subjects').select('student_id, class_subject_id, source').eq('school_id', schoolId).order('student_id').order('class_subject_id').range(f, t), 100_000),
     db.from('subject_leads').select('id, subject_key, subject_name, user_id').eq('school_id', schoolId),
-    db.from('users').select('id, role, name, email, student_class, custom_student_id, assignments, metadata').eq('school_id', schoolId).in('role', ['student', 'teacher', 'admin']).order('name'),
+    pageAll<any>((f, t) => db.from('users').select('id, role, name, email, student_class, custom_student_id, assignments, metadata').eq('school_id', schoolId).in('role', ['student', 'teacher', 'admin']).order('name').order('id').range(f, t), 50_000),
     // Subjects the teacher modules already use for a class: evidence of what the class takes.
-    ...EVIDENCE.map(t => db.from(t).select('class, subject').eq('school_id', schoolId).limit(20_000)),
+    ...EVIDENCE.map(t => pageAll<any>((f, to) => db.from(t).select('class, subject').eq('school_id', schoolId).order('class').order('subject').range(f, to), 50_000)),
   ]);
   const err = [classes, cs, ts, ss, leads, people].find(r => r.error)?.error;
   if (err) return fail(err.message, 500);

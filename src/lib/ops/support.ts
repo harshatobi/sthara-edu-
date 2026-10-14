@@ -192,7 +192,8 @@ async function correctionContext(db: Db, schoolId: string, rows: CorrectionInput
     db.from('classes').select('name').eq('school_id', schoolId),
   ]);
   const wanted = [...new Set(rows.map(r => r.newEmail).filter(Boolean))] as string[];
-  const { data: taken } = wanted.length ? await db.from('users').select('email').in('email', wanted) : { data: [] as { email: string }[] };
+  const { data: taken, error: takenErr } = await byIds<{ email: string }>(wanted, (c, f, t) => db.from('users').select('email').in('email', c).order('email').range(f, t));
+  if (takenErr) throw new Error(`Could not check which emails are taken: ${takenErr.message}`);
   return {
     people: (people || []) as RosterPerson[],
     classes: (classes || []).map(c => c.name as string),

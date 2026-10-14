@@ -3,7 +3,7 @@ import { randomInt } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normClass, tempPassword, validatePeople, type PersonInput, type RowIssue } from './people';
 import { setTeacherSubjects } from '@/lib/subjects/server';
-import { pageAll } from './page';
+import { byIds, pageAll } from './page';
 
 /**
  * Creates school accounts (admin / teacher / student / parent) with the
@@ -58,7 +58,9 @@ export async function createPeople(admin: SupabaseClient, schoolId: string, acto
 
   // Emails are unique platform-wide (one login per email).
   const emails = rows.map(r => r.email).filter(Boolean);
-  const { data: taken } = emails.length ? await admin.from('users').select('email').in('email', emails) : { data: [] as { email: string }[] };
+  // 150 a request: a long list is refused, and a refused check would pass every email as free.
+  const { data: taken, error: takenErr } = await byIds<{ email: string }>(emails, (c, f, t) => admin.from('users').select('email').in('email', c).order('email').range(f, t));
+  if (takenErr) throw new Error(`Could not check which emails are taken: ${takenErr.message}`);
   const issues: RowIssue[] = validatePeople(rows, {
     classes: state.classes.map(c => c.name),
     existingEmails: new Set((taken || []).map(t => String(t.email).toLowerCase())),

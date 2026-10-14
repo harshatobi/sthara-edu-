@@ -5,6 +5,7 @@ import { alertCoordinators } from '@/lib/schedule/notify';
 import { hhmm } from '@/lib/schedule/engine';
 import { dayOf, hm, localOf, parseLocalDateTime, type Punch } from './engine';
 import { loadAttendance } from './load';
+import { pageAll } from '@/lib/ops/page';
 
 /**
  * Punches from a biometric export or a device push, matched to people by employee code on the staff register
@@ -29,9 +30,11 @@ export async function importPunches(db: SupabaseClient, schoolId: string, raw: {
   if (!rows.length) return unmatched.size ? { imported: 0, duplicates: 0, unmatched: [...unmatched] } : { error: 'No rows had an employee code and a time.' };
   // Skip what is already stored.
   const times = rows.map(r => r.at).sort();
-  const { data: have } = await db.from('staff_punches').select('user_id, staff_member_id, at').eq('school_id', schoolId).eq('source', 'biometric')
-    .gte('at', times[0]).lte('at', times[times.length - 1]);
-  const seen = new Set((have || []).map(h => `${h.user_id ?? ''}|${h.staff_member_id ?? ''}|${new Date(h.at).toISOString()}`));
+  // Every stored punch in the file's span, paged: with only the first 1,000, re-importing a month stored duplicates.
+  const { data: have, error: haveErr } = await pageAll<any>((f, t) => db.from('staff_punches').select('id, user_id, staff_member_id, at').eq('school_id', schoolId).eq('source', 'biometric')
+    .gte('at', times[0]).lte('at', times[times.length - 1]).order('id').range(f, t), 500_000);
+  if (haveErr) return { error: `Could not check for punches already saved: ${haveErr.message}` };
+  const seen = new Set(have.map(h => `${h.user_id ?? ''}|${h.staff_member_id ?? ''}|${new Date(h.at).toISOString()}`));
   const fresh = rows.filter(r => { const k = `${r.user_id ?? ''}|${r.staff_member_id ?? ''}|${r.at}`; if (seen.has(k)) return false; seen.add(k); return true; });
   for (let i = 0; i < fresh.length; i += 500) {
     const { error } = await db.from('staff_punches').insert(fresh.slice(i, i + 500));

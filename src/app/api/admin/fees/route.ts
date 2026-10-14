@@ -5,6 +5,7 @@ import { assembleLedger, reminderMessage, validateSchedule, PAY_MODES, type Sche
 import { fmtDate, gradeOf, inr, isoDay, sessionOf } from '@/lib/admin/format';
 import { displayClass } from '@/lib/teacher/scope';
 import type { Perm } from '@/lib/admin/rbac';
+import { byIds, pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,13 +54,16 @@ export async function POST(req: NextRequest) {
       }, { onConflict: 'school_id,session,grade' }).select('id').single();
       if (error) return bad(error.message, 500);
       // Invoices already raised keep their amounts; say so, so nobody assumes they were re-billed.
-      const { data: roll } = await db.from('users').select('id, student_class').eq('school_id', admin.schoolId).eq('role', 'student');
-      const inGrade = (roll || []).filter(u => gradeOf(u.student_class) === grade).map(u => u.id);
-      const { count } = inGrade.length
-        ? await db.from('fee_invoices').select('id', { count: 'exact', head: true })
-          .eq('school_id', admin.schoolId).eq('session', session).is('voided_at', null).in('student_id', inGrade)
-        : { count: 0 };
-      return NextResponse.json({ id: data.id, alreadyInvoiced: count || 0 });
+      // The whole roll (paged: one request stops at 1,000), and the grade's invoices counted 150 students at a time.
+      const { data: roll } = await pageAll<any>((f, t) => db.from('users').select('id, student_class').eq('school_id', admin.schoolId).eq('role', 'student').order('id').range(f, t), 50_000);
+      const inGrade = roll.filter(u => gradeOf(u.student_class) === grade).map(u => u.id as string);
+      let count = 0;
+      for (let i = 0; i < inGrade.length; i += 150) {
+        const r = await db.from('fee_invoices').select('id', { count: 'exact', head: true })
+          .eq('school_id', admin.schoolId).eq('session', session).is('voided_at', null).in('student_id', inGrade.slice(i, i + 150));
+        count += r.count || 0;
+      }
+      return NextResponse.json({ id: data.id, alreadyInvoiced: count });
     }
 
     case 'raise': {
@@ -147,8 +151,10 @@ export async function POST(req: NextRequest) {
     }
 
     case 'remind': {
-      const ids: string[] = (Array.isArray(b.studentIds) ? b.studentIds : []).filter(isUuid).slice(0, 500);
+      const ids: string[] = [...new Set<string>((Array.isArray(b.studentIds) ? b.studentIds : []).filter(isUuid))];
       if (!ids.length) return bad('Pick at least one family.');
+      // Said, not silently cut: a school's whole roll fits well inside this.
+      if (ids.length > 3000) return bad('Send reminders to at most 3,000 families at a time.');
       return remind(db, admin, ids, session, today);
     }
 
@@ -195,24 +201,28 @@ async function invoiceWithPaid(db: any, schoolId: string, id: string) {
 
 /** Reminders use the family's balance and history as the database has it now, not what the browser showed. */
 async function remind(db: any, admin: { id: string; schoolId: string; schoolName: string }, ids: string[], session: string, today: string) {
+  // Ids go 150 at a time and every list is paged: a long id list is refused by the database, and a refused payments
+  // read used to price every family at its full fee in the reminder. Any failed read stops the send.
   const [students, invoices, reminders, guardians] = await Promise.all([
-    db.from('users').select('id, name, student_class').eq('school_id', admin.schoolId).eq('role', 'student').in('id', ids),
-    db.from('fee_invoices').select('*').eq('school_id', admin.schoolId).eq('session', session).in('student_id', ids),
-    db.from('fee_reminders').select('id, student_id, tone, sent_at').eq('school_id', admin.schoolId).in('student_id', ids),
-    db.from('guardians').select('parent_id, student_id').eq('verified', true).in('student_id', ids),
+    byIds<any>(ids, (c, f, t) => db.from('users').select('id, name, student_class').eq('school_id', admin.schoolId).eq('role', 'student').in('id', c).order('id').range(f, t)),
+    byIds<any>(ids, (c, f, t) => db.from('fee_invoices').select('*').eq('school_id', admin.schoolId).eq('session', session).in('student_id', c).order('id').range(f, t)),
+    byIds<any>(ids, (c, f, t) => db.from('fee_reminders').select('id, student_id, tone, sent_at').eq('school_id', admin.schoolId).in('student_id', c).order('id').range(f, t)),
+    byIds<any>(ids, (c, f, t) => db.from('guardians').select('parent_id, student_id').eq('verified', true).in('student_id', c).order('id').range(f, t)),
   ]);
-  if (students.error || invoices.error) return bad((students.error || invoices.error).message, 500);
-  const invIds = (invoices.data || []).map((i: any) => i.id);
-  const payments = invIds.length ? await db.from('fee_payments').select('*').in('invoice_id', invIds) : { data: [] };
+  const readErr = students.error || invoices.error || reminders.error || guardians.error;
+  if (readErr) return bad(`Could not read the families' fees, so no reminder was sent: ${readErr.message}`, 500);
+  const invIds = invoices.data.map((i: any) => i.id);
+  const payments = await byIds<any>(invIds, (c, f, t) => db.from('fee_payments').select('*').in('invoice_id', c).order('id').range(f, t));
+  if (payments.error) return bad(`Could not read the payments, so no reminder was sent: ${payments.error.message}`, 500);
   const ledger = assembleLedger({
-    session, today, students: (students.data || []).map((s: any) => ({ id: s.id, name: s.name || 'Student', cls: displayClass(s.student_class) })),
-    structures: [], invoices: invoices.data || [], payments: payments.data || [], reminders: reminders.data || [],
+    session, today, students: students.data.map((s: any) => ({ id: s.id, name: s.name || 'Student', cls: displayClass(s.student_class) })),
+    structures: [], invoices: invoices.data, payments: payments.data, reminders: reminders.data,
   });
 
   // Don't re-send to a family already reminded in the last 3 days.
-  const recent = new Set((reminders.data || []).filter((r: any) => Date.now() - new Date(r.sent_at).getTime() < 3 * 86_400_000).map((r: any) => r.student_id));
+  const recent = new Set(reminders.data.filter((r: any) => Date.now() - new Date(r.sent_at).getTime() < 3 * 86_400_000).map((r: any) => r.student_id));
   const parents = new Map<string, string[]>();
-  for (const g of guardians.data || []) parents.set(g.student_id, [...(parents.get(g.student_id) || []), g.parent_id]);
+  for (const g of guardians.data) parents.set(g.student_id, [...(parents.get(g.student_id) || []), g.parent_id]);
 
   const sent: string[] = [];
   const skipped: { studentId: string; why: string }[] = [];

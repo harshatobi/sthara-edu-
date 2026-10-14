@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { bad, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { checkPeople } from '@/lib/ops/requests';
+import { byIds, pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,8 @@ export async function POST(req: NextRequest) {
   // school's accounts are checked, so the answer never reveals who uses Sthara elsewhere; ops checks the rest.)
   const emails = checked.people.map(p => p.email);
   if (new Set(emails).size !== emails.length) return bad('The same email is listed twice.');
-  const { data: taken } = await db.from('users').select('email').eq('school_id', admin.schoolId).in('email', emails);
+  const { data: taken, error: takenErr } = await byIds<{ email: string }>(emails, (c, f, t) => db.from('users').select('email').eq('school_id', admin.schoolId).in('email', c).order('email').range(f, t));
+  if (takenErr) return bad('Could not check the emails. Try again.', 500);
   if (taken?.length) return bad(`${taken.map(t => t.email).join(', ')} already ${taken.length === 1 ? 'has' : 'have'} a login.`, 409);
   const { data, error } = await db.from('account_requests').insert({
     school_id: admin.schoolId, kind: 'accounts', people: checked.people, note: str(b.note, 1000) || null, requested_by: admin.id,

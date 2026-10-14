@@ -16,7 +16,7 @@ import { TableIcon as Table } from '@phosphor-icons/react/dist/ssr/Table';
 import { Chip, Empty, type Tone } from '@/components/canon/ui';
 import { Kpi } from '@/components/admin/kit';
 import { fmtDate, isoDay, plural } from '@/lib/admin/format';
-import { addDays, clashesFor, findClashes, homeRoom, namesOf, sectionsOf, teacherLoad, versionOn, weekdayOf, wingOf } from '@/lib/schedule/engine';
+import { addDays, clashesFor, findClashes, homeRoom, namesOf, periodClock, sectionsOf, teacherLoad, versionOn, weekdayOf, wingOf } from '@/lib/schedule/engine';
 import { DAY_NAMES, slotPerson, slotTeacher, type ScheduleRows, type Slot, type TimetableVersion } from '@/lib/schedule/types';
 import { normClass, normSubject, teachingScope } from '@/lib/teacher/scope';
 import WeekGrid, { toPrintGrid, type GridMode } from '@/components/schedule/WeekGrid';
@@ -44,7 +44,8 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
   const slots = useMemo(() => rows.slots.filter(s => s.version_id === version?.id), [rows.slots, version?.id]);
   const names = useMemo(() => namesOf(rows), [rows]);
   const sections = useMemo(() => sectionsOf(rows), [rows]);
-  const clashes = useMemo(() => findClashes(slots, rows.rooms), [slots, rows.rooms]);
+  const clock = useMemo(() => periodClock(rows), [rows]);
+  const clashes = useMemo(() => findClashes(slots, rows.rooms, clock), [slots, rows.rooms, clock]);
   const clashing = useMemo(() => new Set(clashes.flatMap(c => c.slots)), [clashes]);
   const load = useMemo(() => teacherLoad(slots), [slots]);
 
@@ -308,10 +309,14 @@ function CellEditor({ rows, version, cls, weekday, period, slots, call, onClose,
     class: cls, group_label: l.group_label.trim(), weekday, period_no: period, subject: l.subject.trim(), ...slotTeacher(l.teacher_id), room_id: l.room_id || null, combined: l.combined,
   }));
   const others = slots.filter(s => !(normClass(s.class) === normClass(cls) && s.weekday === weekday && s.period_no === period));
-  const warnings = asSlots.flatMap(s => clashesFor(s, [...others, ...asSlots.filter(x => x !== s)], rows.rooms).map(c =>
+  // By clock time: another wing's bells can put a different period number at this same time.
+  const clock = periodClock(rows);
+  const atTime = clock(cls, weekday, period);
+  const sameTime = (s: Slot) => s.weekday === weekday && (s.period_no === period || (() => { const t = clock(s.class, s.weekday, s.period_no); return !!(t && atTime && t[0] < atTime[1] && atTime[0] < t[1]); })());
+  const warnings = asSlots.flatMap(s => clashesFor(s, [...others, ...asSlots.filter(x => x !== s)], rows.rooms, clock).map(c =>
     c.kind === 'teacher' ? `${names.get(slotPerson(s)!) || 'This teacher'} is also in ${c.slots.filter(x => x !== s).map(x => x.class).join(', ')}${c.slots.every(x => x.combined) ? ' (a combined lesson needs the same subject)' : '. Tick "combined" if it is one lesson for both.'}`
       : c.kind === 'room' ? `The room is also booked for ${c.slots.filter(x => x !== s).map(x => x.class).join(', ')}` : 'Two lessons at once need different group names'));
-  const busyTeachers = new Set(others.filter(s => s.weekday === weekday && s.period_no === period && slotPerson(s)).map(s => slotPerson(s)!));
+  const busyTeachers = new Set(others.filter(s => sameTime(s) && slotPerson(s)).map(s => slotPerson(s)!));
 
   return (
     <Pop wide title={`${cls} · ${DAY_NAMES[weekday]} P${period}`} sub={`${version.name}. Split groups (Biology / Computer Science) go in the same period with different group names.`} onClose={onClose}>

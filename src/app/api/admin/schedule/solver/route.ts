@@ -3,8 +3,9 @@ import { bad, deny, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { isSession, sessionOf } from '@/lib/admin/format';
 import { displayClass, normClass } from '@/lib/teacher/scope';
 import { findClashes } from '@/lib/schedule/engine';
-import { cleanSlot, dbError, roomIds, staffIds } from '@/lib/schedule/server';
+import { cleanSlot, dbError, roomIds, scheduleClock, staffIds } from '@/lib/schedule/server';
 import { personCols, type Slot } from '@/lib/schedule/types';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -138,15 +139,17 @@ export async function POST(req: NextRequest) {
     // Replacing: keep a copy of the sheet so a failure part-way puts it back rather than leaving it empty or partial.
     let backup: Record<string, unknown>[] | null = null;
     if (b.replace) {
-      const { data: old, error: readErr } = await db.from('sched_requirements').select('*').eq('school_id', admin.schoolId).eq('session', session);
+      // The whole sheet, paged: a backup cut at 1,000 rows would restore only part of it after a failed replace.
+      const { data: old, error: readErr } = await pageAll<any>((f, t) => db.from('sched_requirements').select('*').eq('school_id', admin.schoolId).eq('session', session).order('id').range(f, t), 50_000);
       if (readErr) return dbError(readErr, 'Could not read the sheet.');
-      backup = (old || []).map(r => { const x: Record<string, unknown> = { ...r }; delete x.class_key; return x; });
+      backup = old.map(r => { const x: Record<string, unknown> = { ...r }; delete x.class_key; return x; });
       const { error } = await db.from('sched_requirements').delete().eq('school_id', admin.schoolId).eq('session', session);
       if (error) return dbError(error, 'Could not clear the sheet.');
     } else {
       // Keep what's there: only add sections and subjects the sheet doesn't have yet.
-      const { data: have } = await db.from('sched_requirements').select('class_key, subject, group_label').eq('school_id', admin.schoolId).eq('session', session);
-      const known = new Set((have || []).map(h => `${h.class_key}|${h.subject.toLowerCase()}|${h.group_label}`));
+      const { data: have, error: haveErr } = await pageAll<any>((f, t) => db.from('sched_requirements').select('id, class_key, subject, group_label').eq('school_id', admin.schoolId).eq('session', session).order('id').range(f, t), 50_000);
+      if (haveErr) return dbError(haveErr, 'Could not read the sheet.');
+      const known = new Set(have.map(h => `${h.class_key}|${h.subject.toLowerCase()}|${h.group_label}`));
       for (let i = rows.length - 1; i >= 0; i--) if (known.has(`${normClass(rows[i].class)}|${rows[i].subject.toLowerCase()}|${rows[i].group_label}`)) rows.splice(i, 1);
     }
     for (let i = 0; i < rows.length; i += 500) {
@@ -178,7 +181,7 @@ export async function POST(req: NextRequest) {
       slots.push({ ...s, locked: !!r?.locked });
     }
     const { data: roomRows } = await db.from('rooms').select('id, name, kind, capacity, home_class, active').eq('school_id', admin.schoolId);
-    const clashes = findClashes(slots, roomRows || []);
+    const clashes = findClashes(slots, roomRows || [], await scheduleClock(db, admin.schoolId));
     if (clashes.length) return bad(`The solver's timetable has ${clashes.length} clash${clashes.length === 1 ? '' : 'es'}; it was not saved. Run it again.`, 409);
     const reportText = b.report && typeof b.report === 'object' ? JSON.stringify(b.report) : null;
     const report = !reportText ? null : reportText.length <= 20000 ? JSON.parse(reportText) : { truncated: true, score: b.report.score ?? null, stats: b.report.stats ?? null };

@@ -5,7 +5,8 @@
  * teachers' load rules, rooms, lessons to keep where they are (locked), and optionally a timetable to start from
  * (repair mode). Output: a clash-free set of lessons, what couldn't be placed and why, and a score.
  *
- * Hard rules (never broken): no teacher, section or room in two places at once; a teacher's times off, caps per
+ * Hard rules (never broken): no teacher, section or room in two places at once (by clock time, so wings whose bells
+ * differ are compared correctly); a teacher's times off, caps per
  * day / week and in a row; a subject at most `max_per_day` times a day (a double counts once); doubles in two
  * back-to-back periods with no break between; the right kind of room (or the named room).
  * Soft rules (scored, lower is better): the class teacher takes the first period; a subject spread across the week;
@@ -37,8 +38,11 @@ export interface SolverRule {
 export interface SolverSection {
   cls: string;
   classTeacher: PersonKey | null;
-  /** Teaching days and their period numbers in order; `pairs` are back-to-back periods (no break between). */
-  days: { weekday: number; periods: number[]; pairs: [number, number][] }[];
+  /**
+   * Teaching days and their period numbers in order; `pairs` are back-to-back periods (no break between).
+   * `times`: when each period runs, [start, end) in minutes after midnight. Without it, period numbers stand in for time.
+   */
+  days: { weekday: number; periods: number[]; pairs: [number, number][]; times?: Record<number, [number, number]> }[];
 }
 /** homeClass: a section's home room, which the solver never hands to another lesson. */
 export interface SolverRoom { id: string; kind: RoomKind; active: boolean; homeClass?: string | null }
@@ -114,10 +118,22 @@ export function solve(input: SolverInput): SolverResult {
   const off = (p: PersonKey, day: number, period: number) =>
     (ruleOf.get(p)?.unavailable ?? []).some(u => u.weekday === day && (!u.periods.length || u.periods.includes(period)));
 
-  // Occupancy.
-  const teacherAt = new Map<string, number>();                  // teacher|day|period -> unit id (-1 locked)
+  // Clock: when a period runs. A section's own bells; else what any section rings for that period that day; else the
+  // period number on a band of its own far before any real time (consecutive numbers stay back to back).
+  const anyTime = new Map<string, [number, number]>();
+  for (const sec of input.sections) for (const d of sec.days) for (const [p, t] of Object.entries(d.times ?? {})) if (!anyTime.has(`${d.weekday}|${p}`)) anyTime.set(`${d.weekday}|${p}`, t);
+  const timeOf = (sk: string, day: number, p: number): [number, number] =>
+    sectionByKey.get(sk)?.days.find(d => d.weekday === day)?.times?.[p] ?? anyTime.get(`${day}|${p}`) ?? [-100_000 + p * 45, -100_000 + p * 45 + 45];
+
+  // Occupancy. Teachers and rooms by time (two lessons clash when their times overlap); sections by their own periods.
+  interface Busy { a: number; b: number; id: number }
+  const teacherAt = new Map<string, Busy[]>();                   // teacher|day -> bookings (id -1 = locked)
   const sectionAt = new Map<string, Map<string, number>>();      // cls|day|period -> group ('' whole) -> unit id
-  const roomAt = new Map<string, number>();                      // room|day|period -> unit id
+  const roomAt = new Map<string, Busy[]>();                      // room|day -> bookings
+  const busyAt = (m: Map<string, Busy[]>, k: string, a: number, b: number, except: number) =>
+    (m.get(k) ?? []).filter(x => x.a < b && a < x.b && (x.id < 0 || x.id !== except)).map(x => x.id);
+  const book = (m: Map<string, Busy[]>, k: string, a: number, b: number, id: number) => { const l = m.get(k); if (l) l.push({ a, b, id }); else m.set(k, [{ a, b, id }]); };
+  const unbook = (m: Map<string, Busy[]>, k: string, id: number) => { const l = m.get(k); if (l) m.set(k, l.filter(x => x.id !== id)); };
   const reqDay = new Map<string, number>();                      // reqId|day -> occurrences (a double counts once)
   const teacherDay = new Map<string, number>();                  // teacher|day -> periods
   const teacherWeek = new Map<string, number>();                 // teacher -> periods
@@ -134,16 +150,17 @@ export function solve(input: SolverInput): SolverResult {
     const cell = sectionAt.get(key3(ck, l.weekday, l.period)) ?? new Map<string, number>();
     cell.set(l.group.toLowerCase(), -1);
     sectionAt.set(key3(ck, l.weekday, l.period), cell);
+    const [la, lb] = timeOf(ck, l.weekday, l.period);
     if (l.teacher) {
       // A combined lesson is one teaching period for the teacher.
-      const tk = key3(l.teacher, l.weekday, l.period);
-      if (!teacherAt.has(tk)) {
-        teacherAt.set(tk, -1);
+      const tk = `${l.teacher}|${l.weekday}`;
+      if (!(teacherAt.get(tk) ?? []).some(x => x.a === la && x.b === lb)) {
+        book(teacherAt, tk, la, lb, -1);
         teacherDay.set(`${l.teacher}|${l.weekday}`, (teacherDay.get(`${l.teacher}|${l.weekday}`) || 0) + 1);
         teacherWeek.set(l.teacher, (teacherWeek.get(l.teacher) || 0) + 1);
       }
     }
-    if (l.roomId) roomAt.set(key3(l.roomId, l.weekday, l.period), -1);
+    if (l.roomId) book(roomAt, `${l.roomId}|${l.weekday}`, la, lb, -1);
     const r = reqFor(l.cls, l.subject, l.group);
     if (r) {
       lockedReqCount.set(r.id, (lockedReqCount.get(r.id) || 0) + 1);
@@ -189,6 +206,8 @@ export function solve(input: SolverInput): SolverResult {
         if (!periods) continue;
         if (others.some(o => !periods.every(q => o!.periods.includes(q)))) continue;
         if (u.len === 2 && others.some(o => !o!.pairs.some(x => x[0] === periods[0] && x[1] === periods[1]))) continue;
+        // A combined lesson is one lesson: its sections must ring those periods at the same time.
+        if (u.sections.length > 1 && periods.some(q => { const t = timeOf(u.sections[0], d.weekday, q); return u.sections.slice(1).some(k => { const o = timeOf(k, d.weekday, q); return o[0] !== t[0] || o[1] !== t[1]; }); })) continue;
         out.push({ day: d.weekday, start: p, periods });
       }
     }
@@ -196,21 +215,27 @@ export function solve(input: SolverInput): SolverResult {
   };
   const shapes = units.map(shapeOf);
 
-  // Every period number taught on each weekday, across sections.
-  const dayPeriods = new Map<number, number[]>();
-  for (const s of input.sections) for (const d of s.days) dayPeriods.set(d.weekday, [...new Set([...(dayPeriods.get(d.weekday) ?? []), ...d.periods])].sort((a, b) => a - b));
+  // Every teaching period on each weekday across sections, as distinct times in order (for gaps in a teacher's day).
+  const dayGrid = new Map<number, [number, number][]>();
+  for (const s of input.sections) for (const d of s.days) {
+    const g = dayGrid.get(d.weekday) ?? [];
+    for (const p of d.periods) { const t = timeOf(norm(s.cls), d.weekday, p); if (!g.some(x => x[0] === t[0] && x[1] === t[1])) g.push(t); }
+    dayGrid.set(d.weekday, g.sort((a, b) => a[0] - b[0] || a[1] - b[1]));
+  }
 
-  // The longest run of consecutive teaching periods a teacher would have on a day if `add` were added.
-  const runWith = (t: PersonKey, day: number, add: number[]) => {
-    const periodsOfDay = new Set(dayPeriods.get(day) ?? []);
-    const busy = (p: number) => add.includes(p) || teacherAt.has(key3(t, day, p));
-    let best = 0;
-    for (const a of add) {
-      let n = 1;
-      for (let p = a - 1; periodsOfDay.has(p) && busy(p); p--) n++;
-      for (let p = a + 1; periodsOfDay.has(p) && busy(p); p++) n++;
-      best = Math.max(best, n);
+  /** Lessons a teacher teaches back to back (at most `BACK_TO_BACK` minutes apart): a break in between starts a new run. */
+  const BACK_TO_BACK = 5;
+  // The longest run of back-to-back lessons a teacher would have on a day if lessons at `add` were added.
+  const runWith = (t: PersonKey, day: number, add: [number, number][]) => {
+    const all = [...(teacherAt.get(`${t}|${day}`) ?? []).map(x => [x.a, x.b] as [number, number]), ...add]
+      .filter((x, i, xs) => xs.findIndex(y => y[0] === x[0] && y[1] === x[1]) === i).sort((a, b) => a[0] - b[0]);
+    let best = 0, n = 0, end = -Infinity, hasAdd = false;
+    for (const x of all) {
+      if (x[0] - end > BACK_TO_BACK) { if (hasAdd) best = Math.max(best, n); n = 0; hasAdd = false; }
+      n++; end = Math.max(end, x[1]);
+      if (add.some(y => y[0] === x[0] && y[1] === x[1])) hasAdd = true;
     }
+    if (hasAdd) best = Math.max(best, n);
     return best;
   };
 
@@ -230,8 +255,8 @@ export function solve(input: SolverInput): SolverResult {
       }
       if (u.teacher) {
         if (off(u.teacher, pos.day, p)) hard = 'teacher off';
-        const id = teacherAt.get(key3(u.teacher, pos.day, p));
-        if (id !== undefined && id !== u.id) { if (id < 0) hard = 'teacher'; else conflicts.add(id); }
+        const [a, b] = timeOf(u.sections[0], pos.day, p);
+        for (const id of busyAt(teacherAt, `${u.teacher}|${pos.day}`, a, b, u.id)) { if (id < 0) hard = 'teacher'; else conflicts.add(id); }
       }
     }
     if (hard) return { ok: false, conflicts, hard };
@@ -240,11 +265,12 @@ export function solve(input: SolverInput): SolverResult {
     if (u.req.roomId || u.req.roomKind) {
       const pool = u.req.roomId ? [u.req.roomId] : kindRooms(u.req.roomKind!);
       if (!pool.length) return { ok: false, conflicts, hard: `no ${u.req.roomKind} room` };
-      const free = pool.find(r => pos.periods.every(p => { const id = roomAt.get(key3(r, pos.day, p)); return id === undefined || id === u.id; }));
+      const ivs = pos.periods.map(p => timeOf(u.sections[0], pos.day, p));
+      const free = pool.find(r => ivs.every(([a, b]) => !busyAt(roomAt, `${r}|${pos.day}`, a, b, u.id).length));
       if (free) room = free;
       else {
         // Every room of the kind is taken: the lessons in the first one are what's in the way.
-        const holder = pos.periods.map(p => roomAt.get(key3(pool[0], pos.day, p))).find(id => id !== undefined && id !== u.id);
+        const holder = ivs.flatMap(([a, b]) => busyAt(roomAt, `${pool[0]}|${pos.day}`, a, b, u.id))[0];
         if (holder === undefined || holder < 0) return { ok: false, conflicts, hard: 'room' };
         conflicts.add(holder);
       }
@@ -261,7 +287,7 @@ export function solve(input: SolverInput): SolverResult {
       if ((teacherDay.get(`${u.teacher}|${pos.day}`) || 0) - mine + u.len > maxDay(u.teacher)) return { ok: false, conflicts, hard: 'teacher day cap' };
       const week = (teacherWeek.get(u.teacher) || 0) - (u.day !== null ? u.periods.length : 0) + u.len;
       if (week > maxWeek(u.teacher)) return { ok: false, conflicts, hard: 'teacher week cap' };
-      if (runWith(u.teacher, pos.day, pos.periods) > maxRun(u.teacher)) return { ok: false, conflicts, hard: 'in a row' };
+      if (runWith(u.teacher, pos.day, pos.periods.map(p => timeOf(u.sections[0], pos.day, p))) > maxRun(u.teacher)) return { ok: false, conflicts, hard: 'in a row' };
     }
     return { ok: true, room };
   };
@@ -274,8 +300,9 @@ export function solve(input: SolverInput): SolverResult {
         cell.set(u.group, u.id);
         sectionAt.set(key3(sk, pos.day, p), cell);
       }
-      if (u.teacher) teacherAt.set(key3(u.teacher, pos.day, p), u.id);
-      if (room) roomAt.set(key3(room, pos.day, p), u.id);
+      const [a, b] = timeOf(u.sections[0], pos.day, p);
+      if (u.teacher) book(teacherAt, `${u.teacher}|${pos.day}`, a, b, u.id);
+      if (room) book(roomAt, `${room}|${pos.day}`, a, b, u.id);
     }
     for (const id of u.reqIds) reqDay.set(`${id}|${pos.day}`, (reqDay.get(`${id}|${pos.day}`) || 0) + 1);
     if (u.teacher) {
@@ -288,9 +315,9 @@ export function solve(input: SolverInput): SolverResult {
     const day = u.day;
     for (const p of u.periods) {
       for (const sk of u.sections) sectionAt.get(key3(sk, day, p))?.delete(u.group);
-      if (u.teacher && teacherAt.get(key3(u.teacher, day, p)) === u.id) teacherAt.delete(key3(u.teacher, day, p));
-      if (u.room && roomAt.get(key3(u.room, day, p)) === u.id) roomAt.delete(key3(u.room, day, p));
     }
+    if (u.teacher) unbook(teacherAt, `${u.teacher}|${day}`, u.id);
+    if (u.room) unbook(roomAt, `${u.room}|${day}`, u.id);
     for (const id of u.reqIds) reqDay.set(`${id}|${day}`, (reqDay.get(`${id}|${day}`) || 1) - 1);
     if (u.teacher) {
       teacherDay.set(`${u.teacher}|${day}`, (teacherDay.get(`${u.teacher}|${day}`) || u.len) - u.len);
@@ -313,10 +340,13 @@ export function solve(input: SolverInput): SolverResult {
   const teacherCost = (t: PersonKey) => {
     let gaps = 0, balance = 0;
     const loads: number[] = [];
-    for (const [d, periods] of dayPeriods) {
-      const uniq = periods.filter(p => teacherAt.has(key3(t, d, p)));
-      loads.push(uniq.length);
-      if (uniq.length > 1) gaps += (uniq[uniq.length - 1] - uniq[0] + 1) - uniq.length;
+    for (const [d, grid] of dayGrid) {
+      const mine = teacherAt.get(`${t}|${d}`) ?? [];
+      const busy = grid.map(([a, b]) => mine.some(x => x.a < b && a < x.b));
+      const first = busy.indexOf(true), last = busy.lastIndexOf(true);
+      const n = busy.filter(Boolean).length;
+      loads.push(n);
+      if (n > 1) gaps += (last - first + 1) - n;
     }
     const avg = loads.reduce((a, b) => a + b, 0) / Math.max(1, loads.length);
     for (const l of loads) balance += (l - avg) ** 2;

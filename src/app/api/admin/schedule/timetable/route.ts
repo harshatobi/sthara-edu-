@@ -7,8 +7,9 @@ import { defaultTerm } from '@/lib/teacher/course';
 import { displayClass, normClass, teachingScope } from '@/lib/teacher/scope';
 import { findClashes, minutes, periodsPerWeek, wingOf } from '@/lib/schedule/engine';
 import { guessRoomKind } from '@/lib/schedule/importer';
-import { cleanSlot, dbError, roomIds, staffIds, staffNames } from '@/lib/schedule/server';
+import { scheduleClock, versionSlots, cleanSlot, dbError, roomIds, staffIds, staffNames } from '@/lib/schedule/server';
 import { DAY_NAMES, type Slot } from '@/lib/schedule/types';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,8 +53,10 @@ export async function POST(req: NextRequest) {
     if (b.copyFrom) {
       const src = await draftOf(db, admin.schoolId, b.copyFrom);
       if (!src) return bad('Unknown timetable to copy.');
-      const { data } = await db.from('timetable_slots').select('class, group_label, weekday, period_no, subject, teacher_id, staff_member_id, room_id, combined, locked').eq('version_id', src.id).limit(MAX_SLOTS);
-      copy = data || [];
+      // Every lesson (paged): a copy cut at 1,000 rows silently dropped the rest of the week.
+      const { data, error: copyErr } = await versionSlots(db, src.id, 'class, group_label, weekday, period_no, subject, teacher_id, staff_member_id, room_id, combined, locked');
+      if (copyErr) return dbError(copyErr, 'Could not read the timetable to copy.');
+      copy = data;
     }
     const { data: v, error } = await db.from('timetable_versions')
       .insert({ school_id: admin.schoolId, session, name, status: 'draft', source: b.copyFrom ? 'copy' : 'manual', created_by: admin.id }).select('id').single();
@@ -91,7 +94,7 @@ export async function POST(req: NextRequest) {
       slots.push(s);
     }
     const { data: roomRows } = await db.from('rooms').select('id, name, kind, capacity, home_class, active').eq('school_id', admin.schoolId);
-    const clashes = findClashes(slots, roomRows || []);
+    const clashes = findClashes(slots, roomRows || [], await scheduleClock(db, admin.schoolId));
     if (clashes.length) return NextResponse.json({ error: `${clashes.length} clash${clashes.length === 1 ? '' : 'es'} in the file. Resolve them on the review screen first.`, clashes: clashes.length }, { status: 409 });
     const { data: v, error } = await db.from('timetable_versions')
       .insert({ school_id: admin.schoolId, session: sessionOf(), name, status: 'draft', source: 'import', created_by: admin.id }).select('id').single();
@@ -111,7 +114,7 @@ export async function POST(req: NextRequest) {
     if (!ISO_DAY.test(from)) return bad('Pick the date it takes effect.');
     if (from < isoDay()) return bad('A timetable takes effect today or later. Past days keep the timetable they had.');
     const [{ data: slots }, { data: rooms }, { data: people }, { data: wings }, { data: bells }] = await Promise.all([
-      db.from('timetable_slots').select('*').eq('version_id', v.id).limit(MAX_SLOTS),
+      versionSlots(db, v.id),
       db.from('rooms').select('id, name, kind, capacity, home_class, active').eq('school_id', admin.schoolId),
       db.from('users').select('id, name, role, assignments, teacher_class, teacher_subject').eq('school_id', admin.schoolId).in('role', ['teacher', 'admin']),
       db.from('sched_wings').select('id, name, grade_from, grade_to').eq('school_id', admin.schoolId),
@@ -119,7 +122,7 @@ export async function POST(req: NextRequest) {
     ]);
     if (!slots?.length) return bad('This timetable has no lessons yet.');
     const names = await staffNames(db, admin.schoolId);
-    const clashes = findClashes(slots as Slot[], rooms || []);
+    const clashes = findClashes(slots as Slot[], rooms || [], await scheduleClock(db, admin.schoolId));
     if (clashes.length) {
       return NextResponse.json({ error: `Fix ${clashes.length} clash${clashes.length === 1 ? '' : 'es'} first. ${clashWords(clashes[0], names)}.`, clashes: clashes.length }, { status: 409 });
     }
@@ -226,9 +229,17 @@ export async function PUT(req: NextRequest) {
   // Replace cells, checking clashes against the rest of the version first; on a database refusal, put the old lessons back.
   const replace = async (cells: { weekday: number; period_no: number; lessons: Slot[] }[]) => {
     const old = (await Promise.all(cells.map(c => cellOf(c.weekday, c.period_no)))).flat();
+    // Checked against the whole day, by clock time: another wing's bells may put a different period number at the same time.
+    const clock = await scheduleClock(db, admin.schoolId);
     for (const c of cells) {
-      const { data: others } = await db.from('timetable_slots').select('*').eq('version_id', v.id).eq('weekday', c.weekday).eq('period_no', c.period_no).neq('class_key', ck);
-      const clash = findClashes([...(others || []), ...c.lessons] as Slot[], roomRows || []).find(x => x.slots.some(s => c.lessons.includes(s)));
+      const { data: day, error: dayErr } = await pageAll<any>((f, t) => db.from('timetable_slots').select('*').eq('version_id', v.id).eq('weekday', c.weekday).neq('class_key', ck).order('id').range(f, t));
+      if (dayErr) return dbError(dayErr, 'Could not check the timetable for clashes.');
+      const others = day.filter(x => {
+        if (x.period_no === c.period_no) return true;
+        const t = clock(cls, c.weekday, c.period_no), u = clock(x.class, x.weekday, x.period_no);
+        return !!(t && u && u[0] < t[1] && t[0] < u[1]);
+      });
+      const clash = findClashes([...others, ...c.lessons] as Slot[], roomRows || [], clock).find(x => x.slots.some(s => c.lessons.includes(s)));
       if (clash) {
         return NextResponse.json({ error: `Clash on ${clashWords(clash, await staffNames(db, admin.schoolId))}.` }, { status: 409 });
       }

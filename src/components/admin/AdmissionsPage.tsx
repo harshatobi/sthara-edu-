@@ -38,7 +38,8 @@ function Admissions({ desk }: { desk: AdminDesk }) {
   const [toast, toastEl] = useToast();
   const P = desk.admissions;
   const [view, setView] = useState<View>('open');
-  const [adding, setAdding] = useState(false);
+  // ?new=1 (from "New enquiry" on the dashboard) opens the form straight away.
+  const [adding, setAdding] = useState(() => params.get('new') === '1' && desk.me.access.can('admissions.manage'));
   const openId = params.get('applicant');
   const current = openId ? P.applicants.find(a => a.id === openId) ?? null : null;
   const setOpen = useCallback((id: string | null) => router.replace(id ? `/admin/admissions?applicant=${id}` : '/admin/admissions', { scroll: false }), [router]);

@@ -21,11 +21,13 @@ import { subjectName, type AdminDesk } from '@/lib/admin/desk';
 import { STAGE_LABEL } from '@/lib/admin/admissions';
 import { ago, daysBetween, fmtDate, inr, inrShort, isoDay, pct, plural } from '@/lib/admin/format';
 import { probe, type Level } from '@/lib/admin/probe';
+import { workItems } from '@/lib/admin/work';
 import { CardHead, DeskGate, Kpi } from './kit';
 
 const TONE: Record<Level, 'r' | 'a' | 'n'> = { critical: 'r', high: 'r', medium: 'a', low: 'n' };
 const TONE_BG = { r: '#FFE4EA', a: '#FEF3C7', n: '#F1F5F9' } as const;
 const TONE_FG = { r: 'var(--red)', a: '#92600A', n: 'var(--mut)' } as const;
+const WORK_EDGE = { r: 'var(--red)', a: '#D97706', g: 'var(--green)', n: 'var(--blue)' } as const;
 
 export default function CommandCentre() {
   return <DeskGate>{desk => <Dashboard desk={desk} />}</DeskGate>;
@@ -47,6 +49,7 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
     return { key: f.key, tone: TONE[f.level], title: f.title, detail: f.summary, action: 'Look into it', href: `/admin/probe?f=${encodeURIComponent(f.key)}` };
   });
   const today = isoDay();
+  const work = workItems(desk, today);
   const sections = ac.sections.length;
   const evidence = pct(ac.evidenced, desk.students.length);
   const dueIn = filing.dueOn ? daysBetween(today, filing.dueOn) : null;
@@ -119,6 +122,26 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
         </>}
       </div>
 
+      {work.length > 0 && (
+        <section aria-label="Your work" style={{ marginBottom: 18 }}>
+          <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em', margin: '2px 0 10px' }}>YOUR WORK</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            {work.map(w => (
+              <div key={w.key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: `3px solid ${WORK_EDGE[w.tone]}` }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <b style={{ fontSize: 15.5, flex: 1 }}>{w.title}</b>
+                  {w.count ? <b className="num" style={{ fontSize: 20, color: WORK_EDGE[w.tone] }}>{w.count.toLocaleString('en-IN')}</b> : null}
+                </div>
+                <div className="muted" style={{ fontSize: 13, flex: 1 }}>{w.detail}</div>
+                <div className="acts" style={{ gap: 8 }}>
+                  {w.actions.map(x => <Link key={x.href} href={x.href} className={`btn sm${x.primary ? ' pri' : ''}`}>{x.label}</Link>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="g2" style={a.can('academics.read') ? undefined : { gridTemplateColumns: '1fr' }}>
         {a.can('academics.read') && <div className="card">
           <CardHead title="TML by grade" sub="Where the school is structurally weak, visible before term-end results rather than after." />
@@ -188,16 +211,6 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
         </div>
       </div>
 
-      {a.can('fees.collect') && (
-        <div className="card" style={{ marginTop: 18, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <b style={{ fontSize: 17 }}>Fee counter</b>
-            <div className="muted" style={{ fontSize: 13.5, marginTop: 2 }}>Find a student, take the payment, print the receipt.</div>
-          </div>
-          <Link href="/admin/fees?tab=counter" className="btn pri">Take a payment</Link>
-          {a.can('fees.dayclose') && <Link href="/admin/fees?tab=daybook" className="btn">Day book</Link>}
-        </div>
-      )}
       {((a.can('fees.read') && fees.totals.billed > 0) || (a.can('admissions.read') && adm.total > 0)) && (
         <div className="g2" style={{ marginTop: 18 }}>
           {a.can('fees.read') && fees.totals.billed > 0 && (

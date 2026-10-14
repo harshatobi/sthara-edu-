@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { UploadSimpleIcon as UploadSimple } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import { Chip } from '@/components/canon/ui';
 import { plural } from '@/lib/admin/format';
-import { findClashes } from '@/lib/schedule/engine';
+import { findClashes, periodClock } from '@/lib/schedule/engine';
 import { parseAsc, parseCsv, parseTable, readXlsx, resolve, type Parsed } from '@/lib/schedule/importer';
 import { DAY_NAMES, type Room, type ScheduleRows, type Slot } from '@/lib/schedule/types';
 import Pop, { run } from '@/components/schedule/Pop';
@@ -54,7 +54,7 @@ export default function ImportWizard({ rows, call, onClose, onDone }: { rows: Sc
     if (!resolved) return { clashes: [], keep: [] as Slot[] };
     const pseudo: Room[] = resolved.newRooms.map(r => ({ id: `new:${rk(r.name)}`, name: r.name, kind: r.kind, capacity: null, home_class: null, active: true }));
     const withIds = resolved.slots.map(s => ((s as any).room_name ? { ...s, room_id: `new:${rk((s as any).room_name)}` } : s));
-    const all = findClashes(withIds, [...rows.rooms, ...pseudo]);
+    const all = findClashes(withIds, [...rows.rooms, ...pseudo], periodClock(rows));
     // Skipping keeps the first lesson of each clash and drops the rest.
     const drop = new Set(all.flatMap(c => c.slots.slice(1)).map(s => withIds.indexOf(s)));
     return { clashes: all, keep: resolved.slots.filter((_, i) => !drop.has(i)) };

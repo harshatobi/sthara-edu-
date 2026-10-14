@@ -12,6 +12,7 @@ import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/C
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { Bar, Chip, Empty, PageBar, type Tone } from '@/components/canon/ui';
 import type { AdminDesk } from '@/lib/admin/desk';
+import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { ago, fmtDate, isoDay, plural } from '@/lib/admin/format';
 import { CardHead, DeskGate, Kpi, downloadCsv } from './kit';
 
@@ -52,6 +53,23 @@ function Compliance({ desk }: { desk: AdminDesk }) {
   const minConsent = Math.min(...C.consents.map(c => c.coverage ?? 0));
 
   const a = desk.me.access;
+  const { call, reload } = useAdminDesk();
+  const [asking, setAsking] = useState<string | null>(null);
+  const [asked, setAsked] = useState<Record<string, string>>({});
+  // Families who can be asked for a missing consent: a verified parent is linked and it isn't on file (as in Probe).
+  const askable = (flagKey: string) => {
+    const type = flagKey === 'wellness-consent' ? 'wellness_checkin' : flagKey === 'tutor-consent' ? 'ai_tutor' : null;
+    return type ? { type, ids: desk.students.filter(s => s.verifiedGuardians > 0 && !s.consents.includes(type)).map(s => s.id) } : null;
+  };
+  const ask = async (key: string, type: string, ids: string[]) => {
+    setAsking(key);
+    try {
+      const r = await call('/api/admin/probe', 'POST', { action: 'request_consent', consentType: type, studentIds: ids });
+      setAsked(x => ({ ...x, [key]: r.sent ? `Asked ${plural(r.sent, 'family', 'families')}.` : 'Everyone was already asked this week.' }));
+      reload();
+    } catch (e: any) { setAsked(x => ({ ...x, [key]: e?.message || 'Could not send. Try again.' })); }
+    setAsking(null);
+  };
   const exportAudit = () => downloadCsv(`audit-trail-${isoDay()}.csv`, [
     ['When', 'Who', 'Role', 'Record', 'Action', 'What changed'],
     ...C.audit.map(a => [a.at, a.actor, a.actorRole, a.table, a.action, a.summary]),
@@ -86,9 +104,20 @@ function Compliance({ desk }: { desk: AdminDesk }) {
               <h3 style={{ fontSize: 17, fontWeight: 800 }}>{f.title}</h3>
               <p className="muted" style={{ marginTop: 6, lineHeight: 1.7, fontSize: 14 }}>{f.detail}</p>
             </div>
-            {f.href.startsWith('/admin/compliance')
-              ? <a className="btn sm" href={f.href.slice('/admin/compliance'.length)}>See coverage <ArrowRight size={13} weight="bold" /></a>
-              : <Link className="btn sm" href={f.href}>{f.href.startsWith('/admin/directory') ? 'Link parents' : 'Open'} <ArrowRight size={13} weight="bold" /></Link>}
+            <div className="acts" style={{ gap: 8 }}>
+              {(() => {
+                const q = a.can('compliance.act') ? askable(f.key) : null;
+                return q && q.ids.length ? (
+                  <button className="btn sm pri" disabled={asking === f.key} onClick={() => ask(f.key, q.type, q.ids)}>
+                    {asking === f.key ? 'Sending…' : `Ask ${plural(q.ids.length, 'family', 'families')} for consent`}
+                  </button>
+                ) : null;
+              })()}
+              {f.href.startsWith('/admin/compliance')
+                ? <a className="btn sm" href={f.href.slice('/admin/compliance'.length)}>See coverage <ArrowRight size={13} weight="bold" /></a>
+                : <Link className="btn sm" href={f.href}>{f.href.startsWith('/admin/directory') ? 'Link parents' : 'Open'} <ArrowRight size={13} weight="bold" /></Link>}
+            </div>
+            {asked[f.key] && <p className="muted" style={{ width: '100%', fontSize: 13 }} role="status">{asked[f.key]}</p>}
           </div>
         </div>
       ))}

@@ -16,6 +16,7 @@ import { useApi, type Call } from '@/lib/exams/useApi';
 import ClassTermView from './ClassTerm';
 import Setup from './Setup';
 import CardSettingsView from './CardSettings';
+import HeldCards from './HeldCards';
 import '@/styles/exams.css';
 import '@/styles/schedule.css';
 
@@ -37,8 +38,8 @@ export interface ExamsData {
 export type Toast = (m: string) => void;
 export type { GradeBand, Rules };
 
-type Tab = 'progress' | 'setup' | 'card';
-const TABS: [Tab, string][] = [['progress', 'Marks and publishing'], ['setup', 'Assessment schemes'], ['card', 'Report card']];
+type Tab = 'progress' | 'setup' | 'card' | 'held';
+const TABS: [Tab, string][] = [['progress', 'Marks and publishing'], ['setup', 'Assessment schemes'], ['card', 'Report card'], ['held', 'Held for fees']];
 
 /**
  * Loads straight from /api/admin/exams, which checks the caller's exam permissions, rather than waiting for the
@@ -68,15 +69,16 @@ function Exams() {
             {data.sessions.map(s => <option key={s} value={s}>Session {s}</option>)}
           </select>
         ) : undefined} />
-      <div className="tabs" role="tablist" aria-label="Exams">
-        {TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => go(k)}>{l}</button>)}
+      <div className="tabs" role="tablist" aria-label="Exams" hidden={!!error}>
+        {TABS.filter(([k]) => k !== 'held' || data?.can.hold).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => go(k)}>{l}</button>)}
       </div>
       {error ? (/role doesn't allow/i.test(error)
-        ? <div className="card"><Empty icon={<LockKey size={26} weight="duotone" />} title="Your role doesn't include exams">The exam cell (academic coordinator), the principal and the school admin work here; the vice principal can view it. A school admin can change your roles.</Empty></div>
+        ? <FeesOnly toast={toast} />
         : <div className="note err" role="alert">Couldn&apos;t load exams: {error}</div>)
         : !data ? <div className="card" aria-busy="true">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} h={44} style={{ marginBottom: 12 }} />)}</div> : <>
           {tab === 'progress' && <Progress data={data} call={call} reload={reload} toast={toast} goSetup={() => go('setup')} schoolName={data.schoolName} onPrint={setPrintSet} />}
           {tab === 'setup' && <Setup data={data} call={call} reload={reload} toast={toast} />}
+          {tab === 'held' && data.can.hold && <HeldCards toast={toast} />}
           {tab === 'card' && <CardSettingsView data={data} call={call} reload={reload} toast={toast} schoolName={data.schoolName} />}
         </>}
       <div className="rc-print">{printSet.map(c => <ReportCard key={c.student.id} card={c} />)}</div>
@@ -211,4 +213,13 @@ function Progress({ data, call, reload, toast, goSetup, schoolName, onPrint }: {
       {open && term && <ClassTermView data={data} classId={open} term={term} call={call} toast={toast} onChanged={reload} onClose={() => setOpen(null)} schoolName={schoolName} onPrint={onPrint} />}
     </>
   );
+}
+
+/** Fees office accounts without exam permissions: only the cards held for fees. */
+function FeesOnly({ toast }: { toast: Toast }) {
+  const { error } = useApi<unknown>('/api/admin/exams?held=1');
+  if (error && /role doesn't allow/i.test(error)) {
+    return <div className="card"><Empty icon={<LockKey size={26} weight="duotone" />} title="Your role doesn't include exams">The exam cell (academic coordinator), the principal and the school admin work here; the vice principal can view it, and the fees office sees cards held for fees. A school admin can change your roles.</Empty></div>;
+  }
+  return <HeldCards toast={toast} />;
 }

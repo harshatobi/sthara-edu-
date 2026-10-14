@@ -23,6 +23,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  *   GET ?session=&term=&class=            one class's term: sheets, readiness, every student's standing
  *   GET ?session=&term=&class=&preview=   a student's card as it would publish now (or "all" for the class)
  *   GET ?session=&term=&class=&cards=1    the published cards (latest versions), for printing
+ *   GET ?held=1                           cards held now, with fees overdue (exams.publish or fees.collect)
  *   POST { action } :
  *     preset { preset, session, grades? }                                    exams.manage
  *     scheme { id, name, grades, grading, rules, status }                     exams.manage
@@ -40,6 +41,8 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  *     settings { accent, affiliation, address, signatures, logo?, holdOnDues, holdMinAmount }   exams.manage
  */
 export async function GET(req: NextRequest) {
+  // The fees office sees (and releases) the cards held for fees without seeing results.
+  if (req.nextUrl.searchParams.get('held')) return heldCards(req);
   const auth = await requireAdmin(req, [...READ]);
   if ('res' in auth) return auth.res;
   const { db, admin } = auth;
@@ -99,6 +102,24 @@ export async function GET(req: NextRequest) {
   } catch (e: any) {
     return examError(e, 'Could not load exams.');
   }
+}
+
+async function heldCards(req: NextRequest) {
+  const auth = await requireAdmin(req, ['exams.publish', 'fees.collect']);
+  if ('res' in auth) return auth.res;
+  const { db, admin } = auth;
+  const { data, error } = await db.from('report_cards').select('id, student_id, term_id, class_id, version, hold_reason, held_at, snapshot->student, snapshot->term, snapshot->>session')
+    .eq('school_id', admin.schoolId).eq('held', true).is('superseded_at', null).order('held_at', { ascending: false }).limit(2000);
+  if (error) return examError(error, 'Could not load the held report cards.');
+  const { data: dues } = await db.rpc('exam_fee_dues', { p_school: admin.schoolId, p_today: isoDay() });
+  const owed = new Map<string, number>((dues || []).map((r: any) => [r.student_id, Number(r.overdue)]));
+  return NextResponse.json({
+    can: { release: true },
+    cards: (data || []).map((c: any) => ({
+      id: c.id, studentId: c.student_id, name: c.student?.name ?? 'Student', admissionNo: c.student?.admissionNo ?? null, cls: c.student?.cls ?? '',
+      term: c.term?.name ?? '', session: c.session ?? '', version: c.version, reason: c.hold_reason, heldAt: c.held_at, overdue: owed.get(c.student_id) ?? 0,
+    })),
+  });
 }
 
 /** JSON with sorted keys: the database returns objects in its own key order. */

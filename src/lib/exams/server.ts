@@ -271,12 +271,12 @@ export async function loadCardSettings(db: Db, schoolId: string): Promise<CardSe
   };
 }
 
-/** Attendance between the term's dates (to today for a term still running). */
-async function termAttendance(db: Db, schoolId: string, term: Term): Promise<Map<string, { present: number; workingDays: number }>> {
+/** Attendance for the session so far: from the scheme's first term to this term's end (to today while it runs). */
+async function termAttendance(db: Db, schoolId: string, term: Term, from: string): Promise<Map<string, { present: number; workingDays: number }>> {
   const today = isoDay();
   const to = term.endsOn < today ? term.endsOn : today;
-  if (to < term.startsOn) return new Map();
-  const { data, error } = await db.rpc('exam_attendance', { p_school: schoolId, p_from: term.startsOn, p_to: to });
+  if (to < from) return new Map();
+  const { data, error } = await db.rpc('exam_attendance', { p_school: schoolId, p_from: from, p_to: to });
   if (error) { console.warn('[exams] attendance', error.message); return new Map(); }
   return new Map((data || []).map((r: any) => [r.student_id, { present: Number(r.present) + Number(r.late), workingDays: Number(r.class_days) }]));
 }
@@ -299,7 +299,7 @@ async function subjectTml(db: Db, studentIds: string[]): Promise<Map<string, Map
 export async function buildCards(db: Db, schoolId: string, schoolName: string, board: string, session: string, d: ClassTermData, studentIds: string[],
   version: number, revised: boolean, settings?: CardSettings): Promise<Map<string, ReportCardSnapshot>> {
   const st = settings ?? await loadCardSettings(db, schoolId);
-  const [att, tml] = await Promise.all([termAttendance(db, schoolId, d.term), subjectTml(db, studentIds)]);
+  const [att, tml] = await Promise.all([termAttendance(db, schoolId, d.term, d.terms[0].startsOn), subjectTml(db, studentIds)]);
   const ranked = d.students.filter(s => d.ranks.has(s.id)).length;
   const out = new Map<string, ReportCardSnapshot>();
   for (const s of d.students.filter(x => studentIds.includes(x.id))) {

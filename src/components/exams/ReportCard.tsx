@@ -24,7 +24,10 @@ export default function ReportCard({ card, doc = true, preview = false }: { card
   const c = card;
   const marks = c.show.marks;
   const accent = c.school.accent || '#002147';
-  const termCols = c.terms.map(t => ({ ...t, span: marks ? t.heads.length + 2 : 1 }));
+  // An earlier term on a later card shows its total and grade only; the card's own term shows every component.
+  const full = (t: ReportCardSnapshot['terms'][number]) => marks && !t.compact;
+  const termCols = c.terms.map(t => ({ ...t, span: full(t) ? t.heads.length + 2 : marks ? 2 : 1 }));
+  const weightLabel = (h: ReportCardSnapshot['terms'][number]['heads'][number]) => (h.varies ? '(varies)' : h.weight > 0 ? `(${n(h.weight)})` : '(not counted)');
   return (
     <article className={`rc${doc ? ' rc-doc' : ''}`} style={{ ['--rc-accent' as string]: accent }} aria-label={`${c.term.name} report card, ${c.student.name}`}>
       <PrintFoot />
@@ -62,8 +65,11 @@ export default function ReportCard({ card, doc = true, preview = false }: { card
                 {c.showFinal && <th colSpan={2} className="rc-term">Overall</th>}
               </tr>
               <tr>
-                {termCols.map(t => marks ? [
-                  ...t.heads.map(h => <th key={`${t.id}${h.key}`} className="rc-h">{h.name}{h.weight > 0 ? <small>({n(h.weight)})</small> : <small>(not counted)</small>}</th>),
+                {termCols.map(t => full(t) ? [
+                  ...t.heads.map(h => <th key={`${t.id}${h.key}`} className="rc-h">{h.name}<small>{weightLabel(h)}</small></th>),
+                  <th key={`${t.id}tot`} className="rc-h rc-tot">Total<small>({n(t.heads.reduce((s, h) => s + h.weight, 0))})</small></th>,
+                  <th key={`${t.id}g`} className="rc-h">Grade</th>,
+                ] : marks ? [
                   <th key={`${t.id}tot`} className="rc-h rc-tot">Total<small>({n(t.heads.reduce((s, h) => s + h.weight, 0))})</small></th>,
                   <th key={`${t.id}g`} className="rc-h">Grade</th>,
                 ] : <th key={`${t.id}g`} className="rc-h">Grade</th>)}
@@ -76,11 +82,9 @@ export default function ReportCard({ card, doc = true, preview = false }: { card
                   <th scope="row" className="rc-sub">{s.name}{c.aggregate && c.subjects.length > c.aggregate.counted && !s.counted && <small> not in best {c.aggregate.counted}</small>}</th>
                   {s.terms.map(t => {
                     const head = c.terms.find(x => x.id === t.termId)!;
-                    return marks ? [
-                      ...t.cells.map((cell, i) => <td key={`${t.termId}${i}`} className={head.heads[i]?.weight === 0 ? 'rc-muted' : undefined}>{cell.text}</td>),
-                      <td key={`${t.termId}tot`} className="rc-tot">{n(t.total)}</td>,
-                      <td key={`${t.termId}g`} className="rc-g">{t.grade ?? ''}</td>,
-                    ] : <td key={`${t.termId}g`} className="rc-g">{t.grade ?? ''}</td>;
+                    const tot = [<td key={`${t.termId}tot`} className="rc-tot">{n(t.total)}</td>, <td key={`${t.termId}g`} className="rc-g">{t.grade ?? ''}</td>];
+                    if (full(head)) return [...t.cells.map((cell, i) => <td key={`${t.termId}${i}`} className={cell.counted === false || (cell.counted === undefined && head.heads[i]?.weight === 0) ? 'rc-muted' : undefined}>{cell.text}</td>), ...tot];
+                    return marks ? tot : <td key={`${t.termId}g`} className="rc-g">{t.grade ?? ''}</td>;
                   })}
                   {c.showFinal && <><td className="rc-tot">{s.final ? n(s.final.pct) : ''}</td><td className="rc-g">{s.final?.grade ?? ''}</td></>}
                 </tr>
@@ -88,6 +92,26 @@ export default function ReportCard({ card, doc = true, preview = false }: { card
             </tbody>
           </table>
         </div>
+        {/* Phones: one block per subject instead of the wide table (the printed card always uses the table). */}
+        <ul className="rc-mob">
+          {c.subjects.map(s => {
+            const cur = s.terms.find(t => t.termId === c.term.id);
+            const head = c.terms.find(x => x.id === c.term.id);
+            return (
+              <li key={s.key} className={s.status === 'fail' ? 'rc-fail' : undefined}>
+                <div className="rc-mob-h"><b>{s.name}</b>{c.aggregate && c.subjects.length > c.aggregate.counted && !s.counted && <small>not in best {c.aggregate.counted}</small>}</div>
+                {s.terms.map(t => {
+                  const th = c.terms.find(x => x.id === t.termId)!;
+                  return <div key={t.termId} className="rc-mob-r"><span>{th.name}</span><b>{marks && t.total !== null ? `${n(t.total)} / ${n(t.outOf)}` : ''} {t.grade ?? ''}</b></div>;
+                })}
+                {c.showFinal && <div className="rc-mob-r"><span>Overall</span><b>{s.final ? `${n(s.final.pct)}% ${s.final.grade ?? ''}` : ''}</b></div>}
+                {marks && cur && head && (
+                  <div className="rc-mob-c">{head.heads.map((h, i) => cur.cells[i]?.text ? <span key={h.key} className={cur.cells[i].counted === false ? 'rc-muted' : undefined}>{h.name} {cur.cells[i].text}</span> : null)}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
         {(c.aggregate || c.result || c.rank) && (
           <div className="rc-sum">
             {c.aggregate && marks && <div><span>{c.aggregate.counted < c.subjects.length ? `Best ${c.aggregate.counted} subjects` : 'Overall'}</span><b>{n(c.aggregate.pct)}%</b></div>}

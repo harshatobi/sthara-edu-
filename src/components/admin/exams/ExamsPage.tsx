@@ -6,9 +6,9 @@ import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
 import { LockOpenIcon as LockOpen } from '@phosphor-icons/react/dist/ssr/LockOpen';
 import { Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
-import { CardHead, DeskGate, Kpi } from '@/components/admin/kit';
+import { CardHead, Kpi } from '@/components/admin/kit';
+import { LockKeyIcon as LockKey } from '@phosphor-icons/react/dist/ssr/LockKey';
 import ReportCard from '@/components/exams/ReportCard';
-import type { AdminDesk } from '@/lib/admin/desk';
 import { fmtDate } from '@/lib/admin/format';
 import type { Assessment, GradeBand, Rules, Scheme, Term } from '@/lib/exams/engine';
 import type { ReportCardSnapshot } from '@/lib/exams/card';
@@ -21,6 +21,7 @@ import '@/styles/schedule.css';
 
 export interface ExamClass { id: string; name: string; grade: number | null; classTeacherId: string | null; classTeacher: string | null; students: number }
 export interface ExamsData {
+  schoolName: string;
   session: string; today: string; current: string; sessions: string[];
   can: { manage: boolean; publish: boolean; hold: boolean };
   presets: { key: string; label: string; grades: number[]; summary: string }[];
@@ -39,12 +40,16 @@ export type { GradeBand, Rules };
 type Tab = 'progress' | 'setup' | 'card';
 const TABS: [Tab, string][] = [['progress', 'Marks and publishing'], ['setup', 'Assessment schemes'], ['card', 'Report card']];
 
+/**
+ * Loads straight from /api/admin/exams, which checks the caller's exam permissions, rather than waiting for the
+ * whole-school admin desk (a large school's desk takes seconds and this page needs none of it).
+ */
 export default function ExamsPage() {
-  return <DeskGate need={['exams.read', 'exams.manage', 'exams.publish']}>{desk => <Exams desk={desk} />}</DeskGate>;
+  return <Exams />;
 }
 
 /** The exam cell: assessment schemes, marks entry progress, review and publishing, and the report card's look. */
-function Exams({ desk }: { desk: AdminDesk }) {
+function Exams() {
   const router = useRouter();
   const params = useSearchParams();
   const tab = TABS.find(t => t[0] === params.get('tab'))?.[0] ?? 'progress';
@@ -66,11 +71,13 @@ function Exams({ desk }: { desk: AdminDesk }) {
       <div className="tabs" role="tablist" aria-label="Exams">
         {TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => go(k)}>{l}</button>)}
       </div>
-      {error ? <div className="note err" role="alert">Couldn&apos;t load exams: {error}</div>
+      {error ? (/role doesn't allow/i.test(error)
+        ? <div className="card"><Empty icon={<LockKey size={26} weight="duotone" />} title="Your role doesn't include exams">The exam cell (academic coordinator), the principal and the school admin work here; the vice principal can view it. A school admin can change your roles.</Empty></div>
+        : <div className="note err" role="alert">Couldn&apos;t load exams: {error}</div>)
         : !data ? <div className="card" aria-busy="true">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} h={44} style={{ marginBottom: 12 }} />)}</div> : <>
-          {tab === 'progress' && <Progress data={data} call={call} reload={reload} toast={toast} goSetup={() => go('setup')} schoolName={desk.school.name} onPrint={setPrintSet} />}
+          {tab === 'progress' && <Progress data={data} call={call} reload={reload} toast={toast} goSetup={() => go('setup')} schoolName={data.schoolName} onPrint={setPrintSet} />}
           {tab === 'setup' && <Setup data={data} call={call} reload={reload} toast={toast} />}
-          {tab === 'card' && <CardSettingsView data={data} call={call} reload={reload} toast={toast} schoolName={desk.school.name} />}
+          {tab === 'card' && <CardSettingsView data={data} call={call} reload={reload} toast={toast} schoolName={data.schoolName} />}
         </>}
       <div className="rc-print">{printSet.map(c => <ReportCard key={c.student.id} card={c} />)}</div>
     </>

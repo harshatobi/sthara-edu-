@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
     }
     const { data: sessions } = await db.from('exam_schemes').select('session').eq('school_id', admin.schoolId);
     return NextResponse.json({
-      session, today: isoDay(), current: sessionOf(),
+      session, today: isoDay(), current: sessionOf(), schoolName: admin.schoolName,
       sessions: [...new Set([sessionOf(), ...(sessions || []).map(s => s.session)])].sort().reverse(),
       can: { manage: admin.access.can('exams.manage'), publish: admin.access.can('exams.publish'), hold: admin.access.any('exams.publish', 'fees.collect') },
       presets: Object.entries(PRESETS).map(([key, p]) => ({ key, ...p })),

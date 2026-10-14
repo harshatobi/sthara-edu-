@@ -57,6 +57,21 @@
 .rc-issued { margin:12px 0 0; font-size:10px; color:#9AA6B8; text-align:right; }
 .rc-stamp { position:absolute; top:40%; left:50%; transform:translate(-50%,-50%) rotate(-18deg); font-size:84px; font-weight:800; color:rgba(225,29,72,.08); letter-spacing:.1em; pointer-events:none; }
 .rc-revised { position:absolute; top:10px; right:18px; font-size:10px; font-weight:800; letter-spacing:.08em; color:#B7791F; background:#FFF4DA; border-radius:8px; padding:3px 8px; }
+/* Phone summary of the scholastic table; the table itself shows from tablets up and on paper. */
+.rc-mob { display:none; list-style:none; margin:0; padding:0; }
+.rc-mob li { border:1px solid #E8EDF4; border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+.rc-mob-h { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:4px; }
+.rc-mob-h small { color:#7A8699; font-size:10.5px; }
+.rc-mob-r { display:flex; justify-content:space-between; font-size:12.5px; padding:2px 0; }
+.rc-mob-r span { color:#556378; }
+.rc-mob-r b { color:var(--rc-accent); }
+.rc-mob li.rc-fail .rc-mob-r b { color:#E11D48; }
+.rc-mob-c { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:6px; font-size:11px; color:#556378; }
+.rc-mob-c .rc-muted { color:#9AA6B8; }
+@media screen and (max-width:640px) {
+  .rc-tw { display:none; }
+  .rc-mob { display:block; }
+}
 @media (max-width:640px) {
   .rc { padding:18px 16px; }
   .rc-head { flex-wrap:wrap; }

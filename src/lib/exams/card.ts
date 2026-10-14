@@ -9,8 +9,10 @@ import { gradeFor, MARK_CODES, type GradeBand, type Rules, type StudentResult, t
 export interface CardBranding {
   logo: string | null; accent: string; affiliation: string | null; address: string | null; signatures: string[];
 }
-export interface CardComponentHead { key: string; name: string; weight: number }
-export interface CardCell { score: number | null; text: string }
+/** varies: some subjects weigh this component differently (theory and practical in skill subjects). */
+export interface CardComponentHead { key: string; name: string; weight: number; varies?: boolean }
+/** counted: false when the component doesn't count for this subject (weight 0). Older snapshots leave it out. */
+export interface CardCell { score: number | null; text: string; counted?: boolean }
 export interface CardSubjectRow {
   key: string; name: string;
   /** Per term shown: one cell per component head, then the total and grade. */
@@ -25,7 +27,8 @@ export interface ReportCardSnapshot {
   session: string;
   scheme: string;
   term: { id: string; name: string; seq: number; isFinal: boolean };
-  terms: { id: string; name: string; heads: CardComponentHead[] }[];
+  /** compact: an earlier term on a later card, shown as its total and grade only. */
+  terms: { id: string; name: string; heads: CardComponentHead[]; compact?: boolean }[];
   showFinal: boolean;
   student: { id: string; name: string; admissionNo: string | null; rollNo: string | null; cls: string };
   show: { marks: boolean; rank: boolean; attendance: boolean; tml: boolean };
@@ -64,7 +67,9 @@ function headsOf(term: Term, r: StudentResult): CardComponentHead[] {
   for (const c of term.components) {
     for (const s of r.subjects) {
       const got = s.terms[term.id]?.components.find(x => x.key === c.key);
-      if (got && !seen.has(c.key)) seen.set(c.key, { key: c.key, name: c.name, weight: c.weight });
+      if (!got) continue;
+      if (!seen.has(c.key)) seen.set(c.key, { key: c.key, name: c.name, weight: c.weight });
+      if (got.weight !== c.weight) seen.get(c.key)!.varies = true;
     }
   }
   return term.components.filter(c => seen.has(c.key)).map(c => seen.get(c.key)!);
@@ -89,10 +94,10 @@ export function buildCard(i: CardInput): ReportCardSnapshot {
       const tr = s.terms[t.id];
       const cells = (heads.get(t.id) ?? []).map(h => {
         const c = tr?.components.find(x => x.key === h.key);
-        if (!c) return { score: null, text: '' };
-        if (c.score !== null) return { score: c.score, text: fmt(c.score) };
+        if (!c) return { score: null, text: '', counted: true };
+        if (c.score !== null) return { score: c.score, text: fmt(c.score), counted: c.weight > 0 };
         const code = c.parts.find(p => p.code2)?.code2;
-        return { score: null, text: code ? code : '' };
+        return { score: null, text: code ? code : '', counted: c.weight > 0 };
       });
       return { termId: t.id, cells, total: tr?.total ?? null, outOf: tr?.outOf ?? 0, grade: tr?.excused ? 'Excused' : tr?.grade ?? null };
     }),
@@ -113,7 +118,7 @@ export function buildCard(i: CardInput): ReportCardSnapshot {
     session: i.session,
     scheme: i.schemeName,
     term: { id: term.id, name: term.name, seq: term.seq, isFinal },
-    terms: shown.map(t => ({ id: t.id, name: t.name, heads: heads.get(t.id) ?? [] })),
+    terms: shown.map(t => ({ id: t.id, name: t.name, heads: heads.get(t.id) ?? [], compact: t.id !== term.id })),
     showFinal,
     student: i.student,
     show: { marks: i.rules.showMarks, rank: i.rules.showRank && !!i.rank, attendance: i.rules.showAttendance && !!att, tml: i.rules.showTml && i.tml.length > 0 },

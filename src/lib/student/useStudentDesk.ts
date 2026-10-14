@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { DEMO_STUDENT, demoRows } from '@/lib/demo/student';
 import { buildSubjects, isAssignedTo, overallTml, shapeAssignment } from './shape';
 import type { StudentDesk } from './types';
+import { all, allByIds } from '@/lib/admin/loadRows';
 
 interface Rows { assignments: any[]; submissions: any[]; tutor_sessions: any[]; tml_scores: any[] }
 
@@ -19,29 +20,34 @@ function assemble(rows: Rows, me: StudentDesk['me'], mode: StudentDesk['mode']):
 
 async function loadLive(profile: UserProfile): Promise<Rows> {
   const supabase = createClient();
-  // The student view: same rows, answer keys removed (staff read the table).
-  let aq = supabase.from('assignments_student').select('*');
-  if (profile.schoolId) aq = aq.eq('school_id', profile.schoolId);
-
-  const [a, s, t, m] = await Promise.all([
-    aq,
+  const [s, t, m] = await Promise.all([
     supabase.from('submissions').select('*').eq('student_id', profile.uid),
     supabase.from('tutor_sessions').select('id, subject, topic, hint_depth, answer_revealed, created_at').eq('student_id', profile.uid),
     supabase.from('tml_scores').select('subject, topic_name, score, confidence_band, item_count, components, computed_at')
       .eq('student_id', profile.uid).order('computed_at', { ascending: false }).limit(1000),
   ]);
+  if (s.error) throw s.error;
+  const submittedIds = new Set((s.data || []).map(x => x.assignment_id));
+
+  // Which assignments are this student's, from a light list of the whole school's (paged: a large school has more
+  // than the 1,000 rows one request returns, and the student's class could be the part cut off), then the full
+  // rows for those only. The student view: answer keys removed (staff read the table).
+  const light = await all((from, to) => {
+    const q = supabase.from('assignments_student').select('id, class, status, assigned_student_ids');
+    return (profile.schoolId ? q.eq('school_id', profile.schoolId) : q).order('id').range(from, to);
+  });
+  const mineIds = light.data.filter(x => x.status !== 'draft').filter(x =>
+    // Always keep anything the student already submitted, even if it's since been re-targeted.
+    submittedIds.has(x.id) || isAssignedTo(x, profile.studentClass || '', profile.uid, profile.customStudentId || '')).map(x => x.id);
+  const a = await allByIds(mineIds, (chunk, from, to) => supabase.from('assignments_student').select('*').in('id', chunk).order('id').range(from, to));
+
   // Assignments and submissions are required; tutor sessions and TML
   // snapshots degrade to "no evidence yet" rather than failing the desk.
-  if (a.error) throw a.error;
-  if (s.error) throw s.error;
   if (t.error) console.warn('[student desk] tutor_sessions unavailable:', t.error.message);
   if (m.error) console.warn('[student desk] tml_scores unavailable:', m.error.message);
 
   const submissions = s.data || [];
-  const submittedIds = new Set(submissions.map(x => x.assignment_id));
-  const assignments = (a.data || []).filter(x => x.status !== 'draft').filter(x =>
-    // Always keep anything the student already submitted, even if it's since been re-targeted.
-    submittedIds.has(x.id) || isAssignedTo(x, profile.studentClass || '', profile.uid, profile.customStudentId || ''));
+  const assignments = a.data;
 
   return { assignments, submissions, tutor_sessions: t.data || [], tml_scores: m.data || [] };
 }

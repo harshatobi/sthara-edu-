@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { linkUsable, whatsappConfig } from '@/lib/whatsapp/config';
 import { normClass } from '@/lib/teacher/scope';
 import { isoDay } from '@/lib/admin/format';
+import { pageAll } from '@/lib/ops/page';
 import { shapeFamily, type FamilyRows, type FamilyView, type WhatsAppStatus } from './family';
 
 const DEFAULT_PREFS = { grades: true, homework_due: true, alerts: true, fees: true, messages: true };
@@ -28,14 +29,17 @@ export async function loadFamily(db: SupabaseClient, parent: { id: string; name:
   const kidIds = kids.map(s => s.id);
   const classes = [...new Set(kids.map(s => s.student_class).filter(Boolean))];
   const since = new Date(Date.now() - 120 * 86_400_000).toISOString();
+  const classKeys = new Set(classes.map(c => normClass(c)));
 
   const [teachers, assignments, submissions, tml, wellness, consents, invoices, threads, notices, wa] = await Promise.all([
     db.from('users').select('id, name, teacher_class, assignments').eq('school_id', parent.schoolId).eq('role', 'teacher'),
-    kidIds.length ? db.from('assignments').select('id, title, type, subject, class, due_date, units, status, assigned_student_ids, created_at, teacher_id')
-      .eq('school_id', parent.schoolId).gte('created_at', since).order('created_at', { ascending: false }).limit(400) : empty,
+    // The children's classes only, every row of the window: the whole school's newest 400 left a child's own work out.
+    kidIds.length ? pageAll<any>((f, t) => db.from('assignments').select('id, title, type, subject, class, due_date, units, status, assigned_student_ids, created_at, teacher_id')
+      .eq('school_id', parent.schoolId).gte('created_at', since).order('created_at', { ascending: false }).order('id').range(f, t), 20_000)
+      .then(r => ({ ...r, data: r.data.filter(a => classKeys.has(normClass(a.class)) || (Array.isArray(a.assigned_student_ids) && a.assigned_student_ids.some((x: string) => kidIds.includes(x)))) })) : empty,
     kidIds.length ? db.from('submissions').select('id, assignment_id, student_id, score, max_score, teacher_approved, submitted_at, teacher_note').in('student_id', kidIds) : empty,
-    kidIds.length ? db.from('tml_scores').select('student_id, subject, topic_name, score, confidence_band, components, item_count, computed_at')
-      .in('student_id', kidIds).order('computed_at', { ascending: false }).limit(3000) : empty,
+    kidIds.length ? pageAll<any>((f, t) => db.from('tml_scores').select('student_id, subject, topic_name, score, confidence_band, components, item_count, computed_at')
+      .in('student_id', kidIds).order('computed_at', { ascending: false }).order('id').range(f, t), 20_000) : empty,
     // Energy only, never journal text (a row with a note is the student's private journal).
     kidIds.length ? db.from('wellness_logs').select('student_id, energy, created_at').in('student_id', kidIds).is('note', null)
       .gte('created_at', new Date(Date.now() - 14 * 86_400_000).toISOString()) : empty,
@@ -54,7 +58,7 @@ export async function loadFamily(db: SupabaseClient, parent: { id: string; name:
   // Attendance this session, the school calendar and the bell timings (for the child's timetable).
   const sessionFrom = `${new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1}-04-01`;
   const [attendance, events, bells, wings] = await Promise.all([
-    kidIds.length ? db.from('attendance').select('student_id, day, status, note').in('student_id', kidIds).gte('day', sessionFrom) : empty,
+    kidIds.length ? pageAll<any>((f, t) => db.from('attendance').select('student_id, day, status, note').in('student_id', kidIds).gte('day', sessionFrom).order('id').range(f, t)) : empty,
     db.from('academic_events').select('id, title, kind, starts_on, ends_on, starts_at, ends_at, wing_ids, suspends_classes').eq('school_id', parent.schoolId).gte('ends_on', sessionFrom),
     db.from('bell_schedules').select('id, wing_id, kind, weekdays, periods:bell_periods(seq, label, kind, period_no, starts_at, ends_at)').eq('school_id', parent.schoolId),
     db.from('sched_wings').select('id, name, grade_from, grade_to').eq('school_id', parent.schoolId),

@@ -85,7 +85,8 @@ function SchemeEditor({ data, scheme, call, reload, toast, onClose }: { data: Ex
   }, [grades, data.subjectsByGrade]);
   const compKeys = [...new Set(terms.flatMap(t => t.components.map(c => c.key)))];
   const set = <K extends keyof Rules>(k: K, v: Rules[K]) => setRules({ ...rules, [k]: v });
-  const save = () => run(setBusy, setErr, () => call('/api/admin/exams', 'POST', { action: 'scheme', id: scheme.id, name, grades, grading, rules, status })).then(ok => { if (ok) { toast('Scheme saved.'); reload(); } });
+  // Saving returns to the list (with the change in it); a failed save keeps the editor open with the reason.
+  const save = () => run(setBusy, setErr, () => call('/api/admin/exams', 'POST', { action: 'scheme', id: scheme.id, name, grades, grading, rules, status })).then(ok => { if (ok) { toast(`${name} saved.`); reload(); onClose(); } });
   const del = () => run(setBusy, setErr, () => call('/api/admin/exams', 'POST', { action: 'scheme_delete', id: scheme.id })).then(ok => { if (ok) { toast('Scheme deleted.'); reload(); onClose(); } });
 
   return (

@@ -104,16 +104,21 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
   if (schoolRow.error || !schoolRow.data) throw new Error(schoolRow.error?.message || 'Your school record could not be found.');
 
   // (Mastery rows carry only the tutor part of their breakdown: it is all the desk reads, and the rest doubles the download.)
-  // Submissions on this school's assignments (the table has no school index for this query shape).
-  const asgIds = assignments.data.map(a => a.id);
-  const chunks: string[][] = [];
-  for (let i = 0; i < asgIds.length; i += 150) chunks.push(asgIds.slice(i, i + 150));
-  const [subParts, wellness] = await Promise.all([
-    Promise.all(chunks.map(chunk => all((a, b) => s('submissions', 'id, assignment_id, student_id, teacher_approved, score, max_score, submitted_at, updated_at')
-      .in('assignment_id', chunk).order('id').range(a, b)))),
+  // Each teacher's marking workload, counted in the database (admin_teacher_work). Before that function exists, the
+  // submissions themselves, as before: every one on the school's assignments, which is megabytes in a large school.
+  const [work, wellness] = await Promise.all([
+    supabase.rpc('admin_teacher_work', { p_school: school }),
     supabase.rpc('school_wellness_report', { p_since: since }),
   ]);
-  const subs: Result = { data: subParts.flatMap(r => r.data), missing: false };
+  let subs: Result = { data: [], missing: false };
+  if (work.error) {
+    const asgIds = assignments.data.map(a => a.id);
+    const chunks: string[][] = [];
+    for (let i = 0; i < asgIds.length; i += 150) chunks.push(asgIds.slice(i, i + 150));
+    const parts = await Promise.all(chunks.map(chunk => all((a, b) => s('submissions', 'assignment_id, teacher_approved, submitted_at, updated_at')
+      .in('assignment_id', chunk).order('id').range(a, b))));
+    subs = { data: parts.flatMap(r => r.data), missing: false };
+  }
 
   const named: Record<string, Result> = {
     leave_requests: leave, fee_structures: structures, fee_invoices: invoices, fee_payments: payments, fee_reminders: reminders,
@@ -126,6 +131,7 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
   return {
     school: schoolRow.data,
     users: users.data, tml: tml.data.map(({ tutor, ...r }) => ({ ...r, components: tutor ? { tutor } : null })), assignments: assignments.data, submissions: subs.data, lessons: lessons.data,
+    teacherWork: work.error ? null : (work.data || []),
     consents: consents.data, guardians: guardians.data, audit: audit.error ? [] : audit.data || [], leave: leave.data,
     structures: structures.data, invoices: invoices.data, payments: payments.data, reminders: reminders.data,
     applicants: applicants.data, admissionEvents: events.data, filings: filings.data,

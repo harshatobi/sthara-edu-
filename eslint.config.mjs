@@ -10,6 +10,9 @@ const eslintConfig = defineConfig([
     // dev compile (the Next.js local-dev guide calls this out). Import each
     // icon from its own module instead.
     rules: {
+      // Database rows are untyped throughout (no generated Supabase types yet), so `any` is the norm: a warning keeps
+      // each one visible to pay down, without drowning the real errors (hooks, imports) that must fail the build.
+      "@typescript-eslint/no-explicit-any": "warn",
       "no-restricted-imports": ["error", {
         paths: [
           { name: "@phosphor-icons/react/dist/ssr", message: "Import the icon's own module: import { HouseIcon as House } from '@phosphor-icons/react/dist/ssr/House'." },

@@ -1,5 +1,6 @@
 'use client';
 
+import { CertificateIcon as Certificate } from '@phosphor-icons/react/dist/ssr/Certificate';
 import { HouseIcon as House } from '@phosphor-icons/react/dist/ssr/House';
 import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
@@ -21,6 +22,7 @@ import '@/styles/parent.css';
 const NAV: CanonNavItem[] = [
   { href: '/parent', label: 'Home', icon: House, exact: true },
   { href: '/parent/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle },
+  { href: '/parent/results', label: 'Report Cards', short: 'Results', icon: Certificate },
   { href: '/parent/progress', label: 'Mastery & Reports', short: 'Progress', icon: ChartLineUp },
   { href: '/parent/messages', label: 'School Messages', short: 'Messages', icon: EnvelopeSimple },
   { href: '/parent/schoolwork', label: 'Schoolwork', icon: ListChecks },

@@ -1,5 +1,6 @@
 'use client';
 
+import { CertificateIcon as Certificate } from '@phosphor-icons/react/dist/ssr/Certificate';
 import { HouseIcon as House } from '@phosphor-icons/react/dist/ssr/House';
 import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
 import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
@@ -16,6 +17,7 @@ import { WellnessProvider } from '@/lib/student/useWellness';
 const NAV: CanonNavItem[] = [
   { href: '/student', label: 'Dashboard', short: 'Home', icon: House, exact: true },
   { href: '/student/homework', label: 'Homework', icon: FileText },
+  { href: '/student/results', label: 'Report Cards', short: 'Results', icon: Certificate },
   { href: '/student/mastery', label: 'Mastery Tracker', short: 'Mastery', icon: ChartLineUp },
   { href: '/student/tutor', label: 'AI Tutor', short: 'Tutor', icon: Brain },
   { href: '/student/wellness', label: 'Wellness Center', short: 'Wellness', icon: Heart },

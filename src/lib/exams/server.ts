@@ -367,10 +367,11 @@ export async function publishClassTerm(db: Db, schoolId: string, schoolName: str
   const [cards, dues, prev] = await Promise.all([
     buildCards(db, schoolId, schoolName, board, session, d, d.students.map(s => s.id), version, revised, settings),
     settings.holdOnDues ? db.rpc('exam_fee_dues', { p_school: schoolId, p_today: isoDay() }) : Promise.resolve({ data: [], error: null }),
-    byIds<any>(d.students.map(s => s.id), (chunk, f, t) => db.from('report_cards').select('id, student_id, version, released_at').eq('term_id', d.term.id).is('superseded_at', null).in('student_id', chunk).order('id').range(f, t)),
+    byIds<any>(d.students.map(s => s.id), (chunk, f, t) => db.from('report_cards').select('id, student_id, version, released_at, released_by').eq('term_id', d.term.id).is('superseded_at', null).in('student_id', chunk).order('id').range(f, t)),
   ]);
   const overdue = new Map<string, number>(((dues as any).data || []).map((r: any) => [r.student_id, Number(r.overdue)]));
-  const released = new Set(prev.data.filter(p => p.released_at).map(p => p.student_id));
+  // A card the office released stays released on every revision (the release is carried onto the new version).
+  const released = new Map<string, { at: string; by: string | null }>(prev.data.filter(p => p.released_at).map(p => [p.student_id, { at: p.released_at, by: p.released_by }]));
   const now = new Date().toISOString();
 
   const rows = d.students.map(s => {
@@ -380,6 +381,7 @@ export async function publishClassTerm(db: Db, schoolId: string, schoolName: str
       school_id: schoolId, student_id: s.id, term_id: d.term.id, class_id: d.cls.id, version, snapshot: cards.get(s.id)!, revised,
       revision_reason: revised ? d.classTerm.reopenReason : null, published_by: by, published_at: now,
       held, hold_reason: held ? 'Fees overdue' : null, held_at: held ? now : null,
+      released_at: released.get(s.id)?.at ?? null, released_by: released.get(s.id)?.by ?? null,
     };
   });
 

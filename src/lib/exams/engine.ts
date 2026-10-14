@@ -169,6 +169,8 @@ export interface SubjectTermResult {
   total: number | null; outOf: number; pct: number | null; grade: string | null; point: number | null;
   /** Assessment codes with no mark yet: the result is not final. */
   missing: string[];
+  /** Every counted assessment was left out (medical or exempt): no result for this subject this term. */
+  excused: boolean;
 }
 
 /** One subject's result for one term. */
@@ -222,7 +224,8 @@ export function subjectTerm(term: Term, assessments: Map<string, Assessment>, su
   const pct = missing.length || !availW ? null : round2((raw / availW) * 100);
   const total = pct === null ? null : round2((pct / 100) * outOf);
   const g = gradeFor(pct, grading);
-  return { components, total, outOf, pct, grade: g?.grade ?? null, point: g?.point ?? null, missing: [...new Set(missing)] };
+  const excused = !missing.length && outOf > 0 && !availW;
+  return { components, total, outOf, pct, grade: g?.grade ?? null, point: g?.point ?? null, missing: [...new Set(missing)], excused };
 }
 
 export interface SubjectInfo { key: string; name: string }
@@ -232,6 +235,8 @@ export interface SubjectResult {
   /** Weighted across the terms so far that count (null until every counted term is complete). */
   final: { pct: number; grade: string | null; point: number | null } | null;
   passed: boolean | null;
+  /** Left out of every counted term (medical or exempt): no result, not counted, neither passed nor failed. */
+  excused: boolean;
 }
 export type ResultStatus = 'pass' | 'compartment' | 'fail';
 export interface StudentResult {
@@ -259,10 +264,13 @@ export function studentResult(scheme: Pick<Scheme, 'grading' | 'rules'>, terms: 
     const res: Record<string, SubjectTermResult> = {};
     for (const t of upto) res[t.id] = subjectTerm(t, byCode, s.key, m, scheme.rules, scheme.grading);
     const weighted = upto.filter(t => t.weight > 0);
+    // A term the subject was excused from (medical / exempt throughout) drops out and the others are reweighted.
+    const scored = weighted.filter(t => !res[t.id].excused);
+    const excused = weighted.length > 0 && scored.length === 0;
     let final: SubjectResult['final'] = null;
-    if (weighted.length && weighted.every(t => res[t.id].pct !== null)) {
-      const w = weighted.reduce((n, t) => n + t.weight, 0);
-      const pct = round2(weighted.reduce((n, t) => n + t.weight * (res[t.id].pct ?? 0), 0) / w);
+    if (scored.length && scored.every(t => res[t.id].pct !== null)) {
+      const w = scored.reduce((n, t) => n + t.weight, 0);
+      const pct = round2(scored.reduce((n, t) => n + t.weight * (res[t.id].pct ?? 0), 0) / w);
       const g = gradeFor(pct, scheme.grading);
       final = { pct, grade: g?.grade ?? null, point: g?.point ?? null };
     }
@@ -272,20 +280,20 @@ export function studentResult(scheme: Pick<Scheme, 'grading' | 'rules'>, terms: 
       passed = final.pct >= scheme.rules.passPct
         && scheme.rules.passEach.every(k => { const c = lastRes.components.find(x => x.key === k); return !c || c.weight === 0 || c.pct === null || c.pct >= scheme.rules.passPct; });
     }
-    return { key: s.key, name: s.name, terms: res, final, passed };
+    return { key: s.key, name: s.name, terms: res, final, passed, excused };
   });
 
   const complete = rows.every(r => Object.values(r.terms).every(t => !t.missing.length));
   const withFinal = rows.filter(r => r.final);
   let aggregate: StudentResult['aggregate'] = null;
-  if (withFinal.length && withFinal.length === rows.length) {
+  if (withFinal.length && rows.every(r => r.final || r.excused)) {
     const counted = countedSubjects(rows, scheme.rules);
     aggregate = { pct: round2(counted.reduce((n, r) => n + r.final!.pct, 0) / counted.length), counted: counted.map(r => r.key) };
   }
 
   let result: ResultStatus | null = null, toClear: string[] = [];
   if (isLast && scheme.rules.result === 'pass_fail' && aggregate) {
-    toClear = mustClear(rows, scheme.rules);
+    toClear = mustClear(withFinal, scheme.rules);
     result = toClear.length === 0 ? 'pass' : toClear.length <= scheme.rules.compartmentMax ? 'compartment' : 'fail';
   }
   return { subjects: rows, aggregate, result, toClear, complete };

@@ -206,3 +206,29 @@ test('import: csv with quotes, matched by admission number, roll, then name', ()
   const t = matchImport(parseCsv('VN003\t39'), students, 40);
   assert.deepEqual(t.matched.map(m => m.studentId), ['3']);
 });
+
+test('a subject excused throughout (medical in its only counted paper) is left out, not blanking the result', () => {
+  const subjects = ['english-language-and-literature', 'hindi-course-a', 'mathematics', 'science', 'social-science', 'computer-applications'];
+  const { scheme, terms, assessments } = build(presetScheme('secondary', '2026-27', subjects));
+  const t1 = (k: string) => withMax(marks(k === 'computer-applications' ? { HY: 'ML' } : { PT1: 30, PF1: 4, SE1: 4, HY: 60 }), assessments, k);
+  const half = studentResult(scheme, terms, assessments, subjects.map(k => ({ key: k, name: k })), new Map(subjects.map(k => [k, t1(k)])), 1);
+  const ca = half.subjects.find(s => s.key === 'computer-applications')!;
+  assert.equal(ca.terms.t1.excused, true);
+  assert.equal(ca.terms.t1.pct, null);
+  assert.equal(half.complete, true);
+  // Annual: medical in the skill subject's theory and practical.
+  const t2 = (k: string) => {
+    const m = t1(k);
+    const extra = k === 'computer-applications' ? marks({ AN: 'ML', PR: 'EX' }) : marks({ PT2: 30, PT3: 30, MA: 4, PF2: 4, SE2: 4, AN: 60 });
+    for (const [c, v] of withMax(extra, assessments, k)) m.set(c, v);
+    return m;
+  };
+  const year = studentResult(scheme, terms, assessments, subjects.map(k => ({ key: k, name: k })), new Map(subjects.map(k => [k, t2(k)])), 2);
+  const ca2 = year.subjects.find(s => s.key === 'computer-applications')!;
+  assert.equal(ca2.excused, true);
+  assert.equal(ca2.final, null);
+  assert.equal(ca2.passed, null);
+  assert.ok(year.aggregate, 'the other five still make an aggregate');
+  assert.equal(year.aggregate!.counted.length, 5);
+  assert.equal(year.result, 'pass');
+});

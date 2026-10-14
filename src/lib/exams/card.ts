@@ -94,7 +94,7 @@ export function buildCard(i: CardInput): ReportCardSnapshot {
         const code = c.parts.find(p => p.code2)?.code2;
         return { score: null, text: code ? code : '' };
       });
-      return { termId: t.id, cells, total: tr?.total ?? null, outOf: tr?.outOf ?? 0, grade: tr?.grade ?? null };
+      return { termId: t.id, cells, total: tr?.total ?? null, outOf: tr?.outOf ?? 0, grade: tr?.excused ? 'Excused' : tr?.grade ?? null };
     }),
     final: s.final ? { pct: s.final.pct, grade: s.final.grade } : null,
     counted: counted.has(s.key),

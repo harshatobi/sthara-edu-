@@ -168,8 +168,11 @@ export const termCodes = (t: Term, as: Assessment[]) => new Set([...t.components
 
 /** The mean of a student's subject percentages in one term (null until every subject has one). */
 export function termPctOf(r: ReturnType<typeof studentResult>, termId: string): number | null {
-  const xs = r.subjects.map(x => x.terms[termId]?.pct).filter((v): v is number => typeof v === 'number');
-  return xs.length && xs.length === r.subjects.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100 : null;
+  const ts = r.subjects.map(x => x.terms[termId]).filter(Boolean);
+  if (ts.some(t => t.missing.length)) return null;
+  // Subjects excused this term (medical or exempt throughout) are left out of the average.
+  const xs = ts.map(t => t.pct).filter((v): v is number => typeof v === 'number');
+  return xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100 : null;
 }
 
 export interface ClassTermData {

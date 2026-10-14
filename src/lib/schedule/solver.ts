@@ -8,7 +8,9 @@
  * Hard rules (never broken): no teacher, section or room in two places at once (by clock time, so wings whose bells
  * differ are compared correctly); a teacher's times off, caps per
  * day / week and in a row; a subject at most `max_per_day` times a day (a double counts once); doubles in two
- * back-to-back periods with no break between; the right kind of room (or the named room).
+ * back-to-back periods with no break between; the right kind of room (or the named room); one lesson per room:
+ * a class's own lessons use its home room, and when a class splits into groups with no room of their own, the
+ * first group keeps the home room and each other group takes a spare classroom or another class's empty home room.
  * Soft rules (scored, lower is better): the class teacher takes the first period; a subject spread across the week;
  * teachers' days balanced and without long gaps.
  *
@@ -33,7 +35,8 @@ export interface SolverRequirement {
 export interface SolverRule {
   person: PersonKey;
   maxPerDay: number | null; maxPerWeek: number | null; maxConsecutive: number | null;
-  unavailable: { weekday: number; periods: number[] }[];  // no periods = the whole day
+  /** No periods and no window = the whole day; `window` = clock time [start, end) in minutes, checked against each lesson's own time. */
+  unavailable: { weekday: number; periods: number[]; window?: [number, number] }[];
 }
 export interface SolverSection {
   cls: string;
@@ -115,8 +118,10 @@ export function solve(input: SolverInput): SolverResult {
   const maxDay = (p: PersonKey) => ruleOf.get(p)?.maxPerDay ?? input.defaults.maxPerDay;
   const maxWeek = (p: PersonKey) => ruleOf.get(p)?.maxPerWeek ?? Infinity;
   const maxRun = (p: PersonKey) => ruleOf.get(p)?.maxConsecutive ?? input.defaults.maxConsecutive;
-  const off = (p: PersonKey, day: number, period: number) =>
-    (ruleOf.get(p)?.unavailable ?? []).some(u => u.weekday === day && (!u.periods.length || u.periods.includes(period)));
+  // Off for a lesson at `period`, running [a, b): the whole day, that period number, or a clock window it overlaps.
+  const off = (p: PersonKey, day: number, period: number, [a, b]: [number, number]) =>
+    (ruleOf.get(p)?.unavailable ?? []).some(u => u.weekday === day && (
+      u.window ? u.window[0] < b && a < u.window[1] : !u.periods.length || u.periods.includes(period)));
 
   // Clock: when a period runs. A section's own bells; else what any section rings for that period that day; else the
   // period number on a band of its own far before any real time (consecutive numbers stay back to back).
@@ -140,6 +145,11 @@ export function solve(input: SolverInput): SolverResult {
   const key3 = (a: string, d: number, p: number) => `${a}|${d}|${p}`;
   const lockedReqCount = new Map<string, number>();
 
+  // Home rooms. Only when the school has set its classrooms up; otherwise lessons with no room claim none (as before).
+  const homeRoomOf = new Map(input.rooms.filter(r => r.active && r.homeClass).map(r => [norm(r.homeClass!), r.id]));
+  const homesKnown = homeRoomOf.size > 0;
+  const homeOf = (sk: string) => homeRoomOf.get(sk) ?? `home:${sk}`;
+
   // Locked lessons: they occupy their places and count towards their requirement.
   const reqKey = (cls: string, subject: string, group: string) => `${norm(cls)}|${subj(subject)}|${group.toLowerCase()}`;
   const reqByLesson = new Map(input.requirements.map(r => [reqKey(r.cls, r.subject, r.group), r]));
@@ -160,7 +170,9 @@ export function solve(input: SolverInput): SolverResult {
         teacherWeek.set(l.teacher, (teacherWeek.get(l.teacher) || 0) + 1);
       }
     }
-    if (l.roomId) book(roomAt, `${l.roomId}|${l.weekday}`, la, lb, -1);
+    // Its room: the one set, else (with classrooms set up) the class's home room.
+    const lr = l.roomId ?? (homesKnown ? homeOf(ck) : null);
+    if (lr) book(roomAt, `${lr}|${l.weekday}`, la, lb, -1);
     const r = reqFor(l.cls, l.subject, l.group);
     if (r) {
       lockedReqCount.set(r.id, (lockedReqCount.get(r.id) || 0) + 1);
@@ -168,6 +180,10 @@ export function solve(input: SolverInput): SolverResult {
       if (!lockedSeen.has(`${dk}|${l.period - 1}`)) reqDay.set(dk, (reqDay.get(dk) || 0) + 1);  // a locked double counts once
       lockedSeen.add(`${dk}|${l.period}`);
     }
+  }
+
+  if (!homesKnown && input.requirements.some(r => r.group && !r.roomId && !r.roomKind)) {
+    warnings.push('Classrooms aren\'t set up (Bells & rooms), so split groups without a room are not given one. Add each class\'s home room so the second group gets a free classroom.');
   }
 
   // Units: requirements sharing a combined key are taught together; otherwise one requirement each.
@@ -240,6 +256,17 @@ export function solve(input: SolverInput): SolverResult {
   };
 
   const kindRooms = (kind: RoomKind) => input.rooms.filter(r => r.active && r.kind === kind && !r.homeClass).map(r => r.id);
+  const spareClassrooms = kindRooms('classroom');
+  const allHomes = [...new Set(homeRoomOf.values())];
+  /** Rooms a lesson may use, best first; null = it claims no room. */
+  const roomPool = (u: Unit): string[] | null => {
+    if (u.req.roomId) return [u.req.roomId];
+    if (u.req.roomKind) return kindRooms(u.req.roomKind);
+    if (!homesKnown) return null;
+    if (u.group === '') return u.sections.map(homeOf);
+    const own = homeOf(u.sections[0]);
+    return [own, ...spareClassrooms, ...allHomes.filter(h => h !== own)];
+  };
 
   /** Why a unit can't go at a position (null = it can, with the room it would get). */
   const blockers = (u: Unit, pos: Pos): { ok: true; room: string | null } | { ok: false; conflicts: Set<number>; hard: string } => {
@@ -254,25 +281,32 @@ export function solve(input: SolverInput): SolverResult {
         }
       }
       if (u.teacher) {
-        if (off(u.teacher, pos.day, p)) hard = 'teacher off';
         const [a, b] = timeOf(u.sections[0], pos.day, p);
+        if (off(u.teacher, pos.day, p, [a, b])) hard = 'teacher off';
         for (const id of busyAt(teacherAt, `${u.teacher}|${pos.day}`, a, b, u.id)) { if (id < 0) hard = 'teacher'; else conflicts.add(id); }
       }
     }
     if (hard) return { ok: false, conflicts, hard };
     // Room: the named room, a free room of the kind, or none (the home room for a whole-class lesson).
     let room: string | null = null;
-    if (u.req.roomId || u.req.roomKind) {
-      const pool = u.req.roomId ? [u.req.roomId] : kindRooms(u.req.roomKind!);
+    const pool = roomPool(u);
+    if (pool) {
       if (!pool.length) return { ok: false, conflicts, hard: `no ${u.req.roomKind} room` };
       const ivs = pos.periods.map(p => timeOf(u.sections[0], pos.day, p));
       const free = pool.find(r => ivs.every(([a, b]) => !busyAt(roomAt, `${r}|${pos.day}`, a, b, u.id).length));
       if (free) room = free;
       else {
-        // Every room of the kind is taken: the lessons in the first one are what's in the way.
-        const holder = ivs.flatMap(([a, b]) => busyAt(roomAt, `${pool[0]}|${pos.day}`, a, b, u.id))[0];
-        if (holder === undefined || holder < 0) return { ok: false, conflicts, hard: 'room' };
-        conflicts.add(holder);
+        // Every room it may use is taken: what's in the way is the movable lessons in the room with fewest of them
+        // (not just the first room listed, which for a second group is only its sibling group).
+        let best: number[] | null = null;
+        // A group tries the other rooms first: its own class's room holds its sibling group, and moving that only swaps them.
+        for (const r of u.group && !u.req.roomId && !u.req.roomKind ? [...pool.slice(1), pool[0]] : pool) {
+          const ids = [...new Set(ivs.flatMap(([a, b]) => busyAt(roomAt, `${r}|${pos.day}`, a, b, u.id)))];
+          if (ids.some(id => id < 0)) continue;
+          if (!best || ids.length < best.length) best = ids;
+        }
+        if (!best) return { ok: false, conflicts, hard: 'room' };
+        for (const id of best) conflicts.add(id);
       }
     }
     if (conflicts.size) return { ok: false, conflicts, hard: '' };
@@ -510,7 +544,9 @@ export function solve(input: SolverInput): SolverResult {
     if (u.day === null) continue;
     for (const p of u.periods) for (const sk of u.sections) {
       const r = u.reqIds.map(id => reqById.get(id)!).find(x => norm(x.cls) === sk) ?? u.req;
-      lessons.push({ cls: displayOf.get(sk) ?? r.cls, group: r.group, subject: u.req.subject, weekday: u.day, period: p, teacher: u.teacher, roomId: u.room, combined: u.sections.length > 1 });
+      // A lesson in its own class's home room (or a stand-in for one) is saved with no room, as always.
+      const roomId = !u.room || u.room.startsWith('home:') || u.room === homeRoomOf.get(sk) ? null : u.room;
+      lessons.push({ cls: displayOf.get(sk) ?? r.cls, group: r.group, subject: u.req.subject, weekday: u.day, period: p, teacher: u.teacher, roomId, combined: u.sections.length > 1 });
     }
   }
   const unplaced = new Map<string, Unplaced>();
@@ -539,7 +575,9 @@ export function solve(input: SolverInput): SolverResult {
       'in a row': 'The teacher would teach too many periods in a row.',
       'per day': 'The subject already meets as often as allowed on every free day.',
       'section': 'The section is full at every period the teacher is free.',
-      'room': `Every ${u.req.roomKind ?? 'named'} room is taken at the free periods.`,
+      'room': u.req.roomKind || u.req.roomId ? `Every ${u.req.roomKind ?? 'named'} room is taken at the free periods.`
+        : u.group ? 'No classroom is free for this group at the free periods (its class\'s room is in use, and no spare or empty classroom is left).'
+        : 'The class\'s room is in use by another group at the free periods.',
       'busy': 'Every free period clashes with another lesson.',
       'free': 'It ran out of time; run again with more time.',
     } as Record<string, string>)[top ?? 'busy'] ?? (top?.startsWith('no ') ? `The school has ${top.replace(' room', '')} room set up (Bells & rooms).` : 'No free period fits.');

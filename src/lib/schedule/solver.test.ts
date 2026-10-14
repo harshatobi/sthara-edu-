@@ -201,3 +201,63 @@ test('solver: a break ends a run of periods in a row', () => {
   });
   assert.deepEqual(r.unplaced, [], 'all six fit: no run passes two because breaks split them');
 });
+
+test('solver: a second group with no room borrows a classroom left empty, never sharing one', () => {
+  // Four periods a day, five days: 9-A needs 25 periods, so its two language groups must run side by side.
+  const four = [{ id: 'b4', name: 'b4', wing_id: null, kind: 'regular', weekdays: [1, 2, 3, 4, 5], periods: [1, 2, 3, 4].map(n => ({ seq: n, label: `P${n}`, kind: 'period' as const, period_no: n, starts_at: `0${7 + n}:00`, ends_at: `0${7 + n}:45` })) } as BellSchedule];
+  const homes: Room[] = [
+    { id: 'h9a', name: '9-A', kind: 'classroom', capacity: 40, home_class: 'Class 9-A', active: true },
+    { id: 'h9b', name: '9-B', kind: 'classroom', capacity: 40, home_class: 'Class 9-B', active: true },
+    { id: 'lab', name: 'Lab', kind: 'lab', capacity: 40, home_class: null, active: true },
+  ];
+  const req = (id: string, cls: string, subject: string, teacher: string, periods: number, extra: Partial<SolverRequirement> = {}): SolverRequirement =>
+    ({ id, cls, subject, group: '', teacher, periods, doubles: 0, roomKind: null, roomId: null, maxPerDay: 4, combinedKey: null, ...extra });
+  const r = solve({
+    sections: ['Class 9-A', 'Class 9-B'].map(cls => ({ cls, classTeacher: null, days: gridFor(cls, { wings: [], bells: four }) })),
+    requirements: [
+      req('m', 'Class 9-A', 'Mathematics', 'T3', 15, { maxPerDay: 3 }),
+      req('h', 'Class 9-A', 'Hindi', 'T1', 5, { group: 'Hindi', maxPerDay: 1 }),
+      req('t', 'Class 9-A', 'Telugu', 'T2', 5, { group: 'Telugu', maxPerDay: 1 }),
+      req('s', 'Class 9-B', 'Science', 'T5', 5, { roomKind: 'lab', maxPerDay: 1 }),
+      req('e', 'Class 9-B', 'English', 'T4', 15, { maxPerDay: 3 }),
+    ],
+    rules: [], defaults: { maxPerDay: 6, maxConsecutive: 4, classTeacherFirst: false, spread: false },
+    rooms: homes.map(x => ({ id: x.id, kind: x.kind, active: x.active, homeClass: x.home_class })), locked: [], seed: 5, timeLimitMs: 1500,
+  });
+  assert.deepEqual(r.unplaced, [], JSON.stringify(r.unplaced));
+  assert.equal(findClashes(toSlots(r.lessons), homes).length, 0, 'no room holds two lessons');
+  const borrowed = r.lessons.filter(l => l.roomId === 'h9b');
+  assert.equal(borrowed.length, 5, 'one language group uses 9-B\'s room, exactly while 9-B is in the lab');
+  for (const l of borrowed) assert.ok(r.lessons.some(x => x.cls === 'Class 9-B' && x.roomId === 'lab' && x.weekday === l.weekday && x.period === l.period));
+});
+
+test('solver: with no classrooms set up, split groups keep the old behaviour and say so', () => {
+  const r = solve({
+    sections: [{ cls: 'Class 9-A', classTeacher: null, days: gridFor('Class 9-A', { wings: [], bells }) }],
+    requirements: [
+      { id: 'h', cls: 'Class 9-A', subject: 'Hindi', group: 'Hindi', teacher: 'T1', periods: 3, doubles: 0, roomKind: null, roomId: null, maxPerDay: 1, combinedKey: null },
+      { id: 't', cls: 'Class 9-A', subject: 'Telugu', group: 'Telugu', teacher: 'T2', periods: 3, doubles: 0, roomKind: null, roomId: null, maxPerDay: 1, combinedKey: null },
+    ],
+    rules: [], defaults: { maxPerDay: 6, maxConsecutive: 4, classTeacherFirst: false, spread: false }, rooms: [], locked: [], seed: 1, timeLimitMs: 200,
+  });
+  assert.deepEqual(r.unplaced, []);
+  assert.ok(r.warnings.some(w => /Classrooms aren't set up/.test(w)));
+});
+
+test('times off by clock: one window means the same in every wing', () => {
+  // The music teacher is out Monday 08:30-09:20. Primary P2 is 08:40-09:20 and Senior P1 is 08:30-09:15: both blocked,
+  // while Primary P1 (08:00-08:40) overlaps only by its last ten minutes and is blocked too; Senior P2 (09:15-10:00) is not.
+  const input: SolverInput = {
+    sections: ['Class 3-A', 'Class 8-A'].map(cls => ({ cls, classTeacher: null, days: gridFor(cls, { wings, bells: twoWingBells }) })),
+    requirements: ['Class 3-A', 'Class 8-A'].map((cls, i) => ({ id: `m${i}`, cls, subject: 'Music', group: '', teacher: 'M', periods: 5, doubles: 0, roomKind: null, roomId: null, maxPerDay: 6, combinedKey: null })),
+    rules: [{ person: 'M', maxPerDay: null, maxPerWeek: null, maxConsecutive: null, unavailable: [{ weekday: 1, periods: [], window: [8 * 60 + 30, 9 * 60 + 20] }] }],
+    defaults: { maxPerDay: 8, maxConsecutive: 6, classTeacherFirst: false, spread: false }, rooms: [], locked: [], seed: 2, timeLimitMs: 600,
+  };
+  const r = solve(input);
+  const clock = periodClock({ wings, bells: twoWingBells });
+  for (const l of r.lessons.filter(x => x.weekday === 1)) {
+    const [a, b] = clock(l.cls, 1, l.period)!;
+    assert.ok(!(a < 9 * 60 + 20 && 8 * 60 + 30 < b), `${l.cls} P${l.period} on Monday falls in the time off`);
+  }
+  assert.deepEqual(r.unplaced, []);
+});

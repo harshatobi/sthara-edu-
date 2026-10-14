@@ -63,7 +63,8 @@ test('clashes: teacher, room (via home room), section, combined lessons allowed'
   assert.deepEqual(findClashes([a, c], rooms).map(x => x.kind), ['room'], '10-B booked into 10-A home room');
   assert.deepEqual(findClashes([a, slot({ id: '4', teacher_id: 't3', group_label: 'Bio' })]).map(x => x.kind), ['section'], 'whole class beside a group');
   assert.deepEqual(findClashes([slot({ id: '5', group_label: 'Bio' }), slot({ id: '6', teacher_id: 't3', group_label: 'CS' })]), [], 'two groups at once');
-  assert.deepEqual(findClashes([slot({ id: '7', group_label: 'Bio' }), slot({ id: '8', teacher_id: 't3', group_label: 'CS' })], rooms), [], 'split groups with no room set do not both claim the home room');
+  assert.deepEqual(findClashes([slot({ id: '7', group_label: 'Bio' }), slot({ id: '8', teacher_id: 't3', group_label: 'CS' })], rooms).map(x => x.kind), ['room'], 'two groups with no room set would share the home room');
+  assert.deepEqual(findClashes([slot({ id: '7', group_label: 'Bio' }), slot({ id: '8', teacher_id: 't3', group_label: 'CS', room_id: 'spare' })], [...rooms, { id: 'spare', name: 'Room 12', kind: 'classroom', capacity: 40, home_class: null, active: true }]), [], 'the second group in a room of its own is fine');
   assert.equal(findClashes([slot({ id: '9', group_label: 'Bio', room_id: 'r1' }), slot({ id: '10', teacher_id: 't3', group_label: 'CS', room_id: 'r1' })], rooms).length, 1, 'but two groups in the same named room clash');
   assert.equal(clashesFor(slot({ id: '1', subject: 'Physics' }), [a, b]).length, 1, 'editing a lesson ignores itself');
 });

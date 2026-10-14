@@ -199,8 +199,9 @@ export function findClashes(slots: Slot[], rooms: Room[] = [], clock?: ClockOf):
     }
   };
   byTime('teacher', s => slotPerson(s));
-  // A split group with no room of its own doesn't claim the home room (its groups go to different rooms).
-  byTime('room', s => (s.room_id || !s.group_label ? roomOf(s, rooms)?.id ?? null : null));
+  // Every lesson is in a room: its own, else its class's home room. So two groups of one class with no room set
+  // can't both be in the home room: the second needs a room of its own (the solver gives it a free classroom).
+  byTime('room', s => roomOf(s, rooms)?.id ?? null);
   for (const [k, xs] of group(s => `${s.weekday}|${s.period_no}|${normClass(s.class)}`)) {
     if (xs.length < 2) continue;
     const whole = xs.filter(s => !s.group_label);

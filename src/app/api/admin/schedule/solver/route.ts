@@ -3,7 +3,7 @@ import { bad, deny, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { isSession, sessionOf } from '@/lib/admin/format';
 import { displayClass, normClass } from '@/lib/teacher/scope';
 import { findClashes } from '@/lib/schedule/engine';
-import { cleanSlot, dbError, roomIds, scheduleClock, staffIds } from '@/lib/schedule/server';
+import { cleanSlot, dbError, roomIds, scheduleClock, staffIds, time } from '@/lib/schedule/server';
 import { personCols, type Slot } from '@/lib/schedule/types';
 import { pageAll } from '@/lib/ops/page';
 
@@ -71,10 +71,13 @@ export async function PUT(req: NextRequest) {
     const fields = { target_per_week: int(b.targetPerWeek, 0, 60), max_per_day: int(b.maxPerDay, 1, 12), max_per_week: int(b.maxPerWeek, 1, 60), max_consecutive: int(b.maxConsecutive, 1, 12) };
     if (Object.values(fields).some(v => Number.isNaN(v))) return bad('Target 0-60 a week; caps 1-12 a day, 1-60 a week, 1-12 in a row.');
     if (fields.max_per_week !== null && fields.max_per_day !== null && fields.max_per_week < fields.max_per_day) return bad('The weekly cap is below the daily cap.');
-    const unavailable = (Array.isArray(b.unavailable) ? b.unavailable : []).slice(0, 14).map((u: { weekday?: unknown; periods?: unknown }) => ({
+    const unavailable = (Array.isArray(b.unavailable) ? b.unavailable : []).slice(0, 21).map((u: { weekday?: unknown; periods?: unknown; from?: unknown; to?: unknown }) => ({
       weekday: Number(u?.weekday), periods: [...new Set((Array.isArray(u?.periods) ? u.periods : []).map(Number))].filter(p => Number.isInteger(p) && p >= 1 && p <= 16).sort((x, y) => x - y),
+      // A clock window, "HH:MM" to "HH:MM": checked against each lesson's own bell time, so it means the same in every wing.
+      ...(u?.from || u?.to ? { from: time(u.from), to: time(u.to) } : {}),
     }));
     if (unavailable.some((u: { weekday: number }) => !Number.isInteger(u.weekday) || u.weekday < 1 || u.weekday > 7)) return bad('Pick the days they are not in.');
+    if (unavailable.some((u: { from?: string | null; to?: string | null }) => ('from' in u) && (!u.from || !u.to || u.from >= u.to))) return bad('A time off needs a start before its end, like 9:00-11:30.');
     const cols = personCols(person);
     const col = cols.user_id ? 'user_id' : 'staff_member_id';
     const row: Record<string, unknown> = { school_id: admin.schoolId, ...cols, ...fields, unavailable, updated_by: admin.id, updated_at: now };

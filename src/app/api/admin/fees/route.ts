@@ -102,7 +102,8 @@ export async function POST(req: NextRequest) {
       const { data, error } = await db.from('fee_payments')
         .update({ voided_at: new Date().toISOString(), void_reason: reason, voided_by: admin.id })
         .eq('id', b.paymentId).eq('school_id', admin.schoolId).is('voided_at', null).select('receipt_no');
-      if (error) return bad(error.message, 500);
+      // The database refuses a void on a closed day (22023) or an edit (42501): the user's to fix, not a server fault.
+      if (error) return bad(error.message, error.code === '22023' ? 409 : error.code === '42501' ? 403 : 500);
       if (!data?.length) return bad('Receipt not found, or already void.', 404);
       return NextResponse.json({ voided: data[0].receipt_no });
     }

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { bad, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { checkPeople } from '@/lib/ops/requests';
-import { byIds, pageAll } from '@/lib/ops/page';
+import { byIds } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 

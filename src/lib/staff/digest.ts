@@ -8,7 +8,7 @@ import { sendWhatsApp } from '@/lib/whatsapp/send';
 import { loadScheduleRows } from '@/lib/schedule/load';
 import { agenda, hhmm } from '@/lib/schedule/engine';
 import { needsOn } from '@/lib/schedule/cover';
-import { byIds, pageAll } from '@/lib/ops/page';
+import { pageAll } from '@/lib/ops/page';
 
 /** Morning / afternoon / evening by the school's clock (IST). */
 const greeting = () => {

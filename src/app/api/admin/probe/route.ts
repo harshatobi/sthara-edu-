@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { bad, deny, ISO_DAY, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { CONSENT_TYPES } from '@/lib/admin/constants';
 import { isoDay } from '@/lib/admin/format';
-import { byIds, pageAll } from '@/lib/ops/page';
+import { byIds } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 

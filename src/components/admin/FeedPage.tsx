@@ -10,6 +10,7 @@ import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Chip, PageBar } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { FeedList, IncidentForm, span, useNow } from '@/components/feed/Feed';
+import { all as allRows } from '@/lib/admin/loadRows';
 import { createClient } from '@/lib/supabase/client';
 import type { AdminDesk } from '@/lib/admin/desk';
 import { INCIDENT_RULES, isEscalated, istDay, type IncidentCategory } from '@/lib/feed/rules';
@@ -65,7 +66,10 @@ function Command({ desk }: { desk: AdminDesk }) {
 
   useEffect(() => {
     if (!canAttendance) return;
-    createClient().from('attendance').select('class_name, status').eq('school_id', desk.school.id).eq('day', istDay())
+    // Paged: today's register for a school of 1,000+ students passes one request's 1,000 rows.
+    const db = createClient();
+    allRows((f, t) => db.from('attendance').select('id, class_name, status').eq('school_id', desk.school.id).eq('day', istDay()).order('id').range(f, t))
+      .then(({ data }) => ({ data, error: null }), (e: Error) => ({ data: null, error: e }))
       .then(({ data, error: e }) => {
         if (e) { setRegisters(new Map()); return; }
         const m = new Map<string, { marked: number; absent: number }>();

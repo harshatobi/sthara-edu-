@@ -119,7 +119,8 @@ export async function storeCapture(db: SupabaseClient, a: any, studentId: string
   if (existing) {
     const { error } = await db.from('submissions').update(row).eq('id', existing.id);
     if (error) throw new GradingError('Could not save the captured work.', 500);
-    await db.from('submission_items').delete().eq('submission_id', existing.id).eq('teacher_confirmed', false);
+    const { error: clearErr } = await db.from('submission_items').delete().eq('submission_id', existing.id).eq('teacher_confirmed', false);
+    if (clearErr) throw new GradingError('Could not save the captured work.', 500);
     return existing.id as string;
   }
   const { data, error } = await db.from('submissions').insert({

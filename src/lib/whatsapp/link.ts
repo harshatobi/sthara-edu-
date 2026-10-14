@@ -111,8 +111,12 @@ export async function linkAction(db: SupabaseClient, user: LinkUser, b: any): Pr
     const code = typeof b.code === 'string' ? b.code.replace(/\D/g, '') : '';
     if (!link.otp_hash || !link.otp_expires_at || new Date(link.otp_expires_at).getTime() < Date.now()) throw new LinkError('That code has expired. Send a new one.', 410);
     if (link.otp_attempts >= 5) throw new LinkError('Too many wrong codes. Send a new one.', 429);
+    // Each guess first claims one of the five attempts, atomically (only if the count is still what was read), so
+    // guesses sent all at once cannot each see "no attempts used" and brute-force the code.
+    const { data: claimed, error: claimErr } = await db.from('whatsapp_links').update({ otp_attempts: link.otp_attempts + 1 })
+      .eq('user_id', user.id).eq('otp_attempts', link.otp_attempts).select('user_id');
+    if (claimErr || !claimed?.length) throw new LinkError('Another attempt is in progress. Wait a moment and try again.', 429);
     if (code.length !== 6 || hashOf(user.id, link.phone_e164, code) !== link.otp_hash) {
-      await db.from('whatsapp_links').update({ otp_attempts: link.otp_attempts + 1 }).eq('user_id', user.id);
       throw new LinkError('That code isn’t right. Check the latest message and try again.');
     }
     const { error } = await db.from('whatsapp_links').update({

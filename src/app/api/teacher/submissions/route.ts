@@ -57,7 +57,9 @@ export async function PATCH(req: NextRequest) {
     teacher_approved: null, score: null, grade: null, final_grade: null, ai_result: aiResult,
   }).eq('id', sub.id);
   if (error) { console.error('[submissions reopen]', error.message); return bad('Could not reopen the grade.', 500); }
-  await db.from('submission_items').delete().eq('submission_id', sub.id);
+  // The confirmed marks must go too, or mastery keeps counting a grade that was reopened.
+  const { error: clearErr } = await db.from('submission_items').delete().eq('submission_id', sub.id);
+  if (clearErr) { console.error('[submissions reopen] items:', clearErr.message); return bad('The grade was reopened, but its marks could not be cleared. Try again.', 500); }
   try { await computeStudentTml(db, sub.student_id, a.subject || undefined); } catch (e: any) { console.error('[submissions reopen] TML:', e?.message); }
 
   await db.from('notifications').insert({
@@ -89,7 +91,8 @@ export async function DELETE(req: NextRequest) {
 
   const fromStudent = (sub.ai_result as any)?.source !== 'teacher_capture';
   const paths = (Array.isArray(sub.image_urls) ? sub.image_urls : []).filter((u: string) => u.startsWith(CAPTURE_PREFIX)).map((u: string) => u.slice(CAPTURE_PREFIX.length));
-  await db.from('submission_items').delete().eq('submission_id', sub.id);
+  const { error: clearErr } = await db.from('submission_items').delete().eq('submission_id', sub.id);
+  if (clearErr) { console.error('[submissions discard] items:', clearErr.message); return bad('Could not remove the work.', 500); }
   const { error } = await db.from('submissions').delete().eq('id', sub.id);
   if (error) { console.error('[submissions discard]', error.message); return bad('Could not remove the work.', 500); }
   if (paths.length) {

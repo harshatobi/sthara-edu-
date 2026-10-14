@@ -5,6 +5,7 @@ import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { TrashIcon as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { WalletIcon as Wallet } from '@phosphor-icons/react/dist/ssr/Wallet';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip, Empty, Skeleton } from '@/components/canon/ui';
 import { CardHead, Kpi, Workspace, downloadCsv } from '@/components/admin/kit';
 import Pop, { run } from '@/components/schedule/Pop';
@@ -25,6 +26,7 @@ export default function Salaries({ data, call, reload, toast }: { data: PayrollD
   const dept = (id: string | null) => data.departments.find(d => d.id === id)?.name ?? '', grade = (id: string | null) => data.grades.find(g => g.id === id)?.name ?? '';
   const needle = q.trim().toLowerCase();
   const shown = active.filter(p => (view === 'all' || (view === 'none' ? !p.salary : p.pay?.onHold)) && (!needle || [p.name, p.employeeCode, p.designation, dept(p.departmentId)].some(v => v?.toLowerCase().includes(needle))));
+  const { shown: shownPage, pager } = usePaged(shown, `${q}|${view}`);
   const withPay = active.filter(p => p.salary), monthly = withPay.reduce((n, p) => n + p.salary!.gross, 0);
   const outOfBand = withPay.filter(p => { const g = data.grades.find(x => x.id === p.gradeId); return g && ((g.payMin !== null && p.salary!.gross < g.payMin) || (g.payMax !== null && p.salary!.gross > g.payMax)); });
   const person = open ? data.people.find(p => p.id === open) : null;
@@ -52,7 +54,7 @@ export default function Salaries({ data, call, reload, toast }: { data: PayrollD
         {shown.length ? (
           <div className="tbl-wrap"><table className="tbl">
             <thead><tr><th>Name</th><th>Grade</th><th className="pay-n">Monthly gross</th><th>Since</th><th>Tax</th><th /></tr></thead>
-            <tbody>{shown.map(p => (
+            <tbody>{shownPage.map(p => (
               <tr key={p.id} className="hr-row" tabIndex={0} onClick={() => setOpen(p.id)} onKeyDown={e => { if (e.key === 'Enter') setOpen(p.id); }}>
                 <td><b>{p.name}</b><div className="muted" style={{ fontSize: 12 }}>{[p.employeeCode, p.designation, dept(p.departmentId)].filter(Boolean).join(' · ')}</div></td>
                 <td>{grade(p.gradeId) || <span className="muted">—</span>}</td>
@@ -62,7 +64,8 @@ export default function Salaries({ data, call, reload, toast }: { data: PayrollD
                 <td>{p.pay?.onHold && <Chip tone="r">ON HOLD</Chip>}</td>
               </tr>
             ))}</tbody>
-          </table></div>
+          </table>
+            <Pager {...pager} noun="people" /></div>
         ) : <Empty icon={<Wallet size={26} weight="duotone" />} title="Nobody here">Change the search or the filter.</Empty>}
       </div>
       {person && <PersonPayWorkspace p={person} data={data} call={call} toast={toast} onChanged={reload} onClose={() => setOpen(null)} />}

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { solve, type SolverInput, type SolverRequirement } from './solver';
 import { gridFor, toSlots } from './solverInput';
-import { findClashes } from './engine';
+import { findClashes, periodClock } from './engine';
 import type { BellSchedule, Room } from './types';
 
 // Monday to Saturday, 8 periods: a break after P3 and lunch after P5 (so P3-P4 and P5-P6 are not back to back).
@@ -151,4 +151,113 @@ test('re-solving: one locked copy of a combined lesson keeps every copy; lessons
     { cls: 'Class 9-B', group: '', subject: 'Physical Education', weekday: 1, period: 3, teacher: 'T8', roomId: 'ground', combined: true, locked: true },
   ], timeLimitMs: 400 });
   for (const q of peReqs) assert.equal(r.lessons.filter(l => l.cls === q.cls && l.subject === 'Physical Education').length, 2, `${q.cls} PE stays at 2`);
+});
+
+// Two wings that ring differently: Primary's periods are 40 minutes from 08:00, Senior's 45 minutes from 08:30.
+const ring = (id: string, wing: string, start: number, len: number): BellSchedule => ({
+  id, name: id, wing_id: wing, kind: 'regular', weekdays: [1, 2, 3, 4, 5],
+  periods: Array.from({ length: 6 }, (_, i) => {
+    const a = start + i * len, b = a + len, hm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    return { seq: i + 1, label: `P${i + 1}`, kind: 'period' as const, period_no: i + 1, starts_at: hm(a), ends_at: hm(b) };
+  }),
+} as BellSchedule);
+const wings = [{ id: 'pri', name: 'Primary', grade_from: 1, grade_to: 5 }, { id: 'sen', name: 'Senior', grade_from: 6, grade_to: 12 }];
+const twoWingBells = [ring('bp', 'pri', 8 * 60, 40), ring('bs', 'sen', 8 * 60 + 30, 45)];
+
+test('clashes are by clock time across wings whose bells differ', () => {
+  const clock = periodClock({ wings, bells: twoWingBells });
+  // Primary P2 is 08:40-09:20; Senior P1 is 08:30-09:15: the same music teacher in both is a clash, at different period numbers.
+  const a = { id: '1', class: 'Class 3-A', group_label: '', weekday: 1, period_no: 2, subject: 'Music', teacher_id: 'm', staff_member_id: null, room_id: null, combined: false };
+  const b = { ...a, id: '2', class: 'Class 8-A', period_no: 1 };
+  assert.deepEqual(findClashes([a, b], [], clock).map(c => c.kind), ['teacher']);
+  assert.equal(findClashes([a, b]).length, 0, 'by period number alone it looked fine');
+  // Primary P4 (10:00-10:40) and Senior P3 (10:00-10:45) also overlap; Primary P1 and Senior P3 do not.
+  assert.equal(findClashes([{ ...a, period_no: 1 }, { ...b, period_no: 3 }], [], clock).length, 0);
+});
+
+test('solver: one teacher across two wings is never in two rooms at once', () => {
+  const input: SolverInput = {
+    sections: ['Class 3-A', 'Class 8-A'].map(cls => ({ cls, classTeacher: null, days: gridFor(cls, { wings, bells: twoWingBells }) })),
+    requirements: ['Class 3-A', 'Class 8-A'].map((cls, i) => ({ id: `m${i}`, cls, subject: 'Music', group: '', teacher: 'M', periods: 10, doubles: 0, roomKind: null, roomId: null, maxPerDay: 2, combinedKey: null })),
+    rules: [], defaults: { maxPerDay: 8, maxConsecutive: 6, classTeacherFirst: false, spread: false }, rooms: [], locked: [], seed: 3, timeLimitMs: 800,
+  };
+  const r = solve(input);
+  const clock = periodClock({ wings, bells: twoWingBells });
+  assert.equal(findClashes(toSlots(r.lessons), [], clock).length, 0, 'no overlapping lessons for the teacher');
+  for (const l of r.lessons) assert.ok(l.weekday >= 1 && l.weekday <= 5);
+});
+
+test('solver: a break ends a run of periods in a row', () => {
+  // Breaks after P2 and P4: with at most 2 in a row, a teacher can still take P1-P2, P3-P4 and P5-P6.
+  const P2 = (seq: number, no: number | null, a: string, b: string, kind: 'period' | 'break' = 'period') => ({ seq, label: kind, kind, period_no: no, starts_at: a, ends_at: b });
+  const withBreaks = [{ id: 'b', name: 'b', wing_id: null, kind: 'regular', weekdays: [1], periods: [
+    P2(1, 1, '08:00', '08:40'), P2(2, 2, '08:40', '09:20'), P2(3, null, '09:20', '09:40', 'break'), P2(4, 3, '09:40', '10:20'), P2(5, 4, '10:20', '11:00'),
+    P2(6, null, '11:00', '11:20', 'break'), P2(7, 5, '11:20', '12:00'), P2(8, 6, '12:00', '12:40')] } as BellSchedule];
+  const r = solve({
+    sections: [{ cls: 'Class 9-A', classTeacher: null, days: gridFor('Class 9-A', { wings: [], bells: withBreaks }) }],
+    requirements: [{ id: 'x', cls: 'Class 9-A', subject: 'Maths', group: '', teacher: 'T', periods: 6, doubles: 0, roomKind: null, roomId: null, maxPerDay: 6, combinedKey: null }],
+    rules: [{ person: 'T', maxPerDay: 6, maxPerWeek: null, maxConsecutive: 2, unavailable: [] }],
+    defaults: { maxPerDay: 6, maxConsecutive: 2, classTeacherFirst: false, spread: false }, rooms: [], locked: [], seed: 1, timeLimitMs: 300,
+  });
+  assert.deepEqual(r.unplaced, [], 'all six fit: no run passes two because breaks split them');
+});
+
+test('solver: a second group with no room borrows a classroom left empty, never sharing one', () => {
+  // Four periods a day, five days: 9-A needs 25 periods, so its two language groups must run side by side.
+  const four = [{ id: 'b4', name: 'b4', wing_id: null, kind: 'regular', weekdays: [1, 2, 3, 4, 5], periods: [1, 2, 3, 4].map(n => ({ seq: n, label: `P${n}`, kind: 'period' as const, period_no: n, starts_at: `0${7 + n}:00`, ends_at: `0${7 + n}:45` })) } as BellSchedule];
+  const homes: Room[] = [
+    { id: 'h9a', name: '9-A', kind: 'classroom', capacity: 40, home_class: 'Class 9-A', active: true },
+    { id: 'h9b', name: '9-B', kind: 'classroom', capacity: 40, home_class: 'Class 9-B', active: true },
+    { id: 'lab', name: 'Lab', kind: 'lab', capacity: 40, home_class: null, active: true },
+  ];
+  const req = (id: string, cls: string, subject: string, teacher: string, periods: number, extra: Partial<SolverRequirement> = {}): SolverRequirement =>
+    ({ id, cls, subject, group: '', teacher, periods, doubles: 0, roomKind: null, roomId: null, maxPerDay: 4, combinedKey: null, ...extra });
+  const r = solve({
+    sections: ['Class 9-A', 'Class 9-B'].map(cls => ({ cls, classTeacher: null, days: gridFor(cls, { wings: [], bells: four }) })),
+    requirements: [
+      req('m', 'Class 9-A', 'Mathematics', 'T3', 15, { maxPerDay: 3 }),
+      req('h', 'Class 9-A', 'Hindi', 'T1', 5, { group: 'Hindi', maxPerDay: 1 }),
+      req('t', 'Class 9-A', 'Telugu', 'T2', 5, { group: 'Telugu', maxPerDay: 1 }),
+      req('s', 'Class 9-B', 'Science', 'T5', 5, { roomKind: 'lab', maxPerDay: 1 }),
+      req('e', 'Class 9-B', 'English', 'T4', 15, { maxPerDay: 3 }),
+    ],
+    rules: [], defaults: { maxPerDay: 6, maxConsecutive: 4, classTeacherFirst: false, spread: false },
+    rooms: homes.map(x => ({ id: x.id, kind: x.kind, active: x.active, homeClass: x.home_class })), locked: [], seed: 5, timeLimitMs: 1500,
+  });
+  assert.deepEqual(r.unplaced, [], JSON.stringify(r.unplaced));
+  assert.equal(findClashes(toSlots(r.lessons), homes).length, 0, 'no room holds two lessons');
+  const borrowed = r.lessons.filter(l => l.roomId === 'h9b');
+  assert.equal(borrowed.length, 5, 'one language group uses 9-B\'s room, exactly while 9-B is in the lab');
+  for (const l of borrowed) assert.ok(r.lessons.some(x => x.cls === 'Class 9-B' && x.roomId === 'lab' && x.weekday === l.weekday && x.period === l.period));
+});
+
+test('solver: with no classrooms set up, split groups keep the old behaviour and say so', () => {
+  const r = solve({
+    sections: [{ cls: 'Class 9-A', classTeacher: null, days: gridFor('Class 9-A', { wings: [], bells }) }],
+    requirements: [
+      { id: 'h', cls: 'Class 9-A', subject: 'Hindi', group: 'Hindi', teacher: 'T1', periods: 3, doubles: 0, roomKind: null, roomId: null, maxPerDay: 1, combinedKey: null },
+      { id: 't', cls: 'Class 9-A', subject: 'Telugu', group: 'Telugu', teacher: 'T2', periods: 3, doubles: 0, roomKind: null, roomId: null, maxPerDay: 1, combinedKey: null },
+    ],
+    rules: [], defaults: { maxPerDay: 6, maxConsecutive: 4, classTeacherFirst: false, spread: false }, rooms: [], locked: [], seed: 1, timeLimitMs: 200,
+  });
+  assert.deepEqual(r.unplaced, []);
+  assert.ok(r.warnings.some(w => /Classrooms aren't set up/.test(w)));
+});
+
+test('times off by clock: one window means the same in every wing', () => {
+  // The music teacher is out Monday 08:30-09:20. Primary P2 is 08:40-09:20 and Senior P1 is 08:30-09:15: both blocked,
+  // while Primary P1 (08:00-08:40) overlaps only by its last ten minutes and is blocked too; Senior P2 (09:15-10:00) is not.
+  const input: SolverInput = {
+    sections: ['Class 3-A', 'Class 8-A'].map(cls => ({ cls, classTeacher: null, days: gridFor(cls, { wings, bells: twoWingBells }) })),
+    requirements: ['Class 3-A', 'Class 8-A'].map((cls, i) => ({ id: `m${i}`, cls, subject: 'Music', group: '', teacher: 'M', periods: 5, doubles: 0, roomKind: null, roomId: null, maxPerDay: 6, combinedKey: null })),
+    rules: [{ person: 'M', maxPerDay: null, maxPerWeek: null, maxConsecutive: null, unavailable: [{ weekday: 1, periods: [], window: [8 * 60 + 30, 9 * 60 + 20] }] }],
+    defaults: { maxPerDay: 8, maxConsecutive: 6, classTeacherFirst: false, spread: false }, rooms: [], locked: [], seed: 2, timeLimitMs: 600,
+  };
+  const r = solve(input);
+  const clock = periodClock({ wings, bells: twoWingBells });
+  for (const l of r.lessons.filter(x => x.weekday === 1)) {
+    const [a, b] = clock(l.cls, 1, l.period)!;
+    assert.ok(!(a < 9 * 60 + 20 && 8 * 60 + 30 < b), `${l.cls} P${l.period} on Monday falls in the time off`);
+  }
+  assert.deepEqual(r.unplaced, []);
 });

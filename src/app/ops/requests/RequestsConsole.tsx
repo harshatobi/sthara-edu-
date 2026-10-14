@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { UserPlusIcon as UserPlus } from '@phosphor-icons/react/dist/ssr/UserPlus';
@@ -54,6 +55,7 @@ export default function RequestsConsole() {
   const pending = useMemo(() => (rows ?? []).filter(r => r.status === 'pending'), [rows]);
   const decided = useMemo(() => (rows ?? []).filter(r => r.status !== 'pending'), [rows]);
   const shown = view === 'pending' ? pending : decided;
+  const { shown: page, pager } = usePaged(shown, view);
 
   const approve = async (r: Req) => {
     setBusy(r.id); setErr(null);
@@ -105,7 +107,7 @@ export default function RequestsConsole() {
 
       {!rows ? (
         <div className="card">{[0, 1, 2].map(i => <Skeleton key={i} h={70} style={{ marginBottom: 12 }} />)}</div>
-      ) : shown.length ? shown.map(r => (
+      ) : shown.length ? <>{page.map(r => (
         <div className="card" key={r.id} style={{ marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 260 }}>
@@ -155,7 +157,7 @@ export default function RequestsConsole() {
           ))}
           {problems[r.id] && <div className="note err" role="alert" style={{ marginTop: 10 }}>Nothing was created: {problems[r.id].error} Fix it with the school, or reject the request with a note.</div>}
         </div>
-      )) : (
+      ))}<Pager {...pager} noun="requests" /></> : (
         <div className="card"><Empty icon={<UserPlus size={26} weight="duotone" />} title={view === 'pending' ? 'No requests waiting' : 'Nothing decided yet'}>
           When a school asks for logins (an enrolment from admissions, or staff, students and parents from its directory) it lands here.
         </Empty></div>

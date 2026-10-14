@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { bad, ISO_DAY, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { sessionOf, sessionStart } from '@/lib/admin/format';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,8 +66,9 @@ export async function POST(req: NextRequest) {
   const since = sessionStart(session);
   const [students, logs, consents] = await Promise.all([
     db.from('users').select('id', { count: 'exact', head: true }).eq('school_id', admin.schoolId).eq('role', 'student'),
-    db.from('wellness_logs').select('student_id, energy').eq('school_id', admin.schoolId).gte('created_at', since).not('energy', 'is', null).limit(200000),
-    db.from('consents').select('student_id').eq('school_id', admin.schoolId).eq('consent_type', 'wellness_checkin').eq('granted', true).is('revoked_at', null),
+    // Every check-in of the session, paged: .limit(200000) was still cut at 1,000 rows, so the filed figures came from a sample.
+    pageAll<any>((f, t) => db.from('wellness_logs').select('id, student_id, energy').eq('school_id', admin.schoolId).gte('created_at', since).not('energy', 'is', null).order('id').range(f, t), 500_000),
+    pageAll<any>((f, t) => db.from('consents').select('id, student_id').eq('school_id', admin.schoolId).eq('consent_type', 'wellness_checkin').eq('granted', true).is('revoked_at', null).order('id').range(f, t), 100_000),
   ]);
   if (logs.error) return bad(logs.error.message, 500);
   const rows = logs.data || [];

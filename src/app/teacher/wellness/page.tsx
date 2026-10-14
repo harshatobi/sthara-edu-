@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { all } from '@/lib/admin/loadRows';
 import { createClient } from '@/lib/supabase/client';
 import { Activity, AlertTriangle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,11 +54,12 @@ export default function TeacherWellnessDashboard() {
 
     const discoverClasses = async () => {
       try {
-        const { data: studentsData } = await supabase
+        const { data: studentsData } = await all((a, b) => supabase
           .from('users')
-          .select('*')
-          .eq('school_id', profile.schoolId)
-          .eq('role', 'student');
+          .select('id, name, email, student_class, branch')
+          .eq('school_id', profile.schoolId!)
+          .eq('role', 'student')
+          .order('id').range(a, b));
 
         const allStudents = studentsData || [];
         const classSet = new Set<string>();
@@ -97,8 +99,8 @@ export default function TeacherWellnessDashboard() {
         // Purpose-limited feed: only students in classes this teacher teaches,
         // energy + at-risk flag, and a note only when the student shared it.
         // Raw wellness_logs rows are not readable by staff (DPDP).
-        const { data: feed, error: feedErr } = await supabase.rpc('teacher_wellness_feed', { p_days: 30 });
-        if (feedErr) throw feedErr;
+        // Paged: 30 days of a teacher's classes can pass the 1,000 rows one request returns.
+        const { data: feed } = await all((a, b) => supabase.rpc('teacher_wellness_feed', { p_days: 30 }).order('log_id').range(a, b));
         setLogs((feed || [])
           .filter((r: any) => r.energy != null && normClass(r.student_class) === normClass(selectedClass))
           .map((r: any) => ({

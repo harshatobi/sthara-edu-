@@ -8,6 +8,7 @@ import { sendWhatsApp } from '@/lib/whatsapp/send';
 import { loadScheduleRows } from '@/lib/schedule/load';
 import { agenda, hhmm } from '@/lib/schedule/engine';
 import { needsOn } from '@/lib/schedule/cover';
+import { pageAll } from '@/lib/ops/page';
 
 /** Morning / afternoon / evening by the school's clock (IST). */
 const greeting = () => {
@@ -59,8 +60,9 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
       if (count) lines.push(`• Work to review: ${count}`);
     }
     if (me.classTeacherOf && new Date(`${today}T00:00:00Z`).getUTCDay() !== 0) {
-      const { data: roster } = await db.from('users').select('id, student_class').eq('school_id', me.schoolId).eq('role', 'student');
-      const ids = (roster || []).filter(s => normClass(s.student_class) === me.classTeacherOf).map(s => s.id);
+      // The whole roll, paged (one request stops at 1,000 and the class could be past it).
+      const { data: roster } = await pageAll<{ id: string; student_class: string | null }>((f, t) => db.from('users').select('id, student_class').eq('school_id', me.schoolId).eq('role', 'student').order('id').range(f, t), 50_000);
+      const ids = roster.filter(s => normClass(s.student_class) === me.classTeacherOf).map(s => s.id);
       const { count } = ids.length ? await db.from('attendance').select('id', { count: 'exact', head: true }).in('student_id', ids).eq('day', today) : { count: 0 };
       lines.push(count ? `• ${displayClass(me.classTeacherOf)} register: marked` : `• ${displayClass(me.classTeacherOf)} register: *not marked yet*. Reply e.g. *ABSENT 4, 12* (everyone else present) or *ALL PRESENT*.`);
     }
@@ -73,10 +75,11 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
       if (count) lines.push(`• Incidents waiting for your decision: ${count}`);
     }
     if (a.can('attendance.read') && new Date(`${today}T00:00:00Z`).getUTCDay() !== 0) {
-      const { data: kids } = await db.from('users').select('student_class').eq('school_id', me.schoolId).eq('role', 'student');
-      const classes = new Set((kids || []).map(k => normClass(k.student_class)).filter(Boolean));
-      const { data: att } = await db.from('attendance').select('class_name').eq('school_id', me.schoolId).eq('day', today);
-      const marked = new Set((att || []).map(r => normClass(r.class_name)));
+      // Both paged: a school of 1,000+ students passes one request's 1,000 rows.
+      const { data: kids } = await pageAll<any>((f, t) => db.from('users').select('id, student_class').eq('school_id', me.schoolId).eq('role', 'student').order('id').range(f, t), 50_000);
+      const classes = new Set(kids.map(k => normClass(k.student_class)).filter(Boolean));
+      const { data: att } = await pageAll<any>((f, t) => db.from('attendance').select('id, class_name').eq('school_id', me.schoolId).eq('day', today).order('id').range(f, t), 50_000);
+      const marked = new Set(att.map(r => normClass(r.class_name)));
       lines.push(`• Registers: ${[...classes].filter(c => marked.has(c)).length} of ${classes.size} marked`);
     }
     if (a.can('messages.office')) {

@@ -4,7 +4,7 @@
  * the current timetable or the teachers' assignments. Pure.
  */
 import { normClass, displayClass, normSubject, teachingScope } from '@/lib/teacher/scope';
-import { classOrder, sectionsOf, wingOf } from './engine';
+import { classOrder, minutes, sectionsOf, wingOf } from './engine';
 import type { SolverInput, SolverLesson, SolverRequirement, SolverRule, SolverSection } from './solver';
 import { personKey, slotPerson, slotTeacher, type BellSchedule, type PersonKey, type RoomKind, type ScheduleRows, type Slot } from './types';
 
@@ -18,7 +18,8 @@ export interface RequirementRow {
 export interface LoadRuleRow {
   id: string; user_id: string | null; staff_member_id: string | null; target_per_week: number | null;
   max_per_day: number | null; max_per_week: number | null; max_consecutive: number | null;
-  unavailable: { weekday: number; periods: number[] }[];
+  /** Times off: a whole day (no periods, no times), period numbers, or a clock window "HH:MM"-"HH:MM". */
+  unavailable: { weekday: number; periods: number[]; from?: string | null; to?: string | null }[];
 }
 export interface SolverSettingsRow {
   default_target_per_week: number; default_max_per_day: number; default_max_consecutive: number;
@@ -48,7 +49,13 @@ export function gridFor(cls: string, rows: Pick<ScheduleRows, 'wings' | 'bells'>
       const a = ordered[i], b = ordered[i + 1];
       if (a.kind === 'period' && b.kind === 'period' && a.period_no && b.period_no) pairs.push([a.period_no, b.period_no]);
     }
-    days.push({ weekday: wd, periods, pairs });
+    // When each period runs, so lessons in wings with different bells are compared by time.
+    // Only bells that make sense on the clock (each period ends after it starts, in order, none overlapping); otherwise
+    // the period numbers stand in for time, as they always did.
+    const clocked = ordered.filter(p => p.kind === 'period' && p.period_no).map(p => [p.period_no!, minutes(p.starts_at), minutes(p.ends_at)] as const);
+    const sane = clocked.every(([, a, b], i) => b > a && (i === 0 || a >= clocked[i - 1][2]));
+    const times = sane ? Object.fromEntries(clocked.map(([n, a, b]) => [n, [a, b] as [number, number]])) : undefined;
+    days.push({ weekday: wd, periods, pairs, ...(times ? { times } : {}) });
   }
   return days;
 }
@@ -82,7 +89,10 @@ export function buildInput(rows: ScheduleRows, reqs: RequirementRow[], rules: Lo
     })),
     rules: rules.map<SolverRule>(r => ({
       person: ruleKey(r), maxPerDay: r.max_per_day, maxPerWeek: r.max_per_week, maxConsecutive: r.max_consecutive,
-      unavailable: (r.unavailable || []).map(u => ({ weekday: Number(u.weekday), periods: (u.periods || []).map(Number) })),
+      unavailable: (r.unavailable || []).map(u => ({
+        weekday: Number(u.weekday), periods: (u.periods || []).map(Number),
+        ...(u.from && u.to ? { window: [minutes(u.from), minutes(u.to)] as [number, number] } : {}),
+      })),
     })),
     defaults: { maxPerDay: settings.default_max_per_day, maxConsecutive: settings.default_max_consecutive, classTeacherFirst: settings.class_teacher_first, spread: settings.subject_spread },
     rooms: rows.rooms.map(r => ({ id: r.id, kind: r.kind, active: r.active, homeClass: r.home_class })),

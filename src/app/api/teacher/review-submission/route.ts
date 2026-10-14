@@ -85,12 +85,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Evidence the TML engine reads: replace whatever the auto-grader wrote.
-  await db.from('submission_items').delete().eq('submission_id', sub.id);
+  // If the old marks can't be cleared, adding the new ones would count the work twice in mastery: stop and say so.
+  const { error: clearErr } = await db.from('submission_items').delete().eq('submission_id', sub.id);
+  if (clearErr) {
+    console.error('[review-submission] items clear failed:', clearErr.message);
+    return NextResponse.json({ error: 'The grade is saved, but the per-question marks could not be updated. Save it again.' }, { status: 500 });
+  }
   const { error: itemsErr } = await db.from('submission_items').insert(items.map(x => ({
     ...x, submission_id: sub.id, assignment_id: a.id, student_id: sub.student_id, school_id: sub.school_id,
     component_type: component, teacher_confirmed: true,
   })));
-  if (itemsErr) console.error('[review-submission] items insert failed:', itemsErr.message);
+  if (itemsErr) {
+    console.error('[review-submission] items insert failed:', itemsErr.message);
+    return NextResponse.json({ error: 'The grade is saved, but the per-question marks could not be saved. Save it again.' }, { status: 500 });
+  }
 
   const amended = sub.teacher_approved === true;
   await db.from('notifications').insert({

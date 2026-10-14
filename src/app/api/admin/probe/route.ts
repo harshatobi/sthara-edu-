@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { bad, deny, ISO_DAY, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { CONSENT_TYPES } from '@/lib/admin/constants';
 import { isoDay } from '@/lib/admin/format';
+import { byIds } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,15 +67,21 @@ export async function POST(req: NextRequest) {
       if (no) return no;
       const type = str(b.consentType, 40);
       if (!(type in CONSENT_TYPES)) return bad('Unknown consent type.');
-      const ids: string[] = (Array.isArray(b.studentIds) ? b.studentIds : []).filter(isUuid).slice(0, 1000);
+      const ids: string[] = [...new Set<string>((Array.isArray(b.studentIds) ? b.studentIds : []).filter(isUuid))];
       if (!ids.length) return bad('Pick at least one family.');
+      if (ids.length > 3000) return bad('Ask at most 3,000 families at a time.');
       // Recomputed here: students of this school, with a verified parent, still missing this consent.
+      // 150 ids a request (a long list is refused by the database), every list paged; a failed read stops the send,
+      // or families who already consented, or were asked this week, would be asked again.
+      const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
       const [students, guardians, consents, recent] = await Promise.all([
-        db.from('users').select('id, name').eq('school_id', admin.schoolId).eq('role', 'student').in('id', ids),
-        db.from('guardians').select('parent_id, student_id').eq('verified', true).in('student_id', ids),
-        db.from('consents').select('student_id').eq('consent_type', type).eq('granted', true).is('revoked_at', null).in('student_id', ids),
-        db.from('notifications').select('student_id').eq('type', 'consent_request').gte('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString()).in('student_id', ids),
+        byIds<any>(ids, (c, f, t) => db.from('users').select('id, name').eq('school_id', admin.schoolId).eq('role', 'student').in('id', c).order('id').range(f, t)),
+        byIds<any>(ids, (c, f, t) => db.from('guardians').select('parent_id, student_id').eq('verified', true).in('student_id', c).order('id').range(f, t)),
+        byIds<any>(ids, (c, f, t) => db.from('consents').select('id, student_id').eq('consent_type', type).eq('granted', true).is('revoked_at', null).in('student_id', c).order('id').range(f, t)),
+        byIds<any>(ids, (c, f, t) => db.from('notifications').select('id, student_id').eq('type', 'consent_request').gte('created_at', weekAgo).in('student_id', c).order('id').range(f, t)),
       ]);
+      const readErr = students.error || guardians.error || consents.error || recent.error;
+      if (readErr) return bad(`Could not check the families, so no request was sent: ${readErr.message}`, 500);
       const has = new Set((consents.data || []).map(c => c.student_id));
       const asked = new Set((recent.data || []).map(n => n.student_id));
       const meta = CONSENT_TYPES[type];

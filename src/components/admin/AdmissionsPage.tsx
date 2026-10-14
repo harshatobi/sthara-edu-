@@ -10,6 +10,7 @@ import { TargetIcon as Target } from '@phosphor-icons/react/dist/ssr/Target';
 import { HourglassIcon as Hourglass } from '@phosphor-icons/react/dist/ssr/Hourglass';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Bar, Chip, Empty, PageBar, type Tone } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import {
@@ -37,7 +38,8 @@ function Admissions({ desk }: { desk: AdminDesk }) {
   const [toast, toastEl] = useToast();
   const P = desk.admissions;
   const [view, setView] = useState<View>('open');
-  const [adding, setAdding] = useState(false);
+  // ?new=1 (from "New enquiry" on the dashboard) opens the form straight away.
+  const [adding, setAdding] = useState(() => params.get('new') === '1' && desk.me.access.can('admissions.manage'));
   const openId = params.get('applicant');
   const current = openId ? P.applicants.find(a => a.id === openId) ?? null : null;
   const setOpen = useCallback((id: string | null) => router.replace(id ? `/admin/admissions?applicant=${id}` : '/admin/admissions', { scroll: false }), [router]);
@@ -45,6 +47,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
 
   const rows = useMemo(() => P.applicants.filter(a =>
     view === 'all' ? true : view === 'open' ? a.open : a.stage === view), [P.applicants, view]);
+  const { shown: shownRows, pager } = usePaged(rows, view);
 
   const exportCsv = () => downloadCsv(`admissions-${P.session}-${isoDay()}.csv`, [
     ['Name', 'Grade', 'Stage', 'Furthest stage', 'Days in stage', 'Source', 'Previous school', 'Guardian', 'Phone', 'Email', 'Assessment on', 'Added'],
@@ -127,11 +130,11 @@ function Admissions({ desk }: { desk: AdminDesk }) {
               </button>
             ))}
           </div>} />
-        {rows.length ? (
+        {rows.length ? (<>
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr><th>Applicant</th><th className="c">Grade</th><th>Stage</th><th className="c">In stage</th><th>Source</th><th /></tr></thead>
-              <tbody>{rows.map(a => (
+              <tbody>{shownRows.map(a => (
                 <ApplicantRow key={a.id} a={a} canManage={desk.me.access.can('admissions.manage')} onOpen={() => setOpen(a.id)}
                   onAdvance={async () => {
                     const to = nextStage(a.stage)!;
@@ -141,7 +144,8 @@ function Admissions({ desk }: { desk: AdminDesk }) {
               ))}</tbody>
             </table>
           </div>
-        ) : (
+          <Pager {...pager} noun="applicants" />
+        </>) : (
           <Empty icon={<UsersThree size={26} weight="duotone" />} title={P.total ? 'Nobody here' : 'No applicants yet'}>
             {P.total ? 'Pick another stage.' : 'Add an enquiry to start the pipeline.'}
           </Empty>

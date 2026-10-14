@@ -9,6 +9,7 @@ import { GearIcon as Gear } from '@phosphor-icons/react/dist/ssr/Gear';
 import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { MapPinIcon as MapPin } from '@phosphor-icons/react/dist/ssr/MapPin';
+import { Pager, pageWindow, usePageNumber } from '@/components/canon/Pager';
 import { Chip, Empty, Skeleton } from '@/components/canon/ui';
 import { CardHead, Kpi, downloadCsv } from '@/components/admin/kit';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
@@ -43,6 +44,7 @@ export default function AttendanceTab({ toast, canEdit }: { toast: (m: string) =
   const [marking, setMarking] = useState<{ p: Person; d: Day } | null>(null);
   const [dialog, setDialog] = useState<null | 'import' | 'settings' | 'leave' | 'device'>(null);
   const [filter, setFilter] = useState<'all' | 'teacher' | 'office' | 'register' | 'issues'>('all');
+  const [page, setPage] = usePageNumber(`${filter}|${date}`);
 
   // The no-show check runs whenever the board is opened on a school day (idempotent).
   useEffect(() => { if (date === now.date) call(API, 'POST', { entity: 'noshow_check' }).catch(() => {}); }, [date, now.date, call]);
@@ -55,6 +57,9 @@ export default function AttendanceTab({ toast, canEdit }: { toast: (m: string) =
   const count = (s: string[]) => days.filter(x => s.includes(x.d.status)).length;
   const shown = days.filter(x => filter === 'all' || (filter === 'issues' ? ['late', 'absent', 'not_in', 'half_day'].includes(x.d.status) || x.d.flags.length > 0 : x.p.kind === filter))
     .filter(x => x.d.status !== 'off' || filter === 'all');
+  const win = pageWindow(shown.length, page);
+  const shownPage = shown.slice(win.from, win.to);
+  const pager = { ...win, total: shown.length, setPage };
 
   return (
     <>
@@ -91,7 +96,7 @@ export default function AttendanceTab({ toast, canEdit }: { toast: (m: string) =
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr><th>Name</th><th>Expected</th><th className="c">In</th><th className="c">Out</th><th>Status</th>{canEdit && <th />}</tr></thead>
-              <tbody>{shown.map(({ p, d }) => (
+              <tbody>{shownPage.map(({ p, d }) => (
                 <tr key={p.key}>
                   <td><b>{p.name}</b><div className="muted" style={{ fontSize: 12 }}>{KIND[p.kind]}{p.employeeCode ? ` · ${p.employeeCode}` : ''}</div></td>
                   <td style={{ fontSize: 13 }}>{d.expected.kind === 'work' ? `${d.expected.label}, ${t(d.expected.start)}–${t(d.expected.end)}` : d.expected.kind === 'leave' ? `Leave (${LEAVE_TYPES[d.expected.label] || d.expected.label})` : 'Off'}</td>
@@ -108,6 +113,7 @@ export default function AttendanceTab({ toast, canEdit }: { toast: (m: string) =
                 </tr>
               ))}</tbody>
             </table>
+            <Pager {...pager} noun="rows" />
           </div>
         ) : <p className="muted">Nobody here for this view.</p>}
       </div>

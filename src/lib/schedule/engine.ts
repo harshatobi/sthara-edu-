@@ -122,12 +122,63 @@ export interface Clash { kind: 'teacher' | 'room' | 'section'; weekday: number; 
 
 const combinedOk = (xs: Slot[]) => xs.every(s => s.combined) && new Set(xs.map(s => normSubject(s.subject))).size === 1;
 
+/** When a lesson runs: [start, end) in minutes after midnight, or null when its section has no bells for it. */
+export type ClockOf = (cls: string, weekday: number, period: number) => [number, number] | null;
+
 /**
- * Clashes in a set of lessons. A teacher or room in two sections at once is a clash unless every row is the
- * same combined lesson. A section can't have two whole-class lessons, or a whole-class lesson beside a group.
- * The room check uses the lesson's effective room (its own, else the home room for a whole-class lesson).
+ * Each section's periods on the clock, from its wing's regular bells (a wing's own schedule, else the school-wide
+ * one). Wings can ring differently: Primary's period 3 may be Senior's period 4, so two lessons clash when their
+ * times overlap, not when their period numbers match.
  */
-export function findClashes(slots: Slot[], rooms: Room[] = []): Clash[] {
+export function periodClock(rows: Pick<ScheduleRows, 'wings' | 'bells'>): ClockOf {
+  const regular = rows.bells.filter(b => b.kind === 'regular');
+  const cache = new Map<string, Map<number, [number, number]>>();
+  return (cls, weekday, period) => {
+    const wing = wingOf(cls, rows.wings)?.id ?? null;
+    const k = `${wing ?? ''}|${weekday}`;
+    let grid = cache.get(k);
+    if (!grid) {
+      const sched = regular.find(b => b.weekdays.includes(weekday) && wing !== null && b.wing_id === wing)
+        ?? regular.find(b => b.weekdays.includes(weekday) && b.wing_id === null);
+      const clocked = [...(sched?.periods ?? [])].sort((x, y) => x.seq - y.seq).filter(p => p.kind === 'period' && p.period_no)
+        .map(p => [p.period_no!, [minutes(p.starts_at), minutes(p.ends_at)]] as [number, [number, number]]);
+      // Bells that don't make sense on the clock (a period ending before it starts, or overlapping the one before) are
+      // ignored: those lessons are compared by period number instead.
+      const sane = clocked.every(([, [a, b]], i) => b > a && (i === 0 || a >= clocked[i - 1][1][1]));
+      grid = new Map(sane ? clocked : []);
+      cache.set(k, grid);
+    }
+    return grid.get(period) ?? null;
+  };
+}
+
+/**
+ * Lessons that overlap in time, grouped: [a, b) and [c, d) overlap when a < d and c < b. Lessons whose time isn't
+ * known fall back to their period number, which only meets lessons with the same period and no known time.
+ */
+function overlapping(xs: Slot[], clock?: ClockOf): Slot[][] {
+  const timed = xs.map(s => {
+    const t = clock?.(s.class, s.weekday, s.period_no) ?? null;
+    // Untimed: a slot of its own far outside the day, per period number.
+    return { s, a: t ? t[0] : -1000 * s.period_no, b: t ? t[1] : -1000 * s.period_no + 1 };
+  }).sort((x, y) => x.a - y.a || x.b - y.b);
+  const out: Slot[][] = [];
+  let cur: typeof timed = [], end = -Infinity;
+  for (const x of timed) {
+    if (cur.length && x.a >= end) { out.push(cur.map(c => c.s)); cur = []; end = -Infinity; }
+    cur.push(x); end = Math.max(end, x.b);
+  }
+  if (cur.length) out.push(cur.map(c => c.s));
+  return out;
+}
+
+/**
+ * Clashes in a set of lessons. A teacher or room in two places at overlapping times is a clash unless every row is
+ * the same combined lesson. A section can't have two whole-class lessons, or a whole-class lesson beside a group.
+ * The room check uses the lesson's effective room (its own, else the home room for a whole-class lesson).
+ * With `clock`, teachers and rooms are checked by time, across wings whose bells differ; without it, by period number.
+ */
+export function findClashes(slots: Slot[], rooms: Room[] = [], clock?: ClockOf): Clash[] {
   const out: Clash[] = [];
   const group = (key: (s: Slot) => string | null) => {
     const m = new Map<string, Slot[]>();
@@ -139,13 +190,18 @@ export function findClashes(slots: Slot[], rooms: Room[] = []): Clash[] {
     }
     return m;
   };
-  for (const [k, xs] of group(s => { const p = slotPerson(s); return p ? `${s.weekday}|${s.period_no}|${p}` : null; })) {
-    if (xs.length > 1 && !combinedOk(xs)) out.push({ kind: 'teacher', weekday: xs[0].weekday, period_no: xs[0].period_no, key: k.split('|')[2], slots: xs });
-  }
-  // A split group with no room of its own doesn't claim the home room (its groups go to different rooms).
-  for (const [k, xs] of group(s => { const r = s.room_id || !s.group_label ? roomOf(s, rooms) : null; return r ? `${s.weekday}|${s.period_no}|${r.id}` : null; })) {
-    if (xs.length > 1 && !combinedOk(xs)) out.push({ kind: 'room', weekday: xs[0].weekday, period_no: xs[0].period_no, key: k.split('|')[2], slots: xs });
-  }
+  // Teachers and rooms: per day, lessons that overlap in time.
+  const byTime = (kind: 'teacher' | 'room', who: (s: Slot) => string | null) => {
+    for (const [k, day] of group(s => { const w = who(s); return w ? `${s.weekday}|${w}` : null; })) {
+      for (const xs of overlapping(day, clock)) {
+        if (xs.length > 1 && !combinedOk(xs)) out.push({ kind, weekday: xs[0].weekday, period_no: xs[0].period_no, key: k.split('|')[1], slots: xs });
+      }
+    }
+  };
+  byTime('teacher', s => slotPerson(s));
+  // Every lesson is in a room: its own, else its class's home room. So two groups of one class with no room set
+  // can't both be in the home room: the second needs a room of its own (the solver gives it a free classroom).
+  byTime('room', s => roomOf(s, rooms)?.id ?? null);
   for (const [k, xs] of group(s => `${s.weekday}|${s.period_no}|${normClass(s.class)}`)) {
     if (xs.length < 2) continue;
     const whole = xs.filter(s => !s.group_label);
@@ -158,9 +214,15 @@ export function findClashes(slots: Slot[], rooms: Room[] = []): Clash[] {
 }
 
 /** Does putting `s` into `slots` (replacing the lesson with the same id) clash? */
-export function clashesFor(s: Slot, slots: Slot[], rooms: Room[] = []): Clash[] {
-  const others = slots.filter(x => x.weekday === s.weekday && x.period_no === s.period_no && !(s.id && x.id === s.id));
-  return findClashes([...others, s], rooms).filter(c => c.slots.includes(s));
+export function clashesFor(s: Slot, slots: Slot[], rooms: Room[] = [], clock?: ClockOf): Clash[] {
+  const t = clock?.(s.class, s.weekday, s.period_no) ?? null;
+  const others = slots.filter(x => {
+    if (x.weekday !== s.weekday || (s.id && x.id === s.id)) return false;
+    if (x.period_no === s.period_no) return true;
+    const u = t && clock?.(x.class, x.weekday, x.period_no);
+    return !!(t && u && u[0] < t[1] && t[0] < u[1]);
+  });
+  return findClashes([...others, s], rooms, clock).filter(c => c.slots.includes(s));
 }
 
 /** Periods a week per teacher, accounts and register members alike (a combined lesson counts once). */

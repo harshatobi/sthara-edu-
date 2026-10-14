@@ -10,6 +10,7 @@ import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/s
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { MagnifyingGlassIcon as MagnifyingGlass } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { ReceiptIcon as Receipt } from '@phosphor-icons/react/dist/ssr/Receipt';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Bar, Chip, Empty, PageBar } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { bucketOf, PAY_MODES, type Family } from '@/lib/admin/fees';
@@ -91,6 +92,7 @@ function Fees({ desk }: { desk: AdminDesk }) {
       return !needle || f.name.toLowerCase().includes(needle) || f.cls.toLowerCase().includes(needle);
     });
   }, [L.families, filter, q, bucket]);
+  const { shown: shownRows, pager } = usePaged(rows, `${filter}|${q}|${bucket}`);
 
   const raise = async (no: number) => {
     setRaising(no); setErr(null);
@@ -253,11 +255,11 @@ function Fees({ desk }: { desk: AdminDesk }) {
               ))}
             </div>
           </div>} />
-        {rows.length ? (
+        {rows.length ? (<>
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr><th>Student</th><th className="r">Billed</th><th className="r">Paid</th><th className="r">Outstanding</th><th className="c">Status</th><th className="c">Tone</th><th>Reminded</th></tr></thead>
-              <tbody>{rows.map(f => {
+              <tbody>{shownRows.map(f => {
                 const worst = f.invoices.find(i => i.status === 'overdue') ?? f.invoices.find(i => i.status === 'partial' || i.status === 'due') ?? f.invoices[0];
                 return (
                   <tr key={f.studentId} className="click" onClick={() => setStudent(f.studentId)} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') setStudent(f.studentId); }}>
@@ -273,7 +275,8 @@ function Fees({ desk }: { desk: AdminDesk }) {
               })}</tbody>
             </table>
           </div>
-        ) : (
+          <Pager {...pager} noun="families" />
+        </>) : (
           <Empty icon={<Receipt size={26} weight="duotone" />} title={L.families.length ? 'No families match' : 'No invoices yet'}>
             {L.families.length ? 'Try another filter or search.' : L.structures.length ? 'Raise an instalment above to bill families for it.' : 'Set a fee structure for each grade, then raise the first instalment.'}
           </Empty>

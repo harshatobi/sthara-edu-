@@ -290,7 +290,8 @@ export async function POST(req: NextRequest) {
           checklist: DEFAULT_EXIT_CHECKLIST, created_by: admin.id,
         }).select('id').single();
         if (error) return hrError(error, 'Could not start the exit.');
-        await db.from('staff_members').update({ exit_on: lastDay, updated_at: now() }).eq('id', m.id);
+        const { error: exitOnErr } = await db.from('staff_members').update({ exit_on: lastDay, updated_at: now() }).eq('id', m.id);
+        if (exitOnErr) return hrError(exitOnErr, 'The exit is started, but the last day did not reach the register. Try again.');
         await event(m.id, 'exit_started', noticeOn, reason, { kind: b.kind, lastDay });
         return NextResponse.json({ ok: true, id: data.id });
       }
@@ -330,7 +331,9 @@ export async function POST(req: NextRequest) {
         const flag = m.user_id ? now() : null;
         const { error } = await db.from('staff_exits').update({ status: 'completed', closed_by: admin.id, closed_at: now(), login_flagged_at: flag }).eq('id', x.id);
         if (error) return hrError(error, 'Could not close the exit.');
-        await db.from('staff_members').update({ active: false, exit_on: x.last_day, whatsapp_opt_in: false, updated_at: now() }).eq('id', m.id);
+        // The register must show them gone, or payroll and rosters keep counting them.
+        const { error: offErr } = await db.from('staff_members').update({ active: false, exit_on: x.last_day, whatsapp_opt_in: false, updated_at: now() }).eq('id', m.id);
+        if (offErr) return hrError(offErr, 'The exit is closed, but the register still shows them as working here. Close it again.');
         // A department can't be headed by someone who has gone. Their reports keep the line until HR moves them (People shows it).
         await db.from('hr_departments').update({ head_id: null }).eq('school_id', school).eq('head_id', m.id);
         await event(m.id, 'exited', x.last_day, x.reason, { kind: x.kind });
@@ -367,7 +370,8 @@ export async function POST(req: NextRequest) {
           contract_from: m.contract_from, contract_to: m.contract_to, reason: str(b.note, 500) || 'Rejoined', created_by: admin.id,
         }, { onConflict: 'staff_member_id,effective_from' });
         if (error) return hrError(error, 'Could not record the rejoining.');
-        await db.from('staff_members').update({ active: true, exit_on: null, probation_until: null, confirmed_on: null, updated_at: now() }).eq('id', m.id);
+        const { error: backErr } = await db.from('staff_members').update({ active: true, exit_on: null, probation_until: null, confirmed_on: null, updated_at: now() }).eq('id', m.id);
+        if (backErr) return hrError(backErr, 'The rejoining is recorded, but the register still shows them as gone. Try again.');
         await event(m.id, 'rehired', on, str(b.note, 1000) || null);
         return NextResponse.json({ ok: true });
       }

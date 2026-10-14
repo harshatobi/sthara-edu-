@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BugIcon as Bug } from '@phosphor-icons/react/dist/ssr/Bug';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
 import { Kpi, downloadCsv, errText, fmtDateTime, num, plural } from '../_ui';
 import { useOpsApi } from '../useOpsApi';
@@ -70,6 +71,7 @@ export default function ErrorsConsole() {
     try { await api('/errors', { method: 'PATCH', body: { fingerprint, ...body } }); load(); } catch (e) { setErr(errText(e)); }
   };
   const groups = data?.groups ?? [];
+  const { shown, pager } = usePaged(groups, `${range}|${view}|${source}`);
 
   return (
     <>
@@ -108,7 +110,7 @@ export default function ErrorsConsole() {
 
       {!data ? (
         <div className="card">{[0, 1, 2].map(i => <Skeleton key={i} h={64} style={{ marginBottom: 12 }} />)}</div>
-      ) : groups.length ? groups.map(g => (
+      ) : groups.length ? <>{shown.map(g => (
         <div key={g.fingerprint} className="card" style={{ marginBottom: 12, borderLeft: `4px solid ${g.status === 'open' ? 'var(--red)' : 'transparent'}` }}>
           <button type="button" onClick={() => setOpen(o => (o === g.fingerprint ? null : g.fingerprint))} aria-expanded={open === g.fingerprint}
             style={{ display: 'flex', gap: 14, alignItems: 'center', width: '100%', textAlign: 'left', flexWrap: 'wrap' }}>
@@ -161,7 +163,7 @@ export default function ErrorsConsole() {
             </div>
           )}
         </div>
-      )) : (
+      ))}<Pager {...pager} noun="error groups" /></> : (
         <div className="card"><Empty icon={<Bug size={26} weight="duotone" />} title={view === 'open' ? 'No open errors' : 'Nothing here'}>
           {view === 'open' ? 'Nothing has gone wrong in this range that is still open. ' : ''}Errors from routes, pages and browsers land here as they happen. <Link href="/ops/health" style={{ color: 'var(--blue)' }}>System health</Link> covers configuration.
         </Empty></div>

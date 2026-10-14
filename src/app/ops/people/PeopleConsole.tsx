@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { AddressBookIcon as AddressBook } from '@phosphor-icons/react/dist/ssr/AddressBook';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { KeyIcon as Key } from '@phosphor-icons/react/dist/ssr/Key';
+import { Pager, pageWindow, usePageNumber } from '@/components/canon/Pager';
 import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
 import type { RegistrySchool } from '@/lib/ops/attention';
 import { Table, downloadCsv, errText, fmtDate, num } from '../_ui';
@@ -27,21 +28,38 @@ export default function PeopleConsole() {
   const [school, setSchool] = useState(params.get('school') ?? '');
   const [schools, setSchools] = useState<RegistrySchool[]>([]);
   const [rows, setRows] = useState<Row[] | null>(null);
-  const [capped, setCapped] = useState(false);
+  const [total, setTotal] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [issued, setIssued] = useState<Record<string, string>>({});
 
   useEffect(() => { api<RegistrySchool[]>('/schools').then(setSchools).catch(() => {}); }, [api]);
+  const query = (extra: Record<string, string>) => new URLSearchParams({ ...(q.trim() ? { q: q.trim() } : {}), ...(role ? { role } : {}), ...(school ? { school } : {}), ...extra });
+  // A new search starts again at the first page.
+  const [page, setPage] = usePageNumber(`${q}|${role}|${school}`);
   useEffect(() => {
     let live = true;
     const t = setTimeout(() => {
-      const sp = new URLSearchParams({ ...(q.trim() ? { q: q.trim() } : {}), ...(role ? { role } : {}), ...(school ? { school } : {}) });
-      api<{ people: Row[]; capped: boolean }>(`/people?${sp}`)
-        .then(d => { if (live) { setRows(d.people); setCapped(d.capped); setErr(null); } })
-        .catch(e => { if (live) { setErr(errText(e)); setRows([]); } });
+      api<{ people: Row[]; total: number | null }>(`/people?${query({ page: String(page) })}`)
+        .then(d => { if (live) { setRows(d.people); setTotal(d.total); setErr(null); } })
+        .catch(e => { if (live) { setErr(errText(e)); setRows([]); setTotal(null); } });
     }, 250);
     return () => { live = false; clearTimeout(t); };
-  }, [api, q, role, school]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, q, role, school, page]);
+
+  /** Every matching account (not just this page), fetched for the file. */
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const { people: all, capped } = await api<{ people: Row[]; capped: boolean }>(`/people?${query({ export: '1' })}`);
+      // A file that stops short must say so.
+      setErr(capped ? `The file holds the first ${num(all.length)} of ${num(total ?? all.length)} accounts (the export limit). Narrow by role or school and export again for the rest.` : null);
+      downloadCsv(`sthara-people-${new Date().toISOString().slice(0, 10)}.csv`,
+        [['Name', 'Email', 'Role', 'School', 'Code', 'Detail', 'Temporary password', 'Created'], ...all.map(p => [p.name, p.email, p.role, p.school, p.schoolCode, p.detail, p.tempPassword ? 'yes' : 'no', fmtDate(p.createdAt)])]);
+    } catch (e) { setErr(errText(e)); }
+    setExporting(false);
+  };
 
   const reset = async (p: Row) => {
     if (!p.schoolId) return;
@@ -55,9 +73,8 @@ export default function PeopleConsole() {
     <>
       <PageBar eyebrow="PLATFORM MANAGER" title="People"
         sub="Every account on Sthara. Search by name, email or roll number to help a school's user."
-        actions={<button className="btn" disabled={!rows?.length} onClick={() => downloadCsv(`sthara-people-${new Date().toISOString().slice(0, 10)}.csv`,
-          [['Name', 'Email', 'Role', 'School', 'Code', 'Detail', 'Temporary password', 'Created'], ...(rows ?? []).map(p => [p.name, p.email, p.role, p.school, p.schoolCode, p.detail, p.tempPassword ? 'yes' : 'no', fmtDate(p.createdAt)])])}>
-          <DownloadSimple size={15} weight="bold" /> Export CSV
+        actions={<button className="btn" disabled={!rows?.length || exporting} onClick={exportCsv}>
+          <DownloadSimple size={15} weight="bold" /> {exporting ? 'Preparing…' : 'Export CSV'}
         </button>} />
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
       <div className="card">
@@ -73,7 +90,7 @@ export default function PeopleConsole() {
         </div>
         {!rows ? <div>{[0, 1, 2, 3].map(i => <Skeleton key={i} h={44} style={{ marginBottom: 8 }} />)}</div> : (
           <>
-            <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>{num(rows.length)} {rows.length === 1 ? 'account' : 'accounts'}{capped ? ' (first 200: refine the search)' : ''}</div>
+            <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>{total === null ? '' : `${num(total)} ${total === 1 ? 'account' : 'accounts'}`}</div>
             <Table head={<tr><th>Name</th><th>Role</th><th>School</th><th>Detail</th><th>Created</th><th className="r">Support</th></tr>}
               empty={!rows.length && <Empty icon={<AddressBook size={28} weight="duotone" />} title="Nobody matches">Try part of a name, an email or a roll number.</Empty>}>
               {rows.map(p => (
@@ -92,6 +109,7 @@ export default function PeopleConsole() {
                 </tr>
               ))}
             </Table>
+            <Pager {...pageWindow(total ?? 0, page)} total={total} setPage={setPage} noun="accounts" />
             {Object.keys(issued).length > 0 && <div className="note" style={{ marginTop: 12 }}>New temporary passwords are shown once and not stored. Hand them over securely.</div>}
           </>
         )}

@@ -3,6 +3,7 @@ import { bad, isUuid, requireAdmin } from '@/lib/admin/serverAuth';
 import { fyEnd, fyStart, monthEnd, monthName, rateOn } from '@/lib/payroll/engine';
 import { bankRows, ecrText, esiRows, taxYearRows, tdsRows } from '@/lib/payroll/outputs';
 import { loadRates, loadSecrets, payrollError, recordPayView, toRunLine } from '@/lib/payroll/server';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,9 @@ export async function GET(req: NextRequest) {
     if (kind === 'tax') {
       const fy = q.get('fy') || '';
       if (!/^\d{4}-\d{2}$/.test(fy)) return bad('Pick the financial year.');
-      const { data } = await db.from('pay_run_lines').select('*, pay_runs!inner(status)').eq('school_id', admin.schoolId).eq('pay_runs.status', 'approved').gte('month', fyStart(fy)).lte('month', fyEnd(fy));
+      // The whole year, paged (a year of a school's staff passes 1,000 lines).
+      const { data, error: yearErr } = await pageAll<any>((f, t) => db.from('pay_run_lines').select('*, pay_runs!inner(status)').eq('school_id', admin.schoolId).eq('pay_runs.status', 'approved').gte('month', fyStart(fy)).lte('month', fyEnd(fy)).order('month').order('id').range(f, t), 200_000);
+      if (yearErr) return bad(`Could not read the year's pay: ${yearErr.message}`, 500);
       if (!data?.length) return bad('There are no approved runs in that year yet.', 404);
       await recordPayView(db, admin, `tax statement ${fy}`, fy, 'EXPORT');
       return NextResponse.json({ filename: `salary-tax-statement-${fy}.csv`, rows: taxYearRows(data.map(toRunLine), secrets) });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Pager, pageWindow, usePageNumber } from '@/components/canon/Pager';
 import { useRouter } from 'next/navigation';
 import { Users, Search, ArrowLeft, GraduationCap, BookOpen, UserCheck, Shield, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
@@ -43,6 +44,8 @@ export default function AdminDirectoryPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [editing, setEditing] = useState<UserData | null>(null);
+  // A new search or role filter starts again at the first page.
+  const [page, setPage] = usePageNumber(`${search}|${filterRole}`);
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'admin')) router.push('/login');
@@ -115,6 +118,7 @@ export default function AdminDirectoryPage() {
     const matchRole = filterRole === 'all' || u.role === filterRole;
     return matchSearch && matchRole;
   });
+  const win = pageWindow(filtered.length, page);
 
   const counts = {
     all:     users.length,
@@ -215,7 +219,7 @@ export default function AdminDirectoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filtered.map(u => {
+                {filtered.slice(win.from, win.to).map(u => {
                   const roleConf = ROLE_CONFIG[u.role] || ROLE_CONFIG.admin;
                   const RoleIcon = roleConf.icon;
                   const isDeleting = deletingId === u.id;
@@ -294,6 +298,7 @@ export default function AdminDirectoryPage() {
                 })}
               </tbody>
             </table>
+            <div style={{ padding: "0 16px 12px" }}><Pager {...win} total={filtered.length} setPage={setPage} noun="accounts" /></div>
           </div>
         )}
       </div>

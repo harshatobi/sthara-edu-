@@ -3,7 +3,9 @@ import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { displayClass, normClass } from '@/lib/teacher/scope';
 import { isUuid, str } from '@/lib/admin/serverAuth';
-import type { Slot } from './types';
+import { pageAll } from '@/lib/ops/page';
+import { periodClock, type ClockOf } from './engine';
+import type { BellSchedule, Slot } from './types';
 
 export const TIME = /^([01]?\d|2[0-3]):[0-5]\d$/;
 export const time = (v: unknown) => (typeof v === 'string' && TIME.test(v.trim()) ? v.trim().padStart(5, '0') : null);
@@ -70,4 +72,18 @@ export function cleanSlot(b: any, staff: Set<string>, rooms: Set<string>): Slot 
     class: displayClass(cls), group_label: str(b?.group_label, 40), weekday, period_no: period, subject,
     teacher_id: teacher, staff_member_id: member, room_id: room, combined: !!b?.combined,
   };
+}
+
+/** Every lesson of a timetable version, paged (a whole school's week passes the 1,000 rows one request returns). */
+export async function versionSlots(db: SupabaseClient, versionId: string, cols = '*') {
+  return pageAll<any>((f, t) => db.from('timetable_slots').select(cols).eq('version_id', versionId).order('id').range(f, t), 20_000);
+}
+
+/** When each section's periods run, from the school's wings and regular bells, for time-based clash checks. */
+export async function scheduleClock(db: SupabaseClient, schoolId: string): Promise<ClockOf> {
+  const [{ data: wings }, { data: bells }] = await Promise.all([
+    db.from('sched_wings').select('id, name, grade_from, grade_to').eq('school_id', schoolId),
+    db.from('bell_schedules').select('id, name, wing_id, kind, weekdays, periods:bell_periods(seq, label, kind, period_no, starts_at, ends_at)').eq('school_id', schoolId).eq('kind', 'regular'),
+  ]);
+  return periodClock({ wings: wings || [], bells: (bells || []) as unknown as BellSchedule[] });
 }

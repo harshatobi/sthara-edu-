@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { DEMO_STUDENT, demoRows } from '@/lib/demo/student';
 import { buildSubjects, isAssignedTo, overallTml, shapeAssignment } from './shape';
 import type { StudentDesk } from './types';
+import { all, allByIds } from '@/lib/admin/loadRows';
 
 interface Rows { assignments: any[]; submissions: any[]; tutor_sessions: any[]; tml_scores: any[] }
 
@@ -19,29 +20,39 @@ function assemble(rows: Rows, me: StudentDesk['me'], mode: StudentDesk['mode']):
 
 async function loadLive(profile: UserProfile): Promise<Rows> {
   const supabase = createClient();
-  // The student view: same rows, answer keys removed (staff read the table).
-  let aq = supabase.from('assignments_student').select('*');
-  if (profile.schoolId) aq = aq.eq('school_id', profile.schoolId);
-
-  const [a, s, t, m] = await Promise.all([
-    aq,
+  // Candidate assignments: the school's, narrowed in the database to the student's grade (a superset that also holds
+  // grade-wide work set for "10"), paged because a large school passes the 1,000 rows one request returns. A light
+  // list first; the exact class and targeting test (isAssignedTo) picks the student's own.
+  const grade = gradeOf(profile.studentClass);
+  const [s, t, m, light] = await Promise.all([
     supabase.from('submissions').select('*').eq('student_id', profile.uid),
     supabase.from('tutor_sessions').select('id, subject, topic, hint_depth, answer_revealed, created_at').eq('student_id', profile.uid),
     supabase.from('tml_scores').select('subject, topic_name, score, confidence_band, item_count, components, computed_at')
       .eq('student_id', profile.uid).order('computed_at', { ascending: false }).limit(1000),
+    all((from, to) => {
+      let q = supabase.from('assignments_student').select('id, class, status, assigned_student_ids');
+      if (profile.schoolId) q = q.eq('school_id', profile.schoolId);
+      if (grade) q = q.ilike('class', `%${grade}%`);
+      return q.order('id').range(from, to);
+    }),
   ]);
+  if (s.error) throw s.error;
+  const submittedIds = new Set((s.data || []).map(x => x.assignment_id as string));
+  const mineIds = new Set(light.data.filter(x => x.status !== 'draft')
+    .filter(x => isAssignedTo(x, profile.studentClass || '', profile.uid, profile.customStudentId || '')).map(x => x.id as string));
+  // Always keep anything the student already submitted, even if it's since been re-targeted or moved class.
+  for (const id of submittedIds) mineIds.add(id);
+  // The student view: answer keys removed (staff read the table).
+  const a = await allByIds([...mineIds], (chunk, from, to) => supabase.from('assignments_student').select('*').in('id', chunk).order('id').range(from, to));
+  const assignmentRows = a.data.filter(x => x.status !== 'draft');
+
   // Assignments and submissions are required; tutor sessions and TML
   // snapshots degrade to "no evidence yet" rather than failing the desk.
-  if (a.error) throw a.error;
-  if (s.error) throw s.error;
   if (t.error) console.warn('[student desk] tutor_sessions unavailable:', t.error.message);
   if (m.error) console.warn('[student desk] tml_scores unavailable:', m.error.message);
 
   const submissions = s.data || [];
-  const submittedIds = new Set(submissions.map(x => x.assignment_id));
-  const assignments = (a.data || []).filter(x => x.status !== 'draft').filter(x =>
-    // Always keep anything the student already submitted, even if it's since been re-targeted.
-    submittedIds.has(x.id) || isAssignedTo(x, profile.studentClass || '', profile.uid, profile.customStudentId || ''));
+  const assignments = assignmentRows;
 
   return { assignments, submissions, tutor_sessions: t.data || [], tml_scores: m.data || [] };
 }
@@ -116,3 +127,6 @@ export function useStudentDesk() {
   useEffect(() => { refreshIfStale(); }, [refreshIfStale]);
   return ctx;
 }
+
+/** The grade number in a class name ("Class 10-A", "10A", "10" -> "10"), or null when there is none. */
+export const gradeOf = (cls: string | null | undefined) => (cls || '').match(/\d{1,2}/)?.[0] ?? null;

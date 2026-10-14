@@ -65,7 +65,7 @@ function Staff({ desk }: { desk: AdminDesk }) {
         actions={<>
           <button className="btn" onClick={exportCsv}><DownloadSimple size={16} /> Export</button>
           <Link className="btn" href="/admin/people">Employee records</Link>
-          <Link className="btn pri" href="/admin/directory"><UserPlus size={16} weight="bold" /> Request logins</Link>
+          {desk.me.access.any('people.manage', 'access.manage') && <Link className="btn pri" href="/admin/directory"><UserPlus size={16} weight="bold" /> Request logins</Link>}
         </>} />
       <MissingNotice desk={desk} tables={['leave_requests', 'lesson_plans']} />
 
@@ -78,7 +78,7 @@ function Staff({ desk }: { desk: AdminDesk }) {
         <Kpi label="ON LEAVE TODAY" value={wf.onLeaveToday.length} icon={CalendarBlank}
           note={wf.onLeaveToday.length ? wf.onLeaveToday.map(l => l.staffName.split(' ')[0]).join(', ') : 'Everyone is in'} />
         <Kpi label="LEAVE REQUESTS" value={wf.pendingLeave.length} icon={Hourglass} valueColor={wf.pendingLeave.length ? 'var(--amber)' : 'var(--green)'}
-          note={wf.pendingLeave.length ? 'Awaiting your decision' : 'None pending'} noteColor={wf.pendingLeave.length ? 'var(--amber)' : 'var(--mut)'}
+          note={!wf.pendingLeave.length ? 'None pending' : desk.me.access.can('leave.approve') ? 'Awaiting your decision' : 'Waiting for HR or the principal'} noteColor={wf.pendingLeave.length ? 'var(--amber)' : 'var(--mut)'}
           onClick={() => document.getElementById('leave')?.scrollIntoView({ behavior: 'smooth' })} />
       </div>
 

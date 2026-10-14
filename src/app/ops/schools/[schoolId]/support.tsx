@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip, Empty, Skeleton } from '@/components/canon/ui';
 import { CORRECTIONS_TEMPLATE, parseCorrectionsCsv, type CorrectionInput, type CorrectionPlan } from '@/lib/ops/corrections';
 import { normClass } from '@/lib/ops/people';
@@ -66,6 +67,7 @@ function FamilyLinks({ fam, post, done }: { fam: { families: Family[]; parents: 
   const needle = q.trim().toLowerCase();
   const list = (show === 'missing' ? missing : show === 'pending' ? pending : fam.families)
     .filter(f => !needle || `${f.name} ${f.rollNo ?? ''} ${f.cls ?? ''} ${f.links.map(l => `${l.name} ${l.email}`).join(' ')}`.toLowerCase().includes(needle));
+  const { shown, pager } = usePaged(list, `${show}|${needle}`);
 
   return (
     <Section title="Family links" sub="Which parent can see which child. Fee reminders, attendance and messages reach only verified links.">
@@ -77,8 +79,8 @@ function FamilyLinks({ fam, post, done }: { fam: { families: Family[]; parents: 
       <input className="cmp-in" style={{ margin: '4px 0 8px' }} placeholder="Search by student, roll number, class or parent" aria-label="Search families" value={q} onChange={e => setQ(e.target.value)} />
       {!list.length ? (
         <Empty icon={<CheckCircle size={26} weight="duotone" />} title={show === 'missing' ? 'Every student has a verified parent' : show === 'pending' ? 'Nothing awaiting verification' : 'Nobody matches'} />
-      ) : list.slice(0, 200).map(f => <FamilyRow key={f.studentId} f={f} parents={fam.parents} post={post} done={done} />)}
-      {list.length > 200 && <p className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Showing 200 of {list.length}. Search to narrow the list.</p>}
+      ) : shown.map(f => <FamilyRow key={f.studentId} f={f} parents={fam.parents} post={post} done={done} />)}
+      <Pager {...pager} noun="students" />
     </Section>
   );
 }

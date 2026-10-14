@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { watchedFetch } from './watch';
 
 // Hardcoded fallback values — these are public anon keys (safe to expose in browser)
 const SUPABASE_URL = 'https://nqwvsuyiwswnsqbyhghb.supabase.co';
@@ -7,7 +8,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || SUPABASE_ANON_KEY;
-  return createBrowserClient(url, key);
+  return createBrowserClient(url, key, { global: { fetch: watchedFetch } });
 }
 
 // Singleton for use in client components

@@ -10,7 +10,7 @@ import { ListChecksIcon as ListChecks } from '@phosphor-icons/react/dist/ssr/Lis
 import { Chip, Empty, Skeleton } from '@/components/canon/ui';
 import { CardHead, Kpi } from '@/components/admin/kit';
 import { plural } from '@/lib/admin/format';
-import { classOrder, findClashes, namesOf, sectionsOf, wingOf } from '@/lib/schedule/engine';
+import { classOrder, findClashes, namesOf, sectionsOf, wingOf, periodClock } from '@/lib/schedule/engine';
 import { buildInput, gridFor, keptLessons, reqTeacher, suggestRequirements, toSlots, type RequirementRow, type SolverSettingsRow } from '@/lib/schedule/solverInput';
 import type { SolverResult } from '@/lib/schedule/solver';
 import { runSolver } from '@/lib/schedule/runSolver';
@@ -93,7 +93,7 @@ function Solve({ rows, data, sections, call, toast, reload }: {
         if (off) r.warnings.unshift(`${plural(off, 'lesson')} of ${base.name} ${off === 1 ? 'is' : 'are'} kept where ${off === 1 ? 'it is' : 'they are'}: the requirements sheet has no row for ${off === 1 ? 'its' : 'their'} section and subject (or ${off === 1 ? 'it is' : 'they are'} part of a locked combined lesson).`);
       }
       // The server refuses a timetable with clashes; check before offering to save.
-      const clashes = findClashes(toSlots(r.lessons), rows.rooms);
+      const clashes = findClashes(toSlots(r.lessons), rows.rooms, periodClock(rows));
       if (clashes.length) throw new Error(`The solver's result has ${plural(clashes.length, 'clash', 'clashes')}. Run it again.`);
       setResult(r);
       setFocus(input.sections[0]?.cls ?? '');

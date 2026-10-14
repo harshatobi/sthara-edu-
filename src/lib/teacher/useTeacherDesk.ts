@@ -3,6 +3,7 @@
 import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LoadTracker } from '@/lib/loadTracker';
 import { useAuth } from '@/contexts/AuthContext';
+import { reportClientError } from '@/lib/errors/client';
 import { createClient } from '@/lib/supabase/client';
 import { assembleDesk, type TeacherDesk } from './desk';
 import { loadTeacherRows } from './loadRows';
@@ -42,9 +43,15 @@ export function TeacherDeskProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     tracker.start();
     const me = { id: profile.uid, name: profile.name || 'Teacher', subject: profile.teacherSubject || scope[0]?.subject || '' };
-    loadTeacherRows(createClient(), { schoolId: profile.schoolId!, uid: profile.uid }, scope)
+    // Failures and degraded parts go to the ops error log: these reads go straight to the database, so the
+    // request explorer never sees them.
+    loadTeacherRows(createClient(), { schoolId: profile.schoolId!, uid: profile.uid }, scope, m => reportClientError('client', m))
       .then(rows => { tracker.finish(true); if (!cancelled) { setDesk(assembleDesk(rows, me, scope, 'live')); setError(null); } })
-      .catch(e => { tracker.finish(false); if (!cancelled) setError(prev => (tracker.everLoaded ? prev : e?.message || 'Could not load your desk.')); });
+      .catch(e => {
+        tracker.finish(false);
+        reportClientError('client', `[teacher desk] load failed: ${e?.message || e}`);
+        if (!cancelled) setError(prev => (tracker.everLoaded ? prev : e?.message || 'Could not load your desk.'));
+      });
     return () => { cancelled = true; };
     // Keyed on identity, not object references: a silent profile refresh must not reload the desk.
     // eslint-disable-next-line react-hooks/exhaustive-deps

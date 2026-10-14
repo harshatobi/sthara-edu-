@@ -40,6 +40,22 @@ export async function all(build: (from: number, to: number) => PromiseLike<{ dat
 }
 
 /**
+ * Every row matching a long id list. A thousand ids do not fit in one request URL (the database answers 400),
+ * so the ids go 150 at a time, each chunk paged by all(), six chunks in flight at once.
+ */
+export async function allByIds(ids: string[], build: (chunk: string[], from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>): Promise<Result> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 150) chunks.push(ids.slice(i, i + 150));
+  const out: any[] = [];
+  for (let i = 0; i < chunks.length; i += 6) {
+    const rs = await Promise.all(chunks.slice(i, i + 6).map(chunk => all((from, to) => build(chunk, from, to))));
+    if (rs.some(r => r.missing)) return { data: [], missing: true };
+    for (const r of rs) out.push(...r.data);
+  }
+  return { data: out, missing: false };
+}
+
+/**
  * Everything the admin desk shows, for one school. The browser passes its own
  * (row-level-secured) client; the server passes the service client for the
  * School OS brief, where the caller's grants still decide what is shown.

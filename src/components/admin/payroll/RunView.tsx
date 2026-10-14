@@ -5,6 +5,7 @@ import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { CaretDownIcon as CaretDown } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { CaretRightIcon as CaretRight } from '@phosphor-icons/react/dist/ssr/CaretRight';
+import { Pager, pageWindow, usePageNumber } from '@/components/canon/Pager';
 import { Chip, Skeleton } from '@/components/canon/ui';
 import { CardHead, Kpi, Workspace, downloadCsv } from '@/components/admin/kit';
 import { inr } from '@/lib/admin/format';
@@ -55,6 +56,7 @@ export default function RunView({ id, data, call, schoolName, onClose, onChanged
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState('');
   const [onlyFlagged, setOnlyFlagged] = useState(false);
+  const [page, setPage] = usePageNumber(`${q}|${onlyFlagged}`);
   const [sendBack, setSendBack] = useState(false);
   const [adjust, setAdjust] = useState<RunLine | null>(null);
   const load = useCallback(() => { call<Detail>(`${RUN}?id=${id}`, 'GET').then(x => { setD(x); setError(null); }).catch(e => setError(e.message)); }, [call, id]);
@@ -84,6 +86,9 @@ export default function RunView({ id, data, call, schoolName, onClose, onChanged
   const flagged = lines.filter(l => l.flags.length);
   const needle = q.trim().toLowerCase();
   const shown = lines.filter(l => (!onlyFlagged || l.flags.length) && (!needle || [l.person.name, l.person.code, l.person.department].some(v => v?.toLowerCase().includes(needle))));
+  const win = pageWindow(shown.length, page);
+  const shownPage = shown.slice(win.from, win.to);
+  const pager = { ...win, total: shown.length, setPage };
   const mine = run.submittedBy === data.me;
   const title = settlement ? `Settlement: ${lines[0]?.person.name ?? 'employee'}` : `Pay run: ${monthName(run.month)}`;
 
@@ -143,7 +148,7 @@ export default function RunView({ id, data, call, schoolName, onClose, onChanged
         <div className="tbl-wrap">
           <table className="tbl">
             <thead><tr><th /><th>Name</th><th className="pay-n">Days paid</th><th className="pay-n">Gross</th><th className="pay-n">Deductions</th><th className="pay-n">Net</th><th>To check</th></tr></thead>
-            <tbody>{shown.map(l => (
+            <tbody>{shownPage.map(l => (
               <Fragment key={l.id}>
                 <tr className="hr-row" onClick={() => setOpen(open === l.id ? null : l.id)}>
                   <td style={{ width: 28 }}><button className="sch-icon" aria-expanded={open === l.id} aria-label={`${open === l.id ? 'Hide' : 'Show'} ${l.person.name}'s working`}>{open === l.id ? <CaretDown size={14} /> : <CaretRight size={14} />}</button></td>
@@ -179,6 +184,7 @@ export default function RunView({ id, data, call, schoolName, onClose, onChanged
               </Fragment>
             ))}</tbody>
           </table>
+            <Pager {...pager} noun="lines" />
         </div>
       </div>
 

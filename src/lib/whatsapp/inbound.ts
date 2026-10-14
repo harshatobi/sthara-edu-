@@ -58,7 +58,13 @@ export async function handleInbound(db: SupabaseClient, msg: { from: string; tex
 
   const command = text.toUpperCase().replace(/[^A-Z]/g, '');
   if (['STOP', 'UNSUBSCRIBE', 'STOPALL'].includes(command)) {
-    await db.from('whatsapp_links').update({ opted_in: false, updated_at: new Date().toISOString() }).eq('user_id', parent.id);
+    // An opt-out must hold: only say "paused" once it is saved; otherwise ask them to send STOP again, and log it.
+    const { error: stopErr } = await db.from('whatsapp_links').update({ opted_in: false, updated_at: new Date().toISOString() }).eq('user_id', parent.id);
+    if (stopErr) {
+      console.error('[whatsapp] STOP not saved:', stopErr.message);
+      await reply('Sorry, that didn’t go through. Please send STOP again.');
+      return;
+    }
     await reply('Paused. You won’t get school updates here until you reply START. You can still ask questions any time.');
     return;
   }

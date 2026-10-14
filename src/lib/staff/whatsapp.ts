@@ -67,7 +67,13 @@ export async function handleStaffInbound(db: SupabaseClient, userId: string, pho
 
   const cmd = parseStaffCommand(text);
   if (cmd.kind === 'stop') {
-    await db.from('whatsapp_links').update({ opted_in: false, updated_at: new Date().toISOString() }).eq('user_id', me.id);
+    // An opt-out must hold: only say "paused" once it is saved; otherwise ask them to send STOP again, and log it.
+    const { error: stopErr } = await db.from('whatsapp_links').update({ opted_in: false, updated_at: new Date().toISOString() }).eq('user_id', me.id);
+    if (stopErr) {
+      console.error('[whatsapp] STOP not saved:', stopErr.message);
+      await reply('Sorry, that didn’t go through. Please send STOP again.');
+      return;
+    }
     await reply('Paused. No alerts, parent messages or digests here until you reply START. You can still ask questions.');
     return;
   }

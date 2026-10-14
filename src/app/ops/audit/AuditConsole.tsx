@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
+import { Pager, pageWindow, usePageNumber } from '@/components/canon/Pager';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import type { RegistrySchool } from '@/lib/ops/attention';
 import { journalLabel, journalValue } from '@/lib/ops/journal';
@@ -33,33 +34,46 @@ export default function AuditConsole() {
   const [q, setQ] = useState('');
   const [schools, setSchools] = useState<RegistrySchool[]>([]);
   const [rows, setRows] = useState<(ConsoleRow | DataRow)[] | null>(null);
+  const [total, setTotal] = useState<number | null>(null);
+  const [needle, setNeedle] = useState('');
+  const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // The search runs in the database (over every entry, not just this page), a moment after typing stops.
+  useEffect(() => { const t = setTimeout(() => setNeedle(q.trim()), 350); return () => clearTimeout(t); }, [q]);
+  // A new filter starts again at the newest page.
+  const [page, setPage] = usePageNumber(`${source}|${school}|${from}|${to}|${needle}`);
+  const query = (extra: Record<string, string>) => new URLSearchParams({ source, ...(school ? { school } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}), ...(needle ? { q: needle } : {}), ...extra });
 
   useEffect(() => { api<RegistrySchool[]>('/schools').then(setSchools).catch(() => {}); }, [api]);
   useEffect(() => {
     let live = true;
-    const sp = new URLSearchParams({ source, ...(school ? { school } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}) });
-    api<{ rows: (ConsoleRow | DataRow)[] }>(`/audit?${sp}`)
-      .then(d => { if (live) { setRows(d.rows); setErr(null); } })
-      .catch(e => { if (live) { setErr(errText(e)); setRows([]); } });
+    api<{ rows: (ConsoleRow | DataRow)[]; total: number | null }>(`/audit?${query({ page: String(page) })}`)
+      .then(d => { if (live) { setRows(d.rows); setTotal(d.total); setErr(null); } })
+      .catch(e => { if (live) { setErr(errText(e)); setRows([]); setTotal(null); } });
     return () => { live = false; };
-  }, [api, source, school, from, to]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, source, school, from, to, needle, page]);
 
   const name = (id: string | null) => (id ? schools.find(s => s.id === id)?.name ?? 'Deleted school' : 'Platform');
-  const shown = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!rows || !needle) return rows ?? [];
-    return rows.filter(r => JSON.stringify(r).toLowerCase().includes(needle));
-  }, [rows, q]);
+  const shown = rows ?? [];
 
-  const exportCsv = () => {
+  /** Every matching entry (not just this page), fetched for the file. */
+  const exportCsv = async () => {
+    setExporting(true);
+    let all: (ConsoleRow | DataRow)[];
+    let capped = false;
+    try { ({ rows: all, capped } = await api<{ rows: (ConsoleRow | DataRow)[]; capped: boolean }>(`/audit?${query({ export: '1' })}`)); } catch (e) { setErr(errText(e)); setExporting(false); return; }
+    setExporting(false);
+    // A file that stops short must say so: it may be handed on as the full record.
+    setErr(capped ? `The file holds the newest ${num(all.length)} of ${num(total ?? all.length)} entries (the export limit). Narrow the dates or school and export again for the rest.` : null);
     const stamp = new Date().toISOString().slice(0, 10);
     if (source === 'console') {
       downloadCsv(`sthara-console-changes-${stamp}.csv`, [['When (IST)', 'Scope', 'School', 'Setting', 'From', 'To', 'Reason', 'By'],
-        ...(shown as ConsoleRow[]).map(r => [fmtDateTime(r.at), r.scope, r.scope === 'school' ? name(r.school_id) : '', label(r), val(r, r.old_value), val(r, r.new_value), r.reason, r.actor_email])]);
+        ...(all as ConsoleRow[]).map(r => [fmtDateTime(r.at), r.scope, r.scope === 'school' ? name(r.school_id) : '', label(r), val(r, r.old_value), val(r, r.new_value), r.reason, r.actor_email])]);
     } else {
       downloadCsv(`sthara-data-audit-${stamp}.csv`, [['When (IST)', 'School', 'Action', 'Table', 'Record', 'Changed fields', 'By', 'Role'],
-        ...(shown as DataRow[]).map(r => [fmtDateTime(r.at), name(r.school_id), r.action, r.table_name, r.row_id, changedKeys(r).join(' '), r.actor, r.actor_role])]);
+        ...(all as DataRow[]).map(r => [fmtDateTime(r.at), name(r.school_id), r.action, r.table_name, r.row_id, changedKeys(r).join(' '), r.actor, r.actor_role])]);
     }
   };
 
@@ -67,7 +81,7 @@ export default function AuditConsole() {
     <>
       <PageBar eyebrow="PLATFORM MANAGER" title="Audit log"
         sub="Every change made in this console, and the database's own audit trail of sensitive writes."
-        actions={<button className="btn" onClick={exportCsv} disabled={!shown.length}><DownloadSimple size={15} weight="bold" /> Export CSV</button>} />
+        actions={<button className="btn" onClick={exportCsv} disabled={!shown.length || exporting}><DownloadSimple size={15} weight="bold" /> {exporting ? 'Preparing…' : 'Export CSV'}</button>} />
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
 
       <div className="seg" role="tablist" aria-label="Audit source" style={{ marginBottom: 18 }}>
@@ -77,7 +91,7 @@ export default function AuditConsole() {
 
       <div className="card">
         <div className="ops-filters">
-          <input className="cmp-in" placeholder="Search within results" aria-label="Search within results" value={q} onChange={e => setQ(e.target.value)} />
+          <input className="cmp-in" placeholder={source === 'console' ? 'Search setting, reason or who' : 'Search table, action, record or role'} aria-label="Search" value={q} onChange={e => setQ(e.target.value)} />
           <select className="cmp-sel" aria-label="School" value={school} onChange={e => setSchool(e.target.value)}>
             <option value="">All schools{source === 'console' ? ' and platform' : ''}</option>
             {source === 'console' && <option value="platform">Platform only</option>}
@@ -88,7 +102,7 @@ export default function AuditConsole() {
         </div>
         {rows === null ? <div>{[0, 1, 2, 3].map(i => <Skeleton key={i} h={44} style={{ marginBottom: 8 }} />)}</div> : (
           <>
-            <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>{num(shown.length)} entr{shown.length === 1 ? 'y' : 'ies'}{rows.length === 1000 ? ' (latest 1,000: narrow the dates to see older ones)' : ''}</div>
+            <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>{total === null ? '' : `${num(total)} entr${total === 1 ? 'y' : 'ies'}, newest first`}</div>
             {source === 'console' ? (
               <Table head={<tr><th>When</th><th>Where</th><th>Setting</th><th>Change</th><th>Reason</th><th>By</th></tr>}
                 empty={!shown.length && <Empty icon={<ClockCounterClockwise size={26} weight="duotone" />} title="No changes match" />}>
@@ -118,6 +132,7 @@ export default function AuditConsole() {
                 ))}
               </Table>
             )}
+            <Pager {...pageWindow(total ?? 0, page)} total={total} setPage={setPage} noun="entries" />
           </>
         )}
       </div>

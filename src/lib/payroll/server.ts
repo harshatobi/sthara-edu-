@@ -10,6 +10,7 @@ import {
   type Salary, type SchoolPay, type Settlement,
 } from './engine';
 import type { RunLine, Secrets } from './outputs';
+import { pageAll } from '@/lib/ops/page';
 
 export const toItem = (r: any): PayItem => ({
   id: r.id, code: r.code, name: r.name, kind: r.kind, calc: r.calc, percentOf: r.percent_of ?? null, countSource: r.count_source ?? null,
@@ -150,10 +151,13 @@ export async function buildLines(db: SupabaseClient, schoolId: string, month: st
 
   // Approved lines: this financial year (for tax), the last year (for bonus) and the last twelve months (for arrears).
   const since = [fyStart(fy), addMonth(month, -12), fyStart(fyOf(addMonth(fyStart(fy), -1)))].sort()[0];
-  const { data: past } = await db.from('pay_run_lines').select('staff_member_id, month, days, earnings, deductions, pay_runs!inner(status, kind)')
-    .eq('school_id', schoolId).eq('pay_runs.status', 'approved').gte('month', since).lt('month', month).order('month');
+  // Every line, paged: two years of a school's staff pass the 1,000 rows one request returns, and the cut fell on the
+  // current year, so tax to date was worked out as if nothing had been paid since April.
+  const { data: past, error: pastErr } = await pageAll<any>((f, t) => db.from('pay_run_lines').select('id, staff_member_id, month, days, earnings, deductions, pay_runs!inner(status, kind)')
+    .eq('school_id', schoolId).eq('pay_runs.status', 'approved').gte('month', since).lt('month', month).order('month').order('id').range(f, t), 200_000);
+  if (pastErr) return { error: `Could not read earlier pay runs: ${pastErr.message}` };
   const history = new Map<string, any[]>();
-  for (const r of past || []) history.set(r.staff_member_id, [...(history.get(r.staff_member_id) ?? []), r]);
+  for (const r of past) history.set(r.staff_member_id, [...(history.get(r.staff_member_id) ?? []), r]);
 
   // Counts for rate x count rules, only if some salary uses one.
   const ruleItems = new Set(items.filter(i => i.calc === 'rate_count' && i.active).map(i => i.id));

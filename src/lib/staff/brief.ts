@@ -10,6 +10,7 @@ import { inr } from '@/lib/admin/format';
 import { canSeeSituation, type FeedCaller } from '@/lib/feed/access';
 import { isEscalated, istDay, DAY_MS } from '@/lib/feed/rules';
 import { personToken, tokenize, type Book } from './ask';
+import { byIds, pageAll } from '@/lib/ops/page';
 
 /**
  * The data brief behind Ask the School OS for staff: what the screens would
@@ -95,7 +96,8 @@ export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Boo
 
   if (me.classTeacherOf && isSunday(today)) out.push('ATTENDANCE TODAY: it is Sunday, no school and no register today.');
   else if (me.classTeacherOf) {
-    const { data: att } = await db.from('attendance').select('student_id, status').eq('school_id', me.schoolId).eq('day', today);
+    // Today's whole school, paged (a school of 1,000+ students passes one request's 1,000 rows).
+    const { data: att } = await pageAll<any>((f, t) => db.from('attendance').select('id, student_id, status').eq('school_id', me.schoolId).eq('day', today).order('id').range(f, t), 50_000);
     const roster = desk.classes.find(c => normClass(c.cls) === me.classTeacherOf)?.students || [];
     const ids = new Set(roster.map(s => s.id));
     const marks = (att || []).filter(a => ids.has(a.student_id));
@@ -108,8 +110,8 @@ export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Boo
   // Wellness, teacher-safe: energy only, never journal text.
   const kids = desk.classes.flatMap(c => c.students);
   if (kids.length) {
-    const { data: w } = await db.from('wellness_logs').select('student_id, energy, created_at').in('student_id', kids.map(k => k.id).slice(0, 800))
-      .gte('created_at', new Date(Date.now() - 7 * DAY_MS).toISOString()).not('energy', 'is', null);
+    const { data: w } = await byIds<any>(kids.map(k => k.id), (c, f, t) => db.from('wellness_logs').select('id, student_id, energy, created_at').in('student_id', c)
+      .gte('created_at', new Date(Date.now() - 7 * DAY_MS).toISOString()).not('energy', 'is', null).order('id').range(f, t));
     const low = new Map<string, number>();
     for (const r of w || []) if ((r.energy ?? 5) <= 2) low.set(r.student_id, (low.get(r.student_id) || 0) + 1);
     out.push(`WELLNESS (last 7 days, energy 1–5 only; journals are private): ${(w || []).length} check-ins from your students; low (2 or below): ${[...low].map(([id, n]) => `${S(id, kids.find(k => k.id === id)!.name)} ×${n}`).join(', ') || 'none'}.`);
@@ -173,8 +175,8 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
 
   if (a.can('wellness.read')) {
     // Anonymised: school level only, suppressed under 5 students (as the CBSE report).
-    const { data: w } = await db.from('wellness_logs').select('student_id, energy').eq('school_id', me.schoolId)
-      .gte('created_at', new Date(Date.now() - 14 * DAY_MS).toISOString()).not('energy', 'is', null);
+    const { data: w } = await pageAll<any>((f, t) => db.from('wellness_logs').select('id, student_id, energy').eq('school_id', me.schoolId)
+      .gte('created_at', new Date(Date.now() - 14 * DAY_MS).toISOString()).not('energy', 'is', null).order('id').range(f, t), 200_000);
     const n = new Set((w || []).map(r => r.student_id)).size;
     const avg = n >= 5 ? (w || []).reduce((s, r) => s + (r.energy ?? 0), 0) / (w || []).length : null;
     const low = n >= 5 ? (w || []).filter(r => (r.energy ?? 5) <= 2).length / (w || []).length : null;
@@ -197,7 +199,7 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
   }
   if (a.can('attendance.read') && isSunday(today)) out.push('ATTENDANCE TODAY: it is Sunday, no school and no registers today.');
   else if (a.can('attendance.read')) {
-    const { data: att } = await db.from('attendance').select('class_name, status').eq('school_id', me.schoolId).eq('day', today);
+    const { data: att } = await pageAll<any>((f, t) => db.from('attendance').select('id, class_name, status').eq('school_id', me.schoolId).eq('day', today).order('id').range(f, t), 50_000);
     const classes = [...new Set(d.students.map(s => normClass(s.cls)).filter(Boolean))];
     const marked = new Set((att || []).map(r => normClass(r.class_name)));
     const absent = (att || []).filter(r => r.status === 'absent').length;

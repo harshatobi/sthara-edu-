@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import Link from 'next/link';
 import { BuildingsIcon as Buildings } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
@@ -59,6 +60,7 @@ export default function EnquiriesConsole() {
   const counts = useMemo(() => Object.fromEntries(VIEWS.map(([v]) => [v, (rows ?? []).filter(e => inView(e, v)).length])), [rows]);
   const needle = q.trim().toLowerCase();
   const shown = (rows ?? []).filter(r => inView(r, view) && (!needle || `${r.name} ${r.email} ${r.school} ${r.message} ${r.state ?? ''} ${r.district ?? ''} ${r.owner ?? ''}`.toLowerCase().includes(needle)));
+  const { shown: page, pager } = usePaged(shown, `${view}|${needle}`);
 
   return (
     <>
@@ -83,7 +85,7 @@ export default function EnquiriesConsole() {
 
       {!rows ? (
         <div className="card">{[0, 1, 2].map(i => <Skeleton key={i} h={70} style={{ marginBottom: 12 }} />)}</div>
-      ) : shown.length ? shown.map(r => (
+      ) : shown.length ? <>{page.map(r => (
         <div className="card" key={r.id} style={{ marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 260 }}>
@@ -136,7 +138,7 @@ export default function EnquiriesConsole() {
             <button className="btn sm" style={{ alignSelf: 'flex-start' }} disabled={(notes[r.id] ?? r.note ?? '') === (r.note ?? '')} onClick={() => update(r.id, { note: notes[r.id] })}>Save note</button>
           </div>
         </div>
-      )) : (
+      ))}<Pager {...pager} noun="enquiries" /></> : (
         <div className="card"><Empty icon={<EnvelopeSimple size={26} weight="duotone" />} title={rows.length ? 'Nothing in this stage' : 'No enquiries yet'}>
           Enquiries sent from the contact form on www.sthara.in appear here.
         </Empty></div>

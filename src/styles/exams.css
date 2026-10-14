@@ -4,12 +4,12 @@
 /* ── Report card ─────────────────────────────────────────────────────────── */
 /* The print set: a direct child of the page's main, hidden on screen. */
 .rc-print { display:none; }
-.rc { --rc-accent:#002147; position:relative; background:#fff; color:#002147; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+.rc { --rc-accent:#002147; --rc-ink:#002147; --rc-on:#fff; position:relative; background:#fff; color:#002147; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
   border:1px solid #E8EDF4; border-radius:16px; padding:26px 28px; max-width:900px; margin:0 auto; font-size:13px; line-height:1.45; }
-.rc h2 { font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--rc-accent); margin:18px 0 8px; }
+.rc h2 { font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--rc-ink); margin:18px 0 8px; }
 .rc-head { display:flex; align-items:center; gap:16px; border-bottom:3px solid var(--rc-accent); padding-bottom:14px; }
 .rc-logo { width:62px; height:62px; object-fit:contain; flex:0 0 auto; }
-.rc-mono { display:grid; place-items:center; border-radius:14px; background:var(--rc-accent); color:#fff; font-weight:800; font-size:20px; letter-spacing:.04em; }
+.rc-mono { display:grid; place-items:center; border-radius:14px; background:var(--rc-accent); color:var(--rc-on); font-weight:800; font-size:20px; letter-spacing:.04em; }
 .rc-school { flex:1; min-width:0; }
 .rc-school h1 { font-size:21px; font-weight:800; line-height:1.15; margin:0; }
 .rc-school p { margin:2px 0 0; color:#556378; font-size:12px; }
@@ -23,12 +23,12 @@
 .rc-t { width:100%; border-collapse:collapse; font-size:12px; }
 .rc-t th, .rc-t td { border:1px solid #D9E1EC; padding:5px 6px; text-align:center; vertical-align:middle; }
 .rc-t thead th { background:#F2F5F9; font-weight:800; font-size:10.5px; line-height:1.2; }
-.rc-t thead th.rc-term { background:var(--rc-accent); color:#fff; letter-spacing:.06em; text-transform:uppercase; font-size:10.5px; }
+.rc-t thead th.rc-term { background:var(--rc-accent); color:var(--rc-on); letter-spacing:.06em; text-transform:uppercase; font-size:10.5px; }
 .rc-t th small { display:block; font-weight:600; color:#7A8699; font-size:9.5px; }
 .rc-t .rc-sub { text-align:left; font-weight:700; min-width:150px; }
 .rc-t .rc-sub small { display:block; font-weight:600; color:#7A8699; font-size:9.5px; }
 .rc-t td.rc-tot { font-weight:800; }
-.rc-t td.rc-g { font-weight:800; color:var(--rc-accent); }
+.rc-t td.rc-g { font-weight:800; color:var(--rc-ink); }
 .rc-t td.rc-muted { color:#9AA6B8; }
 .rc-t tr.rc-fail td.rc-tot, .rc-t tr.rc-fail td.rc-g { color:#E11D48; }
 .rc-small { max-width:420px; }
@@ -64,7 +64,7 @@
 .rc-mob-h small { color:#7A8699; font-size:10.5px; }
 .rc-mob-r { display:flex; justify-content:space-between; font-size:12.5px; padding:2px 0; }
 .rc-mob-r span { color:#556378; }
-.rc-mob-r b { color:var(--rc-accent); }
+.rc-mob-r b { color:var(--rc-ink); }
 .rc-mob li.rc-fail .rc-mob-r b { color:#E11D48; }
 .rc-mob-c { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:6px; font-size:11px; color:#556378; }
 .rc-mob-c .rc-muted { color:#9AA6B8; }
@@ -74,6 +74,7 @@
 }
 @media (max-width:640px) {
   .rc { padding:18px 16px; }
+  .rc-revised { position:static; display:inline-block; margin-bottom:10px; }
   .rc-head { flex-wrap:wrap; }
   .rc-title { align-items:flex-start; text-align:left; width:100%; }
   .rc-two { grid-template-columns:1fr; }

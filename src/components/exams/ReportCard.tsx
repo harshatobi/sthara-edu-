@@ -14,6 +14,21 @@ export function printCards() {
   requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
 }
 
+/**
+ * Colours that stay readable whatever accent a school picks: the accent itself for bands and rules, a darkened
+ * version for text on white, and dark or white text on the band depending on how light the accent is.
+ */
+function inks(hex: string) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  const rgb = m ? [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16)) : [0, 33, 71];
+  const lum = (c: number[]) => { const [r, g, b] = c.map(v => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const contrast = (c: number[]) => 1.05 / (lum(c) + 0.05);
+  let text = rgb;
+  for (let k = 0; k < 12 && contrast(text) < 4.5; k++) text = text.map(v => Math.round(v * 0.82));
+  const toHex = (c: number[]) => `#${c.map(v => v.toString(16).padStart(2, '0')).join('')}`;
+  return { accent: m ? hex : '#002147', text: toHex(text), onBand: 1.05 / (lum(rgb) + 0.05) >= (lum(rgb) + 0.05) / (lum([0, 33, 71]) + 0.05) ? '#FFFFFF' : '#002147' };
+}
+
 const n = (v: number | null) => (v === null ? '' : Number.isInteger(v) ? String(v) : v.toFixed(Math.round(v * 10) === v * 10 ? 1 : 2));
 
 /**
@@ -23,13 +38,13 @@ const n = (v: number | null) => (v === null ? '' : Number.isInteger(v) ? String(
 export default function ReportCard({ card, doc = true, preview = false }: { card: ReportCardSnapshot; doc?: boolean; preview?: boolean }) {
   const c = card;
   const marks = c.show.marks;
-  const accent = c.school.accent || '#002147';
+  const ink = inks(c.school.accent || '#002147');
   // An earlier term on a later card shows its total and grade only; the card's own term shows every component.
   const full = (t: ReportCardSnapshot['terms'][number]) => marks && !t.compact;
   const termCols = c.terms.map(t => ({ ...t, span: full(t) ? t.heads.length + 2 : marks ? 2 : 1 }));
   const weightLabel = (h: ReportCardSnapshot['terms'][number]['heads'][number]) => (h.varies ? '(varies)' : h.weight > 0 ? `(${n(h.weight)})` : '(not counted)');
   return (
-    <article className={`rc${doc ? ' rc-doc' : ''}`} style={{ ['--rc-accent' as string]: accent }} aria-label={`${c.term.name} report card, ${c.student.name}`}>
+    <article className={`rc${doc ? ' rc-doc' : ''}`} style={{ ['--rc-accent' as string]: ink.accent, ['--rc-ink' as string]: ink.text, ['--rc-on' as string]: ink.onBand }} aria-label={`${c.term.name} report card, ${c.student.name}`}>
       <PrintFoot />
       {preview && <div className="rc-stamp" aria-hidden="true">PREVIEW</div>}
       {c.revised && !preview && <div className="rc-revised">Revised · version {c.version}</div>}

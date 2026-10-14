@@ -58,7 +58,7 @@ export default function ImportWizard({ rows, call, onClose, onDone }: { rows: Sc
     // Skipping keeps the first lesson of each clash and drops the rest.
     const drop = new Set(all.flatMap(c => c.slots.slice(1)).map(s => withIds.indexOf(s)));
     return { clashes: all, keep: resolved.slots.filter((_, i) => !drop.has(i)) };
-  }, [resolved, rows.rooms]);
+  }, [resolved, rows]);
   const unmatchedLeft = resolved?.unmatchedTeachers.filter(u => !(u.raw in map)).length ?? 0;
   const toImport = skipClashes ? keep : resolved?.slots ?? [];
   const ready = !!resolved && resolved.slots.length > 0 && (!clashes.length || skipClashes);

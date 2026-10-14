@@ -18,7 +18,10 @@ test('no row for single() and an expired session are not problems', () => {
 
 test('a list cut at 1,000 rows with no limit asked for is reported', () => {
   const p = dbProblem({ url: `${SB}/submissions?select=*&assignment_id=in.(a)`, method: 'GET' }, { status: 200, contentRange: '0-999/*' });
-  assert.match(p!, /^\[database\] submissions: 1000 rows came back with no limit/);
+  assert.match(p!, /^\[database\] submissions: 1000 rows came back/);
+  // A limit above the ceiling does not protect a list, and database functions return lists too.
+  assert.ok(dbProblem({ url: `${SB}/rooms?select=*&limit=3000`, method: 'GET' }, { status: 200, contentRange: '0-999/*' }));
+  assert.match(dbProblem({ url: `${SB}/rpc/teacher_wellness_feed`, method: 'POST' }, { status: 200, contentRange: '0-999/*' })!, /rpc teacher_wellness_feed: 1000 rows/);
   // Grouping: the same problem on another table is a different group, repeats on one table are one group.
   assert.notEqual(normaliseMessage(p!), normaliseMessage(p!.replace('submissions', 'users')));
 });
@@ -26,7 +29,8 @@ test('a list cut at 1,000 rows with no limit asked for is reported', () => {
 test('paged reads, explicit limits, short lists, writes and other hosts are fine', () => {
   const full = { status: 200, contentRange: '1000-1999/*' };
   assert.equal(dbProblem({ url: `${SB}/users?select=id&offset=1000&limit=1000`, method: 'GET' }, full), null);
-  assert.equal(dbProblem({ url: `${SB}/users?select=id&limit=5000`, method: 'GET' }, { status: 200, contentRange: '0-999/*' }), null);
+  assert.equal(dbProblem({ url: `${SB}/users?select=id&limit=1000`, method: 'GET' }, { status: 200, contentRange: '0-999/*' }), null);
+  assert.equal(dbProblem({ url: `${SB}/rpc/f`, method: 'POST' }, { status: 200, contentRange: '0-40/*' }), null);
   assert.equal(dbProblem({ url: `${SB}/users?select=id`, method: 'GET' }, { status: 200, contentRange: '0-33/*' }), null);
   assert.equal(dbProblem({ url: `${SB}/users`, method: 'POST' }, { status: 201, contentRange: '*/*' }), null);
   assert.equal(dbProblem({ url: 'https://x.supabase.co/auth/v1/token', method: 'POST' }, { status: 400, contentRange: null }), null);

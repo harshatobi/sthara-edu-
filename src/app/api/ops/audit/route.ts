@@ -16,7 +16,8 @@ const EXPORT_MAX = 20_000;
  *   console: every change made in this console (settings_changes), with who and why.
  *   data:    the database audit trail (audit_log): grades, roles, consent, guardians, fees, settings.
  * Newest first, 200 a page with the total matching. `q` searches setting, reason and who (console) or table,
- * action, record id and role (data). export=1 returns every matching row (up to 20,000) for the CSV.
+ * action, record id, role and the name or email of who made it (data). export=1 returns every matching row (up to
+ * 20,000, with capped: true when there were more) for the CSV.
  * Dates are IST days, inclusive.
  */
 export async function GET(req: NextRequest) {
@@ -34,8 +35,8 @@ export async function GET(req: NextRequest) {
   const db = createAdminClient();
 
   if (source === 'console') {
-    const build = () => {
-      let q = db.from('settings_changes').select('id, at, actor_email, scope, school_id, key, old_value, new_value, reason', { count: 'exact' });
+    const build = (count: boolean) => {
+      let q = db.from('settings_changes').select('id, at, actor_email, scope, school_id, key, old_value, new_value, reason', count ? { count: 'exact' } : {});
       if (school === 'platform') q = q.eq('scope', 'platform');
       else if (UUID.test(school)) q = q.eq('school_id', school);
       if (from) q = q.gte('at', from);
@@ -45,15 +46,19 @@ export async function GET(req: NextRequest) {
     };
     const r = await rowsOf(build, page, all);
     if (r.error) return NextResponse.json({ error: r.error }, { status: 500 });
-    return NextResponse.json({ source, rows: r.rows, page, pageSize: PAGE, total: r.total });
+    return NextResponse.json({ source, rows: r.rows, page, pageSize: PAGE, total: r.total, capped: r.capped });
   }
 
-  const build = () => {
-    let q = db.from('audit_log').select('id, at, actor_id, actor_role, action, table_name, row_id, school_id, old_values, new_values', { count: 'exact' });
+  // Who made a change is stored as an id: a search for a name or email also matches the accounts it finds.
+  const actorIds = needle
+    ? ((await db.from('users').select('id').or(`name.ilike.*${needle}*,email.ilike.*${needle}*`).limit(100)).data ?? []).map(u => u.id as string)
+    : [];
+  const build = (count: boolean) => {
+    let q = db.from('audit_log').select('id, at, actor_id, actor_role, action, table_name, row_id, school_id, old_values, new_values', count ? { count: 'exact' } : {});
     if (UUID.test(school)) q = q.eq('school_id', school);
     if (from) q = q.gte('at', from);
     if (to) q = q.lte('at', to);
-    if (needle) q = q.or(['table_name', 'action', 'row_id', 'actor_role'].map(c => `${c}.ilike.*${needle}*`).join(','));
+    if (needle) q = q.or([...['table_name', 'action', 'row_id', 'actor_role'].map(c => `${c}.ilike.*${needle}*`), ...(actorIds.length ? [`actor_id.in.(${actorIds.join(',')})`] : [])].join(','));
     return q.order('at', { ascending: false }).order('id', { ascending: false });
   };
   const r = await rowsOf(build, page, all);
@@ -62,17 +67,20 @@ export async function GET(req: NextRequest) {
   const { data: actors } = await byIds<{ id: string; name: string | null; email: string | null }>(ids, (chunk, f, t) => db.from('users').select('id, name, email').in('id', chunk).order('id').range(f, t));
   const who = new Map(actors.map(a => [a.id, a.name || a.email]));
   return NextResponse.json({
-    source, page, pageSize: PAGE, total: r.total,
+    source, page, pageSize: PAGE, total: r.total, capped: r.capped,
     rows: r.rows.map(x => ({ ...x, actor: x.actor_id ? who.get(x.actor_id) ?? 'Deleted user' : 'System' })),
   });
 }
 
-/** One page of a query with the total matching, or (for the CSV) every matching row. */
-async function rowsOf(build: () => any, page: number, all: boolean): Promise<{ rows: any[]; total: number | null; error: string | null }> {
+/**
+ * One page of a query with the total matching, or (for the CSV) every matching row up to 20,000, saying when it
+ * stopped there. Only a page asks the database to count.
+ */
+async function rowsOf(build: (count: boolean) => any, page: number, all: boolean): Promise<{ rows: any[]; total: number | null; capped: boolean; error: string | null }> {
   if (all) {
-    const r = await pageAll<any>((f, t) => build().range(f, t), EXPORT_MAX);
-    return { rows: r.data, total: r.data.length, error: r.error?.message ?? null };
+    const r = await pageAll<any>((f, t) => build(false).range(f, t), EXPORT_MAX);
+    return { rows: r.data, total: r.data.length, capped: r.capped, error: r.error?.message ?? null };
   }
-  const { data, count, error } = await build().range(page * PAGE, page * PAGE + PAGE - 1);
-  return { rows: data || [], total: count ?? null, error: error?.message ?? null };
+  const { data, count, error } = await build(true).range(page * PAGE, page * PAGE + PAGE - 1);
+  return { rows: data || [], total: count ?? null, capped: false, error: error?.message ?? null };
 }

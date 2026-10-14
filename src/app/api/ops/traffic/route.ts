@@ -5,6 +5,7 @@ import { featureLabel } from '@/lib/ai/pricing';
 import { SINCE, during, isSince } from '@/lib/debug/route';
 import { getPlatformSettings } from '@/lib/settings/server';
 import { pageAll } from '@/lib/ops/page';
+import { normaliseMessage } from '@/lib/errors/fingerprint';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
     db.from('schools').select('id, name'),
     getPlatformSettings(db),
     pageAll<{ fingerprint: string; message: string; at: string; repeats: number; school_id: string | null; user_id: string | null; user_role: string | null; route: string | null }>(
-      (f, t) => dbq().order('id').range(f, t), 10_000),
+      (f, t) => dbq().order('id', { ascending: false }).range(f, t), 10_000),
   ]);
   if (rows.error) {
     const missing = rows.error.code === '42P01' || rows.error.code === 'PGRST205';
@@ -99,16 +100,18 @@ export async function GET(req: NextRequest) {
 
 /** Browser database problems grouped: one line per problem, with how often, how many people, which pages and roles. */
 function databaseProblems(rows: { fingerprint: string; message: string; at: string; repeats: number; school_id: string | null; user_id: string | null; user_role: string | null; route: string | null }[]) {
+  // One line per problem: the error log's fingerprint also splits by page, so these group by the message alone.
   const by = new Map<string, { fingerprint: string; message: string; n: number; last: string; users: Set<string>; schools: Set<string>; pages: Set<string>; roles: Set<string> }>();
   for (const r of rows) {
-    const g = by.get(r.fingerprint) ?? { fingerprint: r.fingerprint, message: r.message, n: 0, last: r.at, users: new Set(), schools: new Set(), pages: new Set(), roles: new Set() };
+    const key = normaliseMessage(r.message);
+    const g = by.get(key) ?? { fingerprint: r.fingerprint, message: r.message, n: 0, last: r.at, users: new Set(), schools: new Set(), pages: new Set(), roles: new Set() };
     g.n += r.repeats || 1;
     if (r.at > g.last) g.last = r.at;
     if (r.user_id) g.users.add(r.user_id);
     if (r.school_id) g.schools.add(r.school_id);
     if (r.route) g.pages.add(r.route);
     if (r.user_role) g.roles.add(r.user_role);
-    by.set(r.fingerprint, g);
+    by.set(key, g);
   }
   return [...by.values()].sort((a, b) => b.last.localeCompare(a.last)).map(g => ({
     fingerprint: g.fingerprint, message: g.message.slice(0, 300), n: g.n, last: g.last, users: g.users.size,

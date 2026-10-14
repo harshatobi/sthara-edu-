@@ -26,7 +26,7 @@ export default function Salaries({ data, call, reload, toast }: { data: PayrollD
   const dept = (id: string | null) => data.departments.find(d => d.id === id)?.name ?? '', grade = (id: string | null) => data.grades.find(g => g.id === id)?.name ?? '';
   const needle = q.trim().toLowerCase();
   const shown = active.filter(p => (view === 'all' || (view === 'none' ? !p.salary : p.pay?.onHold)) && (!needle || [p.name, p.employeeCode, p.designation, dept(p.departmentId)].some(v => v?.toLowerCase().includes(needle))));
-  const { shown: shownPage, pager } = usePaged(shown);
+  const { shown: shownPage, pager } = usePaged(shown, `${q}|${view}`);
   const withPay = active.filter(p => p.salary), monthly = withPay.reduce((n, p) => n + p.salary!.gross, 0);
   const outOfBand = withPay.filter(p => { const g = data.grades.find(x => x.id === p.gradeId); return g && ((g.payMin !== null && p.salary!.gross < g.payMin) || (g.payMax !== null && p.salary!.gross > g.payMax)); });
   const person = open ? data.people.find(p => p.id === open) : null;

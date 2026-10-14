@@ -99,7 +99,7 @@ function Directory({ data, call, reload, toast, open }: { data: PeopleData; call
     if (dept && (dept === 'none' ? !!p.departmentId : p.departmentId !== dept)) return false;
     return !needle || [p.name, p.employeeCode, p.designation, p.email, deptName(p.departmentId)].some(v => v?.toLowerCase().includes(needle));
   });
-  const { shown: shownPage, pager } = usePaged(shown);
+  const { shown: shownPage, pager } = usePaged(shown, `${q}|${cat}|${dept}|${state}`);
   const noCode = active.filter(p => !p.employeeCode).length;
   const incomplete = Object.keys(data.gaps).length;
   const exportCsv = () => downloadCsv(`employees-${today}.csv`, [

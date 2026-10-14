@@ -41,7 +41,7 @@ export default function StaffTab({ rows, call, reload, toast, canEdit }: { rows:
   }, [rows.people, rows.staff]);
   const active = people.filter(p => p.active);
   const shown = people.filter(p => (showInactive || p.active) && (filter === 'all' || p.category === filter));
-  const { shown: shownPage, pager } = usePaged(shown);
+  const { shown: shownPage, pager } = usePaged(shown, `${filter}|${showInactive}`);
   const count = (c: StaffCategory) => active.filter(p => p.category === c).length;
   const wing = (id: string | null) => (id ? rows.wings.find(w => w.id === id)?.name ?? '' : '');
   const today = isoDay();

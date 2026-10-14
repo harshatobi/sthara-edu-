@@ -4,7 +4,7 @@
  * Desks (teacher, admin, student, parent) read the database straight from the browser, not through /api, so the
  * request explorer never sees them. Two failures are otherwise silent:
  *   - a refused request (400 for an id list too long for the URL, 403, 500) that the page shrugs off as "no data";
- *   - a list cut at the database's 1,000-row ceiling, which comes back as a normal answer with rows missing.
+ *   - a list (a read, or a database function) cut at the 1,000-row ceiling: a normal answer with rows missing.
  * Both are sent as "[database] ..." errors, which the request explorer lists beside the API traffic.
  */
 import { reportClientError } from '@/lib/errors/client';
@@ -29,10 +29,14 @@ export function dbProblem(
     if (code === 'PGRST116' || res.status === 401) return null;
     return `[database] ${res.status} on ${target} (${method})${code ? ` ${code}` : ''}: ${(res.body?.message || 'request refused').slice(0, 200)}`;
   }
-  if (method !== 'GET' || u.searchParams.has('limit')) return null;
+  // Lists come from reads (GET) and from database functions (POST to /rpc). A page asked for with limit <= 1,000 that
+  // comes back full is the pager working; no limit, or a limit above 1,000, means the ceiling cut the list.
+  if (method !== 'GET' && !(m[1] && method === 'POST')) return null;
+  const limit = u.searchParams.has('limit') ? Number(u.searchParams.get('limit')) : Infinity;
+  if (limit <= DB_MAX_ROWS) return null;
   const r = res.contentRange?.match(/^(\d+)-(\d+)\//);
   if (r && Number(r[2]) - Number(r[1]) + 1 >= DB_MAX_ROWS) {
-    return `[database] ${target}: ${DB_MAX_ROWS} rows came back with no limit asked for, so the list was cut short and the rest silently dropped`;
+    return `[database] ${target}: ${DB_MAX_ROWS} rows came back (the database's ceiling), so the list was cut short and the rest silently dropped`;
   }
   return null;
 }

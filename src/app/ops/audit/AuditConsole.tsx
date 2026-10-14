@@ -62,8 +62,11 @@ export default function AuditConsole() {
   const exportCsv = async () => {
     setExporting(true);
     let all: (ConsoleRow | DataRow)[];
-    try { all = (await api<{ rows: (ConsoleRow | DataRow)[] }>(`/audit?${query({ export: '1' })}`)).rows; } catch (e) { setErr(errText(e)); setExporting(false); return; }
+    let capped = false;
+    try { ({ rows: all, capped } = await api<{ rows: (ConsoleRow | DataRow)[]; capped: boolean }>(`/audit?${query({ export: '1' })}`)); } catch (e) { setErr(errText(e)); setExporting(false); return; }
     setExporting(false);
+    // A file that stops short must say so: it may be handed on as the full record.
+    setErr(capped ? `The file holds the newest ${num(all.length)} of ${num(total ?? all.length)} entries (the export limit). Narrow the dates or school and export again for the rest.` : null);
     const stamp = new Date().toISOString().slice(0, 10);
     if (source === 'console') {
       downloadCsv(`sthara-console-changes-${stamp}.csv`, [['When (IST)', 'Scope', 'School', 'Setting', 'From', 'To', 'Reason', 'By'],

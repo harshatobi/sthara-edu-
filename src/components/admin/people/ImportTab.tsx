@@ -62,7 +62,7 @@ export default function ImportTab({ data, call, reload, toast }: { data: PeopleD
     downloadCsv(`sthara-employees-to-complete-${data.today}.csv`, [IMPORT_COLUMNS.map(c => c[1]), ...data.people.filter(p => p.active).map(p => IMPORT_COLUMNS.map(c => cell[c[0]]?.(p) ?? ''))]);
   };
   const shown = preview ? preview.rows.filter(r => !onlyProblems || r.problems.length) : [];
-  const { shown: shownPage, pager } = usePaged(shown);
+  const { shown: shownPage, pager } = usePaged(shown, `${onlyProblems}|${fileName}`);
 
   return (
     <div className="card">

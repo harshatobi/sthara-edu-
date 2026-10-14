@@ -52,7 +52,9 @@ export default function PeopleConsole() {
   const exportCsv = async () => {
     setExporting(true);
     try {
-      const all = (await api<{ people: Row[] }>(`/people?${query({ export: '1' })}`)).people;
+      const { people: all, capped } = await api<{ people: Row[]; capped: boolean }>(`/people?${query({ export: '1' })}`);
+      // A file that stops short must say so.
+      setErr(capped ? `The file holds the first ${num(all.length)} of ${num(total ?? all.length)} accounts (the export limit). Narrow by role or school and export again for the rest.` : null);
       downloadCsv(`sthara-people-${new Date().toISOString().slice(0, 10)}.csv`,
         [['Name', 'Email', 'Role', 'School', 'Code', 'Detail', 'Temporary password', 'Created'], ...all.map(p => [p.name, p.email, p.role, p.school, p.schoolCode, p.detail, p.tempPassword ? 'yes' : 'no', fmtDate(p.createdAt)])]);
     } catch (e) { setErr(errText(e)); }

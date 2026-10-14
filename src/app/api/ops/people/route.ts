@@ -42,9 +42,9 @@ export async function GET(req: NextRequest) {
   const visible = await visibleSchoolIds(db, await loadSight(db, op));
   if (visible && !visible.size) return NextResponse.json({ people: [], total: 0, page, pageSize: PAGE });
   // A fresh query per page (a builder collects range/order calls rather than replacing them).
-  const build = () => {
+  const build = (count: boolean) => {
   let query = db.from('users')
-    .select('id, name, email, role, school_id, student_class, custom_student_id, teacher_class, assignments, metadata, created_at', { count: 'exact' })
+    .select('id, name, email, role, school_id, student_class, custom_student_id, teacher_class, assignments, metadata, created_at', count ? { count: 'exact' } : {})
     .order('name').order('id');
   if (q) query = query.or(`name.ilike.%${q}%,email.ilike.%${q}%,custom_student_id.ilike.%${q}%`);
   if (ROLES.includes(role)) query = query.eq('role', role);
@@ -53,9 +53,9 @@ export async function GET(req: NextRequest) {
   if (visible) query = query.in('school_id', [...visible]);
   return query;
   };
-  const [{ data, error, count }, { data: schools }] = await Promise.all([
-    all ? pageAll<any>((f, t) => build().range(f, t), 20_000).then(r => ({ ...r, count: r.data.length }))
-      : build().range(page * PAGE, page * PAGE + PAGE - 1),
+  const [{ data, error, count, capped }, { data: schools }] = await Promise.all([
+    all ? pageAll<any>((f, t) => build(false).range(f, t), 20_000).then(r => ({ ...r, count: r.data.length }))
+      : build(true).range(page * PAGE, page * PAGE + PAGE - 1).then(r => ({ ...r, capped: false })),
     db.from('schools').select('id, name, settings'),
   ]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -71,6 +71,6 @@ export async function GET(req: NextRequest) {
       tempPassword: !!(p.metadata as { mustChangePassword?: boolean } | null)?.mustChangePassword,
       createdAt: p.created_at,
     })),
-    total: count ?? null, page, pageSize: PAGE,
+    total: count ?? null, page, pageSize: PAGE, capped: !!capped,
   });
 }

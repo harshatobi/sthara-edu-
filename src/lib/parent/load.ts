@@ -30,12 +30,17 @@ export async function loadFamily(db: SupabaseClient, parent: { id: string; name:
   const classes = [...new Set(kids.map(s => s.student_class).filter(Boolean))];
   const since = new Date(Date.now() - 120 * 86_400_000).toISOString();
   const classKeys = new Set(classes.map(c => normClass(c)));
+  const grades = [...new Set(classes.map(c => String(c).match(/\d{1,2}/)?.[0]).filter((g): g is string => !!g))];
 
   const [teachers, assignments, submissions, tml, wellness, consents, invoices, threads, notices, wa] = await Promise.all([
     db.from('users').select('id, name, teacher_class, assignments').eq('school_id', parent.schoolId).eq('role', 'teacher'),
-    // The children's classes only, every row of the window: the whole school's newest 400 left a child's own work out.
-    kidIds.length ? pageAll<any>((f, t) => db.from('assignments').select('id, title, type, subject, class, due_date, units, status, assigned_student_ids, created_at, teacher_id')
-      .eq('school_id', parent.schoolId).gte('created_at', since).order('created_at', { ascending: false }).order('id').range(f, t), 20_000)
+    // The children's work only, every row of the window (the whole school's newest 400 left a child's own work out):
+    // narrowed in the database to the children's grades, then to their classes and targets below.
+    kidIds.length ? pageAll<any>((f, t) => {
+      const q = db.from('assignments').select('id, title, type, subject, class, due_date, units, status, assigned_student_ids, created_at, teacher_id')
+        .eq('school_id', parent.schoolId).gte('created_at', since);
+      return (grades.length && grades.length === classes.length ? q.or(grades.map(g => `class.ilike.*${g}*`).join(',')) : q).order('created_at', { ascending: false }).order('id').range(f, t);
+    }, 20_000)
       .then(r => ({ ...r, data: r.data.filter(a => classKeys.has(normClass(a.class)) || (Array.isArray(a.assigned_student_ids) && a.assigned_student_ids.some((x: string) => kidIds.includes(x)))) })) : empty,
     kidIds.length ? db.from('submissions').select('id, assignment_id, student_id, score, max_score, teacher_approved, submitted_at, teacher_note').in('student_id', kidIds) : empty,
     kidIds.length ? pageAll<any>((f, t) => db.from('tml_scores').select('student_id, subject, topic_name, score, confidence_band, components, item_count, computed_at')

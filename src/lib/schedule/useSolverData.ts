@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { sessionOf } from '@/lib/admin/format';
 import { DEFAULT_SOLVER_SETTINGS, type LoadRuleRow, type RequirementRow, type SolverSettingsRow } from './solverInput';
+import { all } from '@/lib/admin/loadRows';
 
 export interface SolverData {
   session: string;
@@ -27,8 +28,10 @@ export function useSolverData(session = sessionOf()) {
     let cancelled = false;
     const db = createClient();
     Promise.all([
-      db.from('sched_requirements').select('id, session, class, subject, group_label, teacher_id, staff_member_id, periods_per_week, doubles, room_kind, room_id, max_per_day, combined_key, notes')
-        .eq('school_id', schoolId).eq('session', session).order('class').limit(3000),
+      // Every requirement, a page at a time: .limit(3000) still stopped at the database's 1,000-row ceiling.
+      all((a, b) => db.from('sched_requirements').select('id, session, class, subject, group_label, teacher_id, staff_member_id, periods_per_week, doubles, room_kind, room_id, max_per_day, combined_key, notes')
+        .eq('school_id', schoolId).eq('session', session).order('class').order('id').range(a, b))
+        .then(r => ({ data: r.data, error: r.missing ? { message: 'sched_requirements does not exist' } : null }), (e: Error) => ({ data: null, error: e })),
       db.from('teacher_load_rules').select('id, user_id, staff_member_id, target_per_week, max_per_day, max_per_week, max_consecutive, unavailable').eq('school_id', schoolId).limit(2000),
       db.from('sched_solver_settings').select('default_target_per_week, default_max_per_day, default_max_consecutive, class_teacher_first, subject_spread').eq('school_id', schoolId).maybeSingle(),
     ]).then(([r, l, s]) => {

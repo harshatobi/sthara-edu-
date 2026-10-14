@@ -31,6 +31,8 @@ const eslintConfig = defineConfig([
     // The marketing site is plain browser JS with its own tests (site/tests).
     "site/**",
     "public/site/**",
+    // The test pack (qa/) has its own tsconfig, dependencies and checks.
+    "qa/**",
   ]),
 ]);
 

@@ -1,0 +1,2 @@
+# The test pack runs on developer machines and uploads its runs to the console; the deployment never needs it.
+qa/

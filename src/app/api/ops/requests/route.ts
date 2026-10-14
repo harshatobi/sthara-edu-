@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
+import { byIds, pageAll } from '@/lib/ops/page';
 import { fulfil, type AccountRequest } from '@/lib/ops/requests';
 import { canSeeSchool, loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 
@@ -19,12 +20,14 @@ export async function GET(req: NextRequest) {
   const school = req.nextUrl.searchParams.get('school') || '';
   const db = createAdminClient();
   const cols = 'id, school_id, kind, applicant_id, people, options, note, status, requested_by, created_at, decided_by, decided_at, decision_note, result';
-  let pendingQ = db.from('account_requests').select(cols).eq('status', 'pending');
-  let decidedQ = db.from('account_requests').select(cols).neq('status', 'pending');
-  if (UUID.test(school)) { pendingQ = pendingQ.eq('school_id', school); decidedQ = decidedQ.eq('school_id', school); }
+  const of = (pending: boolean) => {
+    const q = pending ? db.from('account_requests').select(cols).eq('status', 'pending') : db.from('account_requests').select(cols).neq('status', 'pending');
+    return UUID.test(school) ? q.eq('school_id', school) : q;
+  };
+  // Every request, a page at a time (one request stops at 1,000 rows); the page shows them 200 at a time.
   const [pending, decided, schools] = await Promise.all([
-    pendingQ.order('created_at'),
-    decidedQ.order('decided_at', { ascending: false, nullsFirst: false }).limit(100),
+    pageAll<any>((f, t) => of(true).order('created_at').order('id').range(f, t)),
+    pageAll<any>((f, t) => of(false).order('decided_at', { ascending: false, nullsFirst: false }).order('id').range(f, t), 5000),
     db.from('schools').select('id, name, settings'),
   ]);
   if (pending.error) return NextResponse.json({ error: pending.error.message }, { status: 500 });
@@ -33,8 +36,8 @@ export async function GET(req: NextRequest) {
   const userIds = [...new Set(rows.flatMap(r => [r.requested_by, r.decided_by]).filter(Boolean))] as string[];
   const applicantIds = [...new Set(rows.map(r => r.applicant_id).filter(Boolean))] as string[];
   const [{ data: users }, { data: applicants }] = await Promise.all([
-    userIds.length ? db.from('users').select('id, name, email').in('id', userIds) : Promise.resolve({ data: [] as { id: string; name: string; email: string }[] }),
-    applicantIds.length ? db.from('admission_applicants').select('id, name, grade, guardian_name, guardian_email, guardian_phone, stage').in('id', applicantIds) : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    byIds<{ id: string; name: string; email: string }>(userIds, (c, f, t) => db.from('users').select('id, name, email').in('id', c).order('id').range(f, t)),
+    byIds<Record<string, unknown>>(applicantIds, (c, f, t) => db.from('admission_applicants').select('id, name, grade, guardian_name, guardian_email, guardian_phone, stage').in('id', c).order('id').range(f, t)),
   ]);
   const who = new Map((users || []).map(u => [u.id, u.name || u.email]));
   const app = new Map((applicants || []).map(a => [a.id as string, a]));

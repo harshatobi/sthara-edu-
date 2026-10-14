@@ -9,6 +9,7 @@ import { topicKey } from '@/lib/teacher/desk';
 import { parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
+import { byIds, pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -48,8 +49,8 @@ export async function POST(req: NextRequest) {
 
   // ── The brief: this class + subject, from the database ────────────────────
   const [{ data: users }, { data: assignments }, { data: progress }, { data: lessons }] = await Promise.all([
-    db.from('users').select('id, name, student_class').eq('school_id', staff.schoolId).eq('role', 'student'),
-    db.from('assignments').select('id, title, type, status, due_date, units, class, subject, total_marks').eq('school_id', staff.schoolId),
+    pageAll<any>((a, b) => db.from('users').select('id, name, student_class').eq('school_id', staff.schoolId).eq('role', 'student').order('id').range(a, b)),
+    pageAll<any>((a, b) => db.from('assignments').select('id, title, type, status, due_date, units, class, subject, total_marks').eq('school_id', staff.schoolId).order('id').range(a, b)),
     db.from('syllabus_progress').select('chapter_key, topic, status').eq('school_id', staff.schoolId).eq('class', cls).eq('subject', subject).eq('session', CURRENT_SESSION),
     db.from('lesson_plans').select('title, chapter_name, lesson_date, status').eq('school_id', staff.schoolId).eq('class', cls).eq('subject', subject)
       .gte('lesson_date', new Date().toISOString().slice(0, 10)).order('lesson_date').limit(5),
@@ -60,8 +61,9 @@ export async function POST(req: NextRequest) {
   const work = (assignments || []).filter(a => normClass(a.class) === normClass(cls) && normSubject(a.subject) === normSubject(subject));
 
   const [{ data: tml }, { data: subs }] = await Promise.all([
-    roster.length ? db.from('tml_scores').select('student_id, subject, topic_name, score, components, computed_at').in('student_id', roster.map(u => u.id)).order('computed_at', { ascending: false }).limit(3000) : Promise.resolve({ data: [] as any[] }),
-    work.length ? db.from('submissions').select('assignment_id, student_id, score, max_score, teacher_approved').in('assignment_id', work.map(a => a.id)) : Promise.resolve({ data: [] as any[] }),
+    // A class across a year of work passes the database's silent 1,000-row cut, so both are paged.
+    roster.length ? pageAll<any>((a, b) => db.from('tml_scores').select('student_id, subject, topic_name, score, components, computed_at').in('student_id', roster.map(u => u.id)).order('computed_at', { ascending: false }).order('id').range(a, b), 3000) : Promise.resolve({ data: [] as any[] }),
+    work.length ? byIds<any>(work.map(a => a.id), (chunk, a, b) => db.from('submissions').select('assignment_id, student_id, score, max_score, teacher_approved').in('assignment_id', chunk).order('id').range(a, b)) : Promise.resolve({ data: [] as any[] }),
   ]);
 
   const latest = new Map<string, any>();

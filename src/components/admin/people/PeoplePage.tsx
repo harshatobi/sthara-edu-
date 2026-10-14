@@ -6,6 +6,7 @@ import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/react/dist/ssr/IdentificationCard';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { CardHead, DeskGate, Kpi, downloadCsv } from '@/components/admin/kit';
@@ -98,6 +99,7 @@ function Directory({ data, call, reload, toast, open }: { data: PeopleData; call
     if (dept && (dept === 'none' ? !!p.departmentId : p.departmentId !== dept)) return false;
     return !needle || [p.name, p.employeeCode, p.designation, p.email, deptName(p.departmentId)].some(v => v?.toLowerCase().includes(needle));
   });
+  const { shown: shownPage, pager } = usePaged(shown);
   const noCode = active.filter(p => !p.employeeCode).length;
   const incomplete = Object.keys(data.gaps).length;
   const exportCsv = () => downloadCsv(`employees-${today}.csv`, [
@@ -149,7 +151,7 @@ function Directory({ data, call, reload, toast, open }: { data: PeopleData; call
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Reports to</th><th>Joined</th><th className="c">Status</th></tr></thead>
-              <tbody>{shown.map(p => {
+              <tbody>{shownPage.map(p => {
                 const s = status(p);
                 return (
                   <tr key={p.id} className={can.manage ? 'hr-row' : undefined} style={p.active ? undefined : { opacity: 0.55 }} tabIndex={can.manage ? 0 : undefined}
@@ -167,6 +169,7 @@ function Directory({ data, call, reload, toast, open }: { data: PeopleData; call
                 );
               })}</tbody>
             </table>
+            <Pager {...pager} noun="people" />
           </div>
         ) : <Empty icon={<IdentificationCard size={26} weight="duotone" />} title="Nobody matches">Change the search or the filters.</Empty>}
       </div>

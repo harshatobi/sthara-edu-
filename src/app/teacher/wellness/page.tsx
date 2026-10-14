@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { all } from '@/lib/admin/loadRows';
 import { createClient } from '@/lib/supabase/client';
 import { Activity, AlertTriangle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,11 +54,12 @@ export default function TeacherWellnessDashboard() {
 
     const discoverClasses = async () => {
       try {
-        const { data: studentsData } = await supabase
+        const { data: studentsData } = await all((a, b) => supabase
           .from('users')
-          .select('*')
-          .eq('school_id', profile.schoolId)
-          .eq('role', 'student');
+          .select('id, name, email, student_class, branch')
+          .eq('school_id', profile.schoolId!)
+          .eq('role', 'student')
+          .order('id').range(a, b));
 
         const allStudents = studentsData || [];
         const classSet = new Set<string>();

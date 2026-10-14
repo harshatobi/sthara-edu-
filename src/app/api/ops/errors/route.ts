@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,12 +45,16 @@ export async function GET(req: NextRequest) {
 
   const span = RANGES[sp.get('range') || '24h'] ?? RANGES['24h'];
   const since = new Date(Date.now() - span).toISOString();
-  let q = db.from('app_error_groups').select('*').gte('last_seen', since).order('last_seen', { ascending: false }).limit(300);
   const status = sp.get('status') || '';
-  if (STATUSES.includes(status)) q = q.eq('status', status);
   const source = sp.get('source') || '';
-  if (source === 'server' || source === 'client') q = q.eq('source', source);
-  const { data: groups, error } = await q;
+  // Every group in range, a page at a time (one request stops at 1,000 rows); the page shows them 200 at a time.
+  const { data: groups, error: listErr } = await pageAll<any>((f, t) => {
+    let q = db.from('app_error_groups').select('*').gte('last_seen', since);
+    if (STATUSES.includes(status)) q = q.eq('status', status);
+    if (source === 'server' || source === 'client') q = q.eq('source', source);
+    return q.order('last_seen', { ascending: false }).order('fingerprint').range(f, t);
+  }, 5000);
+  const error = listErr;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const fps = (groups || []).map(g => g.fingerprint);

@@ -6,6 +6,7 @@ import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/Arr
 import { ArrowsClockwiseIcon as ArrowsClockwise } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
 import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { WarningOctagonIcon as WarningOctagon } from '@phosphor-icons/react/dist/ssr/WarningOctagon';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { PLATFORM_SETTINGS, REASON_MIN, type PlatformKey, type PlatformValues, type SettingDef } from '@/lib/settings/registry';
@@ -36,6 +37,7 @@ export default function SettingsConsole() {
   }, [api, nonce]);
 
   const history = (data?.journal ?? []).filter(j => j.scope === 'platform');
+  const { shown: historyPage, pager } = usePaged(history);
   return (
     <>
       <PageBar eyebrow="PLATFORM MANAGER" title="Platform settings"
@@ -52,7 +54,7 @@ export default function SettingsConsole() {
             {!data.journal ? <div className="note err" role="alert">The change log isn&apos;t available. Apply migration <span className="mono">ops_settings</span>.</div>
               : !history.length ? <Empty icon={<ClockCounterClockwise size={26} weight="duotone" />} title="No platform changes yet" /> : (
                 <Table head={<tr><th>When</th><th>Setting</th><th>Change</th><th>Reason</th><th>By</th></tr>}>
-                  {history.map(r => (
+                  {historyPage.map(r => (
                     <tr key={r.id}>
                       <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(r.at)}</td>
                       <td className="nm">{journalLabel('platform', r.key)}</td>
@@ -63,6 +65,7 @@ export default function SettingsConsole() {
                   ))}
                 </Table>
               )}
+            <Pager {...pager} noun="changes" />
           </Section>
         </>
       )}

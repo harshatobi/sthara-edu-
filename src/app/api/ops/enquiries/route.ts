@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
+import { pageAll } from '@/lib/ops/page';
 import { loadOperators, resolvePlacement } from '@/lib/ops/org';
 import { can } from '@/lib/ops/roles';
 import { loadSight, loadTerritories } from '@/lib/ops/scope';
@@ -21,15 +22,17 @@ export async function GET(req: NextRequest) {
   if (op instanceof Response) return op;
   const db = createAdminClient();
   const base = 'id, name, email, school, role, phone, designation, city, student_count, board, improvement_goal, message, source_origin, status, note, handled_by, created_at, updated_at';
-  let { data, error } = await db.from('enquiries').select(`${base}, state, district, territory_id, owner_id, source, campaign_id, utm`).order('created_at', { ascending: false }).limit(500);
+  // Every enquiry, a page at a time (one request stops at 1,000 rows).
+  const list = (cols: string) => pageAll<any>((f, t) => db.from('enquiries').select(cols).order('created_at', { ascending: false }).order('id').range(f, t));
+  let { data, error } = await list(`${base}, state, district, territory_id, owner_id, source, campaign_id, utm`);
   // A database with territories but not yet campaigns.
-  if (error?.code === '42703') ({ data, error } = await db.from('enquiries').select(`${base}, state, district, territory_id, owner_id`).order('created_at', { ascending: false }).limit(500) as never);
+  if (error?.code === '42703') ({ data, error } = await list(`${base}, state, district, territory_id, owner_id`));
   // A database older than the ops_foundation migration has no placement columns yet.
-  if (error?.code === '42703') ({ data, error } = await db.from('enquiries').select(base).order('created_at', { ascending: false }).limit(500) as never);
+  if (error?.code === '42703') ({ data, error } = await list(base));
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const [sight, territories, ops] = await Promise.all([loadSight(db, op), loadTerritories(db), loadOperators(db)]);
   const { data: campaigns } = await db.from('ops_campaigns').select('id, name, active').order('name');
-  const { data: deals } = await db.from('ops_opportunities').select('id, enquiry_id').not('enquiry_id', 'is', null).limit(1000);
+  const { data: deals } = await pageAll<{ id: string; enquiry_id: string }>((f, t) => db.from('ops_opportunities').select('id, enquiry_id').not('enquiry_id', 'is', null).order('id').range(f, t));
   const dealOf = new Map((deals || []).map(d => [d.enquiry_id as string, d.id as string]));
   const { data: names } = ops.length ? await db.from('users').select('id, name, email').in('id', ops.map(o => o.id)) : { data: [] };
   const nameOf = new Map((names || []).map(u => [u.id as string, (u.name || u.email) as string]));

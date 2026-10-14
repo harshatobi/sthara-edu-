@@ -547,7 +547,8 @@ function DeleteSchool({ f, onDeleted }: { f: RegistrySchool; onDeleted: () => vo
 function ActivityTab({ d }: { d: Data }) {
   return (
     <>
-      <Section title="Changes made in this console" sub="Tier, pilot, status, AI and profile changes, with who made them and why.">
+      <Section title="Changes made in this console" sub="The latest 200 tier, pilot, status, AI and profile changes, with who made them and why."
+        actions={<Link className="btn sm" href={`/ops/audit?source=console&school=${d.facts.id}`}>Full history <ArrowRight size={13} weight="bold" /></Link>}>
         {!d.journal ? <div className="note err">The change journal isn&apos;t available.</div>
           : !d.journal.length ? <Empty icon={<CheckCircle size={26} weight="duotone" />} title="No changes yet" /> : (
             <Table head={<tr><th>When</th><th>Field</th><th>Change</th><th>Reason</th><th>By</th></tr>}>

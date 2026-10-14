@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
+import { pageAll } from '@/lib/ops/page';
 import { isPlatformKey, parsePlatformValue, parseReason } from '@/lib/settings/registry';
 import { getPlatformSettings, invalidateSettings } from '@/lib/settings/server';
 
@@ -19,8 +20,9 @@ export async function GET(req: NextRequest) {
   try {
     const [platform, journal] = await Promise.all([
       getPlatformSettings(db),
-      db.from('settings_changes').select('id, at, actor_email, scope, school_id, key, old_value, new_value, reason')
-        .eq('scope', 'platform').order('at', { ascending: false }).limit(300),
+      // Every platform change (the page shows them 200 at a time).
+      pageAll((f, t) => db.from('settings_changes').select('id, at, actor_email, scope, school_id, key, old_value, new_value, reason')
+        .eq('scope', 'platform').order('at', { ascending: false }).order('id').range(f, t), 5000),
     ]);
     const { __stored, ...values } = platform;
     return NextResponse.json({ platform: values, platformStored: __stored, journal: journal.error ? null : journal.data, checkedAt: new Date().toISOString() });

@@ -6,6 +6,7 @@ import { FilePdfIcon as FilePdf } from '@phosphor-icons/react/dist/ssr/FilePdf';
 import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Bar, Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { Sparkline, TrendChart, weeklyPts } from '@/components/canon/TrendLine';
 import { createClient } from '@/lib/supabase/client';
@@ -46,6 +47,7 @@ const pctText = (p: number | null) => (p === null ? '—' : `${p}%`);
 
 function Attendance({ desk }: { desk: AdminDesk }) {
   const { att, err, today, sessionStart } = useSchoolAttendance(desk);
+  const { shown: underPage, pager: underPager } = usePaged(att?.under ?? []);
   const cal = useCalendar(desk.school.id);
   const [open, setOpen] = useState<string | null>(null);
   const [doc, setDoc] = useState<'school' | 'class'>('school');
@@ -139,14 +141,13 @@ function Attendance({ desk }: { desk: AdminDesk }) {
               </div>
               <div className="card">
                 <CardHead title={`Under ${MIN_PCT}% this session`} sub="CBSE expects 75% to sit the board exams. Class teachers see the same list." />
-                {!att.under.length ? <p className="muted" style={{ padding: '14px 0' }}>No student is under {MIN_PCT}%.</p> : att.under.slice(0, 40).map(u => (
+                {!att.under.length ? <p className="muted" style={{ padding: '14px 0' }}>No student is under {MIN_PCT}%.</p> : <>{underPage.map(u => (
                   <div className="row" key={u.id} style={{ gap: 10 }}>
                     <Warning size={16} weight="fill" color="var(--red)" aria-hidden="true" />
                     <div style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 14 }}>{u.name}</b><div className="muted" style={{ fontSize: 12 }}>{u.cls}{u.rollNo ? ` · roll ${u.rollNo}` : ''} · {u.session.absent} absent of {u.session.marked}</div></div>
                     <Chip tone="r">{pctText(u.session.pct)}</Chip>
                   </div>
-                ))}
-                {att.under.length > 40 && <p className="muted" style={{ paddingTop: 10 }}>And {att.under.length - 40} more in the spreadsheet.</p>}
+                ))}<Pager {...underPager} noun="students" /></>}
               </div>
             </div>
           </>

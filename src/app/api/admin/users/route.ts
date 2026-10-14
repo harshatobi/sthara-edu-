@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { accessOf } from '@/lib/admin/serverAuth';
+import { byIds, pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,19 +42,20 @@ export async function GET(request: NextRequest) {
       if (!access.can('people.manage') && !access.can('access.manage')) return NextResponse.json({ error: "Your role doesn't include this." }, { status: 403 });
     }
 
-    const { data: users, error: usersErr } = await supabase
+    // Every account, a page at a time: one request stops at 1,000 rows, and a school has students and parents both.
+    const { data: users, error: usersErr } = await pageAll<any>((from, to) => supabase
       .from('users')
       .select('id, name, email, role, student_class, branch, custom_student_id, assignments, teacher_class, metadata, created_at')
       .eq('school_id', schoolId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }).order('id').range(from, to), 50_000);
 
     if (usersErr) throw usersErr;
 
     // Parents' children from the verified guardian links (the source of truth), not the older metadata list.
     const parentIds = (users || []).filter(u => u.role === 'parent').map(u => u.id);
-    const { data: links } = parentIds.length
-      ? await supabase.from('guardians').select('parent_id, student_id, verified').in('parent_id', parentIds)
-      : { data: [] as any[] };
+    // Asked 150 parents at a time: a thousand ids do not fit in one request.
+    const { data: links } = await byIds<any>(parentIds, (chunk, from, to) =>
+      supabase.from('guardians').select('parent_id, student_id, verified').in('parent_id', chunk).order('parent_id').order('student_id').range(from, to));
     const nameOf = new Map((users || []).map(u => [u.id, u.name]));
     const children = new Map<string, { name: string; verified: boolean }[]>();
     for (const l of links || []) children.set(l.parent_id, [...(children.get(l.parent_id) || []), { name: nameOf.get(l.student_id) || 'A student', verified: !!l.verified }]);

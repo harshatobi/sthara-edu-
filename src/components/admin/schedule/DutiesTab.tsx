@@ -8,6 +8,7 @@ import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { PaperPlaneTiltIcon as PaperPlaneTilt } from '@phosphor-icons/react/dist/ssr/PaperPlaneTilt';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip, Empty } from '@/components/canon/ui';
 import { CardHead, downloadCsv } from '@/components/admin/kit';
 import { fmtDate, isoDay, sessionOf, sessionStart } from '@/lib/admin/format';
@@ -38,6 +39,7 @@ export default function DutiesTab({ rows, call, reload, toast, canWorkforce, can
   const [comp, setComp] = useState<{ person?: PersonKey; source?: 'roster' | 'duty' | 'cover' | 'other'; sourceId?: string; dutyOn?: string; note?: string } | null>(null);
   const [sending, setSending] = useState(false);
   const upcoming = rows.duties.filter(d => d.on_date >= today).sort((a, b) => a.on_date.localeCompare(b.on_date) || a.starts_at.localeCompare(b.starts_at));
+  const { shown: upcomingPage, pager: upcomingPager } = usePaged(upcoming);
   const recent = rows.duties.filter(d => d.on_date < today).sort((a, b) => b.on_date.localeCompare(a.on_date)).slice(0, 12);
   const session = sessionOf(new Date(`${today}T12:00:00`));
   const fair = useMemo(() => fairness(rows, sessionStart(session), today), [rows, session, today]);
@@ -105,7 +107,7 @@ export default function DutiesTab({ rows, call, reload, toast, canWorkforce, can
             {canAcademic && <button className="btn sm" onClick={() => setDuty({ kind: 'invigilation', on_date: today, starts_at: '09:00', ends_at: '12:00' })}><Plus size={12} weight="bold" /> Invigilation</button>}
             {canWorkforce && <button className="btn sm" onClick={() => setDuty({ kind: 'event', on_date: today, starts_at: '09:00', ends_at: '13:00' })}><Plus size={12} weight="bold" /> Event duty</button>}
           </div>} />
-        {upcoming.length ? upcoming.slice(0, 40).map(d => (
+        {upcoming.length ? <>{upcomingPage.map(d => (
           <div className="row" key={d.id}>
             <div style={{ width: 92, flex: '0 0 92px' }}><b>{fmtDate(d.on_date, true)}</b><div className="muted" style={{ fontSize: 12 }}>{hhmm(d.starts_at, true)}–{hhmm(d.ends_at, true)}</div></div>
             <div style={{ flex: 1, minWidth: 0 }}><b>{names.get(personKey(d.user_id, d.staff_member_id)!)}</b><div className="muted" style={{ fontSize: 12.5 }}>{d.title}{d.room_id ? ` · ${rows.rooms.find(r => r.id === d.room_id)?.name || ''}` : ''}</div></div>
@@ -115,7 +117,7 @@ export default function DutiesTab({ rows, call, reload, toast, canWorkforce, can
               <button className="sch-icon" aria-label="Remove" onClick={() => act(() => call(API, 'DELETE', { entity: 'duty', id: d.id }), 'Duty removed')}><Trash size={15} /></button>
             </>}
           </div>
-        )) : <p className="muted">No dated duties coming up.</p>}
+        ))}<Pager {...upcomingPager} noun="duties" /></> : <p className="muted">No dated duties coming up.</p>}
       </div>
 
       <div className="g2">

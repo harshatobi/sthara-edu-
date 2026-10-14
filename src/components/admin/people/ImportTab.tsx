@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { UploadSimpleIcon as UploadSimple } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip } from '@/components/canon/ui';
 import { CardHead, downloadCsv } from '@/components/admin/kit';
 import { parseCsv, readXlsx } from '@/lib/schedule/importer';
@@ -61,6 +62,7 @@ export default function ImportTab({ data, call, reload, toast }: { data: PeopleD
     downloadCsv(`sthara-employees-to-complete-${data.today}.csv`, [IMPORT_COLUMNS.map(c => c[1]), ...data.people.filter(p => p.active).map(p => IMPORT_COLUMNS.map(c => cell[c[0]]?.(p) ?? ''))]);
   };
   const shown = preview ? preview.rows.filter(r => !onlyProblems || r.problems.length) : [];
+  const { shown: shownPage, pager } = usePaged(shown);
 
   return (
     <div className="card">
@@ -105,7 +107,7 @@ export default function ImportTab({ data, call, reload, toast }: { data: PeopleD
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr><th className="c">Row</th><th>Name</th><th>What happens</th><th>Sets</th></tr></thead>
-              <tbody>{shown.map(r => (
+              <tbody>{shownPage.map(r => (
                 <tr key={r.line}>
                   <td className="c num">{r.line}</td>
                   <td><b>{r.name || '—'}</b></td>
@@ -119,6 +121,7 @@ export default function ImportTab({ data, call, reload, toast }: { data: PeopleD
                 </tr>
               ))}</tbody>
             </table>
+            <Pager {...pager} noun="rows" />
           </div>
         </div>
       )}

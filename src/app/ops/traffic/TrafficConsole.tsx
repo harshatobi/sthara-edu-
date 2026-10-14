@@ -3,6 +3,8 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PulseIcon as Pulse } from '@phosphor-icons/react/dist/ssr/Pulse';
+import { DatabaseIcon as Database } from '@phosphor-icons/react/dist/ssr/Database';
+import { Pager, pageWindow, usePageNumber } from '@/components/canon/Pager';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { SINCE, speed, type Since } from '@/lib/debug/route';
 import { Section, Table, errText, fmtDateTime, num } from '../_ui';
@@ -14,7 +16,8 @@ interface Row {
   errors: { fingerprint: string; message: string }[];
 }
 interface Stat { method: string; route: string; n: number; p50: number; p95: number; max: number; users: number }
-interface Data { since: Since; recording: boolean; capped: boolean; schools: Record<string, string>; rows: Row[]; stats: Stat[] }
+interface DbProblem { fingerprint: string; message: string; n: number; last: string; users: number; schools: string[]; pages: string[]; roles: string[] }
+interface Data { since: Since; recording: boolean; page: number; pageSize: number; total: number | null; schools: Record<string, string>; rows: Row[]; stats: Stat[]; database: DbProblem[] }
 
 const SINCE_LABEL: Record<Since, string> = { '15m': 'Last 15 minutes', '1h': 'Last hour', '6h': 'Last 6 hours', '24h': 'Last 24 hours', '7d': 'Last 7 days' };
 const dur = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)} s` : `${n} ms`);
@@ -26,20 +29,23 @@ export default function TrafficConsole() {
   const api = useOpsApi();
   const [d, setD] = useState<Data | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [view, setView] = useState<'requests' | 'routes'>('requests');
+  const [view, setView] = useState<'requests' | 'routes' | 'database'>('requests');
   const [f, setF] = useState({ since: '1h' as Since, school: '', user: '', route: '', minMs: '' });
   const [applied, setApplied] = useState(f);
   const [open, setOpen] = useState<number | null>(null);
+  // New filters start again at the newest page.
+  const [page, setPage] = usePageNumber(applied);
 
   const load = useCallback(() => {
-    const p = new URLSearchParams({ since: applied.since });
+    const p = new URLSearchParams({ since: applied.since, page: String(page) });
     if (applied.school) p.set('school', applied.school);
     if (applied.user.trim()) p.set('user', applied.user.trim());
     if (applied.route.trim()) p.set('route', applied.route.trim());
     if (Number(applied.minMs) > 0) p.set('minMs', String(Number(applied.minMs)));
     api<Data>(`/traffic?${p}`).then(x => { setD(x); setErr(null); }).catch(e => setErr(errText(e)));
-  }, [api, applied]);
+  }, [api, applied, page]);
   useEffect(() => { load(); }, [load]);
+
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF(x => ({ ...x, [k]: v }));
   const filterTo = (patch: Partial<typeof f>) => { const next = { ...f, ...patch }; setF(next); setApplied(next); setView('requests'); };
   const schoolName = (id: string | null) => (id ? d?.schools[id] ?? 'Deleted school' : 'Sthara');
@@ -47,7 +53,7 @@ export default function TrafficConsole() {
   return (
     <>
       <PageBar eyebrow="PLATFORM MANAGER" title="Request explorer"
-        sub="Every signed-in API request for the last seven days: the route, who called it (role and id, never a name), how long it took, and the AI calls and errors inside it. Queries and request bodies are not recorded." />
+        sub="Every signed-in API request for the last seven days: the route, who called it (role and id, never a name), how long it took, and the AI calls and errors inside it. Queries and request bodies are not recorded. Database reads that browsers make directly are listed when they fail or come back cut short." />
       {err && <div className="note err" style={{ marginBottom: 18 }} role="alert">{err}</div>}
       {d && !d.recording && <div className="note" style={{ marginBottom: 18 }}>Recording is off (Platform settings &gt; Request log), so nothing new appears here.</div>}
 
@@ -68,10 +74,21 @@ export default function TrafficConsole() {
       <div className="seg" role="tablist" aria-label="View" style={{ marginBottom: 18 }}>
         <button role="tab" aria-selected={view === 'requests'} className={view === 'requests' ? 'on' : ''} onClick={() => setView('requests')}>Requests</button>
         <button role="tab" aria-selected={view === 'routes'} className={view === 'routes' ? 'on' : ''} onClick={() => setView('routes')}>Routes</button>
+        <button role="tab" aria-selected={view === 'database'} className={view === 'database' ? 'on' : ''} onClick={() => setView('database')}>
+          Database reads{d?.database.length ? ` (${d.database.length})` : ''}
+        </button>
       </div>
 
+      {d && d.database.length > 0 && view !== 'database' && (
+        <div className="note err" style={{ marginBottom: 18 }} role="alert">
+          {d.database.length === 1 ? 'One problem' : `${d.database.length} problems`} with database reads made straight from browsers in this period
+          ({d.database.reduce((n, x) => n + x.n, 0).toLocaleString('en-IN')} times). These pages read the database without going through an API route, so they are not in the requests below.{' '}
+          <button className="btn sm" onClick={() => setView('database')}>See them</button>
+        </div>
+      )}
+
       {!d ? <div className="card"><Skeleton h={200} /></div> : view === 'requests' ? (
-        <Section title="Requests" sub={`Newest first.${d.capped ? ' Showing the latest 300 that match: narrow the filters to see further back.' : ''} Click a row for what happened inside it.`}>
+        <Section title="Requests" sub="Newest first, 200 a page. Click a row for what happened inside it.">
           <Table head={<tr><th>Time (IST)</th><th>Request</th><th>Who</th><th>School</th><th className="r">Took</th><th>Inside</th><th>Release</th></tr>}
             empty={!d.rows.length && <Empty icon={<Pulse size={28} weight="duotone" />} title="No requests match">Requests are recorded from the release that added this page onwards.</Empty>}>
             {d.rows.map(r => (
@@ -116,6 +133,25 @@ export default function TrafficConsole() {
               </Fragment>
             ))}
           </Table>
+          <Pager {...pageWindow(d.total ?? 0, d.page, d.pageSize)} total={d.total} setPage={p => { setPage(p); setOpen(null); }} noun="requests" />
+        </Section>
+      ) : view === 'database' ? (
+        <Section title="Database reads from browsers" sub="Desks read the database directly from the browser. Each line is one problem: a read the database refused (the page then shows nothing, or less), or a list that came back cut at 1,000 rows with the rest dropped. Users appear as counts, never names.">
+          <Table head={<tr><th>Problem</th><th>Pages</th><th>Roles</th><th className="r">Times</th><th className="r">People</th><th>Schools</th><th>Last seen (IST)</th></tr>}
+            empty={!d.database.length && <Empty icon={<Database size={28} weight="duotone" />} title="No failed or cut-short database reads in this period" />}>
+            {d.database.map(x => (
+              <tr key={x.fingerprint}>
+                <td style={{ overflowWrap: 'anywhere', maxWidth: 420 }}>{x.message.replace(/^\[database\]\s*/, '')}</td>
+                <td className="mono" style={{ fontSize: 12 }}>{x.pages.join(', ') || 'unknown'}</td>
+                <td>{x.roles.join(', ') || 'unknown'}</td>
+                <td className="r" style={{ fontWeight: 700 }}>{num(x.n)}</td>
+                <td className="r">{num(x.users)}</td>
+                <td style={{ maxWidth: 200 }}>{x.schools.map(schoolName).join(', ') || 'none'}</td>
+                <td style={{ whiteSpace: 'nowrap' }} title={fmtDateTime(x.last)}>{fmtDateTime(x.last)}</td>
+              </tr>
+            ))}
+          </Table>
+          <Link className="btn sm" style={{ marginTop: 10, display: 'inline-flex' }} href="/ops/errors">Open the error log</Link>
         </Section>
       ) : (
         <Section title="Routes" sub="Volume and latency per route for the period and school chosen (the other filters do not apply here). Click one to see its requests.">

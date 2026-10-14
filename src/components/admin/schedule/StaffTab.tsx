@@ -6,6 +6,7 @@ import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimpleIcon as PencilSimple } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { UsersFourIcon as UsersFour } from '@phosphor-icons/react/dist/ssr/UsersFour';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip, Empty } from '@/components/canon/ui';
 import { CardHead, Kpi, downloadCsv } from '@/components/admin/kit';
 import { daysBetween, fmtDate, isoDay } from '@/lib/admin/format';
@@ -40,6 +41,7 @@ export default function StaffTab({ rows, call, reload, toast, canEdit }: { rows:
   }, [rows.people, rows.staff]);
   const active = people.filter(p => p.active);
   const shown = people.filter(p => (showInactive || p.active) && (filter === 'all' || p.category === filter));
+  const { shown: shownPage, pager } = usePaged(shown);
   const count = (c: StaffCategory) => active.filter(p => p.category === c).length;
   const wing = (id: string | null) => (id ? rows.wings.find(w => w.id === id)?.name ?? '' : '');
   const today = isoDay();
@@ -83,7 +85,7 @@ export default function StaffTab({ rows, call, reload, toast, canEdit }: { rows:
           <div className="tbl-wrap">
             <table className="tbl">
               <thead><tr><th>Name</th><th>Role</th><th>Wing</th><th>Phone</th><th className="c">Login</th>{canEdit && <th />}</tr></thead>
-              <tbody>{shown.map(p => (
+              <tbody>{shownPage.map(p => (
                 <tr key={p.key} style={p.active ? undefined : { opacity: 0.5 }}>
                   <td><b>{p.name}</b>{(p.member?.employee_code || (p.member?.employment && p.member.employment !== 'permanent')) && (
                     <div className="muted" style={{ fontSize: 12 }}>{[p.member?.employee_code, p.member?.employment && p.member.employment !== 'permanent' ? `${EMPLOYMENT[p.member.employment]} to ${fmtDate(p.member.contract_to, true)}` : ''].filter(Boolean).join(' · ')}</div>
@@ -96,6 +98,7 @@ export default function StaffTab({ rows, call, reload, toast, canEdit }: { rows:
                 </tr>
               ))}</tbody>
             </table>
+            <Pager {...pager} noun="people" />
           </div>
         ) : <Empty icon={<UsersFour size={26} weight="duotone" />} title="Nobody here yet">Add drivers, security, housekeeping, ayahs, lab attendants and anyone else who works at the school.</Empty>}
       </div>

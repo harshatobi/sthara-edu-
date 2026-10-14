@@ -7,6 +7,7 @@ import { PageBar } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { FeedList, IncidentForm, type StudentOption } from '@/components/feed/Feed';
 import { useAuth } from '@/contexts/AuthContext';
+import { all } from '@/lib/admin/loadRows';
 import { createClient } from '@/lib/supabase/client';
 import { isEscalated } from '@/lib/feed/rules';
 import { useFeed, type FeedItem } from '@/lib/feed/useFeed';
@@ -34,8 +35,9 @@ export default function TeacherFeedPage() {
 
   useEffect(() => {
     if (!profile?.schoolId) return;
-    createClient().from('users').select('id, name, student_class').eq('school_id', profile.schoolId).eq('role', 'student').order('name')
-      .then(({ data }) => setStudents((data || []).map(s => ({ id: s.id, name: s.name || 'Student', cls: displayClass(s.student_class) }))));
+    const db = createClient();
+    all((a, b) => db.from('users').select('id, name, student_class').eq('school_id', profile.schoolId!).eq('role', 'student').order('name').order('id').range(a, b))
+      .then(({ data }) => setStudents(data.map(s => ({ id: s.id, name: s.name || 'Student', cls: displayClass(s.student_class) }))), () => {});
   }, [profile?.schoolId]);
 
   // The incidents behind incident items (parent-notice state, who logged them). Reloaded after acting.

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { all } from '@/lib/admin/loadRows';
 import { createClient } from '@/lib/supabase/client';
 import { CURRENT_SESSION } from '@/lib/curriculum';
 import { normClass, normSubject } from './scope';
@@ -38,7 +39,8 @@ export function useCourse(cls: string, subject: string) {
       db.from('syllabus_progress').select('*').eq('school_id', school).eq('class', cls).eq('subject', subject).eq('session', CURRENT_SESSION),
       db.from('lesson_plans').select('*').eq('school_id', school).eq('class', cls).eq('subject', subject).eq('session', CURRENT_SESSION)
         .order('lesson_date', { ascending: true, nullsFirst: false }).order('period', { ascending: true, nullsFirst: false }),
-      db.from('assignments').select('id, title, type, status, due_date, units, class, subject').eq('school_id', school),
+      all((a, b) => db.from('assignments').select('id, title, type, status, due_date, units, class, subject').eq('school_id', school).order('id').range(a, b))
+        .then(r => ({ data: r.data, error: null }), e => ({ data: null, error: e as Error })),
     ]).then(([p, g, l, a]) => {
       if (cancelled) return;
       const err = p.error || g.error || l.error || a.error;

@@ -106,7 +106,10 @@ async function main() {
     stages, totals, failures,
     files: files.map(f => ({ name: f.name, size: fs.statSync(f.from).size })),
   };
-  const res = await fetch(`${url}/api/qa/runs`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-qa-token': token }, body: JSON.stringify(body) });
+  // A protected Vercel preview also needs the deployment-protection header (VERCEL_OIDC_TOKEN from `vercel env pull`).
+  const oidc = env('VERCEL_OIDC_TOKEN');
+  const auth: Record<string, string> = { 'x-qa-token': token, ...(oidc && url.includes('.vercel.app') ? { 'x-vercel-trusted-oidc-idp-token': oidc } : {}) };
+  const res = await fetch(`${url}/api/qa/runs`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...auth }, body: JSON.stringify(body) });
   const j: any = await res.json().catch(() => ({}));
   if (!res.ok) { console.log(`Upload refused (${res.status}): ${j.error || 'no reason given'}`); return; }
   let sent = 0;
@@ -115,7 +118,7 @@ async function main() {
     const put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': u.contentType, 'x-upsert': 'true' }, body: fs.readFileSync(f.from) });
     if (put.ok) sent++; else console.log(`  ${u.name}: upload failed (${put.status})`);
   }
-  const done = await fetch(`${url}/api/qa/runs/${j.id}/complete`, { method: 'POST', headers: { 'x-qa-token': token } });
+  const done = await fetch(`${url}/api/qa/runs/${j.id}/complete`, { method: 'POST', headers: auth });
   const d: any = await done.json().catch(() => ({}));
   console.log(done.ok ? `Uploaded to the ops console: ${d.status === 'pass' ? 'passed' : 'failed'}, ${sent} file(s). ${url}/ops/quality` : `Upload not finished (${done.status}): ${d.error || ''}`);
 }

@@ -17,6 +17,7 @@ import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/s
 import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/react/dist/ssr/IdentificationCard';
 import { WalletIcon as Wallet } from '@phosphor-icons/react/dist/ssr/Wallet';
 import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuoy';
+import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -41,6 +42,7 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/staff', label: 'Staff & Leave', short: 'Staff', icon: CalendarBlank, need: ['workforce.read'] },
   { href: '/admin/schedule', label: 'Schedule', icon: CalendarDots, need: ['dashboard.view'] },
   { href: '/admin/attendance', label: 'Student Attendance', short: 'Attendance', icon: CalendarCheck, need: ['attendance.read'] },
+  { href: '/admin/exams', label: 'Exams & Report Cards', short: 'Exams', icon: Exam, need: ['exams.read', 'exams.manage', 'exams.publish', 'fees.collect'] },
   { href: '/admin/academic', label: 'Academic Health', short: 'Academic', icon: ChartLineUp, need: ['academics.read'] },
   { href: '/admin/wellness', label: 'CBSE Wellness Report', short: 'Wellness', icon: Heart, need: ['wellness.read'] },
   { href: '/admin/compliance', label: 'DPDP & Compliance', short: 'DPDP', icon: ShieldCheck, need: ['compliance.read', 'audit.read'] },

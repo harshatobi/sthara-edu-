@@ -10,7 +10,7 @@ test('role catalogue matches the database seed', () => {
   const rows = [...seed.matchAll(/\('(\w+)', ARRAY\[([^\]]*)\]\)/g)];
   const db: Record<string, string[]> = Object.fromEntries(rows.map(m => [m[1], m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))]));
   // Permissions added to the catalogue by later migrations (INSERT … ON CONFLICT DO NOTHING).
-  for (const f of ['20260925180000_parent_connect.sql', '20260926200000_situational_feed.sql', '20260926210000_staff_whatsapp.sql', '20260927100000_scheduling.sql', '20260928190000_tutor_guard.sql', '20261013100000_employee_master.sql', '20261013120000_payroll.sql']) {
+  for (const f of ['20260925180000_parent_connect.sql', '20260926200000_situational_feed.sql', '20260926210000_staff_whatsapp.sql', '20260927100000_scheduling.sql', '20260928190000_tutor_guard.sql', '20261013100000_employee_master.sql', '20261013120000_payroll.sql', '20261014214630_exams_core.sql']) {
     const later = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations', f), 'utf8');
     const add = later.slice(later.indexOf('INSERT INTO public.role_permissions'), later.indexOf('ON CONFLICT DO NOTHING'));
     for (const m of add.matchAll(/\('(\w+)',\s+ARRAY\[([^\]]*)\]\)/g)) db[m[1]] = [...(db[m[1]] || []), ...m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))];
@@ -38,6 +38,9 @@ test('separation of duties is built into the roles', () => {
   // Payroll: the roles that prepare a run are not the ones that only approve it.
   assert.ok(!ROLES.finance_head.perms.includes('payroll.prepare') && !ROLES.accountant.perms.includes('payroll.approve') && !ROLES.hr_manager.perms.includes('payroll.approve'));
   assert.ok(!ROLES.cashier.perms.includes('payroll.read') && !ROLES.vice_principal.perms.includes('payroll.read'));
+  // Exams: the exam cell runs marks entry; only the principal (and school admin) publish report cards.
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('exams.publish')).sort(), ['principal', 'school_admin']);
+  assert.ok(ROLES.academic_coordinator.perms.includes('exams.manage'));
   // Staff bank, PAN and personal details: HR and the heads of the school, nobody else who can merely see the workforce.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('hr.sensitive')).sort(), ['hr_manager', 'principal', 'school_admin']);
 });

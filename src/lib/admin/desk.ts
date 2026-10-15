@@ -24,6 +24,8 @@ export interface AdminRows {
   tml: any[];
   assignments: any[];
   submissions: any[];
+  /** Per teacher: submissions waiting for review, the oldest, graded in the last 30 days (admin_teacher_work). Null: count from submissions. */
+  teacherWork?: { teacher_id: string; pending: number | string; oldest_pending: string | null; graded30: number | string; last_graded: string | null }[] | null;
   lessons: any[];
   consents: any[];
   guardians: any[];
@@ -369,6 +371,9 @@ function assembleWorkforce(rows: AdminRows, students: AStudent[], tmlBefore: Map
   for (const a of rows.assignments) asgBy.set(a.teacher_id, [...(asgBy.get(a.teacher_id) || []), a]);
   const subsByAsg = new Map<string, any[]>();
   for (const s of rows.submissions) subsByAsg.set(s.assignment_id, [...(subsByAsg.get(s.assignment_id) || []), s]);
+  // Counted in the database when available: no per-submission rows needed.
+  const workBy = new Map((rows.teacherWork || []).map(w => [w.teacher_id, w]));
+  const hasWork = !!rows.teacherWork;
   const lessonsBy = new Map<string, any[]>();
   for (const l of rows.lessons) lessonsBy.set(l.teacher_id, [...(lessonsBy.get(l.teacher_id) || []), l]);
 
@@ -387,23 +392,28 @@ function assembleWorkforce(rows: AdminRows, students: AStudent[], tmlBefore: Map
     const before = mean(was);
 
     const mine = asgBy.get(u.id) || [];
-    const subs = mine.flatMap(a => subsByAsg.get(a.id) || []);
-    const pending = subs.filter(s => s.teacher_approved !== true);
-    const oldest = pending.reduce<string | null>((m, s) => { const at = s.submitted_at || s.created_at; return at && (!m || at < m) ? at : m; }, null);
-    const graded30 = subs.filter(s => s.teacher_approved === true && ts(s.updated_at) >= since30);
+    // Marking workload: counted in the database when available, else from the submissions themselves.
+    const counted = workBy.get(u.id);
+    const subs = counted || hasWork ? [] : mine.flatMap(a => subsByAsg.get(a.id) || []);
+    const pendingRows = subs.filter(s => s.teacher_approved !== true);
+    const gradedRows = subs.filter(s => s.teacher_approved === true && ts(s.updated_at) >= since30);
+    const backlog = counted ? Number(counted.pending) : pendingRows.length;
+    const oldest = counted ? counted.oldest_pending : pendingRows.reduce<string | null>((m, s) => { const at = s.submitted_at || s.created_at; return at && (!m || at < m) ? at : m; }, null);
+    const graded30 = counted ? Number(counted.graded30) : gradedRows.length;
+    const lastGraded = counted ? counted.last_graded : gradedRows.map(s => s.updated_at).filter(Boolean).sort().pop() ?? null;
     const posted30 = mine.filter(a => ts(a.created_at) >= since30 && a.status !== 'draft');
     const lessons = lessonsBy.get(u.id) || [];
     const lessons30 = lessons.filter(l => ts(l.created_at) >= since30);
-    const actions = posted30.length + lessons30.length + graded30.length;
-    const lastActive = [...mine.map(a => a.created_at), ...lessons.map(l => l.updated_at || l.created_at), ...graded30.map(s => s.updated_at)]
+    const actions = posted30.length + lessons30.length + graded30;
+    const lastActive = [...mine.map(a => a.created_at), ...lessons.map(l => l.updated_at || l.created_at), lastGraded]
       .filter(Boolean).sort().pop() ?? null;
 
     return {
       id: u.id, name: u.name || u.email || 'Teacher', email: u.email || '', scope, classes, subjects,
       students: taught.length, tml, before, delta: tml !== null && before !== null ? tml - before : null,
-      backlog: pending.length, oldestPendingDays: oldest ? Math.max(0, Math.floor((now - ts(oldest)) / DAY)) : null,
+      backlog, oldestPendingDays: oldest ? Math.max(0, Math.floor((now - ts(oldest)) / DAY)) : null,
       posted30: posted30.length, lessons30: lessons30.length, aiLessons30: lessons30.filter(l => l.ai_drafted).length,
-      graded30: graded30.length, lastActive,
+      graded30, lastActive,
       activity: actions >= 4 ? 'high' as const : actions >= 1 ? 'medium' as const : 'none' as const,
       onLeaveToday: onLeaveToday.some(l => l.staffId === u.id),
     };

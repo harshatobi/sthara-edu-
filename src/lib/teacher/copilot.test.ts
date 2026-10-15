@@ -46,3 +46,14 @@ test('a Live Lab demo passes only when the engine accepts every value; answers n
   const nested = parseReply({ artifact: { kind: 'lab', title: 'Again', scene: { engine: 'sound', params: { f: 880 }, predictions: [{ id: 'wavelength' }] } } });
   assert.equal(nested.artifact?.kind === 'lab' && nested.artifact.scene.params.f, 880);
 });
+
+test('a lesson bundle keeps its valid parts, drops broken ones, and never nests', () => {
+  const lesson = { kind: 'lesson', title: 'Ohm’s law', stages: [{ name: 'Hook', minutes: 5 }, { name: 'Explore', minutes: 30 }] };
+  const exit = { kind: 'questions', purpose: 'exit_tickets', title: 'Exit', questions: [{ type: 'mcq', questionText: 'R = ?', options: ['V/I', 'VI'], answer: 0 }] };
+  const lab = { kind: 'lab', engine: 'circuits', params: { v: 12 }, title: 'Demo' };
+  const r = parseReply({ artifact: { kind: 'bundle', title: 'Period 3', parts: [lesson, lab, exit, { kind: 'lab', engine: 'circuits', params: { v: 99 } }, { kind: 'bundle', parts: [lesson, exit] }] } });
+  assert.equal(r.artifact?.kind, 'bundle');
+  if (r.artifact?.kind === 'bundle') assert.deepEqual(r.artifact.parts.map(p => p.kind), ['lesson', 'lab', 'questions'], 'out-of-range demo and nested bundle dropped');
+  const one = parseReply({ artifact: { kind: 'bundle', title: 'x', parts: [lesson, { kind: 'rubric', criteria: [] }] } });
+  assert.equal(one.artifact?.kind, 'lesson', 'a bundle left with one part becomes that part');
+});

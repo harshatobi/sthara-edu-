@@ -14,6 +14,8 @@ import { CheckSquareOffsetIcon as CheckSquareOffset } from '@phosphor-icons/reac
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
+import { CrosshairIcon as Crosshair } from '@phosphor-icons/react/dist/ssr/Crosshair';
+import { StackIcon as Stack } from '@phosphor-icons/react/dist/ssr/Stack';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import type { CourseChapter } from '@/lib/curriculum';
@@ -34,6 +36,8 @@ export const STUDIO_LOOK: Record<StudioKind, { icon: PhosphorIcon; color: string
   answer_key: { icon: CheckSquareOffset, color: '#22C55E' },
   parent_note: { icon: EnvelopeSimple, color: '#F43F5E' },
   lab_demo: { icon: Flask, color: '#7C5CFC' },
+  misconceptions: { icon: Crosshair, color: '#E11D48' },
+  bundle: { icon: Stack, color: '#0F766E' },
 };
 
 export interface StudioRequest {

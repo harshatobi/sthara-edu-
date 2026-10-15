@@ -10,7 +10,20 @@ export const SAMPLE_CONTEXT = 'Class 9 Science · Cell';
 /** Where each sample comes from (all Cell, except the lab demo, which needs a chapter with a simulation). */
 export const sampleContext = (k: StudioKind) => (k === 'lab_demo' ? 'Class 9 Science · Force and Laws of Motion' : SAMPLE_CONTEXT);
 
-export const SAMPLES: Record<StudioKind, Artifact> = {
+const BASE: Omit<Record<StudioKind, Artifact>, 'bundle'> = {
+  misconceptions: {
+    kind: 'document', title: 'Cell: the two ideas tripping up 9-B', audience: 'teacher',
+    markdown: [
+      '**1. "Plant cells don\'t have mitochondria, because they have chloroplasts."**',
+      'Evidence: 11 of 34 chose "Chloroplast" for *the organelle that releases energy in a leaf cell* (Cell quiz, Q4).',
+      'Likely thinking: chloroplasts make food, so they must also supply the energy.',
+      'Fix (8 min): put the two side by side. Chloroplasts *store* the sun\'s energy in glucose; mitochondria *release* it, day and night, in every living cell. Ask: "What powers a leaf cell at midnight?"',
+      'Check: 2 MCQs at the start of the next period.',
+      '',
+      '**2. Osmosis direction.** 7 of 29 lost marks on Q3 of the written test: "water moves to where there is more water."',
+      'Fix: the raisin-in-water and raisin-in-syrup demonstration, predicted first.',
+    ].join('\n'),
+  },
   lab_demo: {
     kind: 'lab', title: 'Does a heavier push mean a bigger speed-up?',
     scene: {
@@ -94,4 +107,12 @@ export const SAMPLES: Record<StudioKind, Artifact> = {
     kind: 'document', title: 'Note to Aarav’s parents', audience: 'parent',
     markdown: 'Dear Mr and Mrs Sharma,\n\nAarav has a real curiosity for Science. He asked the best question in class this week about why onion cells look like bricks.\n\nHe has missed the last two homework tasks on Cells, and his quiz score (45%) tells me the ideas haven’t quite settled yet.\n\n**One thing that would help at home:** ask him to explain one part of a cell to you in two minutes, three evenings this week.\n\nWarm regards,\nPriya Menon',
   },
+};
+
+type Part = Exclude<Artifact, { kind: 'bundle' }>;
+
+export const SAMPLES: Record<StudioKind, Artifact> = {
+  ...BASE,
+  // A bundle is the other samples, together: Cell has no Live Lab simulation, so it has none.
+  bundle: { kind: 'bundle', title: 'Cell: one period, ready to teach', parts: [BASE.lesson, BASE.exit_tickets, BASE.remedial] as Part[] },
 };

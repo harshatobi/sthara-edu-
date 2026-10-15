@@ -20,6 +20,8 @@ import LabArtifact from './LabArtifact';
 import { engineById, scenePredictions } from '@/lib/lab/registry';
 
 const LETTERS = 'ABCDEF';
+/** Plain names for a bundle's parts. */
+const PART_LABEL: Record<string, string> = { lesson: 'lesson plan', lab: 'Live Lab demo', exit_tickets: 'exit tickets', remedial: 'catch-up pack', worksheet: 'worksheet', quiz: 'quiz', rubric: 'rubric', document: 'notes', diagram: 'diagram', image: 'illustration' };
 const PURPOSE: Record<string, string> = { worksheet: 'WORKSHEET', quiz: 'QUIZ', remedial: 'REMEDIAL PACK', exit_tickets: 'EXIT TICKETS' };
 
 /** Plain-text version for the clipboard (WhatsApp, email, a document). */
@@ -38,6 +40,7 @@ export function artifactText(a: Artifact): string {
       `Support: ${a.differentiation.support}`, `Stretch: ${a.differentiation.stretch}`, `Exit check: ${a.checkForUnderstanding}`].join('\n');
   }
   if (a.kind === 'rubric') return [a.title, ...a.criteria.map(c => `${c.name}\n${c.levels.map(l => `  ${l.label} (${l.points}): ${l.descriptor}`).join('\n')}`)].join('\n\n');
+  if (a.kind === 'bundle') return [a.title, ...a.parts.map(p => artifactText(p))].join('\n\n────────\n\n');
   if (a.kind === 'lab') {
     const e = engineById(a.scene.engine);
     return [a.title, e ? `Live Lab: ${e.title}` : '', a.scene.narration ?? '', '',
@@ -94,6 +97,23 @@ export default function ArtifactView({ artifact: a, cls, subject, onRefine, onTo
   };
 
   if (a.kind === 'lab') return <LabArtifact a={a} sample={sample} onRefine={onRefine} />;
+  if (a.kind === 'bundle') {
+    return (
+      <div className="art-bundle">
+        <div className="art-bundle-hd">
+          {sample && <><Chip tone="a">EXAMPLE</Chip>{' '}</>}
+          <Chip tone="p">LESSON BUNDLE</Chip>
+          <h3 style={{ fontSize: 17, fontWeight: 800, marginTop: 8 }}>{a.title}</h3>
+          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{a.parts.length} parts: {a.parts.map(p => PART_LABEL[p.kind === 'questions' ? p.purpose : p.kind] ?? p.kind).join(' · ')}</div>
+        </div>
+        {a.parts.map((p, i) => (
+          <ArtifactView key={i} artifact={p} cls={cls} subject={subject} targets={p.kind === 'questions' && p.purpose === 'remedial' ? targets : []}
+            onToast={onToast} sample={sample}
+            onRefine={onRefine ? r => onRefine(`${r} (only the ${PART_LABEL[p.kind === 'questions' ? p.purpose : p.kind] ?? p.kind} in the bundle)`) : undefined} />
+        ))}
+      </div>
+    );
+  }
 
   const mcqOnly = a.kind === 'questions' && a.questions.every(q => q.type === 'mcq');
   const hasMcq = a.kind === 'questions' && a.questions.some(q => q.type === 'mcq');

@@ -13,7 +13,7 @@ import { validateScene, type LabScene } from '@/lib/lab/registry';
 
 export type StudioKind =
   | 'worksheet' | 'quiz' | 'remedial' | 'lesson' | 'rubric' | 'answer_key'
-  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo';
+  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo' | 'misconceptions' | 'bundle';
 
 export type StudioGroup = 'students' | 'you' | 'parents';
 export interface StudioType {
@@ -37,6 +37,8 @@ export const STUDIO: StudioType[] = [
   { kind: 'discussion', label: 'Discussion prompts', blurb: 'Questions that make them think out loud', group: 'you', needsChapter: true, items: true, seconds: 10 },
   { kind: 'rubric', label: 'Rubric', blurb: 'Criteria and levels for written or project work', group: 'you', needsChapter: false, seconds: 10 },
   { kind: 'answer_key', label: 'Marking scheme', blurb: 'Step marks for a paper you paste in', group: 'you', needsChapter: false, seconds: 12 },
+  { kind: 'bundle', label: 'Lesson bundle', blurb: 'Plan, demo, exit ticket and catch-up pack for one period', group: 'you', needsChapter: true, minutes: true, who: 'many', seconds: 45 },
+  { kind: 'misconceptions', label: 'Fix misconceptions', blurb: 'What they got wrong, why, and what will fix it', group: 'you', needsChapter: false, seconds: 15 },
   { kind: 'lab_demo', label: 'Live lab demo', blurb: 'A simulation for the board, with predictions', group: 'you', needsChapter: true, seconds: 10 },
   { kind: 'parent_note', label: 'Parent note', blurb: 'Warm, specific, one thing to do at home', group: 'parents', needsChapter: false, who: 'one', seconds: 8 },
 ];
@@ -55,7 +57,9 @@ export type Artifact =
   | { kind: 'rubric'; title: string; criteria: { name: string; levels: { label: string; descriptor: string; points: number }[] }[] }
   | { kind: 'document'; title: string; audience: 'teacher' | 'parent' | 'student'; markdown: string }
   /** A Live Lab set-up. Only the engine, its values and the wording come from the model; answers come from the engine. */
-  | { kind: 'lab'; title: string; scene: LabScene };
+  | { kind: 'lab'; title: string; scene: LabScene }
+  /** Everything for one period in one go; each part is checked like a standalone artifact. */
+  | { kind: 'bundle'; title: string; parts: Exclude<Artifact, { kind: 'bundle' }>[] };
 
 /** Studio types that only make sense for some subjects (the Live Lab covers science). */
 export const isScienceSubject = (subject: string) => /science|physics|chemistry/i.test(subject);
@@ -73,9 +77,15 @@ export interface ChatTurn {
 const s = (v: unknown, n = 4000) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 const list = (v: unknown, n = 10, len = 400) => (Array.isArray(v) ? v.map(x => s(x, len)).filter(Boolean).slice(0, n) : []);
 
-function artifactOf(a: any): Artifact | null {
+function artifactOf(a: any, nested = false): Artifact | null {
   if (!a || typeof a !== 'object') return null;
   const title = s(a.title, 200) || 'Untitled';
+  if (a.kind === 'bundle') {
+    if (nested) return null;
+    const parts = (Array.isArray(a.parts) ? a.parts : []).slice(0, 8).map((x: unknown) => artifactOf(x, true)).filter(Boolean) as Exclude<Artifact, { kind: 'bundle' }>[];
+    // A bundle that lost all but one part is just that part.
+    return parts.length >= 2 ? { kind: 'bundle', title, parts } : parts[0] ?? null;
+  }
   if (a.kind === 'questions') {
     const { questions, error } = sanitizeQuestions(a.questions);
     if (error || !questions.length) return null;

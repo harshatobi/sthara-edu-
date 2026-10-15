@@ -1,0 +1,62 @@
+import type { ScriptDef } from './types';
+
+export const scripts: ScriptDef[] = [
+  { n: '01', title: 'Set a grade’s fee structure', role: 'Finance head', perm: 'fees.bill', priority: 'Critical', type: 'Positive', req: ['01'], uat: true,
+    pre: 'Students on roll in Grade 6.', data: '₹96,000 a year in 4 instalments',
+    steps: [
+      ['Admissions & Fees: Fee structure by grade › Grade 6.', 'Students, Annual fee, Instalments and Expected per grade.'],
+      ['ANNUAL FEE (RUPEES) 96000, SPLIT INTO 4.', 'Four instalments, due the 10th of spaced months from April, shares 25% each, ₹24,000 per student.'],
+      ['Change one share so they sum to 90%; save.', 'Refused: shares must sum to 100%.'],
+      ['Put instalment 3 before instalment 2; save.', 'Refused: due dates must run in order within the session.'],
+      ['Restore and save.', 'Saved; Expected = ₹96,000 × students on roll.'],
+    ] },
+  { n: '02', title: 'Raise an instalment and collect it', role: 'Accountant, Cashier', priority: 'Critical', type: 'Positive', req: ['02', '03'], uat: true,
+    pre: 'Structure set.', data: 'Instalment 1; a payment of ₹24,000 by UPI, reference UTR123',
+    steps: [
+      ['Accountant: raise Instalment 1 for Grade 6.', 'One invoice per student; BILLED SO FAR rises.'],
+      ['Cashier: Family accounts › a family › Record payment: 24000, today, UPI, UTR123.', 'Receipt issued; the invoice shows Paid, balance ₹0.'],
+      ['Record 24,000.505.', 'Refused: rupees to at most two decimals ("Enter the amount received, in rupees.").'],
+      ['Record a payment dated tomorrow.', 'Refused: the payment date can’t be in the future.'],
+      ['Day book.', 'Today lists the receipt under UPI.'],
+    ] },
+  { n: '03', title: 'Part payment, void and balance', role: 'Cashier, Finance head', priority: 'Critical', type: 'Positive', req: ['03', '04'], uat: true,
+    pre: 'An invoice of ₹24,000.', data: '₹10,000 cash; then void it',
+    steps: [
+      ['Cashier: record ₹10,000 cash.', 'Part paid; balance ₹14,000.'],
+      ['Finance head: void the invoice.', '"This invoice has receipts against it. Void those receipts first."'],
+      ['Void the receipt with no reason.', '"Give a reason for voiding this receipt."'],
+      ['Void it with a reason.', 'Receipt shows Voided; balance back to ₹24,000 (computed from live receipts).'],
+      ['Void the invoice with a reason; then try to pay it.', 'Cancelled; payment refused: "This invoice was voided."'],
+    ] },
+  { n: '04', title: 'Concession: request, limit, approve', role: 'Accountant, Finance head', priority: 'High', type: 'Positive', req: ['05'], uat: true,
+    pre: 'Invoice ₹24,000 with ₹4,000 paid.', data: 'Sibling concession ₹25,000; then ₹5,000',
+    steps: [
+      ['Accountant: request ₹25,000.', '"The concession can be at most ₹20,000 (the unpaid part of this invoice)."'],
+      ['Request ₹5,000 with no reason.', '"Give a reason for the concession (it appears on the family’s statement)."'],
+      ['Request ₹5,000 "Sibling concession".', 'Listed under Concessions as waiting; the balance is unchanged.'],
+      ['Finance head: reject with a reason; accountant requests again; Finance head approves.', 'Rejected shows the reason; once approved the balance is ₹15,000.'],
+      ['Parent: Fees & Payments.', 'The Concession column shows ₹5,000.'],
+    ] },
+  { n: '05', title: 'Close and reopen the day book', role: 'Accountant, Finance head', priority: 'High', type: 'Positive', req: ['06'],
+    pre: 'Receipts today.', data: 'Cash counted equal to cash receipts',
+    steps: [
+      ['Accountant: Day book › Close day; CASH COUNTED (RUPEES).', 'Closed; totals match the day’s receipts.'],
+      ['Close it again.', 'Refused: already closed.'],
+      ['Finance head: Reopen with no reason.', '"Give a reason for reopening a closed day."'],
+      ['Reopen with "Cheque received on this date was missed".', 'Open again; the reason is recorded.'],
+    ] },
+  { n: '06', title: 'Reminders by tone', role: 'Accountant', perm: 'fees.remind', priority: 'High', type: 'Positive', req: ['07', '10'], uat: true,
+    pre: 'One always-on-time family and one repeat late payer, both overdue.',
+    steps: [
+      ['Stage fee reminders; pick each family.', 'Preview: gentle for the on-time family, firm for the late payer; no emoji; rupee amounts.'],
+      ['Send.', 'Reminded shows today; each verified parent gets an in-app notice.'],
+      ['Send again next week.', 'The tone escalates for the family that ignored it.'],
+    ] },
+  { n: '07', title: 'Ledger, ageing, forecast and export', role: 'Finance head', priority: 'Medium', type: 'Positive', req: ['08', '09'],
+    pre: 'Mixed paid, part-paid and overdue invoices.',
+    steps: [
+      ['Read the tiles and Ageing.', 'BILLED SO FAR, COLLECTED, OUTSTANDING, AVG DAYS LATE agree with the family accounts; ageing buckets by days past due.'],
+      ['Forecast.', 'Month by month: due (invoiced), due (not yet invoiced), collected by receipt date.'],
+      ['Export ledger; open in Excel.', 'Amounts correct; a name beginning with "=" shows as text, not a formula.'],
+    ] },
+];

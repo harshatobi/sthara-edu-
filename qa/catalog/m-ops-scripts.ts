@@ -1,0 +1,88 @@
+import type { ScriptDef } from './types';
+import { A } from './auto';
+
+export const scripts: ScriptDef[] = [
+  { n: '01', title: 'Create a pilot school', role: 'Sthara operator', priority: 'Critical', type: 'Positive', req: ['02', '03', '15'], uat: true,
+    pre: 'Signed in as an operator (lands in Platform Manager › Overview).', data: 'QA Test School; code QATEST1; CBSE; Paid pilot; 40 students',
+    steps: [
+      ['Schools › New school. Type the name and leave the sign-in code.', 'A code is suggested from the name (capitals, digits, hyphen only).'],
+      ['Pick CBSE, tier Paid pilot; check PILOT LENGTH (DAYS).', 'Pilot length starts at the platform default (30). The tier note: "One grade, one term, at full tier price…".'],
+      ['Enter 40 contracted students.', '"Annual value: …(40 students × ₹3,500), when the pilot converts".'],
+      ['Create and set up.', 'The school’s workspace opens: "School created. Set up its classes and subjects next, then add people."'],
+      ['Open Overview.', 'The school is counted; Needs attention lists its setup gaps (classes, subjects, admin).'],
+    ] },
+  { n: '02', title: 'New-school validation: code clash, missing fields, Mandala price', role: 'Sthara operator', priority: 'High', type: 'Negative', req: ['02'],
+    pre: 'QATEST1 exists.', data: 'Code QATEST1 again; code "AB"; Mandala with no price',
+    steps: [
+      ['Create a school with code QATEST1.', '"School code QATEST1 is already in use."'],
+      ['Use the code AB.', 'Refused: a code needs at least 3 letters or digits.'],
+      ['Pick Mandala and leave the price empty.', 'Refused: "Mandala has no list price: set the agreed price per student."'],
+    ] },
+  { n: '03', title: 'Set up classes and subjects', role: 'Sthara operator', priority: 'Critical', type: 'Positive', req: ['03'], uat: true,
+    pre: 'The new school’s workspace › Setup.', data: 'Grade 10, sections A, B; subjects Mathematics, Science, English',
+    steps: [
+      ['Add Grade 10 with sections "A, B".', 'Classes 10-A and 10-B appear.'],
+      ['Add the three subjects to each class.', 'Each class lists its subjects; "Next: add people" is offered.'],
+    ] },
+  { n: '04', title: 'Add people one at a time and by CSV', role: 'Sthara operator', priority: 'Critical', type: 'Positive', req: ['04', '05'], uat: true,
+    pre: 'Classes exist.', data: 'The CSV example (Load example): 1 admin, 1 teacher, 1 student 1042, 1 parent of 1042',
+    auto: [`${A.opsAcc}the downloadable CSV example imports cleanly into a school with its classes`],
+    steps: [
+      ['Add people › One person: a teacher with a name and email.', 'Created; a 12-character temporary password shows once.'],
+      ['Bulk import (CSV) › Load example; import.', 'Four accounts; each has its own temporary password, shown once. The parent is linked to roll number 1042.'],
+      ['Reload the page.', 'Passwords are not shown again (never stored).'],
+      ['Who teaches what: give the teacher 10-A Mathematics and class teacher of 10-A; Save.', '"Every class subject has a teacher" once all are assigned.'],
+    ] },
+  { n: '05', title: 'CSV rows with problems are refused, row by row', role: 'Sthara operator', priority: 'High', type: 'Negative', req: ['04'],
+    pre: 'Classes 10-A, 10-B.', data: 'Rows: class 9-C; a duplicate email; a missing roll number; a parent of roll 999; an email already in use',
+    auto: [`${A.opsAcc}every row problem is reported against its row and field`],
+    steps: [
+      ['Paste the rows and import.', 'Nothing is created. Each problem is listed by row and field, e.g. "Class "9-C" isn’t set up for this school yet", "Same email as row 1", "Students need an admission / roll number", "No student with roll number "999"", "An account with this email already exists".'],
+    ] },
+  { n: '06', title: 'Approve and reject a school’s login request', role: 'Sthara operator, School admin', priority: 'Critical', type: 'Positive', req: ['08'], uat: true,
+    pre: 'The school admin has sent two requests (User Directory › Request logins).', data: 'Request 1: two teachers. Request 2: one teacher',
+    steps: [
+      ['Operator: Login requests › Waiting: open request 1; Approve.', 'Accounts are created; temporary passwords show once to the operator; the request moves to Decided.'],
+      ['Operator: open request 2; Reject with no note.', 'Refused: "Say why, for the school (they see this note)."'],
+      ['Reject with a note.', 'Decided; the school admin sees the note on their request.'],
+      ['Two operators decide the same request at once.', 'The second gets "Someone else just decided this request."'],
+    ] },
+  { n: '07', title: 'Delete a person and a school: reasons and refusals', role: 'Sthara operator', priority: 'Critical', type: 'Negative', req: ['07'],
+    pre: 'A test school whose only admin is A; a student with a fee receipt.', data: 'Reason "abc" (too short); reason "Left the school in June"',
+    steps: [
+      ['Delete the school’s only school admin.', 'Refused by the database: a school keeps at least one school admin.'],
+      ['Delete the student who has a fee receipt.', 'Refused: fee records are kept.'],
+      ['Delete a teacher with reason "abc".', '"Give a reason for deleting the account (at least 4 characters)."'],
+      ['Delete them with a proper reason.', 'Removed; the audit log shows the deletion with a snapshot of what was removed.'],
+    ] },
+  { n: '08', title: 'Change a platform setting (AI switch), with reason and history', role: 'Sthara operator', priority: 'Critical', type: 'Positive', req: ['10'], uat: true,
+    pre: 'A student and a teacher are signed in elsewhere.', data: 'AI features off, reason "Gemini outage test"',
+    steps: [
+      ['Platform settings: switch AI features off without a reason.', '"Give a reason for the change (at least 4 characters)."'],
+      ['Add the reason; save.', 'Saved; History shows who, when, the change and the reason.'],
+      ['Within 30 seconds, the student starts an AI tutor session; the teacher asks the Copilot.', 'Both get a clear "paused" message; no AI call is made (AI usage shows none).'],
+      ['Switch AI back on, with a reason.', 'Both work again.'],
+    ] },
+  { n: '09', title: 'Error log: test error, grouping, resolve', role: 'Sthara operator', priority: 'High', type: 'Positive', req: ['12', '13'],
+    pre: 'Operator access.',
+    steps: [
+      ['Error log › Send a test error.', 'One logged error and one server failure appear (Server and Browser), each grouped.'],
+      ['Open a group; Mark resolved with a note.', 'Status Resolved; the note is saved.'],
+      ['Check an error’s text.', 'No tokens, emails, phone numbers or passwords appear (scrubbed).'],
+      ['System health.', 'Every check is listed with a status; "Every critical check passes" on a healthy setup.'],
+    ] },
+  { n: '10', title: 'School edits: reason, code clash, two operators at once', role: 'Sthara operator', priority: 'High', type: 'Negative', req: ['16', '14'],
+    pre: 'Two operators have the same school open.',
+    steps: [
+      ['Operator 1 changes the tier with a reason; saves.', 'Saved; the school’s "Changes made in this console" lists it.'],
+      ['Operator 2 (page not reloaded) changes the seats; saves.', '"Someone else changed this school a moment ago. Reload and try again."'],
+      ['Change the code to another school’s code.', '"Code <X> is already used by <school>."'],
+      ['Audit log: filter by the school; Export CSV.', 'The changes are listed with reasons; the CSV downloads.'],
+    ] },
+  { n: '11', title: 'Enquiry to school', role: 'Sthara operator', priority: 'Medium', type: 'Positive', req: ['09'],
+    pre: 'An enquiry sent from the website contact form.',
+    steps: [
+      ['Enquiries: find it; add an internal note; Save note.', 'Saved; the enquirer is never sent it.'],
+      ['Create school from it.', 'The New school form says "From a website enquiry"; once created the enquiry is marked qualified.'],
+    ] },
+];

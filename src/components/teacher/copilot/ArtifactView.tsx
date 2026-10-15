@@ -18,6 +18,7 @@ import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { writeCopilotSeed } from './handoff';
 import LabArtifact from './LabArtifact';
 import { DiagramArtifact, ImageArtifact } from './VisualArtifacts';
+import PaperArtifact from './PaperArtifact';
 import { engineById, scenePredictions } from '@/lib/lab/registry';
 
 const LETTERS = 'ABCDEF';
@@ -43,6 +44,7 @@ export function artifactText(a: Artifact): string {
   if (a.kind === 'rubric') return [a.title, ...a.criteria.map(c => `${c.name}\n${c.levels.map(l => `  ${l.label} (${l.points}): ${l.descriptor}`).join('\n')}`)].join('\n\n');
   if (a.kind === 'bundle') return [a.title, ...a.parts.map(p => artifactText(p))].join('\n\n────────\n\n');
   if (a.kind === 'diagram') return [a.title, a.caption].filter(Boolean).join('\n');
+  if (a.kind === 'paper') return [a.title, ...a.paper.sections.flatMap(s => [`SECTION ${s.id} ${s.title}`, ...s.questions.map(q => `${q.q}. ${q.text || q.assertion || q.passage || ''} (${q.marks})`)])].join('\n');
   if (a.kind === 'image') return [a.title, a.caption, `Picture: ${a.prompt}`].filter(Boolean).join('\n');
   if (a.kind === 'lab') {
     const e = engineById(a.scene.engine);
@@ -103,6 +105,7 @@ export default function ArtifactView({ artifact: a, cls, subject, onRefine, onTo
 
   if (a.kind === 'lab') return <LabArtifact a={a} sample={sample} onRefine={onRefine} />;
   if (a.kind === 'diagram') return <DiagramArtifact a={a} sample={sample} />;
+  if (a.kind === 'paper') return <PaperArtifact a={a} onRefine={onRefine} />;
   if (a.kind === 'image') return <ImageArtifact a={a} cls={cls} subject={subject} sample={sample} onChange={onChange} />;
   if (a.kind === 'bundle') {
     return (

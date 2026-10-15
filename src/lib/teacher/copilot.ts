@@ -11,10 +11,12 @@
 import { sanitizeQuestions, type Question } from './questions';
 import { validateScene, type LabScene } from '@/lib/lab/registry';
 import { sanitizeSvg } from './svg';
+import { checkPaper, type Paper } from '@/lib/papers/paper';
+import { designsFor } from '@/lib/papers/designs';
 
 export type StudioKind =
   | 'worksheet' | 'quiz' | 'remedial' | 'lesson' | 'rubric' | 'answer_key'
-  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo' | 'misconceptions' | 'bundle' | 'diagram' | 'illustration';
+  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo' | 'misconceptions' | 'bundle' | 'diagram' | 'illustration' | 'board_paper';
 
 export type StudioGroup = 'students' | 'you' | 'parents';
 export interface StudioType {
@@ -43,6 +45,7 @@ export const STUDIO: StudioType[] = [
   { kind: 'illustration', label: 'Illustration', blurb: 'A picture for a scene or real-world context (you choose to generate it)', group: 'you', needsChapter: false, seconds: 8 },
   { kind: 'misconceptions', label: 'Fix misconceptions', blurb: 'What they got wrong, why, and what will fix it', group: 'you', needsChapter: false, seconds: 15 },
   { kind: 'lab_demo', label: 'Live lab demo', blurb: 'A simulation for the board, with predictions', group: 'you', needsChapter: true, seconds: 10 },
+  { kind: 'board_paper', label: 'Board exam paper', blurb: 'A full paper in the CBSE 2026-27 pattern, with marking scheme', group: 'students', needsChapter: false, seconds: 90 },
   { kind: 'parent_note', label: 'Parent note', blurb: 'Warm, specific, one thing to do at home', group: 'parents', needsChapter: false, who: 'one', seconds: 8 },
 ];
 
@@ -65,12 +68,15 @@ export type Artifact =
   | { kind: 'diagram'; title: string; caption: string; svg: string }
   /** An illustration. The model writes the prompt; the teacher generates it (it costs money), then `path` is set. */
   | { kind: 'image'; title: string; prompt: string; caption: string; path: string | null }
+  /** A full board-pattern paper: every question checked against the official design before it arrives. */
+  | { kind: 'paper'; title: string; paper: Paper }
   /** Everything for one period in one go; each part is checked like a standalone artifact. */
   | { kind: 'bundle'; title: string; parts: Exclude<Artifact, { kind: 'bundle' }>[] };
 
 /** Studio types that only make sense for some subjects (the Live Lab covers science). */
 export const isScienceSubject = (subject: string) => /science|physics|chemistry/i.test(subject);
-export const studioFor = (subject: string) => STUDIO.filter(t => t.kind !== 'lab_demo' || isScienceSubject(subject));
+export const studioFor = (subject: string, cls = '') => STUDIO.filter(t =>
+  (t.kind !== 'lab_demo' || isScienceSubject(subject)) && (t.kind !== 'board_paper' || designsFor(cls, subject).length > 0));
 
 export interface CopilotReply { say: string; ask: AskItem[]; artifact: Artifact | null; suggestions: string[] }
 
@@ -126,6 +132,11 @@ function artifactOf(a: any, nested = false): Artifact | null {
     const flat = a.scene && typeof a.scene === 'object' ? { ...a.scene, title: s(a.title, 200) || a.scene.title } : a;
     const scene = validateScene({ ...flat, title: s(flat.title, 200) || title });
     return scene ? { kind: 'lab', title: scene.title, scene } : null;
+  }
+  if (a.kind === 'paper') {
+    if (nested) return null;
+    const paper = checkPaper(a.paper);
+    return paper ? { kind: 'paper', title: paper.title, paper } : null;
   }
   if (a.kind === 'diagram') {
     const svg = sanitizeSvg(a.svg);

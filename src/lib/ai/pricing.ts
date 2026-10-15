@@ -51,6 +51,7 @@ export const AI_FEATURES = {
   paperGen:         { label: 'Question paper generator', who: 'Teacher' },
   copilot:          { label: 'Teaching copilot', who: 'Teacher' },
   copilotImage:     { label: 'Copilot illustrations', who: 'Teacher' },
+  boardPaper:       { label: 'Board exam papers', who: 'Teacher' },
   lessonDraft:      { label: 'Lesson plan drafting', who: 'Teacher' },
   captureGrade:     { label: 'Capture & AI grading', who: 'Teacher' },
   homeworkGrade:    { label: 'Homework photo grading', who: 'Student' },

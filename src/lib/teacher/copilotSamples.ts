@@ -11,6 +11,15 @@ export const SAMPLE_CONTEXT = 'Class 9 Science · Cell';
 export const sampleContext = (k: StudioKind) => (k === 'lab_demo' ? 'Class 9 Science · Force and Laws of Motion' : SAMPLE_CONTEXT);
 
 const BASE: Omit<Record<StudioKind, Artifact>, 'bundle'> = {
+  board_paper: {
+    kind: 'document', title: 'What a board paper looks like (Class X Science)', audience: 'teacher',
+    markdown: [
+      '**39 questions, 80 marks, 3 hours**, in the three sections of CBSE\'s 2026-27 sample paper: A Biology (30), B Chemistry (25), C Physics (25).',
+      'Each section has its multiple-choice and assertion–reason questions, 2-, 3- and 5-mark answers and a 4-mark case study, with internal choices where the board puts them, and a separate question for visually impaired candidates wherever there is a figure.',
+      'Chapters are weighted as the syllabus weights them (for example 12 marks from Light, 13 from Electricity and Magnetism) and chapters assessed only internally are left out.',
+      'You get the paper and a separate marking scheme with value points, each ready to print.',
+    ].join('\n\n'),
+  },
   diagram: {
     kind: 'diagram', title: 'A plant cell', caption: 'The parts a plant cell has that an animal cell does not: cell wall, chloroplasts, large vacuole.',
     svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500"><rect x="190" y="70" width="420" height="360" rx="28" fill="#ECFDF5" stroke="#166534" stroke-width="6"/><rect x="204" y="84" width="392" height="332" rx="22" fill="#F0FDF4" stroke="#15803D" stroke-width="2"/><rect x="300" y="170" width="200" height="170" rx="40" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="2"/><circle cx="530" cy="150" r="38" fill="#E9D5FF" stroke="#6B21A8" stroke-width="2"/><circle cx="530" cy="150" r="13" fill="#6B21A8"/><ellipse cx="255" cy="140" rx="26" ry="14" fill="#86EFAC" stroke="#166534" stroke-width="2"/><ellipse cx="260" cy="370" rx="26" ry="14" fill="#86EFAC" stroke="#166534" stroke-width="2"/><ellipse cx="545" cy="370" rx="26" ry="14" fill="#86EFAC" stroke="#166534" stroke-width="2"/><line x1="610" y1="250" x2="690" y2="250" stroke="#000" stroke-width="2"/><text x="696" y="255" font-size="16">Cell wall</text><line x1="596" y1="300" x2="690" y2="300" stroke="#000" stroke-width="2"/><text x="696" y="305" font-size="16">Cell membrane</text><line x1="568" y1="150" x2="690" y2="150" stroke="#000" stroke-width="2"/><text x="696" y="155" font-size="16">Nucleus</text><line x1="229" y1="140" x2="110" y2="140" stroke="#000" stroke-width="2"/><text x="104" y="145" font-size="16" text-anchor="end">Chloroplast</text><line x1="300" y1="255" x2="110" y2="255" stroke="#000" stroke-width="2"/><text x="104" y="260" font-size="16" text-anchor="end">Vacuole</text><line x1="400" y1="430" x2="400" y2="470" stroke="#000" stroke-width="2"/><text x="400" y="490" font-size="16" text-anchor="middle">Cytoplasm</text></svg>',

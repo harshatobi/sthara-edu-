@@ -37,6 +37,7 @@ export const RATE_LIMITS = {
   feed:            { limit: 120, windowMs: MIN,      per: 'user',    route: '/api/feed',                    label: 'Situational feed, attendance and incidents' },
   copilot:         { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/copilot',         label: 'Teaching copilot' },
   copilotImage:    { limit: 12,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/copilot/image',   label: 'Copilot illustrations' },
+  boardPaper:      { limit: 6,   windowMs: 60 * MIN, per: 'user',    route: '/api/teacher/copilot',         label: 'Board exam papers (Copilot)' },
   lessons:         { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons',         label: 'Lesson plan writes' },
   lab:             { limit: 60,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lab',             label: 'Live Lab saved demos' },
   lessonDraft:     { limit: 12,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons/draft',   label: 'Lesson plan drafting' },

@@ -9,13 +9,15 @@ import { topicKey } from '@/lib/teacher/desk';
 import { isScienceSubject, parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
 import { enginesFor, labCatalogue } from '@/lib/lab/registry';
 import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconceptions';
+import { designByKey, designsFor } from '@/lib/papers/designs';
+import { generatePaper } from '@/lib/papers/generate';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
 import { byIds, pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
-// A lesson bundle or a board paper is a long reply; give it room.
-export const maxDuration = 180;
+// A lesson bundle is a long reply, and a board paper writes its sections in parallel with one retry each.
+export const maxDuration = 300;
 
 const str = (v: unknown, n = 4000) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 
@@ -49,6 +51,32 @@ export async function POST(req: NextRequest) {
   if (aiBlocked) return aiBlocked;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
+
+  // A board paper is its own job: the design fixes every question, so the class brief isn't needed.
+  if (studioKind === 'board_paper') {
+    if (!checkRateLimit(`boardPaper:${staff.id}`, ...limitOf('boardPaper')).allowed) {
+      return NextResponse.json({ error: 'That’s several papers in a short time. Try again in a little while.' }, { status: 429 });
+    }
+    const options = designsFor(cls, subject);
+    const design = options.find(d => d.key === b?.studio?.design) ?? options[0];
+    const cur = getCurriculum(cls, subject);
+    if (!design || !cur) return NextResponse.json({ error: `There's no board paper design for ${subject} in ${cls} yet.` }, { status: 400 });
+    try {
+      const paper = await generatePaper(new GoogleGenAI({ apiKey }), design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, Math.floor(Math.random() * 1e9));
+      const total = paper.sections.reduce((n, sec) => n + sec.questions.length, 0);
+      return NextResponse.json({
+        reply: {
+          say: `Here is a full ${design.subject}${design.variant ? ` (${design.variant})` : ''} practice paper in the CBSE 2026-27 board pattern: ${total} questions, ${design.maxMarks} marks, with its marking scheme. Every question was checked against the board design; please read it through before you use it.`,
+          ask: [], artifact: { kind: 'paper', title: paper.title, paper },
+          suggestions: ['Make a revision worksheet on the weakest chapter', 'Plan the revision lessons before the exam'],
+        },
+        context: { students: 0, chaptersWithEvidence: 0, assignments: 0 },
+      });
+    } catch (e: any) {
+      console.error('[copilot paper]', e?.message);
+      return NextResponse.json({ error: 'The paper didn’t come out in the board’s shape this time. Try again; each try writes it afresh.' }, { status: 502 });
+    }
+  }
 
   // ── The brief: this class + subject, from the database ────────────────────
   const [{ data: users }, { data: assignments }, { data: progress }, { data: lessons }] = await Promise.all([

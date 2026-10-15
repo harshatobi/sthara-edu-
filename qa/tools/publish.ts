@@ -102,7 +102,8 @@ async function main() {
   const body = {
     startedAt, finishedAt: new Date().toISOString(), machine: os.hostname(),
     git: { commit: git('rev-parse', 'HEAD'), branch: git('branch', '--show-current'), dirty: git('status', '--porcelain', '--', '.', ':!qa').length > 0 },
-    target: env('E2E_BASE_URL') || 'http://localhost:3100',
+    // Where the browser tests pointed; none when this run had no browser stage (--quick).
+    target: stages.some(x => /^E2E/.test(x.name)) ? env('E2E_BASE_URL') || 'http://localhost:3100' : null,
     stages, totals, failures,
     files: files.map(f => ({ name: f.name, size: fs.statSync(f.from).size })),
   };

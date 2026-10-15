@@ -27,6 +27,20 @@ npm install
 The pack lives in the app's repo (`qa/`) and tests the app around it; set `STHARA_APP_DIR` to test another checkout. Browser tests use your
 installed Google Chrome (no download); `E2E_BROWSER=chromium` uses Playwright’s own.
 
+## Runs in the ops console
+
+Every `bash run-regression.sh` ends by uploading the run to **Platform Manager > Quality**: each stage's result and time,
+the test counts, the failing tests, and the files it wrote (the five workbooks, JUnit and Playwright results, stage logs).
+To switch it on for a machine, create an upload token there (director or engineer), then add to `qa/e2e.env`:
+
+```
+QA_UPLOAD_URL=https://www.sthara.in
+QA_UPLOAD_TOKEN=sqa_...
+```
+
+A token can only upload runs. Results are kept for good; files for 90 days unless the run is pinned. Uploading never
+changes the run's result. (A protected Vercel preview also needs `VERCEL_OIDC_TOKEN` from `vercel env pull`.)
+
 ## Run
 
 ```bash

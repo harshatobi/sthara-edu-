@@ -55,7 +55,7 @@ export default function QualityConsole() {
   }, [api, nonce]);
 
   const runs = useMemo(() => (data?.runs ?? []).filter(r => !target || targetOf(r.target) === target), [data, target]);
-  const targets = useMemo(() => [...new Set((data?.runs ?? []).map(r => targetOf(r.target)))], [data]);
+  const targets = useMemo(() => [...new Set((data?.runs ?? []).filter(r => r.target).map(r => targetOf(r.target)))], [data]);
   const done = runs.filter(r => r.status !== 'uploading');
   const last = done[0] ?? null;
   const recent = done.slice(0, 30);
@@ -71,7 +71,7 @@ export default function QualityConsole() {
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         <Kpi label="LAST RUN" value={last ? STATUS[last.status].t : '—'} tone={last ? (last.status === 'pass' ? 'g' : 'r') : undefined}
-          note={last ? `${fmtDateTime(last.started_at)} · ${targetOf(last.target)}` : 'No runs yet'} />
+          note={last ? `${fmtDateTime(last.started_at)}${last.target ? ` · browser tests on ${targetOf(last.target)}` : ''}` : 'No runs yet'} />
         <Kpi label="PASS RATE" value={passRate === null ? '—' : `${passRate}%`} note={recent.length ? `last ${plural(recent.length, 'run')}` : 'No runs yet'} tone={passRate === null ? undefined : passRate >= 90 ? 'g' : passRate >= 60 ? 'a' : 'r'} />
         <Kpi label="UNIT TESTS" value={unit ? num(unit.pass) : '—'} note={unit ? `${num(unit.fail)} failing · ${num(unit.skip)} skipped` : 'in the last run'} tone={unit?.fail ? 'r' : undefined} />
         <Kpi label="BROWSER TESTS" value={e2e ? num(e2e.pass) : '—'} note={e2e ? `${num(e2e.fail)} failing${e2e.flaky ? ` · ${num(e2e.flaky)} flaky` : ''}` : 'in the last run'} tone={e2e?.fail ? 'r' : undefined} />
@@ -88,15 +88,16 @@ export default function QualityConsole() {
           : !runs.length ? <Empty icon={<Flask size={26} weight="duotone" />} title="No runs yet">
             {data.can.manage ? 'Create an upload token below, put it in qa/e2e.env, and the next bash qa/run-regression.sh lands here.' : 'Runs appear here once the test pack uploads them.'}
           </Empty> : (
-            <Table head={<tr><th>Started</th><th>Result</th>{cols.map(c => <th key={c} title={c} style={{ fontSize: 10.5 }}>{c.replace(/^App /, '').replace(/^E2E /, 'Browser: ')}</th>)}<th>Commit</th><th>Where</th></tr>}>
+            <Table head={<tr><th>Started</th><th>Result</th><th>Stages</th><th className="c">Tests</th><th>Commit</th><th>Browser tests</th></tr>}>
               {runs.slice(0, 60).map(r => (
                 <tr key={r.id} className="hr-row" tabIndex={0} style={{ cursor: 'pointer', background: open === r.id ? 'var(--body)' : undefined }}
                   onClick={() => setOpen(o => (o === r.id ? null : r.id))} onKeyDown={e => { if (e.key === 'Enter') setOpen(o => (o === r.id ? null : r.id)); }}>
                   <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(r.started_at)}{r.pinned && <PushPin size={13} weight="fill" style={{ marginLeft: 6, verticalAlign: -2 }} aria-label="Pinned" />}</td>
                   <td><Chip tone={STATUS[r.status].tone}>{STATUS[r.status].t}</Chip></td>
-                  {cols.map(c => { const st = r.stages.find(x => x.name === c); return <td key={c} className="c">{st ? <Chip tone={CELL[st.status]}>{st.status}</Chip> : <span className="muted">·</span>}</td>; })}
+                  <td><StageStrip stages={r.stages} cols={cols} /></td>
+                  <td className="c" style={{ whiteSpace: 'nowrap' }}>{(() => { const t = Object.values(r.totals); const pass = t.reduce((n, c) => n + c.pass, 0), fail = t.reduce((n, c) => n + c.fail, 0); return t.length ? <>{num(pass)}{fail > 0 && <span style={{ color: 'var(--red)', fontWeight: 800 }}> · {num(fail)} failed</span>}</> : <span className="muted">—</span>; })()}</td>
                   <td className="mono" style={{ fontSize: 12 }}>{short(r.git_commit) ?? '—'}{r.git_dirty ? '*' : ''}<div className="muted" style={{ fontSize: 11 }}>{r.git_branch}</div></td>
-                  <td className="muted">{targetOf(r.target)}</td>
+                  <td className="muted">{r.target ? targetOf(r.target) : 'not run'}</td>
                 </tr>
               ))}
             </Table>
@@ -106,6 +107,20 @@ export default function QualityConsole() {
       {open && <RunPanel key={open} id={open} manage={!!data?.can.manage} fileDays={data?.fileDays ?? 90} onChanged={load} onClose={() => setOpen(null)} />}
       {data?.can.manage && data.tokens && <Tokens tokens={data.tokens} onChanged={load} />}
     </>
+  );
+}
+
+/** One square per stage, in run order, coloured by result; the name and result on hover. */
+function StageStrip({ stages, cols }: { stages: Stage[]; cols: string[] }) {
+  const color: Record<Stage['status'], string> = { PASS: '#10B981', FAIL: 'var(--red)', WARN: '#F59E0B', SKIP: '#CBD5E1' };
+  const failed = stages.filter(s => s.status === 'FAIL').length;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 3 }} role="img" aria-label={`${stages.length - failed} of ${stages.length} stages passed`}>
+        {cols.map(c => { const s = stages.find(x => x.name === c); return <span key={c} title={s ? `${c}: ${s.status}` : `${c}: not run`} style={{ width: 11, height: 11, borderRadius: 3, background: s ? color[s.status] : 'transparent', border: s ? 'none' : '1px dashed #CBD5E1' }} />; })}
+      </div>
+      <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{failed ? `${failed} failed` : `${stages.length}/${stages.length}`}</span>
+    </div>
   );
 }
 

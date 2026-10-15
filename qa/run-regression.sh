@@ -17,13 +17,18 @@ for a in "$@"; do case "$a" in --demo) DEMO=1 ;; --quick) QUICK=1 ;; esac; done
 export STHARA_APP_DIR="$APP"
 mkdir -p "$QA/reports/logs"
 NAMES=(); RESULTS=()
+# For the ops console upload (tools/publish.ts): when the run started, and each stage's result and time.
+RUN_STARTED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+STAGES="$QA/reports/stages.tsv"; : > "$STAGES"
 
 stage() { # stage "name" command...
   local name="$1"; shift
   local log="$QA/reports/logs/$(echo "$name" | tr ' /' '__').log"
   printf '\n▶ %s\n' "$name"
+  local t0; t0=$(date +%s)
   if "$@" >"$log" 2>&1; then RESULTS+=("PASS"); printf '  PASS\n'; else RESULTS+=("FAIL"); printf '  FAIL (see %s)\n' "$log"; tail -15 "$log" | sed 's/^/    /'; fi
   NAMES+=("$name")
+  printf '%s\t%s\t%s\n' "$name" "${RESULTS[${#RESULTS[@]}-1]}" "$(( $(date +%s) - t0 ))" >> "$STAGES"
 }
 
 echo "App under test: $APP ($(git -C "$APP" rev-parse --short HEAD 2>/dev/null) on $(git -C "$APP" branch --show-current 2>/dev/null))"
@@ -65,9 +70,13 @@ else
   NAMES+=("App unchanged during run"); RESULTS+=("PASS")
 fi
 
+printf '%s\t%s\t\n' "${NAMES[${#NAMES[@]}-1]}" "${RESULTS[${#RESULTS[@]}-1]}" >> "$STAGES"
+
 echo; echo "════════ Regression summary ════════"
 FAILS=0
 for i in "${!NAMES[@]}"; do printf '  %-4s  %s\n' "${RESULTS[$i]}" "${NAMES[$i]}"; [ "${RESULTS[$i]}" = FAIL ] && FAILS=$((FAILS+1)); done
 echo "Reports: $QA/reports (playwright HTML: npm run report; JUnit: reports/junit)"
 [ "$FAILS" = 0 ] && echo "ALL GREEN" || echo "$FAILS stage(s) failed"
+# Send the run to the ops console (Platform Manager > Quality). Never changes this script's result.
+(cd "$QA" && npx tsx tools/publish.ts "$RUN_STARTED") || true
 exit "$FAILS"

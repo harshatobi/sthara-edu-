@@ -49,6 +49,8 @@ export const CAPABILITIES = [
   'marketing.read',    // campaigns, spend and what a lead costs
   'marketing.manage',  // add campaigns and record spend
   'debug.manage',      // resend a failed message, run a job now
+  'qa.read',           // test runs, failing tests and the test workbooks
+  'qa.manage',         // pin and delete runs, issue and revoke the test pack's upload tokens
 ] as const;
 export type Capability = typeof CAPABILITIES[number];
 
@@ -83,13 +85,13 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
     label: 'Support', reach: 'all',
     note: 'Helps any school: accounts, family links, roster fixes, login requests.',
     can: ['schools.read', 'schools.manage', 'accounts.delete', 'people.search', 'requests.manage', 'errors.read', 'health.read', 'audit.read', 'breakglass', 'debug.read',
-      'crm.read', 'crm.write', 'desk.read', 'desk.work'],
+      'crm.read', 'crm.write', 'desk.read', 'desk.work', 'qa.read'],
   },
   engineer: {
     label: 'Engineer', reach: 'all',
     note: 'Diagnoses the platform: errors, health, AI usage, requests, jobs. Can switch a feature off for a school; changes nothing else.',
     can: ['schools.read', 'schools.switches', 'people.search', 'errors.read', 'errors.manage', 'health.read', 'usage.read', 'settings.read', 'audit.read', 'breakglass',
-      'debug.read', 'debug.manage', 'crm.read', 'desk.read', 'desk.work'],
+      'debug.read', 'debug.manage', 'crm.read', 'desk.read', 'desk.work', 'qa.read', 'qa.manage'],
   },
   finance: {
     label: 'Finance', reach: 'all',

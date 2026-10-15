@@ -78,7 +78,8 @@ function guardOf(route: string, src: string): { guard: Guard; perms: string[] } 
   if (/operatorFromRequest\(|operatorFor\(/.test(src)) return { guard: 'operator', perms: [] };
   if (/CRON_SECRET/.test(src)) return { guard: 'cron', perms: [] };
   if (/x-hub-signature-256/.test(src)) return { guard: 'meta', perms: [] };
-  if (/x-device-token/.test(src)) return { guard: 'device', perms: [] };
+  // Machine credentials: biometric devices, and the test pack uploading its runs (qaCaller, x-qa-token).
+  if (/x-device-token|x-qa-token|qaCaller\(/.test(src)) return { guard: 'device', perms: [] };
   if (/requireAdmin\(/.test(src)) return { guard: 'office', perms: all };
   if (/requireParent\(/.test(src)) return { guard: 'parent', perms: [] };
   if (/requireFeedCaller\(/.test(src)) return { guard: 'feed', perms: [] };

@@ -7,6 +7,7 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
+import { aiFailure, withRetry } from '@/lib/ai/retry';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 90;
@@ -50,11 +51,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const res = await generateMetered(ai, {
+    const res = await withRetry(() => generateMetered(ai, {
       model: AI_MODELS.image,
       contents: [{ role: 'user', parts: [{ text: framed }] }],
       config: { responseModalities: ['TEXT', 'IMAGE'] },
-    }, { feature: 'copilotImage', userId: staff.id, schoolId: staff.schoolId });
+    }, { feature: 'copilotImage', userId: staff.id, schoolId: staff.schoolId }), { tries: 2 });
     const part = res.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data && /^image\//.test(p.inlineData.mimeType ?? ''));
     if (!part?.inlineData?.data) return NextResponse.json({ error: 'No picture came back. Try describing it differently.' }, { status: 502 });
 
@@ -66,7 +67,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ path, url: link?.signedUrl ?? null });
   } catch (e: any) {
     console.error('[copilot image]', e?.message);
-    return NextResponse.json({ error: 'The picture couldn’t be made. Try again, or describe it differently.' }, { status: 502 });
+    const kind = aiFailure(e);
+    return NextResponse.json({
+      error: kind === 'quota' ? 'Pictures need a paid Gemini plan, and the school’s quota with Google is used up or not enabled. Your Sthara administrator needs to check the Gemini plan and billing.'
+        : kind === 'busy' ? 'Google’s image model is overloaded right now. Try again in a few minutes.'
+          : 'The picture couldn’t be made. Try again, or describe it differently.',
+      code: kind,
+    }, { status: kind === 'quota' ? 429 : kind === 'busy' ? 503 : 502 });
   }
 }
 

@@ -11,6 +11,7 @@ import { enginesFor, labCatalogue } from '@/lib/lab/registry';
 import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconceptions';
 import { designByKey, designsFor } from '@/lib/papers/designs';
 import { generatePaper } from '@/lib/papers/generate';
+import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
 import { byIds, pageAll } from '@/lib/ops/page';
@@ -74,7 +75,13 @@ export async function POST(req: NextRequest) {
       });
     } catch (e: any) {
       console.error('[copilot paper]', e?.message);
-      return NextResponse.json({ error: 'The paper didn’t come out in the board’s shape this time. Try again; each try writes it afresh.' }, { status: 502 });
+      const kind = aiFailure(e);
+      return NextResponse.json({
+        error: kind === 'busy' ? 'Google’s AI is overloaded right now, even after several retries. Try again in a few minutes.'
+          : kind === 'quota' ? 'The school’s AI quota with Google has run out, so the paper couldn’t be written. Your Sthara administrator needs to check the Gemini plan and billing.'
+            : 'The paper didn’t come out in the board’s shape this time. Try again; each try writes it afresh.',
+        code: kind,
+      }, { status: kind === 'quota' ? 429 : kind === 'busy' ? 503 : 502 });
     }
   }
 

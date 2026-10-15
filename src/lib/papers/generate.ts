@@ -3,6 +3,7 @@ import type { GoogleGenAI } from '@google/genai';
 import type { CurriculumSubject } from '@/lib/curriculum/types';
 import { generateMetered, type UsageMeta } from '@/lib/ai/usage';
 import { AI_MODELS } from '@/lib/settings/limits';
+import { pooled, withRetry } from '@/lib/ai/retry';
 import { buildBlueprint, type BlueprintItem } from './blueprint';
 import { paperTitle, readSection, type Paper, type PaperSection } from './paper';
 import type { PaperDesign, QType } from './designs';
@@ -66,10 +67,11 @@ Reply with ONE JSON object only: {"questions":[ … one object per slot, in orde
 async function writeSection(ai: GoogleGenAI, design: PaperDesign, section: { id: string; title: string }, items: BlueprintItem[], meta: UsageMeta): Promise<PaperSection> {
   const prompt = sectionPrompt(design, section, items);
   const ask = async (contents: { role: 'user' | 'model'; parts: { text: string }[] }[]) => {
-    const res = await generateMetered(ai, {
-      model: AI_MODELS.standard, contents,
+    // When Gemini Flash is overloaded, wait and retry; the last try goes to Pro, which has its own capacity.
+    const res = await withRetry(attempt => generateMetered(ai, {
+      model: attempt >= 2 ? AI_MODELS.deep : AI_MODELS.standard, contents,
       config: { responseMimeType: 'application/json', temperature: 0.6, maxOutputTokens: 32000 },
-    }, meta);
+    }, meta), { tries: 3 });
     const text = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();
     let raw: unknown = null;
     try { raw = JSON.parse(text); } catch { /* reported below as missing questions */ }
@@ -88,6 +90,7 @@ async function writeSection(ai: GoogleGenAI, design: PaperDesign, section: { id:
 
 export async function generatePaper(ai: GoogleGenAI, design: PaperDesign, cur: CurriculumSubject, meta: UsageMeta, seed: number): Promise<Paper> {
   const plan = buildBlueprint(design, cur, seed);
-  const sections = await Promise.all(design.sections.map(sec => writeSection(ai, design, sec, plan.filter(i => i.section === sec.id), meta)));
+  // Two sections at a time: all at once trips Gemini's per-minute limits and makes overload worse.
+  const sections = await pooled(design.sections.map(sec => () => writeSection(ai, design, sec, plan.filter(i => i.section === sec.id), meta)), 2);
   return { design: design.key, title: paperTitle(design), seed, sections };
 }

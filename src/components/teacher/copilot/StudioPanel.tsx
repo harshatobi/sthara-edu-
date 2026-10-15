@@ -16,6 +16,8 @@ import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import { CrosshairIcon as Crosshair } from '@phosphor-icons/react/dist/ssr/Crosshair';
 import { StackIcon as Stack } from '@phosphor-icons/react/dist/ssr/Stack';
+import { ShapesIcon as Shapes } from '@phosphor-icons/react/dist/ssr/Shapes';
+import { ImageIcon as ImageGlyph } from '@phosphor-icons/react/dist/ssr/Image';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import type { CourseChapter } from '@/lib/curriculum';
@@ -38,6 +40,8 @@ export const STUDIO_LOOK: Record<StudioKind, { icon: PhosphorIcon; color: string
   lab_demo: { icon: Flask, color: '#7C5CFC' },
   misconceptions: { icon: Crosshair, color: '#E11D48' },
   bundle: { icon: Stack, color: '#0F766E' },
+  diagram: { icon: Shapes, color: '#2563EB' },
+  illustration: { icon: ImageGlyph, color: '#DB2777' },
 };
 
 export interface StudioRequest {

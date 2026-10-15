@@ -291,7 +291,8 @@ export default function Copilot() {
                       {t.reply?.ask.length ? <AskCard items={t.reply.ask} disabled={!!sending || idx !== turns.length - 1} onAnswer={a => send(a)} /> : null}
                       {t.reply?.artifact && (
                         <ArtifactView artifact={t.reply.artifact} cls={active?.cls ?? cls} subject={active?.subject ?? subject} targets={t.targets ?? []} onToast={toast}
-                          onRefine={r => send(`${r} — revise the ${t.reply!.artifact!.kind === 'questions' ? 'questions' : t.reply!.artifact!.kind === 'lesson' ? 'lesson plan' : t.reply!.artifact!.kind === 'lab' ? 'Live Lab demo' : 'document'} you just made.`)} />
+                          onChange={next => { const tid = active?.id; setThreads(prev => { const upd = prev.map(th => (th.id !== tid ? th : { ...th, turns: th.turns.map((x, j) => (j === idx && x.reply ? { ...x, reply: { ...x.reply, artifact: next } } : x)) })); saveThreads(uid, upd); return upd; }); }}
+                          onRefine={r => send(`${r} — revise the ${t.reply!.artifact!.kind === 'questions' ? 'questions' : t.reply!.artifact!.kind === 'lesson' ? 'lesson plan' : t.reply!.artifact!.kind === 'lab' ? 'Live Lab demo' : t.reply!.artifact!.kind === 'diagram' ? 'diagram' : t.reply!.artifact!.kind === 'image' ? 'picture' : t.reply!.artifact!.kind === 'bundle' ? 'lesson bundle' : 'document'} you just made.`)} />
                       )}
                       {idx === turns.length - 1 && t.reply?.suggestions.length ? (
                         <div className="sugg">{t.reply.suggestions.map(s => <button key={s} disabled={!!sending} onClick={() => send(s)}>{s}</button>)}</div>

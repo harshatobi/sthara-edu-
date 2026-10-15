@@ -17,6 +17,7 @@ import { totalMarks } from '@/lib/teacher/questions';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { writeCopilotSeed } from './handoff';
 import LabArtifact from './LabArtifact';
+import { DiagramArtifact, ImageArtifact } from './VisualArtifacts';
 import { engineById, scenePredictions } from '@/lib/lab/registry';
 
 const LETTERS = 'ABCDEF';
@@ -41,6 +42,8 @@ export function artifactText(a: Artifact): string {
   }
   if (a.kind === 'rubric') return [a.title, ...a.criteria.map(c => `${c.name}\n${c.levels.map(l => `  ${l.label} (${l.points}): ${l.descriptor}`).join('\n')}`)].join('\n\n');
   if (a.kind === 'bundle') return [a.title, ...a.parts.map(p => artifactText(p))].join('\n\n────────\n\n');
+  if (a.kind === 'diagram') return [a.title, a.caption].filter(Boolean).join('\n');
+  if (a.kind === 'image') return [a.title, a.caption, `Picture: ${a.prompt}`].filter(Boolean).join('\n');
   if (a.kind === 'lab') {
     const e = engineById(a.scene.engine);
     return [a.title, e ? `Live Lab: ${e.title}` : '', a.scene.narration ?? '', '',
@@ -50,8 +53,10 @@ export function artifactText(a: Artifact): string {
 }
 
 /** One Copilot artifact, with the actions that make it useful. */
-export default function ArtifactView({ artifact: a, cls, subject, onRefine, onToast, sample = null, targets = [] }: {
+export default function ArtifactView({ artifact: a, cls, subject, onRefine, onToast, onChange, sample = null, targets = [] }: {
   artifact: Artifact; cls: string; subject: string; onRefine?: (text: string) => void; onToast?: (m: string) => void;
+  /** The artifact changed in place (an illustration was generated); the Copilot keeps the new version. */
+  onChange?: (next: Artifact) => void;
   /** Show as a static example ("what you'll get"), with its footnote; no actions. */
   sample?: string | null;
   /** Students a targeted request was for — carried into "Send to class". */
@@ -97,6 +102,8 @@ export default function ArtifactView({ artifact: a, cls, subject, onRefine, onTo
   };
 
   if (a.kind === 'lab') return <LabArtifact a={a} sample={sample} onRefine={onRefine} />;
+  if (a.kind === 'diagram') return <DiagramArtifact a={a} sample={sample} />;
+  if (a.kind === 'image') return <ImageArtifact a={a} cls={cls} subject={subject} sample={sample} onChange={onChange} />;
   if (a.kind === 'bundle') {
     return (
       <div className="art-bundle">
@@ -109,6 +116,7 @@ export default function ArtifactView({ artifact: a, cls, subject, onRefine, onTo
         {a.parts.map((p, i) => (
           <ArtifactView key={i} artifact={p} cls={cls} subject={subject} targets={p.kind === 'questions' && p.purpose === 'remedial' ? targets : []}
             onToast={onToast} sample={sample}
+            onChange={onChange ? next => onChange({ ...a, parts: a.parts.map((x, j) => (j === i ? next : x)) as typeof a.parts }) : undefined}
             onRefine={onRefine ? r => onRefine(`${r} (only the ${PART_LABEL[p.kind === 'questions' ? p.purpose : p.kind] ?? p.kind} in the bundle)`) : undefined} />
         ))}
       </div>

@@ -57,3 +57,15 @@ test('a lesson bundle keeps its valid parts, drops broken ones, and never nests'
   const one = parseReply({ artifact: { kind: 'bundle', title: 'x', parts: [lesson, { kind: 'rubric', criteria: [] }] } });
   assert.equal(one.artifact?.kind, 'lesson', 'a bundle left with one part becomes that part');
 });
+
+test('diagrams are cleaned before anyone sees them; pictures keep only a path the image route made', () => {
+  const d = parseReply({ artifact: { kind: 'diagram', title: 'Eye', svg: '<svg viewBox="0 0 10 10"><script>x()</script><circle r="4" onclick="y()"/></svg>' } });
+  assert.equal(d.artifact?.kind, 'diagram');
+  if (d.artifact?.kind === 'diagram') { assert.doesNotMatch(d.artifact.svg, /script|onclick/); assert.match(d.artifact.svg, /<circle r="4"\/>/); }
+  assert.equal(parseReply({ artifact: { kind: 'diagram', title: 'x', svg: '<div/>' } }).artifact, null);
+  const good = 'a1b2c3d4-0000-4000-8000-000000000001/a1b2c3d4-0000-4000-8000-000000000002/a1b2c3d4-0000-4000-8000-000000000003.png';
+  const img = parseReply({ artifact: { kind: 'image', title: 'Harbour', prompt: 'A busy harbour in 1900 Bombay', path: good } });
+  assert.equal(img.artifact?.kind === 'image' && img.artifact.path, good);
+  const forged = parseReply({ artifact: { kind: 'image', title: 'x', prompt: 'A busy harbour', path: '../other-school/secret.png' } });
+  assert.equal(forged.artifact?.kind === 'image' && forged.artifact.path, null, 'a forged path is dropped');
+});

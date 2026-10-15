@@ -10,10 +10,11 @@
  */
 import { sanitizeQuestions, type Question } from './questions';
 import { validateScene, type LabScene } from '@/lib/lab/registry';
+import { sanitizeSvg } from './svg';
 
 export type StudioKind =
   | 'worksheet' | 'quiz' | 'remedial' | 'lesson' | 'rubric' | 'answer_key'
-  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo' | 'misconceptions' | 'bundle';
+  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo' | 'misconceptions' | 'bundle' | 'diagram' | 'illustration';
 
 export type StudioGroup = 'students' | 'you' | 'parents';
 export interface StudioType {
@@ -38,6 +39,8 @@ export const STUDIO: StudioType[] = [
   { kind: 'rubric', label: 'Rubric', blurb: 'Criteria and levels for written or project work', group: 'you', needsChapter: false, seconds: 10 },
   { kind: 'answer_key', label: 'Marking scheme', blurb: 'Step marks for a paper you paste in', group: 'you', needsChapter: false, seconds: 12 },
   { kind: 'bundle', label: 'Lesson bundle', blurb: 'Plan, demo, exit ticket and catch-up pack for one period', group: 'you', needsChapter: true, minutes: true, who: 'many', seconds: 45 },
+  { kind: 'diagram', label: 'Labelled diagram', blurb: 'A clean, labelled diagram to print or put on the board', group: 'you', needsChapter: true, seconds: 15 },
+  { kind: 'illustration', label: 'Illustration', blurb: 'A picture for a scene or real-world context (you choose to generate it)', group: 'you', needsChapter: false, seconds: 8 },
   { kind: 'misconceptions', label: 'Fix misconceptions', blurb: 'What they got wrong, why, and what will fix it', group: 'you', needsChapter: false, seconds: 15 },
   { kind: 'lab_demo', label: 'Live lab demo', blurb: 'A simulation for the board, with predictions', group: 'you', needsChapter: true, seconds: 10 },
   { kind: 'parent_note', label: 'Parent note', blurb: 'Warm, specific, one thing to do at home', group: 'parents', needsChapter: false, who: 'one', seconds: 8 },
@@ -58,6 +61,10 @@ export type Artifact =
   | { kind: 'document'; title: string; audience: 'teacher' | 'parent' | 'student'; markdown: string }
   /** A Live Lab set-up. Only the engine, its values and the wording come from the model; answers come from the engine. */
   | { kind: 'lab'; title: string; scene: LabScene }
+  /** A labelled diagram the model drew; the SVG is rebuilt from a whitelist before anyone sees it. */
+  | { kind: 'diagram'; title: string; caption: string; svg: string }
+  /** An illustration. The model writes the prompt; the teacher generates it (it costs money), then `path` is set. */
+  | { kind: 'image'; title: string; prompt: string; caption: string; path: string | null }
   /** Everything for one period in one go; each part is checked like a standalone artifact. */
   | { kind: 'bundle'; title: string; parts: Exclude<Artifact, { kind: 'bundle' }>[] };
 
@@ -119,6 +126,16 @@ function artifactOf(a: any, nested = false): Artifact | null {
     const flat = a.scene && typeof a.scene === 'object' ? { ...a.scene, title: s(a.title, 200) || a.scene.title } : a;
     const scene = validateScene({ ...flat, title: s(flat.title, 200) || title });
     return scene ? { kind: 'lab', title: scene.title, scene } : null;
+  }
+  if (a.kind === 'diagram') {
+    const svg = sanitizeSvg(a.svg);
+    return svg ? { kind: 'diagram', title, caption: s(a.caption, 600), svg } : null;
+  }
+  if (a.kind === 'image') {
+    const prompt = s(a.prompt, 800);
+    // Only a path the image route itself produced: <school>/<teacher>/<uuid>.png
+    const path = typeof a.path === 'string' && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.png$/.test(a.path) ? a.path : null;
+    return prompt ? { kind: 'image', title, prompt, caption: s(a.caption, 600), path } : null;
   }
   if (a.kind === 'document') {
     const markdown = s(a.markdown, 12000);

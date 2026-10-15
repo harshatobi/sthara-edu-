@@ -1,0 +1,12 @@
+import type { ReqDef } from './types';
+import { A } from './auto';
+
+export const reqs: ReqDef[] = [
+  { n: '01', process: 'P02', priority: 'Critical', text: 'Eleven office roles carry the signed-off permissions; access is the union of a person’s active roles; the admin menu shows only what they can use.', perm: 'access.manage', tables: 'role_grants, role_permissions', auto: [`${A.rbac}every office role holds exactly its signed-off permissions`, `${A.rbac}each role sees exactly its menu`, `${A.appRbac}role catalogue matches the database seed`] },
+  { n: '02', process: 'P02', priority: 'Critical', text: 'Segregation of duties: a cashier cannot void; an accountant requests concessions but cannot approve them; only the school admin manages access.', auto: [`${A.rbac}segregation of duties: collection, approval and voiding sit with different roles`, `${A.appRbac}separation of duties is built into the roles`, `~${A.access}cashier:`] },
+  { n: '03', process: 'P02', priority: 'High', text: 'A school admin gives and removes office roles; a role can be temporary (end date today or later) and lapses by itself; every change is kept in Access history.', perm: 'access.manage', api: 'POST/PATCH /api/admin/access', auto: [`${A.rbac}temporary roles lapse after their end date; revoked roles never count`] },
+  { n: '04', process: 'P02', priority: 'Critical', text: 'Logins are created by Sthara only: the school requests them from the User Directory (the same email twice is refused) and can withdraw a pending request.', perm: 'people.manage', api: 'POST/DELETE /api/admin/account-requests', tables: 'account_requests' },
+  { n: '05', process: 'P02', priority: 'High', text: 'The school sets what each teacher teaches (classes must exist) and who is class teacher.', perm: 'people.manage', api: 'PUT /api/admin/users/assignments' },
+  { n: '06', process: 'P02', priority: 'High', text: 'Removing an account: never your own; office accounts need access.manage, others people.manage.', api: 'POST /api/admin/delete-user' },
+  { n: '07', process: 'P02', priority: 'Medium', text: 'Older admin tools (results, heat map, vault, paper generator) are off the menu but open by typed address; they must respect office permissions.', fit: 'Fit with note', note: 'OBS-006: verify with a cashier account (script ACC-06).', auto: [`${A.portals}evidence for TE.040 ADM-ACC-06: pages outside the role, opened by typed address`] },
+];

@@ -1,0 +1,27 @@
+{
+  "name": "sthara-qa",
+  "private": true,
+  "description": "Sthara School OS test pack, kept outside the app: end-to-end and regression scripts, and the Oracle AIM test documents (solution matrix, TE.040, TE.050, TE.130). It reads the app's source and drives the running app; it never changes either.",
+  "type": "module",
+  "scripts": {
+    "inventory": "tsx tools/inventory.ts",
+    "check": "tsx tools/check-catalog.ts",
+    "docs": "tsx tools/build-workbooks.ts",
+    "verify": "tsx tools/verify-workbooks.ts",
+    "unit": "mkdir -p reports/junit && tsx --test --test-force-exit --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=reports/junit/unit.xml regression/unit/*.test.ts",
+    "e2e:local": "playwright test --project=public --project=public-mobile --project=api",
+    "e2e:prod": "playwright test --project=prod-setup --project=prod",
+    "e2e:journeys": "E2E_ALLOW_WRITES=1 playwright test --project=prod-setup --project=journeys",
+    "report": "playwright show-report reports/playwright",
+    "regression": "bash run-regression.sh",
+    "e2e:demo": "playwright test --project=demo"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^20",
+    "exceljs": "4.4.0",
+    "hyperformula": "^3.4.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5"
+  }
+}

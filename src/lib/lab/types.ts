@@ -4,11 +4,12 @@
  * words the prediction questions; the engine works out the answers.
  */
 
-export type ParamSpec =
-  | { kind: 'number'; key: string; label: string; unit: string; min: number; max: number; step: number; default: number }
-  | { kind: 'choice'; key: string; label: string; options: { value: string; label: string }[]; default: string };
-
 export type Params = Record<string, number | string>;
+
+/** `show` hides a control that doesn't apply to the chosen scenario; the value is still validated and kept. */
+export type ParamSpec =
+  | { kind: 'number'; key: string; label: string; unit: string; min: number; max: number; step: number; default: number; show?: (p: any) => boolean }
+  | { kind: 'choice'; key: string; label: string; options: { value: string; label: string }[]; default: string; show?: (p: any) => boolean };
 
 /** A predict-then-reveal question. Options and the right answer always come from the engine. */
 export interface Prediction {

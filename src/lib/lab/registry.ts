@@ -3,8 +3,16 @@ import { validateParams, type LabEngine, type Params, type Prediction } from './
 import { optics } from './engines/optics';
 import { circuits } from './engines/circuits';
 import { acidBase } from './engines/acidBase';
+import { motion } from './engines/motion';
+import { forces } from './engines/forces';
+import { energy } from './engines/energy';
+import { sound } from './engines/sound';
+import { eyePrism } from './engines/eyePrism';
+import { magnetism } from './engines/magnetism';
+import { reactions } from './engines/reactions';
 
-export const ENGINES: LabEngine<any>[] = [optics, circuits, acidBase];
+// Class 9 first, then Class 10, in textbook chapter order.
+export const ENGINES: LabEngine<any>[] = [motion, forces, energy, sound, reactions, optics, eyePrism, circuits, magnetism, acidBase];
 
 export const engineById = (id: unknown): LabEngine<any> | null =>
   (typeof id === 'string' && ENGINES.find(e => e.id === id)) || null;

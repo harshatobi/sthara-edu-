@@ -2,6 +2,7 @@
    The presenter (.lab-show) is built for a classroom projector: big type, thick lines, strong contrast. */
 
 /* ── Gallery ─────────────────────────────────────────────────────────────── */
+.canon .lab-section { font-size:12px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin:0 0 12px; }
 .canon .lab-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; }
 .canon .lab-card { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:22px; display:flex; flex-direction:column; gap:10px; border:1px solid transparent; transition:border-color .15s, transform .12s; text-align:left; }
 .canon .lab-card:hover { border-color:#C9D6E8; }

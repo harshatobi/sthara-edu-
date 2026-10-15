@@ -7,6 +7,13 @@ import type { LabEngine, Params } from '@/lib/lab/types';
 import OpticsView from './OpticsView';
 import CircuitView from './CircuitView';
 import TitrationView from './TitrationView';
+import MotionView from './MotionView';
+import ForcesView from './ForcesView';
+import EnergyView from './EnergyView';
+import SoundView from './SoundView';
+import EyePrismView from './EyePrismView';
+import MagnetismView from './MagnetismView';
+import ReactionsView from './ReactionsView';
 import type { ViewProps } from './types';
 import '@/styles/lab.css';
 
@@ -14,6 +21,13 @@ const VIEWS: Record<string, ComponentType<ViewProps<any>>> = {
   optics: OpticsView,
   circuits: CircuitView,
   'acid-base': TitrationView,
+  motion: MotionView,
+  forces: ForcesView,
+  energy: EnergyView,
+  sound: SoundView,
+  'eye-prism': EyePrismView,
+  magnetism: MagnetismView,
+  reactions: ReactionsView,
 };
 
 export function LabView({ engine, ...props }: ViewProps & { engine: LabEngine<any> }) {
@@ -25,7 +39,7 @@ export function LabView({ engine, ...props }: ViewProps & { engine: LabEngine<an
 export function LabControls({ engine, params, setParam, locked }: { engine: LabEngine<any>; params: Params; setParam: ViewProps['setParam']; locked: boolean }) {
   return (
     <>
-      {engine.params.map(s => {
+      {engine.params.filter(s => !s.show || s.show(params)).map(s => {
         // A choice the engine would refuse in this combination is shown but disabled.
         const refused = (value: string) => s.kind === 'choice' && !!engine.check?.({ ...params, [s.key]: value } as any);
         return (

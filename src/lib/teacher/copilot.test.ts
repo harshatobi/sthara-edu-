@@ -32,3 +32,17 @@ test('every Studio type has a sample, and every sample is a valid artifact', asy
   const lesson = SAMPLES.lesson;
   assert.ok(lesson.kind === 'lesson' && lesson.stages.reduce((n, s) => n + s.minutes, 0) === lesson.durationMin, 'sample lesson timings add up');
 });
+
+test('a Live Lab demo passes only when the engine accepts every value; answers never come from the model', () => {
+  const ok = parseReply({ artifact: { kind: 'lab', engine: 'optics', params: { device: 'convex_lens', f: 10, u: 15 }, title: 'Image by a lens', predictions: ['image-distance', 'made-up'], narration: 'Watch the screen.' } });
+  assert.equal(ok.artifact?.kind, 'lab');
+  if (ok.artifact?.kind === 'lab') {
+    assert.deepEqual(ok.artifact.scene.predictions.map(p => p.id), ['image-distance'], 'unknown question ids are dropped');
+    assert.equal(ok.artifact.scene.answer, 'hands');
+  }
+  assert.equal(parseReply({ artifact: { kind: 'lab', engine: 'optics', params: { f: 500 } } }).artifact, null, 'out of range: no demo');
+  assert.equal(parseReply({ artifact: { kind: 'lab', engine: 'cold-fusion', params: {} } }).artifact, null, 'unknown engine: no demo');
+  // The nested shape the model sees in the conversation history is accepted too.
+  const nested = parseReply({ artifact: { kind: 'lab', title: 'Again', scene: { engine: 'sound', params: { f: 880 }, predictions: [{ id: 'wavelength' }] } } });
+  assert.equal(nested.artifact?.kind === 'lab' && nested.artifact.scene.params.f, 880);
+});

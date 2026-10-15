@@ -13,11 +13,12 @@ import { TableIcon as Table } from '@phosphor-icons/react/dist/ssr/Table';
 import { CheckSquareOffsetIcon as CheckSquareOffset } from '@phosphor-icons/react/dist/ssr/CheckSquareOffset';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
+import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import type { CourseChapter } from '@/lib/curriculum';
-import { STUDIO, STUDIO_GROUPS, type StudioKind } from '@/lib/teacher/copilot';
-import { SAMPLES, SAMPLE_CONTEXT } from '@/lib/teacher/copilotSamples';
+import { STUDIO, STUDIO_GROUPS, studioFor, type StudioKind } from '@/lib/teacher/copilot';
+import { SAMPLES, sampleContext } from '@/lib/teacher/copilotSamples';
 import type { TStudent } from '@/lib/teacher/desk';
 import ArtifactView from './ArtifactView';
 
@@ -32,6 +33,7 @@ export const STUDIO_LOOK: Record<StudioKind, { icon: PhosphorIcon; color: string
   rubric: { icon: Table, color: '#10B981' },
   answer_key: { icon: CheckSquareOffset, color: '#22C55E' },
   parent_note: { icon: EnvelopeSimple, color: '#F43F5E' },
+  lab_demo: { icon: Flask, color: '#7C5CFC' },
 };
 
 export interface StudioRequest {
@@ -55,14 +57,15 @@ function Seg<T extends string | number>({ label, value, options, onChange, forma
 }
 
 /** The tile row (always visible). Picking a tile opens the panel below it. */
-export function StudioTiles({ selected, onSelect, compact }: { selected: StudioKind | null; onSelect: (k: StudioKind | null) => void; compact: boolean }) {
+export function StudioTiles({ selected, onSelect, compact, subject }: { selected: StudioKind | null; onSelect: (k: StudioKind | null) => void; compact: boolean; subject: string }) {
+  const types = studioFor(subject);
   return (
     <div className={`st-tiles${compact ? ' compact' : ''}`}>
       {STUDIO_GROUPS.map(g => (
         <div key={g.key} className="st-group">
           <div className="st-glabel">{g.label}</div>
           <div className="st-row">
-            {STUDIO.filter(t => t.group === g.key).map(t => {
+            {types.filter(t => t.group === g.key).map(t => {
               const look = STUDIO_LOOK[t.kind];
               const on = selected === t.kind;
               return (
@@ -192,7 +195,7 @@ export default function StudioPanel({ kind, cls, subject, chapters, students, be
           <div className="st-spec"><b>{spec}</b><span>About {t.seconds} seconds · one AI request · nothing is posted until you choose to</span></div>
           <div className="st-sample">
             <ArtifactView artifact={SAMPLES[kind]} cls={cls} subject={subject}
-              sample={`Example from ${SAMPLE_CONTEXT}. Yours is written for ${chapter || subject} in ${cls}, using your class's own results.`} />
+              sample={`Example from ${sampleContext(kind)}. Yours is ${kind === 'lab_demo' ? 'set up' : 'written'} for ${chapter || subject} in ${cls}, using your class's own results.`} />
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { PresentationIcon as Presentation } from '@phosphor-icons/react/dist/ssr/Presentation';
+import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { CheckSquareIcon as CheckSquare } from '@phosphor-icons/react/dist/ssr/CheckSquare';
 import { SquareIcon as Square } from '@phosphor-icons/react/dist/ssr/Square';
@@ -13,6 +14,7 @@ import { ANSWER_MODES, engineById, scenePredictions, type AnswerMode, type LabSc
 import { decodeScene, encodeScene } from '@/lib/lab/url';
 import type { LabEngine } from '@/lib/lab/types';
 import LabStage from './LabStage';
+import LabPrint from './LabPrint';
 import { useLabParams } from './useLabParams';
 
 const LETTERS = 'ABCD';
@@ -43,6 +45,7 @@ function Build({ engine, initial }: { engine: LabEngine<any>; initial: LabScene 
   const [picked, setPicked] = useState<string[] | null>(initial?.predictions.length ? initial.predictions.map(p => p.id) : null);
   const [answer, setAnswer] = useState<AnswerMode>(initial?.answer ?? 'hands');
   const [runKey, setRunKey] = useState(0);
+  const [withKey, setWithKey] = useState(true);
 
   // Every question that fits these values, with its engine-worked answer.
   const all = useMemo(() => scenePredictions({ engine: engine.id, params, title, predictions: [], answer: 'hands' }), [engine.id, params, title]);
@@ -61,6 +64,9 @@ function Build({ engine, initial }: { engine: LabEngine<any>; initial: LabScene 
       <PageBar eyebrow={`LIVE LAB · ${engine.chapters.join(' · ').toUpperCase()}`} title={engine.title} sub={engine.blurb}
         actions={<>
           <Link className="btn" href="/teacher/lab"><ArrowLeft size={15} weight="bold" /> All simulations</Link>
+          <button className="btn" onClick={() => window.print()} disabled={!scene.predictions.length} title={scene.predictions.length ? 'A4 worksheet for the class' : 'Pick at least one prediction to print'}>
+            <Printer size={15} weight="bold" /> Print worksheet
+          </button>
           <Link className="btn red" href={`/teacher/lab/present?scene=${encodeScene(scene)}`}><Presentation size={16} weight="fill" /> Present to class</Link>
         </>} />
 
@@ -95,6 +101,9 @@ function Build({ engine, initial }: { engine: LabEngine<any>; initial: LabScene 
             ))}
           </div>
           <p className="muted">{ANSWER_MODES.find(m => m.value === answer)!.note} No student devices needed; you can change it during the lesson too.</p>
+          <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="checkbox" checked={withKey} onChange={e => setWithKey(e.target.checked)} /> Print the answer key on a separate page
+          </label>
           <h4>Title on screen</h4>
           <input className="lab-title-in" value={title} maxLength={140} onChange={e => setTitle(e.target.value)} />
           <h4>What you&apos;ll say first (optional)</h4>
@@ -102,6 +111,7 @@ function Build({ engine, initial }: { engine: LabEngine<any>; initial: LabScene 
             placeholder="One or two lines to open with, shown on the first screen." onChange={e => setNarration(e.target.value)} />
         </div>
       </div>
+      <LabPrint scene={scene} engine={engine} questions={scenePredictions(scene)} withKey={withKey} />
     </>
   );
 }

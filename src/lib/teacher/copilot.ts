@@ -5,14 +5,15 @@
  *   say          short markdown to the teacher
  *   ask          up to 3 clarifying questions, each with tappable options
  *   artifact     something usable: a question set, a lesson plan, a rubric,
- *                or a document (parent note, explanations, …)
+ *                a Live Lab demo, or a document (parent note, explanations, …)
  *   suggestions  2–4 one-tap follow-ups
  */
 import { sanitizeQuestions, type Question } from './questions';
+import { validateScene, type LabScene } from '@/lib/lab/registry';
 
 export type StudioKind =
   | 'worksheet' | 'quiz' | 'remedial' | 'lesson' | 'rubric' | 'answer_key'
-  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets';
+  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo';
 
 export type StudioGroup = 'students' | 'you' | 'parents';
 export interface StudioType {
@@ -36,6 +37,7 @@ export const STUDIO: StudioType[] = [
   { kind: 'discussion', label: 'Discussion prompts', blurb: 'Questions that make them think out loud', group: 'you', needsChapter: true, items: true, seconds: 10 },
   { kind: 'rubric', label: 'Rubric', blurb: 'Criteria and levels for written or project work', group: 'you', needsChapter: false, seconds: 10 },
   { kind: 'answer_key', label: 'Marking scheme', blurb: 'Step marks for a paper you paste in', group: 'you', needsChapter: false, seconds: 12 },
+  { kind: 'lab_demo', label: 'Live lab demo', blurb: 'A simulation for the board, with predictions', group: 'you', needsChapter: true, seconds: 10 },
   { kind: 'parent_note', label: 'Parent note', blurb: 'Warm, specific, one thing to do at home', group: 'parents', needsChapter: false, who: 'one', seconds: 8 },
 ];
 
@@ -51,7 +53,13 @@ export type Artifact =
       priorKnowledge: string; stages: { name: string; minutes: number; teacher: string; students: string }[];
       differentiation: { support: string; stretch: string }; checkForUnderstanding: string; materials: { label: string }[] }
   | { kind: 'rubric'; title: string; criteria: { name: string; levels: { label: string; descriptor: string; points: number }[] }[] }
-  | { kind: 'document'; title: string; audience: 'teacher' | 'parent' | 'student'; markdown: string };
+  | { kind: 'document'; title: string; audience: 'teacher' | 'parent' | 'student'; markdown: string }
+  /** A Live Lab set-up. Only the engine, its values and the wording come from the model; answers come from the engine. */
+  | { kind: 'lab'; title: string; scene: LabScene };
+
+/** Studio types that only make sense for some subjects (the Live Lab covers science). */
+export const isScienceSubject = (subject: string) => /science|physics|chemistry/i.test(subject);
+export const studioFor = (subject: string) => STUDIO.filter(t => t.kind !== 'lab_demo' || isScienceSubject(subject));
 
 export interface CopilotReply { say: string; ask: AskItem[]; artifact: Artifact | null; suggestions: string[] }
 
@@ -94,6 +102,13 @@ function artifactOf(a: any): Artifact | null {
       levels: (Array.isArray(c?.levels) ? c.levels : []).slice(0, 5).map((l: any) => ({ label: s(l?.label, 40), descriptor: s(l?.descriptor, 500), points: Math.max(0, Math.round(Number(l?.points) || 0)) })),
     })).filter((c: any) => c.name && c.levels.length);
     return criteria.length ? { kind: 'rubric', title, criteria } : null;
+  }
+  if (a.kind === 'lab') {
+    // The engine's own check: an unknown engine or any value outside its ranges drops the whole demo.
+    // Accepts the flat shape the prompt asks for, or the nested { scene } shape it sees in the history.
+    const flat = a.scene && typeof a.scene === 'object' ? { ...a.scene, title: s(a.title, 200) || a.scene.title } : a;
+    const scene = validateScene({ ...flat, title: s(flat.title, 200) || title });
+    return scene ? { kind: 'lab', title: scene.title, scene } : null;
   }
   if (a.kind === 'document') {
     const markdown = s(a.markdown, 12000);

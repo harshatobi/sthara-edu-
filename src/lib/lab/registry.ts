@@ -84,3 +84,25 @@ export function scenePredictions(scene: LabScene): Prediction[] {
     return { id: t!.id, ...built, prompt: prompt || built.prompt };
   });
 }
+
+/**
+ * The engines as the Copilot sees them: ids, what each value may be, and the
+ * question ids it can ask. Short on purpose; only the engines that fit the
+ * request are listed.
+ */
+export function labCatalogue(engines: LabEngine<any>[]): string {
+  return engines.map(e => {
+    const values = e.params.map(s => s.kind === 'number'
+      ? `${s.key} ${s.min}–${s.max}${s.unit ? ` ${s.unit}` : ''} (default ${s.default})`
+      : `${s.key} one of ${s.options.map(o => o.value).join('|')} (default ${s.default})`).join('; ');
+    return `- ${e.id}: ${e.title}. Chapters: ${e.chapters.join(', ')}. Values: ${values}. Question ids: ${e.predictions.map(t => `${t.id} (${t.label})`).join(', ')}.`;
+  }).join('\n');
+}
+
+/** Engines to offer for a class and chapter: the chapter's own, else every engine for that class. */
+export function enginesFor(cls: string, chapter?: string | null): LabEngine<any>[] {
+  const byChapter = chapter ? enginesForChapter(chapter) : [];
+  if (byChapter.length) return byChapter;
+  const n = Number(/\d{1,2}/.exec(cls)?.[0]);
+  return ENGINES.filter(e => !n || e.classes.includes(n));
+}

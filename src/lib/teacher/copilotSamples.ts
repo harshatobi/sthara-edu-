@@ -7,8 +7,19 @@
 import type { Artifact, StudioKind } from './copilot';
 
 export const SAMPLE_CONTEXT = 'Class 9 Science · Cell';
+/** Where each sample comes from (all Cell, except the lab demo, which needs a chapter with a simulation). */
+export const sampleContext = (k: StudioKind) => (k === 'lab_demo' ? 'Class 9 Science · Force and Laws of Motion' : SAMPLE_CONTEXT);
 
 export const SAMPLES: Record<StudioKind, Artifact> = {
+  lab_demo: {
+    kind: 'lab', title: 'Does a heavier push mean a bigger speed-up?',
+    scene: {
+      engine: 'forces', params: { scenario: 'push', m1: 10, f: 50, mu: 0.2, t: 4, m2: 5, u1: 3, u2: 0, joins: 'stick' },
+      title: 'Does a heavier push mean a bigger speed-up?', answer: 'hands',
+      predictions: [{ id: 'will-it-move' }, { id: 'acceleration' }],
+      narration: 'A 10 kg box on a classroom floor. We push with 50 N. Before we run it: will it move, and how fast will it speed up?',
+    },
+  },
   worksheet: {
     kind: 'questions', purpose: 'worksheet', title: 'Cell: structure and function — practice', chapter: 'Cell',
     notes: 'Award step marks in Q3: 1 for naming the organelle, 1 for its function.',

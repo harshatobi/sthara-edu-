@@ -16,6 +16,8 @@ import { topicKey } from '@/lib/teacher/desk';
 import { totalMarks } from '@/lib/teacher/questions';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { writeCopilotSeed } from './handoff';
+import LabArtifact from './LabArtifact';
+import { engineById, scenePredictions } from '@/lib/lab/registry';
 
 const LETTERS = 'ABCDEF';
 const PURPOSE: Record<string, string> = { worksheet: 'WORKSHEET', quiz: 'QUIZ', remedial: 'REMEDIAL PACK', exit_tickets: 'EXIT TICKETS' };
@@ -36,6 +38,11 @@ export function artifactText(a: Artifact): string {
       `Support: ${a.differentiation.support}`, `Stretch: ${a.differentiation.stretch}`, `Exit check: ${a.checkForUnderstanding}`].join('\n');
   }
   if (a.kind === 'rubric') return [a.title, ...a.criteria.map(c => `${c.name}\n${c.levels.map(l => `  ${l.label} (${l.points}): ${l.descriptor}`).join('\n')}`)].join('\n\n');
+  if (a.kind === 'lab') {
+    const e = engineById(a.scene.engine);
+    return [a.title, e ? `Live Lab: ${e.title}` : '', a.scene.narration ?? '', '',
+      ...scenePredictions(a.scene).map((q, i) => `${i + 1}. ${q.prompt}\n${q.options.map((o, k) => `   ${LETTERS[k]}. ${o}`).join('\n')}\n   Answer: ${LETTERS[q.correct]}. ${q.explain}`)].join('\n');
+  }
   return `${a.title}\n\n${a.markdown}`;
 }
 
@@ -85,6 +92,8 @@ export default function ArtifactView({ artifact: a, cls, subject, onRefine, onTo
       setSaved(row.id); onToast?.('Saved to your lesson planner');
     } catch (e: any) { setError(e?.message || 'Couldn’t save the lesson.'); } finally { setBusy(false); }
   };
+
+  if (a.kind === 'lab') return <LabArtifact a={a} sample={sample} onRefine={onRefine} />;
 
   const mcqOnly = a.kind === 'questions' && a.questions.every(q => q.type === 'mcq');
   const hasMcq = a.kind === 'questions' && a.questions.some(q => q.type === 'mcq');

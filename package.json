@@ -8,7 +8,7 @@
     "prebuild": "node site/build.mjs --app && node scripts/build-workers.mjs",
     "build": "next build",
     "test:site": "node --test site/tests/*.test.mjs",
-    "test": "npx tsx --test src/lib/tml/*.test.ts src/lib/lab/*.test.ts && npm run test:site",
+    "test": "npx tsx --test src/lib/tml/*.test.ts src/lib/lab/*.test.ts src/lib/teacher/*.test.ts && npm run test:site",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "node -e \"require('fs').rmSync('.next/dev/types',{recursive:true,force:true})\" && next typegen && tsc --noEmit",

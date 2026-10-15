@@ -6,7 +6,8 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { courseChapters, getCurriculum, CURRENT_SESSION } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/desk';
-import { parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
+import { isScienceSubject, parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
+import { enginesFor, labCatalogue } from '@/lib/lab/registry';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
 import { byIds, pageAll } from '@/lib/ops/page';
@@ -111,6 +112,9 @@ export async function POST(req: NextRequest) {
       return `- ${a.type} "${a.title}" (${a.status}, due ${a.due_date || '—'}, chapter ${Array.isArray(a.units) ? a.units[0] : '—'}): ${ss.length}/${roster.length} in, ${graded.length} graded${avg !== null ? `, avg ${avg}%` : ''}${a.status === 'published' && missing.length && missing.length < roster.length ? `; not in: ${missing.join(' ')}` : ''}`;
     }).join('\n')}`);
   } else brief.push('ASSIGNMENTS: none set yet for this class and subject.');
+  // Live Lab: the simulations that fit this class and chapter, so the Copilot can set one up (science only).
+  const labEngines = isScienceSubject(subject) ? enginesFor(cls, focus?.name ?? str(b?.chapter, 200)) : [];
+  if (labEngines.length) brief.push(`LAB ENGINES (Live Lab simulations you can set up; values must stay inside these ranges):\n${labCatalogue(labEngines)}`);
   if (lessons?.length) brief.push(`UPCOMING LESSONS:\n${lessons.map(l => `- ${l.lesson_date}: ${l.title} (${l.chapter_name}, ${l.status})`).join('\n')}`);
   if (studioKind) {
     const t = STUDIO.find(x => x.kind === studioKind)!;
@@ -137,7 +141,9 @@ ARTIFACTS (at most one per reply; omit when asking questions or just discussing)
   Quizzes and exit tickets: MCQ only. Worksheets: mix MCQ and short. Remedial: start concrete and easy, build up, include worked hints in "why".
 - Lesson plan: {"kind":"lesson","title":"…","chapter":"…","topics":["exact content points"],"durationMin":40,"objectives":["Students will be able to …"],"successCriteria":["I can …"],"priorKnowledge":"…","materials":[{"label":"…"}],"stages":[{"name":"…","minutes":5,"teacher":"…","students":"…"}],"differentiation":{"support":"…","stretch":"…"},"checkForUnderstanding":"exit check with expected answer"} — stage minutes must sum to durationMin.
 - Rubric: {"kind":"rubric","title":"…","criteria":[{"name":"…","levels":[{"label":"Exceeds","descriptor":"…","points":4}]}]}
-- Anything else (parent note, explanations three ways, discussion prompts, marking scheme, feedback): {"kind":"document","title":"…","audience":"teacher|parent|student","markdown":"…"}. Parent notes: warm, specific, one concrete thing to do at home, under 150 words, sign off as ${staff.name}.
+${labEngines.length ? `- Live Lab demo (a simulation the teacher runs on the board while the class predicts): {"kind":"lab","engine":"<id from LAB ENGINES>","params":{"<value name>":<value>},"title":"…","predictions":[{"id":"<question id>","prompt":"optional re-wording"}],"narration":"1–2 lines the teacher says first","answer":"hands|class|think"}
+  Use only engines, value names and question ids listed under LAB ENGINES, inside their ranges; leave out values you don't need (defaults apply). Pick 2–4 questions. Never state the answers or any number the simulation reveals: the simulation works them out. answer is how the class responds (most classrooms have no student devices): "hands" (teacher counts hands) unless the teacher asks otherwise. If nothing listed fits what they asked, say so plainly and offer the nearest one.
+` : ''}- Anything else (parent note, explanations three ways, discussion prompts, marking scheme, feedback): {"kind":"document","title":"…","audience":"teacher|parent|student","markdown":"…"}. Parent notes: warm, specific, one concrete thing to do at home, under 150 words, sign off as ${staff.name}.
 
 Reply with ONE JSON object only: {"say":"…","ask":[{"id":"q1","question":"…","options":["…"],"multi":false}],"artifact":{…} or null,"suggestions":["…"]}
 

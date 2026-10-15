@@ -251,7 +251,7 @@ export default function Copilot() {
               <h3 style={{ fontSize: 17, fontWeight: 800 }}>Make something for {cls}</h3>
               {!studio && <span className="muted" style={{ fontSize: 12.5 }}>Pick one to see an example first. Nothing is generated until you say so.</span>}
             </div>
-            <StudioTiles selected={studio?.kind ?? null} compact={!!studio} onSelect={k => openStudio(k)} />
+            <StudioTiles selected={studio?.kind ?? null} compact={!!studio} onSelect={k => openStudio(k)} subject={subject} />
             {studio && (
               <StudioPanel key={studio.key} kind={studio.kind} preset={studio.preset} cls={cls} subject={subject} chapters={chapters}
                 students={students} belowForty={belowForty} sending={!!sending} onGenerate={onGenerate} onClose={() => setStudio(null)} />
@@ -291,7 +291,7 @@ export default function Copilot() {
                       {t.reply?.ask.length ? <AskCard items={t.reply.ask} disabled={!!sending || idx !== turns.length - 1} onAnswer={a => send(a)} /> : null}
                       {t.reply?.artifact && (
                         <ArtifactView artifact={t.reply.artifact} cls={active?.cls ?? cls} subject={active?.subject ?? subject} targets={t.targets ?? []} onToast={toast}
-                          onRefine={r => send(`${r} — revise the ${t.reply!.artifact!.kind === 'questions' ? 'questions' : t.reply!.artifact!.kind === 'lesson' ? 'lesson plan' : 'document'} you just made.`)} />
+                          onRefine={r => send(`${r} — revise the ${t.reply!.artifact!.kind === 'questions' ? 'questions' : t.reply!.artifact!.kind === 'lesson' ? 'lesson plan' : t.reply!.artifact!.kind === 'lab' ? 'Live Lab demo' : 'document'} you just made.`)} />
                       )}
                       {idx === turns.length - 1 && t.reply?.suggestions.length ? (
                         <div className="sugg">{t.reply.suggestions.map(s => <button key={s} disabled={!!sending} onClick={() => send(s)}>{s}</button>)}</div>

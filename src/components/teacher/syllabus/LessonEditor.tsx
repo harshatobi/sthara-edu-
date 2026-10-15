@@ -19,6 +19,7 @@ import { normClass, normSubject } from '@/lib/teacher/scope';
 import { defaultStages, fmtDay, todayIso, type Lesson } from '@/lib/teacher/course';
 import type { LessonPrefill } from './SyllabusWorkspace';
 import LessonPrint from './LessonPrint';
+import LessonLabDemos from '@/components/lab/LessonLabDemos';
 
 const STAGE_COLORS = ['#4C8DFF', '#7C5CFC', '#10B981', '#F59E0B', '#F45E77', '#14B8A6', '#E11D48', '#64748B'];
 type Draft = Omit<Lesson, 'id' | 'teacherId' | 'taughtOn' | 'aiDrafted'> & { aiDrafted: boolean };
@@ -269,6 +270,7 @@ export default function LessonEditor({ course, cls, subject, lesson, prefill, on
                   {chapter && <Link className="btn sm" href={`/teacher/homework?${new URLSearchParams({ new: '1', class: cls, subject, chapter: chapter.name })}`}>Create homework on this chapter</Link>}
                 </div>
               </div>
+              {lesson && <LessonLabDemos lessonId={lesson.id} chapter={chapter?.name ?? null} />}
             </div>
 
             {pastOrTaught && (

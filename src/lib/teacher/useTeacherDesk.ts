@@ -85,3 +85,8 @@ export function useTeacherDesk() {
   useEffect(() => { refreshIfStale(); }, [refreshIfStale]);
   return ctx;
 }
+
+/** The desk if this is inside the teacher layout, else null (for parts that also render on their own). */
+export function useOptionalTeacherDesk() {
+  return useContext(Ctx);
+}

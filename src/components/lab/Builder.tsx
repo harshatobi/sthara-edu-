@@ -15,6 +15,7 @@ import { decodeScene, encodeScene } from '@/lib/lab/url';
 import type { LabEngine } from '@/lib/lab/types';
 import LabStage from './LabStage';
 import LabPrint from './LabPrint';
+import SavePanel, { type SavedRef } from './SavePanel';
 import { useLabParams } from './useLabParams';
 
 const LETTERS = 'ABCD';
@@ -30,18 +31,22 @@ export default function Builder() {
       </Empty>
     );
   }
-  return <Build key={engine.id} engine={engine} initial={fromLink} />;
+  // A saved demo of your own opens with its id (so saving updates it); a colleague's opens as a copy.
+  const id = sp.get('id'), cls = sp.get('class'), subject = sp.get('subject');
+  const saved: SavedRef | null = fromLink && id && cls && subject ? { id, class: cls, subject, lessonPlanId: sp.get('lesson') } : null;
+  return <Build key={engine.id} engine={engine} initial={fromLink} saved={saved} />;
 }
 
-function Build({ engine, initial }: { engine: LabEngine<any>; initial: LabScene | null }) {
+function Build({ engine, initial, saved: savedAtOpen }: { engine: LabEngine<any>; initial: LabScene | null; saved: SavedRef | null }) {
+  const [saved, setSaved] = useState<SavedRef | null>(savedAtOpen);
   const { params, setParam, blocked, reset } = useLabParams(engine, initial?.params);
   const [title, setTitle] = useState(initial?.title ?? engine.title);
   const [narration, setNarration] = useState(initial?.narration ?? '');
   // Re-worded prompts from the Copilot are kept per question id.
   // They can name the values ("object at 15 cm"), so they are dropped once the setup changes.
-  const [saved] = useState<Record<string, string | undefined>>(() => Object.fromEntries((initial?.predictions ?? []).map(p => [p.id, p.prompt])));
+  const [savedPrompts] = useState<Record<string, string | undefined>>(() => Object.fromEntries((initial?.predictions ?? []).map(p => [p.id, p.prompt])));
   const untouched = !!initial && JSON.stringify(params) === JSON.stringify(initial.params);
-  const prompts = untouched ? saved : {};
+  const prompts: Record<string, string | undefined> = untouched ? savedPrompts : {};
   const [picked, setPicked] = useState<string[] | null>(initial?.predictions.length ? initial.predictions.map(p => p.id) : null);
   const [answer, setAnswer] = useState<AnswerMode>(initial?.answer ?? 'hands');
   const [runKey, setRunKey] = useState(0);
@@ -101,6 +106,8 @@ function Build({ engine, initial }: { engine: LabEngine<any>; initial: LabScene 
             ))}
           </div>
           <p className="muted">{ANSWER_MODES.find(m => m.value === answer)!.note} No student devices needed; you can change it during the lesson too.</p>
+          <h4>Save for later</h4>
+          <SavePanel scene={scene} saved={saved} onSaved={setSaved} />
           <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="checkbox" checked={withKey} onChange={e => setWithKey(e.target.checked)} /> Print the answer key on a separate page
           </label>

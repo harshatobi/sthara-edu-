@@ -72,8 +72,18 @@ export function buildAttention(x: {
   desk?: DeskPulse;
   /** Quotes this operator can approve, and open deals whose close date has passed. */
   sales?: { approvals: number; overdue: number };
+  /** Students whose graded work is newer than their TML snapshot: the engine is failing or not running. */
+  staleTml?: number;
 }): AttentionItem[] {
   const out: AttentionItem[] = [];
+  if (x.staleTml && x.staleTml > 0) {
+    out.push({
+      id: 'tml-stale', severity: 'crit',
+      title: `TML is not updating for ${plural(x.staleTml, 'student')}`,
+      detail: 'Teacher-confirmed work is newer than their last TML snapshot. The engine is failing or not running: check the error log, then recompute.',
+      actions: [{ kind: 'open', href: '/ops/errors', label: 'Open error log' }],
+    });
+  }
   const log: AttentionAction = { kind: 'open', href: '/ops/errors', label: 'Open error log' };
   for (const s of (x.errors?.spikes ?? []).slice(0, 3)) {
     out.push({

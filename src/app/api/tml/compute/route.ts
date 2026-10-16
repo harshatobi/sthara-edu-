@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error('[TML Compute API Error]:', err);
-    return NextResponse.json({ error: err.message || 'TML computation failed' }, { status: 500 });
+    return NextResponse.json({ error: 'TML computation failed' }, { status: 500 });
   }
 }
 

@@ -73,7 +73,9 @@ function Mastery() {
       reload();
       setRefreshMsg('Recomputed from your latest graded work.');
     } catch {
-      setRefreshMsg('Could not recompute right now. Your last computed TML is still shown.');
+      setRefreshMsg(graded.length > 0 && m.tml === null
+        ? 'We could not score your graded work just now. This has been logged for the Sthara team; please try again shortly.'
+        : 'Could not recompute right now. Your last computed TML is still shown.');
     } finally {
       setRefreshing(false);
     }
@@ -119,7 +121,9 @@ function Mastery() {
         <div className="kpi">
           <div className="lb">{m.subject.toUpperCase()} TML</div>
           <div className="vl" style={{ color: m.tml !== null ? hmColor(m.tml) : 'var(--mut2)' }}>{m.tml !== null ? `${m.tml}%` : '—'}</div>
-          <div className="nt" style={{ color: 'var(--mut)' }}>{m.note}</div>
+          <div className="nt" style={{ color: 'var(--mut)' }}>
+            {m.tml === null && graded.length > 0 ? 'Your graded work is not scored yet. Press Recompute; if it stays blank, tell your teacher.' : m.note}
+          </div>
         </div>
         <div className="kpi">
           <div className="lb">WEAKEST TOPIC</div>

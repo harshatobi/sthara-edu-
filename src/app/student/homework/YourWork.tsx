@@ -60,6 +60,8 @@ export default function YourWork({ submission, questions, live, getAuthToken }: 
 
   const typed = questions.length > 0 && (submission?.type === 'typed' || Object.keys(answers).length > 0);
   if (!typed && !imageUrls.length && !submission?.submission_text) return null;
+  // Some older work kept only the score, not the answers: say so once instead of "Not attempted" on every line.
+  const noAnswers = typed && Object.keys(answers).length === 0;
 
   return (
     <div className={`bg-white rounded-[20px] ${SH} p-8 mt-5`}>
@@ -70,6 +72,10 @@ export default function YourWork({ submission, questions, live, getAuthToken }: 
             : work?.keyStatus === 'not-everyone-in' || work?.keyStatus === 'awaiting-review' ? 'With your confirmed marks. The answer key opens once the whole class has been graded.'
               : 'With your confirmed marks.'}
       </p>
+
+      {noAnswers && (
+        <p className="text-[13px] text-[#7A8699] bg-[#F7F9FB] rounded-xl px-4 py-3 mb-5">Only your score was recorded for this one, so your answers can&apos;t be shown.</p>
+      )}
 
       {typed && (
         <div className="space-y-5">
@@ -87,7 +93,7 @@ export default function YourWork({ submission, questions, live, getAuthToken }: 
                   )}
                 </div>
                 <div className="mt-2.5 ml-8">
-                  <Answer q={q} value={answers[i]} link={links === undefined ? undefined : links?.answers?.[i] ?? null} keyed={work?.key?.[i]} />
+                  <Answer q={q} value={answers[i]} link={links === undefined ? undefined : links?.answers?.[i] ?? null} keyed={work?.key?.[i]} unknown={noAnswers} />
                 </div>
               </div>
             );
@@ -124,8 +130,11 @@ export default function YourWork({ submission, questions, live, getAuthToken }: 
   );
 }
 
-function Answer({ q, value, link, keyed }: { q: Question; value: unknown; link: string | null | undefined; keyed: number | undefined }) {
-  if (value === undefined || value === null || value === '') return <p className="text-[13.5px] text-[#9AA6B8] italic">Not attempted</p>;
+function Answer({ q, value, link, keyed, unknown }: { q: Question; value: unknown; link: string | null | undefined; keyed: number | undefined; unknown: boolean }) {
+  if (value === undefined || value === null || value === '') {
+    const key = keyed !== undefined && <div className="text-[13.5px] text-[#0B7A54]"><b>Correct answer: {LETTERS[keyed]}.</b> {q.options?.[keyed] ?? ''}</div>;
+    return unknown ? (key || null) : <div className="space-y-1.5"><p className="text-[13.5px] text-[#9AA6B8] italic">Not attempted</p>{key}</div>;
+  }
   if (q.type === 'mcq') {
     const idx = Number(value);
     const known = keyed !== undefined;

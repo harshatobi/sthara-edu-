@@ -16,8 +16,14 @@ import { topicKey } from '@/lib/teacher/desk';
 import { totalMarks } from '@/lib/teacher/questions';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { writeCopilotSeed } from './handoff';
+import LabArtifact from './LabArtifact';
+import { DiagramArtifact, ImageArtifact } from './VisualArtifacts';
+import PaperArtifact from './PaperArtifact';
+import { engineById, scenePredictions } from '@/lib/lab/registry';
 
 const LETTERS = 'ABCDEF';
+/** Plain names for a bundle's parts. */
+const PART_LABEL: Record<string, string> = { lesson: 'lesson plan', lab: 'Live Lab demo', exit_tickets: 'exit tickets', remedial: 'catch-up pack', worksheet: 'worksheet', quiz: 'quiz', rubric: 'rubric', document: 'notes', diagram: 'diagram', image: 'illustration' };
 const PURPOSE: Record<string, string> = { worksheet: 'WORKSHEET', quiz: 'QUIZ', remedial: 'REMEDIAL PACK', exit_tickets: 'EXIT TICKETS' };
 
 /** Plain-text version for the clipboard (WhatsApp, email, a document). */
@@ -36,12 +42,23 @@ export function artifactText(a: Artifact): string {
       `Support: ${a.differentiation.support}`, `Stretch: ${a.differentiation.stretch}`, `Exit check: ${a.checkForUnderstanding}`].join('\n');
   }
   if (a.kind === 'rubric') return [a.title, ...a.criteria.map(c => `${c.name}\n${c.levels.map(l => `  ${l.label} (${l.points}): ${l.descriptor}`).join('\n')}`)].join('\n\n');
+  if (a.kind === 'bundle') return [a.title, ...a.parts.map(p => artifactText(p))].join('\n\n────────\n\n');
+  if (a.kind === 'diagram') return [a.title, a.caption].filter(Boolean).join('\n');
+  if (a.kind === 'paper') return [a.title, ...a.paper.sections.flatMap(s => [`SECTION ${s.id} ${s.title}`, ...s.questions.map(q => `${q.q}. ${q.text || q.assertion || q.passage || ''} (${q.marks})`)])].join('\n');
+  if (a.kind === 'image') return [a.title, a.caption, `Picture: ${a.prompt}`].filter(Boolean).join('\n');
+  if (a.kind === 'lab') {
+    const e = engineById(a.scene.engine);
+    return [a.title, e ? `Live Lab: ${e.title}` : '', a.scene.narration ?? '', '',
+      ...scenePredictions(a.scene).map((q, i) => `${i + 1}. ${q.prompt}\n${q.options.map((o, k) => `   ${LETTERS[k]}. ${o}`).join('\n')}\n   Answer: ${LETTERS[q.correct]}. ${q.explain}`)].join('\n');
+  }
   return `${a.title}\n\n${a.markdown}`;
 }
 
 /** One Copilot artifact, with the actions that make it useful. */
-export default function ArtifactView({ artifact: a, cls, subject, onRefine, onToast, sample = null, targets = [] }: {
+export default function ArtifactView({ artifact: a, cls, subject, onRefine, onToast, onChange, sample = null, targets = [] }: {
   artifact: Artifact; cls: string; subject: string; onRefine?: (text: string) => void; onToast?: (m: string) => void;
+  /** The artifact changed in place (an illustration was generated); the Copilot keeps the new version. */
+  onChange?: (next: Artifact) => void;
   /** Show as a static example ("what you'll get"), with its footnote; no actions. */
   sample?: string | null;
   /** Students a targeted request was for — carried into "Send to class". */
@@ -85,6 +102,29 @@ export default function ArtifactView({ artifact: a, cls, subject, onRefine, onTo
       setSaved(row.id); onToast?.('Saved to your lesson planner');
     } catch (e: any) { setError(e?.message || 'Couldn’t save the lesson.'); } finally { setBusy(false); }
   };
+
+  if (a.kind === 'lab') return <LabArtifact a={a} sample={sample} onRefine={onRefine} />;
+  if (a.kind === 'diagram') return <DiagramArtifact a={a} sample={sample} />;
+  if (a.kind === 'paper') return <PaperArtifact a={a} onRefine={onRefine} />;
+  if (a.kind === 'image') return <ImageArtifact a={a} cls={cls} subject={subject} sample={sample} onChange={onChange} />;
+  if (a.kind === 'bundle') {
+    return (
+      <div className="art-bundle">
+        <div className="art-bundle-hd">
+          {sample && <><Chip tone="a">EXAMPLE</Chip>{' '}</>}
+          <Chip tone="p">LESSON BUNDLE</Chip>
+          <h3 style={{ fontSize: 17, fontWeight: 800, marginTop: 8 }}>{a.title}</h3>
+          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{a.parts.length} parts: {a.parts.map(p => PART_LABEL[p.kind === 'questions' ? p.purpose : p.kind] ?? p.kind).join(' · ')}</div>
+        </div>
+        {a.parts.map((p, i) => (
+          <ArtifactView key={i} artifact={p} cls={cls} subject={subject} targets={p.kind === 'questions' && p.purpose === 'remedial' ? targets : []}
+            onToast={onToast} sample={sample}
+            onChange={onChange ? next => onChange({ ...a, parts: a.parts.map((x, j) => (j === i ? next : x)) as typeof a.parts }) : undefined}
+            onRefine={onRefine ? r => onRefine(`${r} (only the ${PART_LABEL[p.kind === 'questions' ? p.purpose : p.kind] ?? p.kind} in the bundle)`) : undefined} />
+        ))}
+      </div>
+    );
+  }
 
   const mcqOnly = a.kind === 'questions' && a.questions.every(q => q.type === 'mcq');
   const hasMcq = a.kind === 'questions' && a.questions.some(q => q.type === 'mcq');

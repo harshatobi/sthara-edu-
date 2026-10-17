@@ -16,6 +16,7 @@ import { CalendarDotsIcon as CalendarDots } from '@phosphor-icons/react/dist/ssr
 import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
+import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/react/dist/ssr/IdentificationCard';
 import TeacherDemoPortal from '@/components/teacher/TeacherDemoPortal';
@@ -37,6 +38,7 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple },
   { href: '/teacher/syllabus', label: 'Syllabus', icon: Lightning },
   { href: '/teacher/ai-assistant', label: 'AI Assistant', short: 'AI', icon: Brain },
+  { href: '/teacher/lab', label: 'Live Lab', short: 'Lab', icon: Flask },
   { href: '/teacher/heatmap', label: 'Class Heat Map', short: 'Heat map', icon: Fire },
   { href: '/teacher/mastery', label: 'Mastery Tracker', short: 'Mastery', icon: ChartLineUp },
   { href: '/teacher/feed', label: 'Situational Feed', short: 'Feed', icon: Bell },

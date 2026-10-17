@@ -269,7 +269,7 @@ export async function computeStudentTml(
     supabase
       .from('submissions')
       .select(`
-        id, score, max_score, teacher_approved, submitted_at, created_at,
+        id, score, max_score, teacher_approved, submitted_at,
         assignments ( id, subject, title, units, type, proctored )
       `)
       .eq('student_id', studentId)
@@ -364,7 +364,7 @@ export async function computeStudentTml(
 
   subsData.forEach(row => {
     if (coveredSubmissionIds.has(row.id)) return;
-    const ageDays = ageInDays(row.submitted_at || row.created_at);
+    const ageDays = ageInDays(row.submitted_at);
     const maxScore = Number(row.max_score);
     if (ageDays === null || !(maxScore > 0)) return;
     const assign = row.assignments || {};

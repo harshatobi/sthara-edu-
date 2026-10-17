@@ -1,0 +1,95 @@
+'use client';
+
+import type { ComponentType } from 'react';
+import { PlayIcon as Play } from '@phosphor-icons/react/dist/ssr/Play';
+import { ArrowCounterClockwiseIcon as ArrowCounterClockwise } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
+import type { LabEngine, Params } from '@/lib/lab/types';
+import OpticsView from './OpticsView';
+import CircuitView from './CircuitView';
+import TitrationView from './TitrationView';
+import MotionView from './MotionView';
+import ForcesView from './ForcesView';
+import EnergyView from './EnergyView';
+import SoundView from './SoundView';
+import EyePrismView from './EyePrismView';
+import MagnetismView from './MagnetismView';
+import ReactionsView from './ReactionsView';
+import type { ViewProps } from './types';
+import '@/styles/lab.css';
+
+const VIEWS: Record<string, ComponentType<ViewProps<any>>> = {
+  optics: OpticsView,
+  circuits: CircuitView,
+  'acid-base': TitrationView,
+  motion: MotionView,
+  forces: ForcesView,
+  energy: EnergyView,
+  sound: SoundView,
+  'eye-prism': EyePrismView,
+  magnetism: MagnetismView,
+  reactions: ReactionsView,
+};
+
+export function LabView({ engine, ...props }: ViewProps & { engine: LabEngine<any> }) {
+  const View = VIEWS[engine.id];
+  return <div className="lab-view">{View ? <View {...props} /> : null}</div>;
+}
+
+/** A value's control, built from the engine's own range so it can't go out of bounds. */
+export function LabControls({ engine, params, setParam, locked }: { engine: LabEngine<any>; params: Params; setParam: ViewProps['setParam']; locked: boolean }) {
+  return (
+    <>
+      {engine.params.filter(s => !s.show || s.show(params)).map(s => {
+        // A choice the engine would refuse in this combination is shown but disabled.
+        const refused = (value: string) => s.kind === 'choice' && !!engine.check?.({ ...params, [s.key]: value } as any);
+        return (
+          <div className="lab-ctl" key={s.key}>
+            {s.kind === 'number' ? (
+              <>
+                <label htmlFor={`lab-${s.key}`}>{s.label}<output>{params[s.key]} {s.unit}</output></label>
+                <input id={`lab-${s.key}`} type="range" min={s.min} max={s.max} step={s.step} value={Number(params[s.key])} disabled={locked}
+                  onChange={e => setParam(s.key, Number(e.target.value))} />
+              </>
+            ) : (
+              <>
+                <label htmlFor={`lab-${s.key}`}>{s.label}</label>
+                <select id={`lab-${s.key}`} value={String(params[s.key])} disabled={locked} onChange={e => setParam(s.key, e.target.value)}>
+                  {s.options.map(o => <option key={o.value} value={o.value} disabled={refused(o.value)}>{o.label}</option>)}
+                </select>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+export function LabReadouts({ engine, params, conceal }: { engine: LabEngine<any>; params: Params; conceal: boolean }) {
+  if (conceal) return <p className="lab-hidden">Readings stay hidden until you reveal.</p>;
+  return <div className="lab-reads">{engine.readouts(params).map(r => <div className="lab-read" key={r.label}><span>{r.label}</span><b>{r.value}</b></div>)}</div>;
+}
+
+/** The simulation with its controls, readings and run button: the builder's working area. */
+export default function LabStage({ engine, params, setParam, runKey, onRun, onReset }: {
+  engine: LabEngine<any>; params: Params; setParam: ViewProps['setParam']; runKey: number; onRun: () => void; onReset: () => void;
+}) {
+  return (
+    <div className="lab-stage">
+      <LabView engine={engine} params={params} setParam={setParam} conceal={false} runKey={runKey} locked={false} />
+      <div className="lab-side">
+        <div className="lab-panel">
+          <div className="lab-transport">
+            <button className="btn pri sm" onClick={onRun}><Play size={13} weight="fill" /> Run</button>
+            <button className="btn sm" onClick={onReset}><ArrowCounterClockwise size={13} weight="bold" /> Defaults</button>
+          </div>
+          <LabControls engine={engine} params={params} setParam={setParam} locked={false} />
+        </div>
+        <div className="lab-panel">
+          <h4>Readings</h4>
+          <LabReadouts engine={engine} params={params} conceal={false} />
+        </div>
+      </div>
+    </div>
+  );
+}

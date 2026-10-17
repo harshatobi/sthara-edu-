@@ -162,16 +162,31 @@ const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
  * `student_id` scope shows up as foreign rows leaking in), records every filter, and inserts.
  * A table named in `fail` returns an error instead of rows.
  */
+// Real live columns (checked against the database). A select() of anything else fails the
+// query like PostgREST would, so a phantom column can never pass the tests again.
+const LIVE_COLUMNS: Record<string, string[]> = {
+  submissions: ['id', 'student_id', 'assignment_id', 'score', 'max_score', 'teacher_approved', 'submitted_at'],
+  tutor_sessions: ['id', 'student_id', 'subject', 'topic', 'hint_depth', 'answer_revealed', 'created_at'],
+  submission_items: ['id', 'student_id', 'submission_id', 'score', 'max_score', 'component_type', 'created_at', 'teacher_confirmed'],
+};
+function unknownColumn(table: string, cols: string): string | null {
+  const known = LIVE_COLUMNS[table];
+  if (!known) return null;
+  const top = cols.replace(/\w+\s*\([^)]*\)/g, '').split(',').map(c => c.trim()).filter(Boolean);
+  return top.find(c => c !== '*' && !known.includes(c)) ?? null;
+}
+
 function fakeDb(rows: Record<string, Record<string, unknown>[]>, fail: string[] = []) {
   const filters: Record<string, [string, string, unknown][]> = {};
   const inserted: Record<string, unknown>[] = [];
   const from = (table: string) => {
     const f = (filters[table] ??= []);
     const matching = () => (rows[table] ?? []).filter(r => f.every(([op, c, v]) => op !== 'eq' || !(c in r) || r[c] === v));
-    const result = () => (fail.includes(table) ? { data: null, error: { message: `${table} down` } } : { data: matching(), error: null });
+    let badColumn: string | null = null;
+    const result = () => (badColumn ? { data: null, error: { message: `column ${table}.${badColumn} does not exist` } } : fail.includes(table) ? { data: null, error: { message: `${table} down` } } : { data: matching(), error: null });
     const one = async () => (fail.includes(table) ? result() : { data: matching()[0] ?? null, error: null });
     const q: Record<string, unknown> = {
-      select: () => q, order: () => q, limit: () => q,
+      select: (cols?: string) => (badColumn = cols ? unknownColumn(table, cols) : null, q), order: () => q, limit: () => q,
       eq: (c: string, v: unknown) => (f.push(['eq', c, v]), q),
       neq: (c: string, v: unknown) => (f.push(['neq', c, v]), q),
       gt: (c: string, v: unknown) => (f.push(['gt', c, v]), q),

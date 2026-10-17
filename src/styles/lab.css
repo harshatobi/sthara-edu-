@@ -1,0 +1,149 @@
+/* Live Lab additions to canon (src/styles/canon.css). Scoped under .canon, prefixed lab-.
+   The presenter (.lab-show) is built for a classroom projector: big type, thick lines, strong contrast. */
+
+/* ── Gallery ─────────────────────────────────────────────────────────────── */
+.canon .lab-section { font-size:12px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin:0 0 12px; }
+.canon .lab-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; }
+.canon .lab-card { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:22px; display:flex; flex-direction:column; gap:10px; border:1px solid transparent; transition:border-color .15s, transform .12s; text-align:left; }
+.canon .lab-card:hover { border-color:#C9D6E8; }
+.canon .lab-card:active { transform:scale(.99); }
+.canon .lab-card h3 { font-size:17px; font-weight:800; }
+.canon .lab-card p { color:var(--mut); font-size:13.5px; line-height:1.45; }
+.canon .lab-card .lab-tile { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; color:#fff; }
+.canon .lab-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+.canon .lab-chip { font-size:11.5px; font-weight:700; color:var(--ink); background:var(--pale); border-radius:8px; padding:3px 9px; }
+.canon .lab-soon { opacity:.55; pointer-events:none; }
+
+/* ── Stage: the simulation with its controls and readouts ────────────────── */
+.canon .lab-stage { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; align-items:start; }
+.canon .lab-view { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:14px; position:relative; overflow:hidden; }
+.canon .lab-view svg { display:block; width:100%; height:auto; touch-action:none; user-select:none; }
+.canon .lab-side { display:flex; flex-direction:column; gap:14px; }
+.canon .lab-panel { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:18px; display:flex; flex-direction:column; gap:14px; }
+.canon .lab-panel h4 { font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); }
+.canon .lab-ctl { display:flex; flex-direction:column; gap:6px; }
+.canon .lab-ctl label { display:flex; justify-content:space-between; font-size:13px; font-weight:700; }
+.canon .lab-ctl label output { font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; }
+.canon .lab-ctl input[type=range] { width:100%; accent-color:var(--blue); }
+.canon .lab-ctl select { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:13.5px; background:#fff; color:var(--ink); }
+.canon .lab-reads { display:grid; grid-template-columns:1fr; gap:8px; }
+.canon .lab-read { display:flex; justify-content:space-between; gap:12px; font-size:13px; border-top:1px solid var(--line); padding-top:8px; }
+.canon .lab-read:first-child { border-top:0; padding-top:0; }
+.canon .lab-read span { color:var(--mut); }
+.canon .lab-read b { font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; text-align:right; }
+.canon .lab-transport { display:flex; flex-wrap:wrap; gap:8px; }
+.canon .lab-hidden { color:var(--mut2); font-style:italic; font-size:13px; }
+
+/* SVG drawing language, shared by every engine */
+.lab-svg text { font-family:'Plus Jakarta Sans',system-ui,sans-serif; fill:#002147; }
+.lab-svg .lb-axis { stroke:#9AA6B8; stroke-width:1.5; stroke-dasharray:6 6; }
+.lab-svg .lb-tick { stroke:#002147; stroke-width:2; }
+.lab-svg .lb-lbl { font-size:15px; font-weight:700; }
+.lab-svg .lb-sm { font-size:12.5px; font-weight:600; fill:#556378; }
+.lab-svg .lb-glass { fill:#DCEBFF; fill-opacity:.75; stroke:#2F6BFF; stroke-width:2.5; }
+.lab-svg .lb-mirror { fill:none; stroke:#002147; stroke-width:4; }
+.lab-svg .lb-mirror-back { fill:none; stroke:#9AA6B8; stroke-width:2; stroke-dasharray:3 5; }
+.lab-svg .lb-obj { stroke:#E11D48; stroke-width:4; fill:#E11D48; }
+.lab-svg .lb-img { stroke:#7C5CFC; stroke-width:4; fill:#7C5CFC; }
+.lab-svg .lb-img.lb-virtual { stroke-dasharray:7 5; fill-opacity:.4; }
+.lab-svg .lb-ray { stroke:#F59E0B; stroke-width:2.6; fill:none; }
+.lab-svg .lb-ray.lb-virtual { stroke-dasharray:7 6; stroke-width:2; opacity:.85; }
+.lab-svg .lb-ray.lb-draw { stroke-dasharray:1600; stroke-dashoffset:1600; animation:lab-draw 1.1s ease-out forwards; }
+.lab-svg .lb-ray.lb-virtual.lb-draw { animation:lab-fade .6s .9s ease-out both; stroke-dasharray:7 6; stroke-dashoffset:0; }
+.lab-svg .lb-grab { cursor:ew-resize; }
+.lab-svg .lb-wire { stroke:#002147; stroke-width:4; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.lab-svg .lb-flow { stroke:#F59E0B; stroke-width:4; fill:none; stroke-dasharray:6 18; stroke-linecap:round; animation:lab-flow linear infinite; }
+.lab-svg .lb-res { stroke:#002147; stroke-width:3; }
+.lab-svg .lb-meter { fill:#fff; stroke:#002147; stroke-width:2; }
+.lab-svg .lb-curve { stroke:#2F6BFF; stroke-width:3.5; fill:none; stroke-linejoin:round; }
+.lab-svg .lb-grid { stroke:#E8EDF4; stroke-width:1; }
+.lab-svg .lb-eq { stroke:#10B981; stroke-width:2; stroke-dasharray:6 5; }
+@keyframes lab-draw { to { stroke-dashoffset:0; } }
+@keyframes lab-fade { from { opacity:0; } to { opacity:.85; } }
+@keyframes lab-flow { to { stroke-dashoffset:-24; } }
+@media (prefers-reduced-motion:reduce) {
+  .lab-svg .lb-ray.lb-draw, .lab-svg .lb-ray.lb-virtual.lb-draw { animation:none; stroke-dashoffset:0; }
+  .lab-svg .lb-flow { animation:none; }
+}
+
+/* ── Builder ─────────────────────────────────────────────────────────────── */
+.canon .lab-qs { display:flex; flex-direction:column; gap:8px; }
+.canon .lab-q { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:12px; font-size:13px; cursor:pointer; text-align:left; }
+.canon .lab-q.on { border-color:var(--blue); background:var(--pale); }
+.canon .lab-q small { display:block; color:var(--mut); margin-top:3px; }
+.canon .lab-title-in { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:14px; font-weight:700; color:var(--ink); }
+
+/* ── Presenter (projector) ───────────────────────────────────────────────── */
+.canon .lab-show { position:fixed; inset:0; z-index:200; background:#F7F9FB; display:flex; flex-direction:column; padding:18px 24px 20px; gap:16px; overflow:auto; }
+.canon .lab-show-top { display:flex; align-items:center; gap:14px; }
+.canon .lab-show-top h1 { font-size:clamp(20px,2.2vw,32px); font-weight:800; flex:1; min-width:0; }
+.canon .lab-show-top .muted { font-size:14px; }
+.canon .lab-show-main { display:grid; grid-template-columns:minmax(0,2.1fr) minmax(320px,1fr); gap:20px; flex:1; min-height:0; }
+.canon .lab-show .lab-view { padding:18px; align-self:start; }
+/* On a 16:9 projector the drawing takes the height it can without pushing the controls off screen. */
+.canon .lab-show .lab-view svg { max-height:calc(100vh - 210px); }
+.canon .lab-show .lab-svg .lb-lbl { font-size:17px; }
+.canon .lab-show .lab-svg .lb-ray, .canon .lab-show .lab-svg .lb-wire { stroke-width:3.2; }
+.canon .lab-ask { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:24px; display:flex; flex-direction:column; gap:16px; }
+.canon .lab-ask .lb-step { font-size:12px; font-weight:800; letter-spacing:.14em; color:var(--red); text-transform:uppercase; }
+.canon .lab-ask h2 { font-size:clamp(20px,2vw,30px); font-weight:800; line-height:1.25; }
+.canon .lab-opts { display:flex; flex-direction:column; gap:10px; }
+.canon .lab-opt { position:relative; display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px; border:2px solid var(--line); background:#fff; font-size:clamp(15px,1.35vw,20px); font-weight:700; text-align:left; overflow:hidden; }
+.canon .lab-opt .lb-k { position:relative; z-index:1; flex:0 0 auto; width:34px; height:34px; border-radius:10px; background:var(--ink); color:#fff; display:grid; place-items:center; font-size:16px; }
+.canon .lab-opt .lb-t { flex:1; position:relative; z-index:1; }
+.canon .lab-opt .lb-n { position:relative; z-index:1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:clamp(15px,1.3vw,20px); min-width:2ch; text-align:right; }
+.canon .lab-opt .lab-bar { position:absolute; inset:0 auto 0 0; background:var(--pale); transition:width .5s ease; }
+.canon .lab-opt.lb-right { border-color:var(--green); }
+.canon .lab-opt.lb-right .lb-k { background:var(--green); }
+.canon .lab-opt.lb-right .lab-bar { background:#D1FAE5; }
+.canon .lab-opt.lb-wrong { opacity:.7; }
+.canon .lab-vote { display:flex; gap:4px; position:relative; z-index:1; }
+.canon .lab-vote button { width:32px; height:32px; border-radius:9px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; }
+.canon .lab-picked { position:relative; z-index:1; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#fff; background:var(--blue); border-radius:8px; padding:4px 9px; }
+.canon .lab-explain { background:#ECFDF5; border-radius:14px; padding:14px 16px; font-size:clamp(14px,1.2vw,18px); line-height:1.5; color:#065F46; }
+.canon .lab-narr { font-size:clamp(15px,1.3vw,19px); line-height:1.55; color:#334155; }
+.canon .lab-keys { font-size:12px; color:var(--mut); }
+.canon .lab-keys kbd { font-family:'IBM Plex Mono',ui-monospace,monospace; background:#fff; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:11.5px; }
+.canon .lab-bottom { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.canon .lab-dots { display:flex; gap:6px; flex:1; }
+.canon .lab-dots i { width:10px; height:10px; border-radius:50%; background:#D5DEEA; }
+.canon .lab-dots i.on { background:var(--ink); }
+
+@media (max-width:1100px) {
+  .canon .lab-stage, .canon .lab-show-main { grid-template-columns:1fr; }
+}
+@media (max-width:680px) {
+  .canon .lab-show { padding:12px 16px 16px; }
+  .canon .lab-ask { padding:18px; }
+}
+
+/* ── Printed worksheet ───────────────────────────────────────────────────────
+   Hidden on screen. From the builder a print shows only the worksheet (and the key, on its own page).
+   The "Powered by Sthara" foot comes from the shared page-margin rule in globals.css. */
+.canon .lab-print { display:none; }
+@media print {
+  @page { size:A4; margin:12mm 12mm 16mm; }
+  .canon main:has(> .lab-print) > :not(.lab-print) { display:none !important; }
+  .canon:has(> main > .lab-print), body:has(.lab-print) { background:#fff !important; }
+  .canon .lab-print { display:block; color:#002147; font-size:10.5pt; line-height:1.45; }
+}
+.canon .lab-print h1 { font-size:18pt; font-weight:800; letter-spacing:-.02em; margin:2mm 0 3mm; }
+.canon .lab-print h2 { font-size:9pt; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#E11D48; margin:0 0 2mm; }
+.canon .lbp-head { border-bottom:1.5px solid #002147; padding-bottom:3mm; margin-bottom:4mm; }
+.canon .lbp-kicker { font-size:8pt; font-weight:800; letter-spacing:.14em; color:#64748B; }
+.canon .lbp-who { display:flex; gap:6mm; font-size:9.5pt; color:#475569; }
+.canon .lbp-who span { flex:1; border-bottom:1px solid #94A3B8; padding-bottom:5mm; }
+.canon .lbp-narr { margin:0 0 3mm; }
+.canon .lbp-fig .lab-view { box-shadow:none; border:1px solid #CBD5E1; border-radius:4mm; padding:2mm; break-inside:avoid; }
+.canon .lbp-fig .lab-bottom { display:none; }
+.canon .lbp-qs { margin:4mm 0 0; padding-left:6mm; list-style:decimal; }
+.canon .lbp-qs li::marker { font-weight:800; }
+.canon .lbp-qs li { margin:0 0 4mm; break-inside:avoid; }
+.canon .lbp-opts { display:flex; flex-wrap:wrap; gap:1.5mm 6mm; margin:1.5mm 0; }
+.canon .lbp-opts i { display:inline-block; width:3.2mm; height:3.2mm; border:1px solid #002147; border-radius:.8mm; margin-right:1.5mm; vertical-align:-.4mm; }
+.canon .lbp-lines { border-bottom:1px solid #CBD5E1; min-height:9mm; font-size:8.5pt; color:#64748B; }
+.canon .lbp-lines.tall { min-height:28mm; background:repeating-linear-gradient(transparent 0 8.6mm, #CBD5E1 8.6mm 9mm); border:0; }
+.canon .lbp-obs { margin-top:3mm; break-inside:avoid; }
+.canon .lbp-key { break-before:page; }
+.canon .lbp-key p { margin:1mm 0 0; }
+.canon .lbp-setup { font-size:9pt; color:#475569; }

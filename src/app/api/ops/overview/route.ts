@@ -102,6 +102,14 @@ export async function GET(req: NextRequest) {
         };
       }
     }
+    // TML health: students in this operator's schools whose confirmed work (last 14 days) is newer than their
+    // latest snapshot. Best effort, never blocks the page.
+    let staleTml: { schoolId: string; students: number }[] = [];
+    if (can(op.role, 'health.read')) {
+      const stale = await db.rpc('ops_tml_stale');
+      if (!stale.error) staleTml = ((stale.data || []) as { school_id: string; students: number }[])
+        .filter(r => inSight(r.school_id)).map(r => ({ schoolId: r.school_id, students: r.students }));
+    }
     const enq = can(op.role, 'enquiries.read')
       ? enquiries.data.filter(e => sees(sight, { territoryId: e.territory_id, ownerId: e.owner_id })) : [];
     const newEnquiries = enq.filter(e => e.status === 'new').length;
@@ -109,7 +117,7 @@ export async function GET(req: NextRequest) {
     const totals = !can(op.role, 'usage.read') ? null : (usage.data as { totals?: { cost?: number; calls?: number; failed?: number } } | null)?.totals ?? null;
     return NextResponse.json({
       schools: registry,
-      attention: buildAttention({ schools: registry, health: healthItems, newEnquiries, pendingRequests, errors, desk, sales }),
+      attention: buildAttention({ schools: registry, health: healthItems, newEnquiries, pendingRequests, errors, desk, sales, staleTml }),
       errors: { open24h: errors.open24h, new24h: errors.new24h },
       requests: { pending: pendingRequests.reduce((n, p) => n + p.count, 0) },
       health: summarise(healthItems),

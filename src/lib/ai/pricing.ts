@@ -25,6 +25,9 @@ export const PRICES_CHECKED = '2026-09-25';
 export const MODEL_PRICES: Record<string, ModelPrice> = {
   'gemini-2.5-flash': { input: 0.30, output: 2.50, cached: 0.03 },
   'gemini-2.5-flash-lite': { input: 0.10, output: 0.40, cached: 0.01 },
+  // Image generation: each image is about 1,290 output tokens billed at the image rate (≈ $0.039 an image,
+  // Google's pricing page as of February 2026). Prompts are short, so the text input rate barely matters.
+  'gemini-2.5-flash-image': { input: 0.30, output: 30.00, cached: 0.03 },
   'gemini-2.5-pro': {
     input: 1.25, output: 10.00, cached: 0.125,
     longAbove: 200_000, long: { input: 2.50, output: 15.00, cached: 0.25 },
@@ -47,6 +50,8 @@ export const AI_FEATURES = {
   homeworkGen:      { label: 'Homework creator', who: 'Teacher' },
   paperGen:         { label: 'Question paper generator', who: 'Teacher' },
   copilot:          { label: 'Teaching copilot', who: 'Teacher' },
+  copilotImage:     { label: 'Copilot illustrations', who: 'Teacher' },
+  boardPaper:       { label: 'Board exam papers', who: 'Teacher' },
   lessonDraft:      { label: 'Lesson plan drafting', who: 'Teacher' },
   captureGrade:     { label: 'Capture & AI grading', who: 'Teacher' },
   homeworkGrade:    { label: 'Homework photo grading', who: 'Student' },

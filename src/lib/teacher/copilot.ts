@@ -5,14 +5,21 @@
  *   say          short markdown to the teacher
  *   ask          up to 3 clarifying questions, each with tappable options
  *   artifact     something usable: a question set, a lesson plan, a rubric,
- *                or a document (parent note, explanations, …)
+ *                a Live Lab demo, or a document (parent note, explanations, …)
  *   suggestions  2–4 one-tap follow-ups
  */
 import { sanitizeQuestions, type Question } from './questions';
+import { fittingPredictions, validateScene, type LabScene } from '@/lib/lab/registry';
+import { sanitizeSvg } from './svg';
+import { checkPaper, type Paper } from '@/lib/papers/paper';
+import { designsFor } from '@/lib/papers/designs';
+
+/** Where the Copilot image route stores a picture: <school>/<teacher>/<uuid>.png in the private bucket. */
+export const IMAGE_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.png$/;
 
 export type StudioKind =
   | 'worksheet' | 'quiz' | 'remedial' | 'lesson' | 'rubric' | 'answer_key'
-  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets';
+  | 'parent_note' | 'explain' | 'discussion' | 'exit_tickets' | 'lab_demo' | 'misconceptions' | 'bundle' | 'diagram' | 'illustration' | 'board_paper';
 
 export type StudioGroup = 'students' | 'you' | 'parents';
 export interface StudioType {
@@ -36,6 +43,12 @@ export const STUDIO: StudioType[] = [
   { kind: 'discussion', label: 'Discussion prompts', blurb: 'Questions that make them think out loud', group: 'you', needsChapter: true, items: true, seconds: 10 },
   { kind: 'rubric', label: 'Rubric', blurb: 'Criteria and levels for written or project work', group: 'you', needsChapter: false, seconds: 10 },
   { kind: 'answer_key', label: 'Marking scheme', blurb: 'Step marks for a paper you paste in', group: 'you', needsChapter: false, seconds: 12 },
+  { kind: 'bundle', label: 'Lesson bundle', blurb: 'Plan, demo, exit ticket and catch-up pack for one period', group: 'you', needsChapter: true, minutes: true, who: 'many', seconds: 45 },
+  { kind: 'diagram', label: 'Labelled diagram', blurb: 'A clean, labelled diagram to print or put on the board', group: 'you', needsChapter: true, seconds: 15 },
+  { kind: 'illustration', label: 'Illustration', blurb: 'A picture for a scene or real-world context (you choose to generate it)', group: 'you', needsChapter: false, seconds: 8 },
+  { kind: 'misconceptions', label: 'Fix misconceptions', blurb: 'What they got wrong, why, and what will fix it', group: 'you', needsChapter: false, seconds: 15 },
+  { kind: 'lab_demo', label: 'Live lab demo', blurb: 'A simulation for the board, with predictions', group: 'you', needsChapter: true, seconds: 10 },
+  { kind: 'board_paper', label: 'Board exam paper', blurb: 'A full paper in the CBSE 2026-27 pattern, with marking scheme', group: 'students', needsChapter: false, seconds: 90 },
   { kind: 'parent_note', label: 'Parent note', blurb: 'Warm, specific, one thing to do at home', group: 'parents', needsChapter: false, who: 'one', seconds: 8 },
 ];
 
@@ -51,7 +64,22 @@ export type Artifact =
       priorKnowledge: string; stages: { name: string; minutes: number; teacher: string; students: string }[];
       differentiation: { support: string; stretch: string }; checkForUnderstanding: string; materials: { label: string }[] }
   | { kind: 'rubric'; title: string; criteria: { name: string; levels: { label: string; descriptor: string; points: number }[] }[] }
-  | { kind: 'document'; title: string; audience: 'teacher' | 'parent' | 'student'; markdown: string };
+  | { kind: 'document'; title: string; audience: 'teacher' | 'parent' | 'student'; markdown: string }
+  /** A Live Lab set-up. Only the engine, its values and the wording come from the model; answers come from the engine. */
+  | { kind: 'lab'; title: string; scene: LabScene }
+  /** A labelled diagram the model drew; the SVG is rebuilt from a whitelist before anyone sees it. */
+  | { kind: 'diagram'; title: string; caption: string; svg: string }
+  /** An illustration. The model writes the prompt; the teacher generates it (it costs money), then `path` is set. */
+  | { kind: 'image'; title: string; prompt: string; caption: string; path: string | null }
+  /** A full board-pattern paper: every question checked against the official design before it arrives. */
+  | { kind: 'paper'; title: string; paper: Paper }
+  /** Everything for one period in one go; each part is checked like a standalone artifact. */
+  | { kind: 'bundle'; title: string; parts: Exclude<Artifact, { kind: 'bundle' }>[] };
+
+/** Studio types that only make sense for some subjects (the Live Lab covers science). */
+export const isScienceSubject = (subject: string) => /science|physics|chemistry/i.test(subject);
+export const studioFor = (subject: string, cls = '') => STUDIO.filter(t =>
+  (t.kind !== 'lab_demo' || isScienceSubject(subject)) && (t.kind !== 'board_paper' || designsFor(cls, subject).length > 0));
 
 export interface CopilotReply { say: string; ask: AskItem[]; artifact: Artifact | null; suggestions: string[] }
 
@@ -65,9 +93,15 @@ export interface ChatTurn {
 const s = (v: unknown, n = 4000) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 const list = (v: unknown, n = 10, len = 400) => (Array.isArray(v) ? v.map(x => s(x, len)).filter(Boolean).slice(0, n) : []);
 
-function artifactOf(a: any): Artifact | null {
+function artifactOf(a: any, nested = false): Artifact | null {
   if (!a || typeof a !== 'object') return null;
   const title = s(a.title, 200) || 'Untitled';
+  if (a.kind === 'bundle') {
+    if (nested) return null;
+    const parts = (Array.isArray(a.parts) ? a.parts : []).slice(0, 8).map((x: unknown) => artifactOf(x, true)).filter(Boolean) as Exclude<Artifact, { kind: 'bundle' }>[];
+    // A bundle that lost all but one part is just that part.
+    return parts.length >= 2 ? { kind: 'bundle', title, parts } : parts[0] ?? null;
+  }
   if (a.kind === 'questions') {
     const { questions, error } = sanitizeQuestions(a.questions);
     if (error || !questions.length) return null;
@@ -94,6 +128,31 @@ function artifactOf(a: any): Artifact | null {
       levels: (Array.isArray(c?.levels) ? c.levels : []).slice(0, 5).map((l: any) => ({ label: s(l?.label, 40), descriptor: s(l?.descriptor, 500), points: Math.max(0, Math.round(Number(l?.points) || 0)) })),
     })).filter((c: any) => c.name && c.levels.length);
     return criteria.length ? { kind: 'rubric', title, criteria } : null;
+  }
+  if (a.kind === 'lab') {
+    // The engine's own check: an unknown engine or any value outside its ranges drops the whole demo.
+    // Accepts the flat shape the prompt asks for, or the nested { scene } shape it sees in the history.
+    const flat = a.scene && typeof a.scene === 'object' ? { ...a.scene, title: s(a.title, 200) || a.scene.title } : a;
+    const scene = validateScene({ ...flat, title: s(flat.title, 200) || title });
+    if (!scene) return null;
+    // A demo the model sent without questions gets the Builder's default: the first three that fit.
+    if (!scene.predictions.length) scene.predictions = fittingPredictions(scene.engine, scene.params).slice(0, 3).map(q => ({ id: q.id }));
+    return { kind: 'lab', title: scene.title, scene };
+  }
+  if (a.kind === 'paper') {
+    if (nested) return null;
+    const paper = checkPaper(a.paper);
+    return paper ? { kind: 'paper', title: paper.title, paper } : null;
+  }
+  if (a.kind === 'diagram') {
+    const svg = sanitizeSvg(a.svg);
+    return svg ? { kind: 'diagram', title, caption: s(a.caption, 600), svg } : null;
+  }
+  if (a.kind === 'image') {
+    const prompt = s(a.prompt, 800);
+    // Only a path the image route itself produced.
+    const path = typeof a.path === 'string' && IMAGE_PATH.test(a.path) ? a.path : null;
+    return prompt ? { kind: 'image', title, prompt, caption: s(a.caption, 600), path } : null;
   }
   if (a.kind === 'document') {
     const markdown = s(a.markdown, 12000);

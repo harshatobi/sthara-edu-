@@ -6,13 +6,19 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { courseChapters, getCurriculum, CURRENT_SESSION } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/desk';
-import { parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
+import { isScienceSubject, parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
+import { enginesFor, labCatalogue } from '@/lib/lab/registry';
+import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconceptions';
+import { designsFor } from '@/lib/papers/designs';
+import { generatePaper } from '@/lib/papers/generate';
+import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
 import { byIds, pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// A lesson bundle is a long reply, and a board paper writes its sections in parallel with one retry each.
+export const maxDuration = 300;
 
 const str = (v: unknown, n = 4000) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 
@@ -46,6 +52,37 @@ export async function POST(req: NextRequest) {
   if (aiBlocked) return aiBlocked;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
+
+  // A board paper is its own job: the design fixes every question, so the class brief isn't needed.
+  if (studioKind === 'board_paper') {
+    if (!checkRateLimit(`boardPaper:${staff.id}`, ...limitOf('boardPaper')).allowed) {
+      return NextResponse.json({ error: 'That’s several papers in a short time. Try again in a little while.' }, { status: 429 });
+    }
+    const options = designsFor(cls, subject);
+    const design = options.find(d => d.key === b?.studio?.design) ?? options[0];
+    const cur = getCurriculum(cls, subject);
+    if (!design || !cur) return NextResponse.json({ error: `There's no board paper design for ${subject} in ${cls} yet.` }, { status: 400 });
+    try {
+      const paper = await generatePaper(new GoogleGenAI({ apiKey }), design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, Math.floor(Math.random() * 1e9));
+      const total = paper.sections.reduce((n, sec) => n + sec.questions.length, 0);
+      return NextResponse.json({
+        reply: {
+          say: `Here is a full ${design.subject}${design.variant ? ` (${design.variant})` : ''} practice paper in the CBSE 2026-27 board pattern: ${total} questions, ${design.maxMarks} marks, with its marking scheme. Every question was checked against the board design; please read it through before you use it.`,
+          ask: [], artifact: { kind: 'paper', title: paper.title, paper },
+          suggestions: ['Make a revision worksheet on the weakest chapter', 'Plan the revision lessons before the exam'],
+        },
+      });
+    } catch (e: any) {
+      console.error('[copilot paper]', e?.message);
+      const kind = aiFailure(e);
+      return NextResponse.json({
+        error: kind === 'busy' ? 'Google’s AI is overloaded right now, even after several retries. Try again in a few minutes.'
+          : kind === 'quota' ? 'The school’s AI quota with Google has run out, so the paper couldn’t be written. Your Sthara administrator needs to check the Gemini plan and billing.'
+            : 'The paper didn’t come out in the board’s shape this time. Try again; each try writes it afresh.',
+        code: kind,
+      }, { status: kind === 'quota' ? 429 : kind === 'busy' ? 503 : 502 });
+    }
+  }
 
   // ── The brief: this class + subject, from the database ────────────────────
   const [{ data: users }, { data: assignments }, { data: progress }, { data: lessons }] = await Promise.all([
@@ -111,6 +148,26 @@ export async function POST(req: NextRequest) {
       return `- ${a.type} "${a.title}" (${a.status}, due ${a.due_date || '—'}, chapter ${Array.isArray(a.units) ? a.units[0] : '—'}): ${ss.length}/${roster.length} in, ${graded.length} graded${avg !== null ? `, avg ${avg}%` : ''}${a.status === 'published' && missing.length && missing.length < roster.length ? `; not in: ${missing.join(' ')}` : ''}`;
     }).join('\n')}`);
   } else brief.push('ASSIGNMENTS: none set yet for this class and subject.');
+  // Live Lab: the simulations that fit this class and chapter, so the Copilot can set one up (science only).
+  const labEngines = isScienceSubject(subject) ? enginesFor(cls, focus?.name ?? str(b?.chapter, 200)) : [];
+  if (labEngines.length) brief.push(`LAB ENGINES (Live Lab simulations you can set up; values must stay inside these ranges):\n${labCatalogue(labEngines)}`);
+  // Misconceptions: the class's own wrong answers (recent MCQs and photographed work) and tutor struggles.
+  {
+    const recent = work.filter(a => a.status !== 'draft').sort((x, y) => String(y.due_date ?? '').localeCompare(String(x.due_date ?? ''))).slice(0, 15).map(a => a.id);
+    const ids = roster.map(u => u.id);
+    const [{ data: qs }, { data: answered }, { data: tutor }] = await Promise.all([
+      recent.length ? db.from('assignments').select('id, title, class, subject, units, questions').in('id', recent) : Promise.resolve({ data: [] as any[] }),
+      recent.length && ids.length ? byIds<any>(recent, (chunk, a, b2) => db.from('submissions').select('assignment_id, student_id, answers, ai_result').in('assignment_id', chunk).order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
+      // Last 90 days only: older struggles say little about this week's lesson, and the read stays small.
+      ids.length ? byIds<any>(ids, (chunk, a, b2) => db.from('tutor_sessions').select('student_id, subject, topic, micro_topic, hint_depth, answer_revealed').in('student_id', chunk)
+        .gte('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString())
+        .or('answer_revealed.eq.true,hint_depth.gte.3').order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const evidence = misconceptionBrief(findMisconceptions({
+      cls, subject, roster: new Set(ids), assignments: qs ?? [], submissions: answered ?? [], tutor: tutor ?? [],
+    }), id => token.get(id) ?? '?');
+    brief.push(evidence || 'MISCONCEPTION EVIDENCE: none stands out yet (too few answers, or no shared wrong answers).');
+  }
   if (lessons?.length) brief.push(`UPCOMING LESSONS:\n${lessons.map(l => `- ${l.lesson_date}: ${l.title} (${l.chapter_name}, ${l.status})`).join('\n')}`);
   if (studioKind) {
     const t = STUDIO.find(x => x.kind === studioKind)!;
@@ -127,7 +184,8 @@ HOW YOU WORK
 - Students appear ONLY as tokens like [[S3]]. Refer to them with those exact tokens. Never guess or invent names.
 - ASK: if something that materially changes the output is missing (which students, how many items, difficulty, format, time available), ask up to 3 short questions in "ask", each with 2–5 concrete options — and do not produce the artifact in that same reply. If the teacher already gave the details, or says "just do it", do not ask; make sensible choices and state them in one line.
 - PROBE: when the request conflicts with the evidence, say so before acting and offer the choice (e.g. a hard quiz for a chapter the class averages 34% on; a new chapter while the last one is untaught or unassessed; remedial work for students who are actually fine). Be direct, never preachy.
-- When you spot something the teacher didn't ask about but should know (a student slipping, a quiz/homework gap, missing submissions), mention it in one sentence.
+- When you spot something the teacher didn't ask about but should know (a student slipping, a quiz/homework gap, missing submissions, a shared misconception), mention it in one sentence.
+- MISCONCEPTIONS: the evidence block lists wrong answers students actually gave. When you plan or prepare a lesson, start from the biggest one. Say what the students probably think ("they believe…"), labelled as likely, then the fix: a concrete activity, an explanation that confronts the wrong idea, a Live Lab demo if one fits, and a 2-question check. Never invent evidence, counts or students.
 - Stay inside the CBSE ${CURRENT_SESSION} curriculum for this class; respect exclusions listed for the chapter. Indian classroom context: ~40 students, blackboard, limited devices.
 - "say" is short: at most 120 words of markdown. Put substance in the artifact.
 - Always offer 2–4 "suggestions": short next steps written as the teacher would type them (e.g. "Make it easier for [[S2]]", "Turn this into a quiz").
@@ -137,6 +195,11 @@ ARTIFACTS (at most one per reply; omit when asking questions or just discussing)
   Quizzes and exit tickets: MCQ only. Worksheets: mix MCQ and short. Remedial: start concrete and easy, build up, include worked hints in "why".
 - Lesson plan: {"kind":"lesson","title":"…","chapter":"…","topics":["exact content points"],"durationMin":40,"objectives":["Students will be able to …"],"successCriteria":["I can …"],"priorKnowledge":"…","materials":[{"label":"…"}],"stages":[{"name":"…","minutes":5,"teacher":"…","students":"…"}],"differentiation":{"support":"…","stretch":"…"},"checkForUnderstanding":"exit check with expected answer"} — stage minutes must sum to durationMin.
 - Rubric: {"kind":"rubric","title":"…","criteria":[{"name":"…","levels":[{"label":"Exceeds","descriptor":"…","points":4}]}]}
+${labEngines.length ? `- Live Lab demo (a simulation the teacher runs on the board while the class predicts): {"kind":"lab","engine":"<id from LAB ENGINES>","params":{"<value name>":<value>},"title":"…","predictions":[{"id":"<question id>","prompt":"optional re-wording"}],"narration":"1–2 lines the teacher says first","answer":"hands|class|think"}
+  Use only engines, value names and question ids listed under LAB ENGINES, inside their ranges; leave out values you don't need (defaults apply). Pick 2–4 questions. Never state the answers or any number the simulation reveals: the simulation works them out. answer is how the class responds (most classrooms have no student devices): "hands" (teacher counts hands) unless the teacher asks otherwise. If nothing listed fits what they asked, say so plainly and offer the nearest one.
+` : ''}- Labelled diagram: {"kind":"diagram","title":"…","caption":"one line","svg":"<svg viewBox=\\"0 0 800 500\\">…</svg>"}. Use only svg, g, path, line, polyline, polygon, rect, circle, ellipse, text, tspan, defs, marker; no style attributes, scripts, images or links (anything else is removed). Labels are <text font-size="16">, with leader lines to the part. Black strokes about 2 px, light fills, follow NCERT drawing conventions (arrows on rays, standard circuit symbols). Under 30 KB.${labEngines.length ? ' For anything a LAB ENGINE simulates (rays through a lens or mirror, circuits, titration), make a lab artifact instead: it is exact and the class can predict.' : ''}
+- Illustration: {"kind":"image","title":"…","prompt":"what the picture shows, concrete and specific","caption":"…"}. For scenes, real-world contexts, history and geography, story art. Never for anything that needs labels, numbers or exact geometry (make a diagram). The teacher decides whether to generate it; don't describe it as already drawn.
+- Lesson bundle (when the teacher asks for everything for a period, or STUDIO REQUEST is Lesson bundle): {"kind":"bundle","title":"…","parts":[ … ]} with, in this order: a lesson artifact; ${labEngines.length ? 'a lab artifact if a LAB ENGINE fits the chapter; ' : ''}a diagram artifact when a labelled diagram helps; a questions artifact with purpose "exit_tickets" (3 MCQs); a questions artifact with purpose "remedial" for the students below 40% (or the FOR THESE STUDENTS list), built on the MISCONCEPTION EVIDENCE when there is any. Each part follows its own format above. The lesson's stages name the demo and the exit ticket where they happen. This is the one case where a reply carries several things, inside one bundle.
 - Anything else (parent note, explanations three ways, discussion prompts, marking scheme, feedback): {"kind":"document","title":"…","audience":"teacher|parent|student","markdown":"…"}. Parent notes: warm, specific, one concrete thing to do at home, under 150 words, sign off as ${staff.name}.
 
 Reply with ONE JSON object only: {"say":"…","ask":[{"id":"q1","question":"…","options":["…"],"multi":false}],"artifact":{…} or null,"suggestions":["…"]}

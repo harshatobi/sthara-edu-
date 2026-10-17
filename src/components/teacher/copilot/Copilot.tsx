@@ -162,16 +162,17 @@ export default function Copilot() {
     const others = threads.filter(t => t.id !== withTeacher.id);
     persist([withTeacher, ...others]);
     setActiveId(withTeacher.id);
-    setSending(st ? `Writing your ${STUDIO.find(x => x.kind === st.kind)!.label.toLowerCase()} from ${useCls}'s results…` : `Reading ${useCls}'s results…`);
+    setSending(st?.kind === 'board_paper' ? 'Writing the paper section by section and checking each against the board design (a minute or two)…'
+      : st ? `Writing your ${STUDIO.find(x => x.kind === st.kind)!.label.toLowerCase()} from ${useCls}'s results…` : `Reading ${useCls}'s results…`);
     chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
       const lastArtifactIdx = withTeacher.turns.map((t, i) => (t.reply?.artifact ? i : -1)).filter(i => i >= 0).pop();
-      const res = await call<{ reply: CopilotReply; context: typeof ctx }>('/api/teacher/copilot', 'POST', {
+      const res = await call<{ reply: CopilotReply; context?: typeof ctx }>('/api/teacher/copilot', 'POST', {
         class: useCls, subject: useSubject, chapter: st?.chapter || undefined,
-        studio: st ? { kind: st.kind, count: st.count, difficulty: st.difficulty, durationMin: st.duration, targets: st.targets } : undefined,
+        studio: st ? { kind: st.kind, count: st.count, difficulty: st.difficulty, durationMin: st.duration, targets: st.targets, design: st.design } : undefined,
         messages: withTeacher.turns.map((t, i) => ({ role: t.role, text: turnText(t, i === lastArtifactIdx) })),
       });
-      setCtx(res.context);
+      if (res.context) setCtx(res.context); // a board paper reply carries no class summary
       // A reply inherits the targets of the request it answers (so "Send to class" goes to those students).
       const inherited = [...withTeacher.turns].reverse().find(t => t.role === 'teacher' && t.targets)?.targets;
       const done: Thread = { ...withTeacher, turns: [...withTeacher.turns, { role: 'copilot', text: res.reply.say, reply: res.reply, at: now(), ...(inherited ? { targets: inherited } : {}) }], updated: now() };
@@ -251,7 +252,7 @@ export default function Copilot() {
               <h3 style={{ fontSize: 17, fontWeight: 800 }}>Make something for {cls}</h3>
               {!studio && <span className="muted" style={{ fontSize: 12.5 }}>Pick one to see an example first. Nothing is generated until you say so.</span>}
             </div>
-            <StudioTiles selected={studio?.kind ?? null} compact={!!studio} onSelect={k => openStudio(k)} />
+            <StudioTiles selected={studio?.kind ?? null} compact={!!studio} onSelect={k => openStudio(k)} subject={subject} cls={cls} />
             {studio && (
               <StudioPanel key={studio.key} kind={studio.kind} preset={studio.preset} cls={cls} subject={subject} chapters={chapters}
                 students={students} belowForty={belowForty} sending={!!sending} onGenerate={onGenerate} onClose={() => setStudio(null)} />
@@ -291,7 +292,10 @@ export default function Copilot() {
                       {t.reply?.ask.length ? <AskCard items={t.reply.ask} disabled={!!sending || idx !== turns.length - 1} onAnswer={a => send(a)} /> : null}
                       {t.reply?.artifact && (
                         <ArtifactView artifact={t.reply.artifact} cls={active?.cls ?? cls} subject={active?.subject ?? subject} targets={t.targets ?? []} onToast={toast}
-                          onRefine={r => send(`${r} — revise the ${t.reply!.artifact!.kind === 'questions' ? 'questions' : t.reply!.artifact!.kind === 'lesson' ? 'lesson plan' : 'document'} you just made.`)} />
+                          onChange={next => { const tid = active?.id; setThreads(prev => { const upd = prev.map(th => (th.id !== tid ? th : { ...th, turns: th.turns.map((x, j) => (j === idx && x.reply ? { ...x, reply: { ...x.reply, artifact: next } } : x)) })); saveThreads(uid, upd); return upd; }); }}
+                          onRefine={r => t.reply!.artifact!.kind === 'paper'
+                            ? send(r, { studio: { kind: 'board_paper', design: t.reply!.artifact!.paper.design, chapter: '', count: 0, difficulty: 'Mixed', duration: 40, targets: [], note: '' }, cls: active?.cls, subject: active?.subject })
+                            : send(`${r} — revise the ${t.reply!.artifact!.kind === 'questions' ? 'questions' : t.reply!.artifact!.kind === 'lesson' ? 'lesson plan' : t.reply!.artifact!.kind === 'lab' ? 'Live Lab demo' : t.reply!.artifact!.kind === 'diagram' ? 'diagram' : t.reply!.artifact!.kind === 'image' ? 'picture' : t.reply!.artifact!.kind === 'bundle' ? 'lesson bundle' : 'document'} you just made.`)} />
                       )}
                       {idx === turns.length - 1 && t.reply?.suggestions.length ? (
                         <div className="sugg">{t.reply.suggestions.map(s => <button key={s} disabled={!!sending} onClick={() => send(s)}>{s}</button>)}</div>

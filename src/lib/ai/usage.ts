@@ -47,7 +47,8 @@ async function write(r: Row) {
       cost_usd: costUsd(r.model, t),
       ok: r.ok,
       latency_ms: r.latencyMs,
-      error: r.error ? r.error.slice(0, 300) : null,
+      // Long enough to keep the quota metric Google names in a 429 (it comes after the generic message).
+      error: r.error ? r.error.slice(0, 1500) : null,
     });
     if (error) console.error('[ai_usage] insert failed:', error.message);
   } catch (e) {

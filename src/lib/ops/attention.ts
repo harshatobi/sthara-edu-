@@ -72,6 +72,8 @@ export function buildAttention(x: {
   desk?: DeskPulse;
   /** Quotes this operator can approve, and open deals whose close date has passed. */
   sales?: { approvals: number; overdue: number };
+  /** Per school, students whose graded work is newer than their TML snapshot: the engine is failing or not running. */
+  staleTml?: { schoolId: string; students: number }[];
 }): AttentionItem[] {
   const out: AttentionItem[] = [];
   const log: AttentionAction = { kind: 'open', href: '/ops/errors', label: 'Open error log' };
@@ -99,6 +101,15 @@ export function buildAttention(x: {
     });
   }
   const names = new Map(x.schools.map(s => [s.id, s.name]));
+  for (const t of x.staleTml ?? []) {
+    if (t.students <= 0) continue;
+    out.push({
+      id: `tml-stale:${t.schoolId}`, severity: 'crit', schoolId: t.schoolId,
+      title: `${names.get(t.schoolId) ?? 'A school'}: TML is behind for ${plural(t.students, 'student')}`,
+      detail: 'Teacher-confirmed work from the last 14 days is newer than their last TML snapshot. Check the error log, then recompute.',
+      actions: [{ kind: 'open', href: `/ops/schools/${t.schoolId}?tab=health`, label: 'Open school' }, { kind: 'open', href: '/ops/errors', label: 'Open error log' }],
+    });
+  }
   for (const p of x.pendingRequests ?? []) {
     if (p.count <= 0) continue;
     out.push({

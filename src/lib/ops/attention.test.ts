@@ -84,3 +84,11 @@ test('the error log: spikes are critical, new errors a warning, known ones infor
   assert.deepEqual(known.map(a => a.severity), ['info']);
   assert.deepEqual(buildAttention({ schools: [], health: [], newEnquiries: 0, errors: { open24h: 0, new24h: 0, spikes: [] } }), []);
 });
+
+test('stale TML is raised per school, named, and linked to that school', () => {
+  const out = buildAttention({ schools: [school({ id: 'a', name: 'Alpha' })], health: [], newEnquiries: 0,
+    staleTml: [{ schoolId: 'a', students: 3 }, { schoolId: 'b', students: 0 }] });
+  assert.deepEqual(ids(out), ['tml-stale:a']);
+  assert.equal(out[0].title, 'Alpha: TML is behind for 3 students');
+  assert.equal(out[0].severity, 'crit');
+});

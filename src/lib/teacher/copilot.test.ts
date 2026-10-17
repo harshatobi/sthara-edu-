@@ -32,3 +32,40 @@ test('every Studio type has a sample, and every sample is a valid artifact', asy
   const lesson = SAMPLES.lesson;
   assert.ok(lesson.kind === 'lesson' && lesson.stages.reduce((n, s) => n + s.minutes, 0) === lesson.durationMin, 'sample lesson timings add up');
 });
+
+test('a Live Lab demo passes only when the engine accepts every value; answers never come from the model', () => {
+  const ok = parseReply({ artifact: { kind: 'lab', engine: 'optics', params: { device: 'convex_lens', f: 10, u: 15 }, title: 'Image by a lens', predictions: ['image-distance', 'made-up'], narration: 'Watch the screen.' } });
+  assert.equal(ok.artifact?.kind, 'lab');
+  if (ok.artifact?.kind === 'lab') {
+    assert.deepEqual(ok.artifact.scene.predictions.map(p => p.id), ['image-distance'], 'unknown question ids are dropped');
+    assert.equal(ok.artifact.scene.answer, 'hands');
+  }
+  assert.equal(parseReply({ artifact: { kind: 'lab', engine: 'optics', params: { f: 500 } } }).artifact, null, 'out of range: no demo');
+  assert.equal(parseReply({ artifact: { kind: 'lab', engine: 'cold-fusion', params: {} } }).artifact, null, 'unknown engine: no demo');
+  // The nested shape the model sees in the conversation history is accepted too.
+  const nested = parseReply({ artifact: { kind: 'lab', title: 'Again', scene: { engine: 'sound', params: { f: 880 }, predictions: [{ id: 'wavelength' }] } } });
+  assert.equal(nested.artifact?.kind === 'lab' && nested.artifact.scene.params.f, 880);
+});
+
+test('a lesson bundle keeps its valid parts, drops broken ones, and never nests', () => {
+  const lesson = { kind: 'lesson', title: 'Ohm’s law', stages: [{ name: 'Hook', minutes: 5 }, { name: 'Explore', minutes: 30 }] };
+  const exit = { kind: 'questions', purpose: 'exit_tickets', title: 'Exit', questions: [{ type: 'mcq', questionText: 'R = ?', options: ['V/I', 'VI'], answer: 0 }] };
+  const lab = { kind: 'lab', engine: 'circuits', params: { v: 12 }, title: 'Demo' };
+  const r = parseReply({ artifact: { kind: 'bundle', title: 'Period 3', parts: [lesson, lab, exit, { kind: 'lab', engine: 'circuits', params: { v: 99 } }, { kind: 'bundle', parts: [lesson, exit] }] } });
+  assert.equal(r.artifact?.kind, 'bundle');
+  if (r.artifact?.kind === 'bundle') assert.deepEqual(r.artifact.parts.map(p => p.kind), ['lesson', 'lab', 'questions'], 'out-of-range demo and nested bundle dropped');
+  const one = parseReply({ artifact: { kind: 'bundle', title: 'x', parts: [lesson, { kind: 'rubric', criteria: [] }] } });
+  assert.equal(one.artifact?.kind, 'lesson', 'a bundle left with one part becomes that part');
+});
+
+test('diagrams are cleaned before anyone sees them; pictures keep only a path the image route made', () => {
+  const d = parseReply({ artifact: { kind: 'diagram', title: 'Eye', svg: '<svg viewBox="0 0 10 10"><script>x()</script><circle r="4" onclick="y()"/></svg>' } });
+  assert.equal(d.artifact?.kind, 'diagram');
+  if (d.artifact?.kind === 'diagram') { assert.doesNotMatch(d.artifact.svg, /script|onclick/); assert.match(d.artifact.svg, /<circle r="4"\/>/); }
+  assert.equal(parseReply({ artifact: { kind: 'diagram', title: 'x', svg: '<div/>' } }).artifact, null);
+  const good = 'a1b2c3d4-0000-4000-8000-000000000001/a1b2c3d4-0000-4000-8000-000000000002/a1b2c3d4-0000-4000-8000-000000000003.png';
+  const img = parseReply({ artifact: { kind: 'image', title: 'Harbour', prompt: 'A busy harbour in 1900 Bombay', path: good } });
+  assert.equal(img.artifact?.kind === 'image' && img.artifact.path, good);
+  const forged = parseReply({ artifact: { kind: 'image', title: 'x', prompt: 'A busy harbour', path: '../other-school/secret.png' } });
+  assert.equal(forged.artifact?.kind === 'image' && forged.artifact.path, null, 'a forged path is dropped');
+});

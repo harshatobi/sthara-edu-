@@ -13,11 +13,18 @@ import { TableIcon as Table } from '@phosphor-icons/react/dist/ssr/Table';
 import { CheckSquareOffsetIcon as CheckSquareOffset } from '@phosphor-icons/react/dist/ssr/CheckSquareOffset';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
+import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
+import { CrosshairIcon as Crosshair } from '@phosphor-icons/react/dist/ssr/Crosshair';
+import { StackIcon as Stack } from '@phosphor-icons/react/dist/ssr/Stack';
+import { ShapesIcon as Shapes } from '@phosphor-icons/react/dist/ssr/Shapes';
+import { ImageIcon as ImageGlyph } from '@phosphor-icons/react/dist/ssr/Image';
+import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
+import { designsFor } from '@/lib/papers/designs';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import type { CourseChapter } from '@/lib/curriculum';
-import { STUDIO, STUDIO_GROUPS, type StudioKind } from '@/lib/teacher/copilot';
-import { SAMPLES, SAMPLE_CONTEXT } from '@/lib/teacher/copilotSamples';
+import { STUDIO, STUDIO_GROUPS, studioFor, type StudioKind } from '@/lib/teacher/copilot';
+import { SAMPLES, sampleContext } from '@/lib/teacher/copilotSamples';
 import type { TStudent } from '@/lib/teacher/desk';
 import ArtifactView from './ArtifactView';
 
@@ -32,11 +39,19 @@ export const STUDIO_LOOK: Record<StudioKind, { icon: PhosphorIcon; color: string
   rubric: { icon: Table, color: '#10B981' },
   answer_key: { icon: CheckSquareOffset, color: '#22C55E' },
   parent_note: { icon: EnvelopeSimple, color: '#F43F5E' },
+  lab_demo: { icon: Flask, color: '#7C5CFC' },
+  misconceptions: { icon: Crosshair, color: '#E11D48' },
+  bundle: { icon: Stack, color: '#0F766E' },
+  diagram: { icon: Shapes, color: '#2563EB' },
+  illustration: { icon: ImageGlyph, color: '#DB2777' },
+  board_paper: { icon: Exam, color: '#B45309' },
 };
 
 export interface StudioRequest {
   kind: StudioKind; chapter: string; count: number; difficulty: string; duration: number;
   targets: string[]; note: string;
+  /** Board paper: which design (Class 10 Maths has Standard and Basic). */
+  design?: string;
 }
 
 type Who = 'all' | 'below' | 'pick';
@@ -55,14 +70,15 @@ function Seg<T extends string | number>({ label, value, options, onChange, forma
 }
 
 /** The tile row (always visible). Picking a tile opens the panel below it. */
-export function StudioTiles({ selected, onSelect, compact }: { selected: StudioKind | null; onSelect: (k: StudioKind | null) => void; compact: boolean }) {
+export function StudioTiles({ selected, onSelect, compact, subject, cls }: { selected: StudioKind | null; onSelect: (k: StudioKind | null) => void; compact: boolean; subject: string; cls: string }) {
+  const types = studioFor(subject, cls);
   return (
     <div className={`st-tiles${compact ? ' compact' : ''}`}>
       {STUDIO_GROUPS.map(g => (
         <div key={g.key} className="st-group">
           <div className="st-glabel">{g.label}</div>
           <div className="st-row">
-            {STUDIO.filter(t => t.group === g.key).map(t => {
+            {types.filter(t => t.group === g.key).map(t => {
               const look = STUDIO_LOOK[t.kind];
               const on = selected === t.kind;
               return (
@@ -96,6 +112,8 @@ export default function StudioPanel({ kind, cls, subject, chapters, students, be
   const [count, setCount] = useState(kind === 'quiz' ? 5 : kind === 'discussion' ? 4 : 8);
   const [difficulty, setDifficulty] = useState('Mixed');
   const [duration, setDuration] = useState(40);
+  const designs = kind === 'board_paper' ? designsFor(cls, subject) : [];
+  const [design, setDesign] = useState(designs[0]?.key ?? '');
   const [who, setWho] = useState<Who>(preset?.who ?? (kind === 'remedial' && belowForty.length ? 'below' : 'all'));
   const [picked, setPicked] = useState<string[]>([]);
   const [one, setOne] = useState(preset?.student ?? '');
@@ -132,7 +150,7 @@ export default function StudioPanel({ kind, cls, subject, chapters, students, be
     if (t.who === 'one' && !one) { setError('Pick the student this note is about.'); return; }
     if (t.who === 'many' && who === 'pick' && !picked.length) { setError('Tick at least one student, or choose the whole class.'); return; }
     setError(null);
-    onGenerate({ kind, chapter, count: kind === 'exit_tickets' ? 3 : count, difficulty, duration, targets, note: note.trim() });
+    onGenerate({ kind, chapter: kind === 'board_paper' ? '' : chapter, count: kind === 'exit_tickets' ? 3 : count, difficulty, duration, targets, note: note.trim(), ...(kind === 'board_paper' ? { design: design || designs[0]?.key } : {}) });
   }
 
   return (
@@ -148,7 +166,15 @@ export default function StudioPanel({ kind, cls, subject, chapters, students, be
       <div className="st-body">
         <div className="st-settings">
           <div className="st-step">1 · Set it up</div>
-          {(t.needsChapter || chapters.length > 0) && kind !== 'answer_key' && kind !== 'parent_note' && kind !== 'rubric' && (
+          {kind === 'board_paper' && designs.length > 1 && (
+            <Seg label="PAPER" value={design} options={designs.map(d => d.key)} onChange={setDesign} format={k => designs.find(d => d.key === k)?.variant ?? k} />
+          )}
+          {kind === 'board_paper' && designs[0] && (
+            <p className="muted" style={{ fontSize: 12.5 }}>
+              {designs[0].maxMarks} marks, {designs[0].sections.reduce((n, sec) => n + sec.slots.length, 0)} questions, laid out exactly as CBSE&apos;s 2026-27 sample paper, chapters weighted as the syllabus weights them. It takes a minute or two: each section is written and then checked against the board design.
+            </p>
+          )}
+          {(t.needsChapter || chapters.length > 0) && kind !== 'answer_key' && kind !== 'parent_note' && kind !== 'rubric' && kind !== 'board_paper' && (
             <div className="cmp-fld"><label htmlFor="st-ch">CHAPTER</label>
               <select id="st-ch" className="cmp-sel" value={chapter} onChange={e => setChapter(e.target.value)}>
                 {!t.needsChapter && <option value="">Any / not chapter-specific</option>}
@@ -192,7 +218,7 @@ export default function StudioPanel({ kind, cls, subject, chapters, students, be
           <div className="st-spec"><b>{spec}</b><span>About {t.seconds} seconds · one AI request · nothing is posted until you choose to</span></div>
           <div className="st-sample">
             <ArtifactView artifact={SAMPLES[kind]} cls={cls} subject={subject}
-              sample={`Example from ${SAMPLE_CONTEXT}. Yours is written for ${chapter || subject} in ${cls}, using your class's own results.`} />
+              sample={`Example from ${sampleContext(kind)}. Yours is ${kind === 'lab_demo' ? 'set up' : 'written'} for ${chapter || subject} in ${cls}, using your class's own results.`} />
           </div>
         </div>
       </div>

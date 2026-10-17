@@ -62,7 +62,7 @@ export default function ReportOverlay({ a, live, onClose }: { a: DeskAssignment;
               <div className="muted">Graded {dmy(s.submittedAt)}{a.proctored ? ' · proctored' : ''}</div>
             </div>
             <div className="acts">
-              {live && <Link className="btn" href={`/student/homework/${a.id}`}>Open submission</Link>}
+              {live && <Link className="btn" href={`/student/homework/${a.id}`}>See my answers</Link>}
               <button className="btn" onClick={download}><DownloadSimple size={16} weight="bold" /> Download report</button>
             </div>
           </div>

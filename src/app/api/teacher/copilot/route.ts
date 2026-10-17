@@ -9,7 +9,7 @@ import { topicKey } from '@/lib/teacher/desk';
 import { isScienceSubject, parseReply, restoreNames, STUDIO, type StudioKind } from '@/lib/teacher/copilot';
 import { enginesFor, labCatalogue } from '@/lib/lab/registry';
 import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconceptions';
-import { designByKey, designsFor } from '@/lib/papers/designs';
+import { designsFor } from '@/lib/papers/designs';
 import { generatePaper } from '@/lib/papers/generate';
 import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
@@ -71,7 +71,6 @@ export async function POST(req: NextRequest) {
           ask: [], artifact: { kind: 'paper', title: paper.title, paper },
           suggestions: ['Make a revision worksheet on the weakest chapter', 'Plan the revision lessons before the exam'],
         },
-        context: { students: 0, chaptersWithEvidence: 0, assignments: 0 },
       });
     } catch (e: any) {
       console.error('[copilot paper]', e?.message);
@@ -159,7 +158,9 @@ export async function POST(req: NextRequest) {
     const [{ data: qs }, { data: answered }, { data: tutor }] = await Promise.all([
       recent.length ? db.from('assignments').select('id, title, class, subject, units, questions').in('id', recent) : Promise.resolve({ data: [] as any[] }),
       recent.length && ids.length ? byIds<any>(recent, (chunk, a, b2) => db.from('submissions').select('assignment_id, student_id, answers, ai_result').in('assignment_id', chunk).order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
+      // Last 90 days only: older struggles say little about this week's lesson, and the read stays small.
       ids.length ? byIds<any>(ids, (chunk, a, b2) => db.from('tutor_sessions').select('student_id, subject, topic, micro_topic, hint_depth, answer_revealed').in('student_id', chunk)
+        .gte('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString())
         .or('answer_revealed.eq.true,hint_depth.gte.3').order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
     ]);
     const evidence = misconceptionBrief(findMisconceptions({

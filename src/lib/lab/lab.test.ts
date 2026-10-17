@@ -4,7 +4,7 @@ import { solveOptics, optics } from './engines/optics';
 import { solveCircuit, circuits, type CircuitParams } from './engines/circuits';
 import { phAt, equivalenceVolume, indicatorColour, maxVolume, acidBase, type TitrationParams } from './engines/acidBase';
 import { defaults, validateParams, choices } from './types';
-import { validateScene, scenePredictions, ENGINES, enginesForChapter } from './registry';
+import { validateScene, scenePredictions, fittingPredictions, ENGINES, enginesForChapter } from './registry';
 
 const close = (a: number, b: number, tol: number, msg?: string) =>
   assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} expected ${b} ± ${tol}, got ${a}`);
@@ -171,7 +171,7 @@ test('every question of every engine has its right answer among the options, at 
     for (const raw of settings) {
       const params = validateParams(e, raw);
       if (!params) continue; // a combination the engine refuses
-      const qs = scenePredictions({ engine: e.id, params, title: '', predictions: [], answer: 'hands' });
+      const qs = fittingPredictions(e.id, params);
       assert.ok(qs.length > 0, `${e.id} has questions`);
       for (const q of qs) {
         assert.ok(q.options.length >= 2, `${e.id}/${q.id} has options`);
@@ -217,4 +217,10 @@ test('the answering mode is the teacher\'s: kept when valid, counting hands when
   assert.equal(validateScene({ ...base, answer: 'think' })!.answer, 'think');
   assert.equal(validateScene(base)!.answer, 'hands');
   assert.equal(validateScene({ ...base, answer: 'phones' })!.answer, 'hands');
+});
+
+test('a scene that names no questions has none: a pure demo is not "ask everything"', () => {
+  const scene = validateScene({ engine: 'optics', params: { device: 'convex_lens', f: 10, u: 15, h: 2 }, predictions: [] })!;
+  assert.deepEqual(scenePredictions(scene), []);
+  assert.ok(fittingPredictions('optics', scene.params).length > 0);
 });

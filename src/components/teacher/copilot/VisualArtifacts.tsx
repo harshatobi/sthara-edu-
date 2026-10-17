@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePrintOne } from './usePrintOne';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { ImageIcon as ImageGlyph } from '@phosphor-icons/react/dist/ssr/Image';
@@ -12,20 +13,6 @@ import type { Artifact } from '@/lib/teacher/copilot';
 
 type Diagram = Extract<Artifact, { kind: 'diagram' }>;
 type Picture = Extract<Artifact, { kind: 'image' }>;
-
-/** Prints just this card (canon.css: body.print-one shows only .print-me). */
-function usePrintOne() {
-  const box = useRef<HTMLDivElement>(null);
-  const print = () => {
-    const el = box.current;
-    if (!el) return;
-    el.classList.add('print-me'); document.body.classList.add('print-one');
-    const done = () => { el.classList.remove('print-me'); document.body.classList.remove('print-one'); window.removeEventListener('afterprint', done); };
-    window.addEventListener('afterprint', done);
-    window.print();
-  };
-  return { box, print };
-}
 
 /** A labelled diagram, already cleaned on the server; shown through <img>, so nothing in it can run. */
 export function DiagramArtifact({ a, sample }: { a: Diagram; sample?: string | null }) {

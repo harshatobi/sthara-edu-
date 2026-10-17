@@ -10,7 +10,7 @@ import { CheckSquareIcon as CheckSquare } from '@phosphor-icons/react/dist/ssr/C
 import { SquareIcon as Square } from '@phosphor-icons/react/dist/ssr/Square';
 import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import { Empty, PageBar } from '@/components/canon/ui';
-import { ANSWER_MODES, engineById, scenePredictions, type AnswerMode, type LabScene } from '@/lib/lab/registry';
+import { ANSWER_MODES, engineById, fittingPredictions, scenePredictions, type AnswerMode, type LabScene } from '@/lib/lab/registry';
 import { decodeScene, encodeScene } from '@/lib/lab/url';
 import type { LabEngine } from '@/lib/lab/types';
 import LabStage from './LabStage';
@@ -53,7 +53,7 @@ function Build({ engine, initial, saved: savedAtOpen }: { engine: LabEngine<any>
   const [withKey, setWithKey] = useState(true);
 
   // Every question that fits these values, with its engine-worked answer.
-  const all = useMemo(() => scenePredictions({ engine: engine.id, params, title, predictions: [], answer: 'hands' }), [engine.id, params, title]);
+  const all = useMemo(() => fittingPredictions(engine.id, params), [engine.id, params]);
   const chosen = (picked ?? all.slice(0, 3).map(q => q.id)).filter(id => all.some(q => q.id === id));
   const toggle = (id: string) => setPicked(chosen.includes(id) ? chosen.filter(x => x !== id) : [...chosen, id]);
 

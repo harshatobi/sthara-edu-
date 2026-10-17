@@ -22,7 +22,9 @@ const LETTERS = 'ABCD';
 type Step = { kind: 'intro' } | { kind: 'question'; i: number; revealed: boolean } | { kind: 'explore' };
 
 export default function Presenter() {
-  const scene = decodeScene(useSearchParams().get('scene'));
+  // Decoded once per link, so the questions and steps below stay cached across taps.
+  const raw = useSearchParams().get('scene');
+  const scene = useMemo(() => decodeScene(raw), [raw]);
   if (!scene) {
     return (
       <Empty icon={<Flask size={28} weight="duotone" />} title="This lab link doesn't open">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { ArrowsClockwiseIcon as ArrowsClockwise } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
 import { Chip } from '@/components/canon/ui';
@@ -8,6 +8,7 @@ import { designByKey, type PaperDesign } from '@/lib/papers/designs';
 import { svgDataUrl } from '@/lib/teacher/svg';
 import type { Paper, PaperQuestion, Part, QBody } from '@/lib/papers/paper';
 import type { Artifact } from '@/lib/teacher/copilot';
+import { usePrintOne } from './usePrintOne';
 import '@/styles/paper.css';
 
 const LETTERS = 'ABCD';
@@ -21,18 +22,9 @@ const ROMAN = (n: number) => ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 
 export default function PaperArtifact({ a, onRefine }: { a: Extract<Artifact, { kind: 'paper' }>; onRefine?: (text: string) => void }) {
   const design = designByKey(a.paper.design);
   const [tab, setTab] = useState<'paper' | 'scheme'>('paper');
-  const doc = useRef<HTMLDivElement>(null);
+  const { box: doc, print } = usePrintOne();
   if (!design) return null;
   const count = a.paper.sections.reduce((n, s) => n + s.questions.length, 0);
-
-  const print = () => {
-    const el = doc.current;
-    if (!el) return;
-    el.classList.add('print-me'); document.body.classList.add('print-one');
-    const done = () => { el.classList.remove('print-me'); document.body.classList.remove('print-one'); window.removeEventListener('afterprint', done); };
-    window.addEventListener('afterprint', done);
-    window.print();
-  };
 
   return (
     <div className="art">

@@ -8,7 +8,7 @@ import { solveSound, sound, type SoundParams } from './engines/sound';
 import { correctingPower, traceColour, SPECTRUM, eyePrism, type EyeParams } from './engines/eyePrism';
 import { wireField, solenoidPoles, motorForce, deflection, cross, magnetism, type MagParams } from './engines/magnetism';
 import { balance, parseFormula, molarMass, solveReaction, REACTIONS, equationText, reactions, type ReactionParams } from './engines/reactions';
-import { scenePredictions, enginesForChapter } from './registry';
+import { fittingPredictions, enginesForChapter } from './registry';
 
 const close = (a: number, b: number, tol: number, msg?: string) =>
   assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} expected ${b} ± ${tol}, got ${a}`);
@@ -184,7 +184,7 @@ test('every scenario of every new engine asks answerable questions', () => {
     for (const o of overrides) {
       const params = validateParams(engine, { ...defaults(engine), ...o });
       assert.ok(params, `${engine.id} accepts ${JSON.stringify(o)}`);
-      const qs = scenePredictions({ engine: engine.id, params: params!, title: '', predictions: [], answer: 'hands' });
+      const qs = fittingPredictions(engine.id, params!);
       assert.ok(qs.length > 0, `${engine.id} ${JSON.stringify(o)} has questions`);
       for (const q of qs) {
         assert.ok(q.options.length >= 2 && q.correct >= 0 && q.correct < q.options.length, `${engine.id}/${q.id} ok`);

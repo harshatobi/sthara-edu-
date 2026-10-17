@@ -14,6 +14,13 @@
  */
 
 import { normClass, normSubject } from './scope';
+import { mcqCorrect } from './questions';
+
+/** An option index stored as a number or a numeric string; anything else is null. */
+const optionIndex = (v: unknown): number | null => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && /^\d+$/.test(v.trim()) ? Number(v) : NaN;
+  return Number.isInteger(n) && n >= 0 ? n : null;
+};
 
 export interface McqAssignment { id: string; title: string; class: string; subject: string; units: string[] | null; questions: unknown }
 export interface Submission { assignment_id: string; student_id: string; answers: unknown; ai_result: unknown }
@@ -58,20 +65,23 @@ export function findMisconceptions(input: {
 
     // MCQs: tally the option each student picked.
     qs.forEach((q, i) => {
-      if (q?.type !== 'mcq' || !Array.isArray(q.options) || typeof q.answer !== 'number') return;
+      const key = optionIndex(q?.answer);
+      if (q?.type !== 'mcq' || !Array.isArray(q.options) || key === null) return;
       const picks = new Map<number, string[]>();
       let answered = 0;
       for (const s of subs) {
-        const ans = s.answers && typeof s.answers === 'object' ? (s.answers as Record<string, unknown>)[String(i)] : undefined;
-        if (typeof ans !== 'number' || !Number.isInteger(ans) || ans < 0 || ans >= q.options.length) continue;
+        const raw = s.answers && typeof s.answers === 'object' ? (s.answers as Record<string, unknown>)[String(i)] : undefined;
+        // Answers may be stored as 2 or "2"; grading (mcqCorrect) accepts both, so this does too.
+        const ans = optionIndex(raw);
+        if (ans === null || ans >= q.options.length) continue;
         answered++;
-        if (ans === q.answer) continue;
+        if (mcqCorrect(q, raw)) continue;
         picks.set(ans, [...(picks.get(ans) ?? []), s.student_id]);
       }
       for (const [opt, students] of picks) {
         if (students.length >= MIN_STUDENTS && students.length / answered >= MIN_SHARE) {
           wrongOptions.push({
-            assignment: a.title, chapter, q: i + 1, question: short(q.questionText), correct: short(q.options[q.answer], 120),
+            assignment: a.title, chapter, q: i + 1, question: short(q.questionText), correct: short(q.options[key], 120),
             chosen: short(q.options[opt], 120), students, answered,
           });
         }

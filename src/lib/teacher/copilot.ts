@@ -9,10 +9,13 @@
  *   suggestions  2–4 one-tap follow-ups
  */
 import { sanitizeQuestions, type Question } from './questions';
-import { validateScene, type LabScene } from '@/lib/lab/registry';
+import { fittingPredictions, validateScene, type LabScene } from '@/lib/lab/registry';
 import { sanitizeSvg } from './svg';
 import { checkPaper, type Paper } from '@/lib/papers/paper';
 import { designsFor } from '@/lib/papers/designs';
+
+/** Where the Copilot image route stores a picture: <school>/<teacher>/<uuid>.png in the private bucket. */
+export const IMAGE_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.png$/;
 
 export type StudioKind =
   | 'worksheet' | 'quiz' | 'remedial' | 'lesson' | 'rubric' | 'answer_key'
@@ -131,7 +134,10 @@ function artifactOf(a: any, nested = false): Artifact | null {
     // Accepts the flat shape the prompt asks for, or the nested { scene } shape it sees in the history.
     const flat = a.scene && typeof a.scene === 'object' ? { ...a.scene, title: s(a.title, 200) || a.scene.title } : a;
     const scene = validateScene({ ...flat, title: s(flat.title, 200) || title });
-    return scene ? { kind: 'lab', title: scene.title, scene } : null;
+    if (!scene) return null;
+    // A demo the model sent without questions gets the Builder's default: the first three that fit.
+    if (!scene.predictions.length) scene.predictions = fittingPredictions(scene.engine, scene.params).slice(0, 3).map(q => ({ id: q.id }));
+    return { kind: 'lab', title: scene.title, scene };
   }
   if (a.kind === 'paper') {
     if (nested) return null;
@@ -144,8 +150,8 @@ function artifactOf(a: any, nested = false): Artifact | null {
   }
   if (a.kind === 'image') {
     const prompt = s(a.prompt, 800);
-    // Only a path the image route itself produced: <school>/<teacher>/<uuid>.png
-    const path = typeof a.path === 'string' && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.png$/.test(a.path) ? a.path : null;
+    // Only a path the image route itself produced.
+    const path = typeof a.path === 'string' && IMAGE_PATH.test(a.path) ? a.path : null;
     return prompt ? { kind: 'image', title, prompt, caption: s(a.caption, 600), path } : null;
   }
   if (a.kind === 'document') {

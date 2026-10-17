@@ -8,13 +8,13 @@ import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateMetered } from '@/lib/ai/usage';
 import { aiFailure, withRetry } from '@/lib/ai/retry';
+import { IMAGE_PATH } from '@/lib/teacher/copilot';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 90;
 
 const BUCKET = 'copilot-images';
 const LINK_SECONDS = 600;
-const PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.png$/;
 const str = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 
 /**
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
   const { staff, db } = auth;
   const path = str(req.nextUrl.searchParams.get('path'), 200);
   // Any staff member of the school may see its pictures; never another school's.
-  if (!PATH.test(path) || !path.startsWith(`${staff.schoolId}/`)) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  if (!IMAGE_PATH.test(path) || !path.startsWith(`${staff.schoolId}/`)) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   const { data, error } = await db.storage.from(BUCKET).createSignedUrl(path, LINK_SECONDS);
   if (error || !data) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   return NextResponse.json({ url: data.signedUrl });

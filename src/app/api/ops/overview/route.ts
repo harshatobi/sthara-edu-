@@ -8,8 +8,7 @@ import { loadRegistry } from '@/lib/ops/registry';
 import { can } from '@/lib/ops/roles';
 import { loadSight, visibleSchoolIds } from '@/lib/ops/scope';
 import { sees } from '@/lib/ops/territories';
-import { byIds, pageAll } from '@/lib/ops/page';
-import { staleTmlStudents } from '@/lib/ops/tmlHealth';
+import { pageAll } from '@/lib/ops/page';
 import { inQueue, slaState } from '@/lib/ops/desk';
 import { CASE_COLS, clocked, type CaseRow } from '@/lib/ops/deskServer';
 import { canDecide } from '@/lib/ops/sales';
@@ -103,20 +102,13 @@ export async function GET(req: NextRequest) {
         };
       }
     }
-    // TML health: confirmed work in the last 14 days against each student's latest snapshot (best effort, never blocks the page).
-    let staleTml = 0;
+    // TML health: students in this operator's schools whose confirmed work (last 14 days) is newer than their
+    // latest snapshot. Best effort, never blocks the page.
+    let staleTml: { schoolId: string; students: number }[] = [];
     if (can(op.role, 'health.read')) {
-      try {
-        const since = new Date(Date.now() - 14 * 86_400_000).toISOString();
-        const ev = await pageAll<{ student_id: string; created_at: string }>((f, t) =>
-          db.from('submission_items').select('student_id, created_at').eq('teacher_confirmed', true).gte('created_at', since).order('id').range(f, t));
-        if (!ev.error && ev.data.length) {
-          const ids = [...new Set(ev.data.map(e => e.student_id))];
-          const snaps = await byIds<{ student_id: string; computed_at: string }>(ids, (chunk, f, t) =>
-            db.from('tml_scores').select('student_id, computed_at').in('student_id', chunk).order('id').range(f, t));
-          if (!snaps.error) staleTml = staleTmlStudents(ev.data.map(e => ({ student_id: e.student_id, at: e.created_at })), snaps.data, Date.now()).length;
-        }
-      } catch { /* the check is advisory */ }
+      const stale = await db.rpc('ops_tml_stale');
+      if (!stale.error) staleTml = ((stale.data || []) as { school_id: string; students: number }[])
+        .filter(r => inSight(r.school_id)).map(r => ({ schoolId: r.school_id, students: r.students }));
     }
     const enq = can(op.role, 'enquiries.read')
       ? enquiries.data.filter(e => sees(sight, { territoryId: e.territory_id, ownerId: e.owner_id })) : [];

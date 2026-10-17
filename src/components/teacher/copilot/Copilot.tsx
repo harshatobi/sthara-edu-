@@ -167,12 +167,12 @@ export default function Copilot() {
     chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
       const lastArtifactIdx = withTeacher.turns.map((t, i) => (t.reply?.artifact ? i : -1)).filter(i => i >= 0).pop();
-      const res = await call<{ reply: CopilotReply; context: typeof ctx }>('/api/teacher/copilot', 'POST', {
+      const res = await call<{ reply: CopilotReply; context?: typeof ctx }>('/api/teacher/copilot', 'POST', {
         class: useCls, subject: useSubject, chapter: st?.chapter || undefined,
         studio: st ? { kind: st.kind, count: st.count, difficulty: st.difficulty, durationMin: st.duration, targets: st.targets, design: st.design } : undefined,
         messages: withTeacher.turns.map((t, i) => ({ role: t.role, text: turnText(t, i === lastArtifactIdx) })),
       });
-      setCtx(res.context);
+      if (res.context) setCtx(res.context); // a board paper reply carries no class summary
       // A reply inherits the targets of the request it answers (so "Send to class" goes to those students).
       const inherited = [...withTeacher.turns].reverse().find(t => t.role === 'teacher' && t.targets)?.targets;
       const done: Thread = { ...withTeacher, turns: [...withTeacher.turns, { role: 'copilot', text: res.reply.say, reply: res.reply, at: now(), ...(inherited ? { targets: inherited } : {}) }], updated: now() };

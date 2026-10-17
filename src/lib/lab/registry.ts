@@ -71,17 +71,22 @@ export function validateScene(raw: unknown): LabScene | null {
   return { engine: engine.id, params, title, predictions: preds, narration, answer };
 }
 
-/** Questions for a scene: the ones it names, or every question that fits when it names none. */
+/** Every question that fits these values, with its engine-worked answer. */
+export function fittingPredictions(engineId: string, params: Record<string, unknown>): Prediction[] {
+  const engine = engineById(engineId);
+  if (!engine) return [];
+  return engine.predictions.filter(t => !t.applies || t.applies(params)).map(t => ({ id: t.id, ...t.build(params) }));
+}
+
+/** Questions for a scene: exactly the ones it names. A scene that names none is a demo with no questions. */
 export function scenePredictions(scene: LabScene): Prediction[] {
   const engine = engineById(scene.engine);
   if (!engine) return [];
-  const fits = engine.predictions.filter(t => !t.applies || t.applies(scene.params));
-  const picked = scene.predictions.length
-    ? scene.predictions.map(x => ({ t: fits.find(t => t.id === x.id), prompt: x.prompt })).filter(x => x.t)
-    : fits.map(t => ({ t, prompt: undefined }));
-  return picked.map(({ t, prompt }) => {
-    const built = t!.build(scene.params);
-    return { id: t!.id, ...built, prompt: prompt || built.prompt };
+  return scene.predictions.flatMap(x => {
+    const t = engine.predictions.find(t => t.id === x.id);
+    if (!t || (t.applies && !t.applies(scene.params))) return [];
+    const built = t.build(scene.params);
+    return [{ id: t.id, ...built, prompt: x.prompt || built.prompt }];
   });
 }
 

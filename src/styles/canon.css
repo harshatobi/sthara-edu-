@@ -213,6 +213,11 @@
 @keyframes canon-rise { from { opacity:.4; transform:translateY(3px); } to { opacity:1; transform:none; } }
 .canon > main > * { animation:canon-rise .16s ease-out both; }
 .canon > main > .skel-page, .canon > main > [aria-busy="true"] { animation:none; }
+/* Printing: never print mid-fade (a pack mounted just before window.print() would come out washed out), and keep the skip link off paper. */
+@media print {
+  .canon > main > * { animation:none !important; opacity:1 !important; transform:none !important; }
+  .canon .skip { display:none !important; }
+}
 
 /* Score bars fill from zero to their value. */
 @keyframes canon-fill { from { transform:scaleX(0); } }

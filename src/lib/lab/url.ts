@@ -22,3 +22,11 @@ export function decodeScene(s: string | null | undefined): LabScene | null {
     return null;
   }
 }
+
+/** The presenter link. A known class (and saved demo) is passed along so the class's answers are saved for it. */
+export function presentHref(scene: LabScene, ctx?: { class?: string | null; subject?: string | null; demo?: string | null }): string {
+  const q = new URLSearchParams({ scene: encodeScene(scene) });
+  if (ctx?.class && ctx.subject) { q.set('class', ctx.class); q.set('subject', ctx.subject); }
+  if (ctx?.demo) q.set('demo', ctx.demo);
+  return `/teacher/lab/present?${q}`;
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { PaperPlaneTiltIcon as PaperPlaneTilt } from '@phosphor-icons/react/dist/ssr/PaperPlaneTilt';
@@ -8,11 +9,19 @@ import { TrashIcon as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { LockSimpleIcon as LockSimple } from '@phosphor-icons/react/dist/ssr/LockSimple';
+import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import { courseChapters, getCurriculum } from '@/lib/curriculum';
 import { blankQuestion, fromGenerated, sanitizeQuestions, totalMarks, TYPE_LABEL, type QType, type Question } from '@/lib/teacher/questions';
 import { scopeClasses, subjectsIn } from '@/lib/teacher/scope';
 import type { TAssignment, WorkType } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
+import { isScienceSubject } from '@/lib/teacher/copilot';
+import { buildLabQuestion } from '@/lib/lab/question';
+import { Skeleton } from '@/components/canon/ui';
+
+// The simulations load only when a lab question is being added or shown.
+const LabQuestionPicker = dynamic(() => import('@/components/lab/LabQuestionPicker'), { ssr: false, loading: () => <Skeleton h={160} /> });
+const LabQuestionSim = dynamic(() => import('@/components/lab/LabQuestionSim'), { ssr: false, loading: () => <Skeleton h={220} /> });
 
 const LETTERS = 'ABCDEF';
 const todayISO = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
@@ -76,6 +85,15 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
   const setQ = (i: number, patch: Partial<Question>) => setQuestions(qs => qs.map((q, j) => (j === i ? { ...q, ...patch } : q)));
   const addQ = (t: QType) => setQuestions(qs => [...qs, blankQuestion(t)]);
   const delQ = (i: number) => setQuestions(qs => qs.filter((_, j) => j !== i));
+  const [pickingLab, setPickingLab] = useState(false);
+  const canLab = isScienceSubject(subject) && (isQuiz || mode === 'typed');
+  const addLab = (qs: Question[]) => {
+    setQuestions(cur => [...cur, ...qs]);
+    // No chapter picked yet: the simulation's own chapter, so the marks count toward the right TML topic.
+    const ch = qs[0]?.lab ? buildLabQuestion(qs[0].lab)?.chapter : null;
+    if (!chapter && ch && chapters.some(c => c.name === ch)) setChapter(ch);
+    setPickingLab(false);
+  };
 
   async function generate() {
     const focus = topic || chapter;
@@ -216,9 +234,11 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
                 {!isQuiz && <button className="btn" onClick={() => addQ('short')}><Plus size={14} weight="bold" /> Short answer</button>}
                 <button className="btn" onClick={() => addQ('mcq')}><Plus size={14} weight="bold" /> Multiple choice</button>
                 {!isQuiz && mode === 'typed' && <button className="btn" onClick={() => addQ('upload')}><Plus size={14} weight="bold" /> Photo answer</button>}
+                {canLab && <button className="btn" aria-expanded={pickingLab} onClick={() => setPickingLab(v => !v)}><Flask size={14} weight="bold" /> Live lab question</button>}
               </div>
             )}
           </div>
+          {!locked && canLab && pickingLab && <LabQuestionPicker cls={cls} chapter={chapter} onAdd={addLab} onClose={() => setPickingLab(false)} />}
           {!locked && (
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
               <button className="btn red" disabled={generating || (!chapter && !topic)} onClick={generate}>
@@ -238,7 +258,7 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
           {questions.length ? questions.map((q, i) => (
             <div className="cmp-q" key={i}>
               <div className="hd">
-                <b>Q{i + 1} · {TYPE_LABEL[q.type]}{q.level ? ` · ${q.level}` : ''}</b>
+                <b>Q{i + 1} · {q.lab ? 'LIVE LAB · MULTIPLE CHOICE' : TYPE_LABEL[q.type]}{q.level ? ` · ${q.level}` : ''}</b>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   {q.type !== 'mcq' && (
                     <label className="stepper" title="Marks for this question">
@@ -252,7 +272,20 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
               </div>
               <textarea className="cmp-in" rows={2} value={q.questionText} disabled={locked} maxLength={2000} placeholder="Question"
                 onChange={e => setQ(i, { questionText: e.target.value })} />
-              {q.type === 'mcq' && (
+              {q.lab && <LabQuestionSim lab={q.lab} />}
+              {q.lab && (
+                <div className="cmp-opts">
+                  {(q.options ?? []).map((o, oi) => (
+                    <div key={oi} style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+                      <span className={`cmp-opt${q.answer === oi ? ' ok' : ''}`} style={{ flex: '0 0 auto' }}><b>{q.answer === oi ? <Check size={11} weight="bold" /> : LETTERS[oi]}</b></span>
+                      <span>{o}</span>
+                    </div>
+                  ))}
+                  <div className="muted" style={{ fontSize: 11.5 }}>The options and the right answer come from the simulation. You can re-word the question.</div>
+                  {q.why && <div className="muted" style={{ fontSize: 12.5 }}><b>Worked out:</b> {q.why}</div>}
+                </div>
+              )}
+              {q.type === 'mcq' && !q.lab && (
                 <div className="cmp-opts">
                   {(q.options ?? []).map((o, oi) => (
                     <div key={oi} style={{ display: 'flex', gap: 9, alignItems: 'center' }}>

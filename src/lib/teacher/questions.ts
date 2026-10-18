@@ -5,6 +5,8 @@
  * Pure — no I/O — so the browser and the server validate identically.
  */
 
+import { buildLabQuestion, type LabRef } from '@/lib/lab/question';
+
 export type QType = 'short' | 'mcq' | 'upload';
 export type Level = 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -20,6 +22,8 @@ export interface Question {
   /** Quiz only: difficulty tag and the explanation shown after grading. */
   level?: Level;
   why?: string;
+  /** Live Lab: the simulation set-up this MCQ is asked on. Its options, answer and `why` are the engine's. */
+  lab?: LabRef;
 }
 
 export const MAX_QUESTIONS = 50;
@@ -52,6 +56,14 @@ export function sanitizeQuestions(raw: unknown): { questions: Question[]; error:
   const questions: Question[] = [];
   for (const [i, r] of raw.entries()) {
     const q = (r ?? {}) as Record<string, unknown>;
+    // A lab question is rebuilt from its engine: whatever options, key and working came with it are replaced.
+    // The teacher may re-word the question; it defaults to the engine's wording.
+    if (q.lab !== undefined && q.lab !== null) {
+      const built = buildLabQuestion(q.lab);
+      if (!built) return { questions: [], error: `Question ${i + 1}: that lab set-up isn't one the simulation accepts.` };
+      questions.push({ type: 'mcq', questionText: clip(q.questionText) || built.prompt, options: built.options, answer: built.answer, marks: 1, why: built.why, lab: built.lab });
+      continue;
+    }
     const type: QType = q.type === 'mcq' || q.type === 'upload' ? q.type : Array.isArray(q.options) && q.options.length ? 'mcq' : 'short';
     const text = clip(q.questionText ?? q.question ?? q.prompt);
     if (!text) return { questions: [], error: `Question ${i + 1} has no text.` };

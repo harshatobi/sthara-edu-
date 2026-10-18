@@ -15,6 +15,7 @@ import { AtomIcon as Atom } from '@phosphor-icons/react/dist/ssr/Atom';
 import { PageBar } from '@/components/canon/ui';
 import { ENGINES } from '@/lib/lab/registry';
 import SavedDemos from './SavedDemos';
+import PredictionMisses from './PredictionMisses';
 import '@/styles/lab.css';
 
 const LOOK: Record<string, { icon: ComponentType<{ size?: number; weight?: 'duotone' | 'fill' }>; colour: string }> = {
@@ -37,6 +38,7 @@ export default function Gallery() {
     <>
       <PageBar eyebrow="LIVE LAB" title="Simulations for the class"
         sub="Set one up, choose what the class should predict, then present it on the board. Every number comes from the textbook formulas, worked out exactly." />
+      <PredictionMisses />
       <SavedDemos />
       {CLASSES.map(cls => (
         <section key={cls} style={{ marginBottom: 26 }}>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { demoRows } from '@/lib/demo/student';
@@ -12,6 +13,12 @@ import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/Arrow
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { PaperclipIcon as Paperclip } from '@phosphor-icons/react/dist/ssr/Paperclip';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
+import type { LabRef } from '@/lib/lab/question';
+
+// A Live Lab question's simulation, loaded only when the homework has one.
+const LabQuestionSim = dynamic(() => import('@/components/lab/LabQuestionSim'), {
+  ssr: false, loading: () => <div className="h-[260px] rounded-2xl bg-[#F1F5F9] animate-pulse mb-5" />,
+});
 
 interface Question {
   questionText?: string;
@@ -21,6 +28,8 @@ interface Question {
   options?: string[];
   answer?: number;
   marks?: number | null;
+  /** Live Lab: the simulation this question is asked on. */
+  lab?: LabRef;
 }
 
 interface Page {
@@ -421,6 +430,7 @@ export default function HomeworkWorkspace() {
                 <div className={`bg-white rounded-[20px] ${SH} p-[30px]`}>
                   <div className="text-[11.5px] font-extrabold tracking-[.08em] text-[#7A8699]">QUESTION {qi + 1} OF {questions.length}</div>
                   <h2 className="text-[21px] font-extrabold text-[#002147] leading-[1.5] mt-2.5 mb-[22px]">{questionLabel(q)}</h2>
+                  {q.lab && <LabQuestionSim lab={q.lab} />}
 
                   {q.type === 'mcq' && Array.isArray(q.options) ? (
                     <div role="radiogroup">

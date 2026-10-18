@@ -7,7 +7,7 @@ import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { enginesForChapter, validateScene, type LabScene } from '@/lib/lab/registry';
-import { encodeScene } from '@/lib/lab/url';
+import { presentHref } from '@/lib/lab/url';
 
 /**
  * Inside the lesson planner: the Live Lab demos attached to this lesson, ready
@@ -16,16 +16,16 @@ import { encodeScene } from '@/lib/lab/url';
  */
 export default function LessonLabDemos({ lessonId, chapter }: { lessonId: string; chapter: string | null }) {
   const { profile } = useAuth();
-  const [demos, setDemos] = useState<{ id: string; title: string; scene: LabScene }[] | null>(null);
+  const [demos, setDemos] = useState<{ id: string; title: string; scene: LabScene; class: string; subject: string }[] | null>(null);
 
   useEffect(() => {
     if (!profile?.schoolId) return;
     let cancelled = false;
-    createClient().from('lab_scenes').select('id, title, scene').eq('school_id', profile.schoolId).eq('lesson_plan_id', lessonId)
+    createClient().from('lab_scenes').select('id, title, scene, class, subject').eq('school_id', profile.schoolId).eq('lesson_plan_id', lessonId)
       .order('updated_at', { ascending: false }).limit(20)
       .then(({ data }) => {
         if (cancelled) return;
-        setDemos((data ?? []).flatMap(d => { const scene = validateScene(d.scene); return scene ? [{ id: d.id, title: d.title, scene }] : []; }));
+        setDemos((data ?? []).flatMap(d => { const scene = validateScene(d.scene); return scene ? [{ id: d.id, title: d.title, scene, class: d.class, subject: d.subject }] : []; }));
       });
     return () => { cancelled = true; };
   }, [profile?.schoolId, lessonId]);
@@ -38,7 +38,7 @@ export default function LessonLabDemos({ lessonId, chapter }: { lessonId: string
       {demos?.map(d => (
         <div key={d.id} className="li-row" style={{ alignItems: 'center' }}>
           <span style={{ flex: 1 }}>{d.title}</span>
-          <Link className="btn sm red" href={`/teacher/lab/present?scene=${encodeScene(d.scene)}`}><Presentation size={12} weight="fill" /> Present</Link>
+          <Link className="btn sm red" href={presentHref(d.scene, { class: d.class, subject: d.subject, demo: d.id })}><Presentation size={12} weight="fill" /> Present</Link>
         </div>
       ))}
       {fit.length > 0 && (

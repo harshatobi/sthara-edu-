@@ -35,7 +35,7 @@ const J = (n: number) => `${fmt(n, n >= 100 ? 0 : 1)} J`;
 
 const predictions: PredictionTemplate<EnergyParams>[] = [
   {
-    id: 'pe-top', label: 'Potential energy at the top',
+    id: 'pe-top', label: 'Potential energy at the top', topic: 'Kinetic and potential energy and their interconversion',
     applies: p => p.scenario === 'drop',
     build: p => {
       const g = gOf(p), pe = p.m * g * p.h;
@@ -44,7 +44,7 @@ const predictions: PredictionTemplate<EnergyParams>[] = [
     },
   },
   {
-    id: 'half-way', label: 'Energy half-way down',
+    id: 'half-way', label: 'Energy half-way down', topic: 'Conservation of energy',
     applies: p => p.scenario === 'drop',
     build: p => {
       const r = dropAt(p, p.h / 2);
@@ -54,7 +54,7 @@ const predictions: PredictionTemplate<EnergyParams>[] = [
     },
   },
   {
-    id: 'impact-speed', label: 'Speed on reaching the ground',
+    id: 'impact-speed', label: 'Speed on reaching the ground', topic: 'Kinetic and potential energy and their interconversion',
     applies: p => p.scenario === 'drop',
     build: p => {
       const g = gOf(p), v = Math.sqrt(2 * g * p.h);
@@ -64,7 +64,7 @@ const predictions: PredictionTemplate<EnergyParams>[] = [
     },
   },
   {
-    id: 'effort', label: 'Effort needed on the lever',
+    id: 'effort', label: 'Effort needed on the lever', topic: 'Simple machines and mechanical advantage (pulley, inclined plane, lever)',
     applies: p => p.scenario === 'lever',
     build: p => {
       const r = solveLever(p), N = (n: number) => `${fmt(n, 1)} N`;
@@ -73,7 +73,7 @@ const predictions: PredictionTemplate<EnergyParams>[] = [
     },
   },
   {
-    id: 'advantage', label: 'Does the lever make it easier?',
+    id: 'advantage', label: 'Does the lever make it easier?', topic: 'Simple machines and mechanical advantage (pulley, inclined plane, lever)',
     applies: p => p.scenario === 'lever',
     build: p => {
       const r = solveLever(p);

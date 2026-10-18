@@ -16,6 +16,8 @@ import { ANSWER_MODES, engineById, scenePredictions, type AnswerMode, type LabSc
 import { decodeScene, encodeScene } from '@/lib/lab/url';
 import { LabControls, LabReadouts, LabView } from './LabStage';
 import { useLabParams } from './useLabParams';
+import { useClassRun } from './useClassRun';
+import type { RunAnswer } from '@/lib/lab/runs';
 
 const LETTERS = 'ABCD';
 
@@ -23,8 +25,10 @@ type Step = { kind: 'intro' } | { kind: 'question'; i: number; revealed: boolean
 
 export default function Presenter() {
   // Decoded once per link, so the questions and steps below stay cached across taps.
-  const raw = useSearchParams().get('scene');
+  const sp = useSearchParams();
+  const raw = sp.get('scene');
   const scene = useMemo(() => decodeScene(raw), [raw]);
+  const from = { class: sp.get('class'), subject: sp.get('subject'), demo: sp.get('demo') };
   if (!scene) {
     return (
       <Empty icon={<Flask size={28} weight="duotone" />} title="This lab link doesn't open">
@@ -32,10 +36,10 @@ export default function Presenter() {
       </Empty>
     );
   }
-  return <Show scene={scene} />;
+  return <Show scene={scene} from={from} />;
 }
 
-function Show({ scene }: { scene: LabScene }) {
+function Show({ scene, from }: { scene: LabScene; from: { class: string | null; subject: string | null; demo: string | null } }) {
   const engine = engineById(scene.engine)!;
   const { params, setParam, blocked, replace } = useLabParams(engine, scene.params);
   // Questions are fixed to the setup as it was saved: their answers belong to those values.
@@ -46,6 +50,9 @@ function Show({ scene }: { scene: LabScene }) {
   const [mode, setMode] = useState<AnswerMode>(scene.answer);
   const [classPick, setClassPick] = useState<Record<string, number>>({});
   const [runKey, setRunKey] = useState(0);
+  // How each question was answered when it was revealed; every reveal saves the run so far (class-level, no names).
+  const [asked, setAsked] = useState<Record<string, AnswerMode>>({});
+  const log = useClassRun(scene, from);
 
   const q = step.kind === 'question' ? questions[step.i] : null;
   const asking = step.kind === 'question' && !step.revealed;
@@ -65,9 +72,17 @@ function Show({ scene }: { scene: LabScene }) {
       replace(scene.params);
       // Revealing runs the simulation so the class sees the answer happen.
       setRunKey(k => (next.revealed && dir === 1 ? k + 1 : 0));
+      if (next.revealed && dir === 1) setAsked(a => ({ ...a, [questions[next.i].id]: mode }));
     }
     setStep(next);
-  }, [order, at, replace, scene.params]);
+  }, [order, at, replace, scene.params, questions, mode]);
+
+  useEffect(() => {
+    if (!Object.keys(asked).length) return;
+    const answers: Record<string, RunAnswer> = {};
+    for (const [id, m] of Object.entries(asked)) answers[id] = { mode: m, tally: votes[id], pick: classPick[id] ?? null };
+    void log.save(answers);
+  }, [asked]); // eslint-disable-line react-hooks/exhaustive-deps -- saved at each reveal, not on every count
 
   const vote = useCallback((opt: number, d: 1 | -1) => {
     if (!q || mode === 'think') return;
@@ -121,6 +136,15 @@ function Show({ scene }: { scene: LabScene }) {
               <span className="lb-step">Live lab</span>
               <h2>{engine.title}</h2>
               {scene.narration ? <p className="lab-narr">{scene.narration}</p> : <p className="lab-narr">{engine.blurb}</p>}
+              {questions.length > 0 && log.options.length > 0 && (
+                <div className="lab-ctl" style={{ maxWidth: 360 }}>
+                  <label htmlFor="lab-run-class">Save the class&apos;s answers for</label>
+                  <select id="lab-run-class" value={log.target?.key ?? ''} disabled={!log.canChange} onChange={e => log.choose(e.target.value)}>
+                    <option value="">Don&apos;t save this time</option>
+                    {log.options.map(o => <option key={o.key} value={o.key}>{o.cls} · {o.subject}</option>)}
+                  </select>
+                </div>
+              )}
               <button className="btn red" onClick={() => go(1)}>
                 {questions.length ? <>Start: {questions.length} prediction{questions.length === 1 ? '' : 's'}</> : 'Start exploring'} <ArrowRight size={15} weight="bold" />
               </button>
@@ -191,6 +215,9 @@ function Show({ scene }: { scene: LabScene }) {
             <div className="lab-dots" aria-hidden>
               {questions.map((_, i) => <i key={i} className={step.kind === 'question' && step.i >= i || step.kind === 'explore' ? 'on' : ''} />)}
             </div>
+            {log.status === 'saved' && <span className="muted lab-saved" role="status">Saved for {log.target?.cls}</span>}
+            {log.status === 'retrying' && <span className="muted lab-saved" role="status">Not saved yet: retrying</span>}
+            {log.status === 'failed' && <span className="muted lab-saved" role="status">Answers not saved: check the connection</span>}
             {!asking && <button className="btn sm" onClick={run} title="Run (Space)"><Play size={13} weight="fill" /> Run</button>}
             <button className="btn sm" onClick={() => go(-1)} disabled={step.kind === 'intro'} aria-label="Back"><ArrowLeft size={14} weight="bold" /></button>
             {step.kind !== 'explore' && (

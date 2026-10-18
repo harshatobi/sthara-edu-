@@ -31,7 +31,7 @@ const s = (n: number) => (n >= 0.1 ? `${fmt(n, 2)} s` : `${fmt(n * 1000, 1)} ms`
 
 const predictions: PredictionTemplate<SoundParams>[] = [
   {
-    id: 'wavelength', label: 'Wavelength',
+    id: 'wavelength', label: 'Wavelength', topic: 'Characteristics: wavelength, frequency, time period, amplitude, intensity, speed',
     build: p => {
       const r = solveSound(p);
       const c = choices(m(r.lambda), [m(r.v * p.f / 1e5), m(p.f / r.v), m(r.lambda * 2), m(r.lambda / 2)], 61);
@@ -39,7 +39,7 @@ const predictions: PredictionTemplate<SoundParams>[] = [
     },
   },
   {
-    id: 'double-f', label: 'If the frequency doubles',
+    id: 'double-f', label: 'If the frequency doubles', topic: 'Characteristics: wavelength, frequency, time period, amplitude, intensity, speed',
     build: p => {
       const c = choices('The wavelength halves', ['The wavelength halves', 'The wavelength doubles', 'The speed doubles', 'Nothing changes'], 62);
       const r = solveSound(p);
@@ -47,7 +47,7 @@ const predictions: PredictionTemplate<SoundParams>[] = [
     },
   },
   {
-    id: 'echo-time', label: 'When the echo comes back',
+    id: 'echo-time', label: 'When the echo comes back', topic: 'Reflection of sound: echo, reverberation, echolocation',
     build: p => {
       const r = solveSound(p);
       const c = choices(s(r.echo), [s(p.d / r.v), s(r.echo * 2), s(r.v / p.d / 100), s(r.echo / 4)], 63);
@@ -55,7 +55,7 @@ const predictions: PredictionTemplate<SoundParams>[] = [
     },
   },
   {
-    id: 'distinct-echo', label: 'Is the echo heard separately?',
+    id: 'distinct-echo', label: 'Is the echo heard separately?', topic: 'Reflection of sound: echo, reverberation, echolocation',
     build: p => {
       const r = solveSound(p);
       const c = choices(r.distinct ? 'Yes, a separate echo' : 'No, it merges with the clap', ['Yes, a separate echo', 'No, it merges with the clap'], 64);

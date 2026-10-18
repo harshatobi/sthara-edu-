@@ -19,6 +19,9 @@ export interface Prediction {
   correct: number;
   /** One line shown on reveal: the working, from the engine's own numbers. */
   explain: string;
+  /** Where it sits in the syllabus, so evidence lands on the right chapter and topic. */
+  chapter: string;
+  topic: string;
 }
 
 export interface PredictionTemplate<P> {
@@ -27,7 +30,10 @@ export interface PredictionTemplate<P> {
   label: string;
   /** Not every question fits every setup (no image when the object sits at the focus). */
   applies?: (p: P) => boolean;
-  build: (p: P) => Omit<Prediction, 'id'>;
+  /** The official syllabus topic (curriculum JSON, word for word), in `chapter` or else the engine's first chapter. */
+  topic: string | ((p: P) => string);
+  chapter?: string;
+  build: (p: P) => Omit<Prediction, 'id' | 'chapter' | 'topic'>;
 }
 
 export interface Readout { label: string; value: string }
@@ -45,6 +51,11 @@ export interface LabEngine<P extends Params = Params> {
   check?: (p: P) => string | null;
   readouts: (p: P) => Readout[];
   predictions: PredictionTemplate<P>[];
+}
+
+/** Builds one question for these values, with its place in the syllabus. */
+export function buildPrediction<P extends Params>(engine: LabEngine<P>, t: PredictionTemplate<P>, p: P): Prediction {
+  return { id: t.id, ...t.build(p), chapter: t.chapter ?? engine.chapters[0], topic: typeof t.topic === 'function' ? t.topic(p) : t.topic };
 }
 
 export const round = (n: number, dp = 2) => {

@@ -151,20 +151,24 @@ export async function POST(req: NextRequest) {
   // Live Lab: the simulations that fit this class and chapter, so the Copilot can set one up (science only).
   const labEngines = isScienceSubject(subject) ? enginesFor(cls, focus?.name ?? str(b?.chapter, 200)) : [];
   if (labEngines.length) brief.push(`LAB ENGINES (Live Lab simulations you can set up; values must stay inside these ranges):\n${labCatalogue(labEngines)}`);
-  // Misconceptions: the class's own wrong answers (recent MCQs and photographed work) and tutor struggles.
+  // Misconceptions: the class's own wrong answers (recent MCQs and photographed work), tutor struggles and Live Lab predictions.
   {
     const recent = work.filter(a => a.status !== 'draft').sort((x, y) => String(y.due_date ?? '').localeCompare(String(x.due_date ?? ''))).slice(0, 15).map(a => a.id);
     const ids = roster.map(u => u.id);
-    const [{ data: qs }, { data: answered }, { data: tutor }] = await Promise.all([
+    const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
+    const [{ data: qs }, { data: answered }, { data: tutor }, { data: labRuns }] = await Promise.all([
       recent.length ? db.from('assignments').select('id, title, class, subject, units, questions').in('id', recent) : Promise.resolve({ data: [] as any[] }),
       recent.length && ids.length ? byIds<any>(recent, (chunk, a, b2) => db.from('submissions').select('assignment_id, student_id, answers, ai_result').in('assignment_id', chunk).order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
       // Last 90 days only: older struggles say little about this week's lesson, and the read stays small.
       ids.length ? byIds<any>(ids, (chunk, a, b2) => db.from('tutor_sessions').select('student_id, subject, topic, micro_topic, hint_depth, answer_revealed').in('student_id', chunk)
-        .gte('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString())
+        .gte('created_at', since)
         .or('answer_revealed.eq.true,hint_depth.gte.3').order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
+      // Live Lab lessons with this class: what the class predicted (counted hands, no names).
+      db.from('lab_runs').select('class, subject, updated_at, results').eq('school_id', staff.schoolId).eq('class', cls)
+        .gte('updated_at', since).order('updated_at', { ascending: false }).limit(100),
     ]);
     const evidence = misconceptionBrief(findMisconceptions({
-      cls, subject, roster: new Set(ids), assignments: qs ?? [], submissions: answered ?? [], tutor: tutor ?? [],
+      cls, subject, roster: new Set(ids), assignments: qs ?? [], submissions: answered ?? [], tutor: tutor ?? [], labRuns: labRuns ?? [],
     }), id => token.get(id) ?? '?');
     brief.push(evidence || 'MISCONCEPTION EVIDENCE: none stands out yet (too few answers, or no shared wrong answers).');
   }

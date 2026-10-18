@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { demoRows } from '@/lib/demo/student';
 import { compressPhoto, uploadPages } from '@/lib/grading/compress';
 import { gradeOf } from '@/lib/grading/handwritten';
+import YourWork from '../YourWork';
 import { Camera, X, Check, Loader2 } from 'lucide-react';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
@@ -260,6 +261,9 @@ export default function HomeworkWorkspace() {
       const result = isTyped ? await submitTyped() : await submitHandwritten();
       setJustSubmitted(result);
       setConfirmOpen(false);
+      // Read the stored row back so "Your work" shows exactly what was handed in.
+      const { data: stored } = await supabase.from('submissions').select('*').eq('assignment_id', id).eq('student_id', profile!.uid).maybeSingle();
+      if (stored) setSubmission(stored);
     } catch (e: any) {
       setSubmitError(e?.message || 'Submission failed. Please try again.');
       if (!auto) setConfirmOpen(false);
@@ -319,7 +323,7 @@ export default function HomeworkWorkspace() {
               <h1 className="text-[27px] font-extrabold text-[#002147] mt-4">{pendingReview ? 'Submitted' : 'Graded'}</h1>
               <p className="text-[#7A8699] text-[15px] mt-2.5">{assignment.subject} · {assignment.title}</p>
               <p className="text-[#7A8699] text-[13.5px] mt-1">
-                Submitted just now{assignment.proctored ? ' · integrity check: clean' : ''}
+                {justSubmitted || !submission?.submitted_at ? 'Submitted just now' : `Submitted ${new Date(submission.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}{assignment.proctored ? ' · integrity check: clean' : ''}
               </p>
               <div className="text-left bg-[#F7F9FB] border border-[#E8EDF4] rounded-2xl p-4 mt-6 text-[13.5px] text-[#33465F] leading-relaxed">
                 {pendingReview
@@ -356,6 +360,8 @@ export default function HomeworkWorkspace() {
                 </div>
               </div>
             )}
+
+            {submission && <YourWork submission={submission} questions={questions} live={!!user} getAuthToken={getAuthToken} />}
           </div>
         </div>
       </div>

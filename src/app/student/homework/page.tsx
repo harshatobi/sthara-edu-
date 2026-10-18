@@ -145,7 +145,7 @@ function DoneRow({ a, onOpen }: { a: DeskAssignment; onOpen: () => void }) {
       </Chip>
       {graded
         ? <button className="btn" onClick={onOpen}>View report</button>
-        : <button className="btn" disabled>Teacher review pending</button>}
+        : <Link className="btn" href={`/student/homework/${a.id}`} title="Your teacher reviews the AI grade before it counts">View my work</Link>}
     </div>
   );
 }

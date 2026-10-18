@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getCurriculum } from '@/lib/curriculum';
-import { engineById } from '../registry';
-import { validateParams } from '../types';
-import { PRACTICALS, practicalsForClass, readingsFor, resultOk, vivaFor } from './index';
+import { engineById } from './registry';
+import { validateParams } from './types';
+import { PRACTICALS, practicalsForClass, readingsFor, resultOk, vivaFor } from './practicals';
 
 test('all 27 official practicals: 13 in Class 9, 14 in Class 10, numbered in order', () => {
   assert.equal(PRACTICALS.length, 27);
@@ -78,7 +78,7 @@ test('every practical has a viva of at least four questions, engine-worked ones 
 
 test('every photo a practical names is credited and on disk', async () => {
   const fs = await import('node:fs');
-  const { PHOTOS } = await import('../photos');
+  const { PHOTOS } = await import('./photos');
   for (const p of PRACTICALS) for (const id of p.photos ?? []) {
     const ph = PHOTOS[id];
     assert.ok(ph, `${p.id}: photo ${id} in the credits`);

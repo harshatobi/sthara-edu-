@@ -48,7 +48,7 @@ function graphShape(p: MotionParams): string {
 
 const predictions: PredictionTemplate<MotionParams>[] = [
   {
-    id: 'final-velocity', label: 'Speed at the end',
+    id: 'final-velocity', label: 'Speed at the end', topic: 'Kinematic equations for constant acceleration by graphical method',
     build: p => {
       const end = stateAt(p, p.t);
       // The last two always differ from the answer, so even a car that never moves gets real options.
@@ -57,7 +57,7 @@ const predictions: PredictionTemplate<MotionParams>[] = [
     },
   },
   {
-    id: 'distance', label: 'Distance covered',
+    id: 'distance', label: 'Distance covered', topic: 'Kinematic equations for constant acceleration by graphical method',
     applies: p => stateAt(p, p.t).s > 0,
     build: p => {
       const s = stateAt(p, p.t).s;
@@ -66,7 +66,7 @@ const predictions: PredictionTemplate<MotionParams>[] = [
     },
   },
   {
-    id: 'vt-shape', label: 'Shape of the velocity–time graph',
+    id: 'vt-shape', label: 'Shape of the velocity–time graph', topic: 'Graphical representation of straight-line motion (constant velocity and constant acceleration)',
     build: p => {
       const c = choices(graphShape(p), ['A straight line sloping up', 'A straight line sloping down', 'A flat line above the time axis', 'A curve getting steeper'], 33);
       return {
@@ -76,7 +76,7 @@ const predictions: PredictionTemplate<MotionParams>[] = [
     },
   },
   {
-    id: 'stopping', label: 'Stopping time and distance',
+    id: 'stopping', label: 'Stopping time and distance', topic: 'Kinematic equations for constant acceleration by graphical method',
     applies: p => p.a < 0 && p.u > 0 && (stopTime(p) as number) <= p.t,
     build: p => {
       const ts = stopTime(p) as number, d = (p.u * p.u) / (2 * -p.a);

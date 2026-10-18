@@ -48,7 +48,7 @@ const dir = (n: number) => (n > 1e-9 ? 'to the right' : n < -1e-9 ? 'to the left
 
 const predictions: PredictionTemplate<ForcesParams>[] = [
   {
-    id: 'will-it-move', label: 'Does the block move?',
+    id: 'will-it-move', label: 'Does the block move?', topic: 'Force of friction',
     applies: p => p.scenario === 'push',
     build: p => {
       const r = solvePush(p), max = p.mu * p.m1 * G;
@@ -60,7 +60,7 @@ const predictions: PredictionTemplate<ForcesParams>[] = [
     },
   },
   {
-    id: 'acceleration', label: 'Acceleration of the block',
+    id: 'acceleration', label: 'Acceleration of the block', topic: "Newton's first, second and third laws of motion",
     applies: p => p.scenario === 'push' && solvePush(p).moves,
     build: p => {
       const r = solvePush(p);
@@ -70,7 +70,7 @@ const predictions: PredictionTemplate<ForcesParams>[] = [
     },
   },
   {
-    id: 'will-they-meet', label: 'Will the trolleys collide?',
+    id: 'will-they-meet', label: 'Will the trolleys collide?', topic: "Newton's first, second and third laws of motion",
     applies: p => p.scenario === 'collide',
     build: p => {
       const r = solveCollide(p);
@@ -79,7 +79,7 @@ const predictions: PredictionTemplate<ForcesParams>[] = [
     },
   },
   {
-    id: 'after-collision', label: 'Speed after the collision',
+    id: 'after-collision', label: 'Speed after the collision', topic: "Newton's first, second and third laws of motion",
     applies: p => p.scenario === 'collide' && solveCollide(p).meet,
     build: p => {
       const r = solveCollide(p);
@@ -95,7 +95,7 @@ const predictions: PredictionTemplate<ForcesParams>[] = [
     },
   },
   {
-    id: 'momentum-after', label: 'Total momentum after',
+    id: 'momentum-after', label: 'Total momentum after', topic: "Newton's first, second and third laws of motion",
     applies: p => p.scenario === 'collide' && solveCollide(p).meet,
     build: p => {
       const r = solveCollide(p);
@@ -105,7 +105,7 @@ const predictions: PredictionTemplate<ForcesParams>[] = [
     },
   },
   {
-    id: 'which-way', label: 'Which way trolley 1 goes after',
+    id: 'which-way', label: 'Which way trolley 1 goes after', topic: "Newton's first, second and third laws of motion",
     applies: p => p.scenario === 'collide' && solveCollide(p).meet && p.joins === 'bounce',
     build: p => {
       const r = solveCollide(p);

@@ -8,6 +8,9 @@
  *                   same question, with the grader's "to fix" notes
  *   stuck topics    tutor sessions that needed the answer revealed, or the
  *                   deepest hints, per chapter
+ *   class predictions  Live Lab lessons where a share of the hands (or the
+ *                   class's agreed answer) went to a wrong option; anonymous,
+ *                   so class-level only, never tied to a student
  *
  * Counts and students always come from the data. The Copilot may only
  * suggest *what* the misconception probably is.
@@ -15,6 +18,7 @@
 
 import { normClass, normSubject } from './scope';
 import { mcqCorrect } from './questions';
+import type { RunResult } from '@/lib/lab/runs';
 
 /** An option index stored as a number or a numeric string; anything else is null. */
 const optionIndex = (v: unknown): number | null => {
@@ -32,7 +36,15 @@ export interface WrongOption {
 }
 export interface WeakQuestion { assignment: string; chapter: string | null; q: number; avgPct: number; students: string[]; graded: number; notes: string[] }
 export interface StuckTopic { topic: string; revealed: number; deepHints: number; students: string[] }
-export interface Misconceptions { wrongOptions: WrongOption[]; weakQuestions: WeakQuestion[]; stuckTopics: StuckTopic[] }
+export interface LabRun { class: string; subject: string; updated_at: string; results: unknown; scene?: unknown }
+export interface ClassPrediction {
+  chapter: string; topic: string; question: string; correct: string; chosen: string;
+  /** hands: how many chose it, of how many counted. class: the agreed answer (no counts). */
+  mode: 'hands' | 'class'; hands: number | null; counted: number | null; when: string;
+  /** The run's set-up, so the demo can be presented again. */
+  scene?: unknown;
+}
+export interface Misconceptions { wrongOptions: WrongOption[]; weakQuestions: WeakQuestion[]; stuckTopics: StuckTopic[]; classPredictions: ClassPrediction[] }
 
 /** A wrong answer counts as shared when at least this many students, and this share of those who answered, chose it. */
 export const MIN_STUDENTS = 2;
@@ -44,7 +56,7 @@ const short = (s: unknown, n = 220) => (typeof s === 'string' ? s.replace(/\s+/g
 
 export function findMisconceptions(input: {
   cls: string; subject: string; roster: Set<string>;
-  assignments: McqAssignment[]; submissions: Submission[]; tutor: TutorSession[];
+  assignments: McqAssignment[]; submissions: Submission[]; tutor: TutorSession[]; labRuns?: LabRun[];
 }): Misconceptions {
   const { roster } = input;
   const mine = input.assignments.filter(a => normClass(a.class) === normClass(input.cls) && normSubject(a.subject) === normSubject(input.subject));
@@ -132,10 +144,44 @@ export function findMisconceptions(input: {
     .map(([topic, e]) => ({ topic, revealed: e.revealed, deepHints: e.deep, students: [...e.students] }));
 
   return {
+    classPredictions: classPredictions(input.labRuns ?? [], input.cls, input.subject),
     wrongOptions: wrongOptions.sort((x, y) => y.students.length - x.students.length).slice(0, 8),
     weakQuestions: weakQuestions.sort((x, y) => y.students.length - x.students.length).slice(0, 6),
     stuckTopics: stuckTopics.sort((x, y) => y.students.length - x.students.length).slice(0, 6),
   };
+}
+
+/**
+ * Live Lab runs for this class and subject: a wrong option that took at least
+ * MIN_SHARE of the hands (and MIN_STUDENTS hands), or a wrong class answer.
+ * The same question asked again keeps only its latest run.
+ */
+export function classPredictions(runs: LabRun[], cls: string, subject: string): ClassPrediction[] {
+  // Latest run first; null records "asked, and the class was fine", so an older miss on the same question is ignored.
+  const seen = new Map<string, ClassPrediction | null>();
+  const mine = runs.filter(r => normClass(r.class) === normClass(cls) && normSubject(r.subject) === normSubject(subject))
+    .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+  for (const run of mine) {
+    for (const r of asArray(run.results) as RunResult[]) {
+      if (!r || !Array.isArray(r.options) || !Number.isInteger(r.correct) || seen.has(r.prompt)) continue;
+      const miss = (chosen: number, hands: number | null, counted: number | null): ClassPrediction => ({
+        chapter: short(r.chapter, 200), topic: short(r.topic, 200), question: short(r.prompt), correct: short(r.options[r.correct], 120),
+        chosen: short(r.options[chosen], 120), mode: hands === null ? 'class' : 'hands', hands, counted, when: run.updated_at, scene: run.scene,
+      });
+      if (r.mode === 'hands' && Array.isArray(r.tally)) {
+        const tally = r.tally.map(n => Number(n) || 0);
+        const counted = tally.reduce((n, x) => n + x, 0);
+        if (!counted) continue;
+        const worst = tally.reduce((w, n, k) => (k !== r.correct && (w < 0 || n > tally[w]) ? k : w), -1);
+        const n = worst < 0 ? 0 : tally[worst];
+        seen.set(r.prompt, n >= MIN_STUDENTS && n / counted >= MIN_SHARE ? miss(worst, n, counted) : null);
+      } else if (r.mode === 'class' && Number.isInteger(r.pick)) {
+        seen.set(r.prompt, r.pick !== r.correct ? miss(r.pick!, null, null) : null);
+      }
+    }
+  }
+  const share = (p: ClassPrediction) => (p.counted ? p.hands! / p.counted : 1);
+  return [...seen.values()].filter((p): p is ClassPrediction => !!p).sort((a, b) => share(b) - share(a)).slice(0, 6);
 }
 
 /** The Copilot brief's section: students as tokens only. Empty string when nothing stands out. */
@@ -150,6 +196,9 @@ export function misconceptionBrief(m: Misconceptions, token: (studentId: string)
   }
   for (const t of m.stuckTopics) {
     lines.push(`- Tutor: ${t.topic}: ${t.students.length} students struggled (answer revealed ${t.revealed}×, deepest hints ${t.deepHints}×): ${who(t.students)}`);
+  }
+  for (const p of m.classPredictions) {
+    lines.push(`- Live Lab prediction (${p.chapter}: ${p.topic}): "${p.question}" right answer "${p.correct}"; ${p.mode === 'hands' ? `${p.hands} of ${p.counted} hands went to "${p.chosen}"` : `the class agreed on "${p.chosen}"`} (whole class, no names)`);
   }
   return lines.length ? `MISCONCEPTION EVIDENCE (from answers students actually gave; counts are exact):\n${lines.join('\n')}` : '';
 }

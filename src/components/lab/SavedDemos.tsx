@@ -8,7 +8,7 @@ import { CopyIcon as Copy } from '@phosphor-icons/react/dist/ssr/Copy';
 import { TrashIcon as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
 import { Skeleton } from '@/components/canon/ui';
 import { engineById } from '@/lib/lab/registry';
-import { encodeScene } from '@/lib/lab/url';
+import { encodeScene, presentHref } from '@/lib/lab/url';
 import { useOptionalTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { useSavedScenes, type SavedScene } from './useSavedScenes';
 
@@ -61,7 +61,7 @@ export default function SavedDemos() {
                 <p>{e?.title} · {s.class}{s.mine ? '' : ` · ${s.author ?? 'A colleague'}`} · {day(s.updatedAt)}</p>
                 {s.lessonTitle && <p>Lesson: {s.lessonTitle}</p>}
                 <div className="lab-transport" style={{ marginTop: 'auto' }}>
-                  <Link className="btn sm red" href={`/teacher/lab/present?scene=${enc}`}><Presentation size={13} weight="fill" /> Present</Link>
+                  <Link className="btn sm red" href={presentHref(s.scene, { class: s.class, subject: s.subject, demo: s.id })}><Presentation size={13} weight="fill" /> Present</Link>
                   {s.mine
                     ? <Link className="btn sm" href={edit}><PencilSimple size={13} weight="bold" /> Edit</Link>
                     : <Link className="btn sm" href={`/teacher/lab/build?scene=${enc}`}><Copy size={13} weight="bold" /> Make my copy</Link>}

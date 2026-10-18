@@ -6,6 +6,7 @@
 import { sanitizeQuestions, suggestedScores, type Question } from './questions';
 import { gradeOf, type HandwrittenGrade, type HistoryEntry } from '@/lib/grading/handwritten';
 import { normClass, normSubject, scopeClasses, subjectsIn, type ScopeEntry } from './scope';
+import { topicKey } from './topicKey';
 
 export type WorkType = 'homework' | 'quiz' | 'classwork';
 
@@ -33,9 +34,7 @@ export interface TopicScore {
   at: string | null;
 }
 
-/** Topic names match loosely ("Ch 4 · Quadratic Equations" / "quadratic equations"). */
-export const topicKey = (s: string | null | undefined) =>
-  (s || '').toLowerCase().replace(/^ch(apter)?\s*\d+\s*[·:.-]?\s*/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+export { topicKey };
 
 export interface TSubmission {
   id: string;

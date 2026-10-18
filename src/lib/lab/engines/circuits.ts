@@ -49,7 +49,7 @@ function reqWorking(p: CircuitParams, r: CircuitResult): string {
 
 const predictions: PredictionTemplate<CircuitParams>[] = [
   {
-    id: 'total-resistance', label: 'Total resistance',
+    id: 'total-resistance', label: 'Total resistance', topic: 'Series and parallel combination of resistors and daily-life applications',
     build: p => {
       const r = solveCircuit(p), rs = r.branches.map(b => b.r);
       const sum = rs.reduce((s, x) => s + x, 0);
@@ -58,7 +58,7 @@ const predictions: PredictionTemplate<CircuitParams>[] = [
     },
   },
   {
-    id: 'total-current', label: 'Current from the cell',
+    id: 'total-current', label: 'Current from the cell', topic: "Ohm's law",
     build: p => {
       const r = solveCircuit(p), rs = r.branches.map(b => b.r);
       const sum = rs.reduce((s, x) => s + x, 0);
@@ -67,7 +67,7 @@ const predictions: PredictionTemplate<CircuitParams>[] = [
     },
   },
   {
-    id: 'most-power', label: 'Which resistor heats up most',
+    id: 'most-power', label: 'Which resistor heats up most', topic: 'Electric power; interrelation between P, V, I and R',
     applies: p => {
       const ps = solveCircuit(p).branches.map(b => b.p), top = Math.max(...ps);
       return ps.filter(x => Math.abs(x - top) < 1e-9 * Math.max(1, top)).length === 1;
@@ -83,7 +83,7 @@ const predictions: PredictionTemplate<CircuitParams>[] = [
     },
   },
   {
-    id: 'same-for-all', label: 'What every resistor shares',
+    id: 'same-for-all', label: 'What every resistor shares', topic: 'Series and parallel combination of resistors and daily-life applications',
     applies: p => p.topology !== 'mixed',
     build: p => {
       const r = solveCircuit(p);
@@ -98,7 +98,7 @@ const predictions: PredictionTemplate<CircuitParams>[] = [
     },
   },
   {
-    id: 'heat-r1', label: 'Heat produced in R1',
+    id: 'heat-r1', label: 'Heat produced in R1', topic: 'Heating effect of electric current and its applications',
     build: p => {
       const r = solveCircuit(p), b = r.branches[0];
       const j = (n: number) => `${fmt(n, n >= 100 ? 0 : 2)} J`;

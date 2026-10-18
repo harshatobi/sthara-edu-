@@ -7,8 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { CURRENT_SESSION } from '@/lib/curriculum';
 import { useOptionalTeacherDesk } from '@/lib/teacher/useTeacherDesk';
-import { isScienceSubject } from '@/lib/teacher/copilot';
 import type { LabScene } from '@/lib/lab/registry';
+import { labClassOptions } from './useClassRun';
 
 export interface SavedRef { id: string; class: string; subject: string; lessonPlanId: string | null }
 
@@ -20,11 +20,7 @@ export interface SavedRef { id: string; class: string; subject: string; lessonPl
 export default function SavePanel({ scene, saved, onSaved }: { scene: LabScene; saved: SavedRef | null; onSaved: (r: SavedRef) => void }) {
   const desk = useOptionalTeacherDesk();
   const { profile } = useAuth();
-  const options = useMemo(() => {
-    const scope = desk?.desk?.scope ?? [];
-    const sci = scope.filter(e => isScienceSubject(e.subject));
-    return (sci.length ? sci : scope).map(e => ({ key: `${e.cls}::${e.subject}`, cls: e.cls, subject: e.subject }));
-  }, [desk?.desk?.scope]);
+  const options = useMemo(() => labClassOptions(desk?.desk?.scope ?? []), [desk?.desk?.scope]);
   const [pick, setPick] = useState(saved ? `${saved.class}::${saved.subject}` : '');
   const target = options.find(o => o.key === pick) ?? options[0] ?? null;
   const [lessons, setLessons] = useState<{ id: string; title: string; date: string | null }[]>([]);

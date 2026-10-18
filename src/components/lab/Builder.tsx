@@ -11,7 +11,7 @@ import { SquareIcon as Square } from '@phosphor-icons/react/dist/ssr/Square';
 import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import { Empty, PageBar } from '@/components/canon/ui';
 import { ANSWER_MODES, engineById, fittingPredictions, scenePredictions, type AnswerMode, type LabScene } from '@/lib/lab/registry';
-import { decodeScene, encodeScene } from '@/lib/lab/url';
+import { decodeScene, presentHref } from '@/lib/lab/url';
 import type { LabEngine } from '@/lib/lab/types';
 import LabStage from './LabStage';
 import LabPrint from './LabPrint';
@@ -72,7 +72,7 @@ function Build({ engine, initial, saved: savedAtOpen }: { engine: LabEngine<any>
           <button className="btn" onClick={() => window.print()} disabled={!scene.predictions.length} title={scene.predictions.length ? 'A4 worksheet for the class' : 'Pick at least one prediction to print'}>
             <Printer size={15} weight="bold" /> Print worksheet
           </button>
-          <Link className="btn red" href={`/teacher/lab/present?scene=${encodeScene(scene)}`}><Presentation size={16} weight="fill" /> Present to class</Link>
+          <Link className="btn red" href={presentHref(scene, saved ? { class: saved.class, subject: saved.subject, demo: saved.id } : undefined)}><Presentation size={16} weight="fill" /> Present to class</Link>
         </>} />
 
       <LabStage engine={engine} params={params} setParam={setParam} runKey={runKey} onRun={() => setRunKey(k => k + 1)} onReset={reset} />

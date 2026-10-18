@@ -1,5 +1,5 @@
-import { topicKey } from '@/lib/teacher/desk';
-import { validateParams, type LabEngine, type Params, type Prediction } from './types';
+import { topicKey } from '@/lib/teacher/topicKey';
+import { buildPrediction, validateParams, type LabEngine, type Params, type Prediction } from './types';
 import { optics } from './engines/optics';
 import { circuits } from './engines/circuits';
 import { acidBase } from './engines/acidBase';
@@ -75,7 +75,7 @@ export function validateScene(raw: unknown): LabScene | null {
 export function fittingPredictions(engineId: string, params: Record<string, unknown>): Prediction[] {
   const engine = engineById(engineId);
   if (!engine) return [];
-  return engine.predictions.filter(t => !t.applies || t.applies(params)).map(t => ({ id: t.id, ...t.build(params) }));
+  return engine.predictions.filter(t => !t.applies || t.applies(params)).map(t => buildPrediction(engine, t, params));
 }
 
 /** Questions for a scene: exactly the ones it names. A scene that names none is a demo with no questions. */
@@ -85,8 +85,8 @@ export function scenePredictions(scene: LabScene): Prediction[] {
   return scene.predictions.flatMap(x => {
     const t = engine.predictions.find(t => t.id === x.id);
     if (!t || (t.applies && !t.applies(scene.params))) return [];
-    const built = t.build(scene.params);
-    return [{ id: t.id, ...built, prompt: x.prompt || built.prompt }];
+    const built = buildPrediction(engine, t, scene.params);
+    return [{ ...built, prompt: x.prompt || built.prompt }];
   });
 }
 

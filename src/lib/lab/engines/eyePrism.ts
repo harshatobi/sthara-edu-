@@ -49,7 +49,7 @@ const D = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${fmt(Math.abs(n), 
 
 const predictions: PredictionTemplate<EyeParams>[] = [
   {
-    id: 'lens-type', label: 'Which lens corrects it',
+    id: 'lens-type', label: 'Which lens corrects it', topic: 'Defects of vision and their corrections',
     applies: p => p.scenario !== 'prism',
     build: p => {
       const right = p.scenario === 'myopia' ? 'A concave (diverging) lens' : 'A convex (converging) lens';
@@ -63,7 +63,7 @@ const predictions: PredictionTemplate<EyeParams>[] = [
     },
   },
   {
-    id: 'lens-power', label: 'Power of the lens',
+    id: 'lens-power', label: 'Power of the lens', topic: 'Defects of vision and their corrections',
     applies: p => p.scenario !== 'prism',
     build: p => {
       const P = correctingPower(p);
@@ -78,7 +78,7 @@ const predictions: PredictionTemplate<EyeParams>[] = [
     },
   },
   {
-    id: 'where-focus', label: 'Where the uncorrected eye focuses',
+    id: 'where-focus', label: 'Where the uncorrected eye focuses', topic: 'Defects of vision and their corrections',
     applies: p => p.scenario !== 'prism',
     build: p => {
       const right = p.scenario === 'myopia' ? 'In front of the retina' : 'Behind the retina';
@@ -87,7 +87,7 @@ const predictions: PredictionTemplate<EyeParams>[] = [
     },
   },
   {
-    id: 'bends-most', label: 'Which colour bends most',
+    id: 'bends-most', label: 'Which colour bends most', topic: 'Dispersion of light',
     applies: p => p.scenario === 'prism',
     build: p => {
       const t = SPECTRUM.map(c => ({ c, t: traceColour(c.n, p.i)! }));
@@ -97,7 +97,7 @@ const predictions: PredictionTemplate<EyeParams>[] = [
     },
   },
   {
-    id: 'spread', label: 'Angle between red and violet',
+    id: 'spread', label: 'Angle between red and violet', topic: 'Dispersion of light',
     applies: p => p.scenario === 'prism',
     build: p => {
       const red = traceColour(SPECTRUM[0].n, p.i)!, violet = traceColour(SPECTRUM[6].n, p.i)!;

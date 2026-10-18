@@ -150,9 +150,13 @@ function working(p: OpticsParams, r: OpticsResult): string {
   return `${formula}, so v = ${signed(r.v)} cm. ${mf}.`;
 }
 
+// Official topics: mirrors and lenses are separate lines in the syllabus.
+const imageTopic = (p: OpticsParams) => (isMirror(p.device) ? 'Reflection of light by curved surfaces; images formed by spherical mirrors' : 'Refraction by spherical lenses; images formed by lenses');
+const formulaTopic = (p: OpticsParams) => (isMirror(p.device) ? 'Mirror formula and magnification' : 'Lens formula; magnification; power of a lens');
+
 const predictions: PredictionTemplate<OpticsParams>[] = [
   {
-    id: 'image-position', label: 'Where the image forms',
+    id: 'image-position', label: 'Where the image forms', topic: imageTopic,
     build: p => {
       const r = solveOptics(p);
       const c = choices(r.imageAt, imagePlaces(p.device), 1);
@@ -160,7 +164,7 @@ const predictions: PredictionTemplate<OpticsParams>[] = [
     },
   },
   {
-    id: 'image-nature', label: 'Real or virtual, erect or inverted',
+    id: 'image-nature', label: 'Real or virtual, erect or inverted', topic: imageTopic,
     applies: p => !solveOptics(p).atInfinity,
     build: p => {
       const r = solveOptics(p);
@@ -170,7 +174,7 @@ const predictions: PredictionTemplate<OpticsParams>[] = [
     },
   },
   {
-    id: 'image-size', label: 'Bigger or smaller than the object',
+    id: 'image-size', label: 'Bigger or smaller than the object', topic: imageTopic,
     applies: p => !solveOptics(p).atInfinity,
     build: p => {
       const r = solveOptics(p);
@@ -179,7 +183,7 @@ const predictions: PredictionTemplate<OpticsParams>[] = [
     },
   },
   {
-    id: 'image-distance', label: 'Image distance v',
+    id: 'image-distance', label: 'Image distance v', topic: formulaTopic,
     applies: p => !solveOptics(p).atInfinity,
     build: p => {
       const r = solveOptics(p);
@@ -193,7 +197,7 @@ const predictions: PredictionTemplate<OpticsParams>[] = [
     },
   },
   {
-    id: 'magnification', label: 'Magnification m',
+    id: 'magnification', label: 'Magnification m', topic: formulaTopic,
     applies: p => !solveOptics(p).atInfinity && Math.abs(solveOptics(p).m) > 1e-6,
     build: p => {
       const r = solveOptics(p);

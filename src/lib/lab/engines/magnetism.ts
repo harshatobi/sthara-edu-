@@ -60,7 +60,7 @@ const deflectWord = (d: number) => (d === 0 ? 'No deflection' : d > 0 ? 'Right' 
 
 const predictions: PredictionTemplate<MagParams>[] = [
   {
-    id: 'wire-sense', label: 'Which way the field circles the wire',
+    id: 'wire-sense', label: 'Which way the field circles the wire', topic: 'Field due to a current-carrying conductor, coil or solenoid',
     applies: p => p.scenario === 'wire',
     build: p => {
       const r = wireField(p);
@@ -69,7 +69,7 @@ const predictions: PredictionTemplate<MagParams>[] = [
     },
   },
   {
-    id: 'wire-distance', label: 'Field twice as far away',
+    id: 'wire-distance', label: 'Field twice as far away', topic: 'Field due to a current-carrying conductor, coil or solenoid',
     applies: p => p.scenario === 'wire',
     build: p => {
       const r = wireField(p), far = wireField({ ...p, r: p.r * 2 });
@@ -78,7 +78,7 @@ const predictions: PredictionTemplate<MagParams>[] = [
     },
   },
   {
-    id: 'solenoid-north', label: 'Which end is north',
+    id: 'solenoid-north', label: 'Which end is north', topic: 'Field due to a current-carrying conductor, coil or solenoid',
     applies: p => p.scenario === 'solenoid',
     build: p => {
       const r = solenoidPoles(p);
@@ -87,7 +87,7 @@ const predictions: PredictionTemplate<MagParams>[] = [
     },
   },
   {
-    id: 'motor-force', label: 'Which way the rod is pushed',
+    id: 'motor-force', label: 'Which way the rod is pushed', topic: "Force on a current-carrying conductor; Fleming's Left Hand Rule",
     applies: p => p.scenario === 'motor',
     build: p => {
       const r = motorForce(p);
@@ -96,7 +96,7 @@ const predictions: PredictionTemplate<MagParams>[] = [
     },
   },
   {
-    id: 'induction-direction', label: 'Galvanometer deflection',
+    id: 'induction-direction', label: 'Galvanometer deflection', chapter: 'Motor, Electromagnetic Induction and Electric Generator', topic: 'Electromagnetic induction',
     applies: p => p.scenario === 'induction',
     build: p => {
       const d = deflection(p);

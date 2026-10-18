@@ -140,7 +140,7 @@ const g = (n: number) => `${fmt(n, n >= 10 ? 1 : 2)} g`;
 
 const predictions: PredictionTemplate<ReactionParams>[] = [
   {
-    id: 'coefficient', label: 'A coefficient in the balanced equation',
+    id: 'coefficient', label: 'A coefficient in the balanced equation', topic: 'Balanced chemical equations',
     build: p => {
       const r = solveReaction(p);
       // Ask about the species with the largest coefficient: the interesting one.
@@ -150,7 +150,7 @@ const predictions: PredictionTemplate<ReactionParams>[] = [
     },
   },
   {
-    id: 'type', label: 'Type of reaction',
+    id: 'type', label: 'Type of reaction', topic: 'Types of reactions: combination, decomposition, displacement, double displacement, precipitation',
     build: p => {
       const rx = REACTIONS.find(r => r.key === p.reaction)!;
       const c = choices(rx.type, ['Combination', 'Decomposition', 'Displacement', 'Double displacement', 'Combustion', 'Redox'], 92);
@@ -158,7 +158,7 @@ const predictions: PredictionTemplate<ReactionParams>[] = [
     },
   },
   {
-    id: 'product-mass', label: 'Mass of product formed',
+    id: 'product-mass', label: 'Mass of product formed', topic: 'Balanced chemical equations',
     build: p => {
       const r = solveReaction(p), prod = r.products[0], gv = r.given;
       const wrongRatio = (gv.moles * molarMass(prod.formula));
@@ -170,7 +170,7 @@ const predictions: PredictionTemplate<ReactionParams>[] = [
     },
   },
   {
-    id: 'mass-conserved', label: 'Total mass after',
+    id: 'mass-conserved', label: 'Total mass after', chapter: 'Atoms and Molecules', topic: 'Law of conservation of mass',
     applies: p => solveReaction(p).reactants.length > 1 || solveReaction(p).products.length > 1,
     build: p => {
       const r = solveReaction(p);

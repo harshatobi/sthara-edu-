@@ -56,5 +56,5 @@ test('the brief names students only by token, and is empty when nothing stands o
   });
   const brief = misconceptionBrief(m, id => `S${id.slice(1)}`);
   assert.match(brief, /2 of 2 chose "Inside F": \[\[S1\]\] \[\[S2\]\]/);
-  assert.equal(misconceptionBrief({ wrongOptions: [], weakQuestions: [], stuckTopics: [] }, id => id), '');
+  assert.equal(misconceptionBrief({ wrongOptions: [], weakQuestions: [], stuckTopics: [], classPredictions: [] }, id => id), '');
 });

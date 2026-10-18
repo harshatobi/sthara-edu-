@@ -106,7 +106,7 @@ const salt = (a: Analyte) => ({ hcl: 'NaCl', ch3cooh: 'CH₃COONa', naoh: 'NaCl'
 
 const predictions: PredictionTemplate<TitrationParams>[] = [
   {
-    id: 'equivalence-volume', label: 'Volume needed to neutralise',
+    id: 'equivalence-volume', label: 'Volume needed to neutralise', topic: 'Neutralisation',
     build: p => {
       const a = ANALYTE[p.analyte], ve = equivalenceVolume(p);
       const ml = (n: number) => `${fmt(n, 1)} mL`;
@@ -118,7 +118,7 @@ const predictions: PredictionTemplate<TitrationParams>[] = [
     },
   },
   {
-    id: 'equivalence-ph', label: 'Acidic, neutral or basic at neutralisation',
+    id: 'equivalence-ph', label: 'Acidic, neutral or basic at neutralisation', topic: 'pH scale and the importance of pH in everyday life',
     build: p => {
       const ph = phAt(p, equivalenceVolume(p)), n = phNature(ph);
       const c = choices(n, ['Acidic', 'Neutral', 'Basic'], 22);
@@ -130,7 +130,7 @@ const predictions: PredictionTemplate<TitrationParams>[] = [
     },
   },
   {
-    id: 'start-ph', label: 'pH before anything is added',
+    id: 'start-ph', label: 'pH before anything is added', topic: 'pH scale and the importance of pH in everyday life',
     build: p => {
       const ph = phAt(p, 0), a = ANALYTE[p.analyte];
       const show = (x: number) => `About ${fmt(x, 1)}`;
@@ -146,7 +146,7 @@ const predictions: PredictionTemplate<TitrationParams>[] = [
     },
   },
   {
-    id: 'best-indicator', label: 'Which indicator to use',
+    id: 'best-indicator', label: 'Which indicator to use', topic: 'Identification using indicators',
     build: p => {
       const ok = suitableIndicators(p.analyte), right = INDICATOR_LABEL[ok[0]];
       const others = (['phenolphthalein', 'methyl_orange', 'litmus'] as Indicator[]).filter(i => !ok.includes(i)).map(i => INDICATOR_LABEL[i]);
@@ -159,7 +159,7 @@ const predictions: PredictionTemplate<TitrationParams>[] = [
     },
   },
   {
-    id: 'colour-at-end', label: 'Indicator colour when done',
+    id: 'colour-at-end', label: 'Indicator colour when done', topic: 'Identification using indicators',
     build: p => {
       const end = phAt(p, maxVolume(p)), col = indicatorColour(p.indicator, end).name;
       const all = { phenolphthalein: ['Colourless', 'Pink', 'Deep pink'], methyl_orange: ['Red', 'Orange', 'Yellow'], litmus: ['Red', 'Purple', 'Blue'], universal: ['Red', 'Yellow', 'Green', 'Blue', 'Violet'] }[p.indicator];

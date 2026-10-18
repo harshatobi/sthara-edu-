@@ -23,7 +23,8 @@ export default function LabQuestionSim({ lab }: { lab: LabRef }) {
 function Sim({ lab, engine }: { lab: LabRef; engine: NonNullable<ReturnType<typeof engineById>> }) {
   const { params, setParam, blocked, replace } = useLabParams(engine, lab.params);
   const [runKey, setRunKey] = useState(0);
-  const moved = JSON.stringify(params) !== JSON.stringify(lab.params);
+  // Value by value: stored set-ups come back from the database with their keys in another order.
+  const moved = engine.params.some(s => params[s.key] !== lab.params[s.key]);
   return (
     <div className="lab-hw">
       <LabView engine={engine} params={params} setParam={setParam} conceal={false} runKey={runKey} locked={false} />

@@ -56,7 +56,7 @@ function Miss({ cls, subject, m }: { cls: string; subject: string; m: ClassPredi
   return (
     <div className="lab-card" style={{ cursor: 'default' }}>
       <p style={{ fontWeight: 700, color: 'var(--ink)' }}>{m.question}</p>
-      <p><b className="lab-miss-no">{m.mode === 'hands' ? `${m.hands} of ${m.counted} hands` : 'The class agreed on'}</b> {m.chosen}</p>
+      <p>{m.mode === 'hands' ? <><b className="lab-miss-no">{m.hands} of {m.counted} hands</b> chose</> : <b className="lab-miss-no">The class agreed on</b>} <b style={{ color: 'var(--ink)' }}>{m.chosen}</b></p>
       <p>Right answer: <b style={{ color: 'var(--ink)' }}>{m.correct}</b></p>
       <div className="lab-chips">
         <span className="lab-chip">{cls}</span>

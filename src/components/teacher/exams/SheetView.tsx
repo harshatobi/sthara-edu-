@@ -106,7 +106,7 @@ export default function SheetView({ id, call, toast, onChanged, onClose }: { id:
                       onChange={e => setVals({ ...vals, [st.id]: e.target.value })}
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); move(i, 1); } else if (e.key === 'ArrowUp') { e.preventDefault(); move(i, -1); } else if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); } }} />
                   </td>
-                  <td className="muted" style={{ fontSize: 12 }}>{isDirty ? (origin.source === 'grid' ? 'typed' : origin.source === 'import' ? 'import' : origin.source === 'script' ? 'scanned scripts' : 'Sthara test') : st.mark ? ({ grid: 'typed', import: 'import', online: 'Sthara test', script: 'scanned scripts' } as Record<string, string>)[st.mark.source] : ''}
+                  <td className="muted" style={{ fontSize: 12 }}>{isDirty ? (origin.source === 'grid' ? 'typed' : origin.source === 'import' ? 'import' : origin.source === 'script' ? 'scanned scripts' : 'Sthara test') : st.mark ? ({ grid: 'typed', import: 'import', online: 'Sthara test', script: 'scanned scripts', practical: 'Live Lab practicals' } as Record<string, string>)[st.mark.source] : ''}
                     {v && MARK_CODES[v.trim().toUpperCase() as MarkCode] ? ` · ${MARK_CODES[v.trim().toUpperCase() as MarkCode]}` : ''}</td>
                 </tr>
               );

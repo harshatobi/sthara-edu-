@@ -198,8 +198,8 @@ test('choices keeps the right answer, drops duplicates and does not always put i
 });
 
 test('engines are found by their official chapter names', () => {
-  assert.deepEqual(enginesForChapter('Light - Reflection and Refraction').map(e => e.id), ['optics']);
-  assert.deepEqual(enginesForChapter('Electricity').map(e => e.id), ['circuits']);
+  assert.deepEqual(enginesForChapter('Light - Reflection and Refraction').map(e => e.id), ['optics', 'slab']);
+  assert.deepEqual(enginesForChapter('Electricity').map(e => e.id), ['circuits', 'ohm']);
 });
 
 test('a scene survives the URL round trip, and a tampered link is refused', async () => {

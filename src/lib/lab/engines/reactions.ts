@@ -21,6 +21,7 @@ export const REACTIONS: Reaction[] = [
   { key: 'mg-o2', label: 'Burning magnesium ribbon', reactants: ['Mg', 'O2'], products: ['MgO'], type: 'Combination', condition: 'heat', observe: 'A dazzling white flame; white powder (magnesium oxide) is left.' },
   { key: 'cao-h2o', label: 'Quicklime with water', reactants: ['CaO', 'H2O'], products: ['Ca(OH)2'], type: 'Combination', observe: 'Hissing, and the beaker gets hot: slaked lime forms.' },
   { key: 'caco3', label: 'Heating limestone', reactants: ['CaCO3'], products: ['CaO', 'CO2'], type: 'Decomposition', condition: 'heat', observe: 'Carbon dioxide is given off; quicklime is left.' },
+  { key: 'feso4', label: 'Heating ferrous sulphate', reactants: ['FeSO4'], products: ['Fe2O3', 'SO2', 'SO3'], type: 'Decomposition', condition: 'heat', observe: 'The green crystals lose their water, then turn reddish-brown (ferric oxide), with the smell of burning sulphur.' },
   { key: 'pbno3', label: 'Heating lead nitrate', reactants: ['Pb(NO3)2'], products: ['PbO', 'NO2', 'O2'], type: 'Decomposition', condition: 'heat', observe: 'Brown fumes of nitrogen dioxide.' },
   { key: 'agcl', label: 'Silver chloride in sunlight', reactants: ['AgCl'], products: ['Ag', 'Cl2'], type: 'Decomposition', condition: 'sunlight', observe: 'The white solid turns grey.' },
   { key: 'h2o-elec', label: 'Electrolysis of water', reactants: ['H2O'], products: ['H2', 'O2'], type: 'Decomposition', condition: 'electricity', observe: 'Twice as much gas collects at the cathode as at the anode.' },

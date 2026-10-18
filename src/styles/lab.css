@@ -161,3 +161,60 @@
 @media (max-width: 760px) {
   .canon .lab-hw { grid-template-columns:1fr; }
 }
+
+/* ── Practicals: lists, readings tables, tracker, print packs ───────────── */
+.canon .prx-bar { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin:0 0 18px; }
+.canon .prx-no { width:36px; height:36px; border-radius:10px; background:var(--ink); color:#fff; display:grid; place-items:center; font-weight:800; }
+.canon .prx-official { border-left:4px solid var(--red); }
+.canon .prx-official p { margin:8px 0 0; line-height:1.55; }
+.canon .prx-tag { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--red); }
+.canon .prx-two { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+.canon .prx-list { margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:14px; line-height:1.5; }
+.canon .prx-steps li::marker { font-weight:800; }
+.canon .prx-setups { display:grid; grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); gap:18px; }
+.canon .prx-setup { display:flex; flex-direction:column; gap:10px; }
+.canon .prx-setup .lab-view { box-shadow:none; border:1px solid var(--line); }
+.canon .prx-head { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.canon .prx-photos { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+.canon .prx-photos figure { margin:0; background:#fff; border-radius:var(--r); box-shadow:var(--sh); overflow:hidden; }
+.canon .prx-photos img { display:block; width:100%; height:180px; object-fit:cover; }
+.canon .prx-photos figcaption { padding:10px 12px; font-size:12.5px; font-weight:600; line-height:1.4; }
+.canon .prx-photos figcaption a { font-weight:500; color:var(--mut); text-decoration:underline; }
+.canon .prx-given { margin:0 0 10px; padding-left:18px; font-size:13.5px; color:var(--ink); }
+.canon .prx-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+.canon .prx-table th { text-align:left; font-size:11.5px; font-weight:800; letter-spacing:.04em; color:var(--mut); border-bottom:1.5px solid var(--line); padding:8px; }
+.canon .prx-table td { border-bottom:1px solid var(--line); padding:8px; vertical-align:top; }
+.canon .prx-table td.prx-blank { min-width:90px; }
+.canon .prx-key { color:var(--red); font-weight:700; }
+.canon .prx-results { margin-top:12px; display:flex; flex-direction:column; gap:8px; font-size:14px; }
+.canon .prx-line { display:inline-block; width:110px; border-bottom:1.5px solid var(--ink); }
+.canon .prx-working { font-size:12.5px; color:var(--mut); margin-top:3px; }
+.canon .prx-viva { margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px; }
+.canon .prx-viva summary { cursor:pointer; font-weight:700; }
+.canon .prx-viva p { margin:6px 0 0; color:var(--ink); }
+.canon .prx-src { font-size:11.5px; font-weight:700; color:var(--blue); }
+.canon .prx-opt { display:flex; gap:8px; align-items:center; font-size:13.5px; margin-top:12px; }
+.canon .prx-seg { flex-wrap:wrap; margin:0 0 12px; }
+.canon .prx-scroll { overflow-x:auto; background:#fff; border-radius:var(--r); box-shadow:var(--sh); }
+.canon .prx-grid { border-collapse:collapse; width:100%; font-size:13px; }
+.canon .prx-grid th { position:sticky; top:0; background:#fff; font-size:11.5px; font-weight:800; color:var(--mut); padding:8px 6px; border-bottom:1.5px solid var(--line); text-align:center; }
+.canon .prx-grid th:first-child, .canon .prx-grid td.prx-name { text-align:left; position:sticky; left:0; background:#fff; z-index:1; }
+.canon .prx-grid td { padding:6px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap; }
+.canon .prx-grid td.prx-name { font-weight:700; min-width:160px; }
+.canon .prx-focus td { text-align:left; }
+.canon .prx-focus select, .canon .prx-focus input[type=date] { padding:6px 8px; border:1px solid var(--line); border-radius:8px; font:inherit; background:#fff; }
+.canon .prx-tick { width:26px; height:26px; border-radius:8px; border:1.5px solid var(--line); background:#fff; display:inline-grid; place-items:center; color:#fff; cursor:pointer; }
+.canon .prx-tick.on { background:var(--green); border-color:var(--green); }
+.canon .prx-mark { width:70px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font:inherit; text-align:center; }
+@media (max-width: 760px) {
+  .canon .prx-two { grid-template-columns:1fr; }
+  .canon .prx-setups { grid-template-columns:1fr; }
+}
+@media print {
+  .canon .prx-sheet { break-after:page; }
+  .canon .prx-sheet:last-child { break-after:auto; }
+  .canon .prx-print .prx-table { font-size:9.5pt; }
+  .canon .prx-print .prx-table td { padding:2mm 2mm; }
+  .canon .prx-print .prx-table td.prx-blank { min-width:25mm; }
+  .canon .prx-keyrow { font-size:9pt; padding:1.5mm 0; border-bottom:1px solid #E2E8F0; break-inside:avoid; }
+}

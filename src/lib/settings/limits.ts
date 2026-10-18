@@ -41,6 +41,7 @@ export const RATE_LIMITS = {
   lessons:         { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons',         label: 'Lesson plan writes' },
   lab:             { limit: 60,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lab',             label: 'Live Lab saved demos' },
   labRuns:         { limit: 300, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lab/runs',        label: 'Live Lab class predictions' },
+  practicals:      { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/practicals',      label: 'Live Lab practicals tracker' },
   lessonDraft:     { limit: 12,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons/draft',   label: 'Lesson plan drafting' },
   leave:           { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/leave',           label: 'Leave requests' },
   checkin:         { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/me/attendance',           label: 'Staff check-in from the app' },

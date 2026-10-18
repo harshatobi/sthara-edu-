@@ -12,7 +12,26 @@ import { WaveformIcon as Waveform } from '@phosphor-icons/react/dist/ssr/Wavefor
 import { EyeIcon as Eye } from '@phosphor-icons/react/dist/ssr/Eye';
 import { MagnetIcon as Magnet } from '@phosphor-icons/react/dist/ssr/Magnet';
 import { AtomIcon as Atom } from '@phosphor-icons/react/dist/ssr/Atom';
+import { LightningIcon as Lightning } from '@phosphor-icons/react/dist/ssr/Lightning';
+import { MetronomeIcon as Metronome } from '@phosphor-icons/react/dist/ssr/Metronome';
+import { WaveSineIcon as WaveSine } from '@phosphor-icons/react/dist/ssr/WaveSine';
+import { TruckIcon as Truck } from '@phosphor-icons/react/dist/ssr/Truck';
+import { TrendUpIcon as TrendUp } from '@phosphor-icons/react/dist/ssr/TrendUp';
+import { SquareIcon as Square } from '@phosphor-icons/react/dist/ssr/Square';
+import { TestTubeIcon as TestTube } from '@phosphor-icons/react/dist/ssr/TestTube';
+import { DropIcon as Drop } from '@phosphor-icons/react/dist/ssr/Drop';
+import { BathtubIcon as Bathtub } from '@phosphor-icons/react/dist/ssr/Bathtub';
+import { MicroscopeIcon as Microscope } from '@phosphor-icons/react/dist/ssr/Microscope';
+import { BugIcon as Bug } from '@phosphor-icons/react/dist/ssr/Bug';
+import { LeafIcon as Leaf } from '@phosphor-icons/react/dist/ssr/Leaf';
+import { PlantIcon as Plant } from '@phosphor-icons/react/dist/ssr/Plant';
+import { HandPalmIcon as HandPalm } from '@phosphor-icons/react/dist/ssr/HandPalm';
+import { DnaIcon as Dna } from '@phosphor-icons/react/dist/ssr/Dna';
+import { TreeEvergreenIcon as TreeEvergreen } from '@phosphor-icons/react/dist/ssr/TreeEvergreen';
+import { FunnelIcon as Funnel } from '@phosphor-icons/react/dist/ssr/Funnel';
+import { ArrowsDownUpIcon as ArrowsDownUp } from '@phosphor-icons/react/dist/ssr/ArrowsDownUp';
 import { PageBar } from '@/components/canon/ui';
+import { ClipboardTextIcon as ClipboardText } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { ENGINES } from '@/lib/lab/registry';
 import SavedDemos from './SavedDemos';
 import PredictionMisses from './PredictionMisses';
@@ -29,6 +48,25 @@ const LOOK: Record<string, { icon: ComponentType<{ size?: number; weight?: 'duot
   'eye-prism': { icon: Eye, colour: 'var(--red)' },
   magnetism: { icon: Magnet, colour: 'var(--ink)' },
   reactions: { icon: Atom, colour: 'var(--green)' },
+  ohm: { icon: Lightning, colour: 'var(--blue)' },
+  pendulum: { icon: Metronome, colour: 'var(--purple)' },
+  pulse: { icon: WaveSine, colour: 'var(--sky)' },
+  trolley: { icon: Truck, colour: 'var(--coral)' },
+  incline: { icon: TrendUp, colour: 'var(--sky)' },
+  slab: { icon: Square, colour: 'var(--amber)' },
+  'acid-props': { icon: TestTube, colour: 'var(--purple)' },
+  reactivity: { icon: ArrowsDownUp, colour: 'var(--coral)' },
+  soap: { icon: Bathtub, colour: 'var(--sky)' },
+  mixtures: { icon: Funnel, colour: 'var(--amber)' },
+  microscope: { icon: Microscope, colour: 'var(--ink)' },
+  specimens: { icon: Bug, colour: 'var(--green)' },
+  osmosis: { icon: Drop, colour: 'var(--blue)' },
+  photosynthesis: { icon: Leaf, colour: 'var(--green)' },
+  respiration: { icon: Plant, colour: 'var(--amber)' },
+  tropism: { icon: Plant, colour: 'var(--green)' },
+  reflex: { icon: HandPalm, colour: 'var(--red)' },
+  heredity: { icon: Dna, colour: 'var(--purple)' },
+  'food-chain': { icon: TreeEvergreen, colour: 'var(--green)' },
 };
 
 const CLASSES = [9, 10];
@@ -37,7 +75,8 @@ export default function Gallery() {
   return (
     <>
       <PageBar eyebrow="LIVE LAB" title="Simulations for the class"
-        sub="Set one up, choose what the class should predict, then present it on the board. Every number comes from the textbook formulas, worked out exactly." />
+        sub="Set one up, choose what the class should predict, then present it on the board. Every number comes from the textbook formulas, worked out exactly."
+        actions={<Link className="btn red" href="/teacher/lab/practicals"><ClipboardText size={16} weight="fill" /> CBSE practicals</Link>} />
       <PredictionMisses />
       <SavedDemos />
       {CLASSES.map(cls => (

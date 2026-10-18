@@ -10,9 +10,34 @@ import { sound } from './engines/sound';
 import { eyePrism } from './engines/eyePrism';
 import { magnetism } from './engines/magnetism';
 import { reactions } from './engines/reactions';
+import { ohm } from './engines/ohm';
+import { pendulum } from './engines/pendulum';
+import { pulse } from './engines/pulse';
+import { trolley } from './engines/trolley';
+import { incline } from './engines/incline';
+import { slab } from './engines/slab';
+import { acidProps } from './engines/acidProps';
+import { reactivity } from './engines/reactivity';
+import { soap } from './engines/soap';
+import { mixtures } from './engines/mixtures';
+import { microscope } from './engines/microscope';
+import { specimens } from './engines/specimens';
+import { osmosis } from './engines/osmosis';
+import { photosynthesis } from './engines/photosynthesis';
+import { respiration } from './engines/respiration';
+import { tropism } from './engines/tropism';
+import { reflex } from './engines/reflex';
+import { heredity } from './engines/heredity';
+import { foodChain } from './engines/foodChain';
 
 // Class 9 first, then Class 10, in textbook chapter order.
-export const ENGINES: LabEngine<any>[] = [motion, forces, energy, sound, reactions, optics, eyePrism, circuits, magnetism, acidBase];
+export const ENGINES: LabEngine<any>[] = [
+  // Class 9 (and 9-10 benches), in syllabus order
+  microscope, osmosis, specimens, mixtures, reactions, motion, incline, forces, trolley, energy, pendulum, sound, pulse,
+  // Class 10
+  acidBase, acidProps, reactivity, soap, photosynthesis, respiration, tropism, reflex, heredity,
+  optics, slab, eyePrism, circuits, ohm, magnetism, foodChain,
+];
 
 export const engineById = (id: unknown): LabEngine<any> | null =>
   (typeof id === 'string' && ENGINES.find(e => e.id === id)) || null;

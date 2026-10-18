@@ -14,6 +14,25 @@ import SoundView from './SoundView';
 import EyePrismView from './EyePrismView';
 import MagnetismView from './MagnetismView';
 import ReactionsView from './ReactionsView';
+import OhmView from './OhmView';
+import PendulumView from './PendulumView';
+import PulseView from './PulseView';
+import TrolleyView from './TrolleyView';
+import InclineView from './InclineView';
+import SlabView from './SlabView';
+import AcidPropsView from './AcidPropsView';
+import ReactivityView from './ReactivityView';
+import SoapView from './SoapView';
+import MixturesView from './MixturesView';
+import MicroscopeView from './MicroscopeView';
+import SpecimensView from './SpecimensView';
+import OsmosisView from './OsmosisView';
+import PhotosynthesisView from './PhotosynthesisView';
+import RespirationView from './RespirationView';
+import TropismView from './TropismView';
+import ReflexView from './ReflexView';
+import HeredityView from './HeredityView';
+import FoodChainView from './FoodChainView';
 import type { ViewProps } from './types';
 import '@/styles/lab.css';
 
@@ -28,6 +47,25 @@ const VIEWS: Record<string, ComponentType<ViewProps<any>>> = {
   'eye-prism': EyePrismView,
   magnetism: MagnetismView,
   reactions: ReactionsView,
+  ohm: OhmView,
+  pendulum: PendulumView,
+  pulse: PulseView,
+  trolley: TrolleyView,
+  incline: InclineView,
+  slab: SlabView,
+  'acid-props': AcidPropsView,
+  reactivity: ReactivityView,
+  soap: SoapView,
+  mixtures: MixturesView,
+  microscope: MicroscopeView,
+  specimens: SpecimensView,
+  osmosis: OsmosisView,
+  photosynthesis: PhotosynthesisView,
+  respiration: RespirationView,
+  tropism: TropismView,
+  reflex: ReflexView,
+  heredity: HeredityView,
+  'food-chain': FoodChainView,
 };
 
 export function LabView({ engine, ...props }: ViewProps & { engine: LabEngine<any> }) {

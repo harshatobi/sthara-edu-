@@ -32,7 +32,7 @@ export interface PredictionTemplate<P> {
   applies?: (p: P) => boolean;
   /** The official syllabus topic (curriculum JSON, word for word), in `chapter` or else the engine's first chapter. */
   topic: string | ((p: P) => string);
-  chapter?: string;
+  chapter?: string | ((p: P) => string);
   build: (p: P) => Omit<Prediction, 'id' | 'chapter' | 'topic'>;
 }
 
@@ -55,7 +55,7 @@ export interface LabEngine<P extends Params = Params> {
 
 /** Builds one question for these values, with its place in the syllabus. */
 export function buildPrediction<P extends Params>(engine: LabEngine<P>, t: PredictionTemplate<P>, p: P): Prediction {
-  return { id: t.id, ...t.build(p), chapter: t.chapter ?? engine.chapters[0], topic: typeof t.topic === 'function' ? t.topic(p) : t.topic };
+  return { id: t.id, ...t.build(p), chapter: typeof t.chapter === 'function' ? t.chapter(p) : t.chapter ?? engine.chapters[0], topic: typeof t.topic === 'function' ? t.topic(p) : t.topic };
 }
 
 export const round = (n: number, dp = 2) => {

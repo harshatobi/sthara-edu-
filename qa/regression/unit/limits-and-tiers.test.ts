@@ -39,7 +39,7 @@ test('rate limits are the signed-off values (requests per window)', () => {
     tutorSession: '40/5m per user', examTrack: '20/10m per user', quizGen: '15/10m per user', homeworkGen: '15/10m per user',
     paperGen: '10/10m per user', assignments: '60/10m per user', course: '120/10m per user', feed: '120/1m per user', copilot: '40/10m per user',
     copilotImage: '12/10m per user', boardPaper: '6/60m per user',
-    lessons: '120/10m per user', lab: '60/10m per user', labRuns: '300/10m per user', lessonDraft: '12/10m per user', leave: '20/10m per user', checkin: '20/10m per user', capturePage: '300/10m per user',
+    lessons: '120/10m per user', lab: '60/10m per user', labRuns: '300/10m per user', practicals: '120/10m per user', lessonDraft: '12/10m per user', leave: '20/10m per user', checkin: '20/10m per user', capturePage: '300/10m per user',
     captureGrade: '60/10m per user', parentDesk: '60/5m per user', parentAsk: '30/10m per user', staffAsk: '30/10m per user',
     staffWhatsapp: '30/10m per user', schoolMessages: '40/10m per user', whatsappLink: '5/15m per user',
     whatsappInbound: '20/10m per user', clientErrors: '30/1m per ip',

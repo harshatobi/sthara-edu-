@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
       const ids = new Set(students.map(s => s.id));
       const rows = Array.isArray(b.rows) ? b.rows.slice(0, 500) : [];
       if (!rows.length) return bad('There are no marks to save.');
-      const source = ['grid', 'import', 'online', 'script'].includes(b.source) ? b.source : 'grid';
+      const source = ['grid', 'import', 'online', 'script', 'practical'].includes(b.source) ? b.source : 'grid';
       const sourceRef = isUuid(b.sourceRef) ? b.sourceRef : null;
       const upserts: any[] = [], clears: string[] = [], problems: string[] = [];
       for (const r of rows) {

@@ -29,6 +29,35 @@ import { tropism } from './engines/tropism';
 import { reflex } from './engines/reflex';
 import { heredity } from './engines/heredity';
 import { foodChain } from './engines/foodChain';
+import { instruments } from './engines/instruments';
+import { balance } from './engines/balance';
+import { vectors } from './engines/vectors';
+import { shm } from './engines/shm';
+import { friction } from './engines/friction';
+import { projectile } from './engines/projectile';
+import { elastic } from './engines/elastic';
+import { boyle } from './engines/boyle';
+import { fluids } from './engines/fluids';
+import { thermal } from './engines/thermal';
+import { sonometer } from './engines/sonometer';
+import { resonance } from './engines/resonance';
+import { wire } from './engines/wire';
+import { bridge } from './engines/bridge';
+import { galvanometer } from './engines/galvanometer';
+import { components } from './engines/components';
+import { lensBench } from './engines/lensBench';
+import { prismDev } from './engines/prismDev';
+import { refractive } from './engines/refractive';
+import { diode } from './engines/diode';
+import { waveOptics } from './engines/waveOptics';
+import { efield } from './engines/efield';
+import { capacitor } from './engines/capacitor';
+import { lorentz } from './engines/lorentz';
+import { emi } from './engines/emi';
+import { lcr } from './engines/lcr';
+import { photoelectric } from './engines/photoelectric';
+import { bohr } from './engines/bohr';
+import { nucleus } from './engines/nucleus';
 
 // Class 9 first, then Class 10, in textbook chapter order.
 export const ENGINES: LabEngine<any>[] = [
@@ -37,6 +66,10 @@ export const ENGINES: LabEngine<any>[] = [
   // Class 10
   acidBase, acidProps, reactivity, soap, photosynthesis, respiration, tropism, reflex, heredity,
   optics, slab, eyePrism, circuits, ohm, magnetism, foodChain,
+  // Class 11 Physics, in syllabus order
+  instruments, projectile, vectors, friction, balance, elastic, fluids, thermal, boyle, shm, sonometer, resonance,
+  // Class 12 Physics, in syllabus order
+  efield, capacitor, wire, bridge, galvanometer, lorentz, emi, lcr, components, lensBench, prismDev, refractive, waveOptics, photoelectric, bohr, nucleus, diode,
 ];
 
 export const engineById = (id: unknown): LabEngine<any> | null =>
@@ -130,9 +163,11 @@ export function labCatalogue(engines: LabEngine<any>[]): string {
 }
 
 /** Engines to offer for a class and chapter: the chapter's own, else every engine for that class. */
-export function enginesFor(cls: string, chapter?: string | null): LabEngine<any>[] {
+export function enginesFor(cls: string, chapter?: string | null, subject?: string | null): LabEngine<any>[] {
   const byChapter = chapter ? enginesForChapter(chapter) : [];
   if (byChapter.length) return byChapter;
   const n = Number(/\d{1,2}/.exec(cls)?.[0]);
-  return ENGINES.filter(e => !n || e.classes.includes(n));
+  // Classes 11-12 split Science into Physics and Chemistry: a Chemistry class is not offered the Physics engines.
+  const sub = n >= 11 && subject ? (/physics/i.test(subject) ? 'Physics' : /chemistry/i.test(subject) ? 'Chemistry' : null) : null;
+  return ENGINES.filter(e => (!n || e.classes.includes(n)) && (!sub || e.subject === sub));
 }

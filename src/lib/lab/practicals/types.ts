@@ -2,7 +2,7 @@ import type { Params } from '../types';
 import type { Rng } from '../noise';
 
 /**
- * A CBSE practical (Class 9-10 Science, 2026-27 list). The official wording is
+ * A CBSE practical (2026-27 lists: Class 9-10 Science, Class 11-12 Physics). The official wording is
  * kept word for word; everything a class sees or records comes from a Live Lab
  * engine set-up, and readings come from the engine with realistic error.
  */
@@ -49,11 +49,23 @@ export interface Viva {
   source: 'engine' | 'authored';
 }
 
+export type PracticalSubject = 'Science' | 'Physics' | 'Chemistry';
+
 export interface Practical {
-  /** c9-01 … c10-14, in the official list's order. */
+  /**
+   * In the official list's order: c9-01 … c10-14 (Science); p11-ae01 … p12-ba07 (Physics: section a/b,
+   * e = experiment, a = activity, then the official number).
+   */
   id: string;
-  cls: 9 | 10;
+  cls: 9 | 10 | 11 | 12;
+  subject: PracticalSubject;
+  /** The official number (within its section and part, where the list has them). */
   no: number;
+  /** Class 11-12 Physics lists experiments and activities separately, in sections A and B. */
+  part?: 'experiment' | 'activity';
+  section?: 'A' | 'B';
+  /** The other half of an official "OR" pair (either one counts). */
+  orWith?: string;
   /** The official list item, word for word. */
   official: string;
   /** Short name for lists and cards. */
@@ -73,6 +85,12 @@ export interface Practical {
   photos?: string[];
   /** The conclusion students write, with blanks filled from their result. */
   conclusion: string;
+}
+
+/** How a practical is referred to in lists and the tracker: "7", "A-7", "A activity 3". */
+export function refOf(p: Pick<Practical, 'no' | 'part' | 'section'>): string {
+  if (!p.section) return String(p.no);
+  return p.part === 'activity' ? `${p.section} activity ${p.no}` : `${p.section}-${p.no}`;
 }
 
 /** Is a student's result close enough to what their own readings give? */

@@ -3,26 +3,80 @@ import assert from 'node:assert/strict';
 import { getCurriculum } from '@/lib/curriculum';
 import { engineById } from './registry';
 import { validateParams } from './types';
-import { PRACTICALS, practicalsForClass, readingsFor, resultOk, vivaFor } from './practicals';
+import { PRACTICALS, practicalsFor, practicalFits, readingsFor, refOf, resultOk, vivaFor } from './practicals';
+import { markSchemeFor, partsProblem, partsTotal, onSheet, recordShortfall } from './practicals/marks';
 
-test('all 27 official practicals: 13 in Class 9, 14 in Class 10, numbered in order', () => {
-  assert.equal(PRACTICALS.length, 27);
+test('all 27 official Science practicals: 13 in Class 9, 14 in Class 10, numbered in order', () => {
   for (const cls of [9, 10] as const) {
-    const list = practicalsForClass(`Class ${cls}-A`);
+    const list = practicalsFor(`Class ${cls}-A`, 'Science');
     assert.equal(list.length, cls === 9 ? 13 : 14);
     assert.deepEqual(list.map(p => p.no), list.map((_, i) => i + 1));
     assert.deepEqual(list.map(p => p.id), list.map((_, i) => `c${cls}-${String(i + 1).padStart(2, '0')}`));
   }
 });
 
+test('the official Physics lists: XI 20 experiments + 14 activities, XII 15 + 13 (two OR pairs kept as both halves)', () => {
+  const want = { 11: { A: [10, 7], B: [10, 7] }, 12: { A: [8, 6], B: [9, 7] } } as const;
+  for (const cls of [11, 12] as const) {
+    const list = practicalsFor(`Class ${cls}-A`, 'Physics');
+    for (const sec of ['A', 'B'] as const) {
+      const exps = list.filter(p => p.section === sec && p.part === 'experiment'), acts = list.filter(p => p.section === sec && p.part === 'activity');
+      assert.equal(exps.length, want[cls][sec][0], `Class ${cls} ${sec} experiments`);
+      assert.equal(acts.length, want[cls][sec][1], `Class ${cls} ${sec} activities`);
+      for (const xs of [exps, acts]) {
+        const nos = [...new Set(xs.map(p => p.no))];
+        assert.deepEqual(nos, nos.map((_, i) => i + 1), `Class ${cls} ${sec}: numbered in order`);
+      }
+    }
+    // An OR pair: same number, each names the other.
+    for (const p of list.filter(x => x.orWith)) {
+      const q = list.find(x => x.id === p.orWith);
+      assert.ok(q && q.orWith === p.id && q.no === p.no && q.section === p.section, `${p.id}: OR pair`);
+    }
+  }
+  assert.equal(PRACTICALS.length, 27 + 34 + 30);
+  assert.equal(new Set(PRACTICALS.map(p => p.id)).size, PRACTICALS.length, 'ids are unique');
+  assert.equal(practicalsFor('Class 11-A', 'Science').length, 0);
+  assert.equal(practicalsFor('Class 9-A', 'Physics').length, 0);
+  assert.ok(practicalFits(practicalsFor('Class 12-B', 'Physics')[0], 'Class 12-B', 'Physics'));
+  assert.equal(refOf(practicalsFor('Class 12-A', 'Physics').find(p => p.part === 'activity')!), 'A activity 1');
+});
+
 test('each practical sits in a real chapter and topic of its class syllabus', () => {
   for (const p of PRACTICALS) {
-    const cur = getCurriculum(`Class ${p.cls}`, 'Science')!;
+    const cur = getCurriculum(`Class ${p.cls}`, p.subject)!;
     const ch = cur.units.flatMap(u => u.chapters).find(c => c.name === p.chapter);
     assert.ok(ch, `${p.id}: chapter "${p.chapter}"`);
     assert.ok((ch!.topics ?? []).includes(p.topic), `${p.id}: topic "${p.topic}"`);
     assert.ok(p.official.length > 20 && p.aim && p.apparatus.length && p.procedure.length >= 2 && p.precautions.length && p.conclusion, `${p.id} is complete`);
   }
+});
+
+test('Class 11-12 marks: the CBSE parts add up to 30 and are checked', () => {
+  for (const sub of ['Physics', 'Chemistry'] as const) {
+    const s = markSchemeFor(12, sub);
+    assert.equal(s.parts!.reduce((a, p) => a + p.max, 0), 30, sub);
+    const full = Object.fromEntries(s.parts!.map(p => [p.key, p.max]));
+    assert.equal(partsProblem(s, full), null);
+    assert.equal(partsTotal(full), 30);
+    assert.match(partsProblem(s, { ...full, [s.parts![0].key]: s.parts![0].max + 1 })!, /out of/);
+    assert.match(partsProblem(s, { ...full, [s.parts![0].key]: 2.3 })!, /half/);
+    assert.match(partsProblem(s, { ...full, extra: 1 })!, /Unknown/);
+  }
+  assert.equal(markSchemeFor(10, 'Science').parts, null);
+  assert.equal(onSheet(24, 30, 30), 24);
+  assert.equal(onSheet(25, 30, 20), 16.5);
+});
+
+test('the record minimum: 8 experiments (4 per section) and 6 activities (3 per section); an OR pair counts once', () => {
+  const list = practicalsFor('Class 12-A', 'Physics');
+  const pickN = (sec: string, part: string, n: number) => list.filter(p => p.section === sec && p.part === part && !(p.orWith && p.id > p.orWith)).slice(0, n).map(p => p.id);
+  const enough = new Set([...pickN('A', 'experiment', 4), ...pickN('B', 'experiment', 4), ...pickN('A', 'activity', 3), ...pickN('B', 'activity', 3)]);
+  assert.equal(recordShortfall(list, enough), null);
+  const pair = list.find(p => p.orWith)!;
+  const both = new Set([...pickN('A', 'experiment', 3).filter(x => x !== pair.id && x !== pair.orWith), pair.id, pair.orWith!, ...pickN('B', 'experiment', 4), ...pickN('A', 'activity', 3), ...pickN('B', 'activity', 3)]);
+  assert.match(recordShortfall(list, both) ?? '', /experiments/);
+  assert.equal(recordShortfall(practicalsFor('Class 10-A', 'Science'), new Set()), null);
 });
 
 test('every set-up is one its engine accepts', () => {

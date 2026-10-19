@@ -16,7 +16,7 @@ import type { Practical } from './types';
 
 export const CLASS9: Practical[] = [
   {
-    id: 'c9-01', cls: 9, no: 1, kind: 'observation',
+    id: 'c9-01', cls: 9, subject: 'Science', no: 1, kind: 'observation',
     official: 'Preparation of: a) a true solution of common salt, sugar and alum b) a suspension of soil, chalk powder and fine sand in water c) a colloidal solution of starch in water and egg albumin/milk in water and distinguish between these on the basis of transparency, filtration criterion, stability, Tyndall effect',
     title: 'True solutions, suspensions and colloids',
     chapter: 'Exploring Mixtures and their Separation', topic: 'Solutions, suspensions, colloids and their properties',
@@ -48,7 +48,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'A true solution is transparent, filters completely, is stable and shows no Tyndall effect; a suspension is opaque, leaves a residue and settles; a colloid is translucent, filters through, is stable and shows the Tyndall effect.',
   },
   {
-    id: 'c9-02', cls: 9, no: 2, kind: 'observation',
+    id: 'c9-02', cls: 9, subject: 'Science', no: 2, kind: 'observation',
     official: 'Separation of components of mixtures using different techniques: a) Oil and water - Separating Funnel b) Colours in black ink - Paper Chromatography c) Ammonium chloride and common salt - Sublimation d) Muddy water using alum - Coagulation',
     title: 'Separating mixtures',
     chapter: 'Exploring Mixtures and their Separation', topic: 'Separation techniques: crystallisation, distillation, paper chromatography, sublimation, centrifugation, coagulation',
@@ -72,7 +72,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'Immiscible liquids separate in a separating funnel, dyes by chromatography, a sublimable solid by sublimation, and fine mud by coagulation with alum.',
   },
   {
-    id: 'c9-03', cls: 9, no: 3, kind: 'numeric',
+    id: 'c9-03', cls: 9, subject: 'Science', no: 3, kind: 'numeric',
     official: 'Verification of the law of conservation of mass in a chemical reaction.',
     title: 'Conservation of mass',
     chapter: 'Atoms and Molecules', topic: 'Law of conservation of mass',
@@ -101,7 +101,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'The mass before and after the reaction is the same within the least count of the balance: mass is conserved.',
   },
   {
-    id: 'c9-04', cls: 9, no: 4, kind: 'observation',
+    id: 'c9-04', cls: 9, subject: 'Science', no: 4, kind: 'observation',
     official: 'Preparation of stained temporary mounts of (a) onion peel/ Rhoeo leaf (b) human cheek cells to record observations and draw their labeled diagrams.',
     title: 'Onion peel and cheek cells',
     chapter: 'Cell', topic: 'Plant and animal cells',
@@ -131,7 +131,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'Onion cells are plant cells: regular, with a cell wall and a large vacuole. Cheek cells are animal cells: irregular, with only a membrane and a central nucleus.',
   },
   {
-    id: 'c9-05', cls: 9, no: 5, kind: 'observation',
+    id: 'c9-05', cls: 9, subject: 'Science', no: 5, kind: 'observation',
     official: 'To study and identify tissues in plants (Parenchyma, Collenchyma and Sclerenchyma) and animals (striped, smooth and cardiac muscle fibers) from prepared slides. Draw their labeled diagrams.',
     title: 'Plant and animal tissues',
     chapter: 'Tissues', topic: 'Plant tissues: meristematic (types, function) and permanent (types, structure, function)',
@@ -154,7 +154,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'The six tissues are told apart by cell shape, wall thickening, the number and position of nuclei, and stripes.',
   },
   {
-    id: 'c9-06', cls: 9, no: 6, kind: 'observation',
+    id: 'c9-06', cls: 9, subject: 'Science', no: 6, kind: 'observation',
     official: 'To study (a) budding in yeast and Hydra (b) spore formation in bread mold with the help of prepared slides',
     title: 'Budding and spore formation',
     chapter: 'Reproduction', topic: 'Forms of reproduction: sexual and asexual; types of asexual reproduction',
@@ -173,7 +173,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'Yeast and Hydra reproduce by budding; bread mould reproduces by spores formed in sporangia.',
   },
   {
-    id: 'c9-07', cls: 9, no: 7, kind: 'observation',
+    id: 'c9-07', cls: 9, subject: 'Science', no: 7, kind: 'observation',
     official: 'To study and identify different parts of a typical bisexual flower. Draw labeled diagrams.',
     title: 'Parts of a bisexual flower',
     chapter: 'Reproduction', topic: 'Sexual reproduction in flowering plants: flower and its parts, pollination, fertilisation, seed dispersal',
@@ -192,7 +192,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'A bisexual flower has four whorls: calyx (sepals), corolla (petals), androecium (stamens: anther and filament) and gynoecium (pistil: stigma, style and ovary).',
   },
   {
-    id: 'c9-08', cls: 9, no: 8, kind: 'observation',
+    id: 'c9-08', cls: 9, subject: 'Science', no: 8, kind: 'observation',
     official: 'To study the Specimens/virtual specimens/slides/models for identification: (a) Spirogyra, mushroom, moss, fern, pine cone (b) Amoeba, Hydra, tapeworm, Ascaris, earthworm, butterfly, snail, starfish',
     title: 'Identifying specimens',
     chapter: 'Diversity', topic: 'Major divisions of animals and plants',
@@ -216,7 +216,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'Each specimen is placed in its kingdom and group by features such as cell number, chlorophyll, body segmentation, symmetry and appendages.',
   },
   {
-    id: 'c9-09', cls: 9, no: 9, kind: 'numeric',
+    id: 'c9-09', cls: 9, subject: 'Science', no: 9, kind: 'numeric',
     official: 'Verification of law of conservation of energy using a simple pendulum.',
     title: 'Conservation of energy: simple pendulum',
     chapter: 'Work, Energy and Simple Machines', topic: 'Conservation of energy',
@@ -246,7 +246,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'The bob rises almost to the same height on the other side, so its total mechanical energy is conserved (the small difference is lost to air resistance).',
   },
   {
-    id: 'c9-10', cls: 9, no: 10, kind: 'numeric',
+    id: 'c9-10', cls: 9, subject: 'Science', no: 10, kind: 'numeric',
     official: 'Determination of speed of a pulse propagated through a stretched string/ slinky (helical spring).',
     title: 'Speed of a pulse on a slinky',
     chapter: 'Sound', topic: 'Characteristics: wavelength, frequency, time period, amplitude, intensity, speed',
@@ -275,7 +275,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'The pulse travels along the slinky at a steady speed, found as distance travelled divided by time.',
   },
   {
-    id: 'c9-11', cls: 9, no: 11, kind: 'numeric',
+    id: 'c9-11', cls: 9, subject: 'Science', no: 11, kind: 'numeric',
     official: 'Calculation of Mechanical Advantage of a lever using the formula M.A= Load /Effort.',
     title: 'Mechanical advantage of a lever',
     chapter: 'Work, Energy and Simple Machines', topic: 'Simple machines and mechanical advantage (pulley, inclined plane, lever)',
@@ -303,7 +303,7 @@ export const CLASS9: Practical[] = [
     conclusion: 'M.A. = Load / Effort, and it equals effort arm / load arm: a longer effort arm gives a bigger mechanical advantage.',
   },
   {
-    id: 'c9-12', cls: 9, no: 12, kind: 'numeric',
+    id: 'c9-12', cls: 9, subject: 'Science', no: 12, kind: 'numeric',
     official: "Verification of Newton's Second Law of Motion using a trolley, pulley and hanging masses.",
     title: "Newton's second law: trolley and pulley",
     chapter: 'Force and Laws of Motion', topic: "Newton's first, second and third laws of motion",
@@ -337,7 +337,7 @@ export const CLASS9: Practical[] = [
     conclusion: "The acceleration is directly proportional to the applied force for a constant mass (a ∝ F): Newton's second law.",
   },
   {
-    id: 'c9-13', cls: 9, no: 13, kind: 'numeric',
+    id: 'c9-13', cls: 9, subject: 'Science', no: 13, kind: 'numeric',
     official: 'Plotting of distance-time and velocity time graphs using an inclined plane.',
     title: 'Distance-time and velocity-time graphs on an incline',
     chapter: 'Motion', topic: 'Graphical representation of straight-line motion (constant velocity and constant acceleration)',

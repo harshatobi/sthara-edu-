@@ -7,14 +7,14 @@ import { createClient } from '@/lib/supabase/client';
 import { all } from '@/lib/admin/loadRows';
 import { useOptionalTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { normClass } from '@/lib/teacher/scope';
-import { practicalsForClass } from '@/lib/lab/practicals';
+import { practicalsFor } from '@/lib/lab/practicals';
 import { labClassOptions, type ClassOption } from '../useClassRun';
 
-/** The teacher's Class 9 and 10 science classes; the chosen one lives in ?class= so links and reloads keep it. */
+/** The teacher's classes that have CBSE practicals (Science 9-10, Physics 11-12); the chosen one lives in ?class= so links and reloads keep it. */
 export function usePracticalClass() {
   const desk = useOptionalTeacherDesk();
   const sp = useSearchParams(), router = useRouter(), path = usePathname();
-  const options = useMemo<ClassOption[]>(() => labClassOptions(desk?.desk?.scope ?? []).filter(o => practicalsForClass(o.cls).length > 0), [desk?.desk?.scope]);
+  const options = useMemo<ClassOption[]>(() => labClassOptions(desk?.desk?.scope ?? []).filter(o => practicalsFor(o.cls, o.subject).length > 0), [desk?.desk?.scope]);
   const asked = sp.get('class');
   const target = options.find(o => o.key === asked) ?? options.find(o => o.cls === asked) ?? options[0] ?? null;
   const choose = useCallback((key: string) => {

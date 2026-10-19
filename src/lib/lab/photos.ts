@@ -2,7 +2,7 @@
  * Real photographs shown beside the hand-drawn diagrams in the practicals.
  * All from Wikimedia Commons under open licences that allow reuse with credit
  * (CC BY, CC BY-SA, CC0 or public domain; no NonCommercial or NoDerivatives).
- * Downloaded at 900 px wide into public/lab/photos/ on 2026-10-18; the credit
+ * Downloaded at about 900 px wide into public/lab/photos/ (2026-10-18, Physics apparatus 2026-10-19); the credit
  * line must be shown wherever the photo is.
  */
 
@@ -23,6 +23,13 @@ export const PHOTOS: Record<string, Photo> = {
   'stomata': { id: 'stomata', src: '/lab/photos/stomata.jpg', caption: 'Leaf epidermis with stomata, light microscope', author: 'Emilio Ermini', licence: 'CC BY 4.0', licenceUrl: 'https://creativecommons.org/licenses/by/4.0', page: 'https://commons.wikimedia.org/wiki/File:Leaf_epithelium,_stomata.jpg' },
   'striated-muscle': { id: 'striated-muscle', src: '/lab/photos/striated-muscle.jpg', caption: 'Striated (skeletal) muscle, stained section', author: 'Nephron', licence: 'CC BY-SA 3.0', licenceUrl: 'https://creativecommons.org/licenses/by-sa/3.0', page: 'https://commons.wikimedia.org/wiki/File:Skeletal_striated_muscle.jpg' },
   'yeast': { id: 'yeast', src: '/lab/photos/yeast.jpg', caption: 'Yeast cells, some budding (DIC microscope)', author: 'Masur', licence: 'Public domain', licenceUrl: null, page: 'https://commons.wikimedia.org/wiki/File:S_cerevisiae_under_DIC_microscopy.jpg' },
+  // Class 11-12 Physics apparatus (downloaded 2026-10-19)
+  'vernier': { id: 'vernier', src: '/lab/photos/vernier.jpg', caption: 'Vernier callipers: main scale and vernier, least count 0.02 mm', author: 'ArtMechanic', licence: 'CC BY-SA 3.0', licenceUrl: 'https://creativecommons.org/licenses/by-sa/3.0', page: 'https://commons.wikimedia.org/wiki/File:Messschieber.jpg' },
+  'screw-gauge': { id: 'screw-gauge', src: '/lab/photos/screw-gauge.jpg', caption: 'Screw gauge (micrometer): sleeve scale and thimble', author: 'Mystrixo', licence: 'CC BY-SA 4.0', licenceUrl: 'https://creativecommons.org/licenses/by-sa/4.0', page: 'https://commons.wikimedia.org/wiki/File:Micrometer_SOGIMO.jpg' },
+  'spherometer': { id: 'spherometer', src: '/lab/photos/spherometer.jpg', caption: 'Spherometer: three legs, central screw, disc scale and vertical scale', author: 'GOKLuLe', licence: 'CC BY-SA 3.0', licenceUrl: 'https://creativecommons.org/licenses/by-sa/3.0', page: 'https://commons.wikimedia.org/wiki/File:Spherometer.jpg' },
+  'metre-bridge': { id: 'metre-bridge', src: '/lab/photos/metre-bridge.jpg', caption: 'Metre bridge: wire along a metre scale, with thick copper strips', author: 'Jeremyida002', licence: 'CC BY-SA 4.0', licenceUrl: 'https://creativecommons.org/licenses/by-sa/4.0', page: 'https://commons.wikimedia.org/wiki/File:Meter_bridge_001.jpg' },
+  'travelling-microscope': { id: 'travelling-microscope', src: '/lab/photos/travelling-microscope.jpg', caption: 'Travelling microscope: eyepiece E, objective O, vernier V, rack R, screws S and K', author: 'WingkLEE', licence: 'Public domain', licenceUrl: null, page: 'https://commons.wikimedia.org/wiki/File:Traveling_microscope.jpg' },
+  'electronic-components': { id: 'electronic-components', src: '/lab/photos/electronic-components.jpg', caption: 'Mixed electronic components: resistors, capacitors, diodes, LEDs and others, beside a ruler', author: 'Kae', licence: 'Public domain', licenceUrl: null, page: 'https://commons.wikimedia.org/wiki/File:Componentes.JPG' },
 };
 
 /** 'Photo: author, licence (Wikimedia Commons)' */

@@ -13,6 +13,7 @@ import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { UsersIcon as Users } from '@phosphor-icons/react/dist/ssr/Users';
 import { WarningCircleIcon as WarningCircle } from '@phosphor-icons/react/dist/ssr/WarningCircle';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { featureLabel, type ModelPrice } from '@/lib/ai/pricing';
 import { RANGES, daysInIstMonth, type RangeKey } from '@/lib/ai/window';
 import { useOpsApi } from '../useOpsApi';
@@ -345,10 +346,11 @@ function FeatureTable({ data, money }: { data: Data; money: Money }) {
 
 function SchoolTable({ data, money }: { data: Data; money: Money }) {
   const t = data.usage.totals;
+  const { shown, pager } = usePaged(data.usage.schools);
   return (
     <div className="card"><div className="tbl-wrap"><table className="tbl">
       <thead><tr><th>School</th><th className="r">Active users</th><th className="r">Calls</th><th className="r">Tokens</th><th className="r">Per user</th><th className="r">Spend</th><th className="r">Share</th></tr></thead>
-      <tbody>{data.usage.schools.map(s => (
+      <tbody>{shown.map(s => (
         <tr key={s.id ?? 'none'}>
           <td style={{ fontWeight: 700 }}>{s.id ? <Link href={`/ops/${s.id}`}>{s.name}</Link> : <span style={{ color: 'var(--mut)' }}>{s.name}</span>}</td>
           <td className="r">{num(s.users)}</td>
@@ -359,7 +361,7 @@ function SchoolTable({ data, money }: { data: Data; money: Money }) {
           <td className="r"><Share part={Number(s.cost)} whole={Number(t.cost)} /></td>
         </tr>
       ))}</tbody>
-    </table></div></div>
+    </table></div><Pager {...pager} noun="schools" /></div>
   );
 }
 

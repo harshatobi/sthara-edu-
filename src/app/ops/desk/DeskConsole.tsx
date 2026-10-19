@@ -7,6 +7,7 @@ import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuo
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { SlidersHorizontalIcon as SlidersHorizontal } from '@phosphor-icons/react/dist/ssr/SlidersHorizontal';
 import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { PRIORITIES, PRIORITY_LABEL, QUEUES, QUEUE_LABEL, SOURCES, type CaseStatus, type Priority, type Queue, type SlaState } from '@/lib/ops/desk';
 import { Table, errText, fmtDateTime, num } from '../_ui';
 import { useOpsApi } from '../useOpsApi';
@@ -40,6 +41,7 @@ export default function DeskConsole() {
   useEffect(() => { load(); }, [load]);
   const label = (key: string) => d?.categories.find(c => c.key === key)?.label ?? key;
 
+  const { shown: casePage, pager: casePager } = usePaged(d?.cases ?? [], `${queue}|${applied}`);
   return (
     <>
       <PageBar eyebrow="PLATFORM MANAGER" title="Service desk"
@@ -67,7 +69,7 @@ export default function DeskConsole() {
         {!d ? [0, 1, 2].map(i => <Skeleton key={i} h={52} style={{ marginBottom: 10 }} />) : (
           <Table head={<tr><th>Case</th><th>School</th><th>Priority</th><th>Status</th><th>Deadline</th><th>Owner</th><th>Raised</th></tr>}
             empty={!d.cases.length && <Empty icon={<Lifebuoy size={28} weight="duotone" />} title={applied ? 'No case matches' : 'Nothing in this queue'}>{queue === 'open' && !applied ? 'Schools raise cases from Help and support in their office portal.' : undefined}</Empty>}>
-            {d.cases.map(c => (
+            {casePage.map(c => (
               <tr key={c.id} className="click" onClick={() => router.push(`/ops/desk/${c.id}`)}>
                 <td style={{ minWidth: 260 }}>
                   <div className="nm"><span className="mono" style={{ fontSize: 12.5 }}>CASE-{c.number}</span> {c.subject}</div>
@@ -83,6 +85,7 @@ export default function DeskConsole() {
             ))}
           </Table>
         )}
+        <Pager {...casePager} noun="cases" />
       </div>
     </>
   );

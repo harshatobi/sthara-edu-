@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { all } from '@/lib/admin/loadRows';
 import { createClient } from '@/lib/supabase/client';
 import { Activity, AlertTriangle, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -41,6 +42,7 @@ export default function TeacherWellnessDashboard() {
   const [students, setStudents] = useState<Record<string, StudentData>>({});
   const [logs, setLogs] = useState<WellnessLog[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
+  const { shown: logPage, pager: logPager } = usePaged(logs, selectedClass);
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
 
   useEffect(() => {
@@ -218,7 +220,7 @@ export default function TeacherWellnessDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {logs.map(log => {
+                {logPage.map(log => {
                   const student = students[log.student_id];
                   const isLow = log.mood_value <= 40;
                   return (
@@ -256,6 +258,7 @@ export default function TeacherWellnessDashboard() {
                 })}
               </tbody>
             </table>
+            <Pager {...logPager} noun="check-ins" />
           </div>
         )}
       </div>

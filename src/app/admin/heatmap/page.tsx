@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import Link from 'next/link';
+import type { ClassSummary, Heatmap } from '@/lib/admin/heatmap';
+import { Pager, usePaged } from '@/components/canon/Pager';
 
 
 function getScoreColor(score: number | null) {
@@ -16,20 +18,6 @@ function getScoreColor(score: number | null) {
   return { bg: 'bg-rose-50', text: 'text-rose-700', bar: 'bg-rose-500', border: 'border-rose-200', label: 'At Risk' };
 }
 
-interface ClassSummary {
-  className: string;
-  studentCount: number;
-  subjectScores: Record<string, number | null>;
-  overallAvg: number | null;
-}
-
-interface HeatAssignment { id: string; subject?: string | null }
-interface HeatSubmission {
-  assignment_id: string; student_id: string; teacher_approved?: boolean | null;
-  score?: number | null; max_score?: number | null; final_grade?: string | null;
-  ai_result?: { totalScore?: number; maxTotalScore?: number } | null;
-}
-
 export default function AdminHeatmap() {
   const { profile, loading } = useAuth();
   const router = useRouter();
@@ -37,6 +25,12 @@ export default function AdminHeatmap() {
   const [classSummaries, setClassSummaries] = useState<ClassSummary[]>([]);
   const [allSubjects, setAllSubjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [needle, setNeedle] = useState('');
+  const filtered = useMemo(() => {
+    const q = needle.trim().toLowerCase();
+    return q ? classSummaries.filter(c => c.className.toLowerCase().includes(q)) : classSummaries;
+  }, [classSummaries, needle]);
+  const { shown, pager } = usePaged(filtered, needle);
 
   useEffect(() => {
     if (!loading && (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin'))) {
@@ -57,93 +51,9 @@ export default function AdminHeatmap() {
           body: JSON.stringify({ schoolId: profile.schoolId }),
         });
         if (!res.ok) throw new Error('Failed to fetch heatmap data');
-        const { students: allStudents, assignments: assignmentsData, submissions: submissionsData } = await res.json();
-
-        // Group students by class
-        const classMap: Record<string, any[]> = {};
-        (allStudents || []).forEach((s: any) => {
-          const cls = s.student_class || s.branch || 'Unassigned';
-          if (!classMap[cls]) classMap[cls] = [];
-          classMap[cls].push(s);
-        });
-
-        const assignments: HeatAssignment[] = assignmentsData || [];
-        const submissions: HeatSubmission[] = submissionsData || [];
-        const assignMap = new Map(assignments.map(a => [a.id, a]));
-
-        const subjectSet = new Set<string>();
-        const allSubs: Record<string, Record<string, { score: number; max: number }[]>> = {};
-
-        assignments.forEach(a => {
-          if (a.subject) subjectSet.add(a.subject);
-        });
-
-        submissions.forEach(sub => {
-          if (sub.teacher_approved === false) return; // skip rejected
-
-          const assign = assignMap.get(sub.assignment_id);
-          const subj = assign?.subject || 'General';
-          subjectSet.add(subj);
-
-          let sc = sub.score ?? sub.ai_result?.totalScore;
-          let mx = sub.max_score ?? sub.ai_result?.maxTotalScore ?? 10;
-
-          if (sub.final_grade && typeof sub.final_grade === 'string' && sub.final_grade.includes('/')) {
-            const [fs, fm] = sub.final_grade.split('/');
-            sc = parseFloat(fs);
-            mx = parseFloat(fm);
-          }
-
-          if (sc !== null && sc !== undefined && mx > 0) {
-            const sid = sub.student_id;
-            if (!allSubs[sid]) allSubs[sid] = {};
-            if (!allSubs[sid][subj]) allSubs[sid][subj] = [];
-            allSubs[sid][subj].push({ score: sc, max: mx });
-          }
-        });
-
-        const subjectsList = Array.from(subjectSet).sort();
-        setAllSubjects(subjectsList);
-
-        // 5. Compute class averages
-        const summaries: ClassSummary[] = Object.entries(classMap).map(([cls, stds]) => {
-          const subjectScores: Record<string, number | null> = {};
-          const overallList: number[] = [];
-
-          subjectsList.forEach(subj => {
-            let classSubjScoreSum = 0;
-            let classSubjMaxSum = 0;
-
-            stds.forEach(s => {
-              const studentScores = allSubs[s.id]?.[subj] || [];
-              studentScores.forEach(item => {
-                classSubjScoreSum += item.score;
-                classSubjMaxSum += item.max;
-              });
-            });
-
-            if (classSubjMaxSum > 0) {
-              const avg = Math.round((classSubjScoreSum / classSubjMaxSum) * 100);
-              subjectScores[subj] = avg;
-              overallList.push(avg);
-            } else {
-              subjectScores[subj] = null;
-            }
-          });
-
-          const overallAvg = overallList.length > 0
-            ? Math.round(overallList.reduce((a, b) => a + b, 0) / overallList.length)
-            : null;
-
-          return {
-            className: cls,
-            studentCount: stds.length,
-            subjectScores,
-            overallAvg,
-          };
-        });
-
-        setClassSummaries(summaries);
+        const heat: Heatmap = await res.json();
+        setAllSubjects(heat.subjects);
+        setClassSummaries(heat.classes);
       } catch (err) {
         console.error('Error fetching admin heatmap:', err);
       } finally {
@@ -179,6 +89,9 @@ export default function AdminHeatmap() {
         ) : classSummaries.length === 0 ? (
           <div className="py-12 text-center text-gray-400">No class data found.</div>
         ) : (
+          <>
+          <input type="search" value={needle} onChange={e => setNeedle(e.target.value)} placeholder="Filter classes"
+            aria-label="Filter classes" className="mb-4 w-full max-w-xs rounded-xl border border-gray-200 px-3 py-2 text-sm" />
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -192,7 +105,7 @@ export default function AdminHeatmap() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {classSummaries.map(summary => {
+                {shown.map(summary => {
                   const overallClr = getScoreColor(summary.overallAvg);
                   return (
                     <tr key={summary.className} className="hover:bg-gray-50/50 transition-colors">
@@ -220,6 +133,8 @@ export default function AdminHeatmap() {
               </tbody>
             </table>
           </div>
+          <Pager {...pager} noun="classes" />
+          </>
         )}
       </div>
     </div>

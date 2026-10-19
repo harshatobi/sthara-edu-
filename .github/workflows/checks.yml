@@ -1,0 +1,24 @@
+# Pull request checks. check:reads fails on a new database read that can silently stop at
+# the 1,000-row ceiling (see scripts/check-unbounded-reads.mjs).
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  reads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check:reads

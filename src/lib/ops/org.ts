@@ -4,6 +4,7 @@ import { GRANTABLE_ROLES, isOperatorRole, managerProblem, reachOf, type Operator
 import { canonicalState, cleanDistrict, subtree, territoryProblem, type Territory, type TerritoryLevel } from './territories';
 import { loadTerritories, place } from './scope';
 import { passwordProblem } from './password';
+import { pageAll } from './page';
 
 /**
  * The operator organisation: who the operators are, the territories they work, and where
@@ -220,8 +221,8 @@ export async function removeTerritory(db: Db, actor: Actor, id: string, reason: 
 async function replaceAll(db: Db, actor: Actor): Promise<number> {
   const territories = await loadTerritories(db);
   const [{ data: accounts }, { data: enquiries }] = await Promise.all([
-    db.from('ops_accounts').select('school_id, state, district, territory_id, owner_id'),
-    db.from('enquiries').select('id, state, district, territory_id, owner_id').not('state', 'is', null),
+    pageAll<any>((f, t) => db.from('ops_accounts').select('school_id, state, district, territory_id, owner_id').order('school_id').range(f, t), 100_000),
+    pageAll<any>((f, t) => db.from('enquiries').select('id, state, district, territory_id, owner_id').not('state', 'is', null).order('id').range(f, t), 100_000),
   ]);
   let moved = 0;
   for (const a of accounts || []) {

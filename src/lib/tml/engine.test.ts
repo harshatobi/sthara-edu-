@@ -183,10 +183,12 @@ function fakeDb(rows: Record<string, Record<string, unknown>[]>, fail: string[] 
     const f = (filters[table] ??= []);
     const matching = () => (rows[table] ?? []).filter(r => f.every(([op, c, v]) => op !== 'eq' || !(c in r) || r[c] === v));
     let badColumn: string | null = null;
-    const result = () => (badColumn ? { data: null, error: { message: `column ${table}.${badColumn} does not exist` } } : fail.includes(table) ? { data: null, error: { message: `${table} down` } } : { data: matching(), error: null });
+    let win: [number, number] | null = null;
+    const page = (xs: Record<string, unknown>[]) => (win ? xs.slice(win[0], win[1] + 1) : xs);
+    const result = () => (badColumn ? { data: null, error: { message: `column ${table}.${badColumn} does not exist` } } : fail.includes(table) ? { data: null, error: { message: `${table} down` } } : { data: page(matching()), error: null });
     const one = async () => (fail.includes(table) ? result() : { data: matching()[0] ?? null, error: null });
     const q: Record<string, unknown> = {
-      select: (cols?: string) => (badColumn = cols ? unknownColumn(table, cols) : null, q), order: () => q, limit: () => q,
+      select: (cols?: string) => (badColumn = cols ? unknownColumn(table, cols) : null, q), order: () => q, limit: () => q, range: (x: number, y: number) => (win = [x, y], q),
       eq: (c: string, v: unknown) => (f.push(['eq', c, v]), q),
       neq: (c: string, v: unknown) => (f.push(['neq', c, v]), q),
       gt: (c: string, v: unknown) => (f.push(['gt', c, v]), q),

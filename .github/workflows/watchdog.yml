@@ -1,0 +1,45 @@
+# Outage watchdog: probes /api/health from GitHub's servers and keeps a Jira
+# issue open while it fails. See scripts/watchdog.mjs.
+#
+# Needs repo secrets JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN.
+# Scheduled runs only fire from the default branch (main).
+name: Watchdog
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Probe only, no Jira writes'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/watchdog.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/watchdog.mjs
+        env:
+          HEALTH_URL: https://www.sthara.in/api/health
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: CPB
+          JIRA_ISSUE_TYPE: Bug
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}

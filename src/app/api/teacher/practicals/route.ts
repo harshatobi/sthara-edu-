@@ -1,10 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { requireStaff } from '@/lib/teacher/serverAuth';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { requireStaff, type Staff } from '@/lib/teacher/serverAuth';
 import { inScope, normClass } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
 import { officialName } from '@/lib/subjects/catalog';
-import { practicalById } from '@/lib/lab/practicals';
+import { practicalById, practicalFits, practicalSubject } from '@/lib/lab/practicals';
+import { markSchemeFor, onSheet, partsProblem, partsTotal, type Parts } from '@/lib/lab/practicals/marks';
+import { auditExam, loadRoster, sheetStudents, toSheet } from '@/lib/exams/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +18,11 @@ export const dynamic = 'force-dynamic';
  * `viva` 0-5. Teachers save for classes they teach; every practical must be one of that class's and every student
  * on its roster. Reading is direct (row-level security: staff of the same school). The Subject Enrichment mark
  * itself is saved through /api/teacher/exams (source 'practical'), into the open marks sheet.
+ *
+ *   POST { action: 'assess', class, subject, sheetId, rows: [{ studentId, parts: { key: marks } | null }] }
+ * Class 11-12: the practical scored by its CBSE components (src/lib/lab/practicals/marks.ts). The parts are kept
+ * in practical_assessment and their total goes into the open PR sheet in Exams (source 'practical'), scaled if the
+ * school set that sheet to another maximum; null clears both. Submitted and locked sheets refuse, as in Exams.
  */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -31,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (!cls || !asked) return NextResponse.json({ error: 'Pick the class.' }, { status: 400 });
   const subject = officialName(cls, asked);
   if (staff.role === 'teacher' && !inScope(staff.scope, cls, subject) && !inScope(staff.scope, cls, asked)) return NextResponse.json({ error: `You don't teach ${subject} to ${cls}.` }, { status: 403 });
-  const grade = Number(/\d{1,2}/.exec(cls)?.[0]);
+  if (b?.action === 'assess') return assess(auth, cls, subject, b);
   const rows: any[] = Array.isArray(b?.rows) ? b.rows.slice(0, 2000) : [];
   if (!rows.length) return NextResponse.json({ error: 'Nothing to save.' }, { status: 400 });
 
@@ -43,7 +51,7 @@ export async function POST(req: NextRequest) {
   const upserts: Record<string, unknown>[] = [];
   for (const r of rows) {
     const p = practicalById(r?.practical);
-    if (!p || p.cls !== grade) return NextResponse.json({ error: `${r?.practical ?? 'That'} isn't one of the Class ${grade} practicals.` }, { status: 400 });
+    if (!p || !practicalFits(p, cls, subject)) return NextResponse.json({ error: `${r?.practical ?? 'That'} isn't one of the ${cls} ${subject} practicals.` }, { status: 400 });
     if (!onRoster.has(r?.studentId)) return NextResponse.json({ error: `A student who isn't in ${cls}.` }, { status: 400 });
     const row: Record<string, unknown> = { school_id: staff.schoolId, class: cls, subject, student_id: r.studentId, practical: p.id, updated_by: staff.id, updated_at: now };
     if ('done' in r) {
@@ -73,4 +81,56 @@ export async function POST(req: NextRequest) {
   const { error } = await db.from('practical_progress').upsert(merged, { onConflict: 'student_id,subject,practical' });
   if (error) { console.error('[practicals POST]', error.message); return NextResponse.json({ error: 'Could not save.' }, { status: 500 }); }
   return NextResponse.json({ success: true, saved: merged.length });
+}
+
+const bad = (error: string, status = 400) => NextResponse.json({ error }, { status });
+
+async function assess({ staff, db }: { staff: Staff; db: SupabaseClient }, cls: string, subject: string, b: any) {
+  if (staff.role !== 'teacher') return bad('Practical marks are entered by the subject teacher.', 403);
+  const grade = Number(/\d{1,2}/.exec(cls)?.[0]), sub = practicalSubject(subject);
+  const scheme = sub ? markSchemeFor(grade, sub) : null;
+  if (!scheme?.parts) return bad(`${cls} ${subject} has no practical parts to score.`);
+  if (!UUID.test(String(b?.sheetId ?? ''))) return bad('Unknown sheet.');
+
+  const { data: row } = await db.from('exam_sheets').select('*').eq('id', b.sheetId).eq('school_id', staff.schoolId).maybeSingle();
+  if (!row) return bad('Unknown sheet.', 404);
+  const sh = toSheet(row);
+  const [{ data: asmt }, roster] = await Promise.all([
+    db.from('exam_assessments').select('code, name').eq('id', sh.assessmentId).maybeSingle(),
+    loadRoster(db, staff.schoolId),
+  ]);
+  const cs = roster.classSubjects.find(x => x.id === sh.classSubjectId), klass = roster.classes.find(c => c.id === sh.classId);
+  if (!asmt || !cs || !klass || !scheme.sheet.test(asmt.code) || normClass(klass.name) !== normClass(cls) || practicalSubject(cs.name) !== sub) {
+    return bad(`That isn't the practical sheet for ${cls} ${subject}.`);
+  }
+  if (sh.status !== 'open') return bad(sh.status === 'locked' ? 'This sheet is published. The principal has to reopen the term to change it.' : 'This sheet is submitted. Ask the class teacher to send it back to change it.', 409);
+
+  const onSheetIds = new Set(sheetStudents(roster, cs).map(s => s.id));
+  const rows: any[] = Array.isArray(b?.rows) ? b.rows.slice(0, 500) : [];
+  if (!rows.length) return bad('Nothing to save.');
+  const now = new Date().toISOString();
+  const keep: Record<string, unknown>[] = [], marks: Record<string, unknown>[] = [], clears: string[] = [];
+  for (const r of rows) {
+    if (!onSheetIds.has(r?.studentId)) return bad(`A student who isn't on the ${cls} ${subject} sheet.`);
+    if (r.parts === null) { clears.push(r.studentId); continue; }
+    const problem = partsProblem(scheme, r.parts);
+    if (problem) return bad(`${roster.students.find(s => s.id === r.studentId)?.name ?? 'A student'}: ${problem}`);
+    const parts = Object.fromEntries(scheme.parts.map(p => [p.key, (r.parts as Parts)[p.key]]));
+    const total = partsTotal(parts);
+    keep.push({ school_id: staff.schoolId, sheet_id: sh.id, class: cls, subject, student_id: r.studentId, parts, total, updated_by: staff.id, updated_at: now });
+    marks.push({ school_id: staff.schoolId, sheet_id: sh.id, student_id: r.studentId, marks: onSheet(total, scheme.total, sh.maxMarks), code: null, questions: null, source: 'practical', source_ref: null, updated_by: staff.id, updated_at: now });
+  }
+  if (keep.length) {
+    const { error } = await db.from('practical_assessment').upsert(keep, { onConflict: 'sheet_id,student_id' });
+    if (error) { console.error('[practicals assess]', error.message); return bad('Could not save the parts.', 500); }
+    const { error: e2 } = await db.from('exam_marks').upsert(marks, { onConflict: 'sheet_id,student_id' });
+    if (e2) { console.error('[practicals assess marks]', e2.message); return bad('The parts are saved but the marks sheet could not be updated. Try again.', 500); }
+  }
+  if (clears.length) {
+    const { error } = await db.from('practical_assessment').delete().eq('sheet_id', sh.id).in('student_id', clears);
+    const { error: e2 } = await db.from('exam_marks').delete().eq('sheet_id', sh.id).in('student_id', clears).eq('source', 'practical');
+    if (error || e2) { console.error('[practicals assess clear]', (error ?? e2)!.message); return bad('Could not clear those marks.', 500); }
+  }
+  await auditExam(db, staff.schoolId, staff.id, staff.role, 'FILL', 'exam_sheets', sh.id, { source: 'practical', parts: true, rows: keep.length, cleared: clears.length });
+  return NextResponse.json({ success: true, saved: keep.length, cleared: clears.length });
 }

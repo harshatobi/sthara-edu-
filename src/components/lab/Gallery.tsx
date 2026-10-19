@@ -30,6 +30,18 @@ import { DnaIcon as Dna } from '@phosphor-icons/react/dist/ssr/Dna';
 import { TreeEvergreenIcon as TreeEvergreen } from '@phosphor-icons/react/dist/ssr/TreeEvergreen';
 import { FunnelIcon as Funnel } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { ArrowsDownUpIcon as ArrowsDownUp } from '@phosphor-icons/react/dist/ssr/ArrowsDownUp';
+import { RulerIcon as Ruler } from '@phosphor-icons/react/dist/ssr/Ruler';
+import { ThermometerIcon as Thermometer } from '@phosphor-icons/react/dist/ssr/Thermometer';
+import { GaugeIcon as Gauge } from '@phosphor-icons/react/dist/ssr/Gauge';
+import { TargetIcon as Target } from '@phosphor-icons/react/dist/ssr/Target';
+import { SpiralIcon as Spiral } from '@phosphor-icons/react/dist/ssr/Spiral';
+import { SunIcon as Sun } from '@phosphor-icons/react/dist/ssr/Sun';
+import { CpuIcon as Cpu } from '@phosphor-icons/react/dist/ssr/Cpu';
+import { RainbowIcon as Rainbow } from '@phosphor-icons/react/dist/ssr/Rainbow';
+import { WavesIcon as Waves } from '@phosphor-icons/react/dist/ssr/Waves';
+import { PlugIcon as Plug } from '@phosphor-icons/react/dist/ssr/Plug';
+import { RadioactiveIcon as Radioactive } from '@phosphor-icons/react/dist/ssr/Radioactive';
+import { CubeIcon as Cube } from '@phosphor-icons/react/dist/ssr/Cube';
 import { PageBar } from '@/components/canon/ui';
 import { ClipboardTextIcon as ClipboardText } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { ENGINES } from '@/lib/lab/registry';
@@ -67,9 +79,38 @@ const LOOK: Record<string, { icon: ComponentType<{ size?: number; weight?: 'duot
   reflex: { icon: HandPalm, colour: 'var(--red)' },
   heredity: { icon: Dna, colour: 'var(--purple)' },
   'food-chain': { icon: TreeEvergreen, colour: 'var(--green)' },
+  instruments: { icon: Ruler, colour: 'var(--ink)' },
+  balance: { icon: Scales, colour: 'var(--amber)' },
+  vectors: { icon: ArrowsLeftRight, colour: 'var(--blue)' },
+  shm: { icon: Metronome, colour: 'var(--purple)' },
+  friction: { icon: Square, colour: 'var(--amber)' },
+  projectile: { icon: Target, colour: 'var(--red)' },
+  elastic: { icon: Spiral, colour: 'var(--ink)' },
+  boyle: { icon: Gauge, colour: 'var(--blue)' },
+  fluids: { icon: Drop, colour: 'var(--blue)' },
+  thermal: { icon: Thermometer, colour: 'var(--red)' },
+  sonometer: { icon: WaveSine, colour: 'var(--purple)' },
+  resonance: { icon: Waveform, colour: 'var(--purple)' },
+  wire: { icon: Lightning, colour: 'var(--amber)' },
+  bridge: { icon: Circuitry, colour: 'var(--blue)' },
+  galvanometer: { icon: Gauge, colour: 'var(--ink)' },
+  components: { icon: Plug, colour: 'var(--green)' },
+  'lens-bench': { icon: Eye, colour: 'var(--blue)' },
+  'prism-dev': { icon: Rainbow, colour: 'var(--purple)' },
+  refractive: { icon: Drop, colour: 'var(--ink)' },
+  diode: { icon: Cpu, colour: 'var(--green)' },
+  'wave-optics': { icon: Waves, colour: 'var(--blue)' },
+  efield: { icon: Lightning, colour: 'var(--red)' },
+  capacitor: { icon: Cube, colour: 'var(--blue)' },
+  lorentz: { icon: Magnet, colour: 'var(--red)' },
+  emi: { icon: Magnet, colour: 'var(--purple)' },
+  lcr: { icon: WaveSine, colour: 'var(--green)' },
+  photoelectric: { icon: Sun, colour: 'var(--amber)' },
+  bohr: { icon: Atom, colour: 'var(--purple)' },
+  nucleus: { icon: Radioactive, colour: 'var(--red)' },
 };
 
-const CLASSES = [9, 10];
+const CLASSES = [9, 10, 11, 12];
 
 export default function Gallery() {
   return (
@@ -81,7 +122,7 @@ export default function Gallery() {
       <SavedDemos />
       {CLASSES.map(cls => (
         <section key={cls} style={{ marginBottom: 26 }}>
-          <h2 className="lab-section">Class {cls} Science</h2>
+          <h2 className="lab-section">Class {cls} {cls >= 11 ? 'Physics' : 'Science'}</h2>
           <div className="lab-grid">
             {ENGINES.filter(e => e.classes[0] === cls).map(e => {
               const look = LOOK[e.id] ?? { icon: Flask, colour: 'var(--ink)' };

@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
     }).join('\n')}`);
   } else brief.push('ASSIGNMENTS: none set yet for this class and subject.');
   // Live Lab: the simulations that fit this class and chapter, so the Copilot can set one up (science only).
-  const labEngines = isScienceSubject(subject) ? enginesFor(cls, focus?.name ?? str(b?.chapter, 200)) : [];
+  const labEngines = isScienceSubject(subject) ? enginesFor(cls, focus?.name ?? str(b?.chapter, 200), subject) : [];
   if (labEngines.length) brief.push(`LAB ENGINES (Live Lab simulations you can set up; values must stay inside these ranges):\n${labCatalogue(labEngines)}`);
   // Misconceptions: the class's own wrong answers (recent MCQs and photographed work), tutor struggles and Live Lab predictions.
   {

@@ -18,7 +18,7 @@ import type { Practical } from './types';
 
 export const CLASS10: Practical[] = [
   {
-    id: 'c10-01', cls: 10, no: 1, kind: 'observation',
+    id: 'c10-01', cls: 10, subject: 'Science', no: 1, kind: 'observation',
     official: 'A. Finding the pH of the following samples by using pH paper/universal indicator: a) Dilute Hydrochloric Acid b) Dilute NaOH solution c) Dilute Ethanoic Acid solution d) Lemon juice e) Water f) Dilute Hydrogen Carbonate solution. B. Studying the properties of acids and bases (HCl & NaOH) on the basis of their reaction with: a) Litmus solution (Blue/Red) b) Zinc metal c) Solid sodium carbonate',
     title: 'pH of samples; properties of HCl and NaOH',
     chapter: 'Acids, Bases and Salts', topic: 'pH scale and the importance of pH in everyday life',
@@ -58,7 +58,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'Acids have pH below 7 and turn blue litmus red; they give hydrogen with zinc and carbon dioxide with carbonates. Bases have pH above 7 and turn red litmus blue.',
   },
   {
-    id: 'c10-02', cls: 10, no: 2, kind: 'observation',
+    id: 'c10-02', cls: 10, subject: 'Science', no: 2, kind: 'observation',
     official: 'Performing and observing the following reactions and classifying them into: a) Combination reaction b) Decomposition reaction c) Displacement reaction d) Double displacement reaction: Action of water on quicklime; Action of heat on ferrous sulphate crystals; Iron nails kept in copper sulphate solution; Reaction between sodium sulphate and barium chloride solutions',
     title: 'Types of chemical reactions',
     chapter: 'Chemical Reactions and Equations', topic: 'Types of reactions: combination, decomposition, displacement, double displacement, precipitation',
@@ -86,7 +86,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'Quicklime with water is combination; heating ferrous sulphate is decomposition; iron in copper sulphate is displacement; sodium sulphate with barium chloride is double displacement.',
   },
   {
-    id: 'c10-03', cls: 10, no: 3, kind: 'observation',
+    id: 'c10-03', cls: 10, subject: 'Science', no: 3, kind: 'observation',
     official: 'Observing the action of Zn, Fe, Cu and Al metals on the following salt solutions: a) ZnSO₄(aq) b) FeSO₄(aq) c) CuSO₄(aq) d) Al₂(SO₄)₃(aq). Arranging Zn, Fe, Cu and Al (metals) in the decreasing order of reactivity based on the above result.',
     title: 'Reactivity of Zn, Fe, Cu and Al',
     chapter: 'Metals and Non-metals', topic: 'Reactivity series',
@@ -117,7 +117,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'A metal displaces another only if it is more reactive. The decreasing order of reactivity is Al > Zn > Fe > Cu.',
   },
   {
-    id: 'c10-04', cls: 10, no: 4, kind: 'numeric',
+    id: 'c10-04', cls: 10, subject: 'Science', no: 4, kind: 'numeric',
     official: 'Studying the dependence of potential difference (V) across a resistor on the current (I) passing through it and determine its resistance. Also plotting a graph between V and I.',
     title: "Ohm's law: V-I graph",
     chapter: 'Electricity', topic: "Ohm's law",
@@ -155,7 +155,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'V/I is constant, so V is directly proportional to I (Ohm\'s law). The V-I graph is a straight line through the origin; its slope gives the resistance.',
   },
   {
-    id: 'c10-05', cls: 10, no: 5, kind: 'numeric',
+    id: 'c10-05', cls: 10, subject: 'Science', no: 5, kind: 'numeric',
     official: 'Determination of the equivalent resistance of two resistors when connected in series and parallel.',
     title: 'Resistors in series and parallel',
     chapter: 'Electricity', topic: 'Series and parallel combination of resistors and daily-life applications',
@@ -190,7 +190,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'In series the equivalent resistance is the sum, Rs = R₁ + R₂; in parallel 1/Rp = 1/R₁ + 1/R₂, so Rp is less than either resistor.',
   },
   {
-    id: 'c10-06', cls: 10, no: 6, kind: 'observation',
+    id: 'c10-06', cls: 10, subject: 'Science', no: 6, kind: 'observation',
     official: 'Preparing a temporary mount of a leaf peel to show stomata.',
     title: 'Leaf peel: stomata',
     chapter: 'Life Processes', topic: 'Basic concept of nutrition, respiration, transport and excretion in plants and animals',
@@ -218,7 +218,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'The leaf peel shows many stomata, each a pore bounded by two bean-shaped guard cells with chloroplasts, among irregular epidermal cells.',
   },
   {
-    id: 'c10-07', cls: 10, no: 7, kind: 'numeric',
+    id: 'c10-07', cls: 10, subject: 'Science', no: 7, kind: 'numeric',
     official: 'Experimentally show that carbon dioxide is given out during respiration.',
     title: 'CO₂ in respiration',
     chapter: 'Life Processes', topic: 'Basic concept of nutrition, respiration, transport and excretion in plants and animals',
@@ -246,7 +246,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'Water rises only with the live seeds: they give out carbon dioxide (absorbed by KOH) in respiration.',
   },
   {
-    id: 'c10-08', cls: 10, no: 8, kind: 'observation',
+    id: 'c10-08', cls: 10, subject: 'Science', no: 8, kind: 'observation',
     official: 'Study of the following properties of acetic acid (ethanoic acid): a) Odour b) solubility in water c) effect on litmus d) reaction with Sodium Hydrogen Carbonate',
     title: 'Properties of ethanoic acid',
     chapter: 'Carbon and its Compounds', topic: 'Ethanol and ethanoic acid (properties and uses only)',
@@ -270,7 +270,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'Ethanoic acid has a vinegar smell, mixes completely with water, turns blue litmus red, and gives carbon dioxide with sodium hydrogen carbonate.',
   },
   {
-    id: 'c10-09', cls: 10, no: 9, kind: 'observation',
+    id: 'c10-09', cls: 10, subject: 'Science', no: 9, kind: 'observation',
     official: 'Study of the comparative cleaning capacity of a sample of soap in soft and hard water.',
     title: 'Soap in soft and hard water',
     chapter: 'Carbon and its Compounds', topic: 'Soaps and detergents',
@@ -297,7 +297,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'The soap gives the most lather in distilled (soft) water and the least in hard water, where scum forms: soap cleans better in soft water.',
   },
   {
-    id: 'c10-10', cls: 10, no: 10, kind: 'numeric',
+    id: 'c10-10', cls: 10, subject: 'Science', no: 10, kind: 'numeric',
     official: 'Determination of the focal length of: a) Concave mirror b) Convex lens by obtaining the image of a distant object.',
     title: 'Focal length of a concave mirror and a convex lens',
     chapter: 'Light - Reflection and Refraction', topic: 'Lens formula; magnification; power of a lens',
@@ -329,7 +329,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'The image of a distant object forms at the focus, so the mirror-to-screen and lens-to-screen distances give the approximate focal lengths.',
   },
   {
-    id: 'c10-11', cls: 10, no: 11, kind: 'numeric',
+    id: 'c10-11', cls: 10, subject: 'Science', no: 11, kind: 'numeric',
     official: 'Tracing the path of a ray of light passing through a rectangular glass slab for different angles of incidence. Measure the angle of incidence, angle of refraction, angle of emergence and interpret the result.',
     title: 'Ray through a glass slab',
     chapter: 'Light - Reflection and Refraction', topic: 'Refraction; laws of refraction; refractive index',
@@ -361,7 +361,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'The ray bends towards the normal on entering the glass and away from it on leaving; the angle of emergence equals the angle of incidence, and sin i / sin r is nearly constant (the refractive index).',
   },
   {
-    id: 'c10-12', cls: 10, no: 12, kind: 'observation',
+    id: 'c10-12', cls: 10, subject: 'Science', no: 12, kind: 'observation',
     official: 'Studying (a) binary fission in Amoeba, and (b) budding in yeast and Hydra with the help of prepared slides.',
     title: 'Binary fission and budding',
     chapter: 'How do Organisms Reproduce?', topic: 'Reproduction in animals and plants (asexual and sexual)',
@@ -380,7 +380,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'Amoeba reproduces by binary fission; yeast and Hydra reproduce by budding. Both are asexual.',
   },
   {
-    id: 'c10-13', cls: 10, no: 13, kind: 'numeric',
+    id: 'c10-13', cls: 10, subject: 'Science', no: 13, kind: 'numeric',
     official: 'Tracing the path of the rays of light through a glass prism.',
     title: 'Ray through a glass prism',
     chapter: 'The Human Eye and the Colourful World', topic: 'Refraction of light through a prism',
@@ -408,7 +408,7 @@ export const CLASS10: Practical[] = [
     conclusion: 'The ray is deviated towards the base of the prism; the angle of deviation depends on the angle of incidence (δ = i + e − A).',
   },
   {
-    id: 'c10-14', cls: 10, no: 14, kind: 'observation',
+    id: 'c10-14', cls: 10, subject: 'Science', no: 14, kind: 'observation',
     official: 'Identification of the different parts of an embryo of a dicot seed (pea, gram or red kidney bean).',
     title: 'Parts of a dicot seed',
     chapter: 'How do Organisms Reproduce?', topic: 'Reproduction in animals and plants (asexual and sexual)',

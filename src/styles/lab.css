@@ -164,7 +164,7 @@
 
 /* ── Practicals: lists, readings tables, tracker, print packs ───────────── */
 .canon .prx-bar { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin:0 0 18px; }
-.canon .prx-no { width:36px; height:36px; border-radius:10px; background:var(--ink); color:#fff; display:grid; place-items:center; font-weight:800; }
+.canon .prx-no { min-width:36px; width:max-content; padding:0 10px; height:36px; font-size:13px; border-radius:10px; background:var(--ink); color:#fff; display:grid; place-items:center; font-weight:800; }
 .canon .prx-official { border-left:4px solid var(--red); }
 .canon .prx-official p { margin:8px 0 0; line-height:1.55; }
 .canon .prx-tag { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--red); }
@@ -218,3 +218,7 @@
   .canon .prx-print .prx-table td.prx-blank { min-width:25mm; }
   .canon .prx-keyrow { font-size:9pt; padding:1.5mm 0; border-bottom:1px solid #E2E8F0; break-inside:avoid; }
 }
+
+/* Class 11-12: the practical mark scored by its CBSE parts */
+.canon .prx-parts input { width:52px; }
+.canon .prx-short { color:var(--red); font-size:12px; }

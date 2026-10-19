@@ -13,12 +13,13 @@ import { CURRENT_SESSION } from '@/lib/curriculum';
 import { engineById, validateScene } from '@/lib/lab/registry';
 import { presentHref } from '@/lib/lab/url';
 import { PHOTOS, credit } from '@/lib/lab/photos';
-import { practicalById, readingsFor, vivaFor, type Practical } from '@/lib/lab/practicals';
+import { practicalById, readingsFor, refOf, vivaFor, type Practical } from '@/lib/lab/practicals';
 import { LabView } from '../LabStage';
 import ReadingsTable from './ReadingsTable';
 import { usePracticalClass } from './usePracticals';
 
 type PrintMode = 'pack' | 'record' | null;
+const ROMAN: Record<number, string> = { 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII' };
 
 export default function PracticalPage({ id }: { id: string }) {
   const p = practicalById(id);
@@ -49,7 +50,7 @@ function Detail({ p }: { p: Practical }) {
 
   return (
     <>
-      <PageBar eyebrow={`CLASS ${p.cls} · PRACTICAL ${p.no} · ${p.chapter.toUpperCase()}`} title={p.title} sub={p.aim}
+      <PageBar eyebrow={`CLASS ${p.cls} · ${p.part === 'activity' ? 'ACTIVITY' : 'PRACTICAL'} ${refOf(p).toUpperCase()} · ${p.chapter.toUpperCase()}`} title={p.title} sub={p.aim}
         actions={<>
           <Link className="btn" href={back}><ArrowLeft size={15} weight="bold" /> All practicals</Link>
           <button className="btn" onClick={() => setPrinting('record')}><Printer size={15} weight="bold" /> Print record page</button>
@@ -59,7 +60,7 @@ function Detail({ p }: { p: Practical }) {
         </>} />
 
       <section className="card prx-official">
-        <span className="prx-tag">CBSE 2026-27 list, Class {p.cls === 9 ? 'IX' : 'X'} #{p.no}</span>
+        <span className="prx-tag">CBSE 2026-27 list, Class {ROMAN[p.cls]} {p.subject} {refOf(p)}</span>
         <p>{p.official}</p>
       </section>
 
@@ -156,7 +157,7 @@ function ClassPack({ p, students, cls, withKey }: { p: Practical; students: { id
       {sets.map(({ s, r }) => (
         <section key={s.id} className="prx-sheet">
           <header className="lbp-head">
-            <div className="lbp-kicker">PRACTICAL {p.no} · CLASS {p.cls} SCIENCE · {p.chapter.toUpperCase()}</div>
+            <div className="lbp-kicker">{p.part === 'activity' ? 'ACTIVITY' : 'PRACTICAL'} {refOf(p).toUpperCase()} · CLASS {p.cls} {p.subject.toUpperCase()} · {p.chapter.toUpperCase()}</div>
             <h1>{p.title}</h1>
             <div className="lbp-who"><span>{s.name}{s.rollNo ? ` · ${s.rollNo}` : ''}</span><span>{cls}</span><span>Date</span></div>
           </header>
@@ -188,7 +189,7 @@ function RecordPage({ p }: { p: Practical }) {
     <article className="lab-print prx-print">
       <section className="prx-sheet">
         <header className="lbp-head">
-          <div className="lbp-kicker">PRACTICAL RECORD · CLASS {p.cls} SCIENCE · PRACTICAL {p.no}</div>
+          <div className="lbp-kicker">PRACTICAL RECORD · CLASS {p.cls} {p.subject.toUpperCase()} · {p.part === 'activity' ? 'ACTIVITY' : 'PRACTICAL'} {refOf(p).toUpperCase()}</div>
           <h1>{p.title}</h1>
           <div className="lbp-who"><span>Name</span><span>Roll no.</span><span>Date</span></div>
         </header>

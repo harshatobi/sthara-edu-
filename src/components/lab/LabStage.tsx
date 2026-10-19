@@ -33,6 +33,35 @@ import TropismView from './TropismView';
 import ReflexView from './ReflexView';
 import HeredityView from './HeredityView';
 import FoodChainView from './FoodChainView';
+import InstrumentsView from './InstrumentsView';
+import BalanceView from './BalanceView';
+import VectorsView from './VectorsView';
+import ShmView from './ShmView';
+import FrictionView from './FrictionView';
+import ProjectileView from './ProjectileView';
+import ElasticView from './ElasticView';
+import BoyleView from './BoyleView';
+import FluidsView from './FluidsView';
+import ThermalView from './ThermalView';
+import SonometerView from './SonometerView';
+import ResonanceView from './ResonanceView';
+import WireView from './WireView';
+import BridgeView from './BridgeView';
+import GalvanometerView from './GalvanometerView';
+import ComponentsView from './ComponentsView';
+import LensBenchView from './LensBenchView';
+import PrismDevView from './PrismDevView';
+import RefractiveView from './RefractiveView';
+import DiodeView from './DiodeView';
+import WaveOpticsView from './WaveOpticsView';
+import EfieldView from './EfieldView';
+import CapacitorView from './CapacitorView';
+import LorentzView from './LorentzView';
+import EmiView from './EmiView';
+import LcrView from './LcrView';
+import PhotoelectricView from './PhotoelectricView';
+import BohrView from './BohrView';
+import NucleusView from './NucleusView';
 import type { ViewProps } from './types';
 import '@/styles/lab.css';
 
@@ -66,6 +95,35 @@ const VIEWS: Record<string, ComponentType<ViewProps<any>>> = {
   reflex: ReflexView,
   heredity: HeredityView,
   'food-chain': FoodChainView,
+  instruments: InstrumentsView,
+  balance: BalanceView,
+  vectors: VectorsView,
+  shm: ShmView,
+  friction: FrictionView,
+  projectile: ProjectileView,
+  elastic: ElasticView,
+  boyle: BoyleView,
+  fluids: FluidsView,
+  thermal: ThermalView,
+  sonometer: SonometerView,
+  resonance: ResonanceView,
+  wire: WireView,
+  bridge: BridgeView,
+  galvanometer: GalvanometerView,
+  components: ComponentsView,
+  'lens-bench': LensBenchView,
+  'prism-dev': PrismDevView,
+  refractive: RefractiveView,
+  diode: DiodeView,
+  'wave-optics': WaveOpticsView,
+  efield: EfieldView,
+  capacitor: CapacitorView,
+  lorentz: LorentzView,
+  emi: EmiView,
+  lcr: LcrView,
+  photoelectric: PhotoelectricView,
+  bohr: BohrView,
+  nucleus: NucleusView,
 };
 
 export function LabView({ engine, ...props }: ViewProps & { engine: LabEngine<any> }) {

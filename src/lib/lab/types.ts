@@ -38,11 +38,14 @@ export interface PredictionTemplate<P> {
 
 export interface Readout { label: string; value: string }
 
+/** The subject whose curriculum an engine's chapters come from: Science in Classes 9-10, Physics or Chemistry in 11-12. */
+export type LabSubject = 'Science' | 'Physics' | 'Chemistry';
+
 export interface LabEngine<P extends Params = Params> {
   id: string;
   title: string;
   blurb: string;
-  subject: 'Science';
+  subject: LabSubject;
   classes: number[];
   /** Official chapter names (matched with topicKey). */
   chapters: string[];

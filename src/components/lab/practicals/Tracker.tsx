@@ -311,7 +311,7 @@ function PartsPanel({ target, students, scheme, evidence, call }: {
                     return (
                       <tr key={s.id}>
                         <td className="prx-name">{s.name}</td>
-                        <td className="muted" style={{ fontSize: 12.5 }}>{evidence(s.id)}</td>
+                        <td className="muted prx-ev">{evidence(s.id)}</td>
                         {parts.map(p => (
                           <td key={p.key}><input className="prx-mark" inputMode="decimal" value={value(s.id, p.key)} disabled={!open} placeholder="–" aria-label={`${s.name}: ${p.label}, out of ${p.max}`}
                             onChange={e => setVals(v => ({ ...v, [s.id]: { ...Object.fromEntries(parts.map(q => [q.key, value(s.id, q.key)])), [p.key]: e.target.value } }))} /></td>

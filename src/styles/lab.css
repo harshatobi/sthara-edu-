@@ -221,4 +221,5 @@
 
 /* Class 11-12: the practical mark scored by its CBSE parts */
 .canon .prx-parts input { width:52px; }
+.canon .prx-parts .prx-ev { font-size:12px; min-width:180px; max-width:240px; white-space:normal; line-height:1.35; text-align:left; }
 .canon .prx-short { color:var(--red); font-size:12px; }

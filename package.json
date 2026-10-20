@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:reads": "node scripts/check-unbounded-reads.mjs",
+    "check:grants": "node scripts/check-migration-grants.mjs",
     "typecheck": "node -e \"require('fs').rmSync('.next/dev/types',{recursive:true,force:true})\" && next typegen && tsc --noEmit",
     "db:login": "npx -y supabase@2.117.0 login",
     "db:link": "npx -y supabase@2.117.0 link --project-ref nqwvsuyiwswnsqbyhghb",

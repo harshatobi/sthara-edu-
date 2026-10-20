@@ -5,6 +5,7 @@ import { loadPicklist } from '@/lib/ops/deskServer';
 import { ROLE_INFO, can } from '@/lib/ops/roles';
 import { loadLimits, loadStages } from '@/lib/ops/salesServer';
 import { parseReason } from '@/lib/settings/registry';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (op instanceof Response) return op;
   const db = createAdminClient();
   const [stages, reasons, limits, { data: used }] = await Promise.all([
-    loadStages(db), loadPicklist(db, 'loss_reason', false), loadLimits(db), db.from('ops_opportunities').select('stage'),
+    loadStages(db), loadPicklist(db, 'loss_reason', false), loadLimits(db), pageAll<{ stage: string }>((f, t) => db.from('ops_opportunities').select('stage').order('id').range(f, t), 100_000),
   ]);
   const inUse = new Map<string, number>();
   for (const o of used || []) inUse.set(o.stage, (inUse.get(o.stage) ?? 0) + 1);

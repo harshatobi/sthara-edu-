@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PlayCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { all } from '@/lib/admin/loadRows';
+import { Pager, usePaged } from '@/components/canon/Pager';
 
 interface VideoFile {
   id: string;
@@ -23,6 +25,8 @@ export default function StudentVideos() {
   const [availableSubjects, setAvailableSubjects] = useState<string[]>(['All', 'Mathematics', 'Science', 'English', 'Social Studies']);
   const [videos, setVideos] = useState<VideoFile[]>([]);
   const [fetching, setFetching] = useState(true);
+  const filtered = useMemo(() => (activeSubject === 'All' ? videos : videos.filter(v => (v as any).subject === activeSubject)), [videos, activeSubject]);
+  const { shown, pager } = usePaged(filtered, activeSubject);
 
   useEffect(() => {
     if (!loading && (!profile || profile.role !== 'student')) {
@@ -36,10 +40,13 @@ export default function StudentVideos() {
     const fetchVideos = async () => {
       setFetching(true);
       try {
-        const { data: materialsData } = await supabase
+        // Every row: a school's library keeps growing, and one read stops at 1,000.
+        const { data: materialsData } = await all((a, b) => supabase
           .from('materials')
           .select('*')
-          .eq('school_id', profile.schoolId);
+          .eq('school_id', profile.schoolId)
+          .order('id')
+          .range(a, b));
 
         const loadedVideos: VideoFile[] = (materialsData || []).map((m: any) => ({
           id: m.id,
@@ -100,17 +107,16 @@ export default function StudentVideos() {
 
         {fetching ? (
           <div className="py-12 text-center text-gray-400">Loading videos...</div>
-        ) : (() => {
-          const filtered = activeSubject === 'All' ? videos : videos.filter(v => (v as any).subject === activeSubject);
-          return filtered.length === 0 ? (
+        ) : filtered.length === 0 ? (
             <div className="py-12 text-center text-gray-400">No video materials found for <strong>{activeSubject}</strong>.</div>
           ) : (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map(v => (
+              {shown.map(v => (
                 <div key={v.id} className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm space-y-3 p-4">
                   <div className="aspect-video bg-black/10 rounded-xl flex items-center justify-center relative">
                     {v.url ? (
-                      <video src={v.url} controls className="w-full h-full rounded-xl object-cover" />
+                      <video src={v.url} controls preload="none" className="w-full h-full rounded-xl object-cover" />
                     ) : (
                       <PlayCircle className="w-12 h-12 text-indigo-600" />
                     )}
@@ -119,8 +125,9 @@ export default function StudentVideos() {
                 </div>
               ))}
             </div>
-          );
-        })()}
+            <Pager {...pager} noun="videos" />
+            </>
+          )}
       </div>
     </div>
   );

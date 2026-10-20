@@ -6,6 +6,7 @@ import { can } from '@/lib/ops/roles';
 import { loadAccounts, loadSight, loadTerritories } from '@/lib/ops/scope';
 import { sees } from '@/lib/ops/territories';
 import { parseReason } from '@/lib/settings/registry';
+import { pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   const [territories, accounts, ops, sight, { data: members }, { data: enquiries }] = await Promise.all([
     loadTerritories(db), loadAccounts(db), loadOperators(db), loadSight(db, me),
     db.from('ops_territory_members').select('territory_id, operator_id'),
-    db.from('enquiries').select('territory_id, owner_id, status').in('status', ['new', 'contacted', 'qualified']),
+    pageAll<any>((f, t) => db.from('enquiries').select('territory_id, owner_id, status').in('status', ['new', 'contacted', 'qualified']).order('id').range(f, t), 100_000),
   ]);
   const active = ops.filter(o => o.active);
   const { data: names } = active.length ? await db.from('users').select('id, name, email').in('id', active.map(o => o.id)) : { data: [] };

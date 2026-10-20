@@ -14,6 +14,7 @@ import { istDay } from '@/lib/feed/rules';
 import { MIN_PCT, monthDays, schoolDays } from '@/lib/attendance/register';
 import { shapeSchoolAttendance, type SchoolAttendance, type SummaryRow } from '@/lib/attendance/school';
 import type { AdminDesk } from '@/lib/admin/desk';
+import { all } from '@/lib/admin/loadRows';
 import { normClass } from '@/lib/teacher/scope';
 import MonthSheet from '@/components/teacher/attendance/MonthSheet';
 import RegisterDoc, { printRegister } from '@/components/teacher/attendance/RegisterDoc';
@@ -32,12 +33,19 @@ export function useSchoolAttendance(desk: AdminDesk | null) {
   useEffect(() => {
     if (!desk) return;
     let alive = true;
-    createClient().rpc('school_attendance_summary', { p_from: sessionStart, p_to: today, p_month_from: `${today.slice(0, 7)}-01` })
-      .then(({ data, error }) => {
+    // Two rows per student plus one per class-week: a large school passes the 1,000-row cap, so page it. Ordering on
+    // every column makes each page a slice of one fixed sequence (rows that tie on all of them are identical anyway).
+    const db = createClient();
+    const args = { p_from: sessionStart, p_to: today, p_month_from: `${today.slice(0, 7)}-01` };
+    all((a, b) => db.rpc('school_attendance_summary', args)
+      .order('bucket').order('class_name').order('key').order('student_id')
+      .order('present').order('late').order('absent').order('excused')
+      .range(a, b))
+      .then(({ data, missing }) => {
         if (!alive) return;
-        if (error) { setState({ data: null, err: /does not exist|schema cache/i.test(error.message) ? 'Attendance reporting is waiting on a database update.' : error.message }); return; }
-        setState({ data: shapeSchoolAttendance((data || []) as SummaryRow[], desk.students, sessionStart, today), err: null });
-      });
+        if (missing) { setState({ data: null, err: 'Attendance reporting is waiting on a database update.' }); return; }
+        setState({ data: shapeSchoolAttendance(data as SummaryRow[], desk.students, sessionStart, today), err: null });
+      }, (e: Error) => { if (alive) setState({ data: null, err: e.message }); });
     return () => { alive = false; };
   }, [desk, sessionStart, today]);
   return { att: state?.data ?? null, err: state?.err ?? null, today, sessionStart };

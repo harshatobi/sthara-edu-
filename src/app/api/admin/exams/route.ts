@@ -5,6 +5,7 @@ import { notifyGuardians } from '@/lib/parent/notify';
 import {
   CODE_RE, gradingProblem, presetScheme, PRESETS, termProblem, toGrading, toRules, type Component, type PresetKey, type SubjectOverride,
 } from '@/lib/exams/engine';
+import { pageAll } from '@/lib/ops/page';
 import {
   auditExam, buildCards, examError, loadCardSettings, loadClassTerm, loadRoster, loadSchemes, openSheets, publishClassTerm,
   reviewBackToOpen, summarizeClassTerm, toAssessment, toClassTerm, toScheme,
@@ -111,7 +112,7 @@ async function heldCards(req: NextRequest) {
   const { data, error } = await db.from('report_cards').select('id, student_id, term_id, class_id, version, hold_reason, held_at, snapshot->student, snapshot->term, snapshot->>session')
     .eq('school_id', admin.schoolId).eq('held', true).is('superseded_at', null).order('held_at', { ascending: false }).limit(2000);
   if (error) return examError(error, 'Could not load the held report cards.');
-  const { data: dues } = await db.rpc('exam_fee_dues', { p_school: admin.schoolId, p_today: isoDay() });
+  const { data: dues } = await pageAll<any>((f, t) => db.rpc('exam_fee_dues', { p_school: admin.schoolId, p_today: isoDay() }).order('student_id').range(f, t), 100_000);
   const owed = new Map<string, number>((dues || []).map((r: any) => [r.student_id, Number(r.overdue)]));
   return NextResponse.json({
     can: { release: true },

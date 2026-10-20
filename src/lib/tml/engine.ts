@@ -40,6 +40,8 @@
  *   academic term) are honored without double-counting.
  */
 
+import { all } from '../admin/loadRows';
+
 // ---------------------------------------------------------------------------
 // Time-decay (spec 2.2): 14-day half-life, applied to every evidence source.
 // ---------------------------------------------------------------------------
@@ -242,6 +244,19 @@ export function evidenceTopicName(assign: { units?: unknown; title?: string | nu
   return rawUnits.length > 0 ? rawUnits[0] : (assign?.title?.trim() || 'Core Concepts');
 }
 
+/**
+ * Every row of a read, paged past the 1,000-row cap, answered as { data, error } like a single read. A table that
+ * is missing counts as an error: TML must not be saved from partial evidence.
+ */
+async function everyRow(build: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>) {
+  try {
+    const r = await all(build);
+    return r.missing ? { data: null, error: { message: 'table is missing' } } : { data: r.data, error: null };
+  } catch (e: any) {
+    return { data: null, error: { message: e?.message || String(e) } };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Re-computes TML for a student from Supabase evidence and persists an
 // append-only snapshot per topic into tml_scores.
@@ -257,27 +272,31 @@ export async function computeStudentTml(
     supabase.from('users').select('id, school_id').eq('id', studentId).single(),
     // Only marks a teacher has confirmed (or instant MCQ marking) move TML;
     // AI-suggested marks wait for review.
-    supabase
+    // Paged: a student's evidence grows every term and must never stop at the 1,000-row cap.
+    everyRow((a: number, b: number) => supabase
       .from('submission_items')
       .select(`
         id, score, max_score, component_type, created_at, submission_id,
         assignments ( id, subject, title, units, type, proctored )
       `)
       .eq('student_id', studentId)
-      .eq('teacher_confirmed', true),
+      .eq('teacher_confirmed', true)
+      .order('id').range(a, b)),
     // Top-level fallback for rows without per-question items; same rule: confirmed only.
-    supabase
+    everyRow((a: number, b: number) => supabase
       .from('submissions')
       .select(`
         id, score, max_score, teacher_approved, submitted_at,
         assignments ( id, subject, title, units, type, proctored )
       `)
       .eq('student_id', studentId)
-      .eq('teacher_approved', true),
-    supabase
+      .eq('teacher_approved', true)
+      .order('id').range(a, b)),
+    everyRow((a: number, b: number) => supabase
       .from('tutor_sessions')
       .select('id, subject, topic, hint_depth, answer_revealed, created_at')
-      .eq('student_id', studentId),
+      .eq('student_id', studentId)
+      .order('id').range(a, b)),
     // Integrity violations (assignment-level).
     supabase
       .from('proctor_alerts')

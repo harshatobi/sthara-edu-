@@ -276,7 +276,8 @@ async function termAttendance(db: Db, schoolId: string, term: Term, from: string
   const today = isoDay();
   const to = term.endsOn < today ? term.endsOn : today;
   if (to < from) return new Map();
-  const { data, error } = await db.rpc('exam_attendance', { p_school: schoolId, p_from: from, p_to: to });
+  // One row per student: a school of over 1,000 pages, or the rest would miss their attendance.
+  const { data, error } = await pageAll<any>((f, t) => db.rpc('exam_attendance', { p_school: schoolId, p_from: from, p_to: to }).order('student_id').range(f, t), 100_000);
   if (error) { console.warn('[exams] attendance', error.message); return new Map(); }
   return new Map((data || []).map((r: any) => [r.student_id, { present: Number(r.present) + Number(r.late), workingDays: Number(r.class_days) }]));
 }
@@ -366,7 +367,7 @@ export async function publishClassTerm(db: Db, schoolId: string, schoolName: str
   const revised = version > 1;
   const [cards, dues, prev] = await Promise.all([
     buildCards(db, schoolId, schoolName, board, session, d, d.students.map(s => s.id), version, revised, settings),
-    settings.holdOnDues ? db.rpc('exam_fee_dues', { p_school: schoolId, p_today: isoDay() }) : Promise.resolve({ data: [], error: null }),
+    settings.holdOnDues ? pageAll<any>((f, t) => db.rpc('exam_fee_dues', { p_school: schoolId, p_today: isoDay() }).order('student_id').range(f, t), 100_000) : Promise.resolve({ data: [], error: null }),
     byIds<any>(d.students.map(s => s.id), (chunk, f, t) => db.from('report_cards').select('id, student_id, version, released_at, released_by').eq('term_id', d.term.id).is('superseded_at', null).in('student_id', chunk).order('id').range(f, t)),
   ]);
   const overdue = new Map<string, number>(((dues as any).data || []).map((r: any) => [r.student_id, Number(r.overdue)]));

@@ -49,13 +49,15 @@ export default function RegulatoryVaultPage() {
     if (!profile?.schoolId) return;
     setGeneratingReport('cbse');
     try {
-      const { data: students } = await supabase
+      // A count, not the rows: fetching them stopped at 1,000 and under-reported large schools.
+      const { count, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id', { count: 'exact', head: true })
         .eq('school_id', profile.schoolId)
         .eq('role', 'student');
+      if (error) throw error;
 
-      const html = `<p>Total Enrolled Students: ${(students || []).length}</p>
+      const html = `<p>Total Enrolled Students: ${count ?? 0}</p>
       <p>All student records and attendance logs verified compliant for academic year ${academicYear}.</p>`;
 
       downloadReport('CBSE Compliance Audit Report', html);

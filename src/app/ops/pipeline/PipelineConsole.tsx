@@ -7,6 +7,7 @@ import { FunnelIcon as Funnel } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { SlidersHorizontalIcon as SlidersHorizontal } from '@phosphor-icons/react/dist/ssr/SlidersHorizontal';
 import { Chip, Empty, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
+import { Pager, usePaged } from '@/components/canon/Pager';
 import { OPP_KINDS, QUOTE_STATUS, type Forecast, type OppKind, type QuoteStatus, type Stage } from '@/lib/ops/sales';
 import { SOURCES } from '@/lib/ops/revenue';
 import { INDIAN_STATES } from '@/lib/ops/territories';
@@ -48,6 +49,7 @@ export default function PipelineConsole() {
 
   const needle = q.trim().toLowerCase();
   const opps = useMemo(() => (d?.opps ?? []).filter(o => !needle || `${o.name} ${o.ref} ${o.owner ?? ''} ${o.state ?? ''} ${o.school ?? ''}`.toLowerCase().includes(needle)), [d, needle]);
+  const { shown: oppPage, pager: oppPager } = usePaged(opps, needle);
   const reasonLabel = (k: string | null) => d?.lossReasons.find(r => r.key === k)?.label ?? k ?? '';
   const stageLabel = (k: string) => d?.stages.find(s => s.key === k)?.label ?? k;
   const move = async (o: Opp, stage: string) => {
@@ -148,7 +150,7 @@ export default function PipelineConsole() {
         <div className="card">
           <Table head={<tr><th>Deal</th><th>Stage</th><th className="r">Annual value</th><th>Expected close</th><th>Owner</th><th>Quote</th><th>Next step</th></tr>}
             empty={!opps.length && <Empty icon={<Funnel size={28} weight="duotone" />} title={d.opps.length ? 'No deal matches' : 'No deals yet'}>{d.opps.length ? undefined : 'Convert a website enquiry, or start a renewal from New deal.'}</Empty>}>
-            {opps.map(o => (
+            {oppPage.map(o => (
               <tr key={o.id} className="click" onClick={() => router.push(`/ops/pipeline/${o.id}`)}>
                 <td style={{ minWidth: 220 }}><div className="nm">{o.name}</div><div className="sub"><span className="mono">{o.ref}</span> · {OPP_KINDS[o.kind]}{o.territory ? ` · ${o.territory}` : ''}</div></td>
                 <td><Chip tone={o.stageKind === 'won' ? 'g' : o.stageKind === 'lost' ? 'r' : 'b'}>{stageLabel(o.stage).toUpperCase()}</Chip>{o.stageKind === 'lost' && o.lossReason && <div className="sub">{reasonLabel(o.lossReason)}</div>}</td>
@@ -160,6 +162,7 @@ export default function PipelineConsole() {
               </tr>
             ))}
           </Table>
+          <Pager {...oppPager} noun="deals" />
         </div>
       ) : f && (
         <>

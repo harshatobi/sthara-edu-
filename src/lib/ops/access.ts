@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { OperatorRole } from './roles';
+import { IMPORT_ROLES, type OperatorRole } from './roles';
 
 /**
  * Break-glass access.
@@ -23,8 +23,7 @@ const fail = (error: string, status = 400) => ({ ok: false as const, error, stat
 export const GRANT_MINUTES = 30;
 export const GRANT_REASON_MIN = 10;
 export const GRANT_SCOPES = ['records', 'view_as', 'import'] as const;
-/** Who may open an import window (Moses, 2026-10-20: directors only until the Platform Manager roles are revisited). */
-export const IMPORT_ROLES: readonly OperatorRole[] = ['director'];
+export { IMPORT_ROLES };
 export type GrantScope = typeof GRANT_SCOPES[number];
 
 export interface Grant {

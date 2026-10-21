@@ -18,6 +18,7 @@ import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/re
 import { WalletIcon as Wallet } from '@phosphor-icons/react/dist/ssr/Wallet';
 import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuoy';
 import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
+import { UploadSimpleIcon as UploadSimple } from '@phosphor-icons/react/dist/ssr/UploadSimple';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -48,6 +49,7 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/compliance', label: 'DPDP & Compliance', short: 'DPDP', icon: ShieldCheck, need: ['compliance.read', 'audit.read'] },
   { href: '/admin/access', label: 'Roles & Access', short: 'Access', icon: Key, need: ['access.manage'] },
   { href: '/admin/directory', label: 'User Directory', short: 'Logins', icon: UsersThree, need: ['people.manage', 'access.manage'] },
+  { href: '/admin/import', label: 'Data Import', short: 'Import', icon: UploadSimple, need: ['data.import'] },
   // Every office account can reach Sthara.
   { href: '/admin/support', label: 'Help & Support', short: 'Help', icon: Lifebuoy, need: [] },
 ];

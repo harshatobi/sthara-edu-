@@ -31,6 +31,7 @@ import { ControlsTab } from './controls';
 import { RelationshipTab } from './crm';
 import { useCan } from '../../OpsShell';
 import { SubjectsTab } from './subjects';
+import { ImportsTab } from './imports';
 import { HealthBadge, HealthCard, HealthTab, healthOf, type SchoolMetrics } from '../../health';
 import type { Health } from '@/lib/ops/health';
 
@@ -55,7 +56,7 @@ interface Data {
 const MANAGE_TABS: readonly string[] = ['classes', 'subjects', 'people', 'teaching', 'support'];
 const TABS = [
   ['overview', 'Overview'], ['crm', 'Account 360'], ['health', 'Health'], ['access', 'Subscription & access'], ['account', 'Ownership & access'], ['controls', 'Controls'], ['records', 'Records'], ['classes', 'Classes & subjects'],
-  ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['activity', 'Activity'],
+  ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching'], ['support', 'Support'], ['imports', 'Imports'], ['activity', 'Activity'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
@@ -69,7 +70,7 @@ const GROUPS: { key: string; label: string; tabs: [Tab, string][] }[] = [
   { key: 'health', label: 'Health', tabs: [['health', 'Health']] },
   { key: 'commercial', label: 'Subscription', tabs: [['access', 'Plan and access'], ['account', 'Territory, owner and record access']] },
   { key: 'setup', label: 'Setup', tabs: [['classes', 'Classes'], ['subjects', 'Subjects'], ['people', 'People'], ['teaching', 'Teaching']] },
-  { key: 'tools', label: 'Support tools', tabs: [['support', 'Fixes'], ['controls', 'Controls and checks'], ['records', 'Records']] },
+  { key: 'tools', label: 'Support tools', tabs: [['support', 'Fixes'], ['controls', 'Controls and checks'], ['records', 'Records'], ['imports', 'Imports']] },
   { key: 'activity', label: 'Activity', tabs: [['activity', 'Activity']] },
 ];
 
@@ -196,6 +197,7 @@ export default function SchoolWorkspace({ schoolId }: { schoolId: string }) {
           {tab === 'teaching' && <TeachingStep schoolId={schoolId} classes={data.classes} people={data.people} onSaved={load} />}
           {tab === 'subjects' && <SubjectsTab schoolId={schoolId} onChanged={async msg => { toast(msg); await load(); }} />}
           {tab === 'support' && <SupportTab schoolId={schoolId} classes={data.classes} people={data.people} onChanged={async msg => { toast(msg); await load(); }} />}
+          {tab === 'imports' && <ImportsTab schoolId={schoolId} onChanged={toast} />}
           {tab === 'activity' && <ActivityTab d={data} />}
         </>
       )}

@@ -101,6 +101,8 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
 };
 
 export const can = (role: OperatorRole, cap: Capability) => ROLE_INFO[role].can.includes(cap);
+/** Who may import a school's data on its behalf (Moses, 2026-10-20: directors only until the Platform Manager roles are revisited). */
+export const IMPORT_ROLES: readonly OperatorRole[] = ['director'];
 export const reachOf = (role: OperatorRole): Reach => ROLE_INFO[role].reach;
 export const roleLabel = (role: unknown) => (isOperatorRole(role) ? ROLE_INFO[role].label : 'Operator');
 /** Roles that can be given from the console. Director stays a database change, so one stolen session cannot mint another. */

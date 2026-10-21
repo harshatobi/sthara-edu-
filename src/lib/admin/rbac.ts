@@ -46,6 +46,7 @@ export const PERMS = {
   'exams.read': 'See exam results and report cards across the school',
   'exams.manage': 'Run the exam cell: set up assessment schemes, open marks entry and follow progress',
   'exams.publish': 'Lock and publish report cards, and reopen them with a reason',
+  'data.import': 'Bulk-import the school\u2019s data from Sthara\u2019s published file formats, and undo an import',
 } as const;
 export type Perm = keyof typeof PERMS;
 

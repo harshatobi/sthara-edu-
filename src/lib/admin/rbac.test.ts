@@ -9,7 +9,10 @@ test('role catalogue matches the database seed', () => {
   const dir = path.join(process.cwd(), 'supabase/migrations');
   const sql = fs.readFileSync(path.join(dir, fs.readdirSync(dir).find(f => f.endsWith('_baseline.sql'))!), 'utf8');
   const start = sql.indexOf('INSERT INTO public.role_permissions');
-  const seed = sql.slice(start, sql.indexOf(';\n', start));
+  // Later migrations add rows with their own INSERT INTO public.role_permissions statements.
+  const later = fs.readdirSync(dir).filter(f => f.endsWith('.sql') && !f.endsWith('_baseline.sql')).sort()
+    .flatMap(f => fs.readFileSync(path.join(dir, f), 'utf8').match(/INSERT INTO public\.role_permissions[^;]*;/g) ?? []);
+  const seed = [sql.slice(start, sql.indexOf(';\n', start)), ...later].join('\n');
   const db: Record<string, string[]> = {};
   for (const m of seed.matchAll(/\('(\w+)', '([^']+)'\)/g)) (db[m[1]] ||= []).push(m[2]);
   for (const k of Object.keys(db)) db[k] = [...new Set(db[k])].sort();
@@ -37,6 +40,8 @@ test('separation of duties is built into the roles', () => {
   assert.ok(!ROLES.cashier.perms.includes('payroll.read') && !ROLES.vice_principal.perms.includes('payroll.read'));
   // Exams: the exam cell runs marks entry; only the principal (and school admin) publish report cards.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('exams.publish')).sort(), ['principal', 'school_admin']);
+  // Bulk import: principal and school admin only (Moses, 2026-10-20).
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('data.import')).sort(), ['principal', 'school_admin']);
   assert.ok(ROLES.academic_coordinator.perms.includes('exams.manage'));
   // Staff bank, PAN and personal details: HR and the heads of the school, nobody else who can merely see the workforce.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('hr.sensitive')).sort(), ['hr_manager', 'principal', 'school_admin']);

@@ -1,4 +1,5 @@
-# Pull request checks. check:reads fails on a new database read that can silently stop at
+# Pull request checks. check:grants fails on a migration that creates a public table or view without granting
+# API access to it (Supabase stops auto-granting on 2026-10-30). check:reads fails on a new database read that can silently stop at
 # the 1,000-row ceiling (see scripts/check-unbounded-reads.mjs).
 name: Checks
 
@@ -22,3 +23,13 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run check:reads
+
+  grants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/check-migration-grants.mjs

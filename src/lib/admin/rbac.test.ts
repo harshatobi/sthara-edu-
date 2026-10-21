@@ -5,22 +5,19 @@ import path from 'node:path';
 import { Access, activeGrants, PERMS, ROLES, ROLE_KEYS } from './rbac';
 
 test('role catalogue matches the database seed', () => {
-  const sql = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260924140000_admin_rbac.sql'), 'utf8');
-  const seed = sql.slice(sql.indexOf('INSERT INTO public.role_permissions'), sql.indexOf(') AS t(r, ps)'));
-  const rows = [...seed.matchAll(/\('(\w+)', ARRAY\[([^\]]*)\]\)/g)];
-  const db: Record<string, string[]> = Object.fromEntries(rows.map(m => [m[1], m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))]));
-  // Permissions added to the catalogue by later migrations (INSERT … ON CONFLICT DO NOTHING).
-  for (const f of ['20260925180000_parent_connect.sql', '20260926200000_situational_feed.sql', '20260926210000_staff_whatsapp.sql', '20260927100000_scheduling.sql', '20260928190000_tutor_guard.sql', '20261013100000_employee_master.sql', '20261013120000_payroll.sql', '20261014214630_exams_core.sql']) {
-    const later = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations', f), 'utf8');
-    const add = later.slice(later.indexOf('INSERT INTO public.role_permissions'), later.indexOf('ON CONFLICT DO NOTHING'));
-    for (const m of add.matchAll(/\('(\w+)',\s+ARRAY\[([^\]]*)\]\)/g)) db[m[1]] = [...(db[m[1]] || []), ...m[2].match(/'([^']+)'/g)!.map(s => s.slice(1, -1))];
-  }
+  // The baseline migration carries the catalogue as dumped from the database, one (role_key, perm) row per line.
+  const dir = path.join(process.cwd(), 'supabase/migrations');
+  const sql = fs.readFileSync(path.join(dir, fs.readdirSync(dir).find(f => f.endsWith('_baseline.sql'))!), 'utf8');
+  const start = sql.indexOf('INSERT INTO public.role_permissions');
+  const seed = sql.slice(start, sql.indexOf(';\n', start));
+  const db: Record<string, string[]> = {};
+  for (const m of seed.matchAll(/\('(\w+)', '([^']+)'\)/g)) (db[m[1]] ||= []).push(m[2]);
   for (const k of Object.keys(db)) db[k] = [...new Set(db[k])].sort();
   assert.deepEqual(Object.keys(db).sort(), [...ROLE_KEYS].sort());
   for (const r of ROLE_KEYS) assert.deepEqual(db[r], [...ROLES[r].perms].sort(), `role ${r}`);
   for (const ps of Object.values(db)) for (const p of ps) assert.ok(p in PERMS, `unknown perm ${p}`);
   // The CHECK constraint on role_grants lists the same roles.
-  const check = sql.match(/role_key\s+text NOT NULL CHECK \(role_key IN \(([^)]*)\)\)/)![1];
+  const check = sql.match(/"role_grants_role_key_check" CHECK \(\("role_key" = ANY \(ARRAY\[([^\]]*)\]\)\)\)/)![1];
   assert.deepEqual(check.match(/'([^']+)'/g)!.map(s => s.slice(1, -1)).sort(), [...ROLE_KEYS].sort());
 });
 

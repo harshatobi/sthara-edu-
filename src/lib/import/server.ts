@@ -214,11 +214,38 @@ export async function runWorker(db: Db, budgetMs = STEP_MS): Promise<number> {
       else if (job.status === 'committing') await commit(db, job, deadline);
       else if (job.status === 'undoing') await undo(db, job, deadline);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      await db.from('import_jobs').update({ last_error: msg.slice(0, 2000), locked_until: null }).eq('id', job.id);
+      await stepFailed(db, job, e instanceof Error ? e.message : String(e));
     }
   }
   return data?.length ?? 0;
+}
+
+/** Tries at the same point before a check or commit gives up. */
+const MAX_TRIES = 5;
+
+/**
+ * A step threw. Wait longer before each retry (30 s, 1, 2, 4 min); after MAX_TRIES at the same point a check fails
+ * (nothing was written) and a commit rolls back what it wrote. An undo keeps trying, at most every 30 minutes,
+ * because it has to finish.
+ */
+async function stepFailed(db: Db, job: Job, msg: string) {
+  const at = `${job.status}:${job.phase_cursor}`;
+  const prev = job.summary.retry as { at?: string; n?: number } | undefined;
+  const n = prev?.at === at ? Number(prev.n ?? 0) + 1 : 1;
+  const lastError = msg.slice(0, 2000);
+  const summary = { ...job.summary, retry: { at, n } };
+  if (n >= MAX_TRIES && job.status !== 'undoing') {
+    const why = `Stopped after ${n} tries: ${lastError}`.slice(0, 2000);
+    if (job.status === 'committing' && job.phase_cursor > 0) {
+      await db.from('import_jobs').update({ status: 'undoing', committed_at: new Date().toISOString(), last_error: why, locked_until: null, summary: { ...summary, failure: why } }).eq('id', job.id);
+      await audit(db, null, job, 'import.rolled_back', { why });
+    } else {
+      await db.from('import_jobs').update({ status: 'failed', last_error: why, locked_until: null, summary: { ...summary, failure: why } }).eq('id', job.id);
+    }
+    return;
+  }
+  const wait = Math.min(30 * 2 ** (n - 1), 1800);
+  await db.from('import_jobs').update({ last_error: lastError, summary, locked_until: new Date(Date.now() + wait * 1000).toISOString() }).eq('id', job.id);
 }
 
 async function update(db: Db, id: string, patch: Record<string, unknown>) {

@@ -37,7 +37,7 @@ export interface JobRow {
 const STATUS: Record<string, { label: string; tone: Tone }> = {
   uploading: { label: 'UPLOADING', tone: 'n' }, checking: { label: 'CHECKING', tone: 'b' }, rejected: { label: 'NEEDS FIXES', tone: 'r' },
   checked: { label: 'READY TO COMMIT', tone: 'a' }, committing: { label: 'WRITING', tone: 'b' }, committed: { label: 'IMPORTED', tone: 'g' },
-  failed: { label: 'FAILED, ROLLED BACK', tone: 'r' }, undoing: { label: 'UNDOING', tone: 'b' }, undone: { label: 'UNDONE', tone: 'n' },
+  failed: { label: 'FAILED', tone: 'r' }, undoing: { label: 'UNDOING', tone: 'b' }, undone: { label: 'UNDONE', tone: 'n' },
   cancelled: { label: 'CANCELLED', tone: 'n' },
 };
 const WAITING = new Set(['uploading', 'checking', 'committing', 'undoing']);
@@ -270,7 +270,7 @@ function JobPanel({ api, id, onChanged, onClose }: { api: ImportApi; id: string;
 
           {j.status === 'failed' && (
             <div className="note err" style={{ marginTop: 14 }}>
-              {String(j.summary.failure ?? j.last_error ?? 'The import stopped.')} Everything it had written has been rolled back.
+              {String(j.summary.failure ?? j.last_error ?? 'The import stopped.')} {j.committed_at ? 'Everything it had written has been rolled back.' : 'Nothing was saved.'} If it keeps happening, ask Sthara support.
             </div>
           )}
 

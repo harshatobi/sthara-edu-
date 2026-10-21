@@ -28,8 +28,8 @@ const EXPECTED: Record<RoleKey, string[]> = {
 
 /** Admin menu labels each role sees (layout.tsx filters by `need`; Fees reads "Fees" without admissions). */
 const MENU: Record<RoleKey, string[]> = {
-  school_admin: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Roles & Access', 'User Directory', 'Help & Support'],
-  principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'User Directory', 'Help & Support'],
+  school_admin: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Roles & Access', 'User Directory', 'Data Import', 'Help & Support'],
+  principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'User Directory', 'Data Import', 'Help & Support'],
   vice_principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions', 'Parent Messages', 'People', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
   finance_head: ['Dashboard', 'Probe', 'Fees', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'DPDP & Compliance', 'Help & Support'],
   accountant: ['Dashboard', 'Probe', 'Fees', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'Help & Support'],

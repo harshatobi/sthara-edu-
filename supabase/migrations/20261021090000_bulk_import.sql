@@ -392,7 +392,7 @@ BEGIN
 
   PERFORM set_config('sthara.import_job', p_job::text, true);
   -- Receipt numbers Sthara issues carry on after the highest imported one in its format. Moved first, so a row with
-  -- no receipt number is numbered after every imported one (the server sends numbered rows before blank ones).
+  -- no receipt number is numbered after every imported one (import_receipt_floor does the same for the whole file).
   INSERT INTO public.doc_counters (school_id, kind, session, last_no)
     SELECT p_school, 'receipt', m[1], max(m[2]::int)
     FROM (SELECT regexp_match(receipt_no, '^RCT/(\d{4}-\d{2})/(\d{1,9})$') AS m FROM pg_temp._r WHERE cur_id IS NULL AND receipt_no IS NOT NULL) s
@@ -404,6 +404,16 @@ BEGIN
     FROM pg_temp._r WHERE cur_id IS NULL ORDER BY n;
   RETURN v_out;
 END $$;
+
+-- Before the first payments chunk: the receipt counter moves past the highest receipt number anywhere in the file
+-- (p_floors = {"2025-26": 41, ...}), so a receipt Sthara numbers can never take a number a later chunk imports.
+CREATE OR REPLACE FUNCTION public.import_receipt_floor(p_school uuid, p_floors jsonb)
+  RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp
+  AS $$
+  INSERT INTO public.doc_counters (school_id, kind, session, last_no)
+    SELECT p_school, 'receipt', key, value::int FROM jsonb_each_text(p_floors) WHERE key ~ '^\d{4}-\d{2}$' AND value ~ '^\d{1,9}$'
+    ON CONFLICT (school_id, kind, session) DO UPDATE SET last_no = greatest(doc_counters.last_no, EXCLUDED.last_no);
+$$;
 
 CREATE OR REPLACE FUNCTION public.import_admission_applicants(p_job uuid, p_school uuid, p_actor uuid, p_rows jsonb, p_dry boolean)
   RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
@@ -528,7 +538,8 @@ BEGIN
     IF t = 'admission_applicants' THEN
       WITH c AS (SELECT id FROM public.fee_payments WHERE import_job_id = p_job AND voided_at IS NULL LIMIT p_limit),
       kept AS (UPDATE public.fee_payments p SET import_job_id = NULL FROM c WHERE p.id = c.id AND app.day_closed(p.school_id, p.paid_on) RETURNING p.id),
-      v AS (UPDATE public.fee_payments p SET voided_at = now(), void_reason = 'import undone', voided_by = j.undone_by
+      v AS (UPDATE public.fee_payments p SET voided_at = now(), void_reason = 'import undone',
+            voided_by = (SELECT u.id FROM public.users u WHERE u.id = j.undone_by)
             FROM c WHERE p.id = c.id AND p.id NOT IN (SELECT id FROM kept) RETURNING p.id)
       SELECT (SELECT count(*) FROM v), (SELECT count(*) FROM kept) INTO v_n, v_kept;
       v_removed := v_removed + v_n;
@@ -565,7 +576,8 @@ BEGIN
     'import_attendance(uuid, uuid, uuid, jsonb, boolean)', 'import_exam_marks(uuid, uuid, uuid, jsonb, boolean)',
     'import_legacy_results(uuid, uuid, uuid, jsonb, boolean)', 'import_fee_structures(uuid, uuid, uuid, jsonb, boolean)',
     'import_fee_invoices(uuid, uuid, uuid, jsonb, boolean)', 'import_fee_payments(uuid, uuid, uuid, jsonb, boolean)',
-    'import_admission_applicants(uuid, uuid, uuid, jsonb, boolean)', 'import_undo(uuid, int)', 'import_claim(int, int)'] LOOP
+    'import_admission_applicants(uuid, uuid, uuid, jsonb, boolean)', 'import_receipt_floor(uuid, jsonb)',
+    'import_undo(uuid, int)', 'import_claim(int, int)'] LOOP
     EXECUTE format('REVOKE ALL ON FUNCTION public.%s FROM PUBLIC, anon, authenticated', f);
     EXECUTE format('GRANT EXECUTE ON FUNCTION public.%s TO service_role', f);
   END LOOP;

@@ -21,6 +21,27 @@ forms) on the student's record, privately.
 - **Retention (2026-10-20):** student documents are kept permanently, and purged only on a DPDP erasure request or
   when the tenant leaves Sthara (after an export). Moses is moving to a larger plan, so storage cost is not a limit.
 
+**2026-10-21 (asked in session; not built yet):**
+- **Photo** is a register field (decided in 01), not a document.
+- **Admission checklist:** Sthara's default set (birth certificate, Aadhaar card, transfer certificate from Class 2 on,
+  previous report card, address proof, a parent ID); the school admin adds or drops kinds per grade. Caste, income,
+  disability and medical documents are optional uploads.
+- **Uploads:** the registrar, and parents from the portal. A parent upload is "awaiting check" until the registrar
+  verifies or rejects it.
+- **Verification:** the registrar marks each document "verified against the original" (who, when) or rejects it with a
+  note the parent sees. The checklist counts only verified documents.
+- **Viewing by kind:** register readers see identity and academic documents; medical and disability documents only the
+  health officer, principal and school admin; caste and income certificates follow 02 (all register readers). Parents
+  see what they or the school uploaded for their child. Every download is logged.
+- **Files:** any type, up to 25 MB, no compression, straight to a private bucket. Anything that isn't a PDF or an
+  image is always served as a download (never opened in the browser), so an uploaded page or script can't run.
+- **Import:** the office picks the manifest (CSV/XLSX) and a folder or many files in the browser; each file uploads
+  straight to storage and is matched to the manifest by file name, then the usual check and commit. A manifest row
+  without its file is a problem (nothing written); a file nobody listed is reported and not stored.
+- **Erasure (DPDP):** a parent asks from the portal; the registrar (or DPO) approves or declines with a reason.
+  Documents the school must keep by law (TC, admission register proofs) can be declined; approved ones are deleted
+  from storage and the deletion is logged.
+
 ## Still open (ask Moses before building)
 
 - Which document kinds, and which are required at admission (a checklist showing what's missing)?

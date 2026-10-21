@@ -30,6 +30,7 @@ const GROWING = new Set(`
   tutor_session_turns assignments engagement_scores leave_requests school_messages school_threads staff_punches
   materials incidents whatsapp_log practical_progress situations lesson_plans report_cards class_subjects
   ops_accounts ops_cases ops_case_messages ops_activities ops_contacts ops_opportunities enquiries ai_usage import_jobs legacy_results students enrolments student_changes
+  family_members emergency_contacts sibling_links student_change_requests student_health health_events
 `.split(/\s+/).filter(Boolean));
 
 /**

@@ -52,11 +52,13 @@ export const PERMS = {
   'students.aadhaar': 'See a student\u2019s full Aadhaar number (every look is recorded)',
   'outcomes.approve': 'Approve or return the class teachers\u2019 year-end outcomes',
   'session.manage': 'Set when the school\u2019s academic session starts and open the next session',
+  'health.read': 'See students\u2019 full health records (every look is recorded)',
+  'health.manage': 'Keep the health records: cards, check-ups, vaccinations, parents\u2019 requested changes and retention',
 } as const;
 export type Perm = keyof typeof PERMS;
 
 export type RoleKey = 'school_admin' | 'principal' | 'vice_principal' | 'finance_head' | 'accountant' | 'cashier'
-  | 'admissions_officer' | 'hr_manager' | 'academic_coordinator' | 'counsellor' | 'dpo' | 'registrar';
+  | 'admissions_officer' | 'hr_manager' | 'academic_coordinator' | 'counsellor' | 'dpo' | 'registrar' | 'health_officer';
 
 const ALL = Object.keys(PERMS) as Perm[];
 
@@ -89,6 +91,10 @@ export const ROLES: Record<RoleKey, { label: string; summary: string; perms: Per
   registrar: {
     label: 'Registrar', summary: 'The student register: admissions into it, corrections, classes, roll numbers and year-end outcomes',
     perms: ['dashboard.view', 'students.read', 'students.manage', 'students.aadhaar'],
+  },
+  health_officer: {
+    label: 'Health officer', summary: 'The school nurse or doctor: health records, check-ups, vaccinations and alerts',
+    perms: ['dashboard.view', 'health.read', 'health.manage'],
   },
 };
 export const ROLE_KEYS = Object.keys(ROLES) as RoleKey[];

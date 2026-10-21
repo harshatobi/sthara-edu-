@@ -20,6 +20,7 @@ import { CardHead, DeskGate, Field, Workspace } from '../kit';
 import { FieldInput } from './StudentsPage';
 import { STAGE_TONE } from './YearEnd';
 import FamilyTab, { type FamilyData } from './FamilyTab';
+import HealthPanel from './HealthPanel';
 import { AddressInputs } from '@/components/students/forms';
 import { useGet } from '@/components/canon/useGet';
 
@@ -56,7 +57,7 @@ function Rec({ id }: { id: string }) {
   const { data, error, reload } = useGet<Record_>(`/api/admin/students/${id}`);
   const { call } = useAdminDesk();
   const [toast, toastEl] = useToast();
-  const [tab, setTab] = useState<'register' | 'family' | 'enrolment' | 'history'>('register');
+  const [tab, setTab] = useState<'register' | 'family' | 'health' | 'enrolment' | 'history'>('register');
   const [panel, setPanel] = useState<null | 'correct' | 'move' | 'left' | 'rejoin' | 'cancel' | 'reveal'>(null);
   const [shown, setShown] = useState<string | null>(null);
   if (error) return <div className="note err" role="alert">{error}</div>;
@@ -105,9 +106,9 @@ function Rec({ id }: { id: string }) {
         </div>
         <div>
           <div className="tabs" role="tablist" aria-label="Record" style={{ marginBottom: 16 }}>
-            {(['register', 'family', 'enrolment', 'history'] as const).map(t => (
+            {(['register', 'family', 'health', 'enrolment', 'history'] as const).map(t => (
               <button key={t} role="tab" aria-selected={tab === t} className={`tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
-                {t === 'register' ? 'Register' : t === 'family' ? `Family${data.requests.length ? ` (${data.requests.length} to review)` : ''}` : t === 'enrolment' ? 'Enrolment' : `Changes (${data.changes.length})`}
+                {t === 'register' ? 'Register' : t === 'health' ? 'Health' : t === 'family' ? `Family${data.requests.length ? ` (${data.requests.length} to review)` : ''}` : t === 'enrolment' ? 'Enrolment' : `Changes (${data.changes.length})`}
               </button>
             ))}
           </div>
@@ -137,6 +138,7 @@ function Rec({ id }: { id: string }) {
             </div>
           )}
           {tab === 'family' && <FamilyTab studentId={id} data={data} canManage={data.can.manage && s.status !== 'cancelled'} onChanged={msg => { toast(msg); reload(); }} />}
+          {tab === 'health' && <HealthPanel studentId={id} />}
           {tab === 'enrolment' && (
             <div className="card">
               <CardHead title="Year by year" sub="Every class this student has been in, with dates. A move closes one row and opens the next." />

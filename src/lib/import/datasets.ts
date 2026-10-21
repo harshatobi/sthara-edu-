@@ -14,6 +14,7 @@ import { normClass } from '@/lib/teacher/scope';
 import { evenSchedule, validateSchedule } from '@/lib/admin/fees';
 import { parseAmount, parseDate, parseSession } from './parse';
 import { parseAadhaar } from '@/lib/students/aadhaar';
+import { IMPAIRMENT_LABEL, IMPAIRMENTS, SCREEN_RESULTS, checkEvent, checkUdise, parseAllergyList, parseNameList } from '@/lib/students/health';
 import { ADDRESS_PARTS, FIELD, checkAddress, checkFamily, checkField, parseGrade as parseRegisterGrade, parseOutcome } from '@/lib/students/register';
 
 export type Kind = 'text' | 'date' | 'session' | 'amount' | 'int' | 'enum' | 'email' | 'phone';
@@ -499,7 +500,87 @@ const family: Dataset = {
   },
 };
 
-export const DATASETS: Dataset[] = [students, enrolments, family, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
+const SCREEN: Record<string, string> = Object.fromEntries(SCREEN_RESULTS.flatMap(r => [[r, r], [r.replace('_', ' '), r]]).concat([['no', 'negative'], ['yes', 'confirmed']]));
+const impairmentOf = (v: string) => {
+  const t = v.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return (IMPAIRMENTS as readonly string[]).includes(t) ? t : IMPAIRMENTS.find(i => IMPAIRMENT_LABEL[i].toLowerCase() === v.trim().toLowerCase()) ?? null;
+};
+
+const health: Dataset = {
+  key: 'health', label: 'Health records', writer: 'import_health', needs: [],
+  about: 'One row per student. The UDISE+ part loads for everyone; allergies, conditions and medication only where the parent has given health consent in Sthara.',
+  lands: 'Each student\u2019s health card. Rows without consent keep their UDISE+ part; the rest is left out and counted, not refused.',
+  matching: 'Admission number.',
+  columns: [
+    ADM,
+    { key: 'blood_group', required: false, kind: 'text', max: 20, example: 'O+', guide: 'A+, A-, B+, B-, AB+, AB-, O+ or O- ("O positive" works too).' },
+    { key: 'height_cm', required: false, kind: 'amount', example: '142', guide: 'Height in cm.' },
+    { key: 'weight_kg', required: false, kind: 'amount', example: '36', guide: 'Weight in kg.' },
+    { key: 'measured_on', required: false, kind: 'date', example: '', guide: 'When height and weight were measured, DD-MM-YYYY.' },
+    { key: 'cwsn', required: false, kind: 'enum', values: YES_NO, example: '', guide: 'Yes for a child with special needs.' },
+    { key: 'impairments', required: false, kind: 'text', max: 300, example: '', guide: `Separated by ";": ${IMPAIRMENTS.map(i => IMPAIRMENT_LABEL[i]).join(', ')}.` },
+    { key: 'disability_certificate', required: false, kind: 'enum', values: YES_NO, example: '', guide: 'Yes when the child has a disability certificate.' },
+    { key: 'disability_percent', required: false, kind: 'int', min: 0, maxValue: 100, example: '', guide: 'Disability percentage on the certificate.' },
+    { key: 'sld_screening', required: false, kind: 'enum', values: SCREEN, example: '', guide: 'Not screened, Negative, Referred or Confirmed.' },
+    { key: 'asd_screening', required: false, kind: 'enum', values: SCREEN, example: '', guide: 'Not screened, Negative, Referred or Confirmed.' },
+    { key: 'adhd_screening', required: false, kind: 'enum', values: SCREEN, example: '', guide: 'Not screened, Negative, Referred or Confirmed.' },
+    { key: 'allergies', required: false, kind: 'text', max: 600, example: 'Peanut (severe); Dust', guide: 'Separated by ";", severity in brackets (mild, moderate, severe). Needs health consent.' },
+    { key: 'conditions', required: false, kind: 'text', max: 600, example: 'Asthma', guide: 'Separated by ";". Needs health consent.' },
+    { key: 'medication', required: false, kind: 'text', max: 600, example: '', guide: 'Separated by ";", as "Salbutamol 2 puffs". Needs health consent.' },
+  ],
+  identity: c => admKey(String(c.admission_no)),
+  build(c, n) {
+    const p: Problem[] = [];
+    const imp = c.impairments == null ? undefined : String(c.impairments).split(/;/).map(x => x.trim()).filter(Boolean);
+    const bad = imp?.find(x => !impairmentOf(x));
+    if (bad) p.push({ n, column: 'impairments', error: `Unknown impairment "${bad}".` });
+    const screening = Object.fromEntries((['sld', 'asd', 'adhd'] as const).flatMap(k => (c[`${k}_screening`] == null ? [] : [[k, String(c[`${k}_screening`])]])));
+    const u = checkUdise({
+      ...(c.blood_group != null ? { blood_group: c.blood_group } : {}), ...(c.height_cm != null ? { height_cm: c.height_cm } : {}),
+      ...(c.weight_kg != null ? { weight_kg: c.weight_kg } : {}), ...(c.measured_on != null ? { measured_on: c.measured_on } : {}),
+      ...(c.cwsn != null ? { cwsn: c.cwsn === 'true' } : {}), ...(imp && !bad ? { impairments: imp.map(impairmentOf) } : {}),
+      ...(c.disability_certificate != null ? { disability_certificate: c.disability_certificate === 'true' } : {}),
+      ...(c.disability_percent != null ? { disability_percent: c.disability_percent } : {}), ...(Object.keys(screening).length ? { screening } : {}),
+    });
+    if ('error' in u) p.push({ n, error: u.error });
+    if (p.length) return fail(...p);
+    const row: Record<string, unknown> = { admission_no: String(c.admission_no).trim(), ...(u as { value: object }).value };
+    if (c.allergies != null) row.allergies = parseAllergyList(String(c.allergies));
+    if (c.conditions != null) row.conditions = parseNameList(String(c.conditions)).map(name => ({ name, plan: null, serious: false }));
+    if (c.medication != null) row.medication = parseNameList(String(c.medication)).map(x => { const m = x.match(/^(.*?)\s+(\d.*)$/); return { name: (m ? m[1] : x).slice(0, 80), dose: m ? m[2].slice(0, 60) : null, timing: null, schoolGives: false }; });
+    return { ok: true, row };
+  },
+};
+
+const healthEvents: Dataset = {
+  key: 'health_events', label: 'Check-ups and vaccinations', writer: 'import_health_events', needs: [],
+  about: 'One row per check-up or vaccination. Loaded only for students whose parent has given health consent in Sthara.',
+  lands: 'The dated health timeline on each student\u2019s record. Rows without consent are left out and counted, not refused.',
+  matching: 'Admission number, kind, date and vaccine.',
+  columns: [
+    ADM,
+    { key: 'kind', required: true, kind: 'enum', values: { checkup: 'checkup', 'check-up': 'checkup', 'check up': 'checkup', vaccination: 'vaccination', vaccine: 'vaccination' }, example: 'Check-up', guide: 'Check-up or Vaccination.' },
+    { key: 'date', required: true, kind: 'date', example: '15-07-2025', guide: 'DD-MM-YYYY.' },
+    { key: 'vaccine', required: false, kind: 'text', max: 60, example: '', guide: 'For a vaccination: the vaccine.' },
+    { key: 'dose', required: false, kind: 'text', max: 20, example: '', guide: 'For a vaccination: the dose number.' },
+    { key: 'vision_left', required: false, kind: 'text', max: 20, example: '6/6', guide: 'Check-up: left eye.' },
+    { key: 'vision_right', required: false, kind: 'text', max: 20, example: '6/6', guide: 'Check-up: right eye.' },
+    { key: 'hearing', required: false, kind: 'text', max: 60, example: 'Normal', guide: 'Check-up: hearing.' },
+    { key: 'dental', required: false, kind: 'text', max: 60, example: '', guide: 'Check-up: dental findings.' },
+    { key: 'height_cm', required: false, kind: 'amount', example: '142', guide: 'Check-up: height in cm.' },
+    { key: 'weight_kg', required: false, kind: 'amount', example: '36', guide: 'Check-up: weight in kg.' },
+    { key: 'remarks', required: false, kind: 'text', max: 300, example: '', guide: 'The doctor\u2019s remarks.' },
+  ],
+  identity: c => `${admKey(String(c.admission_no))}|${c.kind}|${c.date}|${String(c.vaccine ?? '').toLowerCase()}`,
+  build(c, n) {
+    const data = Object.fromEntries(['vaccine', 'dose', 'vision_left', 'vision_right', 'hearing', 'dental', 'height_cm', 'weight_kg', 'remarks'].flatMap(k => (c[k] == null ? [] : [[k, c[k]]])));
+    const e = checkEvent({ kind: c.kind, on_date: c.date, data });
+    if ('error' in e) return fail({ n, error: e.error });
+    return { ok: true, row: { admission_no: String(c.admission_no).trim(), kind: e.value.kind, on_date: e.value.on_date, data: e.value.data, note: null } };
+  },
+};
+
+export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
 export const datasetOf = (key: unknown) => DATASETS.find(d => d.key === key) ?? null;
 
 // ── Cells ───────────────────────────────────────────────────────────────────

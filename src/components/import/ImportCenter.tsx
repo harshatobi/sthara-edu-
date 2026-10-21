@@ -267,6 +267,11 @@ function JobPanel({ api, id, onChanged, onClose }: { api: ImportApi; id: string;
                 : <div className="kpi"><div className="lb">NOTHING TO IMPORT</div><div className="vl">{n(Number(j.summary.skipped ?? 0))}</div></div>}
             </div>
           )}
+          {Number(j.summary.withheld ?? 0) > 0 && ['checked', 'committed'].includes(j.status) && (
+            <div className="note info" style={{ marginTop: 12 }}>
+              {n(Number(j.summary.withheld))} row{Number(j.summary.withheld) === 1 ? '' : 's'} had health details for students whose parents haven&apos;t given health consent. Those details are left out; everything else on those rows is imported.
+            </div>
+          )}
 
           {j.status === 'failed' && (
             <div className="note err" style={{ marginTop: 14 }}>

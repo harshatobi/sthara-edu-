@@ -1,3 +1,5 @@
+import { checkCare, checkUdise } from './health';
+
 /**
  * The student register: its fields (from the UDISE+ 2025-26 DCF section 4, APAAR and CBSE registration), how each
  * is checked, grade and outcome labels, and the school session. Pure, so the admin forms, the importer and the
@@ -276,7 +278,7 @@ export const rollRuleOf = (settings: unknown): RollRule => {
 
 // ── Requests from parents ───────────────────────────────────────────────────
 
-export type RequestKind = 'address' | 'family' | 'emergency';
+export type RequestKind = 'address' | 'family' | 'emergency' | 'health';
 
 /** What a parent may propose, checked as the office would check it. */
 export function checkProposal(kind: RequestKind, proposed: Record<string, unknown>): { value: Record<string, unknown> } | { error: string } {
@@ -287,6 +289,15 @@ export function checkProposal(kind: RequestKind, proposed: Record<string, unknow
     const perm = same ? { value: null } : checkAddress(proposed.permanent_address);
     if ('error' in perm) return perm;
     return { value: { address: cur.value, permanent_same: same, permanent_address: perm.value } };
+  }
+  if (kind === 'health') {
+    // Parents propose the allergies, conditions, medication and blood group they know; the health officer checks.
+    const pick = Object.fromEntries(['blood_group', 'allergies', 'conditions', 'medication'].filter(k => proposed[k] !== undefined).map(k => [k, proposed[k]]));
+    if (!Object.keys(pick).length) return { error: 'Say what should change.' };
+    const u = checkUdise(pick), c = checkCare(pick);
+    if ('error' in u) return u;
+    if ('error' in c) return c;
+    return { value: { ...u.value, ...c.value } };
   }
   if (kind === 'family') {
     const c = checkFamily(proposed);

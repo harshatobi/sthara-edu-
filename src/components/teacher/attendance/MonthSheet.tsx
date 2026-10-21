@@ -12,6 +12,7 @@ import { Sparkline, TrendChart, weeklyPts } from '@/components/canon/TrendLine';
 import { dayLabel } from './DayRegister';
 import type { History } from './useRegister';
 import type { DocStudent } from './RegisterDoc';
+import { HealthAlertMark } from '../HealthAlert';
 
 const shiftMonth = (m: string, n: number) => {
   const d = new Date(Date.UTC(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1 + n, 1));
@@ -22,7 +23,8 @@ const shiftMonth = (m: string, n: number) => {
  * The month as a paper register: students down, days across, totals and the session percentage at the end,
  * a daily headcount at the foot. Days still open for correction jump to the day register.
  */
-export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, days, roster, history, today, editableFrom, sessionStart, onOpenDay, onPdf }: {
+export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, days, roster, history, today, editableFrom, sessionStart, onOpenDay, onPdf, alerts }: {
+  alerts?: Map<string, string>;
   cls: string;
   month: string;
   setMonth: (m: string) => void;
@@ -111,7 +113,7 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
                 {rows.map(({ s, h, month: t, session }) => (
                   <tr key={s.id}>
                     <td className="stick roll">{s.rollNo || '–'}</td>
-                    <th scope="row" className="stick name">{s.name}</th>
+                    <th scope="row" className="stick name">{s.name}<HealthAlertMark alert={alerts?.get(s.id)} /></th>
                     {days.map(d => {
                       if (d.off) return <td key={d.date} className={`off ${d.off.why}`} aria-label={`${dayLabel(d.date)}: ${d.off.label}`}>{d.off.why === 'holiday' ? 'H' : ''}</td>;
                       const m = h[d.date];
@@ -170,7 +172,7 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
               return (
                 <li key={s.id}>
                   <span className="reg-roll-no">{s.rollNo || '–'}</span>
-                  <b>{s.name}</b>
+                  <b>{s.name}</b><HealthAlertMark alert={alerts?.get(s.id)} />
                   {belowMin(session) && <span className="ch r xs">{session.pct}% this session</span>}
                   {streak >= 3 && <span className="ch a xs">Absent {streak} days running</span>}
                   <Sparkline points={weeklyPts(weeks.per[s.id])} label={`${s.name}, weekly attendance`} />

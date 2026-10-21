@@ -1,7 +1,8 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { byIds, pageAll } from '@/lib/ops/page';
-import { checkFamily, checkProposal, cleanPhone, type FamilyInput } from './register';
+import { checkFamily, checkProposal, cleanPhone, type FamilyInput, type RequestKind } from './register';
+import { consented, saveCard } from './healthServer';
 
 /**
  * Family on the student record (brief 02): contacts, emergency contacts in calling order, sibling suggestions the
@@ -127,10 +128,10 @@ export async function confirmedSiblings(db: Db, schoolId: string, studentId: str
 // ── Requests from parents ───────────────────────────────────────────────────
 
 /** The office queue: pending requests across the school, oldest first, with the student. */
-export async function pendingRequests(db: Db, schoolId: string) {
+export async function pendingRequests(db: Db, schoolId: string, kinds: RequestKind[]) {
   const { data, error } = await pageAll<any>((f, t) => db.from('student_change_requests')
     .select('id, student_id, kind, target_id, proposed, note, created_at, requested_by, students!inner(full_name, admission_no)')
-    .eq('school_id', schoolId).eq('status', 'pending').order('created_at').order('id').range(f, t), 5_000);
+    .eq('school_id', schoolId).eq('status', 'pending').in('kind', kinds).order('created_at').order('id').range(f, t), 5_000);
   if (error) throw new Error(error.message);
   const who = new Map<string, string>();
   const ids = [...new Set(data.map(r => r.requested_by))];
@@ -143,9 +144,9 @@ export async function pendingRequests(db: Db, schoolId: string) {
 }
 
 /** Approves (applies) or rejects a parent request. Applying runs the same checks the office's own edits do. */
-export async function decideRequest(db: Db, a: Actor, id: string, approve: boolean, note: string): Promise<Result> {
+export async function decideRequest(db: Db, a: Actor, id: string, approve: boolean, note: string, kinds: RequestKind[]): Promise<Result> {
   const { data: r } = await db.from('student_change_requests').select('*').eq('id', id).eq('school_id', a.schoolId).maybeSingle();
-  if (!r) return fail('Request not found.', 404);
+  if (!r || !kinds.includes(r.kind)) return fail('Request not found.', 404);
   if (r.status !== 'pending') return fail('Already decided.', 409);
   if (!approve && note.trim().length < 3) return fail('Say why, so the parent knows what to fix.');
   if (approve) {
@@ -161,7 +162,8 @@ export async function decideRequest(db: Db, a: Actor, id: string, approve: boole
         const { data: cur } = await db.from('family_members').select('is_primary').eq('id', target).maybeSingle();
         out = await writeFamily(db, a, r.student_id, { ...(checked.value as unknown as FamilyInput), is_primary: !!cur?.is_primary }, target);
       } else out = await writeFamily(db, a, r.student_id, checked.value as unknown as FamilyInput);
-    } else out = await setEmergency(db, a, r.student_id, (checked.value as { list: EmergencyInput[] }).list);
+    } else if (r.kind === 'health') out = await saveCard(db, a, r.student_id, checked.value);
+    else out = await setEmergency(db, a, r.student_id, (checked.value as { list: EmergencyInput[] }).list);
     if (!out.ok) return out;
   }
   const { error } = await db.from('student_change_requests').update({ status: approve ? 'approved' : 'rejected', decided_by: a.id, decided_at: new Date().toISOString(), decision_note: note.trim().slice(0, 300) || null })
@@ -171,13 +173,16 @@ export async function decideRequest(db: Db, a: Actor, id: string, approve: boole
 
 /** A parent proposes a change for one of their verified children. */
 export async function propose(db: Db, parentId: string, studentUserId: string, kind: unknown, proposed: unknown, targetId: unknown, note: unknown): Promise<Result<{ id: string }>> {
-  if (kind !== 'address' && kind !== 'family' && kind !== 'emergency') return fail('Pick what you want to change.');
+  if (kind !== 'address' && kind !== 'family' && kind !== 'emergency' && kind !== 'health') return fail('Pick what you want to change.');
   const { data: g } = await db.from('guardians').select('id').eq('parent_id', parentId).eq('student_id', studentUserId).eq('verified', true).maybeSingle();
   if (!g) return fail('Only a verified parent can propose changes.', 403);
   const { data: st } = await db.from('students').select('id, school_id').eq('user_id', studentUserId).maybeSingle();
   if (!st) return fail('This student isn’t on the school register yet.', 404);
   const checked = checkProposal(kind, (proposed && typeof proposed === 'object' ? proposed : {}) as Record<string, unknown>);
   if ('error' in checked) return fail(checked.error);
+  if (kind === 'health' && ['allergies', 'conditions', 'medication'].some(k => k in checked.value) && !(await consented(db, st.school_id, [st.id])).has(st.id)) {
+    return fail('Give health consent first (WhatsApp & Privacy), then the school can keep allergies, conditions and medication.', 409);
+  }
   let target: string | null = null;
   if (kind === 'family' && typeof targetId === 'string') {
     const { data: f } = await db.from('family_members').select('id').eq('id', targetId).eq('student_id', st.id).maybeSingle();

@@ -299,19 +299,21 @@ async function check(db: Db, job: Job, deadline: number) {
   const parts = chunks(c.rows, CHUNK, r.d.group);
   let { phase_cursor: i, added, updated, unchanged, problem_count: pc } = job;
   let problems = i === 0 ? [] : job.problems;
+  // Rows whose consented details were left out (health without the parent's consent): counted, never refused.
+  let withheld = i === 0 ? 0 : Number(job.summary?.withheld ?? 0);
   if (i === 0) { added = updated = unchanged = pc = 0; }
   for (; i < parts.length && Date.now() < deadline; i++) {
     const { data, error } = await db.rpc(r.d.writer, { p_job: job.id, p_school: job.school_id, p_actor: null, p_rows: writerRows(r.d, parts[i]), p_dry: true });
     if (error) throw new Error(error.message);
-    const o = data as { added: number; updated: number; unchanged: number; problems: Problem[] };
-    added += o.added; updated += o.updated; unchanged += o.unchanged; pc += o.problems.length;
+    const o = data as { added: number; updated: number; unchanged: number; withheld?: number; problems: Problem[] };
+    added += o.added; updated += o.updated; unchanged += o.unchanged; pc += o.problems.length; withheld += o.withheld ?? 0;
     problems = mergeProblems(problems, o.problems);
-    await update(db, job.id, { phase_cursor: i + 1, added, updated, unchanged, problem_count: pc, problems });
+    await update(db, job.id, { phase_cursor: i + 1, added, updated, unchanged, problem_count: pc, problems, summary: { ...job.summary, withheld } });
   }
   if (i < parts.length) return update(db, job.id, { locked_until: null, file_sha256: r.sha, total_rows: c.total });
   await update(db, job.id, {
     status: pc ? 'rejected' : 'checked', phase_cursor: 0, file_sha256: r.sha, total_rows: c.total, checked_at: new Date().toISOString(),
-    summary: { skipped: c.skipped, chunks: parts.length }, locked_until: null,
+    summary: { skipped: c.skipped, chunks: parts.length, withheld }, locked_until: null,
   });
 }
 

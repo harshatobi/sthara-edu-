@@ -8,6 +8,7 @@ import { ListChecksIcon as ListChecks } from '@phosphor-icons/react/dist/ssr/Lis
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
+import { FirstAidKitIcon as FirstAidKit } from '@phosphor-icons/react/dist/ssr/FirstAidKit';
 import { GearSixIcon as GearSix } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { StudentIcon as Student } from '@phosphor-icons/react/dist/ssr/Student';
 import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
@@ -30,6 +31,7 @@ const NAV: CanonNavItem[] = [
   { href: '/parent/attendance', label: 'Attendance & Calendar', short: 'Calendar', icon: CalendarCheck },
   { href: '/parent/fees', label: 'Fees & Payments', short: 'Fees', icon: CurrencyInr },
   { href: '/parent/family', label: 'Family Details', short: 'Family', icon: UsersThree },
+  { href: '/parent/health', label: 'Health Card', short: 'Health', icon: FirstAidKit },
   { href: '/parent/settings', label: 'WhatsApp & Privacy', short: 'Settings', icon: GearSix, also: ['/parent/consent'] },
 ];
 

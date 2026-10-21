@@ -6,6 +6,7 @@ import {
   addressLine, admissionFormat, checkAddress, checkAdmissionNo, checkFamily, checkField, checkFields, checkProposal, cleanPhone, currentSession, FIELD, parseGrade, parseOutcome, rollRuleOf, sectionOf, sessionFor,
 } from './register';
 import { blocked, classProgress, nextClassName, stageOf, type ChainRow } from './outcomes';
+import { alertOf, checkCare, checkEvent, checkUdise, parseAllergyList } from './health';
 import { checkTable } from '@/lib/import/engine';
 import { datasetOf, type Lookups } from '@/lib/import/datasets';
 
@@ -215,4 +216,58 @@ test('register import: background and both addresses', () => {
   assert.equal(r.rows[0].row.social_category, 'obc');
   assert.equal(r.rows[0].row.bpl, true);
   assert.deepEqual(r.problems.map(p => p.column), ['address_line1']);
+});
+
+test('health: UDISE+ part cleaned and checked', () => {
+  for (const [raw, want] of [['O+', 'O+'], ['o +ve', 'O+'], ['AB negative', 'AB-'], ['b-', 'B-']] as const) {
+    assert.deepEqual(checkUdise({ blood_group: raw }), { value: { blood_group: want } }, raw);
+  }
+  assert.ok('error' in checkUdise({ blood_group: 'Z+' }));
+  assert.ok('error' in checkUdise({ height_cm: 20 }));
+  assert.deepEqual(checkUdise({ impairments: ['low_vision'] }), { value: { impairments: ['low_vision'], cwsn: true } }, 'an impairment means special needs');
+  assert.ok('error' in checkUdise({ impairments: ['flu'] }));
+  assert.ok('error' in checkUdise({ disability_percent: 140 }));
+  assert.deepEqual(checkUdise({ screening: { sld: 'referred', asd: '' } }), { value: { screening: { sld: 'referred' } } });
+});
+
+test('health: care lists, the alert teachers see, and file cells', () => {
+  const c = checkCare({ allergies: [{ what: ' Peanut ', severity: 'severe', action: 'EpiPen in bag' }, { what: 'Dust' }], conditions: [{ name: 'Asthma', plan: 'Inhaler', serious: true }, { name: 'Myopia' }] });
+  assert.ok('value' in c);
+  const v = (c as { value: { allergies: any[]; conditions: any[] } }).value;
+  assert.deepEqual(v.allergies[1], { kind: 'other', what: 'Dust', severity: 'moderate', action: null });
+  assert.equal(alertOf({ allergies: v.allergies, conditions: v.conditions }), 'Allergic to Peanut (severe): EpiPen in bag. Allergic to Dust. Asthma: Inhaler');
+  assert.equal(alertOf({ allergies: [], conditions: [{ name: 'Myopia', plan: null, serious: false }] }), null, 'only serious conditions alert');
+  assert.ok('error' in checkCare({ allergies: [{ what: '' }] }));
+  assert.deepEqual(parseAllergyList('Peanut (severe); Penicillin;  '), [
+    { kind: 'food', what: 'Peanut', severity: 'severe', action: null }, { kind: 'drug', what: 'Penicillin', severity: 'moderate', action: null }]);
+});
+
+test('health: check-ups compute BMI, vaccinations need the vaccine', () => {
+  const e = checkEvent({ kind: 'checkup', on_date: '2025-07-01', data: { height_cm: '150', weight_kg: '45', vision_left: '6/6' } });
+  assert.deepEqual(e, { value: { kind: 'checkup', on_date: '2025-07-01', data: { vision_left: '6/6', height_cm: 150, weight_kg: 45, bmi: 20 }, note: null } });
+  assert.ok('error' in checkEvent({ kind: 'vaccination', on_date: '2025-07-01', data: {} }));
+  assert.ok('error' in checkEvent({ kind: 'checkup', on_date: '2025-07-01', data: {} }), 'a check-up needs a result');
+  assert.ok('error' in checkEvent({ kind: 'xray', on_date: '2025-07-01' }));
+});
+
+test('health imports: UDISE+ part and consented lists from the file', () => {
+  const r = checkTable(datasetOf('health')!, [
+    ['admission_no', 'blood_group', 'impairments', 'sld_screening', 'allergies', 'medication'],
+    ['VN/001', 'B positive', 'Low vision; Hearing impairment', 'referred', 'Peanut (severe)', 'Salbutamol 2 puffs'],
+    ['VN/002', '', 'flu', '', '', ''],
+  ], look, false);
+  assert.deepEqual(r.rows[0].row, { admission_no: 'VN/001', blood_group: 'B+', impairments: ['low_vision', 'hearing'], cwsn: true, screening: { sld: 'referred' },
+    allergies: [{ kind: 'food', what: 'Peanut', severity: 'severe', action: null }], medication: [{ name: 'Salbutamol', dose: '2 puffs', timing: null, schoolGives: false }] });
+  assert.deepEqual(r.problems.map(p => p.column), ['impairments']);
+  const e = checkTable(datasetOf('health_events')!, [
+    ['admission_no', 'kind', 'date', 'vaccine', 'dose', 'remarks'],
+    ['VN/001', 'Vaccine', '10-01-2024', 'MMR', '2', ''],
+    ['VN/001', 'check-up', '01-07-2025', '', '', 'Healthy'],
+    ['VN/001', 'vaccination', '11-01-2024', '', '', ''],
+  ], look, false);
+  assert.deepEqual(e.rows.map(x => x.row), [
+    { admission_no: 'VN/001', kind: 'vaccination', on_date: '2024-01-10', data: { vaccine: 'MMR', dose: '2' }, note: null },
+    { admission_no: 'VN/001', kind: 'checkup', on_date: '2025-07-01', data: { remarks: 'Healthy' }, note: null },
+  ]);
+  assert.equal(e.problems.length, 1);
 });

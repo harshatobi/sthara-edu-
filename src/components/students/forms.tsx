@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { ADDRESS_PARTS, EDUCATION, EDUCATION_LABEL, RELATION_LABEL, RELATIONS, type Address, type Education, type Relation } from '@/lib/students/register';
 import { Field, Workspace } from '@/components/admin/kit';
+import { ALLERGY_KINDS, SEVERITIES, type Allergy, type Condition, type HealthCard, type Medication } from '@/lib/students/health';
 
 /** Forms shared by the office (student record) and parents (family details): address, a family member, emergency contacts. */
 
@@ -81,6 +82,51 @@ export function EmergencyForm({ family, current, onClose, onSave }: { family: { 
         </div>
       ))}
       {list.length < 3 && <button className="btn" onClick={() => setList(l => [...l, family[0] ? { familyMemberId: family[0].id } : { name: '', relation: '', phone: '' }])}><Plus size={14} /> Add a contact</button>}
+    </Workspace>
+  );
+}
+
+/** Allergies, conditions and medication editors (also used by parents to propose changes). */
+export function CareForm({ card, onClose, onSave, title }: { card: Partial<HealthCard>; onClose: () => void; onSave: (v: Record<string, unknown>) => void; title?: string }) {
+  const [al, setAl] = useState<Allergy[]>(card.allergies ?? []);
+  const [co, setCo] = useState<Condition[]>(card.conditions ?? []);
+  const [me, setMe] = useState<Medication[]>(card.medication ?? []);
+  return (
+    <Workspace title={title ?? 'Allergies, conditions and medication'} onClose={onClose} wide actions={<button className="btn pri" onClick={() => onSave({ allergies: al, conditions: co, medication: me })}>Save</button>}>
+      <h3 style={{ fontSize: 15, fontWeight: 800 }}>Allergies</h3>
+      {al.map((a, i) => (
+        <div key={i} className="g2" style={{ alignItems: 'end', marginBottom: 6 }}>
+          <Field label="ALLERGIC TO" htmlFor={`a-w-${i}`}><input id={`a-w-${i}`} className="cmp-in" value={a.what} onChange={e => setAl(l => l.map((x, j) => j === i ? { ...x, what: e.target.value } : x))} /></Field>
+          <Field label="KIND · SEVERITY" htmlFor={`a-k-${i}`}><div style={{ display: 'flex', gap: 6 }}>
+            <select id={`a-k-${i}`} className="cmp-sel" value={a.kind} onChange={e => setAl(l => l.map((x, j) => j === i ? { ...x, kind: e.target.value as Allergy['kind'] } : x))}>{ALLERGY_KINDS.map(k => <option key={k} value={k}>{k}</option>)}</select>
+            <select className="cmp-sel" aria-label="Severity" value={a.severity} onChange={e => setAl(l => l.map((x, j) => j === i ? { ...x, severity: e.target.value as Allergy['severity'] } : x))}>{SEVERITIES.map(k => <option key={k} value={k}>{k}</option>)}</select>
+            <button className="btn sm" onClick={() => setAl(l => l.filter((_, j) => j !== i))}>Remove</button></div></Field>
+          <Field label="WHAT TO DO" htmlFor={`a-a-${i}`}><input id={`a-a-${i}`} className="cmp-in" value={a.action ?? ''} placeholder="EpiPen in the front pocket of the bag" onChange={e => setAl(l => l.map((x, j) => j === i ? { ...x, action: e.target.value } : x))} /></Field>
+        </div>
+      ))}
+      <button className="btn sm" onClick={() => setAl(l => [...l, { kind: 'food', what: '', severity: 'moderate', action: null }])}><Plus size={14} /> Allergy</button>
+      <h3 style={{ fontSize: 15, fontWeight: 800, marginTop: 18 }}>Conditions</h3>
+      {co.map((c, i) => (
+        <div key={i} className="g2" style={{ alignItems: 'end', marginBottom: 6 }}>
+          <Field label="CONDITION" htmlFor={`c-n-${i}`}><input id={`c-n-${i}`} className="cmp-in" value={c.name} placeholder="Asthma" onChange={e => setCo(l => l.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} /></Field>
+          <Field label="EMERGENCY PLAN" htmlFor={`c-p-${i}`}><input id={`c-p-${i}`} className="cmp-in" value={c.plan ?? ''} onChange={e => setCo(l => l.map((x, j) => j === i ? { ...x, plan: e.target.value } : x))} /></Field>
+          <label style={{ display: 'flex', gap: 8, fontSize: 14 }}><input type="checkbox" checked={c.serious} onChange={e => setCo(l => l.map((x, j) => j === i ? { ...x, serious: e.target.checked } : x))} /> Show as an alert to teachers</label>
+          <button className="btn sm" onClick={() => setCo(l => l.filter((_, j) => j !== i))}>Remove</button>
+        </div>
+      ))}
+      <button className="btn sm" onClick={() => setCo(l => [...l, { name: '', plan: null, serious: false }])}><Plus size={14} /> Condition</button>
+      <h3 style={{ fontSize: 15, fontWeight: 800, marginTop: 18 }}>Medication</h3>
+      {me.map((m, i) => (
+        <div key={i} className="g2" style={{ alignItems: 'end', marginBottom: 6 }}>
+          <Field label="MEDICINE" htmlFor={`m-n-${i}`}><input id={`m-n-${i}`} className="cmp-in" value={m.name} onChange={e => setMe(l => l.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} /></Field>
+          <Field label="DOSE · WHEN" htmlFor={`m-d-${i}`}><div style={{ display: 'flex', gap: 6 }}>
+            <input id={`m-d-${i}`} className="cmp-in" value={m.dose ?? ''} placeholder="2 puffs" onChange={e => setMe(l => l.map((x, j) => j === i ? { ...x, dose: e.target.value } : x))} />
+            <input className="cmp-in" aria-label="When" value={m.timing ?? ''} placeholder="Before games" onChange={e => setMe(l => l.map((x, j) => j === i ? { ...x, timing: e.target.value } : x))} /></div></Field>
+          <label style={{ display: 'flex', gap: 8, fontSize: 14 }}><input type="checkbox" checked={m.schoolGives} onChange={e => setMe(l => l.map((x, j) => j === i ? { ...x, schoolGives: e.target.checked } : x))} /> The school gives it</label>
+          <button className="btn sm" onClick={() => setMe(l => l.filter((_, j) => j !== i))}>Remove</button>
+        </div>
+      ))}
+      <button className="btn sm" onClick={() => setMe(l => [...l, { name: '', dose: null, timing: null, schoolGives: false }])}><Plus size={14} /> Medicine</button>
     </Workspace>
   );
 }

@@ -61,6 +61,27 @@ then adds history instead of overwriting it. Everything in 02–08 hangs off thi
 - **The register import creates records only,** never logins. Logins are still issued only through the ops flow,
   and linked by admission number.
 
+**2026-10-21, round 2 (field list, from the official MoE UDISE+ DCF 2025-26, Section 4, plus the APAAR and CBSE requirements):**
+- **Register (01):** full name; name as on Aadhaar (APAAR needs them to match); gender (UDISE: Male, Female,
+  Transgender); date of birth; photo; admission number; PEN (UDISE+ Student National Code); APAAR ID; Aadhaar
+  (encrypted plus last 4, with a "no Aadhaar" flag; UDISE+ takes 9999 9999 9999 for none); CBSE registration number
+  (Class 9/11); board roll number (Class 10/12); admission date; class admitted to; previous school; status in the
+  previous year (same school, other school, Anganwadi/ECCE, not studying); previous class; previous school's TC
+  number; admitted under RTE 12(1)(c) (and amount claimed); medium of instruction; Indian national.
+- **Enrolment (01, per year):** session, grade, section, roll number, stream (11-12), language group (1st/2nd/3rd),
+  vocational sector and job role (9-12, NSQF), free-facility flags (government and aided schools), year-end result in
+  UDISE codes (promoted, detained, promoted without exam, dropout, repeater by choice) plus left/TC. Overall % and
+  days attended are derived from marks and attendance, never typed in.
+- **Elsewhere:** family, contact, category, minority, BPL/AAY, EWS, mother tongue, parents' education and distance
+  go in 02. Blood group, height/weight, CWSN and impairment type, disability certificate/% and SLD/ASD/ADHD
+  screening go in 03. Gifted, competitions/Olympiads, NCC/NSS/Scouts and digital skills go in 06.
+- **Filings to cover:** CBSE (registration, LOC), UDISE+ and APAAR nationally, and state scholarship and RTE returns
+  for **Telangana, Andhra Pradesh, Karnataka, Tamil Nadu and every North Indian state.** Each state's format must
+  be researched from its official source before it's built.
+- **Hand-off:** where a portal takes a bulk upload (UDISE+ Excel, CBSE LOC), Sthara produces that exact file.
+  Otherwise it produces a pre-filled review sheet the office signs off. Problems (missing PEN, Aadhaar name
+  mismatch) are flagged before sign-off.
+
 ## Still open (ask Moses before building)
 
 **Shape**

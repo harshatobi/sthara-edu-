@@ -47,39 +47,48 @@ export const PERMS = {
   'exams.manage': 'Run the exam cell: set up assessment schemes, open marks entry and follow progress',
   'exams.publish': 'Lock and publish report cards, and reopen them with a reason',
   'data.import': 'Bulk-import the school\u2019s data from Sthara\u2019s published file formats, and undo an import',
+  'students.read': 'See the student register and each student\u2019s enrolment history (Aadhaar masked)',
+  'students.manage': 'Keep the register: admit, correct and cancel entries, set classes and roll numbers, finalise year-end outcomes',
+  'students.aadhaar': 'See a student\u2019s full Aadhaar number (every look is recorded)',
+  'outcomes.approve': 'Approve or return the class teachers\u2019 year-end outcomes',
+  'session.manage': 'Set when the school\u2019s academic session starts and open the next session',
 } as const;
 export type Perm = keyof typeof PERMS;
 
 export type RoleKey = 'school_admin' | 'principal' | 'vice_principal' | 'finance_head' | 'accountant' | 'cashier'
-  | 'admissions_officer' | 'hr_manager' | 'academic_coordinator' | 'counsellor' | 'dpo';
+  | 'admissions_officer' | 'hr_manager' | 'academic_coordinator' | 'counsellor' | 'dpo' | 'registrar';
 
 const ALL = Object.keys(PERMS) as Perm[];
 
 export const ROLES: Record<RoleKey, { label: string; summary: string; perms: Perm[] }> = {
   school_admin: { label: 'School admin', summary: 'Everything, including who can do what', perms: ALL },
-  principal: { label: 'Principal', summary: 'Everything except managing access', perms: ALL.filter(p => p !== 'access.manage') },
+  principal: { label: 'Principal', summary: 'Everything except managing access and the session calendar', perms: ALL.filter(p => p !== 'access.manage' && p !== 'session.manage') },
   vice_principal: {
     label: 'Vice principal', summary: 'Academics, staff and leave, admissions view, wellness and compliance',
     perms: ['dashboard.view', 'boardpack.view', 'probe.view', 'academics.read', 'workforce.read', 'leave.approve', 'admissions.read', 'wellness.read', 'compliance.read', 'messages.office',
-      'feed.read', 'incidents.manage', 'attendance.read', 'os.ask', 'schedule.academic', 'exams.read'],
+      'feed.read', 'incidents.manage', 'attendance.read', 'os.ask', 'schedule.academic', 'exams.read', 'students.read'],
   },
   finance_head: {
     label: 'Finance head', summary: 'All of fees, including voids, concession approval and day close; approves payroll',
     perms: ['dashboard.view', 'boardpack.view', 'probe.view', 'fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request',
-      'fees.concession.approve', 'fees.void', 'fees.dayclose', 'fees.remind', 'audit.read', 'payroll.read', 'payroll.approve'],
+      'fees.concession.approve', 'fees.void', 'fees.dayclose', 'fees.remind', 'audit.read', 'payroll.read', 'payroll.approve', 'students.read'],
   },
   accountant: {
     label: 'Accountant', summary: 'Billing, collection, reminders and day close; prepares payroll; concessions need approval',
-    perms: ['dashboard.view', 'probe.view', 'fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request', 'fees.dayclose', 'fees.remind', 'payroll.read', 'payroll.prepare'],
+    perms: ['dashboard.view', 'probe.view', 'fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request', 'fees.dayclose', 'fees.remind', 'payroll.read', 'payroll.prepare', 'students.read'],
   },
   cashier: { label: 'Cashier', summary: 'Records payments and issues receipts', perms: ['dashboard.view', 'fees.read', 'fees.collect'] },
-  admissions_officer: { label: 'Admissions officer', summary: 'The admissions pipeline', perms: ['dashboard.view', 'probe.view', 'admissions.read', 'admissions.manage'] },
+  admissions_officer: { label: 'Admissions officer', summary: 'The admissions pipeline', perms: ['dashboard.view', 'probe.view', 'admissions.read', 'admissions.manage', 'students.read'] },
   hr_manager: { label: 'HR manager', summary: 'Employee records, leave, the staff register and shifts; prepares payroll', perms: ['dashboard.view', 'probe.view', 'workforce.read', 'leave.approve', 'leave.policy', 'schedule.workforce', 'hr.manage', 'hr.sensitive', 'payroll.read', 'payroll.prepare'] },
-  academic_coordinator: { label: 'Academic coordinator', summary: 'Academic health, teaching staff, the timetable and the exam cell', perms: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic', 'exams.read', 'exams.manage'] },
+  academic_coordinator: { label: 'Academic coordinator', summary: 'Academic health, teaching staff, the timetable and the exam cell', perms: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic', 'exams.read', 'exams.manage', 'students.read'] },
   counsellor: { label: 'Counsellor', summary: 'Anonymised wellness, safety alerts and parents\' messages to the office', perms: ['dashboard.view', 'wellness.read', 'messages.office', 'safeguarding.read'] },
   dpo: {
     label: 'Data protection officer', summary: 'Consent, DPDP flags and the audit trail',
     perms: ['dashboard.view', 'probe.view', 'compliance.read', 'compliance.act', 'audit.read', 'wellness.read'],
+  },
+  registrar: {
+    label: 'Registrar', summary: 'The student register: admissions into it, corrections, classes, roll numbers and year-end outcomes',
+    perms: ['dashboard.view', 'students.read', 'students.manage', 'students.aadhaar'],
   },
 };
 export const ROLE_KEYS = Object.keys(ROLES) as RoleKey[];

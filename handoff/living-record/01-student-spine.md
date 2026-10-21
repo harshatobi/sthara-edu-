@@ -82,6 +82,24 @@ then adds history instead of overwriting it. Everything in 02–08 hangs off thi
   Otherwise it produces a pre-filled review sheet the office signs off. Problems (missing PEN, Aadhaar name
   mismatch) are flagged before sign-off.
 
+**2026-10-21, round 3 (asked in session, before building):**
+- **01 and 09 ship in the same PR** (PR 36), so 01's importers sit on 09's mechanism without a stacked branch.
+- **A new office role, Registrar,** manages the register (admit, correct, cancel, classes and roll numbers, finalise
+  outcomes) and can unmask Aadhaar, as can the school admin and the principal. Every unmask is audited.
+- **Readers (Aadhaar masked):** vice principal, academic coordinator, admissions officer, finance head and accountant.
+- **Screen:** a new **Admin › Students** section: the register list, and one record page per student with tabs
+  (Register, Enrolment; 02-08 add Family, Health, Documents and the rest).
+- **The Aadhaar key** (`STUDENT_PII_KEY`) is created by Claude: kept in `.env.local`, Vercel Production and
+  Preview (Sensitive), and noted in the disaster-recovery runbook. Moses keeps an off-site copy, because losing it
+  loses the stored numbers.
+- **Year-end outcomes: the full chain is in 01.** The class teacher proposes each student's outcome, the principal
+  approves, and the registrar finalises and promotes. Once next session's classes are set, the parent and student
+  portals show the final update.
+- **Sessions:** the **school admin** sets the session start month and opens the next session. Opening it needs
+  every outcome finalised, or an override with a reason, and it is audited.
+- **Photo:** the office (registrar) uploads it to a private bucket. Staff who can see the student, the student and
+  their parents see it through short-lived links. More documents come in 04.
+
 ## Still open (ask Moses before building)
 
 **Shape**

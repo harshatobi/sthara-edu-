@@ -19,6 +19,31 @@ contacts. One place, kept current, with a history of changes.
 
 - Demographics and family are in the first version.
 
+**2026-10-21 (asked in session; fields from the 01 round 2 UDISE+ split):**
+- **Fields:** mother tongue, social category (General, SC, ST, OBC), religion and minority status, BPL and AAY card,
+  EWS / disadvantaged group, family income, both parents' education and occupation, distance from school, blood
+  group stays in 03. Name, gender, date of birth and nationality are already on the register (01).
+- **Sensitive fields** (category, religion and minority, BPL/AAY/EWS, income) are seen by **every register reader**
+  (registrar, principal, school admin, vice principal, academic coordinator, admissions officer, finance head,
+  accountant); edited by register managers. Every change keeps history.
+- **Family are contacts on the record,** not only logins: mother, father, guardian and others with name, relation,
+  phone, email, education, occupation and income. A contact links to a parent login when Sthara issues one, matched by
+  phone or email. Logins are still issued only by Sthara (the import never creates one).
+- **Siblings are suggested** from a shared parent phone or login (and from a shared family code in the import); the
+  registrar confirms. Confirmed siblings show on each record, and the fee concession screen can see them; nothing
+  applies a concession by itself.
+- **Emergency contacts:** up to 3, in calling order. Each is a family member on the record or someone else (name,
+  relation, phone).
+- **Parents propose changes** to family and contact details on the portal; the registrar approves or rejects with a
+  note. Nothing changes until approved; history is kept.
+- **Admission copy-over:** admitting an applicant pre-fills the register and family from the admission form (name,
+  date of birth, previous school, guardian name, phone and email); the registrar reviews before saving, and the
+  applicant keeps a link to the record.
+- **Address:** structured: house and street, locality, village or town, district, state, PIN, for the current and the
+  permanent address ("same as current").
+- **Import:** one format, Family and emergency contacts, with an optional `family_code` column; rows sharing a code
+  are one family (siblings suggested for confirmation). Without it, siblings are suggested from shared parent phones.
+
 ## Still open (ask Moses before building)
 
 - Exact field list. Ask Moses rather than guessing (DOB, gender, category/caste, religion, nationality, mother

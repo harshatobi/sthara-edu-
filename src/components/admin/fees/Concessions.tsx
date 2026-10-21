@@ -8,6 +8,7 @@ import { dues, findFamilies } from '@/lib/admin/counter';
 import type { Family } from '@/lib/admin/fees';
 import { ago, fmtDate, inr, plural } from '@/lib/admin/format';
 import { CardHead, Field } from '../kit';
+import SiblingNote from './SiblingNote';
 
 type Call = (path: string, method: 'POST', body: unknown) => Promise<any>;
 const CHIP: Record<string, { t: string; tone: Tone }> = {
@@ -149,6 +150,7 @@ function RequestForm({ desk, call, onDone, start, pendingOn }: { desk: AdminDesk
             <div style={{ flex: 1, minWidth: 200 }}><b style={{ fontSize: 16 }}>{family.name}</b><div className="muted" style={{ fontSize: 13 }}>{family.cls} · {inr(family.outstanding)} due</div></div>
             <button className="btn sm" onClick={() => { setStudentId(null); setErr(null); }}>Another student</button>
           </div>
+          <SiblingNote userId={family.studentId} />
           {open.length && inv ? (
             <>
               <div className="g2" style={{ gap: 14 }}>

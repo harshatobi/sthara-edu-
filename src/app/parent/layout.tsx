@@ -7,6 +7,7 @@ import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/C
 import { ListChecksIcon as ListChecks } from '@phosphor-icons/react/dist/ssr/ListChecks';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
+import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { GearSixIcon as GearSix } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { StudentIcon as Student } from '@phosphor-icons/react/dist/ssr/Student';
 import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
@@ -28,6 +29,7 @@ const NAV: CanonNavItem[] = [
   { href: '/parent/schoolwork', label: 'Schoolwork', icon: ListChecks },
   { href: '/parent/attendance', label: 'Attendance & Calendar', short: 'Calendar', icon: CalendarCheck },
   { href: '/parent/fees', label: 'Fees & Payments', short: 'Fees', icon: CurrencyInr },
+  { href: '/parent/family', label: 'Family Details', short: 'Family', icon: UsersThree },
   { href: '/parent/settings', label: 'WhatsApp & Privacy', short: 'Settings', icon: GearSix, also: ['/parent/consent'] },
 ];
 

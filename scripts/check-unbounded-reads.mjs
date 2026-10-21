@@ -29,7 +29,7 @@ const GROWING = new Set(`
   app_errors admission_events admission_applicants pay_run_lines exam_marks exam_sheets tutor_sessions
   tutor_session_turns assignments engagement_scores leave_requests school_messages school_threads staff_punches
   materials incidents whatsapp_log practical_progress situations lesson_plans report_cards class_subjects
-  ops_accounts ops_cases ops_case_messages ops_activities ops_contacts ops_opportunities enquiries ai_usage import_jobs legacy_results
+  ops_accounts ops_cases ops_case_messages ops_activities ops_contacts ops_opportunities enquiries ai_usage import_jobs legacy_results students enrolments student_changes
 `.split(/\s+/).filter(Boolean));
 
 /**

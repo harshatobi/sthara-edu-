@@ -19,6 +19,7 @@ import { WalletIcon as Wallet } from '@phosphor-icons/react/dist/ssr/Wallet';
 import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuoy';
 import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
 import { UploadSimpleIcon as UploadSimple } from '@phosphor-icons/react/dist/ssr/UploadSimple';
+import { StudentIcon as Student } from '@phosphor-icons/react/dist/ssr/Student';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import AdminDemoPortal from '@/components/admin/AdminDemoPortal';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -38,6 +39,7 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/fees', label: 'Admissions & Fees', short: 'Fees', icon: CurrencyInr, also: ['/admin/admissions'], need: ['fees.read'] },
   { href: '/admin/admissions', label: 'Admissions', icon: CurrencyInr, need: ['admissions.read'] },
   { href: '/admin/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple, need: ['messages.office'] },
+  { href: '/admin/students', label: 'Students', icon: Student, need: ['students.read', 'outcomes.approve', 'session.manage'] },
   { href: '/admin/people', label: 'People', icon: IdentificationCard, need: ['dashboard.view'] },
   { href: '/admin/payroll', label: 'Payroll', icon: Wallet, need: ['payroll.read', 'payroll.prepare', 'payroll.approve'] },
   { href: '/admin/staff', label: 'Staff & Leave', short: 'Staff', icon: CalendarBlank, need: ['workforce.read'] },

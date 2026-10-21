@@ -16,6 +16,7 @@ import { CalendarDotsIcon as CalendarDots } from '@phosphor-icons/react/dist/ssr
 import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
+import { GraduationCapIcon as GraduationCap } from '@phosphor-icons/react/dist/ssr/GraduationCap';
 import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import { IdentificationCardIcon as IdentificationCard } from '@phosphor-icons/react/dist/ssr/IdentificationCard';
@@ -33,6 +34,7 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle },
   { href: '/teacher/attendance', label: 'Attendance', short: 'Register', icon: CalendarCheck },
   { href: '/teacher/exams', label: 'Exams & Marks', short: 'Exams', icon: Exam },
+  { href: '/teacher/outcomes', label: 'Year-End Outcomes', short: 'Year end', icon: GraduationCap },
   { href: '/teacher/homework', label: 'Homework', icon: FileText },
   { href: '/teacher/quiz', label: 'Quiz Creator', short: 'Quiz', icon: ClipboardText },
   { href: '/teacher/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple },

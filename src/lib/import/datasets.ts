@@ -3,8 +3,9 @@
  * reads), how a row is checked, and how people-facing keys (admission number, class, assessment, subject) turn
  * into ids. Pure: the template download, the dry run and the tests all use these same definitions.
  *
- * A student is named by admission number in every file. Until the admission register lands (brief 01) that is the
- * school's own student ID, users.custom_student_id.
+ * A student is named by admission number in every file: the number on the school's admission register (brief 01).
+ * Files about a student's days and marks need the student to have a Sthara login; the register itself and enrolment
+ * history do not.
  *
  * Blank optional cells leave what is stored alone (sent as null). A class, assessment or subject the school has not
  * set up is refused, never created.
@@ -12,6 +13,8 @@
 import { normClass } from '@/lib/teacher/scope';
 import { evenSchedule, validateSchedule } from '@/lib/admin/fees';
 import { parseAmount, parseDate, parseSession } from './parse';
+import { parseAadhaar } from '@/lib/students/aadhaar';
+import { ADDRESS_PARTS, FIELD, checkAddress, checkFamily, checkField, parseGrade as parseRegisterGrade, parseOutcome } from '@/lib/students/register';
 
 export type Kind = 'text' | 'date' | 'session' | 'amount' | 'int' | 'enum' | 'email' | 'phone';
 
@@ -32,8 +35,8 @@ export interface Column {
 }
 
 export interface Lookups {
-  /** Admission number (as admKey) to the student. */
-  students: Map<string, { id: string; name: string }>;
+  /** Admission number (as admKey) to the student: the login (users.id) when Sthara has issued one. */
+  students: Map<string, { id: string | null; name: string }>;
   /** Admission numbers two or more students share: refused until the school fixes them. */
   ambiguous?: Set<string>;
   /** normClass(name) to the class name as the school writes it. */
@@ -86,7 +89,8 @@ function student(c: Cells, n: number, look: Lookups): { id: string } | Problem {
   const adm = s(c, 'admission_no')!;
   if (look.ambiguous?.has(admKey(adm))) return { n, column: 'admission_no', error: `More than one student has admission number "${adm}". Fix that in the roster first.` };
   const st = look.students.get(admKey(adm));
-  return st ? { id: st.id } : { n, column: 'admission_no', error: `No student with admission number "${adm}" in this school.` };
+  if (!st) return { n, column: 'admission_no', error: `No student with admission number "${adm}" on this school\u2019s register.` };
+  return st.id ? { id: st.id } : { n, column: 'admission_no', error: `${st.name || adm} has no Sthara login yet. Records like this can be imported once Sthara issues the login.` };
 }
 function klass(c: Cells, n: number, look: Lookups, col = 'class'): string | Problem | null {
   const v = s(c, col);
@@ -327,7 +331,175 @@ const applicants: Dataset = {
   },
 };
 
-export const DATASETS: Dataset[] = [attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
+// ── The register and enrolment history (brief 01) ───────────────────────────
+
+const YES_NO: Record<string, string> = { yes: 'true', y: 'true', true: 'true', '1': 'true', no: 'false', n: 'false', false: 'false', '0': 'false' };
+const GENDER: Record<string, string> = { male: 'male', m: 'male', boy: 'male', female: 'female', f: 'female', girl: 'female', transgender: 'transgender', t: 'transgender', tg: 'transgender' };
+const PREV: Record<string, string> = {
+  same_school: 'same_school', 'same school': 'same_school', 'this school': 'same_school', other_school: 'other_school', 'other school': 'other_school',
+  'another school': 'other_school', anganwadi: 'anganwadi_ecce', ecce: 'anganwadi_ecce', anganwadi_ecce: 'anganwadi_ecce', 'anganwadi/ecce': 'anganwadi_ecce',
+  not_studying: 'not_studying', 'not studying': 'not_studying', none: 'not_studying',
+};
+const CATEGORY: Record<string, string> = { general: 'general', gen: 'general', sc: 'sc', st: 'st', obc: 'obc', 'obc-ncl': 'obc' };
+const RELIGION: Record<string, string> = Object.fromEntries(['hindu', 'muslim', 'christian', 'sikh', 'buddhist', 'parsi', 'jain', 'other'].map(r => [r, r]));
+const RELATION: Record<string, string> = {
+  mother: 'mother', mom: 'mother', mum: 'mother', father: 'father', dad: 'father', guardian: 'guardian', grandmother: 'grandparent',
+  grandfather: 'grandparent', grandparent: 'grandparent', sibling: 'sibling', brother: 'sibling', sister: 'sibling', other: 'other', uncle: 'other', aunt: 'other',
+};
+const EDUCATION: Record<string, string> = {
+  none: 'none', illiterate: 'none', 'no schooling': 'none', primary: 'primary', 'upper primary': 'upper_primary', upper_primary: 'upper_primary', middle: 'upper_primary',
+  secondary: 'secondary', '10th': 'secondary', ssc: 'secondary', 'higher secondary': 'higher_secondary', higher_secondary: 'higher_secondary', '12th': 'higher_secondary',
+  intermediate: 'higher_secondary', graduate: 'graduate', degree: 'graduate', 'post graduate': 'post_graduate', 'post-graduate': 'post_graduate', post_graduate: 'post_graduate',
+  pg: 'post_graduate', other: 'other',
+};
+const STREAMS: Record<string, string> = { science: 'science', commerce: 'commerce', humanities: 'humanities', arts: 'humanities', vocational: 'vocational', other: 'other' };
+const reg = (key: string, guide: string, example = '', extra: Partial<Column> = {}): Column =>
+  ({ key, required: false, kind: 'text', max: FIELD.get(key)?.max ?? 40, example, guide, ...extra });
+
+const students: Dataset = {
+  key: 'students', label: 'Admission register', writer: 'import_students', needs: [],
+  about: 'One row per student, current or past. Creates register entries only; logins are issued by Sthara and linked by admission number.',
+  lands: 'The admission register. An admission number already on it is corrected field by field, and every change keeps its old value in the history.',
+  matching: 'Admission number.',
+  columns: [
+    { ...ADM, guide: 'The school\u2019s admission number, exactly as written in the register. Numbers carry over unchanged; Sthara continues after the highest.' },
+    reg('full_name', 'The student\u2019s full name. Required for a new entry.', 'Aarav Sharma', { max: 120, aliases: ['name', 'student_name'] }),
+    reg('aadhaar_name', 'The name exactly as on the Aadhaar card (APAAR needs it to match).', 'AARAV SHARMA', { max: 120 }),
+    reg('gender', 'Male, Female or Transgender.', 'Male', { kind: 'enum', values: GENDER }),
+    reg('date_of_birth', 'DD-MM-YYYY.', '14-08-2012', { kind: 'date', aliases: ['dob'] }),
+    reg('aadhaar', '12 digits. Encrypted as soon as it arrives; only the last 4 are ever shown without permission.', '', { max: 20, aliases: ['aadhaar_no', 'aadhaar_number'] }),
+    reg('no_aadhaar', 'Yes when the student has no Aadhaar (leave aadhaar blank).', '', { kind: 'enum', values: YES_NO }),
+    reg('pen', 'PEN, the 11-digit UDISE+ student code.', '', { max: 15 }),
+    reg('apaar_id', '12-digit APAAR ID.', '', { max: 15, aliases: ['apaar'] }),
+    reg('cbse_reg_no', 'CBSE registration number (Class 9 or 11).', '', { max: 20 }),
+    reg('board_roll_no', 'Board exam roll number (Class 10 or 12).', '', { max: 20 }),
+    reg('admitted_on', 'Date of admission, DD-MM-YYYY.', '01-06-2018', { kind: 'date', aliases: ['admission_date', 'date_of_admission'] }),
+    reg('admitted_class', 'The class admitted to: Nursery, LKG, UKG or 1 to 12.', '1', { max: 12 }),
+    reg('previous_status', 'In this school, In another school, Anganwadi/ECCE or Not studying.', '', { kind: 'enum', values: PREV }),
+    reg('previous_school', 'The school before this one.', '', { max: 200 }),
+    reg('previous_class', 'The class in that school.', '', { max: 40 }),
+    reg('previous_tc_no', 'Number of the transfer certificate from that school.', '', { max: 40, aliases: ['tc_no'] }),
+    reg('rte_seat', 'Yes when admitted under RTE 12(1)(c).', '', { kind: 'enum', values: YES_NO, aliases: ['rte'] }),
+    reg('rte_amount', 'RTE reimbursement claimed, in rupees.', '', { kind: 'amount' }),
+    reg('medium', 'Medium of instruction.', 'English', { max: 40 }),
+    reg('indian_national', 'Yes or No. Blank means Yes for a new entry.', '', { kind: 'enum', values: YES_NO }),
+    reg('mother_tongue', 'Mother tongue.', 'Telugu', { max: 40 }),
+    reg('social_category', 'General, SC, ST or OBC.', '', { kind: 'enum', values: CATEGORY, aliases: ['category'] }),
+    reg('religion', 'Hindu, Muslim, Christian, Sikh, Buddhist, Parsi, Jain or Other.', '', { kind: 'enum', values: RELIGION }),
+    reg('minority', 'Yes when from a minority community.', '', { kind: 'enum', values: YES_NO }),
+    reg('bpl', 'Yes when the family has a BPL card.', '', { kind: 'enum', values: YES_NO }),
+    reg('aay', 'Yes when the family has an Antyodaya (AAY) card.', '', { kind: 'enum', values: YES_NO }),
+    reg('ews', 'Yes when EWS or a disadvantaged group (RTE).', '', { kind: 'enum', values: YES_NO }),
+    reg('family_income', 'Family income a year, in rupees.', '', { kind: 'amount' }),
+    reg('distance_km', 'Distance from home to school, in km.', '', { kind: 'amount' }),
+    reg('family_code', 'Optional: the same code on brothers and sisters marks one family (siblings are suggested for the office to confirm).', '', { max: 40 }),
+    ...ADDRESS_PARTS.map(p => reg(`address_${p.key}`, `Current address: ${p.label.toLowerCase()}.`, p.key === 'pin' ? '500001' : '', { max: p.max })),
+    reg('permanent_same', 'Yes (or blank) when the permanent address is the current one.', '', { kind: 'enum', values: YES_NO }),
+    ...ADDRESS_PARTS.map(p => reg(`permanent_${p.key}`, `Permanent address: ${p.label.toLowerCase()}. Only when different.`, '', { max: p.max })),
+  ],
+  identity: c => admKey(String(c.admission_no)),
+  build(c, n) {
+    const p: Problem[] = [];
+    const row: Record<string, unknown> = { admission_no: String(c.admission_no).trim() };
+    const take = (key: string, raw: unknown, col = key) => {
+      if (raw == null) return;
+      const r = checkField(FIELD.get(key)!, raw);
+      if ('error' in r) p.push({ n, column: col, error: r.error }); else row[key] = r.value;
+    };
+    for (const k of ['full_name', 'aadhaar_name', 'date_of_birth', 'pen', 'apaar_id', 'cbse_reg_no', 'board_roll_no', 'admitted_on', 'previous_school', 'previous_class', 'previous_tc_no', 'rte_amount', 'medium', 'mother_tongue', 'family_income', 'distance_km']) take(k, c[k]);
+    for (const k of ['gender', 'previous_status', 'social_category', 'religion']) if (c[k] != null) row[k] = c[k];
+    for (const k of ['no_aadhaar', 'rte_seat', 'indian_national', 'minority', 'bpl', 'aay', 'ews', 'permanent_same']) if (c[k] != null) row[k] = c[k] === 'true';
+    if (c.family_code != null) row.family_code = String(c.family_code).trim();
+    for (const which of ['address', 'permanent'] as const) {
+      const parts = Object.fromEntries(ADDRESS_PARTS.map(p => [p.key, c[`${which}_${p.key}`] == null ? '' : String(c[`${which}_${p.key}`])]));
+      if (Object.values(parts).every(v => !v)) continue;
+      const a = checkAddress(parts);
+      if ('error' in a) p.push({ n, column: `${which}_line1`, error: a.error }); else row[which === 'address' ? 'address' : 'permanent_address'] = a.value;
+    }
+    if (row.permanent_address && row.permanent_same === undefined) row.permanent_same = false;
+    if (row.permanent_same === true && row.permanent_address) p.push({ n, column: 'permanent_same', error: 'Permanent address given, but permanent_same says Yes.' });
+    if (c.admitted_class != null) {
+      const g = parseRegisterGrade(String(c.admitted_class));
+      if (g == null) p.push({ n, column: 'admitted_class', error: 'A class is Nursery, LKG, UKG or 1 to 12.' }); else row.admitted_grade = g;
+    }
+    if (c.aadhaar != null) {
+      if (row.no_aadhaar === true) p.push({ n, column: 'aadhaar', error: 'The row says No Aadhaar but also gives a number.' });
+      else { const a = parseAadhaar(String(c.aadhaar)); if (!a.ok) p.push({ n, column: 'aadhaar', error: a.error }); else row.aadhaar = a.digits; }
+    }
+    if (row.rte_amount != null && row.rte_seat === false) p.push({ n, column: 'rte_amount', error: 'An RTE amount needs RTE seat = Yes.' });
+    if (typeof row.date_of_birth === 'string' && typeof row.admitted_on === 'string' && row.admitted_on < row.date_of_birth) p.push({ n, column: 'admitted_on', error: 'Admitted before the date of birth.' });
+    return p.length ? fail(...p) : { ok: true, row };
+  },
+};
+
+const enrolments: Dataset = {
+  key: 'enrolments', label: 'Enrolment history', writer: 'import_enrolments', needs: [],
+  about: 'One row per student per past session: the class they were in and how the year ended. Students who have left are welcome.',
+  lands: 'Each student\u2019s year-by-year history on the register. Import the admission register first; this session\u2019s classes are set in Sthara.',
+  matching: 'Admission number and session.',
+  columns: [
+    ADM,
+    { key: 'session', required: true, kind: 'session', example: '2024-25', guide: 'The academic session, as 2024-25.' },
+    { key: 'class', required: true, kind: 'text', max: 12, aliases: ['grade'], example: '7', guide: 'The class: Nursery, LKG, UKG or 1 to 12.' },
+    { key: 'section', required: false, kind: 'text', max: 10, example: 'B', guide: 'The section, if the school had sections.' },
+    { key: 'class_name', required: false, kind: 'text', max: 40, example: '', guide: 'The class as the school named it, if different from class and section (for example "7 Rose").' },
+    { key: 'roll_no', required: false, kind: 'text', max: 12, example: '14', guide: 'The roll number that year.' },
+    { key: 'stream', required: false, kind: 'enum', values: STREAMS, example: '', guide: 'Classes 11 and 12: Science, Commerce, Humanities, Vocational or Other.' },
+    { key: 'first_language', required: false, kind: 'text', max: 40, example: 'English', guide: 'First language that year.' },
+    { key: 'second_language', required: false, kind: 'text', max: 40, example: 'Hindi', guide: 'Second language.' },
+    { key: 'third_language', required: false, kind: 'text', max: 40, example: '', guide: 'Third language (Classes up to 8).' },
+    { key: 'outcome', required: false, kind: 'text', max: 30, aliases: ['result'], example: 'Promoted', guide: 'How the year ended: Promoted, Detained, Promoted without exam, Repeater by choice, Dropout or Left (TC).' },
+  ],
+  identity: c => `${admKey(String(c.admission_no))}|${c.session}`,
+  build(c, n) {
+    const p: Problem[] = [];
+    const grade = parseRegisterGrade(String(c.class));
+    if (grade == null) p.push({ n, column: 'class', error: 'A class is Nursery, LKG, UKG or 1 to 12.' });
+    const outcome = c.outcome == null ? null : parseOutcome(String(c.outcome));
+    if (c.outcome != null && !outcome) p.push({ n, column: 'outcome', error: 'Outcome is Promoted, Detained, Promoted without exam, Repeater by choice, Dropout or Left (TC).' });
+    if (p.length) return fail(...p);
+    const langs = Object.fromEntries(['first', 'second', 'third'].flatMap(k => (c[`${k}_language`] == null ? [] : [[k, String(c[`${k}_language`])]])));
+    const section = s(c, 'section')?.toUpperCase() ?? null;
+    return { ok: true, row: {
+      admission_no: String(c.admission_no).trim(), session: c.session, grade, section,
+      class_name: s(c, 'class_name') ?? `${grade! <= 0 ? ['Nursery', 'LKG', 'UKG'][grade! + 2] : grade}${section ? `-${section}` : ''}`,
+      roll_no: s(c, 'roll_no'), stream: c.stream ?? null, languages: Object.keys(langs).length ? langs : null, outcome,
+    } };
+  },
+};
+
+const family: Dataset = {
+  key: 'family', label: 'Family and emergency contacts', writer: 'import_family', needs: [],
+  about: 'One row per family member of a student. Contacts only: parent logins are issued by Sthara and link to these by phone or email.',
+  lands: 'Each student\u2019s family on the record, emergency contacts in calling order, and the family code that suggests siblings.',
+  matching: 'Admission number, relation and name.',
+  columns: [
+    ADM,
+    { key: 'relation', required: true, kind: 'enum', values: RELATION, example: 'Mother', guide: 'Mother, Father, Guardian, Grandparent, Sibling or Other.' },
+    { key: 'name', required: true, kind: 'text', max: 120, example: 'Lakshmi Sharma', guide: 'Full name.' },
+    { key: 'phone', required: false, kind: 'text', max: 20, aliases: ['mobile'], example: '9876543210', guide: '10-digit mobile. +91 and spaces are fine.' },
+    { key: 'email', required: false, kind: 'text', max: 160, example: '', guide: 'Email address.' },
+    { key: 'education', required: false, kind: 'enum', values: EDUCATION, example: 'Graduate', guide: 'No schooling, Primary, Upper primary, Secondary, Higher secondary, Graduate, Post-graduate or Other.' },
+    { key: 'occupation', required: false, kind: 'text', max: 80, example: 'Teacher', guide: 'Occupation.' },
+    { key: 'annual_income', required: false, kind: 'amount', aliases: ['income'], example: '', guide: 'Income a year, in rupees.' },
+    { key: 'primary', required: false, kind: 'enum', values: YES_NO, aliases: ['is_primary'], example: 'Yes', guide: 'Yes for the one person the school contacts first.' },
+    { key: 'lives_with', required: false, kind: 'enum', values: YES_NO, example: '', guide: 'No when this person does not live with the student.' },
+    { key: 'emergency', required: false, kind: 'int', min: 1, maxValue: 3, aliases: ['emergency_order'], example: '1', guide: '1, 2 or 3: their place in the emergency calling order. Blank when not an emergency contact.' },
+    { key: 'family_code', required: false, kind: 'text', max: 40, example: 'SHARMA-01', guide: 'Optional: the same code on brothers and sisters marks one family.' },
+  ],
+  identity: c => `${admKey(String(c.admission_no))}|${c.relation}|${String(c.name).trim().toLowerCase()}`,
+  build(c, n) {
+    const f = checkFamily({ relation: c.relation, name: c.name, phone: c.phone ?? '', email: c.email ?? '', education: c.education ?? null, occupation: c.occupation ?? '', annual_income: c.annual_income ?? null });
+    if ('error' in f) return fail({ n, error: f.error });
+    return { ok: true, row: {
+      admission_no: String(c.admission_no).trim(), relation: f.value.relation, name: f.value.name, phone: f.value.phone, email: f.value.email, education: f.value.education,
+      occupation: f.value.occupation, annual_income: f.value.annual_income, is_primary: c.primary == null ? null : c.primary === 'true',
+      lives_with: c.lives_with == null ? null : c.lives_with === 'true', emergency: num(c, 'emergency'), family_code: s(c, 'family_code')?.trim() ?? null,
+    } };
+  },
+};
+
+export const DATASETS: Dataset[] = [students, enrolments, family, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
 export const datasetOf = (key: unknown) => DATASETS.find(d => d.key === key) ?? null;
 
 // ── Cells ───────────────────────────────────────────────────────────────────

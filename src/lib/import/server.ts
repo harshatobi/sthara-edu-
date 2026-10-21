@@ -4,7 +4,8 @@ import { after } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { pageAll, byIds } from '@/lib/ops/page';
 import { normClass } from '@/lib/teacher/scope';
-import { sessionOf } from '@/lib/admin/format';
+import { currentSession } from '@/lib/students/register';
+import { piiReady, sealAadhaar } from '@/lib/students/pii';
 import { admKey, datasetOf, sheetKey, type Dataset, type Lookups, type Problem } from './datasets';
 import { CHUNK, checkTable, chunks, payload, PROBLEM_CAP, receiptFloors } from './engine';
 import { kindOf, readTable } from './parse';
@@ -57,16 +58,11 @@ const safeName = (n: string) => n.replace(/[^\w.-]+/g, '_').slice(-120) || 'file
 export async function loadLookups(db: Db, schoolId: string, needs: Dataset['needs']): Promise<Lookups> {
   const look: Lookups = { students: new Map(), classes: new Map(), sheets: new Map(), ambiguous: new Set() };
   if (needs.includes('students')) {
-    const r = await pageAll<{ id: string; name: string | null; custom_student_id: string | null }>((from, to) =>
-      db.from('users').select('id, name, custom_student_id').eq('school_id', schoolId).eq('role', 'student').order('id').range(from, to), 200_000);
+    // The admission register (numbers are unique per school there); cancelled entries name nobody.
+    const r = await pageAll<{ user_id: string | null; full_name: string; admission_no: string }>((from, to) =>
+      db.from('students').select('user_id, full_name, admission_no').eq('school_id', schoolId).neq('status', 'cancelled').order('id').range(from, to), 200_000);
     if (r.error) throw new Error(r.error.message);
-    for (const u of r.data) {
-      if (!u.custom_student_id?.trim()) continue;
-      const k = admKey(u.custom_student_id);
-      if (look.students.has(k)) look.ambiguous!.add(k);
-      look.students.set(k, { id: u.id, name: u.name || '' });
-    }
-    for (const k of look.ambiguous!) look.students.delete(k);
+    for (const st of r.data) look.students.set(admKey(st.admission_no), { id: st.user_id, name: st.full_name });
   }
   if (needs.includes('classes') || needs.includes('sheets')) {
     const r = await pageAll<{ id: string; name: string | null }>((from, to) => db.from('classes').select('id, name').eq('school_id', schoolId).order('id').range(from, to));
@@ -74,8 +70,9 @@ export async function loadLookups(db: Db, schoolId: string, needs: Dataset['need
     for (const c of r.data) if (c.name) look.classes.set(normClass(c.name), c.name);
     if (needs.includes('sheets')) {
       const className = new Map(r.data.map(c => [c.id, c.name || '']));
-      // This session's schemes only, so last year's "PT1" never catches this year's marks.
-      const { data: schemes, error } = await db.from('exam_schemes').select('id').eq('school_id', schoolId).eq('session', sessionOf()).limit(200);
+      // This session's schemes only (the school's own session), so last year's "PT1" never catches this year's marks.
+      const { data: school } = await db.from('schools').select('settings').eq('id', schoolId).maybeSingle();
+      const { data: schemes, error } = await db.from('exam_schemes').select('id').eq('school_id', schoolId).eq('session', currentSession(school?.settings)).limit(200);
       if (error) throw new Error(error.message);
       const assessments = await byIds<{ id: string; code: string; name: string }>((schemes || []).map(x => x.id), (ids, from, to) =>
         db.from('exam_assessments').select('id, code, name').in('scheme_id', ids).order('id').range(from, to));
@@ -271,6 +268,17 @@ async function readJob(db: Db, job: Job) {
 
 const mergeProblems = (a: Problem[], b: Problem[]) => [...a, ...b].slice(0, PROBLEM_CAP);
 
+/** What the writer receives. Aadhaar numbers on the register are sealed here, on the server, never stored as typed. */
+function writerRows(d: Dataset, part: { n: number; row: Record<string, unknown> }[]) {
+  const rows = payload(part) as Record<string, unknown>[];
+  if (d.key !== 'students') return rows;
+  return rows.map(r => {
+    if (typeof r.aadhaar !== 'string') return r;
+    const { aadhaar, ...rest } = r;
+    return { ...rest, ...sealAadhaar(aadhaar as string) };
+  });
+}
+
 async function check(db: Db, job: Job, deadline: number) {
   const r = await readJob(db, job);
   if ('missing' in r) return update(db, job.id, { status: 'rejected', problem_count: 1, problems: [{ n: 0, error: 'The file never reached Sthara. Upload it again.' }], locked_until: null });
@@ -283,13 +291,17 @@ async function check(db: Db, job: Job, deadline: number) {
       summary: { skipped: c.skipped },
     });
   }
+  if (r.d.key === 'students' && !piiReady() && c.rows.some(x => x.row.aadhaar)) {
+    return update(db, job.id, { status: 'rejected', file_sha256: r.sha, total_rows: c.total, checked_at: new Date().toISOString(), locked_until: null,
+      problem_count: 1, problems: [{ n: 0, error: 'Aadhaar numbers can\u2019t be stored yet: the encryption key isn\u2019t set up. Remove the aadhaar column, or ask Sthara support.' }] });
+  }
   // The code found nothing: now ask the database, chunk by chunk, what would change and what it refuses.
   const parts = chunks(c.rows, CHUNK, r.d.group);
   let { phase_cursor: i, added, updated, unchanged, problem_count: pc } = job;
   let problems = i === 0 ? [] : job.problems;
   if (i === 0) { added = updated = unchanged = pc = 0; }
   for (; i < parts.length && Date.now() < deadline; i++) {
-    const { data, error } = await db.rpc(r.d.writer, { p_job: job.id, p_school: job.school_id, p_actor: null, p_rows: payload(parts[i]), p_dry: true });
+    const { data, error } = await db.rpc(r.d.writer, { p_job: job.id, p_school: job.school_id, p_actor: null, p_rows: writerRows(r.d, parts[i]), p_dry: true });
     if (error) throw new Error(error.message);
     const o = data as { added: number; updated: number; unchanged: number; problems: Problem[] };
     added += o.added; updated += o.updated; unchanged += o.unchanged; pc += o.problems.length;
@@ -329,7 +341,7 @@ async function commit(db: Db, job: Job, deadline: number) {
   // Rows record who wrote them only when that is a school user (an operator has no account in the school).
   const actor = job.summary.committedByKind === 'admin' ? job.committed_by : null;
   for (; i < parts.length && Date.now() < deadline; i++) {
-    const { data, error } = await db.rpc(r.d.writer, { p_job: job.id, p_school: job.school_id, p_actor: actor, p_rows: payload(parts[i]), p_dry: false });
+    const { data, error } = await db.rpc(r.d.writer, { p_job: job.id, p_school: job.school_id, p_actor: actor, p_rows: writerRows(r.d, parts[i]), p_dry: false });
     if (error) return stop(error.message);
     const o = data as { added: number; updated: number; unchanged: number; problems: Problem[] };
     if (o.problems.length) {

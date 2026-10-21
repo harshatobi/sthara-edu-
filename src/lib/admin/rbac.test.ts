@@ -19,8 +19,10 @@ test('role catalogue matches the database seed', () => {
   assert.deepEqual(Object.keys(db).sort(), [...ROLE_KEYS].sort());
   for (const r of ROLE_KEYS) assert.deepEqual(db[r], [...ROLES[r].perms].sort(), `role ${r}`);
   for (const ps of Object.values(db)) for (const p of ps) assert.ok(p in PERMS, `unknown perm ${p}`);
-  // The CHECK constraint on role_grants lists the same roles.
-  const check = sql.match(/"role_grants_role_key_check" CHECK \(\("role_key" = ANY \(ARRAY\[([^\]]*)\]\)\)\)/)![1];
+  // The CHECK constraint on role_grants lists the same roles (the newest definition: a later migration may widen it).
+  const redefined = fs.readdirSync(dir).filter(f => f.endsWith('.sql') && !f.endsWith('_baseline.sql')).sort()
+    .flatMap(f => [...fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/ADD CONSTRAINT role_grants_role_key_check CHECK \(role_key IN \(([^)]*)\)\)/g)].map(m => m[1]));
+  const check = redefined.at(-1) ?? sql.match(/"role_grants_role_key_check" CHECK \(\("role_key" = ANY \(ARRAY\[([^\]]*)\]\)\)\)/)![1];
   assert.deepEqual(check.match(/'([^']+)'/g)!.map(s => s.slice(1, -1)).sort(), [...ROLE_KEYS].sort());
 });
 

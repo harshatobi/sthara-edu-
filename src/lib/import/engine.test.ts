@@ -20,7 +20,7 @@ test('every dataset has a unique key, a writer and a guide for each column', () 
   for (const x of DATASETS) {
     assert.match(x.writer, /^import_[a-z_]+$/);
     assert.equal(x.writer, `import_${x.key}`);
-    for (const c of x.columns) assert.ok(c.key && /^[a-z_]+$/.test(c.key), `${x.key}.${c.key}`);
+    for (const c of x.columns) assert.ok(c.key && /^[a-z][a-z_0-9]*$/.test(c.key), `${x.key}.${c.key}`);
     assert.equal(new Set(x.columns.map(c => c.key)).size, x.columns.length, `${x.key} has repeated columns`);
   }
 });

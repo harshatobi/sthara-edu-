@@ -51,7 +51,8 @@ for (const r of routes) {
       // Locally there is no service key: a device token that gets as far as the database lookup can't be checked.
       test.skip(IS_LOCAL && r.guard === 'device', 'Needs the database to look the device token up.');
       const res = await call(request, method, sampleUrl(r.route), FORGED);
-      const allowed = r.guard === 'operator' ? [404] : r.guard === 'meta' ? expected : [401, 403];
+      // Operator routes and hidden machine routes (the import worker) answer 404, as if there were no route.
+      const allowed = r.guard === 'operator' || expected.includes(404) ? [404] : r.guard === 'meta' ? expected : [401, 403];
       expect(allowed, `${label} with a forged token: got ${res.status()}`).toContain(res.status());
       await expectNoLeak(res, label);
     });

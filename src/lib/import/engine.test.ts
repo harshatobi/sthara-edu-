@@ -193,3 +193,20 @@ test('documents: each row needs its file, sizes are checked, the kind is read by
   assert.deepEqual(r.problems.map(p => [p.n, p.column]), [[3, 'file_name'], [4, 'file_name'], [5, 'kind']]);
   assert.match(r.problems[0].error, /wasn.t uploaded/);
 });
+
+test('certificates: kind by name or title, numbers kept with their serial, every TC field carried', () => {
+  const withTypes: Lookups = { ...look, certTypes: new Map([['tc', { id: 't-tc', kind: 'tc' }], ['transfer certificate', { id: 't-tc', kind: 'tc' }], ['study certificate', { id: 't-st', kind: 'custom' }]]) };
+  const r = checkTable(d('certificates'), [
+    ['admission_no', 'kind', 'number', 'issued_on', 'duplicate', 'pupil_name', 'father_name', 'conduct', 'body', 'cancelled'],
+    ['A001', 'Transfer Certificate', 'TC/0412', '15-04-2024', '', 'Asha Rao', 'Ravi Rao', 'Good', '', ''],
+    ['A001', 'TC', 'TC/0412', '20-06-2024', '1', 'Asha Rao', 'Ravi Rao', 'Good', '', ''],
+    ['A002', 'Study certificate', '88', '01-07-2024', '', '', '', '', 'This is to certify ...', 'Yes'],
+    ['A002', 'Bonafide', 'B/1', '01-07-2024', '', '', '', '', 'x', ''],
+    ['A002', 'TC', 'TC/0500', '01-07-2024', '', '', '', '', '', ''],
+  ], withTypes, false);
+  assert.deepEqual(r.rows.map(x => [x.row.type_id, x.row.number, x.row.serial, x.row.copy_no, x.row.cancelled]), [
+    ['t-tc', 'TC/0412', 412, 0, false], ['t-tc', 'TC/0412', 412, 1, false], ['t-st', '88', 88, 0, true],
+  ]);
+  assert.deepEqual(r.rows[0].row.data, { pupil_name: 'Asha Rao', father_name: 'Ravi Rao', conduct: 'Good', admission_no: 'A001', issued_on: '15-04-2024' });
+  assert.deepEqual(r.problems.map(p => [p.n, p.column]), [[5, 'kind'], [6, 'pupil_name']]);
+});

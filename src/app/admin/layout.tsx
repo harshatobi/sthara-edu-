@@ -5,6 +5,7 @@ import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/C
 import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
 import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
 import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
+import { CertificateIcon as Certificate } from '@phosphor-icons/react/dist/ssr/Certificate';
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
@@ -40,8 +41,9 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/fees', label: 'Admissions & Fees', short: 'Fees', icon: CurrencyInr, also: ['/admin/admissions'], need: ['fees.read'] },
   { href: '/admin/admissions', label: 'Admissions', icon: CurrencyInr, need: ['admissions.read'] },
   { href: '/admin/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple, need: ['messages.office'] },
-  { href: '/admin/students', label: 'Students', icon: Student, need: ['students.read', 'outcomes.approve', 'session.manage'] },
+  { href: '/admin/students', label: 'Students', icon: Student, need: ['students.read', 'outcomes.approve', 'session.manage', 'compliance.act'] },
   { href: '/admin/health', label: 'Health', icon: FirstAidKit, need: ['health.read'] },
+  { href: '/admin/certificates', label: 'Certificates', icon: Certificate, need: ['certificates.prepare', 'certificates.approve', 'certificates.setup'] },
   { href: '/admin/people', label: 'People', icon: IdentificationCard, need: ['dashboard.view'] },
   { href: '/admin/payroll', label: 'Payroll', icon: Wallet, need: ['payroll.read', 'payroll.prepare', 'payroll.approve'] },
   { href: '/admin/staff', label: 'Staff & Leave', short: 'Staff', icon: CalendarBlank, need: ['workforce.read'] },

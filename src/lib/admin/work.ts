@@ -93,6 +93,11 @@ export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions
     out.push({ key: 'register', title: 'Student register', detail: 'Admit into the register, correct records, set classes and roll numbers, close the year.', count: null, tone: 'n',
       actions: [{ label: 'Change requests', href: '/admin/students?tab=requests', primary: true }, { label: 'Open the register', href: '/admin/students' }] });
   }
+  if (can('certificates.approve') || can('certificates.prepare')) {
+    const approves = can('certificates.approve');
+    out.push({ key: 'certificates', title: 'Certificates', detail: approves ? 'Approve TCs and other certificates the registrar has prepared; cancel or reissue.' : 'Prepare TCs, bonafide and fee certificates from a student\u2019s record and send them for approval.',
+      count: null, tone: 'n', actions: [{ label: approves ? 'To approve' : 'Open certificates', href: '/admin/certificates?tab=approve', primary: true }] });
+  }
   if (can('health.manage')) {
     out.push({ key: 'health', title: 'Health records', detail: 'Health cards, check-ups, vaccinations, alerts and parents’ requested changes.', count: null, tone: 'n',
       actions: [{ label: 'Open health records', href: '/admin/health', primary: true }] });

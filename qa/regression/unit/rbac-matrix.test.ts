@@ -16,6 +16,8 @@ import { navOf } from '../../tools/inventory';
 // school admin manage it too and approve year-end outcomes; the session calendar is the school admin's alone; the
 // vice principal, academic coordinator, admissions officer, finance head and accountant read it. Living Record 03:
 // a Health officer role keeps the health records with the principal and school admin.
+// Re-signed 2026-10-23 (Living Record 05): certificates. The registrar prepares them; the principal and school admin
+// approve and set them up (new Certificates menu). The DPO reaches Students for parents' document-erasure requests (04).
 const EXPECTED: Record<RoleKey, string[]> = {
   school_admin: Object.keys(PERMS),
   principal: Object.keys(PERMS).filter(p => p !== 'access.manage' && p !== 'session.manage'),
@@ -28,14 +30,14 @@ const EXPECTED: Record<RoleKey, string[]> = {
   academic_coordinator: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic', 'exams.read', 'exams.manage', 'students.read'],
   counsellor: ['dashboard.view', 'wellness.read', 'messages.office', 'safeguarding.read'],
   dpo: ['dashboard.view', 'probe.view', 'compliance.read', 'compliance.act', 'audit.read', 'wellness.read'],
-  registrar: ['dashboard.view', 'students.read', 'students.manage', 'students.aadhaar'],
+  registrar: ['dashboard.view', 'students.read', 'students.manage', 'students.aadhaar', 'certificates.prepare'],
   health_officer: ['dashboard.view', 'health.read', 'health.manage'],
 };
 
 /** Admin menu labels each role sees (layout.tsx filters by `need`; Fees reads "Fees" without admissions). */
 const MENU: Record<RoleKey, string[]> = {
-  school_admin: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'Students', 'Health', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Roles & Access', 'User Directory', 'Data Import', 'Help & Support'],
-  principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'Students', 'Health', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'User Directory', 'Data Import', 'Help & Support'],
+  school_admin: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'Students', 'Health', 'Certificates', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Roles & Access', 'User Directory', 'Data Import', 'Help & Support'],
+  principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'Students', 'Health', 'Certificates', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'User Directory', 'Data Import', 'Help & Support'],
   vice_principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions', 'Parent Messages', 'Students', 'People', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
   finance_head: ['Dashboard', 'Probe', 'Fees', 'Students', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'DPDP & Compliance', 'Help & Support'],
   accountant: ['Dashboard', 'Probe', 'Fees', 'Students', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'Help & Support'],
@@ -44,8 +46,8 @@ const MENU: Record<RoleKey, string[]> = {
   hr_manager: ['Dashboard', 'Probe', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Help & Support'],
   academic_coordinator: ['Dashboard', 'Probe', 'Situational Feed', 'Students', 'People', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'Help & Support'],
   counsellor: ['Dashboard', 'Situational Feed', 'Parent Messages', 'People', 'Schedule', 'CBSE Wellness Report', 'Help & Support'],
-  dpo: ['Dashboard', 'Probe', 'People', 'Schedule', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
-  registrar: ['Dashboard', 'Students', 'People', 'Schedule', 'Help & Support'],
+  dpo: ['Dashboard', 'Probe', 'Students', 'People', 'Schedule', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
+  registrar: ['Dashboard', 'Students', 'Certificates', 'People', 'Schedule', 'Help & Support'],
   health_officer: ['Dashboard', 'Health', 'People', 'Schedule', 'Help & Support'],
 };
 

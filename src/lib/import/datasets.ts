@@ -16,6 +16,7 @@ import { parseAmount, parseDate, parseSession } from './parse';
 import { parseAadhaar } from '@/lib/students/aadhaar';
 import { IMPAIRMENT_LABEL, IMPAIRMENTS, SCREEN_RESULTS, checkEvent, checkUdise, parseAllergyList, parseNameList } from '@/lib/students/health';
 import { DOC_KINDS, DOC_KIND_KEYS, DOC_MAX_BYTES, cleanFileName } from '@/lib/students/documents';
+import { TC_FIELDS, TC_HEADER, dmy, serialOf } from '@/lib/certificates/certs';
 import { ADDRESS_PARTS, FIELD, checkAddress, checkAdmissionNo, checkFamily, checkField, parseGrade as parseRegisterGrade, parseOutcome } from '@/lib/students/register';
 
 export type Kind = 'text' | 'date' | 'session' | 'amount' | 'int' | 'enum' | 'email' | 'phone';
@@ -47,6 +48,8 @@ export interface Lookups {
   sheets: Map<string, { id: string; max: number; status: string }>;
   /** Files uploaded with the job (documents): where the file of that name is and its size, or null when it never came. */
   file?: (name: string) => { path: string; size: number } | null;
+  /** The school's kinds of certificate: kind key ("tc") or title, lower case, to its type and kind. */
+  certTypes?: Map<string, { id: string; kind: string }>;
 }
 
 export type Cells = Record<string, string | number | null>;
@@ -66,7 +69,7 @@ export interface Dataset {
   /** The database writer: public.import_<key>. */
   writer: string;
   /** Which lookups the server must load. */
-  needs: ('students' | 'classes' | 'sheets' | 'files')[];
+  needs: ('students' | 'classes' | 'sheets' | 'files' | 'certTypes')[];
   /** The file is a manifest, and the files it lists are uploaded with it (documents). */
   files?: boolean;
   /** Identity of a row inside one file; null when the row has none (never a duplicate). */
@@ -623,7 +626,55 @@ const documents: Dataset = {
   },
 };
 
-export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, documents, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
+const CERT_KIND_ALIASES: Record<string, string> = {
+  'transfer certificate': 'tc', 'tc': 'tc', 'school leaving certificate': 'tc', 'leaving certificate': 'tc', 'bonafide': 'bonafide', 'bonafide certificate': 'bonafide', 'bona fide': 'bonafide',
+  'character': 'character', 'character certificate': 'character', 'conduct certificate': 'character', 'fee paid': 'fee_paid', 'fee paid certificate': 'fee_paid', 'fee certificate': 'fee_paid',
+};
+
+const certificates: Dataset = {
+  key: 'certificates', label: 'Certificates already issued', writer: 'import_certificates', needs: ['certTypes'],
+  about: 'The school\u2019s past TC, bonafide and other certificate registers, one row per certificate, with every value it printed.',
+  lands: 'The certificate register and each student\u2019s Certificates tab, as full certificates (reprintable). Their numbers are kept; Sthara\u2019s numbering continues after the highest.',
+  matching: 'Kind, number and duplicate number.',
+  columns: [
+    ADM,
+    { key: 'kind', required: true, kind: 'text', max: 80, aliases: ['certificate'], example: 'Transfer certificate', guide: 'Transfer certificate, Bonafide, Character, Fee paid, or the title of a certificate the school has set up.' },
+    { key: 'number', required: true, kind: 'text', max: 40, aliases: ['certificate_no', 'tc_no', 'serial_no', 'sl_no'], example: 'TC/0412', guide: 'The number as printed. Sthara continues after its last digits.' },
+    { key: 'issued_on', required: true, kind: 'date', aliases: ['date_of_issue'], example: '15-04-2024', guide: 'Date of issue, DD-MM-YYYY.' },
+    { key: 'duplicate', required: false, kind: 'int', min: 0, maxValue: 20, aliases: ['copy_no'], example: '', guide: 'For a duplicate: 1 for the first, 2 for the second. The original (blank or 0) must be in the file or already in Sthara.' },
+    { key: 'cancelled', required: false, kind: 'enum', values: YES_NO, example: '', guide: 'Yes when the school cancelled it.' },
+    { key: 'cancel_reason', required: false, kind: 'text', max: 300, example: '', guide: 'Why it was cancelled.' },
+    { key: 'body', required: false, kind: 'text', max: 4000, aliases: ['wording', 'text'], example: '', guide: 'Bonafide, character and other certificates: the full wording as printed.' },
+    ...[...TC_HEADER.filter(f => f.key !== 'admission_no'), ...TC_FIELDS.filter(f => f.key !== 'issued_on')].map(f => ({
+      key: f.key, required: false, kind: 'text' as const, max: f.long ? 600 : 200, example: f.key === 'pupil_name' ? 'Aarav Sharma' : '', guide: `TC${f.n ? ` field ${f.n}` : ''}: ${f.label}.`,
+    })),
+  ],
+  identity: c => `${String(c.kind).trim().toLowerCase()}|${String(c.number).trim().toLowerCase()}|${c.duplicate ?? 0}`,
+  build(c, n, look) {
+    const k = String(c.kind).trim().toLowerCase();
+    const t = look.certTypes?.get(CERT_KIND_ALIASES[k] ?? k);
+    if (!t) return fail({ n, column: 'kind', error: `There is no certificate "${c.kind}" here. Set it up in Certificates first, or check the spelling.` });
+    const number = String(c.number).trim();
+    const tc = t.kind === 'tc';
+    const data: Record<string, string> = {};
+    if (tc) {
+      for (const f of [...TC_HEADER, ...TC_FIELDS]) if (c[f.key] != null) data[f.key] = String(c[f.key]);
+      data.admission_no = String(c.admission_no).trim();
+      data.issued_on = dmy(String(c.issued_on));
+      if (!data.pupil_name) return fail({ n, column: 'pupil_name', error: 'A TC needs at least the pupil\u2019s name; give every field it printed.' });
+    } else {
+      if (c.body == null) return fail({ n, column: 'body', error: 'Give the wording as printed.' });
+      data.body = String(c.body);
+    }
+    if (c.cancelled !== 'true' && c.cancel_reason != null) return fail({ n, column: 'cancel_reason', error: 'A reason is given but cancelled isn\u2019t Yes.' });
+    return { ok: true, row: {
+      admission_no: String(c.admission_no).trim(), type_id: t.id, number, serial: serialOf(number), copy_no: c.duplicate ?? 0, issued_on: c.issued_on,
+      cancelled: c.cancelled === 'true', cancel_reason: c.cancel_reason ?? null, data,
+    } };
+  },
+};
+
+export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, documents, certificates, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
 export const datasetOf = (key: unknown) => DATASETS.find(d => d.key === key) ?? null;
 
 // ── Cells ───────────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import { piiReady, sealAadhaar } from '@/lib/students/pii';
 import { admKey, datasetOf, fileKey, sheetKey, type Dataset, type Lookups, type Problem } from './datasets';
 import { cleanFileName } from '@/lib/students/documents';
 import { DOC_BUCKET } from '@/lib/students/documentsServer';
+import { types as certTypes } from '@/lib/certificates/server';
 import { CHUNK, checkTable, chunks, payload, PROBLEM_CAP, receiptFloors } from './engine';
 import { kindOf, readTable } from './parse';
 
@@ -68,6 +69,13 @@ export async function loadLookups(db: Db, schoolId: string, needs: Dataset['need
       const k = admKey(st.admission_no);
       if (look.students.has(k)) look.ambiguous!.add(k);
       look.students.set(k, { id: st.user_id, name: st.full_name });
+    }
+  }
+  if (needs.includes('certTypes')) {
+    look.certTypes = new Map();
+    for (const t of await certTypes(db, schoolId)) {
+      look.certTypes.set(t.title.toLowerCase(), { id: t.id, kind: t.kind });
+      if (t.kind !== 'custom') look.certTypes.set(t.kind, { id: t.id, kind: t.kind });
     }
   }
   if (needs.includes('classes') || needs.includes('sheets')) {

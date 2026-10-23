@@ -54,6 +54,9 @@ export const PERMS = {
   'session.manage': 'Set when the school\u2019s academic session starts and open the next session',
   'health.read': 'See students\u2019 full health records (every look is recorded)',
   'health.manage': 'Keep the health records: cards, check-ups, vaccinations, parents\u2019 requested changes and retention',
+  'certificates.prepare': 'Prepare certificates (TC, bonafide, character, fee paid) and send them for approval',
+  'certificates.approve': 'Approve and issue certificates, cancel them and issue duplicates',
+  'certificates.setup': 'Set up certificates: numbering, wording, the school\u2019s own certificates, signature and stamp',
 } as const;
 export type Perm = keyof typeof PERMS;
 
@@ -90,7 +93,7 @@ export const ROLES: Record<RoleKey, { label: string; summary: string; perms: Per
   },
   registrar: {
     label: 'Registrar', summary: 'The student register: admissions into it, corrections, classes, roll numbers and year-end outcomes',
-    perms: ['dashboard.view', 'students.read', 'students.manage', 'students.aadhaar'],
+    perms: ['dashboard.view', 'students.read', 'students.manage', 'students.aadhaar', 'certificates.prepare'],
   },
   health_officer: {
     label: 'Health officer', summary: 'The school nurse or doctor: health records, check-ups, vaccinations and alerts',

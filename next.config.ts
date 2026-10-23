@@ -40,8 +40,11 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: false },
   images: { unoptimized: true },
   serverExternalPackages: ['firebase-admin', '@google/generative-ai'],
-  // The ops Settings module compares the repo's migrations with the ones applied live.
-  outputFileTracingIncludes: { '/api/ops/settings': ['./supabase/migrations/*.sql'] },
+  // The ops Settings module compares migrations; certificate PDFs embed the brand font.
+  outputFileTracingIncludes: {
+    '/api/ops/settings': ['./supabase/migrations/*.sql'],
+    '/api/admin/certificates': ['./public/site/assets/jakarta-regular.ttf', './public/site/assets/jakarta-bold.ttf'],
+  },
   experimental: {
     // Reuse a visited page's server payload for 30s on client navigation
     // (Next 15+ default is 0: every tab switch refetches). Page data is loaded

@@ -153,3 +153,25 @@ test('every template opens, and its own example row passes the header check', as
     assert.equal(sheets[1].rows.length - 1 >= x.columns.length, true);
   }
 });
+
+test('admission numbers: two register entries on one key are refused, not guessed', () => {
+  const twice: Lookups = { ...look, ambiguous: new Set([admKey('A002')]) };
+  const r = checkTable(d('attendance'), [
+    ['admission_no', 'class', 'date', 'status'],
+    ['A001', '10-A', '05-06-2024', 'P'],
+    ['A002', '10-A', '05-06-2024', 'P'],
+  ], twice, false);
+  assert.deepEqual(r.problems.map(p => [p.n, p.column]), [[3, 'admission_no']]);
+  assert.match(r.problems[0].error, /More than one student/);
+  assert.notEqual(admKey('A 001'), admKey('A001'), 'spaces inside a number count, as in the register index');
+});
+
+test('register: an admission number the register would refuse is caught in the check', () => {
+  const r = checkTable(d('students'), [
+    ['admission_no', 'full_name'],
+    ['A1024', 'Asha Rao'],
+    ['A#1025', 'Ravi Rao'],
+    ['A'.repeat(31), 'Mira Rao'],
+  ], look, false);
+  assert.deepEqual(r.problems.map(p => [p.n, p.column]), [[3, 'admission_no'], [4, 'admission_no']]);
+});

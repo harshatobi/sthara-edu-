@@ -143,7 +143,10 @@ export async function healthBoard(db: Db, schoolId: string, settings: unknown) {
 export async function classAlerts(db: Db, schoolId: string, cls: string) {
   const { data: school } = await db.from('schools').select('settings').eq('id', schoolId).maybeSingle();
   const session = currentSession(school?.settings);
-  const { data: en } = await pageAll<any>((f, t) => db.from('enrolments').select('student_id, class_name').eq('school_id', schoolId).eq('session', session).is('ends_on', null).order('id').range(f, t), 200_000);
+  // Narrowed in the database by the class's number (or its first letters: LKG, UKG), matched exactly below.
+  const n = normClass(cls), hint = n.match(/^\d+/)?.[0] ?? n.slice(0, 3);
+  const { data: en } = await pageAll<any>((f, t) => db.from('enrolments').select('student_id, class_name').eq('school_id', schoolId).eq('session', session).is('ends_on', null)
+    .ilike('class_name', `%${hint}%`).order('id').range(f, t), 200_000);
   const ids = [...new Set(en.filter(e => normClass(e.class_name ?? '') === normClass(cls)).map(e => e.student_id))];
   if (!ids.length) return [];
   const [cards, st] = await Promise.all([

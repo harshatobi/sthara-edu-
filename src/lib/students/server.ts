@@ -479,17 +479,19 @@ export async function chainStep(db: Db, a: Actor, step: Step | 'propose', items:
   const now = new Date().toISOString();
   const byId = new Map(items.map(i => [i.id, i]));
   if (step === 'return' && (note ?? '').trim().length < 3) return fail('Say what the class teacher should look at again.');
+  // Every row is checked before any is written, so a bad row never leaves the class half-done.
+  if (step === 'propose' && items.some(it => !isOutcome(it.outcome))) return fail('Pick an outcome for every student.');
+  if (step === 'finalise' && rows.some(r => { const it = byId.get(r.id)!; return isOutcome(it.outcome) && it.outcome !== r.proposed_outcome && (typeof it.note !== 'string' || it.note.trim().length < 3); }))
+    return fail('Changing the approved outcome needs a reason.');
   for (const r of rows) {
     const it = byId.get(r.id)!;
     let patch: Record<string, unknown>;
     if (step === 'propose') {
-      if (!isOutcome(it.outcome)) return fail('Pick an outcome for every student.');
       patch = { proposed_outcome: it.outcome, proposed_note: typeof it.note === 'string' ? it.note.trim().slice(0, 300) || null : null, proposed_by: a.id, proposed_at: now, returned_note: null };
     } else if (step === 'approve') patch = { approved_by: a.id, approved_at: now, returned_note: null };
     else if (step === 'return') patch = { approved_by: null, approved_at: null, returned_note: note!.trim().slice(0, 300) };
     else if (step === 'finalise') {
       const over = isOutcome(it.outcome) && it.outcome !== r.proposed_outcome ? it.outcome : null;
-      if (over && (typeof it.note !== 'string' || it.note.trim().length < 3)) return fail('Changing the approved outcome needs a reason.');
       patch = { outcome: over ?? r.proposed_outcome, finalised_by: a.id, finalised_at: now };
       if (over) await audit(db, a, 'student.outcome_changed', r.student_id, { from: r.proposed_outcome, to: over, why: String(it.note).trim().slice(0, 300) });
     } else patch = { outcome: null, finalised_by: null, finalised_at: null, approved_by: null, approved_at: null };

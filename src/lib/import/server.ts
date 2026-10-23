@@ -62,7 +62,11 @@ export async function loadLookups(db: Db, schoolId: string, needs: Dataset['need
     const r = await pageAll<{ user_id: string | null; full_name: string; admission_no: string }>((from, to) =>
       db.from('students').select('user_id, full_name, admission_no').eq('school_id', schoolId).neq('status', 'cancelled').order('id').range(from, to), 200_000);
     if (r.error) throw new Error(r.error.message);
-    for (const st of r.data) look.students.set(admKey(st.admission_no), { id: st.user_id, name: st.full_name });
+    for (const st of r.data) {
+      const k = admKey(st.admission_no);
+      if (look.students.has(k)) look.ambiguous!.add(k);
+      look.students.set(k, { id: st.user_id, name: st.full_name });
+    }
   }
   if (needs.includes('classes') || needs.includes('sheets')) {
     const r = await pageAll<{ id: string; name: string | null }>((from, to) => db.from('classes').select('id, name').eq('school_id', schoolId).order('id').range(from, to));
@@ -117,8 +121,12 @@ export async function undoBlock(db: Db, job: Pick<Job, 'id' | 'school_id' | 'dat
   if (job.status !== 'committed' || !job.committed_at) return 'Only a committed import can be undone.';
   if (Date.now() - Date.parse(job.committed_at) > UNDO_DAYS * 86_400_000) return `Imports can be undone for ${UNDO_DAYS} days. Correct the records instead.`;
   const { data: later } = await db.from('import_jobs').select('id, file_name').eq('school_id', job.school_id).eq('dataset', job.dataset)
-    .in('status', ['committed', 'committing', 'undoing']).gt('committed_at', job.committed_at).neq('id', job.id).limit(1);
+    .in('status', ['committed', 'undoing']).gt('committed_at', job.committed_at).neq('id', job.id).limit(1);
   if (later?.length) return `Undo the later import of this kind first (${later[0].file_name}).`;
+  // A commit still writing has no committed_at yet, but it is newer than this one: undo would restore under it.
+  const { data: busy } = await db.from('import_jobs').select('id, file_name').eq('school_id', job.school_id).eq('dataset', job.dataset)
+    .eq('status', 'committing').neq('id', job.id).limit(1);
+  if (busy?.length) return `Another import of this kind is being written (${busy[0].file_name}). Undo once it has finished.`;
   return null;
 }
 
@@ -162,6 +170,9 @@ export async function startCheck(db: Db, job: Job): Promise<Result> {
 
 export async function startCommit(db: Db, actor: Actor, job: Job): Promise<Result> {
   if (job.status !== 'checked') return fail(job.status === 'rejected' ? 'Fix the problems in the file and import it again.' : 'Only a checked import can be committed.', 409);
+  // An undo of the same kind restores rows newest-first; writing on top of it would mix the two.
+  const { data: undoing } = await db.from('import_jobs').select('file_name').eq('school_id', job.school_id).eq('dataset', job.dataset).eq('status', 'undoing').limit(1);
+  if (undoing?.length) return fail(`An import of this kind is being undone (${undoing[0].file_name}). Commit once that has finished.`, 409);
   const { data, error } = await db.from('import_jobs').update({ status: 'committing', phase_cursor: 0, committed_by: actor.id, locked_until: null, summary: { ...job.summary, committedByKind: actor.kind } })
     .eq('id', job.id).eq('status', 'checked').select('id');
   if (error) return fail(error.message, 500);
@@ -202,10 +213,16 @@ export function kick(db: Db) {
 /** Claims waiting jobs and moves each one step. Returns how many jobs it touched. */
 export async function runWorker(db: Db, budgetMs = STEP_MS): Promise<number> {
   const deadline = Date.now() + budgetMs;
-  // bounded: import_claim returns at most p_limit rows
-  const { data, error } = await db.rpc('import_claim', { p_limit: 2, p_seconds: Math.ceil(budgetMs / 1000) + 30 });
-  if (error) throw new Error(error.message);
-  for (const job of (data || []) as Job[]) {
+  let touched = 0;
+  // One job at a time, and a second only while half the time is left: each step downloads and parses its file first,
+  // so a job claimed with no time left would do that for nothing.
+  while (touched < 2 && (touched === 0 || deadline - Date.now() > budgetMs / 2)) {
+    // bounded: import_claim returns at most p_limit rows
+    const { data, error } = await db.rpc('import_claim', { p_limit: 1, p_seconds: Math.ceil((deadline - Date.now()) / 1000) + 30 });
+    if (error) throw new Error(error.message);
+    const job = ((data || []) as Job[])[0];
+    if (!job) break;
+    touched++;
     try {
       if (job.status === 'checking') await check(db, job, deadline);
       else if (job.status === 'committing') await commit(db, job, deadline);
@@ -214,7 +231,7 @@ export async function runWorker(db: Db, budgetMs = STEP_MS): Promise<number> {
       await stepFailed(db, job, e instanceof Error ? e.message : String(e));
     }
   }
-  return data?.length ?? 0;
+  return touched;
 }
 
 /** Tries at the same point before a check or commit gives up. */
@@ -337,14 +354,15 @@ async function commit(db: Db, job: Job, deadline: number) {
     added = updated = unchanged = 0;
     if (r.d.key === 'fee_payments') {
       const { error } = await db.rpc('import_receipt_floor', { p_school: job.school_id, p_floors: receiptFloors(c.rows) });
-      if (error) return stop(error.message);
+      if (error) throw new Error(error.message);
     }
   }
   // Rows record who wrote them only when that is a school user (an operator has no account in the school).
   const actor = job.summary.committedByKind === 'admin' ? job.committed_by : null;
   for (; i < parts.length && Date.now() < deadline; i++) {
     const { data, error } = await db.rpc(r.d.writer, { p_job: job.id, p_school: job.school_id, p_actor: actor, p_rows: writerRows(r.d, parts[i]), p_dry: false });
-    if (error) return stop(error.message);
+    // Thrown, not stopped: a timeout or dropped connection is retried with backoff, and only rolls back after MAX_TRIES.
+    if (error) throw new Error(error.message);
     const o = data as { added: number; updated: number; unchanged: number; problems: Problem[] };
     if (o.problems.length) {
       await update(db, job.id, { problems: o.problems.slice(0, PROBLEM_CAP), problem_count: o.problems.length });

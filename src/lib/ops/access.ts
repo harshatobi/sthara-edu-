@@ -93,6 +93,8 @@ export async function requireGrant(db: Db, operatorId: string, schoolId: string,
   if (!grant) return fail('This shows the school\'s own records. Open an access window on the school first.', 423);
   if (scope === 'view_as' && grant.scope !== 'view_as') return fail('Your access window does not cover viewing as the school.', 423);
   if (scope === 'import' && grant.scope !== 'import') return fail('Importing for the school needs an import window. Open one first.', 423);
+  // An import window covers imports and nothing else: no named records under it.
+  if (scope !== 'import' && grant.scope === 'import') return fail('Your access window covers imports only. Open a records window to see the school\'s records.', 423);
   return { ok: true, grant };
 }
 

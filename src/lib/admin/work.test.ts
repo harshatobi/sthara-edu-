@@ -32,6 +32,8 @@ test('each role sees its own jobs', () => {
   assert.ok(keys('academic_coordinator').includes('cover'));
   assert.ok(keys('finance_head').includes('concessions') && keys('finance_head').includes('daybook'));
   assert.ok(!keys('cashier').includes('daybook'), 'the cashier does not close the day');
+  assert.deepEqual(keys('registrar'), ['register']);
+  assert.deepEqual(keys('health_officer'), ['health']);
 });
 
 test('own concession requests are not "waiting for your approval"', () => {

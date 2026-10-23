@@ -89,6 +89,14 @@ export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions
     out.push({ key: 'filing', title: 'CBSE wellness filing', detail: desk.filing.dueOn ? `Due ${desk.filing.dueOn}. Fill in the manual sections and file.` : 'Fill in the manual sections and file.',
       count: null, tone: 'a', actions: [{ label: 'Prepare the filing', href: '/admin/wellness', primary: true }] });
   }
+  if (can('students.manage')) {
+    out.push({ key: 'register', title: 'Student register', detail: 'Admit into the register, correct records, set classes and roll numbers, close the year.', count: null, tone: 'n',
+      actions: [{ label: 'Change requests', href: '/admin/students?tab=requests', primary: true }, { label: 'Open the register', href: '/admin/students' }] });
+  }
+  if (can('health.manage')) {
+    out.push({ key: 'health', title: 'Health records', detail: 'Health cards, check-ups, vaccinations, alerts and parents’ requested changes.', count: null, tone: 'n',
+      actions: [{ label: 'Open health records', href: '/admin/health', primary: true }] });
+  }
   if (can('people.manage')) {
     out.push({ key: 'logins', title: 'Logins', detail: 'Ask Sthara for new logins, remove accounts, set what teachers teach.', count: null, tone: 'n',
       actions: [{ label: 'User directory', href: '/admin/directory', primary: true }] });

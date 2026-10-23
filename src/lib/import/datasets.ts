@@ -15,7 +15,7 @@ import { evenSchedule, validateSchedule } from '@/lib/admin/fees';
 import { parseAmount, parseDate, parseSession } from './parse';
 import { parseAadhaar } from '@/lib/students/aadhaar';
 import { IMPAIRMENT_LABEL, IMPAIRMENTS, SCREEN_RESULTS, checkEvent, checkUdise, parseAllergyList, parseNameList } from '@/lib/students/health';
-import { ADDRESS_PARTS, FIELD, checkAddress, checkFamily, checkField, parseGrade as parseRegisterGrade, parseOutcome } from '@/lib/students/register';
+import { ADDRESS_PARTS, FIELD, checkAddress, checkAdmissionNo, checkFamily, checkField, parseGrade as parseRegisterGrade, parseOutcome } from '@/lib/students/register';
 
 export type Kind = 'text' | 'date' | 'session' | 'amount' | 'int' | 'enum' | 'email' | 'phone';
 
@@ -73,13 +73,13 @@ export interface Dataset {
 
 // ── Keys ────────────────────────────────────────────────────────────────────
 
-/** Admission numbers compare without case or surrounding spaces; "A-001" and "a-001" are the same student. */
-export const admKey = (v: string) => v.trim().toLowerCase().replace(/\s+/g, '');
+/** Admission numbers compare without case or surrounding spaces, as the register's unique index does; "A-001" and "a-001" are the same student. */
+export const admKey = (v: string) => v.trim().toLowerCase();
 const nameKey = (v: string) => v.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 export const sheetKey = (assessment: string, cls: string, subject: string) => `${nameKey(assessment)}|${normClass(cls)}|${nameKey(subject)}`;
 
 const ADM: Column = {
-  key: 'admission_no', required: true, kind: 'text', max: 40, aliases: ['admission_number', 'adm_no', 'admn_no', 'student_id'],
+  key: 'admission_no', required: true, kind: 'text', max: 30, aliases: ['admission_number', 'adm_no', 'admn_no', 'student_id'],
   example: 'A1024', guide: 'The student’s admission number, exactly as the school writes it.',
 };
 
@@ -401,6 +401,9 @@ const students: Dataset = {
   identity: c => admKey(String(c.admission_no)),
   build(c, n) {
     const p: Problem[] = [];
+    // A new entry takes this number as is, so it must be one the register accepts (the dry run never inserts).
+    const adm = checkAdmissionNo(String(c.admission_no));
+    if ('error' in adm) p.push({ n, column: 'admission_no', error: adm.error });
     const row: Record<string, unknown> = { admission_no: String(c.admission_no).trim() };
     const take = (key: string, raw: unknown, col = key) => {
       if (raw == null) return;

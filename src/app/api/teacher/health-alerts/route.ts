@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
     const { data } = await db.from('users').select('teacher_class').eq('id', staff.id).maybeSingle();
     allowed = !!data?.teacher_class && normClass(data.teacher_class) === normClass(cls);
   }
-  if (!allowed && staff.role === 'admin') allowed = (await accessOf(db, staff.id, staff.schoolId)).any('health.read', 'students.read');
+  // Office staff need health.read: students.read shows only the UDISE+ part of a health record, never allergies or conditions.
+  if (!allowed && staff.role === 'admin') allowed = (await accessOf(db, staff.id, staff.schoolId)).can('health.read');
   if (!allowed) return NextResponse.json({ error: 'Only teachers of this class see its alerts.' }, { status: 403 });
   return NextResponse.json({ alerts: await classAlerts(db, staff.schoolId, cls) });
 }

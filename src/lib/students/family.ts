@@ -54,18 +54,28 @@ export async function saveFamily(db: Db, a: Actor, studentId: string, input: Rec
 }
 
 async function writeFamily(db: Db, a: Actor, studentId: string, v: FamilyInput, memberId?: string): Promise<Result<{ id: string }>> {
+  if (memberId) {
+    const { data } = await db.from('family_members').select('id').eq('id', memberId).eq('student_id', studentId).eq('school_id', a.schoolId).maybeSingle();
+    if (!data) return fail('Family member not found.', 404);
+  }
+  // The old primary steps down first (one primary per student), and steps back up if the save then fails.
+  let demoted: string[] = [];
   if (v.is_primary) {
     let q = db.from('family_members').update({ is_primary: false }).eq('student_id', studentId).eq('is_primary', true);
     if (memberId) q = q.neq('id', memberId);
-    await q;
+    const { data, error } = await q.select('id');
+    if (error) return fail('Could not save.', 500);
+    demoted = (data || []).map(d => d.id);
   }
+  const restore = async () => { if (demoted.length) await db.from('family_members').update({ is_primary: true }).in('id', demoted); };
   if (memberId) {
     const { data, error } = await db.from('family_members').update(v).eq('id', memberId).eq('student_id', studentId).eq('school_id', a.schoolId).select('id').maybeSingle();
-    if (error) return fail('Could not save.', 500);
-    return data ? { ok: true, id: data.id } : fail('Family member not found.', 404);
+    if (error || !data) { await restore(); return error ? fail('Could not save.', 500) : fail('Family member not found.', 404); }
+    return { ok: true, id: data.id };
   }
   const { data, error } = await db.from('family_members').insert({ ...v, school_id: a.schoolId, student_id: studentId, created_by: a.id }).select('id').single();
-  return error || !data ? fail('Could not save.', 500) : { ok: true, id: data.id };
+  if (error || !data) { await restore(); return fail('Could not save.', 500); }
+  return { ok: true, id: data.id };
 }
 
 /** Removes a family member who isn't a parent login (unlink the login through Sthara first). */
@@ -84,7 +94,7 @@ export async function setEmergency(db: Db, a: Actor, studentId: string, list: Em
   const st = await studentOf(db, a.schoolId, studentId);
   if (!st) return fail('Student not found.', 404);
   const fam = new Set(((await db.from('family_members').select('id').eq('student_id', studentId).limit(30)).data || []).map(f => f.id));
-  const rows = [];
+  const rows: ({ position: number } & Record<string, unknown>)[] = [];
   for (const [i, e] of list.entries()) {
     if (e.familyMemberId) {
       if (!fam.has(e.familyMemberId)) return fail('An emergency contact must be family on this record, or someone with a name and phone.');
@@ -96,9 +106,18 @@ export async function setEmergency(db: Db, a: Actor, studentId: string, list: Em
       rows.push({ school_id: a.schoolId, student_id: studentId, position: i + 1, family_member_id: null, name, relation: (e.relation || '').trim().slice(0, 40) || null, phone });
     }
   }
-  const del = await db.from('emergency_contacts').delete().eq('student_id', studentId).eq('school_id', a.schoolId);
-  if (del.error) return fail('Could not save.', 500);
-  if (rows.length) { const { error } = await db.from('emergency_contacts').insert(rows); if (error) return fail('Could not save.', 500); }
+  // Each place is written in place, and only places past the new list are removed: a failed save never leaves the
+  // student with no one to call.
+  const { data: had, error: readErr } = await db.from('emergency_contacts').select('id, position').eq('student_id', studentId).eq('school_id', a.schoolId).limit(3);
+  if (readErr) return fail('Could not save.', 500);
+  const at = new Map((had || []).map(h => [h.position as number, h.id as string]));
+  for (const r of rows) {
+    const id = at.get(r.position);
+    const { error } = id ? await db.from('emergency_contacts').update(r).eq('id', id) : await db.from('emergency_contacts').insert(r);
+    if (error) return fail('Could not save.', 500);
+  }
+  const extra = [...at].filter(([pos]) => pos > rows.length).map(([, id]) => id);
+  if (extra.length) { const { error } = await db.from('emergency_contacts').delete().in('id', extra); if (error) return fail('Could not save.', 500); }
   return { ok: true };
 }
 

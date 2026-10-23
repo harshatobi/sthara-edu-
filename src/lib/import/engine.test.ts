@@ -175,3 +175,21 @@ test('register: an admission number the register would refuse is caught in the c
   ], look, false);
   assert.deepEqual(r.problems.map(p => [p.n, p.column]), [[3, 'admission_no'], [4, 'admission_no']]);
 });
+
+test('documents: each row needs its file, sizes are checked, the kind is read by name', () => {
+  const files: Record<string, number> = { 'a1024-birth.pdf': 1000, 'big.pdf': 26 * 1024 * 1024 };
+  const withFiles: Lookups = { ...look, file: name => (name.toLowerCase() in files ? { path: `s/import/j/${name}`, size: files[name.toLowerCase()] } : null) };
+  const r = checkTable(d('documents'), [
+    ['admission_no', 'kind', 'file_name', 'issued_on', 'verified'],
+    ['A1024', 'Birth certificate', 'A1024-birth.pdf', '12-03-2014', 'Yes'],
+    ['A1025', 'transfer_certificate', 'missing.pdf', '', ''],
+    ['A1026', 'Aadhaar card', 'big.pdf', '', ''],
+    ['A1027', 'Library card', 'A1024-birth.pdf', '', ''],
+  ], withFiles, false);
+  assert.deepEqual(r.rows.map(x => x.row), [{
+    admission_no: 'A1024', kind: 'birth_certificate', title: null, default_title: 'Birth certificate', document_no: null, issued_on: '2014-03-12', valid_until: null,
+    verified: true, storage_path: 's/import/j/A1024-birth.pdf', file_name: 'A1024-birth.pdf', size_bytes: 1000,
+  }]);
+  assert.deepEqual(r.problems.map(p => [p.n, p.column]), [[3, 'file_name'], [4, 'file_name'], [5, 'kind']]);
+  assert.match(r.problems[0].error, /wasn.t uploaded/);
+});

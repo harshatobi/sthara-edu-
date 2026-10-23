@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { byIds, pageAll } from '@/lib/ops/page';
 import { checkFamily, checkProposal, cleanPhone, type FamilyInput, type RequestKind } from './register';
 import { consented, saveCard } from './healthServer';
+import { eraseForRequest } from './documentsServer';
 
 /**
  * Family on the student record (brief 02): contacts, emergency contacts in calling order, sibling suggestions the
@@ -27,7 +28,7 @@ export async function familyOf(db: Db, schoolId: string, studentId: string) {
     db.from('family_members').select(FCOLS).eq('student_id', studentId).eq('school_id', schoolId).order('is_primary', { ascending: false }).order('created_at').limit(30),
     db.from('emergency_contacts').select('id, position, family_member_id, name, relation, phone').eq('student_id', studentId).order('position').limit(3),
     db.from('sibling_links').select('id, a, b, status, source').eq('school_id', schoolId).or(`a.eq.${studentId},b.eq.${studentId}`).neq('status', 'rejected').limit(40),
-    db.from('student_change_requests').select('id, kind, target_id, proposed, note, status, requested_by, created_at').eq('student_id', studentId).eq('status', 'pending').order('created_at').limit(40),
+    db.from('student_change_requests').select('id, kind, target_id, proposed, note, status, requested_by, created_at').eq('student_id', studentId).eq('status', 'pending').neq('kind', 'document_erasure').order('created_at').limit(40),
   ]);
   const others = (sib.data || []).map(l => (l.a === studentId ? l.b : l.a));
   const names = new Map<string, { name: string; admissionNo: string }>();
@@ -158,8 +159,15 @@ export async function pendingRequests(db: Db, schoolId: string, kinds: RequestKi
     const { data: ps } = await byIds<{ id: string; name: string | null }>(ids, (chunk, f, t) => db.from('users').select('id, name').in('id', chunk).order('id').range(f, t));
     for (const p of ps) who.set(p.id, p.name || 'Parent');
   }
+  // An erasure request names its document: show which one.
+  const docIds = data.filter(r => r.kind === 'document_erasure' && r.target_id).map(r => r.target_id as string);
+  const docs = new Map<string, { kind: string; title: string; file_name: string }>();
+  if (docIds.length) {
+    const { data: ds } = await byIds<{ id: string; kind: string; title: string; file_name: string }>(docIds, (chunk, f, t) => db.from('student_documents').select('id, kind, title, file_name').in('id', chunk).order('id').range(f, t));
+    for (const d of ds) docs.set(d.id, d);
+  }
   return data.map(r => ({ id: r.id, studentId: r.student_id, student: r.students.full_name, admissionNo: r.students.admission_no, kind: r.kind, targetId: r.target_id,
-    proposed: r.proposed, note: r.note, createdAt: r.created_at, by: who.get(r.requested_by) ?? 'Parent' }));
+    proposed: r.proposed, note: r.note, createdAt: r.created_at, by: who.get(r.requested_by) ?? 'Parent', doc: r.target_id ? docs.get(r.target_id) ?? null : null }));
 }
 
 /** Approves (applies) or rejects a parent request. Applying runs the same checks the office's own edits do. */
@@ -182,6 +190,7 @@ export async function decideRequest(db: Db, a: Actor, id: string, approve: boole
         out = await writeFamily(db, a, r.student_id, { ...(checked.value as unknown as FamilyInput), is_primary: !!cur?.is_primary }, target);
       } else out = await writeFamily(db, a, r.student_id, checked.value as unknown as FamilyInput);
     } else if (r.kind === 'health') out = await saveCard(db, a, r.student_id, checked.value);
+    else if (r.kind === 'document_erasure') out = await eraseForRequest(db, { ...a, role: 'admin' }, r.student_id, r.target_id, note.trim() || 'Erased at the parent\u2019s request');
     else out = await setEmergency(db, a, r.student_id, (checked.value as { list: EmergencyInput[] }).list);
     if (!out.ok) return out;
   }

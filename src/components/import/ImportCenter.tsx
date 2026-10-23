@@ -25,6 +25,8 @@ export interface ImportApi {
   create(body: { dataset: string; fileName: string; fileBytes: number }): Promise<{ job: JobRow; upload: { url: string } }>;
   get(id: string): Promise<{ job: JobRow & { problems: Problem[] }; undo: { blocked: string | null } | null }>;
   act(id: string, action: 'uploaded' | 'commit' | 'undo' | 'cancel'): Promise<unknown>;
+  /** One-time upload links for the files a manifest lists (documents). */
+  fileUrls(id: string, names: string[]): Promise<{ files: { name: string; url: string }[] }>;
 }
 
 export interface JobRow {
@@ -110,10 +112,18 @@ export default function ImportCenter({ api, who }: { api: ImportApi; /** Whose s
 function Start({ api, who, onStarted }: { api: ImportApi; who: 'school' | 'sthara'; onStarted: (id: string) => void }) {
   const [key, setKey] = useState(DATASETS[0].key);
   const [file, setFile] = useState<File | null>(null);
+  const [docs, setDocs] = useState<File[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const d = datasetOf(key)!;
+  // A folder pick brings its sub-folders' files and the manifest itself; keep each name once, leave the manifest out.
+  const addDocs = (list: FileList | null) => setDocs(old => {
+    const byName = new Map(old.map(f => [f.name.toLowerCase(), f]));
+    for (const f of Array.from(list || [])) if (f.size > 0 && !/^\./.test(f.name) && f.name !== file?.name) byName.set(f.name.toLowerCase(), f);
+    return [...byName.values()];
+  });
+  const tooBig = docs.filter(f => f.size > 25 * 1024 * 1024);
 
   const start = async () => {
     if (!file) return;
@@ -125,8 +135,28 @@ function Start({ api, who, onStarted }: { api: ImportApi; who: 'school' | 'sthar
       const ext = file.name.toLowerCase().split('.').pop() || '';
       const put = await fetch(upload.url, { method: 'PUT', headers: { 'Content-Type': MIME[ext] || 'application/octet-stream', 'x-upsert': 'true' }, body: file });
       if (!put.ok) throw new Error('The upload did not finish. Check your connection and try again.');
+      if (d.files) {
+        // Each file goes straight to storage, four at a time, with its own one-time link.
+        let done = 0;
+        for (let i = 0; i < docs.length; i += 100) {
+          const part = docs.slice(i, i + 100);
+          const { files } = await api.fileUrls(job.id, part.map(f => f.name));
+          const byName = new Map(part.map(f => [f.name, f]));
+          for (let k = 0; k < files.length; k += 4) {
+            await Promise.all(files.slice(k, k + 4).map(async u => {
+              const f = byName.get(u.name);
+              if (!f) return;
+              const res = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream', 'x-upsert': 'true' }, body: f });
+              if (!res.ok) throw new Error(`"${f.name}" did not upload. Check your connection and try again.`);
+              done++;
+            }));
+            setBusy(`Uploading files: ${n(done)} of ${n(docs.length)}`);
+          }
+        }
+      }
       await api.act(job.id, 'uploaded');
       setFile(null);
+      setDocs([]);
       if (input.current) input.current.value = '';
       onStarted(job.id);
     } catch (e) { setErr(e instanceof Error ? e.message : 'Could not start the import.'); }
@@ -155,8 +185,24 @@ function Start({ api, who, onStarted }: { api: ImportApi; who: 'school' | 'sthar
         <div>
           <label className="lbl" htmlFor="imp-file">THE FILE (.XLSX OR .CSV, UP TO 50 MB)</label>
           <input id="imp-file" ref={input} className="cmp-in" type="file" accept=".csv,.tsv,.txt,.xlsx" onChange={e => setFile(e.target.files?.[0] ?? null)} />
+          {d.files && (
+            <div style={{ marginTop: 14 }}>
+              <span className="lbl">THE FILES IT LISTS (UP TO 25 MB EACH)</span>
+              <div className="acts" style={{ marginTop: 6 }}>
+                <label className="btn sm" style={{ cursor: 'pointer' }}>Choose files<input type="file" multiple hidden onChange={e => { addDocs(e.target.files); e.target.value = ''; }} /></label>
+                <label className="btn sm" style={{ cursor: 'pointer' }}>Choose a folder
+                  <input type="file" multiple hidden ref={el => { if (el) el.setAttribute('webkitdirectory', ''); }} onChange={e => { addDocs(e.target.files); e.target.value = ''; }} />
+                </label>
+                {docs.length > 0 && <button type="button" className="btn sm" onClick={() => setDocs([])}>Clear</button>}
+              </div>
+              <p className="muted" style={{ marginTop: 8, fontSize: 13.5 }}>
+                {docs.length ? `${n(docs.length)} file${docs.length === 1 ? '' : 's'} ready, ${(docs.reduce((t, f) => t + f.size, 0) / 1048576).toFixed(1)} MB.` : 'Matched to the manifest by file name. A file the manifest doesn\u2019t list is reported and not kept.'}
+              </p>
+              {tooBig.length > 0 && <div className="note err" role="alert" style={{ marginTop: 8 }}>Over 25 MB: {tooBig.slice(0, 5).map(f => f.name).join(', ')}{tooBig.length > 5 ? ` and ${tooBig.length - 5} more` : ''}. Scan them smaller or split them.</div>}
+            </div>
+          )}
           <div className="acts" style={{ marginTop: 12 }}>
-            <button type="button" className="btn pri" disabled={!file || !!busy} onClick={start}>
+            <button type="button" className="btn pri" disabled={!file || !!busy || (d.files && (!docs.length || tooBig.length > 0))} onClick={start}>
               <UploadSimple size={15} weight="bold" /> {busy ?? 'Upload and check'}
             </button>
           </div>
@@ -272,6 +318,14 @@ function JobPanel({ api, id, onChanged, onClose }: { api: ImportApi; id: string;
               {n(Number(j.summary.withheld))} row{Number(j.summary.withheld) === 1 ? '' : 's'} had health details for students whose parents haven&apos;t given health consent. Those details are left out; everything else on those rows is imported.
             </div>
           )}
+          {(() => {
+            const u = j.summary.unlisted as { count: number; names: string[] } | undefined;
+            return u?.count ? (
+              <div className="note info" style={{ marginTop: 12 }}>
+                {n(u.count)} file{u.count === 1 ? '' : 's'} came with the manifest but no row lists {u.count === 1 ? 'it' : 'them'}, so {u.count === 1 ? 'it was' : 'they were'} not kept: {u.names.join(', ')}{u.count > u.names.length ? ` and ${n(u.count - u.names.length)} more` : ''}.
+              </div>
+            ) : null;
+          })()}
 
           {j.status === 'failed' && (
             <div className="note err" style={{ marginTop: 14 }}>

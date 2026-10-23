@@ -15,6 +15,7 @@ import { evenSchedule, validateSchedule } from '@/lib/admin/fees';
 import { parseAmount, parseDate, parseSession } from './parse';
 import { parseAadhaar } from '@/lib/students/aadhaar';
 import { IMPAIRMENT_LABEL, IMPAIRMENTS, SCREEN_RESULTS, checkEvent, checkUdise, parseAllergyList, parseNameList } from '@/lib/students/health';
+import { DOC_KINDS, DOC_KIND_KEYS, DOC_MAX_BYTES, cleanFileName } from '@/lib/students/documents';
 import { ADDRESS_PARTS, FIELD, checkAddress, checkAdmissionNo, checkFamily, checkField, parseGrade as parseRegisterGrade, parseOutcome } from '@/lib/students/register';
 
 export type Kind = 'text' | 'date' | 'session' | 'amount' | 'int' | 'enum' | 'email' | 'phone';
@@ -44,6 +45,8 @@ export interface Lookups {
   classes: Map<string, string>;
   /** sheetKey(assessment, class, subject) to the open or closed marks sheet. */
   sheets: Map<string, { id: string; max: number; status: string }>;
+  /** Files uploaded with the job (documents): where the file of that name is and its size, or null when it never came. */
+  file?: (name: string) => { path: string; size: number } | null;
 }
 
 export type Cells = Record<string, string | number | null>;
@@ -63,7 +66,9 @@ export interface Dataset {
   /** The database writer: public.import_<key>. */
   writer: string;
   /** Which lookups the server must load. */
-  needs: ('students' | 'classes' | 'sheets')[];
+  needs: ('students' | 'classes' | 'sheets' | 'files')[];
+  /** The file is a manifest, and the files it lists are uploaded with it (documents). */
+  files?: boolean;
   /** Identity of a row inside one file; null when the row has none (never a duplicate). */
   identity: (c: Cells) => string | null;
   /** Rows sharing this go in the same chunk. */
@@ -583,7 +588,42 @@ const healthEvents: Dataset = {
   },
 };
 
-export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
+/** A file name as the manifest and the upload are matched: cleaned, without case. */
+export const fileKey = (name: string) => (cleanFileName(name) ?? '').toLowerCase();
+
+const DOC_KIND_VALUES: Record<string, string> = Object.fromEntries(DOC_KIND_KEYS.flatMap(k => [[k, k], [k.replace(/_/g, ' '), k], [DOC_KINDS[k].label.toLowerCase(), k]]));
+
+const documents: Dataset = {
+  key: 'documents', label: 'Student documents', writer: 'import_documents', needs: ['files'], files: true,
+  about: 'A manifest, one row per document, with the files themselves: pick them (or the whole folder) after the manifest. Each file up to 25 MB, any type.',
+  lands: 'The Documents tab of each student’s record. A file the manifest doesn’t list is reported and not kept.',
+  matching: 'Admission number, kind and file name.',
+  columns: [
+    ADM,
+    { key: 'kind', required: true, kind: 'enum', values: DOC_KIND_VALUES, aliases: ['document', 'type'], example: 'Birth certificate', guide: `One of: ${DOC_KIND_KEYS.map(k => DOC_KINDS[k].label).join(', ')}.` },
+    { key: 'file_name', required: true, kind: 'text', max: 200, aliases: ['file', 'filename'], example: 'A1024-birth.pdf', guide: 'The file’s name exactly as uploaded with this manifest.' },
+    { key: 'title', required: false, kind: 'text', max: 120, example: '', guide: 'What to call it on the record. Blank uses the kind.' },
+    { key: 'document_no', required: false, kind: 'text', max: 60, aliases: ['certificate_no', 'number'], example: 'BC/2014/0567', guide: 'The certificate or document number.' },
+    { key: 'issued_on', required: false, kind: 'date', example: '12-03-2014', guide: 'When it was issued, DD-MM-YYYY.' },
+    { key: 'valid_until', required: false, kind: 'date', aliases: ['expires_on', 'valid_till'], example: '', guide: 'For certificates that expire (income, caste): the last valid day.' },
+    { key: 'verified', required: false, kind: 'enum', values: YES_NO, example: 'Yes', guide: 'Yes when the school has seen the original: it counts as verified by whoever commits. Blank waits for the registrar’s check.' },
+  ],
+  identity: c => `${admKey(String(c.admission_no))}|${c.kind}|${fileKey(String(c.file_name))}`,
+  build(c, n, look) {
+    const name = cleanFileName(String(c.file_name));
+    if (!name) return fail({ n, column: 'file_name', error: 'Give the file’s name.' });
+    const f = look.file?.(name) ?? null;
+    if (!f) return fail({ n, column: 'file_name', error: `"${name}" wasn’t uploaded with this manifest.` });
+    if (f.size > DOC_MAX_BYTES) return fail({ n, column: 'file_name', error: `"${name}" is over 25 MB.` });
+    if (c.issued_on != null && c.valid_until != null && String(c.valid_until) < String(c.issued_on)) return fail({ n, column: 'valid_until', error: 'It can’t expire before it was issued.' });
+    return { ok: true, row: {
+      admission_no: String(c.admission_no).trim(), kind: c.kind, title: c.title, default_title: DOC_KINDS[c.kind as keyof typeof DOC_KINDS].label, document_no: c.document_no,
+      issued_on: c.issued_on, valid_until: c.valid_until, verified: c.verified == null ? null : c.verified === 'true', storage_path: f.path, file_name: name, size_bytes: f.size,
+    } };
+  },
+};
+
+export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, documents, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
 export const datasetOf = (key: unknown) => DATASETS.find(d => d.key === key) ?? null;
 
 // ── Cells ───────────────────────────────────────────────────────────────────

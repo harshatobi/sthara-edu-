@@ -11,6 +11,8 @@ import { useGet } from '@/components/canon/useGet';
 import { fmtDate } from '@/lib/admin/format';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Field, Kpi, Workspace } from './kit';
+import DocumentsPanel from './students/DocumentsPanel';
+import Requests from './students/Requests';
 import HealthPanel from './students/HealthPanel';
 
 interface Row { id: string; name: string; admissionNo: string; className: string | null; consent: boolean; hasLogin: boolean; bloodGroup: string | null; cwsn: boolean; alert: string | null; medicines: number }
@@ -50,6 +52,7 @@ function Health() {
       {toastEl}
       <PageBar eyebrow="HEALTH" title="Student health" sub={`Session ${data.session.replace('-', '–')}. Every look at a student's full record is recorded.`} />
       {err && <div className="note err" role="alert" style={{ marginBottom: 14 }}>{err}</div>}
+      <Requests documentsOnly />
       <div className="kpis">
         <Kpi label="ALERTS" value={C.alerts} icon={Warning} valueColor={C.alerts ? 'var(--red)' : undefined} note="Shown to the class's teachers" onClick={() => setView('alerts')} />
         <Kpi label="SPECIAL NEEDS (CWSN)" value={C.cwsn} icon={HandHeart} note="For UDISE+ and support" onClick={() => setView('cwsn')} />
@@ -106,7 +109,7 @@ function Health() {
           {data.can.manage && <button className="btn" disabled={!days || Number(days) === data.settings.retentionDays} onClick={() => post({ action: 'retention', days: Number(days) }, 'Saved.')}>Save</button>}
         </div>
       </div>
-      {open && <Workspace title={open.name} sub={`${open.admissionNo}${open.className ? ` · ${open.className}` : ''}`} onClose={() => { setOpen(null); reload(); }} wide><HealthPanel studentId={open.id} /></Workspace>}
+      {open && <Workspace title={open.name} sub={`${open.admissionNo}${open.className ? ` · ${open.className}` : ''}`} onClose={() => { setOpen(null); reload(); }} wide><HealthPanel studentId={open.id} /><h3 style={{ fontSize: 17, fontWeight: 800, margin: '22px 0 12px' }}>Documents</h3><DocumentsPanel studentId={open.id} /></Workspace>}
     </>
   );
 }

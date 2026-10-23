@@ -28,12 +28,13 @@ function Import() {
       get: id => get(`/api/admin/import/${id}`),
       create: body => call('/api/admin/import', 'POST', body),
       act: (id, action) => call(`/api/admin/import/${id}`, 'POST', { action }),
+      fileUrls: (id, names) => call(`/api/admin/import/${id}`, 'POST', { action: 'file-urls', names }),
     };
   }, [call, getAuthToken]);
   return (
     <>
       <PageBar eyebrow="DATA IMPORT" title="Bring your records into Sthara"
-        sub="Attendance, marks, past results, fees and admissions, from Sthara's published file formats. Checked in full before anything is saved, and undoable for 30 days." />
+        sub="The register, family, health, documents, attendance, marks, past results, fees and admissions, from Sthara's published file formats. Checked in full before anything is saved, and undoable for 30 days." />
       <ImportCenter api={api} who="school" />
     </>
   );

@@ -42,7 +42,13 @@ forms) on the student's record, privately.
   Documents the school must keep by law (TC, admission register proofs) can be declined; approved ones are deleted
   from storage and the deletion is logged.
 
-## Still open (ask Moses before building)
+**2026-10-23 (asked in session):**
+- **Manifest columns:** `admission_no`, `kind`, `file_name` required; `title`, `document_no`, `issued_on`, `valid_until`
+  optional. `valid_until` covers certificates that expire (income, caste), so the checklist can flag them.
+- **Imported documents and verification:** an optional `verified` column. Yes marks the document verified by whoever
+  commits, dated at commit; blank leaves it awaiting the registrar's check.
+
+## Still open (answered above, kept for the record)
 
 - Which document kinds, and which are required at admission (a checklist showing what's missing)?
 - Student photo: is it a document, or a profile field shown across the app (ID cards, report cards)?
@@ -62,3 +68,20 @@ forms) on the student's record, privately.
 
 Answers recorded. The import format is published, with a template, and works for the tenant admin and for ops. Table, private bucket, policies, signed-URL access, audit, and an admission checklist if agreed.
 Tests for access. All checks pass.
+
+## Built (2026-10-23, PR 36)
+
+- Migration `20261024090000_student_documents.sql`: `student_documents` (server-only: no access for signed-in users),
+  the private `student-docs` bucket (25 MB, any type), the `document_erasure` request kind, `import_documents`, and undo
+  learning documents. A register entry with documents from anywhere else survives a register undo.
+- `src/lib/students/documents.ts` (kinds, who sees which, checklist, checks) and `documentsServer.ts` (upload links,
+  finish, signed open links with the view recorded, verify/reject/remove, erasure, checklist setting, parent views).
+- Files only open in the browser when their first bytes say PDF or image (looked at once, remembered); anything else,
+  SVG included, downloads.
+- Screens: Documents tab on the student record (and in the health officer's student view, medical kinds only); documents
+  to check and erasure requests in Admin › Students › Requests (the DPO sees erasures; the Health page shows medical
+  documents to check); the admission checklist editor in Register settings (school admin); Parent portal › Documents.
+- Import: "Student documents" format. Pick the manifest, then files or a whole folder; each file uploads straight to
+  storage with its own one-time link. Files nobody listed are reported and removed at the check; after a commit or undo,
+  files no row uses are removed.
+- Tests: `documents.test.ts`, import engine documents test, SQL scenarios run on the local baseline copy.

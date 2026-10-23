@@ -42,6 +42,7 @@ export function ImportsTab({ schoolId, onChanged }: { schoolId: string; onChange
     get: id => api(`/schools/${schoolId}/import/${id}`),
     create: body => api(`/schools/${schoolId}/import`, { method: 'POST', body }),
     act: (id, action) => api(`/schools/${schoolId}/import/${id}`, { method: 'POST', body: { action } }),
+    fileUrls: (id, names) => api(`/schools/${schoolId}/import/${id}`, { method: 'POST', body: { action: 'file-urls', names } }),
   }), [api, schoolId]);
 
   if (grant === undefined) return <Skeleton h={200} style={{ borderRadius: 20 }} />;

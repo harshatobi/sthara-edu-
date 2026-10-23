@@ -1,7 +1,7 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cancelJob, createJob, getJob, kick, listJobs, startCheck, startCommit, startUndo, undoBlock, type Actor, type Job } from './server';
+import { cancelJob, createJob, fileUrls, getJob, kick, listJobs, startCheck, startCommit, startUndo, undoBlock, type Actor, type Job } from './server';
 
 /**
  * The request handling the school's admin routes and the ops console share. The caller has already been
@@ -39,12 +39,16 @@ export async function jobResponse(db: Db, schoolId: string, id: string) {
   return NextResponse.json({ job, undo: job.status === 'committed' ? { blocked: await undoBlock(db, job) } : null });
 }
 
-/** POST one job: { action: 'uploaded' | 'commit' | 'undo' | 'cancel' }. */
+/** POST one job: { action: 'uploaded' | 'commit' | 'undo' | 'cancel' }, or { action: 'file-urls', names } for a manifest's files. */
 export async function actionResponse(db: Db, actor: Actor, id: string, body: unknown) {
   if (!UUID.test(id)) return NextResponse.json({ error: 'Import not found' }, { status: 404 });
   const job: Job | null = await getJob(db, actor.schoolId, id);
   if (!job) return NextResponse.json({ error: 'Import not found' }, { status: 404 });
   const action = (body as { action?: unknown } | null)?.action;
+  if (action === 'file-urls') {
+    const f = await fileUrls(db, job, (body as { names?: unknown }).names);
+    return f.ok ? NextResponse.json({ files: f.files }) : NextResponse.json({ error: f.error }, { status: f.status });
+  }
   const out = action === 'uploaded' ? await startCheck(db, job)
     : action === 'commit' ? await startCommit(db, actor, job)
       : action === 'undo' ? await startUndo(db, actor, job)

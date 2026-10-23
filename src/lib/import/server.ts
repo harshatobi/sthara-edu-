@@ -6,7 +6,9 @@ import { pageAll, byIds } from '@/lib/ops/page';
 import { normClass } from '@/lib/teacher/scope';
 import { currentSession } from '@/lib/students/register';
 import { piiReady, sealAadhaar } from '@/lib/students/pii';
-import { admKey, datasetOf, sheetKey, type Dataset, type Lookups, type Problem } from './datasets';
+import { admKey, datasetOf, fileKey, sheetKey, type Dataset, type Lookups, type Problem } from './datasets';
+import { cleanFileName } from '@/lib/students/documents';
+import { DOC_BUCKET } from '@/lib/students/documentsServer';
 import { CHUNK, checkTable, chunks, payload, PROBLEM_CAP, receiptFloors } from './engine';
 import { kindOf, readTable } from './parse';
 
@@ -102,6 +104,71 @@ export async function loadLookups(db: Db, schoolId: string, needs: Dataset['need
   return look;
 }
 
+// ── Files that come with a manifest (documents) ─────────────────────────────
+// They go straight into the private documents bucket, in the job's own folder, named by a hash of the file name (so
+// the manifest's name finds it) plus a readable part. What no row uses is removed: after the check (files nobody
+// listed), and after a commit or undo (copies the record already had, rows undone).
+
+const MAX_FILES = 5000;
+const docFolder = (job: Pick<Job, 'id' | 'school_id'>) => `${job.school_id}/import/${job.id}`;
+const objectKey = (name: string) => `${createHash('sha256').update(fileKey(name)).digest('hex').slice(0, 16)}-${safeName(cleanFileName(name) ?? 'file')}`;
+
+async function listFolder(db: Db, folder: string): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await db.storage.from(DOC_BUCKET).list(folder, { limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } });
+    if (error) throw new Error(error.message);
+    for (const f of data || []) if (f.id) out.set(f.name, Number((f.metadata as { size?: number } | null)?.size ?? 0));
+    if (!data || data.length < 1000) return out;
+  }
+}
+
+/** Removes the job's files that `keep` doesn't want; returns the names removed. */
+async function sweepFiles(db: Db, job: Pick<Job, 'id' | 'school_id' | 'dataset'>, keep: (path: string) => boolean = () => false): Promise<string[]> {
+  if (!datasetOf(job.dataset)?.files) return [];
+  const folder = docFolder(job);
+  const gone = [...(await listFolder(db, folder)).keys()].filter(k => !keep(`${folder}/${k}`));
+  for (let i = 0; i < gone.length; i += 500) {
+    const { error } = await db.storage.from(DOC_BUCKET).remove(gone.slice(i, i + 500).map(k => `${folder}/${k}`));
+    if (error) console.warn('[import files]', error.message);
+  }
+  return gone;
+}
+
+/** Files the job's rows still point at, after a commit or an undo. */
+async function referenced(db: Db, job: Pick<Job, 'id' | 'school_id'>): Promise<Set<string>> {
+  const r = await pageAll<{ storage_path: string }>((from, to) => db.from('student_documents').select('storage_path').eq('school_id', job.school_id)
+    .like('storage_path', `${docFolder(job)}/%`).order('id').range(from, to), MAX_FILES * 2);
+  if (r.error) throw new Error(r.error.message);
+  return new Set(r.data.map(x => x.storage_path));
+}
+
+/** One-time upload links for files that come with the manifest, up to 200 per call. */
+export async function fileUrls(db: Db, job: Job, names: unknown): Promise<Result<{ files: { name: string; url: string }[] }>> {
+  if (!datasetOf(job.dataset)?.files) return fail('This import takes one file.');
+  if (job.status !== 'uploading') return fail('Files can only be added before the check starts.', 409);
+  if (!Array.isArray(names) || !names.length || names.length > 200) return fail('Send between 1 and 200 file names at a time.');
+  const seen = new Set<string>();
+  const clean: string[] = [];
+  for (const raw of names) {
+    const name = cleanFileName(raw);
+    if (!name) return fail('A file has no name.');
+    if (seen.has(fileKey(name))) return fail(`Two files are called "${name}". Rename one.`);
+    seen.add(fileKey(name));
+    clean.push(name);
+  }
+  const files: { name: string; url: string }[] = [];
+  for (let i = 0; i < clean.length; i += 20) {
+    const part = await Promise.all(clean.slice(i, i + 20).map(async name => {
+      const up = await db.storage.from(DOC_BUCKET).createSignedUploadUrl(`${docFolder(job)}/${objectKey(name)}`, { upsert: true });
+      return up.error || !up.data ? null : { name, url: up.data.signedUrl };
+    }));
+    if (part.some(x => !x)) return fail('Could not prepare the uploads. Try again.', 500);
+    files.push(...(part as { name: string; url: string }[]));
+  }
+  return { ok: true, files };
+}
+
 // ── Reading jobs ────────────────────────────────────────────────────────────
 
 export async function listJobs(db: Db, schoolId: string, limit = 100): Promise<Omit<Job, 'problems'>[]> {
@@ -192,7 +259,9 @@ export async function startUndo(db: Db, actor: Actor, job: Job): Promise<Result>
 export async function cancelJob(db: Db, job: Job): Promise<Result> {
   if (!['uploading', 'checked', 'rejected'].includes(job.status)) return fail('This import can no longer be cancelled.', 409);
   const { error } = await db.from('import_jobs').update({ status: 'cancelled' }).eq('id', job.id).in('status', ['uploading', 'checked', 'rejected']);
-  return error ? fail(error.message, 500) : { ok: true };
+  if (error) return fail(error.message, 500);
+  await sweepFiles(db, job).catch(e => console.warn('[import files]', e instanceof Error ? e.message : e));
+  return { ok: true };
 }
 
 async function audit(db: Db, actor: Pick<Actor, 'id' | 'kind'> | null, job: Pick<Job, 'id' | 'school_id' | 'dataset' | 'file_name'>, action: string, values: Record<string, unknown>) {
@@ -255,6 +324,7 @@ async function stepFailed(db: Db, job: Job, msg: string) {
       await audit(db, null, job, 'import.rolled_back', { why });
     } else {
       await db.from('import_jobs').update({ status: 'failed', last_error: why, locked_until: null, summary: { ...summary, failure: why } }).eq('id', job.id);
+      await sweepFiles(db, job).catch(e => console.warn('[import files]', e instanceof Error ? e.message : e));
     }
     return;
   }
@@ -280,7 +350,24 @@ async function readJob(db: Db, job: Job) {
     return { d, sha, unreadable: e instanceof Error ? e.message : 'We could not read that file.' };
   }
   const look = await loadLookups(db, job.school_id, d.needs);
-  return { d, sha, checked: checkTable(d, table, look, job.file_kind === 'xlsx') };
+  let unlisted: string[] = [];
+  if (d.files) {
+    const folder = docFolder(job);
+    const objects = await listFolder(db, folder);
+    if (objects.size > MAX_FILES) return { d, sha, unreadable: `Up to ${MAX_FILES.toLocaleString('en-IN')} files go with one manifest. Split it by class.` };
+    const used = new Set<string>();
+    look.file = name => {
+      const k = objectKey(name);
+      const size = objects.get(k);
+      if (size == null) return null;
+      used.add(k);
+      return { path: `${folder}/${k}`, size };
+    };
+    const checked = checkTable(d, table, look, job.file_kind === 'xlsx');
+    unlisted = [...objects.keys()].filter(k => !used.has(k));
+    return { d, sha, checked, unlisted };
+  }
+  return { d, sha, checked: checkTable(d, table, look, job.file_kind === 'xlsx'), unlisted };
 }
 
 const mergeProblems = (a: Problem[], b: Problem[]) => [...a, ...b].slice(0, PROBLEM_CAP);
@@ -299,13 +386,25 @@ function writerRows(d: Dataset, part: { n: number; row: Record<string, unknown> 
 async function check(db: Db, job: Job, deadline: number) {
   const r = await readJob(db, job);
   if ('missing' in r) return update(db, job.id, { status: 'rejected', problem_count: 1, problems: [{ n: 0, error: 'The file never reached Sthara. Upload it again.' }], locked_until: null });
-  if ('unreadable' in r) return update(db, job.id, { status: 'rejected', file_sha256: r.sha, problem_count: 1, problems: [{ n: 0, error: r.unreadable }], locked_until: null });
+  if ('unreadable' in r) {
+    await sweepFiles(db, job);
+    return update(db, job.id, { status: 'rejected', file_sha256: r.sha, problem_count: 1, problems: [{ n: 0, error: r.unreadable }], locked_until: null });
+  }
   const c = r.checked!;
+  // Files nobody listed are reported and not kept (only on the first pass: later passes find them gone).
+  if (job.phase_cursor === 0 && r.unlisted?.length) {
+    const folder = docFolder(job);
+    const drop = new Set(r.unlisted);
+    await sweepFiles(db, job, p => !drop.has(p.slice(folder.length + 1)));
+    job.summary = { ...job.summary, unlisted: { count: r.unlisted.length, names: r.unlisted.slice(0, 50).map(k => k.slice(17)) } };
+  }
   if (c.fileProblems.length || c.problemCount) {
+    // A rejected manifest is imported again as a new job, files and all.
+    await sweepFiles(db, job);
     return update(db, job.id, {
       status: 'rejected', file_sha256: r.sha, total_rows: c.total, checked_at: new Date().toISOString(), locked_until: null,
       problem_count: c.fileProblems.length + c.problemCount, problems: mergeProblems(c.fileProblems.map(error => ({ n: 0, error })), c.problems),
-      summary: { skipped: c.skipped },
+      summary: { ...job.summary, skipped: c.skipped },
     });
   }
   if (r.d.key === 'students' && !piiReady() && c.rows.some(x => x.row.aadhaar)) {
@@ -328,9 +427,10 @@ async function check(db: Db, job: Job, deadline: number) {
     await update(db, job.id, { phase_cursor: i + 1, added, updated, unchanged, problem_count: pc, problems, summary: { ...job.summary, withheld } });
   }
   if (i < parts.length) return update(db, job.id, { locked_until: null, file_sha256: r.sha, total_rows: c.total });
+  if (pc) await sweepFiles(db, job);
   await update(db, job.id, {
     status: pc ? 'rejected' : 'checked', phase_cursor: 0, file_sha256: r.sha, total_rows: c.total, checked_at: new Date().toISOString(),
-    summary: { skipped: c.skipped, chunks: parts.length, withheld }, locked_until: null,
+    summary: { ...(job.summary.unlisted ? { unlisted: job.summary.unlisted } : {}), skipped: c.skipped, chunks: parts.length, withheld }, locked_until: null,
   });
 }
 
@@ -339,7 +439,8 @@ async function commit(db: Db, job: Job, deadline: number) {
   const stop = async (why: string) => {
     if (job.phase_cursor === 0) {
       // Nothing written yet: the import simply fails.
-      return update(db, job.id, { status: 'failed', last_error: why, locked_until: null, summary: { ...job.summary, failure: why } });
+      await update(db, job.id, { status: 'failed', last_error: why, locked_until: null, summary: { ...job.summary, failure: why } });
+      return void await sweepFiles(db, job);
     }
     await update(db, job.id, { status: 'undoing', committed_at: new Date().toISOString(), last_error: why, locked_until: null, summary: { ...job.summary, failure: why } });
     await audit(db, null, job, 'import.rolled_back', { why });
@@ -374,6 +475,8 @@ async function commit(db: Db, job: Job, deadline: number) {
   }
   if (i < parts.length) return update(db, job.id, { locked_until: null });
   await update(db, job.id, { status: 'committed', phase_cursor: 0, committed_at: new Date().toISOString(), locked_until: null });
+  // A row that matched a document already on the record kept that file: the copy uploaded with it goes.
+  if (r.d.files) { const keep = await referenced(db, job); await sweepFiles(db, job, p => keep.has(p)); }
   await audit(db, job.committed_by ? { id: job.committed_by, kind: job.summary.committedByKind === 'operator' ? 'operator' : 'admin' } : null, job, 'import.committed', { added, updated, unchanged, rows: c.total });
 }
 
@@ -387,6 +490,8 @@ async function undo(db: Db, job: Job, deadline: number) {
     await update(db, job.id, { summary: { ...job.summary, restored, removed } });
     if (o.done) {
       const failed = !!job.summary.failure;
+      // The files of removed rows go too; rows kept (changed since) keep theirs.
+      if (datasetOf(job.dataset)?.files) { const keep = await referenced(db, job); await sweepFiles(db, job, p => keep.has(p)); }
       await update(db, job.id, { status: failed ? 'failed' : 'undone', undone_at: new Date().toISOString(), locked_until: null });
       if (!failed) await audit(db, job.undone_by ? { id: job.undone_by, kind: job.summary.undoneByKind === 'operator' ? 'operator' : 'admin' } : null, job, 'import.undone', { restored, removed });
       return;

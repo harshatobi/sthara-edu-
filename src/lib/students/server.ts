@@ -8,6 +8,7 @@ import {
   admissionFormat, checkAdmissionNo, checkFields, currentSession, nextSessionOf, rollRuleOf, ROLL_RULES, sessionSettings,
   type Outcome, type RollRule,
 } from './register';
+import { checklistOf } from './documents';
 import { blocked, classProgress, isOutcome, stageOf, type ChainRow, type Step } from './outcomes';
 import { familyOf } from './family';
 import { checkAddress, checkFamily } from './register';
@@ -334,7 +335,7 @@ export async function readSettings(db: Db, schoolId: string) {
   const sess = sessionSettings(s);
   const { data: counter } = await db.from('doc_counters').select('last_no').eq('school_id', schoolId).eq('kind', 'admission').eq('session', 'all').maybeSingle();
   const fmt = admissionFormat(s);
-  return { session: { ...sess, current: currentSession(s) }, admission: { ...fmt, last: counter?.last_no ?? 0, next: `${fmt.prefix}${String((counter?.last_no ?? 0) + 1).padStart(fmt.pad, '0')}` }, rollRule: rollRuleOf(s) };
+  return { session: { ...sess, current: currentSession(s) }, admission: { ...fmt, last: counter?.last_no ?? 0, next: `${fmt.prefix}${String((counter?.last_no ?? 0) + 1).padStart(fmt.pad, '0')}` }, rollRule: rollRuleOf(s), checklist: checklistOf(s) };
 }
 
 async function patchSettings(db: Db, schoolId: string, patch: Record<string, unknown>) {

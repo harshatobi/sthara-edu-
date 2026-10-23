@@ -37,14 +37,14 @@ const TABS = [['register', 'Register'], ['requests', 'Requests'], ['year', 'Year
 
 /** Admin › Students: the admission register, the year-end chain and the register settings. */
 export default function StudentsPage() {
-  return <DeskGate need={['students.read', 'outcomes.approve', 'session.manage']}>{desk => <Students desk={desk} />}</DeskGate>;
+  return <DeskGate need={['students.read', 'outcomes.approve', 'session.manage', 'compliance.act']}>{desk => <Students desk={desk} />}</DeskGate>;
 }
 
 function Students({ desk }: { desk: AdminDesk }) {
   const params = useSearchParams();
   const path = usePathname();
   const a = desk.me.access;
-  const tabs = TABS.filter(([k]) => k === 'register' || k === 'requests' ? a.can('students.read') : k === 'year' ? a.any('students.read', 'outcomes.approve') : a.any('students.read', 'session.manage'));
+  const tabs = TABS.filter(([k]) => k === 'register' ? a.can('students.read') : k === 'requests' ? a.any('students.read', 'compliance.act') : k === 'year' ? a.any('students.read', 'outcomes.approve') : a.any('students.read', 'session.manage'));
   const tab = tabs.find(([k]) => k === params.get('tab'))?.[0] ?? tabs[0]?.[0] ?? 'register';
   return (
     <>

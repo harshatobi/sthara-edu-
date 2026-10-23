@@ -278,7 +278,7 @@ export const rollRuleOf = (settings: unknown): RollRule => {
 
 // ── Requests from parents ───────────────────────────────────────────────────
 
-export type RequestKind = 'address' | 'family' | 'emergency' | 'health';
+export type RequestKind = 'address' | 'family' | 'emergency' | 'health' | 'document_erasure';
 
 /** What a parent may propose, checked as the office would check it. */
 export function checkProposal(kind: RequestKind, proposed: Record<string, unknown>): { value: Record<string, unknown> } | { error: string } {
@@ -299,6 +299,8 @@ export function checkProposal(kind: RequestKind, proposed: Record<string, unknow
     if ('error' in c) return c;
     return { value: { ...u.value, ...c.value } };
   }
+  // Erasing a document carries nothing but the document (the request's target).
+  if (kind === 'document_erasure') return { value: {} };
   if (kind === 'family') {
     const c = checkFamily(proposed);
     return 'error' in c ? c : { value: { ...c.value, is_primary: false } };

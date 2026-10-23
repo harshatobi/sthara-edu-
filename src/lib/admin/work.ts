@@ -98,6 +98,10 @@ export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions
     out.push({ key: 'certificates', title: 'Certificates', detail: approves ? 'Approve TCs and other certificates the registrar has prepared; cancel or reissue.' : 'Prepare TCs, bonafide and fee certificates from a student\u2019s record and send them for approval.',
       count: null, tone: 'n', actions: [{ label: approves ? 'To approve' : 'Open certificates', href: '/admin/certificates?tab=approve', primary: true }] });
   }
+  if (can('cocurricular.approve')) {
+    out.push({ key: 'kirti', title: 'Kirti to approve', detail: 'Achievements, events and house points teachers recorded, waiting for you.', count: null, tone: 'n',
+      actions: [{ label: 'Approve Kirti', href: '/admin/cocurricular?tab=approve', primary: true }, { label: 'Houses', href: '/admin/cocurricular?tab=houses' }] });
+  }
   if (can('health.manage')) {
     out.push({ key: 'health', title: 'Health records', detail: 'Health cards, check-ups, vaccinations, alerts and parents’ requested changes.', count: null, tone: 'n',
       actions: [{ label: 'Open health records', href: '/admin/health', primary: true }] });

@@ -71,6 +71,16 @@ export async function loadLookups(db: Db, schoolId: string, needs: Dataset['need
       look.students.set(k, { id: st.user_id, name: st.full_name });
     }
   }
+  if (needs.includes('houses')) {
+    const { data, error } = await db.from('houses').select('id, name').eq('school_id', schoolId).eq('active', true).limit(40);
+    if (error) throw new Error(error.message);
+    look.houses = new Map((data || []).map(h => [String(h.name).trim().toLowerCase(), h.id as string]));
+  }
+  if (needs.includes('groups')) {
+    const { data, error } = await db.from('cc_groups').select('id, name').eq('school_id', schoolId).eq('active', true).limit(2000);
+    if (error) throw new Error(error.message);
+    look.groups = new Map((data || []).map(g => [String(g.name).trim().toLowerCase(), g.id as string]));
+  }
   if (needs.includes('certTypes')) {
     look.certTypes = new Map();
     for (const t of await certTypes(db, schoolId)) {

@@ -210,3 +210,20 @@ test('certificates: kind by name or title, numbers kept with their serial, every
   assert.deepEqual(r.rows[0].row.data, { pupil_name: 'Asha Rao', father_name: 'Ravi Rao', conduct: 'Good', admission_no: 'A001', issued_on: '15-04-2024' });
   assert.deepEqual(r.problems.map(p => [p.n, p.column]), [[5, 'kind'], [6, 'pupil_name']]);
 });
+
+test('co-curricular: houses and clubs by name, Kirti with session from the date and friendly spellings', () => {
+  const lk: Lookups = { ...look, houses: new Map([['tagore', 'h1']]), groups: new Map([['under-14 football', 'g1']]) };
+  const h = checkTable(d('house_members'), [['admission_no', 'house', 'from'], ['A001', 'Tagore', '01-04-2024'], ['A002', 'Nehru', '']], lk, false);
+  assert.deepEqual(h.rows.map(x => x.row), [{ admission_no: 'A001', house_id: 'h1', from_date: '2024-04-01', reason: null }]);
+  assert.deepEqual(h.problems.map(p => [p.n, p.column]), [[3, 'house']]);
+  const m = checkTable(d('cc_memberships'), [['admission_no', 'team', 'session', 'role'], ['A001', 'Under-14 Football', '2025-26', 'Captain']], lk, false);
+  assert.deepEqual(m.rows[0].row, { admission_no: 'A001', group_id: 'g1', session: '2025-26', role: 'Captain' });
+  const k = checkTable(d('kirti'), [
+    ['admission_no', 'date', 'event', 'category', 'level', 'position'],
+    ['A001', '14-11-2024', 'District athletics', 'Sports', 'District', 'Gold'],
+    ['A002', '02-03-2025', 'Debate', 'Literary (debate, essay, elocution)', 'inter-school', 'runner up'],
+    ['A002', '02-03-2025', 'Quiz', 'Academic', 'School', 'Other'],
+  ], lk, false);
+  assert.deepEqual(k.rows.map(x => [x.row.session, x.row.position, x.row.level, x.row.category]), [['2024-25', 'first', 'district', 'sports'], ['2024-25', 'second', 'inter_school', 'literary']]);
+  assert.deepEqual(k.problems.map(p => [p.n, p.column]), [[4, 'position_note']]);
+});

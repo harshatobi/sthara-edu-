@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { SquaresFourIcon as SquaresFour } from '@phosphor-icons/react/dist/ssr/SquaresFour';
+import { TrophyIcon as Trophy } from '@phosphor-icons/react/dist/ssr/Trophy';
 import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
 import { ClipboardTextIcon as ClipboardText } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { LightningIcon as Lightning } from '@phosphor-icons/react/dist/ssr/Lightning';
@@ -35,6 +36,7 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher/attendance', label: 'Attendance', short: 'Register', icon: CalendarCheck },
   { href: '/teacher/exams', label: 'Exams & Marks', short: 'Exams', icon: Exam },
   { href: '/teacher/outcomes', label: 'Year-End Outcomes', short: 'Year end', icon: GraduationCap },
+  { href: '/teacher/kirti', label: 'Kirti', icon: Trophy },
   { href: '/teacher/homework', label: 'Homework', icon: FileText },
   { href: '/teacher/quiz', label: 'Quiz Creator', short: 'Quiz', icon: ClipboardText },
   { href: '/teacher/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple },

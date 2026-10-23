@@ -8,7 +8,7 @@
     "prebuild": "node site/build.mjs --app && node scripts/build-workers.mjs",
     "build": "next build",
     "test:site": "node --test site/tests/*.test.mjs",
-    "test": "npx tsx --test src/lib/tml/*.test.ts src/lib/ops/attention.test.ts src/lib/admin/heatmap.test.ts src/lib/lab/*.test.ts src/lib/teacher/*.test.ts src/lib/papers/*.test.ts src/lib/ai/*.test.ts src/lib/student/*.test.ts src/lib/import/*.test.ts src/lib/students/*.test.ts src/lib/certificates/*.test.ts && npm run test:site",
+    "test": "npx tsx --test src/lib/tml/*.test.ts src/lib/ops/attention.test.ts src/lib/admin/heatmap.test.ts src/lib/lab/*.test.ts src/lib/teacher/*.test.ts src/lib/papers/*.test.ts src/lib/ai/*.test.ts src/lib/student/*.test.ts src/lib/import/*.test.ts src/lib/students/*.test.ts src/lib/certificates/*.test.ts src/lib/cocurricular/*.test.ts && npm run test:site",
     "start": "next start",
     "lint": "eslint",
     "check:reads": "node scripts/check-unbounded-reads.mjs",

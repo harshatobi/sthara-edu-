@@ -1,6 +1,7 @@
 'use client';
 
 import { CertificateIcon as Certificate } from '@phosphor-icons/react/dist/ssr/Certificate';
+import { TrophyIcon as Trophy } from '@phosphor-icons/react/dist/ssr/Trophy';
 import { HouseIcon as House } from '@phosphor-icons/react/dist/ssr/House';
 import { ChatsCircleIcon as ChatsCircle } from '@phosphor-icons/react/dist/ssr/ChatsCircle';
 import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
@@ -34,6 +35,7 @@ const NAV: CanonNavItem[] = [
   { href: '/parent/family', label: 'Family Details', short: 'Family', icon: UsersThree },
   { href: '/parent/health', label: 'Health Card', short: 'Health', icon: FirstAidKit },
   { href: '/parent/documents', label: 'Documents', short: 'Documents', icon: FileText },
+  { href: '/parent/kirti', label: 'Kirti', icon: Trophy },
   { href: '/parent/settings', label: 'WhatsApp & Privacy', short: 'Settings', icon: GearSix, also: ['/parent/consent'] },
 ];
 

@@ -17,6 +17,7 @@ import { parseAadhaar } from '@/lib/students/aadhaar';
 import { IMPAIRMENT_LABEL, IMPAIRMENTS, SCREEN_RESULTS, checkEvent, checkUdise, parseAllergyList, parseNameList } from '@/lib/students/health';
 import { DOC_KINDS, DOC_KIND_KEYS, DOC_MAX_BYTES, cleanFileName } from '@/lib/students/documents';
 import { TC_FIELDS, TC_HEADER, dmy, serialOf } from '@/lib/certificates/certs';
+import { CATEGORIES, CATEGORY_LABEL, LEVELS, LEVEL_LABEL, POSITIONS, POSITION_LABEL } from '@/lib/cocurricular/kirti';
 import { ADDRESS_PARTS, FIELD, checkAddress, checkAdmissionNo, checkFamily, checkField, parseGrade as parseRegisterGrade, parseOutcome } from '@/lib/students/register';
 
 export type Kind = 'text' | 'date' | 'session' | 'amount' | 'int' | 'enum' | 'email' | 'phone';
@@ -50,6 +51,9 @@ export interface Lookups {
   file?: (name: string) => { path: string; size: number } | null;
   /** The school's kinds of certificate: kind key ("tc") or title, lower case, to its type and kind. */
   certTypes?: Map<string, { id: string; kind: string }>;
+  /** Houses and clubs/teams by lower-case name. */
+  houses?: Map<string, string>;
+  groups?: Map<string, string>;
 }
 
 export type Cells = Record<string, string | number | null>;
@@ -69,7 +73,7 @@ export interface Dataset {
   /** The database writer: public.import_<key>. */
   writer: string;
   /** Which lookups the server must load. */
-  needs: ('students' | 'classes' | 'sheets' | 'files' | 'certTypes')[];
+  needs: ('students' | 'classes' | 'sheets' | 'files' | 'certTypes' | 'houses' | 'groups')[];
   /** The file is a manifest, and the files it lists are uploaded with it (documents). */
   files?: boolean;
   /** Identity of a row inside one file; null when the row has none (never a duplicate). */
@@ -674,7 +678,77 @@ const certificates: Dataset = {
   },
 };
 
-export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, documents, certificates, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
+const enumOf = (keys: readonly string[], label: Record<string, string>, extra: Record<string, string> = {}) =>
+  Object.fromEntries(keys.flatMap(k => [[k, k], [k.replace(/_/g, ' '), k], [label[k].toLowerCase(), k]]).concat(Object.entries(extra)));
+
+const housePlacements: Dataset = {
+  key: 'house_members', label: 'House placements', writer: 'import_house_members', needs: ['houses'],
+  about: 'One row per student: the house they are in, and from when. Add the houses in Co-curricular first.',
+  lands: 'Each student\u2019s house. A different house than now closes the current one the day before (kept as history).',
+  matching: 'Admission number.',
+  columns: [
+    ADM,
+    { key: 'house', required: true, kind: 'text', max: 40, example: 'Tagore', guide: 'The house, by its name in Sthara.' },
+    { key: 'from', required: false, kind: 'date', aliases: ['from_date', 'since'], example: '01-04-2024', guide: 'From when, DD-MM-YYYY. Blank means the day of the import.' },
+    { key: 'reason', required: false, kind: 'text', max: 200, example: '', guide: 'Why, for a move.' },
+  ],
+  identity: c => admKey(String(c.admission_no)),
+  build(c, n, look) {
+    const h = look.houses?.get(String(c.house).trim().toLowerCase());
+    if (!h) return fail({ n, column: 'house', error: `There is no house "${c.house}". Add it in Co-curricular first, or check the spelling.` });
+    return { ok: true, row: { admission_no: String(c.admission_no).trim(), house_id: h, from_date: c.from ?? new Date().toISOString().slice(0, 10), reason: c.reason } };
+  },
+};
+
+const memberships: Dataset = {
+  key: 'cc_memberships', label: 'Club and team members', writer: 'import_cc_memberships', needs: ['groups'],
+  about: 'One row per student per club or team per session. Set up the clubs and teams in Co-curricular first.',
+  lands: 'Each student\u2019s clubs and teams. NCC and Scouts/Guides fill TC field 16.',
+  matching: 'Admission number, club or team, and session.',
+  columns: [
+    ADM,
+    { key: 'group', required: true, kind: 'text', max: 80, aliases: ['club', 'team'], example: 'Under-14 football', guide: 'The club or team, by its name in Sthara.' },
+    { key: 'session', required: true, kind: 'session', example: '2025-26', guide: 'The academic session, as 2025-26.' },
+    { key: 'role', required: false, kind: 'text', max: 40, example: 'Captain', guide: 'Captain, secretary, cadet rank... Blank is a member.' },
+  ],
+  identity: c => `${admKey(String(c.admission_no))}|${String(c.group).trim().toLowerCase()}|${c.session}`,
+  build(c, n, look) {
+    const g = look.groups?.get(String(c.group).trim().toLowerCase());
+    if (!g) return fail({ n, column: 'group', error: `There is no club or team "${c.group}". Set it up in Co-curricular first.` });
+    return { ok: true, row: { admission_no: String(c.admission_no).trim(), group_id: g, session: c.session, role: c.role } };
+  },
+};
+
+const kirti: Dataset = {
+  key: 'kirti', label: 'Kirti (achievements and participation)', writer: 'import_kirti', needs: [],
+  about: 'One row per student per event: the school\u2019s past records of wins, places and participation.',
+  lands: 'Each student\u2019s Kirti, approved (the school recorded them already), on the portals and the TC.',
+  matching: 'Admission number, event and date.',
+  columns: [
+    ADM,
+    { key: 'date', required: true, kind: 'date', aliases: ['on_date', 'event_date'], example: '14-11-2024', guide: 'The day of the event, DD-MM-YYYY.' },
+    { key: 'event', required: true, kind: 'text', max: 160, aliases: ['title', 'achievement'], example: 'District athletics meet, 100 m', guide: 'The event or award.' },
+    { key: 'category', required: true, kind: 'enum', values: enumOf(CATEGORIES, CATEGORY_LABEL, { sports: 'sports', academic: 'academic', music: 'music_dance', dance: 'music_dance' }), example: 'Sports', guide: `One of: ${CATEGORIES.map(k => CATEGORY_LABEL[k]).join(', ')}.` },
+    { key: 'level', required: true, kind: 'enum', values: enumOf(LEVELS, LEVEL_LABEL, { interschool: 'inter_school', zonal: 'zone', cluster: 'zone' }), example: 'District', guide: `One of: ${LEVELS.map(k => LEVEL_LABEL[k]).join(', ')}.` },
+    { key: 'position', required: true, kind: 'enum', values: enumOf(POSITIONS, POSITION_LABEL, { participation: 'participant', '1': 'first', '2': 'second', '3': 'third', gold: 'first', silver: 'second', bronze: 'third', winner: 'first', 'runner up': 'second', 'runner-up': 'second' }), example: '1st', guide: 'Participant, 1st, 2nd, 3rd, Special mention or Other.' },
+    { key: 'position_note', required: false, kind: 'text', max: 60, example: '', guide: 'For Other: what it was (Best speaker).' },
+    { key: 'house_points', required: false, kind: 'int', min: 0, maxValue: 1000, example: '', guide: 'Points to the student\u2019s house on that day.' },
+    { key: 'notes', required: false, kind: 'text', max: 500, example: '', guide: 'Anything else.' },
+  ],
+  identity: c => `${admKey(String(c.admission_no))}|${String(c.event).trim().toLowerCase()}|${c.date}`,
+  build(c, n) {
+    if (c.position === 'other' && c.position_note == null) return fail({ n, column: 'position_note', error: 'Say what the position was.' });
+    const d = String(c.date);
+    const y = Number(d.slice(0, 4)), m = Number(d.slice(5, 7));
+    const start = m >= 4 ? y : y - 1;
+    return { ok: true, row: {
+      admission_no: String(c.admission_no).trim(), session: `${start}-${String((start + 1) % 100).padStart(2, '0')}`, on_date: d, title: String(c.event), category: c.category,
+      level: c.level, position: c.position, position_note: c.position_note, house_points: c.house_points, notes: c.notes,
+    } };
+  },
+};
+
+export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, documents, certificates, housePlacements, memberships, kirti, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
 export const datasetOf = (key: unknown) => DATASETS.find(d => d.key === key) ?? null;
 
 // ── Cells ───────────────────────────────────────────────────────────────────

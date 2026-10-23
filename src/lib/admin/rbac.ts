@@ -56,6 +56,8 @@ export const PERMS = {
   'health.manage': 'Keep the health records: cards, check-ups, vaccinations, parents\u2019 requested changes and retention',
   'certificates.prepare': 'Prepare certificates (TC, bonafide, character, fee paid) and send them for approval',
   'certificates.approve': 'Approve and issue certificates, cancel them and issue duplicates',
+  'cocurricular.manage': 'Set up houses, clubs and teams, place students in houses',
+  'cocurricular.approve': 'Approve Kirti (achievements and participation) and house points teachers record',
   'certificates.setup': 'Set up certificates: numbering, wording, the school\u2019s own certificates, signature and stamp',
 } as const;
 export type Perm = keyof typeof PERMS;
@@ -85,7 +87,7 @@ export const ROLES: Record<RoleKey, { label: string; summary: string; perms: Per
   cashier: { label: 'Cashier', summary: 'Records payments and issues receipts', perms: ['dashboard.view', 'fees.read', 'fees.collect'] },
   admissions_officer: { label: 'Admissions officer', summary: 'The admissions pipeline', perms: ['dashboard.view', 'probe.view', 'admissions.read', 'admissions.manage', 'students.read'] },
   hr_manager: { label: 'HR manager', summary: 'Employee records, leave, the staff register and shifts; prepares payroll', perms: ['dashboard.view', 'probe.view', 'workforce.read', 'leave.approve', 'leave.policy', 'schedule.workforce', 'hr.manage', 'hr.sensitive', 'payroll.read', 'payroll.prepare'] },
-  academic_coordinator: { label: 'Academic coordinator', summary: 'Academic health, teaching staff, the timetable and the exam cell', perms: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic', 'exams.read', 'exams.manage', 'students.read'] },
+  academic_coordinator: { label: 'Academic coordinator', summary: 'Academic health, teaching staff, the timetable, the exam cell and co-curricular', perms: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic', 'exams.read', 'exams.manage', 'students.read', 'cocurricular.manage', 'cocurricular.approve'] },
   counsellor: { label: 'Counsellor', summary: 'Anonymised wellness, safety alerts and parents\' messages to the office', perms: ['dashboard.view', 'wellness.read', 'messages.office', 'safeguarding.read'] },
   dpo: {
     label: 'Data protection officer', summary: 'Consent, DPDP flags and the audit trail',

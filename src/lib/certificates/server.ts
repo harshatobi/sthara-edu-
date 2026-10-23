@@ -10,6 +10,7 @@ import {
   financialYear, pronouns, renderBody, unknownPlaceholders, type CertKind, type CertStatus,
 } from './certs';
 import { certificatePdf, type CertPdf } from './pdf';
+import { tcFields } from '@/lib/cocurricular/server';
 
 /**
  * Certificates out (brief 05), server side. The caller has been authorised: it passes the school and what the person
@@ -192,6 +193,8 @@ async function tcValues(db: Db, schoolId: string, st: StudentRow, f: Awaited<Ret
     ]) : Promise.resolve(null),
     duesOf(db, schoolId, st.user_id),
   ]);
+  // Fields 16 and 17 from approved co-curricular records (brief 06); the registrar can still edit them.
+  const cc = await tcFields(db, schoolId, st.id);
   const failedTimes = cur?.grade == null ? 0 : en.filter(e => e.grade === cur.grade && e.outcome === 'detained').length;
   const promoted = done && (done.outcome === 'promoted' || done.outcome === 'promoted_no_exam') && done.grade != null;
   const v: Record<string, string> = {
@@ -208,7 +211,7 @@ async function tcValues(db: Db, schoolId: string, st: StudentRow, f: Awaited<Ret
     promotion: promoted ? `Yes, to Class ${classFiguresWords(done!.grade! + 1)}` : done?.outcome === 'detained' ? 'No' : '',
     dues_paid_upto: dues.paidUpto, concession: dues.concessions.join('; ') || 'No',
     working_days: att ? String(att[0].count ?? 0) : '', days_present: att ? String(att[1].count ?? 0) : '',
-    ncc: '', activities: '', conduct: '', applied_on: dmy(isoDay()), issued_on: '', reason: st.leaving_reason ?? '', remarks: '',
+    ncc: cc.ncc || 'No', activities: cc.activities, conduct: '', applied_on: dmy(isoDay()), issued_on: '', reason: st.leaving_reason ?? '', remarks: '',
     leaving_on: st.left_on ?? isoDay(),
   };
   return { v, dues: dues.outstanding };

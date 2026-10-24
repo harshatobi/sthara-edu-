@@ -90,3 +90,4 @@ checks, and every read of a counselling note audited. Tests proving other roles 
   actions, ask the counsellor). Dashboard work items, including "Assign a Safeguarding lead" for access managers.
 - Local SQL scenarios (16): child-protection visibility with no lead / a lead / a lapsed lead, the VP and school admin
   shut out, the logger keeps their own incident, no direct table access, constraints, import undo.
+- Migration applied live 2026-10-24 (one transaction, history row md5 = file). Live history 14 = branch 14.

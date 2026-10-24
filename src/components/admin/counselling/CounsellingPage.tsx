@@ -11,6 +11,7 @@ import { useGet } from '@/components/canon/useGet';
 import { fmtDate, isoDay } from '@/lib/admin/format';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CASE_LABEL, type CaseStatus, type ReferralStatus } from '@/lib/conduct/rules';
+import Timeline from '@/components/timeline/Timeline';
 import { CardHead, DeskGate, Field, Workspace } from '../kit';
 
 interface CaseRow { id: string; studentId: string; student: string; admissionNo: string; status: CaseStatus; openedOn: string; closedOn: string | null; sessions: number; lastSession: string | null; counsellor: string | null }
@@ -31,6 +32,7 @@ function Body() {
   const [toast, toastEl] = useToast();
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [timelineOf, setTimelineOf] = useState<{ id: string; name: string } | null>(null);
   const { call } = useAdminDesk();
   const counsellor = !!data?.can.notes;
   const fresh = (data?.referrals ?? []).filter(r => r.status === 'new');
@@ -77,7 +79,8 @@ function Body() {
                     <td>{fmtDate(c.openedOn)}{c.closedOn ? ` to ${fmtDate(c.closedOn)}` : ''}</td>
                     <td><Chip tone={c.status === 'open' ? 'a' : 'n'}>{CASE_LABEL[c.status].toUpperCase()}</Chip></td>
                     <td>{c.sessions}{c.lastSession ? <span className="muted"> · last {fmtDate(c.lastSession)}</span> : ''}</td>
-                    <td>{counsellor ? <button className="btn sm" onClick={() => setOpen(c.id)}>Open</button> : <LockKey size={16} aria-label="Notes are the counsellor's" />}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{counsellor ? <button className="btn sm" onClick={() => setOpen(c.id)}>Open</button> : <LockKey size={16} aria-label="Notes are the counsellor's" />}
+                      {' '}<button className="btn sm" onClick={() => setTimelineOf({ id: c.studentId, name: c.student })}>Timeline</button></td>
                   </tr>
                 ))}</tbody>
               </table></div>
@@ -86,6 +89,7 @@ function Body() {
         </>
       )}
       {open && <CaseWorkspace id={open} onClose={() => { setOpen(null); reload(); }} />}
+      {timelineOf && <Workspace wide title={`Timeline: ${timelineOf.name}`} sub="Every school year, as your role sees it." onClose={() => setTimelineOf(null)}><Timeline query={`studentId=${timelineOf.id}`} /></Workspace>}
       {adding && <NewCase onClose={() => setAdding(false)} onOpened={id => { setAdding(false); reload(); setOpen(id); }} />}
     </>
   );

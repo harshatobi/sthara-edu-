@@ -50,6 +50,7 @@ export const RATE_LIMITS = {
   parentDesk:      { limit: 60,  windowMs: 5 * MIN,  per: 'user',    route: '/api/parent/desk',             label: 'Parent portal data' },
   parentAsk:       { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/ask',              label: 'Ask the School OS (web)' },
   staffAsk:        { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/staff/ask',               label: 'Ask the School OS (teachers and leadership)' },
+  timelineAsk:     { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/timeline',                label: 'Ask about a student\u2019s timeline' },
   staffWhatsapp:   { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/staff/whatsapp',          label: 'Staff WhatsApp settings' },
   schoolMessages:  { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/messages, /api/staff/messages', label: 'Parent and staff messages' },
   whatsappLink:    { limit: 5,   windowMs: 15 * MIN, per: 'user',    route: '/api/parent/whatsapp',         label: 'WhatsApp number linking' },

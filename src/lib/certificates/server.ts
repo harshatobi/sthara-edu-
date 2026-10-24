@@ -52,10 +52,14 @@ export async function types(db: Db, schoolId: string): Promise<CertType[]> {
   const have = new Set((data || []).map(t => t.kind));
   const missing = BUILT_IN.filter(k => !have.has(k));
   if (!missing.length) return data as CertType[];
-  const { error: ins } = await db.from('certificate_types').upsert(missing.map(k => ({
-    school_id: schoolId, kind: k, title: KIND_TITLE[k], prefix: DEFAULT_PREFIX[k], body: k === 'bonafide' || k === 'character' ? DEFAULT_BODY[k] : null, needs_approval: true,
-  })), { onConflict: 'school_id,kind', ignoreDuplicates: true });
-  if (ins && ins.code !== '23505') throw new Error(ins.message);
+  // One insert per kind: the (school_id, kind) index is partial, so ON CONFLICT can't name it, and a duplicate
+  // just means another request created that kind first.
+  for (const k of missing) {
+    const { error: ins } = await db.from('certificate_types').insert({
+      school_id: schoolId, kind: k, title: KIND_TITLE[k], prefix: DEFAULT_PREFIX[k], body: k === 'bonafide' || k === 'character' ? DEFAULT_BODY[k] : null, needs_approval: true,
+    });
+    if (ins && ins.code !== '23505') throw new Error(ins.message);
+  }
   const again = await db.from('certificate_types').select(TCOLS).eq('school_id', schoolId).order('created_at').limit(200);
   return (again.data || []) as CertType[];
 }

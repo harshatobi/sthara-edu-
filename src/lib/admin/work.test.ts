@@ -34,6 +34,18 @@ test('each role sees its own jobs', () => {
   assert.ok(!keys('cashier').includes('daybook'), 'the cashier does not close the day');
   assert.deepEqual(keys('registrar'), ['register', 'certificates']);
   assert.deepEqual(keys('health_officer'), ['health']);
+  assert.ok(keys('counsellor').includes('counselling'));
+  assert.deepEqual(keys('safeguarding_lead'), ['safety', 'safeguarding']);
+  assert.ok(keys('vice_principal').includes('discipline'));
+});
+
+test('whoever manages access is asked to assign a Safeguarding lead until one is', () => {
+  const d = desk('school_admin');
+  d.grants = [{ role: 'school_admin' }];
+  assert.ok(workItems(d, '2026-10-24').some(i => i.key === 'dsl'));
+  d.grants = [{ role: 'safeguarding_lead' }];
+  assert.ok(!workItems(d, '2026-10-24').some(i => i.key === 'dsl'));
+  assert.ok(!workItems(desk('principal'), '2026-10-24').some(i => i.key === 'dsl'), 'the principal does not manage access');
 });
 
 test('own concession requests are not "waiting for your approval"', () => {

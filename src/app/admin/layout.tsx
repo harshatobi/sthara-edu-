@@ -7,6 +7,9 @@ import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/C
 import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
 import { CertificateIcon as Certificate } from '@phosphor-icons/react/dist/ssr/Certificate';
 import { TrophyIcon as Trophy } from '@phosphor-icons/react/dist/ssr/Trophy';
+import { GavelIcon as Gavel } from '@phosphor-icons/react/dist/ssr/Gavel';
+import { HandHeartIcon as HandHeart } from '@phosphor-icons/react/dist/ssr/HandHeart';
+import { ShieldWarningIcon as ShieldWarning } from '@phosphor-icons/react/dist/ssr/ShieldWarning';
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
@@ -46,6 +49,10 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/health', label: 'Health', icon: FirstAidKit, need: ['health.read'] },
   { href: '/admin/certificates', label: 'Certificates', icon: Certificate, need: ['certificates.prepare', 'certificates.approve', 'certificates.setup'] },
   { href: '/admin/cocurricular', label: 'Co-curricular', icon: Trophy, need: ['cocurricular.manage', 'cocurricular.approve'] },
+  { href: '/admin/discipline', label: 'Discipline', icon: Gavel, need: ['discipline.approve', 'discipline.suspend', 'discipline.archive'] },
+  { href: '/admin/counselling', label: 'Counselling', icon: HandHeart, need: ['counselling.notes', 'counselling.overview'] },
+  // The principal reads child protection until the school assigns a Safeguarding lead; the page says which applies.
+  { href: '/admin/safeguarding', label: 'Safeguarding', icon: ShieldWarning, need: ['safeguarding.cases'] },
   { href: '/admin/people', label: 'People', icon: IdentificationCard, need: ['dashboard.view'] },
   { href: '/admin/payroll', label: 'Payroll', icon: Wallet, need: ['payroll.read', 'payroll.prepare', 'payroll.approve'] },
   { href: '/admin/staff', label: 'Staff & Leave', short: 'Staff', icon: CalendarBlank, need: ['workforce.read'] },
@@ -68,6 +75,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   const a = desk?.me.access;
   const nav = NAV.filter(n => {
     if (!a) return n.href === '/admin';
+    if (n.href === '/admin/safeguarding') return a.can('safeguarding.cases') || a.roles.includes('principal');
     if (n.need.length && !a.any(...n.need)) return false;
     // With fees, admissions is a tab inside "Admissions & Fees"; without fees it gets its own entry.
     if (n.href === '/admin/admissions') return !a.can('fees.read');

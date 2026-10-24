@@ -46,3 +46,23 @@ export function openAadhaar(cipher: string): string {
   d.setAuthTag(Buffer.from(tag, 'base64url'));
   return Buffer.concat([d.update(Buffer.from(data, 'base64url')), d.final()]).toString('utf8');
 }
+
+/**
+ * Free text kept sealed in the database (counselling notes and referrals, child-protection steps): the same
+ * AES-256-GCM and key, so the audit trail and any copy of the database hold only ciphertext.
+ */
+export function sealText(text: string): string {
+  const iv = randomBytes(12);
+  const c = createCipheriv('aes-256-gcm', key(), iv);
+  const data = Buffer.concat([c.update(text, 'utf8'), c.final()]);
+  return `v1:${iv.toString('base64url')}:${c.getAuthTag().toString('base64url')}:${data.toString('base64url')}`;
+}
+
+/** The text back. Throws when the key is wrong or the ciphertext was altered. */
+export function openText(cipher: string): string {
+  const [v, iv, tag, data] = cipher.split(':');
+  if (v !== 'v1' || !iv || !tag || !data) throw new Error('Unknown ciphertext format.');
+  const d = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64url'));
+  d.setAuthTag(Buffer.from(tag, 'base64url'));
+  return Buffer.concat([d.update(Buffer.from(data, 'base64url')), d.final()]).toString('utf8');
+}

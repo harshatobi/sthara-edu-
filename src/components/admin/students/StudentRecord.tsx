@@ -24,6 +24,7 @@ import HealthPanel from './HealthPanel';
 import DocumentsPanel from './DocumentsPanel';
 import { StudentCertificates } from '../certificates/CertificateWork';
 import StudentKirti from '../cocurricular/StudentKirti';
+import ConductPanel from './ConductPanel';
 import { AddressInputs } from '@/components/students/forms';
 import { useGet } from '@/components/canon/useGet';
 
@@ -60,7 +61,7 @@ function Rec({ id }: { id: string }) {
   const { data, error, reload } = useGet<Record_>(`/api/admin/students/${id}`);
   const { call } = useAdminDesk();
   const [toast, toastEl] = useToast();
-  const [tab, setTab] = useState<'register' | 'family' | 'health' | 'documents' | 'certificates' | 'kirti' | 'enrolment' | 'history'>('register');
+  const [tab, setTab] = useState<'register' | 'family' | 'health' | 'documents' | 'certificates' | 'kirti' | 'conduct' | 'enrolment' | 'history'>('register');
   const [panel, setPanel] = useState<null | 'correct' | 'move' | 'left' | 'rejoin' | 'cancel' | 'reveal'>(null);
   const [shown, setShown] = useState<string | null>(null);
   if (error) return <div className="note err" role="alert">{error}</div>;
@@ -109,9 +110,9 @@ function Rec({ id }: { id: string }) {
         </div>
         <div>
           <div className="tabs" role="tablist" aria-label="Record" style={{ marginBottom: 16 }}>
-            {(['register', 'family', 'health', 'documents', 'certificates', 'kirti', 'enrolment', 'history'] as const).map(t => (
+            {(['register', 'family', 'health', 'documents', 'certificates', 'kirti', 'conduct', 'enrolment', 'history'] as const).map(t => (
               <button key={t} role="tab" aria-selected={tab === t} className={`tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
-                {t === 'register' ? 'Register' : t === 'health' ? 'Health' : t === 'documents' ? 'Documents' : t === 'certificates' ? 'Certificates' : t === 'kirti' ? 'Kirti' : t === 'family' ? `Family${data.requests.length ? ` (${data.requests.length} to review)` : ''}` : t === 'enrolment' ? 'Enrolment' : `Changes (${data.changes.length})`}
+                {t === 'register' ? 'Register' : t === 'health' ? 'Health' : t === 'documents' ? 'Documents' : t === 'certificates' ? 'Certificates' : t === 'kirti' ? 'Kirti' : t === 'conduct' ? 'Conduct' : t === 'family' ? `Family${data.requests.length ? ` (${data.requests.length} to review)` : ''}` : t === 'enrolment' ? 'Enrolment' : `Changes (${data.changes.length})`}
               </button>
             ))}
           </div>
@@ -145,6 +146,7 @@ function Rec({ id }: { id: string }) {
           {tab === 'documents' && <DocumentsPanel studentId={id} />}
           {tab === 'certificates' && <StudentCertificates studentId={id} active={s.status !== 'cancelled'} />}
           {tab === 'kirti' && <StudentKirti studentId={id} firstName={String(s.full_name).split(' ')[0]} active={s.status === 'active'} />}
+          {tab === 'conduct' && <ConductPanel studentId={id} active={s.status === 'active'} />}
           {tab === 'enrolment' && (
             <div className="card">
               <CardHead title="Year by year" sub="Every class this student has been in, with dates. A move closes one row and opens the next." />

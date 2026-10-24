@@ -35,8 +35,14 @@ test('separation of duties is built into the roles', () => {
   assert.ok(!ROLES.finance_head.perms.includes('wellness.read'));
   // Ask the School OS about the whole school is for leadership only.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('os.ask')).sort(), ['principal', 'school_admin', 'vice_principal']);
-  // A student's safety disclosure reaches the counsellor and the principal, no one else.
-  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('safeguarding.read')).sort(), ['counsellor', 'principal', 'school_admin']);
+  // A student's safety disclosure reaches the counsellor, the principal and the Safeguarding lead, no one else.
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('safeguarding.read')).sort(), ['counsellor', 'principal', 'safeguarding_lead', 'school_admin']);
+  // Counselling notes are the counsellor's and child-protection cases the Safeguarding lead's: not even the school
+  // admin or principal holds them (brief 07). A suspension is the principal's; the vice principal approves the rest.
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('counselling.notes')), ['counsellor']);
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('safeguarding.cases')), ['safeguarding_lead']);
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('discipline.suspend')).sort(), ['principal', 'school_admin']);
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('discipline.archive')).sort(), ['principal', 'registrar', 'school_admin']);
   // Payroll: the roles that prepare a run are not the ones that only approve it.
   assert.ok(!ROLES.finance_head.perms.includes('payroll.prepare') && !ROLES.accountant.perms.includes('payroll.approve') && !ROLES.hr_manager.perms.includes('payroll.approve'));
   assert.ok(!ROLES.cashier.perms.includes('payroll.read') && !ROLES.vice_principal.perms.includes('payroll.read'));

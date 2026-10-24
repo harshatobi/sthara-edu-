@@ -16,6 +16,7 @@ import type { AdminDesk } from '@/lib/admin/desk';
 import { INCIDENT_RULES, isEscalated, istDay, type IncidentCategory } from '@/lib/feed/rules';
 import { useFeed, type FeedItem } from '@/lib/feed/useFeed';
 import { displayClass, normClass } from '@/lib/teacher/scope';
+import Link from 'next/link';
 import { CardHead, DeskGate, Kpi } from './kit';
 
 export default function AdminFeedPage() {
@@ -167,7 +168,7 @@ function Command({ desk }: { desk: AdminDesk }) {
 
       {canDecide && (waiting.length > 0 || openCritical.length > 0) && (
         <div className="card" style={{ marginBottom: 18, borderLeft: '4px solid var(--red)' }}>
-          <CardHead title="Incidents that need you" sub="Bullying, safety and child protection are your call. Parents only see the category and the one-line summary." />
+          <CardHead title="Incidents that need you" sub="Bullying and safety are your call; child protection is handled in Safeguarding. Parents only see the category and the one-line summary." />
           {[...new Map([...waiting, ...openCritical].map(i => [i.id, i])).values()].map(inc => {
             const rule = INCIDENT_RULES[inc.category];
             return (
@@ -175,7 +176,7 @@ function Command({ desk }: { desk: AdminDesk }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
                     <Chip tone={inc.severity === 'critical' ? 'r' : 'a'}>{rule.label.toUpperCase()}</Chip>
-                    {inc.category === 'child_protection' && <Chip tone="p">PRINCIPAL ONLY</Chip>}
+                    {inc.category === 'child_protection' && <Chip tone="p">SAFEGUARDING LEAD ONLY</Chip>}
                     <Chip tone="n">{inc.status === 'open' ? 'OPEN' : 'CLOSED'}</Chip>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 14.5 }}>{inc.summary}</div>
@@ -185,10 +186,12 @@ function Command({ desk }: { desk: AdminDesk }) {
                   {inc.details && <div style={{ fontSize: 13, marginTop: 6, lineHeight: 1.55 }}>{inc.details}</div>}
                   {inc.category === 'child_protection' && (
                     <div className="note err" style={{ fontSize: 12.5, marginTop: 8 }}>
-                      POCSO: suspected sexual abuse of a child must be reported to the police or the Child Welfare Committee, whatever is decided about parents. Record the report in the outcome.
+                      POCSO: suspected sexual abuse of a child must be reported to the police or the Child Welfare Committee, whatever is decided about parents. Record the report, and how the parent is told, in Safeguarding.
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                  {inc.category === 'child_protection' ? (
+                    <div style={{ marginTop: 10 }}><Link className="btn pri sm" href={`/admin/safeguarding?case=${inc.id}`}>Open in Safeguarding</Link></div>
+                  ) : <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                     {inc.parent_notice === 'principal_decides' && <>
                       <button className="btn pri sm" disabled={!!busy || !inc.student_id} onClick={() => act(inc, 'notify')}>Tell parents</button>
                       <button className="btn sm" disabled={!!busy} onClick={() => act(inc, 'decline')}>Don&apos;t tell parents</button>
@@ -201,7 +204,7 @@ function Command({ desk }: { desk: AdminDesk }) {
                         <button className="btn sm" onClick={() => { setClosing(null); setOutcome(''); }}>Cancel</button>
                       </>
                     ) : <button className="btn sm" onClick={() => setClosing(inc.id)}>Close with outcome</button>)}
-                  </div>
+                  </div>}
                 </div>
               </div>
             );

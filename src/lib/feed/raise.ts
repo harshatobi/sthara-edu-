@@ -4,10 +4,11 @@ import { whatsappStaff } from '@/lib/staff/notify';
 import { normClass, teachingScope } from '@/lib/teacher/scope';
 import { ROLES, type RoleKey } from '@/lib/admin/rbac';
 import { escalateAt, higher, type Draft, type Severity } from './rules';
+import { cpReaders } from '@/lib/conduct/safeguarding';
 
 /** Office roles that receive escalations: whoever may decide on incidents. */
 const PRINCIPAL_ROLES = (Object.keys(ROLES) as RoleKey[]).filter(r => ROLES[r].perms.includes('incidents.manage'));
-/** Office roles that receive students' safety alerts: counsellor, principal, school admin. */
+/** Office roles that receive students' safety alerts: counsellor, principal, school admin, Safeguarding lead. */
 const SAFEGUARDING_ROLES = (Object.keys(ROLES) as RoleKey[]).filter(r => ROLES[r].perms.includes('safeguarding.read'));
 
 /** Teachers of a class (class teacher or any subject in it). */
@@ -29,7 +30,7 @@ export async function classTeachersOf(db: SupabaseClient, schoolId: string, clas
 /** Office staff who hold incidents.manage (principal, VP, school admin). */
 export const principalsOf = (db: SupabaseClient, schoolId: string) => grantHolders(db, schoolId, PRINCIPAL_ROLES);
 
-/** Office staff who hold safeguarding.read (counsellor, principal, school admin). */
+/** Office staff who hold safeguarding.read (counsellor, principal, school admin, Safeguarding lead). */
 export const safeguardingOf = (db: SupabaseClient, schoolId: string) => grantHolders(db, schoolId, SAFEGUARDING_ROLES);
 
 /**
@@ -49,13 +50,21 @@ async function grantHolders(db: SupabaseClient, schoolId: string, roles: RoleKey
   return (users || []).filter(u => u.role === 'admin' && u.school_id === schoolId).map(u => u.id as string);
 }
 
-/** Who should hear about an item: the addressed teacher, else the student's/class's teachers; principal items go to principals. */
+/**
+ * Who should hear about an item: the addressed teacher, else the student's/class's teachers. Child protection (the
+ * 'principal' audience) goes to the Safeguarding lead, or the principal while the school has none.
+ */
 async function recipients(db: SupabaseClient, schoolId: string, row: any): Promise<string[]> {
-  if (row.audience === 'principal') return principalsOf(db, schoolId);
+  if (row.audience === 'principal') return cpReaders(db, schoolId);
   if (row.audience === 'safeguarding') return safeguardingOf(db, schoolId);
   if (row.teacher_id) return [row.teacher_id];
   return teachersOf(db, schoolId, row.class_name);
 }
+
+/** What an alert says. A child-protection case says only that one is waiting: no name or summary goes to WhatsApp. */
+const alertText = (row: { audience: string; title: string; message: string }) => (row.audience === 'principal'
+  ? { title: 'A child-protection case needs you', body: 'Open Safeguarding in Sthara for the details.' }
+  : { title: row.title, body: row.message });
 
 /**
  * Tells staff about feed items: an in-app notification always; WhatsApp too
@@ -112,7 +121,7 @@ export async function raise(db: SupabaseClient, schoolId: string, drafts: Draft[
     created = data?.length ?? 0;
     for (const row of data || []) {
       if (row.severity !== 'critical') continue;
-      await alertStaff(db, schoolId, await recipients(db, schoolId, row), { title: row.title, body: row.message, critical: true, situationId: row.id });
+      await alertStaff(db, schoolId, await recipients(db, schoolId, row), { ...alertText(row), critical: true, situationId: row.id });
     }
   }
   for (const d of uniq) {
@@ -148,10 +157,13 @@ export async function escalate(db: SupabaseClient, schoolId: string, now = new D
   const principals = await principalsOf(db, schoolId);
   // A safety disclosure escalates within the safeguarding circle, never wider.
   const safeguarding = data.some(r => r.audience === 'safeguarding') ? await safeguardingOf(db, schoolId) : [];
+  // Child protection escalates to its reader only (the Safeguarding lead, or the principal while there is none).
+  const cp = data.some(r => r.audience === 'principal') ? await cpReaders(db, schoolId) : [];
   for (const r of data) {
     if (!won.has(r.id)) continue;
-    await alertStaff(db, schoolId, r.audience === 'safeguarding' ? safeguarding : principals, {
-      title: `Escalated: ${r.title}`, body: `${r.message} Not acknowledged in time.`, critical: true, situationId: r.id,
+    const t = alertText(r);
+    await alertStaff(db, schoolId, r.audience === 'safeguarding' ? safeguarding : r.audience === 'principal' ? cp : principals, {
+      title: `Escalated: ${t.title}`, body: `${t.body} Not acknowledged in time.`, critical: true, situationId: r.id,
     });
   }
   return won.size;

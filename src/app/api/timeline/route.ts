@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
   if (!messages.length || messages[messages.length - 1].role !== 'me') return NextResponse.json({ error: 'Ask something first.' }, { status: 400 });
   const blocked = await aiGate(a.viewer.id, 'ask');
   if (blocked) return blocked;
+  if (!process.env.GEMINI_API_KEY) return NextResponse.json({ error: 'Asking isn\u2019t set up on this server yet.' }, { status: 503 });
   try {
     const timeline = shapeTimeline(await loadRows(db, a), a.lens);
     return NextResponse.json({ answer: await askTimeline(timeline, a.subject.fullName, messages, { userId: a.viewer.id, schoolId: a.subject.schoolId }) });

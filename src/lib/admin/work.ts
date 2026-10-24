@@ -20,7 +20,7 @@ export interface WorkItem {
 
 const n = (x: number, one: string, many = `${one}s`) => `${x.toLocaleString('en-IN')} ${x === 1 ? one : many}`;
 
-export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions' | 'concessions' | 'dayBook' | 'fees' | 'compliance' | 'filing'>, today: string): WorkItem[] {
+export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions' | 'concessions' | 'dayBook' | 'fees' | 'compliance' | 'filing'> & { grants?: AdminDesk['grants'] }, today: string): WorkItem[] {
   const a = desk.me.access;
   const can = (p: Perm) => a.can(p);
   const out: WorkItem[] = [];
@@ -77,7 +77,7 @@ export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions
       actions: [{ label: 'Open messages', href: '/admin/messages', primary: true }] });
   }
   if (can('safeguarding.read') || can('incidents.manage')) {
-    out.push({ key: 'safety', title: 'Safety alerts and incidents', detail: 'Tutor safety alerts, bullying and child-protection incidents waiting for a decision.', count: null, tone: 'n',
+    out.push({ key: 'safety', title: 'Safety alerts and incidents', detail: 'Tutor safety alerts, and bullying and safety incidents waiting for a decision.', count: null, tone: 'n',
       actions: [{ label: 'Review', href: '/admin/feed', primary: true }] });
   }
   if (can('compliance.act')) {
@@ -88,6 +88,40 @@ export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions
   if (can('wellness.file') && desk.filing.status !== 'filed') {
     out.push({ key: 'filing', title: 'CBSE wellness filing', detail: desk.filing.dueOn ? `Due ${desk.filing.dueOn}. Fill in the manual sections and file.` : 'Fill in the manual sections and file.',
       count: null, tone: 'a', actions: [{ label: 'Prepare the filing', href: '/admin/wellness', primary: true }] });
+  }
+  if (can('students.manage')) {
+    out.push({ key: 'register', title: 'Student register', detail: 'Admit into the register, correct records, set classes and roll numbers, close the year.', count: null, tone: 'n',
+      actions: [{ label: 'Change requests', href: '/admin/students?tab=requests', primary: true }, { label: 'Open the register', href: '/admin/students' }] });
+  }
+  if (can('certificates.approve') || can('certificates.prepare')) {
+    const approves = can('certificates.approve');
+    out.push({ key: 'certificates', title: 'Certificates', detail: approves ? 'Approve TCs and other certificates the registrar has prepared; cancel or reissue.' : 'Prepare TCs, bonafide and fee certificates from a student\u2019s record and send them for approval.',
+      count: null, tone: 'n', actions: [{ label: approves ? 'To approve' : 'Open certificates', href: '/admin/certificates?tab=approve', primary: true }] });
+  }
+  if (can('cocurricular.approve')) {
+    out.push({ key: 'kirti', title: 'Kirti to approve', detail: 'Achievements, events and house points teachers recorded, waiting for you.', count: null, tone: 'n',
+      actions: [{ label: 'Approve Kirti', href: '/admin/cocurricular?tab=approve', primary: true }, { label: 'Houses', href: '/admin/cocurricular?tab=houses' }] });
+  }
+  if (can('discipline.approve') || can('discipline.suspend')) {
+    out.push({ key: 'discipline', title: 'Discipline to approve', detail: 'Warnings, parent meetings, detentions and suspensions teachers proposed.', count: null, tone: 'n',
+      actions: [{ label: 'To approve', href: '/admin/discipline?tab=approve', primary: true }] });
+  }
+  if (can('counselling.notes')) {
+    out.push({ key: 'counselling', title: 'Counselling', detail: 'Referrals from teachers, parents and the office; your cases and session notes.', count: null, tone: 'n',
+      actions: [{ label: 'Open counselling', href: '/admin/counselling', primary: true }] });
+  }
+  if (can('safeguarding.cases')) {
+    out.push({ key: 'safeguarding', title: 'Child protection', detail: 'Child-protection cases and their POCSO steps. Only you see them.', count: null, tone: 'n',
+      actions: [{ label: 'Open safeguarding', href: '/admin/safeguarding', primary: true }] });
+  }
+  // Child protection falls to the principal until someone holds the Safeguarding lead role.
+  if (can('access.manage') && desk.grants && !desk.grants.some(g => g.role === 'safeguarding_lead')) {
+    out.push({ key: 'dsl', title: 'Assign a Safeguarding lead', detail: 'No one holds the Safeguarding lead role, so child-protection cases go to the principal. Assign the school’s designated person.', count: 1, tone: 'a',
+      actions: [{ label: 'Roles & Access', href: '/admin/access', primary: true }] });
+  }
+  if (can('health.manage')) {
+    out.push({ key: 'health', title: 'Health records', detail: 'Health cards, check-ups, vaccinations, alerts and parents’ requested changes.', count: null, tone: 'n',
+      actions: [{ label: 'Open health records', href: '/admin/health', primary: true }] });
   }
   if (can('people.manage')) {
     out.push({ key: 'logins', title: 'Logins', detail: 'Ask Sthara for new logins, remove accounts, set what teachers teach.', count: null, tone: 'n',

@@ -27,7 +27,7 @@ const GROUPS: [string, Perm[]][] = [
   ['Fees', ['fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request', 'fees.concession.approve', 'fees.void', 'fees.dayclose', 'fees.remind']],
   ['Admissions', ['admissions.read', 'admissions.manage']],
   ['Wellbeing & compliance', ['wellness.read', 'wellness.file', 'compliance.read', 'compliance.act', 'audit.read']],
-  ['Administration', ['people.manage', 'access.manage']],
+  ['Administration', ['people.manage', 'access.manage', 'data.import']],
 ];
 
 function Access({ desk }: { desk: AdminDesk }) {
@@ -165,7 +165,7 @@ function Access({ desk }: { desk: AdminDesk }) {
 }
 
 interface StharaWindow {
-  id: string; by: string; role: string; scope: 'records' | 'view_as'; reason: string; caseRef: string | null;
+  id: string; by: string; role: string; scope: 'records' | 'view_as' | 'import'; reason: string; caseRef: string | null;
   startedAt: string; expiresAt: string; endedAt: string | null; opened: number;
 }
 const timeIST = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
@@ -200,7 +200,7 @@ function StharaAccess() {
                 <b style={{ fontSize: 13.5, overflowWrap: 'anywhere' }}>{w.by} · {roleLabel(w.role)}, Sthara</b>
                 <div style={{ fontSize: 13.5, marginTop: 3 }}>{w.reason}</div>
                 <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
-                  {timeIST(w.startedAt)} · {live ? 'open now' : `${Math.max(1, Math.round((Date.parse(end) - Date.parse(w.startedAt)) / 60_000))} min`} · {w.scope === 'view_as' ? 'viewed the school as you see it' : `${plural(w.opened, 'record')} opened`}{w.caseRef ? ` · case ${w.caseRef}` : ''}
+                  {timeIST(w.startedAt)} · {live ? 'open now' : `${Math.max(1, Math.round((Date.parse(end) - Date.parse(w.startedAt)) / 60_000))} min`} · {w.scope === 'view_as' ? 'viewed the school as you see it' : w.scope === 'import' ? 'ran bulk imports (see Data Import)' : `${plural(w.opened, 'record')} opened`}{w.caseRef ? ` · case ${w.caseRef}` : ''}
                 </div>
               </div>
               <Chip tone={live ? 'a' : 'n'}>{live ? 'OPEN' : 'CLOSED'}</Chip>

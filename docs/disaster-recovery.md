@@ -104,11 +104,19 @@ Vercel env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `S
 `GEMINI_API_KEY` (or `GOOGLE_GENERATIVE_AI_API_KEY`), `TUTOR_SESSION_SECRET`, `CRON_SECRET`, `YOUTUBE_API_KEY`,
 `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`,
 `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_BUSINESS_NUMBER`, `WHATSAPP_TEMPLATE_OTP`, `WHATSAPP_TEMPLATE_ALERT`,
-`POLICIES_APPROVED`; and any of `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY` that are set.
+`POLICIES_APPROVED`, `IMPORT_WORKER_SECRET`, `STUDENT_PII_KEY`; and any of `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY` that are set.
+Supabase Vault (not in any backup; recreate with `vault.create_secret`): `import_worker_url`
+(`https://www.sthara.in/api/import/worker`) and `import_worker_secret` (the same value as `IMPORT_WORKER_SECRET`).
 GitHub repo secrets (watchdog): `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`.
 Backups: `BACKUP_PASSPHRASE`, the Supabase database password.
 
-`TUTOR_SESSION_SECRET` must stay the same across a rebuild or open tutor sessions stop verifying. The WhatsApp
+`TUTOR_SESSION_SECRET` must stay the same across a rebuild or open tutor sessions stop verifying.
+**`STUDENT_PII_KEY` must never be lost or changed.** It encrypts every Aadhaar number on the student register (the
+database holds only ciphertext, the last 4 digits and a keyed hash). A backup restored without the same key keeps
+everything except the Aadhaar numbers, which would have to be collected again. Changing it means decrypting every
+`students.aadhaar_cipher` with the old key and sealing it again with the new one (and recomputing `aadhaar_hash`)
+in one pass; never just replace it in Vercel. `IMPORT_WORKER_SECRET` can be rotated any time: replace it in
+`.env.local`, Vercel and the Vault secret, then redeploy. The WhatsApp
 webhook points at `https://www.sthara.in/api/whatsapp/webhook`, so it survives a database move untouched.
 
 ## Auth settings (fill in from the dashboard; they are not in any backup)

@@ -16,6 +16,7 @@ import { MARKS, MARK_LABEL, MARK_SHORT, MIN_PCT, absentStreak, addDay, belowMin,
 import { Sparkline, weeklyPts } from '@/components/canon/TrendLine';
 import { Empty } from '@/components/canon/ui';
 import type { History } from './useRegister';
+import { HealthAlertMark } from '../HealthAlert';
 
 const ICON = { present: Check, absent: X, late: Clock, excused: FirstAid } as const;
 const KEY_OF: Record<string, Mark> = { p: 'present', a: 'absent', l: 'late', e: 'excused' };
@@ -33,7 +34,8 @@ export interface SavePayload { marks: { studentId: string; status: Mark; note: s
  * One day's register: everyone starts present (or as saved), the teacher marks who isn't here, with a note
  * where it helps. Fast paths: "absentees by roll number", P/A/L/E keys that mark and move down.
  */
-export default function DayRegister({ day, isToday, roster, history, recent, canMark, busy, onSave, onDirty }: {
+export default function DayRegister({ day, isToday, roster, history, recent, canMark, busy, onSave, onDirty, alerts }: {
+  alerts?: Map<string, string>;
   day: string;
   isToday: boolean;
   roster: TStudent[];
@@ -205,7 +207,7 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
                 <div className="reg-roll-no" aria-label={`Roll ${s.rollNo || 'none'}`}>{s.rollNo || '–'}</div>
                 <div className="reg-who">
                   <div className="reg-name">
-                    {s.name}
+                    {s.name}<HealthAlertMark alert={alerts?.get(s.id)} />
                     {isChanged && <span className="reg-dot" title="Changed, not saved yet"><span className="sr">(unsaved)</span></span>}
                   </div>
                   <div className="reg-meta">

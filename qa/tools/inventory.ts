@@ -40,7 +40,7 @@ export type Guard =
   | 'parent'        // requireParent
   | 'signed-in'     // verifyApiToken + the route's own role checks
   | 'operator'      // operatorFromRequest: Sthara operators only, 404 for everyone else
-  | 'cron'          // Authorization: Bearer <CRON_SECRET>
+  | 'cron'          // Authorization: Bearer <CRON_SECRET>, or the import worker's x-worker-secret (IMPORT_WORKER_SECRET)
   | 'device'        // biometric device token
   | 'meta'          // WhatsApp webhook: verify token (GET) / X-Hub-Signature-256 (POST)
   | 'public'        // deliberately open (sign-in lookup, health, contact form, error reports)
@@ -76,7 +76,7 @@ function guardOf(route: string, src: string): { guard: Guard; perms: string[] } 
   if (route in PUBLIC) return { guard: 'public', perms: [] };
   // operatorFor(req, perm) replaced operatorFromRequest in the ops CRM (2026-10-13); both 404 non-operators.
   if (/operatorFromRequest\(|operatorFor\(/.test(src)) return { guard: 'operator', perms: [] };
-  if (/CRON_SECRET/.test(src)) return { guard: 'cron', perms: [] };
+  if (/CRON_SECRET|IMPORT_WORKER_SECRET/.test(src)) return { guard: 'cron', perms: [] };
   if (/x-hub-signature-256/.test(src)) return { guard: 'meta', perms: [] };
   // Machine credentials: biometric devices, and the test pack uploading its runs (qaCaller, x-qa-token).
   if (/x-device-token|x-qa-token|qaCaller\(/.test(src)) return { guard: 'device', perms: [] };
@@ -88,8 +88,12 @@ function guardOf(route: string, src: string): { guard: Guard; perms: string[] } 
   return { guard: 'unguarded', perms: [] };
 }
 
+/** Machine routes that answer a wrong or missing secret with 404, so they look like no route at all. */
+const HIDDEN = new Set(['/api/import/worker']);
+
 function anonymousFor(route: string, guard: Guard, methods: string[]): Record<string, number[]> {
   if (PUBLIC[route]) return PUBLIC[route];
+  if (HIDDEN.has(route)) return Object.fromEntries(methods.map(m => [m, [404]]));
   const out: Record<string, number[]> = {};
   for (const m of methods) {
     if (guard === 'operator') out[m] = [404];

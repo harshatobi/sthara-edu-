@@ -15,6 +15,7 @@ import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/C
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { Bar, Chip, Skeleton, hmColor } from '@/components/canon/ui';
 import DemoNote from '@/components/canon/DemoNote';
+import YearEndCard from '@/components/students/YearEndCard';
 import { useToast } from '@/components/canon/useToast';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { colorForIcon } from '@/lib/iconColors';
@@ -51,6 +52,7 @@ export default function StudentDashboard() {
   return (
     <>
       {desk.mode === 'demo' && <DemoNote />}
+      {desk.mode !== 'demo' && <YearEndCard />}
 
       <div className="hero">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>

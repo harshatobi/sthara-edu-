@@ -27,7 +27,8 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
   const today = istDay();
   const { data: sit } = await db.from('situations').select('id, school_id, audience, teacher_id, class_name, severity, title, escalate_at, acknowledged_at, created_at')
     .eq('school_id', me.schoolId).is('acknowledged_at', null).gte('created_at', new Date(Date.now() - 30 * DAY_MS).toISOString()).limit(400);
-  const open = (sit || []).filter(r => canSeeSituation(me, r));
+  // Child protection is counted separately below; its titles never go to WhatsApp.
+  const open = (sit || []).filter(r => r.audience !== 'principal' && canSeeSituation(me, r));
   const esc = open.filter(r => isEscalated(r));
   const crit = open.filter(r => r.severity === 'critical');
   const top = [...esc, ...crit.filter(r => !esc.includes(r)), ...open.filter(r => r.severity === 'high' && !esc.includes(r))].slice(0, 3);
@@ -71,8 +72,13 @@ export async function buildDigest(db: SupabaseClient, me: FeedCaller): Promise<{
     lines.push(`• Feed: ${plural(open.length, 'open item')}, ${crit.length} critical, *${esc.length} escalated to you*`);
     const a = me.access!;
     if (a.can('incidents.manage')) {
-      const { count } = await db.from('incidents').select('id', { count: 'exact', head: true }).eq('school_id', me.schoolId).eq('parent_notice', 'principal_decides');
+      const { count } = await db.from('incidents').select('id', { count: 'exact', head: true }).eq('school_id', me.schoolId).eq('parent_notice', 'principal_decides').neq('category', 'child_protection');
       if (count) lines.push(`• Incidents waiting for your decision: ${count}`);
+    }
+    // Child protection: a count only, never details on WhatsApp.
+    if (me.cpReader) {
+      const { count } = await db.from('incidents').select('id', { count: 'exact', head: true }).eq('school_id', me.schoolId).eq('category', 'child_protection').eq('status', 'open');
+      if (count) lines.push(`• Open child-protection cases: ${count} (open Safeguarding in Sthara)`);
     }
     if (a.can('attendance.read') && new Date(`${today}T00:00:00Z`).getUTCDay() !== 0) {
       // Both paged: a school of 1,000+ students passes one request's 1,000 rows.

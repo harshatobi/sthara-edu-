@@ -9,6 +9,8 @@ import { loadFamily } from './load';
 import { parseAskReply, restore, tokenize, type AskReply, type NameBook } from './ask';
 import type { ParentCaller } from './serverAuth';
 import { generateMetered } from '@/lib/ai/usage';
+import { loadRows, registerIdOf, timelineAccess } from '@/lib/timeline/server';
+import { shapeTimeline, timelineText } from '@/lib/timeline/rules';
 
 const CONSENT_LABEL: Record<string, string> = {
   ai_tutor: 'AI tutor', wellness_checkin: 'wellness check-ins', data_processing: 'data processing', proctoring: 'proctored tests',
@@ -24,7 +26,7 @@ export function nameBook(view: FamilyView): NameBook {
 }
 
 /** The data brief: only this family's children, every name as a token. */
-export function buildBrief(view: FamilyView, findings: ProbeFinding[], book: NameBook): string {
+export function buildBrief(view: FamilyView, findings: ProbeFinding[], book: NameBook, history: Map<string, string> = new Map()): string {
   const tokOfStaff = new Map([...book.staff].map(([t, s]) => [s.id, `[[${t}]]`]));
   const tokOfChild = new Map([...book.children].map(([t, c]) => [c.id, `[[${t}]]`]));
   const staff = (id: string | null | undefined) => (id ? tokOfStaff.get(id) ?? 'a teacher' : 'no teacher on record');
@@ -56,6 +58,8 @@ export function buildBrief(view: FamilyView, findings: ProbeFinding[], book: Nam
     lines.push(c.fees.invoices.length
       ? `Fees: ${inr(c.fees.outstanding)} outstanding, ${inr(c.fees.overdue)} overdue. ${c.fees.nextDue ? `Next: ${c.fees.nextDue.label} ${inr(c.fees.nextDue.balance)} due ${fmtDate(c.fees.nextDue.dueOn)} (${c.fees.nextDue.invoiceNo}).` : 'Nothing further due.'} Paid so far: ${inr(c.fees.invoices.reduce((n, i) => n + i.paid, 0))}.`
       : 'Fees: no invoices raised this session.');
+    const past = history.get(c.id);
+    if (past) lines.push(`Year by year (the school's timeline, newest first):\n${past}`);
     lines.push(`Consents: ${Object.entries(CONSENT_LABEL).map(([key, label]) => `${label} ${c.consents[key] === undefined ? 'not decided' : c.consents[key] ? 'granted' : 'declined'}`).join(', ')}`);
     out.push(lines.join('\n'));
   }
@@ -74,7 +78,7 @@ function systemPrompt(view: FamilyView, brief: string, channel: 'web' | 'whatsap
 You know exactly what the school's records say (the DATA BRIEF below) and nothing else about the family.
 
 HOW YOU WORK
-- Answer from the DATA BRIEF only. Quote its numbers and dates. If the brief doesn't cover something (attendance, timetable, exam dates, transport, events), say the school hasn't shared that here and offer to ask the right person. Never invent scores, dates, teachers or policies.
+- Answer from the DATA BRIEF only. Quote its numbers and dates. The "Year by year" lines cover earlier school years (attendance, results, mastery, homework, fees, achievements, approved discipline); use them for questions about change over time. If the brief doesn't cover something (timetable, exam dates, transport, events), say the school hasn't shared that here and offer to ask the right person. Never invent scores, dates, teachers or policies.
 - Children appear only as tokens like [[C1]], teachers as [[T1]]. Use those exact tokens; never guess names.
 - ASK: ${kids > 1 ? 'if the question could be about more than one child and it matters, ask which child (options are the child tokens) before answering. ' : ''}If a request is too vague to answer well, ask ONE short question with 2–4 options. If it is clear, answer straight away.
 - PROBE: explain the why behind a number, not just the number (e.g. a low chapter score driven by missing homework rather than wrong answers; a dip after a run of overdue work). After answering, if the PROBE list has something serious (severity 60+) the parent hasn't heard in this conversation, raise it in one sentence.
@@ -96,6 +100,20 @@ DATA BRIEF
 ${brief}`;
 }
 
+/** Each child's year-by-year timeline (brief 08), as the parent may see it. A child without one is left out. */
+async function histories(db: SupabaseClient, parent: ParentCaller, view: FamilyView): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  await Promise.all(view.children.map(async c => {
+    try {
+      const reg = await registerIdOf(db, c.id);
+      if (!reg) return;
+      const a = await timelineAccess(db, parent.id, reg);
+      if (a.ok) out.set(c.id, timelineText(shapeTimeline(await loadRows(db, a), a.lens)));
+    } catch (e) { console.warn('[parent ask] timeline', e instanceof Error ? e.message : e); }
+  }));
+  return out;
+}
+
 export interface AskResult { reply: AskReply; view: FamilyView; findings: ProbeFinding[] }
 
 /**
@@ -114,7 +132,7 @@ export async function askSchoolOS(db: SupabaseClient, parent: ParentCaller, mess
   }
   const findings = probeFamily(view);
   const book = nameBook(view);
-  const system = systemPrompt(view, buildBrief(view, findings, book), channel);
+  const system = systemPrompt(view, buildBrief(view, findings, book, await histories(db, parent, view)), channel);
   const contents = messages.slice(-12).map(m => ({ role: m.role === 'os' ? 'model' : 'user', parts: [{ text: tokenize(m.text, book) }] }));
   const ai = new GoogleGenAI({ apiKey });
   const res = await generateMetered(ai, {

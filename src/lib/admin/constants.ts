@@ -11,4 +11,5 @@ export const CONSENT_TYPES: Record<string, { label: string; purpose: string }> =
   ai_tutor: { label: 'AI tutor', purpose: 'Socratic tutor sessions and their depth scores' },
   data_processing: { label: 'Learning data', purpose: 'TML diagnostics from homework, quizzes and tutor use' },
   proctoring: { label: 'Proctoring', purpose: 'Tab-switch monitoring during proctored work' },
+  health_record: { label: 'Health record', purpose: 'Allergies, conditions, medication, check-ups and vaccinations kept by the school health officer' },
 };

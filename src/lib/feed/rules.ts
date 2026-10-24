@@ -93,8 +93,9 @@ export type ParentNotice = 'sent' | 'awaiting_class_teacher' | 'principal_decide
 /**
  * The school's routing for incidents (decided 2026-09-26): health is told to
  * parents at once; discipline waits for the class teacher to confirm; bullying,
- * safety and child protection are the principal's call. Child protection is
- * seen by the principal only (POCSO: mandatory reporting still applies).
+ * safety are the principal's call. Child protection belongs to the Safeguarding
+ * lead (the principal until one is assigned; brief 07), who records the POCSO
+ * steps and how the parent is told in Safeguarding, never through the portal.
  */
 export const INCIDENT_RULES: Record<IncidentCategory, { label: string; severity: Severity; notice: ParentNotice; audience: 'staff' | 'principal'; hint: string }> = {
   health: { label: 'Health or injury', severity: 'high', notice: 'sent', audience: 'staff', hint: 'Parents are told straight away.' },
@@ -104,7 +105,7 @@ export const INCIDENT_RULES: Record<IncidentCategory, { label: string; severity:
   property: { label: 'Property or damage', severity: 'normal', notice: 'awaiting_class_teacher', audience: 'staff', hint: 'The class teacher confirms before parents are told.' },
   child_protection: {
     label: 'Child protection', severity: 'critical', notice: 'principal_decides', audience: 'principal',
-    hint: 'Only the principal sees this. Under POCSO, suspected abuse must be reported to the police or the Child Welfare Committee.',
+    hint: 'Only the school\u2019s Safeguarding lead (the principal, until one is assigned) sees this. Under POCSO, suspected abuse must be reported to the police or the Child Welfare Committee.',
   },
   other: { label: 'Other', severity: 'normal', notice: 'awaiting_class_teacher', audience: 'staff', hint: 'The class teacher confirms before parents are told.' },
 };
@@ -126,10 +127,11 @@ export function incidentDraft(i: {
     sent: 'Parents have been told.', awaiting_class_teacher: 'Waiting for the class teacher to confirm before parents are told.',
     principal_decides: 'Waiting for the principal to decide on telling parents.', declined: 'Decided not to tell parents.', not_applicable: '',
   }[i.notice];
+  const noticeLine = i.category === 'child_protection' ? 'The Safeguarding lead handles this case in Safeguarding.' : notice;
   return {
     kind: 'incident', category: 'incident', severity: i.severity, audience: r.audience,
     title: `${r.label}: ${i.summary}`,
-    message: `${who}. Logged by ${i.loggedByName}${i.location ? ` at ${i.location}` : ''}. ${notice}`.trim(),
+    message: `${who}. Logged by ${i.loggedByName}${i.location ? ` at ${i.location}` : ''}. ${noticeLine}`.trim(),
     dedupeKey: `incident:${i.id}`, studentId: i.studentId, studentName: i.studentName, className: i.className,
     sourceTable: 'incidents', sourceId: i.id, metadata: { incidentCategory: i.category, parentNotice: i.notice },
   };

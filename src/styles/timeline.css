@@ -1,0 +1,79 @@
+/* The unified timeline (Living Record brief 08), prefixed tl-. Not scoped under .canon: the printed student file is
+   portalled to <body>, outside the portal shell, so the colours it needs are set here. */
+.tl, .tl-doc {
+  --tl-ink:#002147; --tl-line:#E8EDF4; --tl-mut:#7A8699; --tl-pale:#F7F9FB;
+  --tl-g:#0B7A54; --tl-a:#B45309; --tl-r:#BE123C; --tl-b:#2F6BFF; --tl-n:#5B6B82;
+}
+.tl-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+.tl-years { list-style:none; margin:0; padding:0; display:grid; gap:12px; }
+.tl-year { border:1px solid var(--tl-line); border-radius:14px; padding:12px 14px; background:#fff; }
+.tl-year.on { border-color:#C9D6EA; box-shadow:0 1px 0 rgba(0,33,71,.04); }
+.tl-head { display:flex; align-items:center; gap:10px; width:100%; background:none; border:0; padding:0; font:inherit; color:var(--tl-ink); cursor:pointer; }
+.tl-head.static { cursor:default; }
+.tl-head:focus-visible { outline:2px solid var(--tl-b); outline-offset:4px; border-radius:8px; }
+.tl-caret { color:var(--tl-mut); transition:transform .15s; }
+.tl-year.on .tl-caret { transform:rotate(180deg); }
+.tl-chip { margin-left:8px; vertical-align:middle; }
+.tl-ico { display:inline-grid; place-items:center; width:28px; height:28px; border-radius:8px; background:var(--tl-pale); color:var(--tl-ink); flex:none; }
+
+.tl-stats { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; margin-top:12px; }
+.tl-stat { display:flex; gap:8px; align-items:center; border:1px solid var(--tl-line); border-radius:10px; padding:8px 10px; min-width:0; }
+.tl-k { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--tl-mut); }
+.tl-v { font-size:14px; font-weight:800; color:var(--tl-ink); overflow-wrap:anywhere; }
+.tl-stat.t-g .tl-v { color:var(--tl-g); } .tl-stat.t-a .tl-v { color:var(--tl-a); } .tl-stat.t-r .tl-v { color:var(--tl-r); }
+
+.tl-events { list-style:none; margin:14px 0 2px; padding:0; border-top:1px solid var(--tl-line); }
+.tl-ev { display:grid; grid-template-columns:28px 64px 1fr; gap:10px; align-items:start; padding:10px 0; border-bottom:1px solid var(--tl-line); }
+.tl-ev:last-child { border-bottom:0; }
+.tl-ev.t-g .tl-ico { color:var(--tl-g); background:#E7F8F1; } .tl-ev.t-a .tl-ico { color:var(--tl-a); background:#FEF3E2; }
+.tl-ev.t-r .tl-ico { color:var(--tl-r); background:#FFE4E9; } .tl-ev.t-b .tl-ico { color:var(--tl-b); background:#EAF2FF; }
+.tl-when { font-size:12.5px; font-weight:700; color:var(--tl-mut); padding-top:5px; font-variant-numeric:tabular-nums; }
+.tl-title { font-weight:700; color:var(--tl-ink); font-size:14px; padding-top:4px; }
+.tl-detail { font-size:13px; margin-top:2px; }
+
+.tl-ai { display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; color:#6D4AFF; }
+.tl-ai.sm { font-size:11px; margin-bottom:4px; }
+.tl-turns { display:grid; gap:10px; margin-bottom:12px; }
+.tl-turn { border-radius:12px; padding:10px 12px; font-size:14px; line-height:1.5; }
+.tl-turn.me { background:var(--tl-pale); justify-self:end; max-width:85%; }
+.tl-turn.os { border:1px solid #E4DCFF; background:#FAF8FF; }
+.tl-suggest { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.tl-form { display:flex; gap:8px; }
+.tl-form input { flex:1; min-width:0; }
+
+@media (max-width:640px) {
+  .tl-ev { grid-template-columns:28px 1fr; }
+  .tl-when { grid-column:2; padding-top:0; order:-1; }
+  .tl-stats { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .tl-form { flex-direction:column; }
+}
+
+/* The teacher's picker: classes and students on the left, the timeline on the right. */
+.tl-pick { display:grid; grid-template-columns:minmax(220px, 280px) 1fr; gap:14px; align-items:start; }
+.tl-roster { list-style:none; margin:0; padding:0; display:grid; gap:4px; max-height:60vh; overflow:auto; }
+.tl-roster button { display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; text-align:left; background:none; border:1px solid transparent; border-radius:10px; padding:8px 10px; font:inherit; color:#002147; cursor:pointer; }
+.tl-roster button:hover { background:#F7F9FB; }
+.tl-roster button.on { border-color:#C9D6EA; background:#EAF2FF; }
+.tl-roster button:focus-visible { outline:2px solid #2F6BFF; outline-offset:1px; }
+.tl-roster .mono { font-size:12px; }
+@media (max-width:860px) { .tl-pick { grid-template-columns:1fr; } .tl-roster { max-height:none; } }
+.tl-pick .tl-k { font-size:11px; font-weight:800; letter-spacing:.06em; color:#7A8699; }
+
+/* The student file: only on paper. */
+.tl-doc { display:none; }
+@media print {
+  @page tlfile { size:A4 portrait; margin:12mm 12mm 16mm; }
+  body.print-tl > :not(.tl-doc) { display:none !important; }
+  body.print-tl { background:#fff !important; }
+  body.print-tl .tl-doc { display:block; page:tlfile; color:var(--tl-ink); font-size:10pt; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .tl-doc-head { display:flex; justify-content:space-between; gap:16px; border-bottom:2px solid var(--tl-ink); padding-bottom:8px; margin-bottom:10px; }
+  .tl-doc-head h1 { font-size:18pt; margin:2px 0; }
+  .tl-doc-eyebrow { font-size:8pt; font-weight:800; letter-spacing:.12em; color:var(--tl-mut); }
+  .tl-doc-scope { font-size:8.5pt; color:var(--tl-mut); max-width:45%; text-align:right; }
+  .tl-doc-year { break-inside:auto; margin-bottom:12px; }
+  .tl-doc-year h2 { font-size:12pt; margin:10px 0 4px; break-after:avoid; }
+  .tl-doc .tl-stats { grid-template-columns:repeat(4, 1fr); margin-top:4px; }
+  .tl-doc .tl-ev { break-inside:avoid; padding:5px 0; grid-template-columns:22px 56px 1fr; }
+  .tl-doc .tl-ico { width:22px; height:22px; }
+}

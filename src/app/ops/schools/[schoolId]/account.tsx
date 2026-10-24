@@ -10,7 +10,7 @@ import { Facts, Section, Table, errText, fmtDateTime, num } from '../../_ui';
 import { useOpsApi } from '../../useOpsApi';
 
 interface Grant {
-  id: string; operatorId: string | null; operatorEmail: string; operatorRole: string; scope: 'records' | 'view_as';
+  id: string; operatorId: string | null; operatorEmail: string; operatorRole: string; scope: 'records' | 'view_as' | 'import';
   reason: string; caseRef: string | null; startedAt: string; expiresAt: string; endedAt: string | null; opened: number;
 }
 interface Data {
@@ -67,7 +67,7 @@ export function AccountTab({ schoolId, onChanged }: { schoolId: string; onChange
           <div className="ops-window" role="status">
             <LockKeyOpen size={26} weight="duotone" color="#B45309" />
             <div style={{ flex: 1, minWidth: 220 }}>
-              <div className="nm">Your window is open{d.myGrant.scope === 'view_as' ? ' (view as the school)' : ''}</div>
+              <div className="nm">Your window is open{d.myGrant.scope === 'view_as' ? ' (view as the school)' : d.myGrant.scope === 'import' ? ' (imports)' : ''}</div>
               <div className="sub">{d.myGrant.reason}{d.myGrant.caseRef ? ` · case ${d.myGrant.caseRef}` : ''}</div>
             </div>
             <div className="t" aria-label="Time left">{mmss(Date.parse(d.myGrant.expiresAt) - now)}</div>
@@ -88,7 +88,7 @@ export function AccountTab({ schoolId, onChanged }: { schoolId: string; onChange
                 <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(g.startedAt)}</td>
                 <td><div className="nm" style={{ overflowWrap: 'anywhere' }}>{g.operatorEmail}</div><div className="sub">{roleLabel(g.operatorRole)}</div></td>
                 <td style={{ fontSize: 13.5, maxWidth: 360 }}>{g.reason}{g.caseRef && <div className="sub">Case {g.caseRef}</div>}</td>
-                <td>{g.scope === 'view_as' ? 'View as school' : 'Records'}</td>
+                <td>{g.scope === 'view_as' ? 'View as school' : g.scope === 'import' ? 'Imports' : 'Records'}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>{end ? `${Math.max(1, Math.round((Date.parse(end) - Date.parse(g.startedAt)) / 60_000))} min` : '—'}</td>
                 <td className="r">{num(g.opened)}</td>
                 <td>{live ? <Chip tone="a">OPEN</Chip> : g.endedAt ? <Chip tone="n">ENDED</Chip> : <Chip tone="n">EXPIRED</Chip>}</td>

@@ -15,6 +15,7 @@ import DayRegister, { dayLabel, type SavePayload } from './attendance/DayRegiste
 import MonthSheet from './attendance/MonthSheet';
 import RegisterDoc, { printRegister } from './attendance/RegisterDoc';
 import { sessionFrom, useCalendar, useHistory, wingIdOf } from './attendance/useRegister';
+import { useClassAlerts } from './HealthAlert';
 
 type View = 'day' | 'month';
 
@@ -35,6 +36,7 @@ export default function AttendancePage() {
   const [picked, setCls] = useState('');
   const cls = picked || ownClass || classes[0] || '';
   const isOwn = !!ownClass && normClass(ownClass) === normClass(cls);
+  const alerts = useClassAlerts(cls);
   const roster = useMemo(() => (desk?.classes.find(c => normClass(c.cls) === normClass(cls))?.students || [])
     .slice().sort((a, b) => (a.rollNo || '').localeCompare(b.rollNo || '', 'en', { numeric: true }) || a.name.localeCompare(b.name)), [desk, cls]);
 
@@ -124,13 +126,13 @@ export default function AttendancePage() {
               })}
             </div>
             <DayRegister key={`${cls}|${day}|${version}`} day={day} isToday={day === today} roster={roster} history={history} recent={trail}
-              canMark={canMark} busy={busy} onSave={save} onDirty={onDirty} />
+              canMark={canMark} busy={busy} onSave={save} onDirty={onDirty} alerts={alerts} />
           </>
         ) : (
           <MonthSheet cls={cls} month={month} setMonth={setMonth} minMonth={sessionStart.slice(0, 7)} maxMonth={today.slice(0, 7)}
             days={monthSheetDays} roster={roster} history={history} today={today} editableFrom={window_[window_.length - 1]?.date ?? today}
             sessionStart={sessionStart} onPdf={printRegister}
-            onOpenDay={d => { setDay(d); setView('day'); }} />
+            onOpenDay={d => { setDay(d); setView('day'); }} alerts={alerts} />
         )}
       </div>
 

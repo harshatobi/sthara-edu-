@@ -80,3 +80,4 @@ access is filtered per role on the server. Tests for the per-role filtering. All
   recorded.
 - Tests: `src/lib/timeline/rules.test.ts` (9): per-role filtering for office roles, class and subject teachers, parent
   and student; child protection never appears; the AI text stays in the lens.
+- Migration applied live 2026-10-24 (one transaction, history row md5 = file; execute for service_role only, not anon or authenticated). Live history 15 = branch 15. 2 ms on the sandbox's busiest student.

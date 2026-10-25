@@ -12,39 +12,58 @@ import { navOf } from '../../tools/inventory';
 // Re-signed 2026-10-15 after payroll (2026-10-13), the employee master (hr.manage, hr.sensitive), People and
 // Help & Support for every office account, and exams (2026-10-14: the academic coordinator runs the exam cell,
 // the principal publishes, the vice principal reads; the fees office sees only report cards held for fees).
+// Re-signed 2026-10-21 (Living Record 01): the student register. A new Registrar role keeps it; the principal and
+// school admin manage it too and approve year-end outcomes; the session calendar is the school admin's alone; the
+// vice principal, academic coordinator, admissions officer, finance head and accountant read it. Living Record 03:
+// a Health officer role keeps the health records with the principal and school admin.
+// Re-signed 2026-10-23 (Living Record 05): certificates. The registrar prepares them; the principal and school admin
+// approve and set them up (new Certificates menu). The DPO reaches Students for parents' document-erasure requests (04).
+// Living Record 06: co-curricular. The academic coordinator (with the principal and school admin) sets up houses, clubs
+// and teams and approves Kirti and house points (new Co-curricular menu).
+// Re-signed 2026-10-24 (Living Record 07): discipline and counselling. The vice principal approves warnings, parent
+// meetings and detentions, the principal (and school admin) suspensions; the registrar opens the archive (new Discipline
+// menu). Counselling notes are the counsellor's alone; the principal and school admin see dates and status (new
+// Counselling menu). A new Safeguarding lead role holds child-protection cases, which the school admin and principal no
+// longer hold (the principal reads them only while no lead is assigned: Safeguarding menu for the principal role).
 const EXPECTED: Record<RoleKey, string[]> = {
-  school_admin: Object.keys(PERMS),
-  principal: Object.keys(PERMS).filter(p => p !== 'access.manage'),
-  vice_principal: ['dashboard.view', 'boardpack.view', 'probe.view', 'academics.read', 'workforce.read', 'leave.approve', 'admissions.read', 'wellness.read', 'compliance.read', 'messages.office', 'feed.read', 'incidents.manage', 'attendance.read', 'os.ask', 'schedule.academic', 'exams.read'],
-  finance_head: ['dashboard.view', 'boardpack.view', 'probe.view', 'fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request', 'fees.concession.approve', 'fees.void', 'fees.dayclose', 'fees.remind', 'audit.read', 'payroll.read', 'payroll.approve'],
-  accountant: ['dashboard.view', 'probe.view', 'fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request', 'fees.dayclose', 'fees.remind', 'payroll.read', 'payroll.prepare'],
+  school_admin: Object.keys(PERMS).filter(p => p !== 'counselling.notes' && p !== 'safeguarding.cases'),
+  principal: Object.keys(PERMS).filter(p => p !== 'access.manage' && p !== 'session.manage' && p !== 'counselling.notes' && p !== 'safeguarding.cases'),
+  vice_principal: ['dashboard.view', 'boardpack.view', 'probe.view', 'academics.read', 'workforce.read', 'leave.approve', 'admissions.read', 'wellness.read', 'compliance.read', 'messages.office', 'feed.read', 'incidents.manage', 'attendance.read', 'os.ask', 'schedule.academic', 'exams.read', 'students.read', 'discipline.approve'],
+  finance_head: ['dashboard.view', 'boardpack.view', 'probe.view', 'fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request', 'fees.concession.approve', 'fees.void', 'fees.dayclose', 'fees.remind', 'audit.read', 'payroll.read', 'payroll.approve', 'students.read'],
+  accountant: ['dashboard.view', 'probe.view', 'fees.read', 'fees.collect', 'fees.bill', 'fees.concession.request', 'fees.dayclose', 'fees.remind', 'payroll.read', 'payroll.prepare', 'students.read'],
   cashier: ['dashboard.view', 'fees.read', 'fees.collect'],
-  admissions_officer: ['dashboard.view', 'probe.view', 'admissions.read', 'admissions.manage'],
+  admissions_officer: ['dashboard.view', 'probe.view', 'admissions.read', 'admissions.manage', 'students.read'],
   hr_manager: ['dashboard.view', 'probe.view', 'workforce.read', 'leave.approve', 'leave.policy', 'schedule.workforce', 'hr.manage', 'hr.sensitive', 'payroll.read', 'payroll.prepare'],
-  academic_coordinator: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic', 'exams.read', 'exams.manage'],
-  counsellor: ['dashboard.view', 'wellness.read', 'messages.office', 'safeguarding.read'],
+  academic_coordinator: ['dashboard.view', 'probe.view', 'academics.read', 'workforce.read', 'feed.read', 'attendance.read', 'schedule.academic', 'exams.read', 'exams.manage', 'students.read', 'cocurricular.manage', 'cocurricular.approve'],
+  counsellor: ['dashboard.view', 'wellness.read', 'messages.office', 'safeguarding.read', 'counselling.notes'],
   dpo: ['dashboard.view', 'probe.view', 'compliance.read', 'compliance.act', 'audit.read', 'wellness.read'],
+  registrar: ['dashboard.view', 'students.read', 'students.manage', 'students.aadhaar', 'certificates.prepare', 'discipline.archive'],
+  health_officer: ['dashboard.view', 'health.read', 'health.manage'],
+  safeguarding_lead: ['dashboard.view', 'safeguarding.read', 'safeguarding.cases'],
 };
 
 /** Admin menu labels each role sees (layout.tsx filters by `need`; Fees reads "Fees" without admissions). */
 const MENU: Record<RoleKey, string[]> = {
-  school_admin: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Roles & Access', 'User Directory', 'Help & Support'],
-  principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'User Directory', 'Help & Support'],
-  vice_principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions', 'Parent Messages', 'People', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
-  finance_head: ['Dashboard', 'Probe', 'Fees', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'DPDP & Compliance', 'Help & Support'],
-  accountant: ['Dashboard', 'Probe', 'Fees', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'Help & Support'],
+  school_admin: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'Students', 'Health', 'Certificates', 'Co-curricular', 'Discipline', 'Counselling', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Roles & Access', 'User Directory', 'Data Import', 'Help & Support'],
+  principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions & Fees', 'Parent Messages', 'Students', 'Health', 'Certificates', 'Co-curricular', 'Discipline', 'Counselling', 'Safeguarding', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'User Directory', 'Data Import', 'Help & Support'],
+  vice_principal: ['Dashboard', 'Ask the School OS', 'Probe', 'Situational Feed', 'Admissions', 'Parent Messages', 'Students', 'Discipline', 'People', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
+  finance_head: ['Dashboard', 'Probe', 'Fees', 'Students', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'DPDP & Compliance', 'Help & Support'],
+  accountant: ['Dashboard', 'Probe', 'Fees', 'Students', 'People', 'Payroll', 'Schedule', 'Exams & Report Cards', 'Help & Support'],
   cashier: ['Dashboard', 'Fees', 'People', 'Schedule', 'Exams & Report Cards', 'Help & Support'],
-  admissions_officer: ['Dashboard', 'Probe', 'Admissions', 'People', 'Schedule', 'Help & Support'],
+  admissions_officer: ['Dashboard', 'Probe', 'Admissions', 'Students', 'People', 'Schedule', 'Help & Support'],
   hr_manager: ['Dashboard', 'Probe', 'People', 'Payroll', 'Staff & Leave', 'Schedule', 'Help & Support'],
-  academic_coordinator: ['Dashboard', 'Probe', 'Situational Feed', 'People', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'Help & Support'],
-  counsellor: ['Dashboard', 'Situational Feed', 'Parent Messages', 'People', 'Schedule', 'CBSE Wellness Report', 'Help & Support'],
-  dpo: ['Dashboard', 'Probe', 'People', 'Schedule', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
+  academic_coordinator: ['Dashboard', 'Probe', 'Situational Feed', 'Students', 'Co-curricular', 'People', 'Staff & Leave', 'Schedule', 'Student Attendance', 'Exams & Report Cards', 'Academic Health', 'Help & Support'],
+  counsellor: ['Dashboard', 'Situational Feed', 'Parent Messages', 'Counselling', 'People', 'Schedule', 'CBSE Wellness Report', 'Help & Support'],
+  dpo: ['Dashboard', 'Probe', 'Students', 'People', 'Schedule', 'CBSE Wellness Report', 'DPDP & Compliance', 'Help & Support'],
+  registrar: ['Dashboard', 'Students', 'Certificates', 'Discipline', 'People', 'Schedule', 'Help & Support'],
+  health_officer: ['Dashboard', 'Health', 'People', 'Schedule', 'Help & Support'],
+  safeguarding_lead: ['Dashboard', 'Situational Feed', 'Safeguarding', 'People', 'Schedule', 'Help & Support'],
 };
 
 /** Mirrors the filter in src/app/admin/layout.tsx (read from the file, not re-implemented by hand). */
 function menuFor(a: Access): string[] {
   return navOf('src/app/admin/layout.tsx', 'admin')
-    .filter(n => !n.need.length || n.need.some(p => a.can(p as never)))
+    .filter(n => (n.href === '/admin/safeguarding' ? a.can('safeguarding.cases') || a.roles.includes('principal') : !n.need.length || n.need.some(p => a.can(p as never))))
     .filter(n => n.href !== '/admin/admissions' || !a.can('fees.read'))
     .map(n => (n.href === '/admin/fees' && !a.can('admissions.read') ? 'Fees' : n.label));
 }

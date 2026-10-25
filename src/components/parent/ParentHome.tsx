@@ -15,6 +15,7 @@ import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/C
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
 import { Bar, Donut, Empty } from '@/components/canon/ui';
+import YearEndCard from '@/components/students/YearEndCard';
 import { ago, fmtDate, inr } from '@/lib/admin/format';
 import { ENERGY_LABEL, upcoming, workDone } from '@/lib/parent/family';
 import { BandChip, ChildSwitcher, FamilyGate, TONE_COLOR, Trend } from './common';
@@ -113,6 +114,8 @@ export default function ParentHome() {
                 </div>
               </Link>
             </div>
+
+            <YearEndCard studentId={c.id} />
 
             <div className="g2">
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

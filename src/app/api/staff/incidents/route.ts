@@ -106,7 +106,11 @@ export async function PATCH(req: NextRequest) {
   if (!isUuid(b.id)) return bad('Which incident?');
   const { data: inc } = await db.from('incidents').select('*, logger:users!incidents_logged_by_fkey(name), student:users!incidents_student_id_fkey(name)').eq('id', b.id).maybeSingle();
   if (!inc || inc.school_id !== me.schoolId) return bad('Incident not found.', 404);
-  if (inc.category === 'child_protection' && !canManageIncidents(me) && inc.logged_by !== me.id) return bad('Incident not found.', 404);
+  if (inc.category === 'child_protection') {
+    if (!me.cpReader && inc.logged_by !== me.id) return bad('Incident not found.', 404);
+    // Parents are never told through the portal, and the case closes with its POCSO steps recorded.
+    return bad(me.cpReader ? 'Child-protection cases are handled in Safeguarding.' : 'The Safeguarding lead handles this case.', 409);
+  }
   const loggedByName = (inc as any).logger?.name || 'staff';
   const withName = { ...inc, student_name: (inc as any).student?.name ?? null };
 

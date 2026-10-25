@@ -8,6 +8,7 @@ import { limitOf, type RateLimitKey } from '@/lib/settings/limits';
 import { accessOf } from '@/lib/admin/serverAuth';
 import type { Access } from '@/lib/admin/rbac';
 import { normClass, teachingScope, type ScopeEntry } from '@/lib/teacher/scope';
+import { isCpReader } from '@/lib/conduct/safeguarding';
 
 export interface FeedCaller {
   id: string;
@@ -20,6 +21,8 @@ export interface FeedCaller {
   classTeacherOf: string;
   /** Office staff: their office roles (teachers get none). */
   access: Access | null;
+  /** Reads child-protection cases: the Safeguarding lead, or the principal while the school has none (brief 07). */
+  cpReader: boolean;
 }
 
 /** Teacher or office staff calling a feed route; role, school and scope come from the database. */
@@ -47,6 +50,7 @@ export async function callerById(db: SupabaseClient, userId: string): Promise<Fe
   return {
     id: row.id, name: row.name || 'Staff', role: row.role, schoolId: row.school_id,
     scope: row.role === 'teacher' ? teachingScope(row) : [], classTeacherOf: row.role === 'teacher' ? normClass(row.teacher_class) : '', access,
+    cpReader: await isCpReader(db, row.school_id, access),
   };
 }
 
@@ -59,13 +63,15 @@ export const teaches = (me: FeedCaller, className: string | null | undefined) =>
   !!normClass(className) && me.scope.some(e => normClass(e.cls) === normClass(className));
 
 export const canManageIncidents = (me: FeedCaller) => !!me.access?.can('incidents.manage');
-export const canReadSchoolFeed = (me: FeedCaller) => !!me.access?.any('feed.read', 'incidents.manage', 'safeguarding.read');
+export const canReadSchoolFeed = (me: FeedCaller) => !!me.access?.any('feed.read', 'incidents.manage', 'safeguarding.read') || me.cpReader;
 
 /** Mirrors the situations_read RLS policy for server routes. */
 export function canSeeSituation(me: FeedCaller, row: { school_id: string; audience: string; teacher_id: string | null; class_name: string | null }): boolean {
   if (row.school_id !== me.schoolId) return false;
-  // A student's safety disclosure: counsellor and principal only (not other incident managers).
+  // A student's safety disclosure: counsellor, principal and Safeguarding lead (not other incident managers).
   if (row.audience === 'safeguarding') return !!me.access?.can('safeguarding.read');
+  // Child protection: the Safeguarding lead, or the principal while the school has none.
+  if (row.audience === 'principal') return me.cpReader;
   if (canManageIncidents(me)) return true;
   if (row.audience !== 'staff') return false;
   if (me.role === 'admin') return canReadSchoolFeed(me);

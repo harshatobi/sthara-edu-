@@ -9,15 +9,20 @@ test('role catalogue matches the database seed', () => {
   const dir = path.join(process.cwd(), 'supabase/migrations');
   const sql = fs.readFileSync(path.join(dir, fs.readdirSync(dir).find(f => f.endsWith('_baseline.sql'))!), 'utf8');
   const start = sql.indexOf('INSERT INTO public.role_permissions');
-  const seed = sql.slice(start, sql.indexOf(';\n', start));
+  // Later migrations add rows with their own INSERT INTO public.role_permissions statements.
+  const later = fs.readdirSync(dir).filter(f => f.endsWith('.sql') && !f.endsWith('_baseline.sql')).sort()
+    .flatMap(f => fs.readFileSync(path.join(dir, f), 'utf8').match(/INSERT INTO public\.role_permissions[^;]*;/g) ?? []);
+  const seed = [sql.slice(start, sql.indexOf(';\n', start)), ...later].join('\n');
   const db: Record<string, string[]> = {};
   for (const m of seed.matchAll(/\('(\w+)', '([^']+)'\)/g)) (db[m[1]] ||= []).push(m[2]);
   for (const k of Object.keys(db)) db[k] = [...new Set(db[k])].sort();
   assert.deepEqual(Object.keys(db).sort(), [...ROLE_KEYS].sort());
   for (const r of ROLE_KEYS) assert.deepEqual(db[r], [...ROLES[r].perms].sort(), `role ${r}`);
   for (const ps of Object.values(db)) for (const p of ps) assert.ok(p in PERMS, `unknown perm ${p}`);
-  // The CHECK constraint on role_grants lists the same roles.
-  const check = sql.match(/"role_grants_role_key_check" CHECK \(\("role_key" = ANY \(ARRAY\[([^\]]*)\]\)\)\)/)![1];
+  // The CHECK constraint on role_grants lists the same roles (the newest definition: a later migration may widen it).
+  const redefined = fs.readdirSync(dir).filter(f => f.endsWith('.sql') && !f.endsWith('_baseline.sql')).sort()
+    .flatMap(f => [...fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/ADD CONSTRAINT role_grants_role_key_check CHECK \(role_key IN \(([^)]*)\)\)/g)].map(m => m[1]));
+  const check = redefined.at(-1) ?? sql.match(/"role_grants_role_key_check" CHECK \(\("role_key" = ANY \(ARRAY\[([^\]]*)\]\)\)\)/)![1];
   assert.deepEqual(check.match(/'([^']+)'/g)!.map(s => s.slice(1, -1)).sort(), [...ROLE_KEYS].sort());
 });
 
@@ -30,13 +35,21 @@ test('separation of duties is built into the roles', () => {
   assert.ok(!ROLES.finance_head.perms.includes('wellness.read'));
   // Ask the School OS about the whole school is for leadership only.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('os.ask')).sort(), ['principal', 'school_admin', 'vice_principal']);
-  // A student's safety disclosure reaches the counsellor and the principal, no one else.
-  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('safeguarding.read')).sort(), ['counsellor', 'principal', 'school_admin']);
+  // A student's safety disclosure reaches the counsellor, the principal and the Safeguarding lead, no one else.
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('safeguarding.read')).sort(), ['counsellor', 'principal', 'safeguarding_lead', 'school_admin']);
+  // Counselling notes are the counsellor's and child-protection cases the Safeguarding lead's: not even the school
+  // admin or principal holds them (brief 07). A suspension is the principal's; the vice principal approves the rest.
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('counselling.notes')), ['counsellor']);
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('safeguarding.cases')), ['safeguarding_lead']);
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('discipline.suspend')).sort(), ['principal', 'school_admin']);
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('discipline.archive')).sort(), ['principal', 'registrar', 'school_admin']);
   // Payroll: the roles that prepare a run are not the ones that only approve it.
   assert.ok(!ROLES.finance_head.perms.includes('payroll.prepare') && !ROLES.accountant.perms.includes('payroll.approve') && !ROLES.hr_manager.perms.includes('payroll.approve'));
   assert.ok(!ROLES.cashier.perms.includes('payroll.read') && !ROLES.vice_principal.perms.includes('payroll.read'));
   // Exams: the exam cell runs marks entry; only the principal (and school admin) publish report cards.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('exams.publish')).sort(), ['principal', 'school_admin']);
+  // Bulk import: principal and school admin only (Moses, 2026-10-20).
+  assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('data.import')).sort(), ['principal', 'school_admin']);
   assert.ok(ROLES.academic_coordinator.perms.includes('exams.manage'));
   // Staff bank, PAN and personal details: HR and the heads of the school, nobody else who can merely see the workforce.
   assert.deepEqual(ROLE_KEYS.filter(r => ROLES[r].perms.includes('hr.sensitive')).sort(), ['hr_manager', 'principal', 'school_admin']);

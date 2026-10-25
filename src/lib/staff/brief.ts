@@ -32,7 +32,8 @@ async function feedLines(db: SupabaseClient, me: FeedCaller, book: Book, limit: 
     .eq('school_id', me.schoolId).is('acknowledged_at', null).gte('created_at', new Date(Date.now() - 30 * DAY_MS).toISOString())
     .order('created_at', { ascending: false }).limit(400);
   const rank = { critical: 0, high: 1, normal: 2 } as Record<string, number>;
-  const mine = (data || []).filter(r => canSeeSituation(me, r))
+  // Child protection never goes into a model's context, even for the Safeguarding lead (brief 07).
+  const mine = (data || []).filter(r => r.audience !== 'principal' && canSeeSituation(me, r))
     .sort((a, b) => Number(isEscalated(b)) - Number(isEscalated(a)) || rank[a.severity] - rank[b.severity] || b.created_at.localeCompare(a.created_at));
   const lines = mine.slice(0, limit).map((r, i) => {
     const t = `F${i + 1}`;
@@ -193,7 +194,7 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
   }
   if (a.can('incidents.manage')) {
     const { data: inc } = await db.from('incidents').select('id, category, severity, summary, student_id, class_name, parent_notice, status, created_at')
-      .eq('school_id', me.schoolId).eq('status', 'open').order('created_at', { ascending: false }).limit(20);
+      .eq('school_id', me.schoolId).eq('status', 'open').neq('category', 'child_protection').order('created_at', { ascending: false }).limit(20);
     const waiting = (inc || []).filter(i => i.parent_notice === 'principal_decides');
     out.push(`INCIDENTS: ${(inc || []).length} open; waiting for your decision on parents: ${waiting.map(i => `${i.category} "${i.summary}" (${i.class_name || 'no class'}, ${ageDays(i.created_at)} days)`).join('; ') || 'none'}.`);
   }

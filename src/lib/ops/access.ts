@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { OperatorRole } from './roles';
+import { IMPORT_ROLES, type OperatorRole } from './roles';
 
 /**
  * Break-glass access.
@@ -9,6 +9,9 @@ import type { OperatorRole } from './roles';
  * fees, messages, a raw row) an operator first opens a window here: one school, a written reason,
  * at most 30 minutes, read-only. The window and everything opened under it are recorded, cannot be
  * edited, and are shown to the school's administrators.
+ *
+ * The one writing window is 'import': it lets a director run, commit and undo bulk imports for the
+ * school (and nothing else). An import started inside it may finish after the window closes.
  *
  * Tools that show named records call `requireGrant` and `recordAccess`; nothing else unlocks them.
  */
@@ -19,7 +22,8 @@ const fail = (error: string, status = 400) => ({ ok: false as const, error, stat
 
 export const GRANT_MINUTES = 30;
 export const GRANT_REASON_MIN = 10;
-export const GRANT_SCOPES = ['records', 'view_as'] as const;
+export const GRANT_SCOPES = ['records', 'view_as', 'import'] as const;
+export { IMPORT_ROLES };
 export type GrantScope = typeof GRANT_SCOPES[number];
 
 export interface Grant {
@@ -51,7 +55,8 @@ export async function openGrant(
 ): Promise<Result<{ grant: Grant }>> {
   const reason = typeof b.reason === 'string' ? b.reason.replace(/\s+/g, ' ').trim() : '';
   if (reason.length < GRANT_REASON_MIN || reason.length > 500) return fail(`Say why you need the school's records (at least ${GRANT_REASON_MIN} characters). The school will see this.`);
-  const scope: GrantScope = b.scope === 'view_as' ? 'view_as' : 'records';
+  const scope: GrantScope = b.scope === 'view_as' || b.scope === 'import' ? b.scope : 'records';
+  if (scope === 'import' && !IMPORT_ROLES.includes(op.role)) return fail('Only a director can open an import window.', 403);
   const caseRef = typeof b.caseRef === 'string' ? b.caseRef.trim().slice(0, 80) || null : null;
   const existing = await activeGrant(db, op.id, schoolId);
   if (existing) return fail('You already have a window open on this school. End it before opening another.', 409);
@@ -87,6 +92,9 @@ export async function requireGrant(db: Db, operatorId: string, schoolId: string,
   const grant = await activeGrant(db, operatorId, schoolId);
   if (!grant) return fail('This shows the school\'s own records. Open an access window on the school first.', 423);
   if (scope === 'view_as' && grant.scope !== 'view_as') return fail('Your access window does not cover viewing as the school.', 423);
+  if (scope === 'import' && grant.scope !== 'import') return fail('Importing for the school needs an import window. Open one first.', 423);
+  // An import window covers imports and nothing else: no named records under it.
+  if (scope !== 'import' && grant.scope === 'import') return fail('Your access window covers imports only. Open a records window to see the school\'s records.', 423);
   return { ok: true, grant };
 }
 

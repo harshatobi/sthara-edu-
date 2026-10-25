@@ -29,7 +29,8 @@ const GROWING = new Set(`
   app_errors admission_events admission_applicants pay_run_lines exam_marks exam_sheets tutor_sessions
   tutor_session_turns assignments engagement_scores leave_requests school_messages school_threads staff_punches
   materials incidents whatsapp_log practical_progress situations lesson_plans report_cards class_subjects
-  ops_accounts ops_cases ops_case_messages ops_activities ops_contacts ops_opportunities enquiries ai_usage
+  ops_accounts ops_cases ops_case_messages ops_activities ops_contacts ops_opportunities enquiries ai_usage import_jobs legacy_results students enrolments student_changes
+  family_members emergency_contacts sibling_links student_change_requests student_health health_events
 `.split(/\s+/).filter(Boolean));
 
 /**
@@ -37,7 +38,7 @@ const GROWING = new Set(`
  * can't be cut, so it isn't checked. Add a new set-returning function here.
  */
 const SET_RPCS = new Set(`
-  admin_teacher_work exam_attendance exam_fee_dues ops_registry_counts ops_school_metrics ops_subject_metrics
+  admin_teacher_work exam_attendance exam_fee_dues ops_registry_counts ops_school_metrics ops_subject_metrics import_claim
   ops_tml_stale parent_wellness_summary school_attendance_summary school_wellness_aggregates school_wellness_report
   teacher_wellness_feed
 `.split(/\s+/).filter(Boolean));

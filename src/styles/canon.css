@@ -79,7 +79,9 @@
 .canon .nv.on { background:var(--role-soft); color:var(--navy); font-weight:700; --role-icon:var(--navy); --ai-icon:var(--navy); }
 .canon .nv.on:hover { background:var(--role-soft); color:var(--navy); }
 /* AI entry points carry a small "AI" tag beside the label (crimson always comes with its marker). */
-.canon .nv .ai-tag { margin-left:auto; }
+.canon .nv .lbl-t { flex:1 1 auto; min-width:0; }
+.canon .nv .ai-tag { margin-left:auto; flex:0 0 auto; padding:3px 4px; gap:2px; letter-spacing:.04em; }
+.canon .nv:has(.ai-tag) { gap:11px; padding-right:10px; }
 /* Ops: the four role pastels as a stripe across the top of the sidebar, and as the active item's edge. */
 .canon[data-role="ops"] > aside { position:sticky; }
 .canon[data-role="ops"] > aside::before { content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--ops-band); }

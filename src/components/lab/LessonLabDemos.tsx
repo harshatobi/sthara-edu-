@@ -38,7 +38,7 @@ export default function LessonLabDemos({ lessonId, chapter }: { lessonId: string
       {demos?.map(d => (
         <div key={d.id} className="li-row" style={{ alignItems: 'center' }}>
           <span style={{ flex: 1 }}>{d.title}</span>
-          <Link className="btn sm red" href={presentHref(d.scene, { class: d.class, subject: d.subject, demo: d.id })}><Presentation size={12} weight="fill" /> Present</Link>
+          <Link className="btn sm pri" href={presentHref(d.scene, { class: d.class, subject: d.subject, demo: d.id })}><Presentation size={12} weight="fill" /> Present</Link>
         </div>
       ))}
       {fit.length > 0 && (

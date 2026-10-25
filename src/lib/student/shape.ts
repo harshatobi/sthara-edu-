@@ -18,7 +18,7 @@ export const displaySubject = (s: string | null | undefined) =>
 /** Card accent per subject, from the mockup's assignment colours. */
 export function subjectColor(s: string): string {
   const k = subjectKey(s);
-  if (k.startsWith('math')) return '#E11D48';
+  if (k.startsWith('math')) return '#0891B2';
   if (k.includes('science') || k.includes('physics') || k.includes('chem') || k.includes('bio')) return '#F59E0B';
   if (k.includes('social') || k.includes('history') || k.includes('geog') || k.includes('civics')) return '#7C5CFC';
   if (k.includes('english')) return '#2F6BFF';

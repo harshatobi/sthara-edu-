@@ -41,6 +41,7 @@
  */
 
 import { all } from '../admin/loadRows';
+import { bandColor } from './bands';
 
 // ---------------------------------------------------------------------------
 // Time-decay (spec 2.2): 14-day half-life, applied to every evidence source.
@@ -218,18 +219,18 @@ export function normalizeTutorVolume(sessionCount: number, ceiling: number = 10)
 }
 
 // ---------------------------------------------------------------------------
-// Mastery bands & pedagogical triggers (spec section 3) — exact palette match
-// with the design system.
+// Mastery bands & pedagogical triggers (spec section 3). Colours come from
+// lib/tml/bands, the single source for band colours and labels.
 // ---------------------------------------------------------------------------
 export type MasteryBand = 'Exemplary' | 'Proficient' | 'Developing' | 'Critical Gap' | 'Severe Need';
 
 export function mapMasteryBand(tml: number | null): { band: MasteryBand; color: string; action: string } | null {
   if (tml === null) return null;
-  if (tml >= 90) return { band: 'Exemplary', color: '#10B981', action: 'Auto-unlocks advanced Olympiad / HOTS Socratic extension modules.' };
-  if (tml >= 75) return { band: 'Proficient', color: '#34D399', action: 'CBSE Distinction benchmark. Standard maintenance review schedule.' };
-  if (tml >= 50) return { band: 'Developing', color: '#F5B60B', action: 'Flags specific micro-topic gaps; generates focused practice drills.' };
-  if (tml >= 35) return { band: 'Critical Gap', color: '#F98A4B', action: 'Triggers mandatory 3-step AI Socratic Tutor session; alerts teacher.' };
-  return { band: 'Severe Need', color: '#E11D48', action: 'Immediate Remediation Plan assigned; logged in Parent WhatsApp.' };
+  if (tml >= 90) return { band: 'Exemplary', color: bandColor(tml), action: 'Auto-unlocks advanced Olympiad / HOTS Socratic extension modules.' };
+  if (tml >= 75) return { band: 'Proficient', color: bandColor(tml), action: 'CBSE Distinction benchmark. Standard maintenance review schedule.' };
+  if (tml >= 50) return { band: 'Developing', color: bandColor(tml), action: 'Flags specific micro-topic gaps; generates focused practice drills.' };
+  if (tml >= 35) return { band: 'Critical Gap', color: bandColor(tml), action: 'Triggers mandatory 3-step AI Socratic Tutor session; alerts teacher.' };
+  return { band: 'Severe Need', color: bandColor(tml), action: 'Immediate Remediation Plan assigned; logged in Parent WhatsApp.' };
 }
 
 // ---------------------------------------------------------------------------

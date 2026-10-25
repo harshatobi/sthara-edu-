@@ -5,7 +5,7 @@ import { usePrintOne } from './usePrintOne';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { ImageIcon as ImageGlyph } from '@phosphor-icons/react/dist/ssr/Image';
-import { Chip, Skeleton } from '@/components/canon/ui';
+import { Chip, Skeleton, AiTag } from '@/components/canon/ui';
 import { getAuthToken } from '@/lib/auth/getAuthToken';
 import { useOptionalTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { svgDataUrl } from '@/lib/teacher/svg';
@@ -104,7 +104,7 @@ export function ImageArtifact({ a, cls, subject, sample, onChange }: { a: Pictur
       </div>
       {sample ? <div className="art-ft muted" style={{ fontSize: 12 }}>{sample}</div> : (
         <div className="art-ft">
-          {!a.path && !url && <button className="btn sm red" disabled={busy || prompt.trim().length < 8 || !desk} onClick={generate}><ImageGlyph size={13} weight="fill" /> {busy ? 'Drawing… (about 15 s)' : 'Generate picture (about ₹4)'}</button>}
+          {!a.path && !url && <button className="btn sm ai" disabled={busy || prompt.trim().length < 8 || !desk} onClick={generate}><ImageGlyph size={13} weight="fill" /> {busy ? 'Drawing… (about 15 s)' : 'Generate picture (about ₹4)'} <AiTag /></button>}
           {url && <button className="btn sm" onClick={print}><Printer size={13} weight="bold" /> Print</button>}
         </div>
       )}

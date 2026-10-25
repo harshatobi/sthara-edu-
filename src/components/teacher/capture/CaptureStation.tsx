@@ -188,7 +188,7 @@ export default function CaptureStation({ a, onClose, onReview }: { a: TAssignmen
                 ))}
                 {mine.length < MAX_PAGES && existing?.state !== 'graded' && (!job || job.state === 'failed' || job.state === 'ready') && (
                   <div className="cs-add">
-                    <button className="btn red" onClick={() => camRef.current?.click()}><Camera size={18} weight="fill" /> {mine.length ? 'Next page' : 'Photograph page 1'}</button>
+                    <button className="btn pri" onClick={() => camRef.current?.click()}><Camera size={18} weight="fill" /> {mine.length ? 'Next page' : 'Photograph page 1'}</button>
                     <button className="btn" onClick={() => galRef.current?.click()}><Images size={16} weight="bold" /> From gallery</button>
                     <p className="muted">Flat on the desk, whole page in frame, good light. Photograph every page that has an answer.</p>
                   </div>

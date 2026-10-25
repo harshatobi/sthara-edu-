@@ -54,7 +54,7 @@ function Detail({ p }: { p: Practical }) {
         actions={<>
           <Link className="btn" href={back}><ArrowLeft size={15} weight="bold" /> All practicals</Link>
           <button className="btn" onClick={() => setPrinting('record')}><Printer size={15} weight="bold" /> Print record page</button>
-          <button className="btn red" disabled={!students.length} title={students.length ? 'One sheet per student with their own readings' : 'No students in this class yet'} onClick={() => setPrinting('pack')}>
+          <button className="btn pri" disabled={!students.length} title={students.length ? 'One sheet per student with their own readings' : 'No students in this class yet'} onClick={() => setPrinting('pack')}>
             <Printer size={15} weight="bold" /> Print class pack{students.length ? ` (${students.length})` : ''}
           </button>
         </>} />
@@ -142,7 +142,7 @@ function SetupCard({ label, scene, cls, subject }: { label: string; scene: NonNu
       <div className="prx-head"><b>{label}</b><span style={{ flex: 1 }} />
         <button className="btn sm" onClick={() => setRunKey(k => k + 1)}><Play size={13} weight="fill" /> Run</button>
         <Link className="btn sm" href={`/teacher/lab/build?${new URLSearchParams({ e: engine.id })}`}>Open in Live Lab</Link>
-        <Link className="btn sm red" href={presentHref(scene, cls && subject ? { class: cls, subject } : undefined)}><Presentation size={13} weight="fill" /> Present</Link>
+        <Link className="btn sm pri" href={presentHref(scene, cls && subject ? { class: cls, subject } : undefined)}><Presentation size={13} weight="fill" /> Present</Link>
       </div>
       <LabView engine={engine} params={scene.params} setParam={() => {}} conceal={false} runKey={runKey} locked />
     </div>

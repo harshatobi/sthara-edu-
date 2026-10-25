@@ -12,6 +12,7 @@ import { balances, type Balance } from './leave';
 import { Access, activeGrants, type Grant } from './rbac';
 import { CONSENT_TYPES, LEAVE_TYPES } from './constants';
 import { DAY, daysBetween, gradeOf, isoDay, nextSession, sessionOf } from './format';
+import { TML_BANDS, tmlBand, type TmlBandKey } from '@/lib/tml/bands';
 
 export { CONSENT_TYPES, LEAVE_TYPES };
 
@@ -54,15 +55,12 @@ export interface AdminRows {
 }
 
 // ── Mastery bands (TML specification) ───────────────────────────────────────
-export const BANDS = [
-  { key: 'exemplary', label: 'Exemplary', range: '90–100%', min: 90, color: '#10B981' },
-  { key: 'proficient', label: 'Proficient', range: '75–89%', min: 75, color: '#34D399' },
-  { key: 'developing', label: 'Developing', range: '50–74%', min: 50, color: '#F5B60B' },
-  { key: 'critical', label: 'Critical gap', range: '35–49%', min: 35, color: '#F98A4B' },
-  { key: 'severe', label: 'Severe need', range: 'below 35%', min: -Infinity, color: '#E11D48' },
-] as const;
-export type BandKey = typeof BANDS[number]['key'];
-export const bandOf = (v: number): BandKey => BANDS.find(b => v >= b.min)!.key;
+// Staff wording; ranges and colours from lib/tml/bands.
+export const BANDS = TML_BANDS.map(b => ({
+  key: b.key, label: b.label.staff, range: b.min === -Infinity ? 'below 35%' : `${b.range}%`, min: b.min, color: b.color, ink: b.ink,
+}));
+export type BandKey = TmlBandKey;
+export const bandOf = (v: number): BandKey => tmlBand(v).key;
 /** Same threshold the teacher desk flags students at (TClass.belowForty). */
 export const AT_RISK = 40;
 

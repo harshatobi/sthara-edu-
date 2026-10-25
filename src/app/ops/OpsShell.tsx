@@ -66,7 +66,7 @@ export default function OpsShell({ operator, role, mustChangePassword, devPrevie
   const nav = useMemo(() => NAV.filter(n => !n.cap || can(role, n.cap)), [role]);
   return (
     <OpsContext.Provider value={{ operator, role, devPreview }}>
-      <CanonShell subtitle={role === 'director' ? 'PLATFORM MANAGER' : `PLATFORM MANAGER · ${roleLabel(role).toUpperCase()}`} nav={nav} label="Platform Manager">
+      <CanonShell role="ops" subtitle={role === 'director' ? 'PLATFORM MANAGER' : `PLATFORM MANAGER · ${roleLabel(role).toUpperCase()}`} nav={nav} label="Platform Manager">
         <div style={{ maxWidth: 1320, margin: '0 auto', width: '100%' }}>
           {devPreview && (
             <div className="note info" style={{ marginBottom: 18 }}>

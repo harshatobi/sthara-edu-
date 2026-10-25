@@ -8,7 +8,7 @@ import { BookOpenIcon as BookOpen } from '@phosphor-icons/react/dist/ssr/BookOpe
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { TargetIcon as Target } from '@phosphor-icons/react/dist/ssr/Target';
-import { Empty, PageBar, Skeleton, hmColor } from '@/components/canon/ui';
+import { Empty, PageBar, Skeleton, hmColor, hmInk } from '@/components/canon/ui';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { normClass } from '@/lib/teacher/scope';
 import { BAND_LABEL, chapterStats, chaptersFor, scoreFor } from '@/lib/teacher/mastery';
@@ -176,22 +176,22 @@ export default function ClassHeatMap() {
                   <tr key={s.id}>
                     <td className="nm">
                       <Link href={`/teacher/mastery?${new URLSearchParams({ class: cls, subject, student: s.id })}`} style={{ display: 'flex', alignItems: 'center', gap: 9 }} title="Open in Mastery Tracker">
-                        <span className="heat-av" style={{ background: t ? hmColor(t.score) : '#9AA6B8' }}>{initials(s.name)}</span>{s.name}
+                        <span className="heat-av" style={{ background: t ? hmColor(t.score) : '#9AA6B8', color: t ? hmInk(t.score) : '#fff' }}>{initials(s.name)}</span>{s.name}
                       </Link>
                     </td>
                     {COMPONENTS.map(c => {
                       const v = t?.[c.key] ?? null;
                       return v === null
                         ? <td key={c.key} className="cell na" title={`${s.name} · ${c.label} · no evidence`}>–</td>
-                        : <td key={c.key} className="cell" style={{ background: hmColor(v) }} title={`${s.name} · ${c.label} · ${v}%`}>{v}</td>;
+                        : <td key={c.key} className="cell" style={{ background: hmColor(v), color: hmInk(v) }} title={`${s.name} · ${c.label} · ${v}%`}>{v}</td>;
                     })}
-                    {t ? <td className="cell" style={{ background: hmColor(t.score) }}>{t.score}</td> : <td className="cell na">–</td>}
+                    {t ? <td className="cell" style={{ background: hmColor(t.score), color: hmInk(t.score) }}>{t.score}</td> : <td className="cell na">–</td>}
                     <td className="cell na" style={{ fontSize: 11 }}>{t?.band ? BAND_LABEL[t.band] ?? t.band : '–'}</td>
                   </tr>
                 ))}
                 <tr>
                   <td className="nm" style={{ color: 'var(--mut)' }}>Class average</td>
-                  {compAvg.map(c => c.avg === null ? <td key={c.key} className="cell na">–</td> : <td key={c.key} className="cell" style={{ background: hmColor(c.avg), opacity: 0.75 }}>{c.avg}</td>)}
+                  {compAvg.map(c => c.avg === null ? <td key={c.key} className="cell na">–</td> : <td key={c.key} className="cell" style={{ background: hmColor(c.avg), color: hmInk(c.avg), opacity: 0.75 }}>{c.avg}</td>)}
                   <td className="cell" style={{ background: '#94A3B8' }}>{chap.avg ?? '–'}</td><td />
                 </tr>
               </tbody>

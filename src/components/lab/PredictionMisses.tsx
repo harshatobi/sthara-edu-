@@ -65,7 +65,7 @@ function Miss({ cls, subject, m }: { cls: string; subject: string; m: ClassPredi
       </div>
       {scene && (
         <div className="lab-transport">
-          <Link className="btn sm red" href={presentHref(scene, { class: cls, subject })}><Presentation size={13} weight="fill" /> Present again</Link>
+          <Link className="btn sm pri" href={presentHref(scene, { class: cls, subject })}><Presentation size={13} weight="fill" /> Present again</Link>
         </div>
       )}
     </div>

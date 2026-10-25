@@ -239,7 +239,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
           {error && <div className="err" role="alert" style={{ marginBottom: 12 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             {suggested !== null && <button className="btn" disabled={working === suggested} onClick={() => setOverall(suggested)}>Match AI score</button>}
-            <button className="btn red" disabled={saving} onClick={confirm}>
+            <button className="btn pri" disabled={saving} onClick={confirm}>
               <Check size={15} weight="bold" /> {saving ? 'Saving…' : sub.state === 'graded' ? 'Update grade' : 'Confirm grade'}
             </button>
             {sub.state === 'graded' && <Chip tone="g">Graded {sub.score}/{sub.max}</Chip>}

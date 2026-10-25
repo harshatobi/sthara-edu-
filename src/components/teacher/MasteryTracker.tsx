@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { LightningIcon as Lightning } from '@phosphor-icons/react/dist/ssr/Lightning';
 import { CrosshairIcon as Crosshair } from '@phosphor-icons/react/dist/ssr/Crosshair';
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
-import { Bar, Chip, Empty, PageBar, Skeleton, hmColor } from '@/components/canon/ui';
+import { Bar, Chip, Empty, PageBar, Skeleton, hmColor, hmInk } from '@/components/canon/ui';
 import Radar from '@/components/canon/Radar';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { normClass, normSubject } from '@/lib/teacher/scope';
@@ -116,7 +116,7 @@ export default function MasteryTracker() {
               return (
                 <div key={c.key} style={{ border: isWeak ? '2px solid var(--blue)' : '1px solid var(--line)', borderRadius: 16, padding: 20, marginBottom: 12, background: isWeak ? '#FAFCFF' : '#fff' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-                    <div className="av" style={{ background: hmColor(c.t.score), color: '#fff', borderRadius: 11 }}>{c.seq}</div>
+                    <div className="av" style={{ background: hmColor(c.t.score), color: hmInk(c.t.score), borderRadius: 11 }}>{c.seq}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <b style={{ fontSize: 18 }}>{c.name}</b>
                       <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap', alignItems: 'center' }}>

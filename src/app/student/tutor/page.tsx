@@ -12,7 +12,7 @@ import { TrendUpIcon as TrendUp } from '@phosphor-icons/react/dist/ssr/TrendUp';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { subjectIcon } from '@/components/canon/subjectIcon';
 import { subjectColor } from '@/lib/student/shape';
-import { Chip, Donut, PageBar, Skeleton, hmColor } from '@/components/canon/ui';
+import { Chip, Donut, PageBar, Skeleton, hmColor, AiTag } from '@/components/canon/ui';
 import DemoNote from '@/components/canon/DemoNote';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentDesk } from '@/lib/student/useStudentDesk';
@@ -448,7 +448,7 @@ function Session({ topic, demo, onNew, onPick }: { topic: Topic; demo: boolean; 
           <form style={{ display: 'flex', gap: 10 }} onSubmit={e => { e.preventDefault(); void send(); }}>
             <input ref={inputRef} className="tin" value={input} onChange={e => setInput(e.target.value)} maxLength={1500}
               aria-label="Your answer" placeholder={done ? 'Session finished — start a new one to keep going' : 'Type your answer…'} disabled={done || (busy && !log.length)} />
-            <button className="btn red" disabled={done || busy || !input.trim()}><PaperPlaneRight size={15} weight="fill" /> Send</button>
+            <button className="btn ai" disabled={done || busy || !input.trim()}><PaperPlaneRight size={15} weight="fill" /> Send <AiTag /></button>
           </form>
           {!done && (
             <button className="btn sm" style={{ alignSelf: 'flex-start' }} onClick={reveal} disabled={busy || !log.length}>

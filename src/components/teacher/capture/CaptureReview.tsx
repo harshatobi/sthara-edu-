@@ -188,7 +188,7 @@ export default function CaptureReview({ a, sub, onPick, onBack }: { a: TAssignme
           <div className="cr-acts">
             {perQuestion && aiMarks && changed > 0 && <button className="btn" onClick={() => setMarks(aiMarks)}>Reset to AI marks</button>}
             {canReread && <button className="btn" disabled={!!busy} onClick={() => void reread()}><ArrowsClockwise size={14} weight="bold" /> {busy === 'reread' ? 'Reading…' : g ? 'Read again' : 'Read with AI'}</button>}
-            <button className="btn red" disabled={!!busy} onClick={() => void confirm()}>
+            <button className="btn pri" disabled={!!busy} onClick={() => void confirm()}>
               <Check size={15} weight="bold" /> {busy === 'save' ? 'Saving…' : sub.state === 'graded' ? 'Update grade' : changed ? `Confirm (${changed} changed)` : 'Confirm marks'}
             </button>
             {sub.state === 'graded' && sub.score !== null && sub.max && <Chip tone={scoreTone(sub.score, sub.max)}>Graded {sub.score}/{sub.max}</Chip>}

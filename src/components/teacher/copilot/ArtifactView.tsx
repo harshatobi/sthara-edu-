@@ -196,11 +196,11 @@ export default function ArtifactView({ artifact: a, cls, subject, onRefine, onTo
       </div>
 
       {sample ? <div className="art-ft muted" style={{ fontSize: 12 }}>{sample}</div> : <div className="art-ft">
-        {a.kind === 'questions' && !mcqOnly && <button className="btn sm red" onClick={() => sendToClass('homework')}><PaperPlaneTilt size={13} weight="fill" /> Send to {cls} as homework</button>}
+        {a.kind === 'questions' && !mcqOnly && <button className="btn sm pri" onClick={() => sendToClass('homework')}><PaperPlaneTilt size={13} weight="fill" /> Send to {cls} as homework</button>}
         {a.kind === 'questions' && hasMcq && <button className={`btn sm ${mcqOnly ? 'red' : ''}`} onClick={() => sendToClass('quiz')}><PaperPlaneTilt size={13} weight={mcqOnly ? 'fill' : 'bold'} /> {mcqOnly ? `Send to ${cls} as a quiz` : 'MCQs as a quiz'}</button>}
         {a.kind === 'lesson' && (saved
           ? <Link className="btn sm" href={`/teacher/syllabus?${new URLSearchParams({ class: cls, subject, tab: 'lessons', lesson: saved })}`}><Check size={13} weight="bold" /> Open in planner</Link>
-          : <button className="btn sm red" disabled={busy} onClick={saveLesson}><Notebook size={13} weight="bold" /> {busy ? 'Saving…' : 'Save to lesson planner'}</button>)}
+          : <button className="btn sm pri" disabled={busy} onClick={saveLesson}><Notebook size={13} weight="bold" /> {busy ? 'Saving…' : 'Save to lesson planner'}</button>)}
         <button className="btn sm" onClick={copy}><Copy size={13} weight="bold" /> Copy</button>
         <button className="btn sm" onClick={print}><Printer size={13} weight="bold" /> Print</button>
         <span style={{ flex: 1 }} />

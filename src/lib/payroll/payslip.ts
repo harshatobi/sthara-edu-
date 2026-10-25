@@ -57,7 +57,7 @@ export function printPayslips(school: string, lines: RunLine[], kind: 'regular' 
       body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #002147; margin: 0; font-size: 11.5px; }
       section { page-break-after: always; } section:last-child { page-break-after: auto; }
       header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #002147; padding-bottom: 8px; margin-bottom: 14px; }
-      .k { font-size: 9px; font-weight: 800; letter-spacing: .16em; color: #E11D48; } h1 { font-size: 22px; margin: 2px 0 0; } header b { font-size: 13px; }
+      .k { font-size: 9px; font-weight: 800; letter-spacing: .16em; color: #002147; } h1 { font-size: 22px; margin: 2px 0 0; } header b { font-size: 13px; }
       h2 { font-size: 16px; margin: 0 0 10px; }
       dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 14px; margin: 0 0 16px; }
       dt { font-size: 8.5px; font-weight: 800; letter-spacing: .1em; color: #7A8699; text-transform: uppercase; } dd { margin: 2px 0 0; font-weight: 600; }

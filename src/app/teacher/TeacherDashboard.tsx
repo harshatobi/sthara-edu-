@@ -117,7 +117,7 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      <h3 className="sec"><span className="dot" style={{ background: '#FFE4EA', color: 'var(--red)' }}><BookOpen size={15} weight="bold" /></span>Your assigned classes</h3>
+      <h3 className="sec"><span className="dot" style={{ background: 'var(--role-w10)', color: 'var(--role-deep)' }}><BookOpen size={15} weight="bold" /></span>Your assigned classes</h3>
       {desk.classes.length ? (
         <div className="g3">
           {desk.classes.map(c => {

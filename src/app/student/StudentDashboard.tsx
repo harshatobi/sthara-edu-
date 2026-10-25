@@ -13,7 +13,7 @@ import { TrophyIcon as Trophy } from '@phosphor-icons/react/dist/ssr/Trophy';
 import { BrainIcon as Brain } from '@phosphor-icons/react/dist/ssr/Brain';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
-import { Bar, Chip, Skeleton, hmColor } from '@/components/canon/ui';
+import { Bar, Chip, Skeleton, heatColor, hmColor } from '@/components/canon/ui';
 import DemoNote from '@/components/canon/DemoNote';
 import YearEndCard from '@/components/students/YearEndCard';
 import { useToast } from '@/components/canon/useToast';
@@ -24,6 +24,7 @@ import { mapMasteryBand } from '@/lib/tml/engine';
 import { useStudentDesk } from '@/lib/student/useStudentDesk';
 import { ENERGY_LEVELS, useWellness } from '@/lib/student/useWellness';
 import { dmy, dueIn, mostRecentGraded, openAssignments, weakestSubject, weakestTopicOverall } from '@/lib/student/shape';
+import { engineBandLabel } from '@/lib/tml/bands';
 
 const ENERGY_ICONS = [BatteryLow, BatteryMedium, BatteryHigh, BatteryFull, Rocket];
 
@@ -72,7 +73,7 @@ export default function StudentDashboard() {
               return (
                 <button key={lvl.label} className={today === i ? 'on' : ''} aria-pressed={today === i}
                   aria-label={`Set today's energy: ${lvl.label}`} title={lvl.label}
-                  style={{ '--lvl': hmColor(lvl.value) } as React.CSSProperties}
+                  style={{ '--lvl': heatColor(lvl.value) } as React.CSSProperties}
                   disabled={!wellness.state} onClick={() => logEnergy(i)}>
                   <Icon size={17} weight={today === i ? 'fill' : 'duotone'} />
                 </button>
@@ -86,7 +87,7 @@ export default function StudentDashboard() {
             <div>
               <div className="lb">TRUE MASTERY LEVEL</div>
               <div className="vl">{desk.overallTml !== null ? `${desk.overallTml}%` : '—'}</div>
-              <div className="nt">{band ? `${band.band} · see your weakest subject` : 'Builds as your work is graded'}</div>
+              <div className="nt">{band ? `${engineBandLabel(band.band, 'family')} · see your weakest subject` : 'Builds as your work is graded'}</div>
             </div>
             <div className="ic"><InteractiveIcon icon={ChartLineUp} color={colorForIcon(ChartLineUp)} size={21} /></div>
           </button>

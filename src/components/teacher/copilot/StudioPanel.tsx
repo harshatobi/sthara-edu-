@@ -27,6 +27,7 @@ import { STUDIO, STUDIO_GROUPS, studioFor, type StudioKind } from '@/lib/teacher
 import { SAMPLES, sampleContext } from '@/lib/teacher/copilotSamples';
 import type { TStudent } from '@/lib/teacher/desk';
 import ArtifactView from './ArtifactView';
+import { AiTag } from '@/components/canon/ui';
 
 export const STUDIO_LOOK: Record<StudioKind, { icon: PhosphorIcon; color: string }> = {
   worksheet: { icon: FileText, color: '#3B82F6' },
@@ -227,8 +228,8 @@ export default function StudioPanel({ kind, cls, subject, chapters, students, be
         {error && <span className="err" role="alert" style={{ padding: '8px 12px' }}>{error}</span>}
         <span style={{ flex: 1 }} />
         <button className="btn" onClick={onClose}>Cancel</button>
-        <button className="btn red" disabled={sending || (kind === 'answer_key' && !note.trim())} onClick={generate}>
-          <Sparkle size={15} weight="fill" /> {sending ? 'Creating…' : `Create ${t.label.toLowerCase()}`}
+        <button className="btn ai" disabled={sending || (kind === 'answer_key' && !note.trim())} onClick={generate}>
+          <Sparkle size={15} weight="fill" /> {sending ? 'Creating…' : `Create ${t.label.toLowerCase()}`} <AiTag />
         </button>
       </div>
     </div>

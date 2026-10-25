@@ -57,7 +57,7 @@ const LOOK: Record<string, { icon: ComponentType<{ size?: number; weight?: 'duot
   forces: { icon: ArrowsLeftRight, colour: 'var(--coral)' },
   energy: { icon: Scales, colour: 'var(--green)' },
   sound: { icon: Waveform, colour: 'var(--amber)' },
-  'eye-prism': { icon: Eye, colour: 'var(--red)' },
+  'eye-prism': { icon: Eye, colour: 'var(--role-deep)' },
   magnetism: { icon: Magnet, colour: 'var(--ink)' },
   reactions: { icon: Atom, colour: 'var(--green)' },
   ohm: { icon: Lightning, colour: 'var(--blue)' },
@@ -76,7 +76,7 @@ const LOOK: Record<string, { icon: ComponentType<{ size?: number; weight?: 'duot
   photosynthesis: { icon: Leaf, colour: 'var(--green)' },
   respiration: { icon: Plant, colour: 'var(--amber)' },
   tropism: { icon: Plant, colour: 'var(--green)' },
-  reflex: { icon: HandPalm, colour: 'var(--red)' },
+  reflex: { icon: HandPalm, colour: 'var(--role-deep)' },
   heredity: { icon: Dna, colour: 'var(--purple)' },
   'food-chain': { icon: TreeEvergreen, colour: 'var(--green)' },
   instruments: { icon: Ruler, colour: 'var(--ink)' },
@@ -84,11 +84,11 @@ const LOOK: Record<string, { icon: ComponentType<{ size?: number; weight?: 'duot
   vectors: { icon: ArrowsLeftRight, colour: 'var(--blue)' },
   shm: { icon: Metronome, colour: 'var(--purple)' },
   friction: { icon: Square, colour: 'var(--amber)' },
-  projectile: { icon: Target, colour: 'var(--red)' },
+  projectile: { icon: Target, colour: 'var(--role-deep)' },
   elastic: { icon: Spiral, colour: 'var(--ink)' },
   boyle: { icon: Gauge, colour: 'var(--blue)' },
   fluids: { icon: Drop, colour: 'var(--blue)' },
-  thermal: { icon: Thermometer, colour: 'var(--red)' },
+  thermal: { icon: Thermometer, colour: 'var(--role-deep)' },
   sonometer: { icon: WaveSine, colour: 'var(--purple)' },
   resonance: { icon: Waveform, colour: 'var(--purple)' },
   wire: { icon: Lightning, colour: 'var(--amber)' },
@@ -100,14 +100,14 @@ const LOOK: Record<string, { icon: ComponentType<{ size?: number; weight?: 'duot
   refractive: { icon: Drop, colour: 'var(--ink)' },
   diode: { icon: Cpu, colour: 'var(--green)' },
   'wave-optics': { icon: Waves, colour: 'var(--blue)' },
-  efield: { icon: Lightning, colour: 'var(--red)' },
+  efield: { icon: Lightning, colour: 'var(--role-deep)' },
   capacitor: { icon: Cube, colour: 'var(--blue)' },
-  lorentz: { icon: Magnet, colour: 'var(--red)' },
+  lorentz: { icon: Magnet, colour: 'var(--role-deep)' },
   emi: { icon: Magnet, colour: 'var(--purple)' },
   lcr: { icon: WaveSine, colour: 'var(--green)' },
   photoelectric: { icon: Sun, colour: 'var(--amber)' },
   bohr: { icon: Atom, colour: 'var(--purple)' },
-  nucleus: { icon: Radioactive, colour: 'var(--red)' },
+  nucleus: { icon: Radioactive, colour: 'var(--role-deep)' },
 };
 
 const CLASSES = [9, 10, 11, 12];
@@ -117,7 +117,7 @@ export default function Gallery() {
     <>
       <PageBar eyebrow="LIVE LAB" title="Simulations for the class"
         sub="Set one up, choose what the class should predict, then present it on the board. Every number comes from the textbook formulas, worked out exactly."
-        actions={<Link className="btn red" href="/teacher/lab/practicals"><ClipboardText size={16} weight="fill" /> CBSE practicals</Link>} />
+        actions={<Link className="btn pri" href="/teacher/lab/practicals"><ClipboardText size={16} weight="fill" /> CBSE practicals</Link>} />
       <PredictionMisses />
       <SavedDemos />
       {CLASSES.map(cls => (

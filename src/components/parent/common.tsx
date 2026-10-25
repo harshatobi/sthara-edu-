@@ -10,6 +10,7 @@ import { Empty, Skeleton } from '@/components/canon/ui';
 import { useFamily } from '@/lib/parent/useFamily';
 import type { Band, Child, FamilyView } from '@/lib/parent/family';
 import type { ProbeFinding } from '@/lib/parent/probe';
+import { TML_BANDS, engineBandLabel, type TmlBandKey } from '@/lib/tml/bands';
 
 /** Loading / error / no-linked-child states shared by every parent page. */
 export function FamilyGate({ children, skeleton }: {
@@ -66,7 +67,7 @@ export function BandChip({ band, score }: { band: Band | null; score?: number | 
   if (!band) return <span className="ch n">No evidence yet</span>;
   return (
     <span className="pa-band" style={{ ['--b' as string]: band.color }}>
-      <i aria-hidden="true" />{score !== undefined && score !== null ? `${score}% · ` : ''}{band.band}
+      <i aria-hidden="true" />{score !== undefined && score !== null ? `${score}% · ` : ''}{engineBandLabel(band.band, 'family')}
     </span>
   );
 }
@@ -84,10 +85,13 @@ export function Trend({ delta }: { delta: number | null }) {
 
 export const TONE_COLOR: Record<string, string> = { r: '#E11D48', a: '#F59E0B', g: '#10B981', b: '#2F6BFF', n: '#9AA6B8' };
 
-export const BAND_KEY: { band: string; range: string; color: string; meaning: string }[] = [
-  { band: 'Exemplary', range: '90–100', color: '#10B981', meaning: 'Ready for stretch and olympiad-level work' },
-  { band: 'Proficient', range: '75–89', color: '#34D399', meaning: 'Secure; CBSE distinction level' },
-  { band: 'Developing', range: '50–74', color: '#F5B60B', meaning: 'Getting there; focused practice closes the gaps' },
-  { band: 'Critical Gap', range: '35–49', color: '#F98A4B', meaning: 'The AI tutor sets a guided session; the teacher is alerted' },
-  { band: 'Severe Need', range: 'under 35', color: '#E11D48', meaning: 'A remediation plan starts, and you are told' },
-];
+const BAND_MEANING: Record<TmlBandKey, string> = {
+  exemplary: 'Ready for stretch and olympiad-level work',
+  proficient: 'Secure; CBSE distinction level',
+  developing: 'Getting there; focused practice closes the gaps',
+  critical: 'The AI tutor sets a guided session; the teacher is alerted',
+  severe: 'A remediation plan starts, and you are told',
+};
+/** Parent-facing band key: family wording ("Needs support" at the bottom), colours from lib/tml/bands. */
+export const BAND_KEY: { band: string; range: string; color: string; meaning: string }[] =
+  TML_BANDS.map(b => ({ band: b.label.family, range: b.range, color: b.color, meaning: BAND_MEANING[b.key] }));

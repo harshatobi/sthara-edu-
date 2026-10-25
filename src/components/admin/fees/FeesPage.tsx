@@ -125,7 +125,7 @@ function Fees({ desk }: { desk: AdminDesk }) {
         sub={`AY ${desk.session.replace('-', '–')} · ${plural(desk.students.length, 'student')} on roll · ${L.structures.length ? `${inrShort(L.totals.expectedAnnual)} expected this year` : 'no fees set yet'}`}
         actions={<>
           <button className="btn" onClick={exportLedger} disabled={!L.invoices.length}><DownloadSimple size={16} /> Export ledger</button>
-          {a.can('fees.remind') && <button className="btn red" disabled={!L.families.some(f => f.outstanding > 0)}
+          {a.can('fees.remind') && <button className="btn pri" disabled={!L.families.some(f => f.outstanding > 0)}
             onClick={() => setReminding((overdueFamilies.length ? overdueFamilies : L.families.filter(f => f.outstanding > 0)))}>
             {overdueFamilies.length ? `Stage ${plural(overdueFamilies.length, 'reminder')}` : 'Send reminders'}
           </button>}

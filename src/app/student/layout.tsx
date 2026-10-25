@@ -23,7 +23,7 @@ const NAV: CanonNavItem[] = [
   { href: '/student/mastery', label: 'Mastery Tracker', short: 'Mastery', icon: ChartLineUp },
   { href: '/student/kirti', label: 'Kirti', icon: Trophy },
   { href: '/student/timeline', label: 'My Timeline', short: 'Timeline', icon: ClockCounterClockwise },
-  { href: '/student/tutor', label: 'AI Tutor', short: 'Tutor', icon: Brain },
+  { href: '/student/tutor', label: 'AI Tutor', short: 'Tutor', icon: Brain, ai: true },
   { href: '/student/wellness', label: 'Wellness Center', short: 'Wellness', icon: Heart },
 ];
 
@@ -35,7 +35,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   return (
     <StudentDeskProvider>
       <WellnessProvider>
-        <CanonShell subtitle="HONEST DESK" nav={NAV} label="Student navigation">{children}</CanonShell>
+        <CanonShell role="student" subtitle="HONEST DESK" nav={NAV} label="Student navigation">{children}</CanonShell>
       </WellnessProvider>
     </StudentDeskProvider>
   );

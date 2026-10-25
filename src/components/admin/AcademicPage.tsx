@@ -5,7 +5,7 @@ import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/C
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
-import { Bar, Chip, Empty, PageBar, hmColor } from '@/components/canon/ui';
+import { Bar, Chip, Empty, PageBar, hmColor, hmInk } from '@/components/canon/ui';
 import { AT_RISK, BANDS, subjectName, type AdminDesk, type AStudent } from '@/lib/admin/desk';
 import { ago, isoDay, plural } from '@/lib/admin/format';
 import { CardHead, DeskGate, Workspace, downloadCsv } from './kit';
@@ -57,7 +57,7 @@ function Academic({ desk }: { desk: AdminDesk }) {
                     {ac.subjects.map(s => {
                       const c = ac.matrix.find(m => m.grade === g.grade && m.subject === s)!;
                       return (
-                        <td key={s} className={`cell${c.tml === null ? ' na' : ''}`} style={{ background: c.tml !== null ? hmColor(c.tml) : undefined, cursor: c.tml !== null ? 'pointer' : 'default' }}
+                        <td key={s} className={`cell${c.tml === null ? ' na' : ''}`} style={{ background: c.tml !== null ? hmColor(c.tml) : undefined, color: c.tml !== null ? hmInk(c.tml) : undefined, cursor: c.tml !== null ? 'pointer' : 'default' }}
                           title={c.tml !== null ? `${plural(c.n, 'student')} with evidence` : 'No evidence yet'}
                           onClick={() => c.tml !== null && router.replace(`/admin/academic?grade=${g.grade}&subject=${encodeURIComponent(s)}`, { scroll: false })}>
                           {c.tml !== null ? c.tml : '—'}

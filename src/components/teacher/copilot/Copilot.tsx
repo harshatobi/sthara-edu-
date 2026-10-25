@@ -10,7 +10,7 @@ import { MagnifyingGlassIcon as MagnifyingGlass } from '@phosphor-icons/react/di
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { TrashIcon as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
 import { ArrowClockwiseIcon as ArrowClockwise } from '@phosphor-icons/react/dist/ssr/ArrowClockwise';
-import { Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
+import { AiTag, Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { courseChapters, getCurriculum } from '@/lib/curriculum';
@@ -90,7 +90,7 @@ function AskCard({ items, disabled, onAnswer }: { items: AskItem[]; disabled: bo
         </div>
       ))}
       <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-        <button className="btn sm red" disabled={disabled || !ready} onClick={() => onAnswer(items.map(q => `${q.question} → ${(pick[q.id] ?? []).join(', ')}`).join('\n'))}>Continue</button>
+        <button className="btn sm ai" disabled={disabled || !ready} onClick={() => onAnswer(items.map(q => `${q.question} → ${(pick[q.id] ?? []).join(', ')}`).join('\n'))}>Continue <AiTag /></button>
         <button className="btn sm" disabled={disabled} onClick={() => onAnswer('Use your best judgement on those and go ahead.')}>You decide</button>
       </div>
     </div>
@@ -325,7 +325,7 @@ export default function Copilot() {
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }} />
                 <span className="muted" style={{ fontSize: 11 }}>Enter to send · Shift+Enter for a new line</span>
               </div>
-              <button className="btn red" type="submit" disabled={!!sending || !input.trim()} aria-label="Send"><PaperPlaneRight size={16} weight="fill" /></button>
+              <button className="btn ai" type="submit" disabled={!!sending || !input.trim()} aria-label="Send"><PaperPlaneRight size={16} weight="fill" /><AiTag /></button>
             </form>
           </div>
         </div>

@@ -77,7 +77,7 @@ export default function FamilyLedger({ family, school, session, call, access, pe
     <Workspace wide title={family.name} sub={`${family.cls} · AY ${session.replace('-', '–')} fee account`} onClose={onClose}
       actions={<div className="acts">
         <button className="btn" onClick={printStatement}><Printer size={16} /> Statement</button>
-        {family.outstanding > 0 && access.can('fees.remind') && <button className="btn red" onClick={onRemind}>Send reminder</button>}
+        {family.outstanding > 0 && access.can('fees.remind') && <button className="btn pri" onClick={onRemind}>Send reminder</button>}
       </div>}>
       <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
         <div className="kpi"><div className="lb">BILLED</div><div className="vl num" style={{ fontSize: 28 }}>{inr(family.billed)}</div></div>

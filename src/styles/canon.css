@@ -25,7 +25,9 @@
   --ai:#E11D48; --ai-dark:#FB7185; --ai-wash:#FDE8EC; --ai-ink:#B3123A;
   --role-icon:var(--role-deep); --ai-icon:var(--ai);
   --r:20px; --sh:0 1px 2px rgba(0,33,71,.05),0 10px 30px rgba(0,33,71,.05);
-  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+  /* Latin in Plus Jakarta Sans; Indian scripts fall through to the matching Noto face (loaded by CanonShell). */
+  font-family:'Plus Jakarta Sans','Noto Sans Devanagari','Noto Sans Bengali','Noto Sans Gujarati','Noto Sans Gurmukhi',
+    'Noto Sans Oriya','Noto Sans Tamil','Noto Sans Telugu','Noto Sans Kannada','Noto Sans Malayalam','Noto Nastaliq Urdu',system-ui,sans-serif;
   background:var(--body); color:var(--ink);
   -webkit-font-smoothing:antialiased;
   min-height:100vh; display:flex; width:100%;
@@ -109,12 +111,15 @@
 .canon > aside .nv:not(.on) .ai-tag { background:color-mix(in srgb, var(--ai-dark) 22%, transparent); color:#FFD1DA; }
 .canon .nv.on .ai-tag { background:rgba(0,33,71,.12); color:var(--navy); }
 .canon .ch.ai { background:var(--ai-wash); color:var(--ai-ink); }
-/* Ask bars: crimson outline with the Sparkle and the tag. */
-.canon .ask-ai { border-color:var(--ai) !important; box-shadow:0 0 0 3px color-mix(in srgb, var(--ai) 12%, transparent); }
+/* Ask bars (an AI entry point): crimson outline; the send button carries the Sparkle and the tag. */
+.canon .cp-input.ask-ai textarea { border-color:color-mix(in srgb, var(--ai) 55%, #fff); }
+.canon .cp-input.ask-ai textarea:focus { outline-color:var(--ai); border-color:var(--ai); }
 .canon .btn.sm { padding:6px 12px; font-size:11.5px; }
 .canon .hero { border-radius:24px; padding:34px 36px; color:#fff; background:radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), var(--navy);
   --role-icon:var(--role-soft); --ai-icon:var(--ai-dark); margin-bottom:22px; position:relative; overflow:hidden; }
 .canon .hero h1 { font-size:40px; font-weight:800; }
+/* A card on the hero's navy-with-role-glow ground (e.g. the student's AI learning path). */
+.canon .card.dark-card { background:radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), var(--navy); --role-icon:var(--role-soft); --ai-icon:var(--ai-dark); }
 .canon .hero .hsub { color:rgba(255,255,255,.72); font-size:14.5px; margin-top:7px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .canon .chip { display:inline-block; background:rgba(255,255,255,.14); border-radius:8px; padding:4px 11px; font-size:12px; font-weight:600; color:#DCE9FA; }
 .canon .chip.mono { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11.5px; }
@@ -348,7 +353,7 @@
 .canon .more-sheet .hd b { font-size:16px; font-weight:800; }
 .canon .more-sheet .hd button { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--mut); }
 .canon .more-sheet a, .canon .more-sheet .out { display:flex; align-items:center; gap:13px; padding:12px 10px; border-radius:14px; font-size:15px; font-weight:600; width:100%; text-align:left; }
-.canon .more-sheet a.on { background:var(--pale); }
+.canon .more-sheet a.on { background:var(--role-w10); color:var(--role-deep); }
 .canon .more-sheet .out { border-top:1px solid var(--line); border-radius:0; margin-top:8px; padding-top:16px; color:var(--role-deep); }
 .canon .tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; font-weight:700; color:var(--mut2); padding:4px 0; border-radius:10px; }
 .canon .tabbar button.on { color:var(--ink); }
@@ -608,7 +613,7 @@
 .canon .bp-bar-top { position:sticky; top:0; z-index:5; display:flex; gap:10px; align-items:center; width:100%; max-width:210mm; background:var(--body); padding:4px 0 10px; font-size:13px; flex-wrap:wrap; }
 .canon .bp-page { position:relative; width:210mm; min-height:297mm; background:#fff; color:var(--bp-ink); box-shadow:0 1px 2px rgba(0,33,71,.06),0 18px 40px rgba(0,33,71,.10); padding:18mm 16mm 26mm; overflow:hidden; font-size:10.5pt; line-height:1.45; }
 .canon .bp-cover { padding:0 0 26mm; }
-.canon .bp-hero { background:linear-gradient(115deg,#062347 0%,#123F84 58%,#0F5AB8 100%); color:#fff; padding:14mm 16mm 16mm; min-height:96mm; display:flex; flex-direction:column; justify-content:space-between; }
+.canon .bp-hero { background:radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), #002147; color:#fff; padding:14mm 16mm 16mm; min-height:96mm; display:flex; flex-direction:column; justify-content:space-between; }
 .canon .bp-brand { font-size:17pt; font-weight:800; letter-spacing:-.01em; }
 .canon .bp-brand i { display:block; font-style:normal; color:#FF5A7A; font-size:7pt; font-weight:800; letter-spacing:.16em; margin-top:1mm; }
 .canon .bp-hero h1 { font-size:30pt; font-weight:800; line-height:1.08; letter-spacing:-.02em; margin:3mm 0 3mm; }

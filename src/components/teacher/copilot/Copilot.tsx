@@ -317,7 +317,7 @@ export default function Copilot() {
               <div ref={endRef} />
             </div>
 
-            <form className="cp-input" onSubmit={e => { e.preventDefault(); send(input); }}>
+            <form className="cp-input ask-ai" onSubmit={e => { e.preventDefault(); send(input); }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <textarea ref={inputRef} rows={2} value={input} maxLength={4000} aria-label="Ask the Copilot"
                   placeholder={lastReply?.ask.length ? 'Answer above, or reply in your own words…' : `Ask about ${cls}, e.g. "Who's struggling with ${chapters[0]?.name ?? 'this chapter'}?"`}

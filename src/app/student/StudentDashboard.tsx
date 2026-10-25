@@ -13,7 +13,7 @@ import { TrophyIcon as Trophy } from '@phosphor-icons/react/dist/ssr/Trophy';
 import { BrainIcon as Brain } from '@phosphor-icons/react/dist/ssr/Brain';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
-import { Bar, Chip, Skeleton, heatColor, hmColor } from '@/components/canon/ui';
+import { AiTag, Bar, Chip, Skeleton, heatColor, hmColor } from '@/components/canon/ui';
 import DemoNote from '@/components/canon/DemoNote';
 import YearEndCard from '@/components/students/YearEndCard';
 import { useToast } from '@/components/canon/useToast';
@@ -89,7 +89,7 @@ export default function StudentDashboard() {
               <div className="vl">{desk.overallTml !== null ? `${desk.overallTml}%` : '—'}</div>
               <div className="nt">{band ? `${engineBandLabel(band.band, 'family')} · see your weakest subject` : 'Builds as your work is graded'}</div>
             </div>
-            <div className="ic"><InteractiveIcon icon={ChartLineUp} color={colorForIcon(ChartLineUp)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={ChartLineUp} size={21} /></div>
           </button>
           <button className="hstat" onClick={() => router.push('/student/homework')}>
             <div>
@@ -97,7 +97,7 @@ export default function StudentDashboard() {
               <div className="vl">{open.length}</div>
               <div className="nt">{next ? `Next: ${dueIn(next.dueAt).text.toLowerCase()}` : 'All caught up'}</div>
             </div>
-            <div className="ic"><InteractiveIcon icon={Target} color={colorForIcon(Target)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={Target} size={21} /></div>
           </button>
           <button className="hstat" disabled={!recent} onClick={() => recent && router.push(`/student/homework?${q({ tab: 'done', report: recent.id })}`)}>
             <div style={{ minWidth: 0 }}>
@@ -108,7 +108,7 @@ export default function StudentDashboard() {
               </div>
               <div className="nt" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{recent ? recent.title : 'Nothing graded yet'}</div>
             </div>
-            <div className="ic"><InteractiveIcon icon={Trophy} color={colorForIcon(Trophy)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={Trophy} size={21} /></div>
           </button>
         </div>
       </div>
@@ -158,30 +158,30 @@ export default function StudentDashboard() {
             ))}
           </div>
 
-          <div className="card" style={{ background: 'linear-gradient(120deg,#123F84,#0F5AB8)', color: '#fff' }}>
+          <div className="card dark-card" style={{ color: '#fff' }}>
             <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
               <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', flex: '0 0 42px' }}>
-                <InteractiveIcon icon={Brain} color="#F5B60B" size={21} active />
+                <InteractiveIcon icon={Brain} ai size={21} active />
               </div>
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 800 }}>Your AI Learning Path</h3>
                 {weakTopic ? (
                   <>
-                    <p style={{ color: '#BBD3F2', fontSize: 13.5, lineHeight: 1.65, marginTop: 8 }}>
-                      {weakTopic.name} is your lowest micro-topic at <b style={{ color: '#F5B60B' }}>{weakTopic.score}%</b>, in {weakTopic.subject}.
+                    <p style={{ color: 'rgba(255,255,255,.74)', fontSize: 13.5, lineHeight: 1.65, marginTop: 8 }}>
+                      {weakTopic.name} is your lowest micro-topic at <b style={{ color: hmColor(weakTopic.score) }}>{weakTopic.score}%</b>, in {weakTopic.subject}.
                       A focused Socratic session is the fastest way to move it.
                     </p>
-                    <Link className="btn" style={{ background: '#fff', color: 'var(--ink)', marginTop: 16 }}
+                    <Link className="btn ai" style={{ marginTop: 16 }}
                       href={`/student/tutor?${q({ topic: weakTopic.name, subject: weakTopic.subject, score: weakTopic.score })}`}>
-                      Start with the AI Tutor <ArrowRight size={15} weight="bold" />
+                      Start with the AI Tutor <AiTag /><ArrowRight size={15} weight="bold" />
                     </Link>
                   </>
                 ) : (
                   <>
-                    <p style={{ color: '#BBD3F2', fontSize: 13.5, lineHeight: 1.65, marginTop: 8 }}>
+                    <p style={{ color: 'rgba(255,255,255,.74)', fontSize: 13.5, lineHeight: 1.65, marginTop: 8 }}>
                       Once a few pieces of work are graded, this points you at your weakest micro-topic. Until then, the tutor is open for anything.
                     </p>
-                    <Link className="btn" style={{ background: '#fff', color: 'var(--ink)', marginTop: 16 }} href="/student/tutor">Open the AI Tutor <ArrowRight size={15} weight="bold" /></Link>
+                    <Link className="btn ai" style={{ marginTop: 16 }} href="/student/tutor">Open the AI Tutor <AiTag /><ArrowRight size={15} weight="bold" /></Link>
                   </>
                 )}
               </div>

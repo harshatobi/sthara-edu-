@@ -9,7 +9,7 @@ import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { ArrowsClockwiseIcon as ArrowsClockwise } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
 import { MagnifyingGlassPlusIcon as MagnifyingGlassPlus } from '@phosphor-icons/react/dist/ssr/MagnifyingGlassPlus';
 import { CameraIcon as Camera } from '@phosphor-icons/react/dist/ssr/Camera';
-import { Chip, Skeleton, scoreTone } from '@/components/canon/ui';
+import { AiTag, Chip, Skeleton, scoreTone } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { marksOf } from '@/lib/teacher/questions';
@@ -129,7 +129,7 @@ export default function CaptureReview({ a, sub, onPick, onBack }: { a: TAssignme
 
         <div className="cr-marks">
           <div className="cr-sum">
-            <div><span>AI SUGGESTED</span><b>{g ? `${g.suggestedTotal}/${g.max}` : '—'}</b></div>
+            <div><span>AI SUGGESTED <AiTag /></span><b>{g ? `${g.suggestedTotal}/${g.max}` : '—'}</b></div>
             <div><span>YOUR TOTAL</span><b>{working}/{max}</b></div>
             <div><span>CHECK FIRST</span><b style={{ color: checkFirst ? '#E11D48' : '#10B981' }}>{checkFirst}</b></div>
             {g && <div><span>HANDWRITING</span><b>{g.legibility === 'high' ? 'Clear' : g.legibility === 'medium' ? 'Readable' : 'Hard to read'}</b></div>}

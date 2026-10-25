@@ -32,6 +32,11 @@ export interface CanonNavItem {
 /** Whose desk this is; sets data-role on the shell, which picks the role colour tokens in canon.css. */
 export type CanonRole = 'student' | 'teacher' | 'admin' | 'parent' | 'ops';
 
+const INDIC_FONTS = `https://fonts.googleapis.com/css2?${[
+  'Noto+Sans+Devanagari', 'Noto+Sans+Bengali', 'Noto+Sans+Gujarati', 'Noto+Sans+Gurmukhi', 'Noto+Sans+Oriya',
+  'Noto+Sans+Tamil', 'Noto+Sans+Telugu', 'Noto+Sans+Kannada', 'Noto+Sans+Malayalam',
+].map(f => `family=${f}:wght@400;600;700`).join('&')}&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap`;
+
 /** Tabs that fit the phone bar; the rest (and sign-out) live behind "More". */
 const PHONE_TABS = 4;
 
@@ -76,6 +81,9 @@ export default function CanonShell({ role, subtitle, nav, label, children, inbox
         precedence="default"
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
       />
+      {/* Noto fallbacks for every Indian script in the curriculum. Each face carries a unicode-range, so a
+          script's file downloads only when text in that script is on the page. */}
+      <link rel="stylesheet" precedence="default" href={INDIC_FONTS} />
       <a className="skip" href="#canon-main">Skip to content</a>
       <aside>
         <div className="brand"><b>Sthara</b><i>{subtitle}</i></div>

@@ -55,7 +55,7 @@ export default function AuthStatus() {
         ))}
       </aside>
       <main aria-hidden="true" className="flex-1 min-w-0 p-4 md:px-[34px] md:py-[26px]">
-        <div className="h-[260px] rounded-3xl bg-gradient-to-r from-[#072044] via-[#123F84] to-[#0F5AB8] opacity-90 motion-safe:animate-pulse" />
+        <div className="h-[260px] rounded-3xl bg-[#002147] opacity-90 motion-safe:animate-pulse" />
         <div className="grid md:grid-cols-2 gap-[18px] mt-[22px]">
           <div className="bg-white rounded-[20px] p-[26px] space-y-4">
             <div className={`${bar} h-5 w-48`} />

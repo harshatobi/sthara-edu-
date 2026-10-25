@@ -19,13 +19,13 @@ export interface TmlBand {
   range: string;
   /** Fill colour. */
   color: string;
-  /** Text on the fill: white on the two darkest, navy on the rest (all 4.5:1 or better). */
+  /** Text on the fill: navy, except white on the crimson bottom band (every pair passes 4.5:1; see lib/ui/contrast.test). */
   ink: string;
   label: Record<BandAudience, string>;
 }
 
 export const TML_BANDS: readonly TmlBand[] = [
-  { key: 'exemplary', min: 90, range: '90–100', color: '#10B981', ink: '#FFFFFF', label: { staff: 'Exemplary', family: 'Exemplary' } },
+  { key: 'exemplary', min: 90, range: '90–100', color: '#10B981', ink: '#0B1F3A', label: { staff: 'Exemplary', family: 'Exemplary' } },
   { key: 'proficient', min: 75, range: '75–89', color: '#34D399', ink: '#0B1F3A', label: { staff: 'Proficient', family: 'Proficient' } },
   { key: 'developing', min: 50, range: '50–74', color: '#F5B60B', ink: '#0B1F3A', label: { staff: 'Developing', family: 'Developing' } },
   { key: 'critical', min: 35, range: '35–49', color: '#F98A4B', ink: '#0B1F3A', label: { staff: 'Critical gap', family: 'Critical gap' } },

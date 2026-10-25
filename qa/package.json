@@ -14,7 +14,8 @@
     "e2e:journeys": "E2E_ALLOW_WRITES=1 playwright test --project=prod-setup --project=journeys",
     "report": "playwright show-report reports/playwright",
     "regression": "bash run-regression.sh",
-    "e2e:demo": "playwright test --project=demo"
+    "e2e:demo": "playwright test --project=demo",
+    "e2e:visual": "playwright test --project=prod-setup --project=visual"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

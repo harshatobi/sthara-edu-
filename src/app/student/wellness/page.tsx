@@ -148,7 +148,7 @@ export default function WellnessPage() {
       <h3 className="sec"><span className="dot" style={{ background: 'var(--pale)', color: 'var(--blue)' }}><NotePencil size={15} weight="bold" /></span>Your journal</h3>
       <div className="card">
         {state.entries.length === 0 ? (
-          <Empty icon={<InteractiveIcon icon={NotePencil} color="#7C3AED" size={30} active />} title="No journal entries yet">
+          <Empty icon={<InteractiveIcon icon={NotePencil} size={30} active />} title="No journal entries yet">
             Anything you save above will show up here for you to read later.
           </Empty>
         ) : state.entries.map(e => (

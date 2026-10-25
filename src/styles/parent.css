@@ -19,10 +19,10 @@
 .canon .pa-hero-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; }
 .canon .pa-eyebrow { color:#FDA4B8; font-size:11.5px; font-weight:800; letter-spacing:.14em; margin-bottom:6px; }
 .canon .pa-wa-on { display:inline-flex; align-items:center; gap:6px; background:rgba(37,211,102,.16); color:#C8F7DA; border:1px solid rgba(37,211,102,.35); padding:6px 12px; border-radius:99px; font-size:12.5px; font-weight:700; }
-.canon .pa-ask { display:flex; align-items:center; gap:10px; margin-top:22px; background:#fff; border-radius:16px; padding:8px 8px 8px 16px; color:var(--purple); box-shadow:0 12px 30px rgba(0,0,0,.18); }
+.canon .pa-ask { display:flex; align-items:center; gap:10px; margin-top:22px; background:#fff; border-radius:16px; padding:8px 8px 8px 16px; color:var(--ai); border:1.5px solid var(--ai); box-shadow:0 12px 30px rgba(0,0,0,.18); }
 .canon .pa-ask input { flex:1; min-width:0; border:0; font:inherit; font-size:15.5px; color:var(--ink); padding:10px 4px; background:transparent; }
 .canon .pa-ask input:focus { outline:none; }
-.canon .pa-ask:focus-within { box-shadow:0 0 0 3px rgba(124,92,252,.45), 0 12px 30px rgba(0,0,0,.18); }
+.canon .pa-ask:focus-within { box-shadow:0 0 0 3px color-mix(in srgb, var(--ai) 35%, transparent), 0 12px 30px rgba(0,0,0,.18); }
 .canon .pa-starters { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
 .canon .pa-starters button { font-size:13px; font-weight:600; padding:8px 13px; border-radius:99px; background:rgba(255,255,255,.12); color:#E4EEFB; border:1px solid rgba(255,255,255,.22); text-align:left; transition:background .15s; }
 .canon .pa-starters button:hover { background:rgba(255,255,255,.2); }

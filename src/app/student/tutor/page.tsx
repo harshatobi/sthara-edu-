@@ -220,7 +220,7 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
                   <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>The tutor checks it belongs to your syllabus first.</p>
                 </>
               )}
-              <button className="btn pri" style={{ marginTop: 16 }} disabled={!topicName}>Start session <ArrowRight size={15} weight="bold" /></button>
+              <button className="btn ai" style={{ marginTop: 16 }} disabled={!topicName}>Start session <AiTag /><ArrowRight size={15} weight="bold" /></button>
             </form>
           )}
         </div>

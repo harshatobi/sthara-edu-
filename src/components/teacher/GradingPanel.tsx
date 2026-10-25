@@ -6,7 +6,7 @@ import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/Arr
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
-import { Chip, Skeleton, scoreTone } from '@/components/canon/ui';
+import { AiTag, Chip, Skeleton, scoreTone } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { marksOf, mcqCorrect, TYPE_LABEL, type Question } from '@/lib/teacher/questions';
 import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
@@ -209,7 +209,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 18px', background: '#F4F7FC', borderRadius: 14, flexWrap: 'wrap' }}>
             {suggested !== null && (
-              <div><div className="muted" style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em' }}>AI SUGGESTED</div><div style={{ fontSize: 22, fontWeight: 800 }}>{suggested}/{max}</div></div>
+              <div><div className="muted" style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em' }}>AI SUGGESTED <AiTag /></div><div style={{ fontSize: 22, fontWeight: 800 }}>{suggested}/{max}</div></div>
             )}
             <div style={{ flex: 1, minWidth: 12 }} />
             {perQuestion ? (

@@ -61,7 +61,7 @@ export default function ParentHome() {
                 )}
               </div>
               <form className="pa-ask" onSubmit={e => { e.preventDefault(); if (q.trim()) ask(q.trim()); }}>
-                <ChatsCircle size={22} weight="duotone" aria-hidden="true" />
+                <Sparkle size={22} weight="fill" aria-hidden="true" />
                 <label htmlFor="pa-ask-in" className="sr-only">Ask the School OS</label>
                 <input id="pa-ask-in" value={q} onChange={e => setQ(e.target.value)} placeholder={`Ask the School OS anything about ${c.firstName}…`} autoComplete="off" />
                 <button className="btn ai" type="submit" disabled={!q.trim()}><PaperPlaneRight size={16} weight="fill" /> Ask <AiTag /></button>

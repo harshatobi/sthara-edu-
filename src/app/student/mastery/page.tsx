@@ -39,7 +39,7 @@ function Mastery() {
       <>
         <PageBar eyebrow="MASTERY TRACKER" title="Your TML Breakdown" sub="Every score that feeds your True Mastery Level, and how much it counts." />
         <div className="card">
-          <Empty icon={<InteractiveIcon icon={ChartLineUp} color="#3B82F6" size={32} active />} title="No evidence yet">
+          <Empty icon={<InteractiveIcon icon={ChartLineUp} size={32} active />} title="No evidence yet">
             Your TML starts building as soon as your first assignment or quiz is graded.
           </Empty>
         </div>

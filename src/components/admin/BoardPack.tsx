@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { FilePdfIcon as FilePdf } from '@phosphor-icons/react/dist/ssr/FilePdf';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
-import { AT_RISK, BANDS, bandOf, LEAVE_TYPES, subjectName, type AdminDesk, type TeacherRow } from '@/lib/admin/desk';
+import { AT_RISK, BANDS, LEAVE_TYPES, subjectName, type AdminDesk, type TeacherRow } from '@/lib/admin/desk';
 import { bandColor, bandInk } from '@/lib/tml/bands';
 import { PAY_MODES } from '@/lib/admin/fees';
 import { STAGE_LABEL, STAGE_COLOR, STAGE_ONE } from '@/lib/admin/admissions';

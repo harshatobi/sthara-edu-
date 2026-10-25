@@ -14,12 +14,12 @@ import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { NotePencilIcon as NotePencil } from '@phosphor-icons/react/dist/ssr/NotePencil';
 import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
-import { ICON_COLORS, colorForIcon } from '@/lib/iconColors';
+import { bandColor, bandInk } from '@/lib/tml/bands';
 
 export default function AdminDemoPortal() {
   const [view, setView] = useState<'dash' | 'adm' | 'staff' | 'acad' | 'cbse' | 'dpdp'>('dash');
 
-  const hmColor = (v: number) => (v >= 75 ? '#10B981' : v >= 55 ? '#5FC79B' : v >= 40 ? '#F5B60B' : v >= 25 ? '#F98A4B' : '#E11D48');
+  const hmColor = bandColor;
   const bar = (v: number, c?: string) => (
     <div className="bar"><i style={{ width: `${v}%`, background: c || hmColor(v) }} /></div>
   );
@@ -28,7 +28,8 @@ export default function AdminDemoPortal() {
     <div className="portal-shell">
       <style jsx global>{`
         :root {
-          --nav:#062347; --nav2:#0A2C57; --navActive:#14365E;
+          --navy:#002147; --role-deep:#996219; --role-soft:#F1C482; --role-dusk:color-mix(in srgb, #996219 42%, #0A1324); --role-btn:var(--navy); --role-icon:#996219;
+          --ai:#E11D48; --ai-dark:#FB7185; --ai-icon:var(--ai);
           --ink:#002147; --body:#F7F9FB; --line:#E8EDF4;
           --red:#E11D48; --blue:#2F6BFF; --sky:#4C8DFF;
           --green:#10B981; --amber:#F59E0B; --purple:#7C5CFC;
@@ -36,37 +37,37 @@ export default function AdminDemoPortal() {
           --r:20px; --sh:0 1px 2px rgba(0,33,71,.05),0 10px 30px rgba(0,33,71,.05);
         }
         .portal-shell { display: flex; min-height: 100vh; background: var(--body); color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; }
-        aside { width: 264px; flex: 0 0 264px; background: var(--nav); min-height: 100vh; padding: 26px 18px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+        aside { width: 264px; flex: 0 0 264px; background: linear-gradient(180deg, var(--role-dusk) 0%, var(--navy) 100%); --role-icon: var(--role-soft); --ai-icon: var(--ai-dark); min-height: 100vh; padding: 26px 18px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
         .brand { padding: 0 10px 26px; }
         .brand b { display: block; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
-        .brand i { display: block; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .14em; font-style: normal; margin-top: 2px; }
+        .brand i { display: block; color: var(--role-soft); font-size: 11px; font-weight: 800; letter-spacing: .14em; font-style: normal; margin-top: 2px; }
         nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-        .nv { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border-radius: 12px; color: #93A7C4; font-size: 14.5px; font-weight: 500; text-align: left; position: relative; transition: .15s; background: none; border: none; cursor: pointer; width: 100%; }
-        .nv:hover { background: rgba(255,255,255,.05); color: #D5E1F2; }
-        .nv.on { background: var(--navActive); color: #fff; font-weight: 600; }
-        .nv.on:before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; background: var(--red); border-radius: 0 3px 3px 0; }
-        .nv-out { border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-top: 14px; }
+        .nv { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border-radius: 12px; color: rgba(255,255,255,.74); font-size: 14.5px; font-weight: 500; text-align: left; position: relative; transition: .15s; background: none; border: none; cursor: pointer; width: 100%; }
+        .nv:hover { background: rgba(255,255,255,.07); color: #fff; }
+        .nv.on, .nv.on:hover { background: var(--role-soft); color: var(--navy); font-weight: 700; --role-icon: var(--navy); --ai-icon: var(--navy); }
+                .nv-out { border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-top: 14px; }
         main { flex: 1; min-width: 0; padding: 26px 34px 70px; max-width: 1560px; }
 
         .card { background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 26px; }
         .pbar { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 20px 26px; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
-        .pbar .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--red); font-size: 12px; font-weight: 800; letter-spacing: .13em; }
+        .pbar .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--role-deep); font-size: 12px; font-weight: 800; letter-spacing: .13em; }
         .pbar h1 { font-size: 31px; font-weight: 800; margin-top: 5px; }
         .pbar .sub { color: var(--mut); font-size: 13.5px; margin-top: 4px; }
         .acts { display: flex; gap: 10px; align-items: center; }
         .btn { padding: 11px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; transition: .15s; }
         .btn:hover { border-color: #C9D6E8; }
-        .btn.pri { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .btn.pri { background: var(--role-btn); color: #fff; border-color: var(--role-btn); }
+        .btn.ai { background: var(--ai); color: #fff; border-color: var(--ai); }
         .btn.red { background: var(--red); color: #fff; border-color: var(--red); }
-        .hero { border-radius: 24px; padding: 34px 36px; color: #fff; background: linear-gradient(103deg,#072044 0%,#123F84 52%,#0F5AB8 100%); margin-bottom: 22px; position: relative; overflow: hidden; }
+        .hero { border-radius: 24px; padding: 34px 36px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), var(--navy); --role-icon: var(--role-soft); --ai-icon: var(--ai-dark); margin-bottom: 22px; position: relative; overflow: hidden; }
         .hero h1 { font-size: 40px; font-weight: 800; }
-        .hero .hsub { color: #A9C4E8; font-size: 14.5px; margin-top: 7px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .hero .hsub { color: rgba(255,255,255,.72); font-size: 14.5px; margin-top: 7px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .chip { display: inline-block; background: rgba(255,255,255,.14); border-radius: 8px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: #DCE9FA; }
         .hgrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 16px; margin-top: 26px; }
         .hstat { background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 20px 22px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .hstat .lb { font-size: 11.5px; font-weight: 800; letter-spacing: .11em; color: #9FBBE0; }
+        .hstat .lb { font-size: 11.5px; font-weight: 800; letter-spacing: .11em; color: color-mix(in srgb, var(--role-soft) 70%, #fff); }
         .hstat .vl { font-size: 34px; font-weight: 800; margin-top: 6px; line-height: 1; }
-        .hstat .nt { font-size: 12.5px; color: #8FAED6; margin-top: 6px; }
+        .hstat .nt { font-size: 12.5px; color: rgba(255,255,255,.66); margin-top: 6px; }
         .hstat .ic { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.14); display: grid; place-items: center; font-size: 18px; }
         .kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 18px; margin-bottom: 22px; }
         .kpi { background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 24px 26px; position: relative; overflow: hidden; }
@@ -92,7 +93,7 @@ export default function AdminDemoPortal() {
 
         .role-sw { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 50; background: var(--ink); border-radius: 99px; padding: 7px; display: flex; gap: 4px; box-shadow: 0 14px 40px rgba(0,33,71,.35); }
         .role-sw a { padding: 10px 20px; border-radius: 99px; color: #93A7C4; font-size: 13px; font-weight: 700; text-decoration: none; }
-        .role-sw a.on { background: var(--red); color: #fff; }
+        .role-sw a.on { background: var(--role-soft); color: var(--navy); }
       `}</style>
 
       {/* Sidebar */}
@@ -115,13 +116,13 @@ export default function AdminDemoPortal() {
               className={`nv ${view === k ? 'on' : ''}`}
               onClick={() => setView(k as any)}
             >
-              <InteractiveIcon icon={Icon} color={colorForIcon(Icon)} active={view === k} size={19} />
+              <InteractiveIcon icon={Icon} active={view === k} size={19} />
               <span>{n}</span>
             </button>
           ))}
           <div className="nv-out">
             <Link href="/login" className="nv">
-              <InteractiveIcon icon={SignOut} color={ICON_COLORS.SignOut} size={19} />
+              <InteractiveIcon icon={SignOut} size={19} />
               <span>Sign Out</span>
             </Link>
           </div>
@@ -250,7 +251,7 @@ export default function AdminDemoPortal() {
                 <div className="sub">AY 2026–27 · 812 students · Shikhara ₹3,500/student/yr platform cost</div>
               </div>
               <div className="acts">
-                <button className="btn red" onClick={() => alert('74 WhatsApp reminders staged and sent!')}>Stage 74 WhatsApp reminders</button>
+                <button className="btn pri" onClick={() => alert('74 WhatsApp reminders staged and sent!')}>Stage 74 WhatsApp reminders</button>
               </div>
             </div>
 
@@ -350,7 +351,7 @@ export default function AdminDemoPortal() {
                     <tr key={g as string}>
                       <td className="nm">{g}</td>
                       {(v as number[]).map((x, idx) => (
-                        <td key={idx} className="cell" style={{ background: hmColor(x) }}>{x}</td>
+                        <td key={idx} className="cell" style={{ background: hmColor(x), color: bandInk(x) }}>{x}</td>
                       ))}
                     </tr>
                   ))}
@@ -370,7 +371,7 @@ export default function AdminDemoPortal() {
                 <div className="sub">Filing due 15 Sep 2026 · 84% auto-populated from live check-in data</div>
               </div>
               <div className="acts">
-                <button className="btn red" onClick={() => alert('CBSE Wellness PDF Report downloaded!')}>⤓ Generate CBSE PDF</button>
+                <button className="btn pri" onClick={() => alert('CBSE Wellness PDF Report downloaded!')}>⤓ Generate CBSE PDF</button>
               </div>
             </div>
 

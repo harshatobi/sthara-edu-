@@ -10,13 +10,24 @@
  */
 
 .canon {
-  --nav:#062347; --nav2:#0A2C57; --navActive:#14365E;
   --ink:#002147; --body:#F7F9FB; --line:#E8EDF4;
   --red:#E11D48; --blue:#2F6BFF; --sky:#4C8DFF;
   --green:#10B981; --amber:#F59E0B; --purple:#7C5CFC; --coral:#F45E77;
   --mut:#7A8699; --mut2:#9AA6B8; --pale:#EAF2FF;
+  /* Role colour (the "Dusk" preset, docs/handoffs/sthara-dusk-handoff.md). Each role layout sets data-role on
+     .canon; components use only these variables. Deep = fills and text on white, soft = accents on navy,
+     dusk = the top of the sidebar gradient. Crimson (--red) means risk or AI and nothing else. */
+  --navy:#002147; --role-deep:#002147; --role-soft:#AFC4E3; --role-dusk:#002147;
+  --role-w6:color-mix(in srgb, var(--role-deep) 6%, #fff); --role-w10:color-mix(in srgb, var(--role-deep) 10%, #fff);
+  --role-w18:color-mix(in srgb, var(--role-deep) 18%, #fff);
+  /* Buttons that aren't risk or AI: role deep, except admin (navy, so it never sits beside an amber band pill). */
+  --role-btn:var(--role-deep);
+  --ai:#E11D48; --ai-dark:#FB7185; --ai-wash:#FDE8EC; --ai-ink:#B3123A;
+  --role-icon:var(--role-deep); --ai-icon:var(--ai);
   --r:20px; --sh:0 1px 2px rgba(0,33,71,.05),0 10px 30px rgba(0,33,71,.05);
-  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+  /* Latin in Plus Jakarta Sans; Indian scripts fall through to the matching Noto face (loaded by CanonShell). */
+  font-family:'Plus Jakarta Sans','Noto Sans Devanagari','Noto Sans Bengali','Noto Sans Gujarati','Noto Sans Gurmukhi',
+    'Noto Sans Oriya','Noto Sans Tamil','Noto Sans Telugu','Noto Sans Kannada','Noto Sans Malayalam','Noto Nastaliq Urdu',system-ui,sans-serif;
   background:var(--body); color:var(--ink);
   -webkit-font-smoothing:antialiased;
   min-height:100vh; display:flex; width:100%;
@@ -24,6 +35,12 @@
   padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
   min-height:100dvh;
 }
+.canon[data-role="student"] { --role-deep:#315FA9; --role-soft:#9AC2FF; --role-dusk:color-mix(in srgb, #315FA9 38%, #0A1324); }
+.canon[data-role="teacher"] { --role-deep:#167762; --role-soft:#79DFC6; --role-dusk:color-mix(in srgb, #167762 38%, #0A1324); }
+.canon[data-role="admin"]   { --role-deep:#996219; --role-soft:#F1C482; --role-dusk:color-mix(in srgb, #996219 42%, #0A1324); --role-btn:var(--navy); }
+.canon[data-role="parent"]  { --role-deep:#A13C5A; --role-soft:#EFA5BC; --role-dusk:color-mix(in srgb, #A13C5A 36%, #0A1324); }
+.canon[data-role="ops"]     { --role-deep:#002147; --role-soft:#AFC4E3; --role-dusk:#002147;
+  --ops-band:linear-gradient(90deg,#9AC2FF 0 25%,#79DFC6 25% 50%,#F1C482 50% 75%,#EFA5BC 75%); }
 /* Element resets sit in Tailwind's base layer: Tailwind v4 puts its utilities in a cascade layer, and unlayered
    CSS beats any layered rule whatever its specificity, so unlayered resets here stripped the background, border
    and colour off every Tailwind-styled button on legacy pages inside the canon shell. In the base layer they lose
@@ -39,10 +56,11 @@
 .canon .mono { font-family:'IBM Plex Mono',ui-monospace,monospace; }
 
 /* ---------- SHELL ---------- */
-.canon > aside { width:264px; flex:0 0 264px; background:var(--nav); min-height:100vh; padding:26px 18px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; height:100dvh; }
+.canon > aside { width:264px; flex:0 0 264px; background:linear-gradient(180deg, var(--role-dusk) 0%, var(--navy) 100%);
+  --role-icon:var(--role-soft); --ai-icon:var(--ai-dark); min-height:100vh; padding:26px 18px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; height:100dvh; }
 .canon .brand { padding:0 10px 26px; }
 .canon .brand b { display:block; color:#fff; font-size:26px; font-weight:800; letter-spacing:-.02em; }
-.canon .brand i { display:block; color:var(--red); font-size:11px; font-weight:800; letter-spacing:.14em; font-style:normal; margin-top:2px; }
+.canon .brand i { display:block; color:var(--role-soft); font-size:11px; font-weight:800; letter-spacing:.14em; font-style:normal; margin-top:2px; }
 /* A long menu (the teacher desk has 15 entries) scrolls inside the sidebar; sign-out stays pinned below it. */
 .canon > aside nav { display:flex; flex-direction:column; gap:2px; flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain;
   scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.18) transparent; margin:0 -6px; padding:0 6px; }
@@ -56,36 +74,63 @@
   .canon > aside .nv { padding-top:9px; padding-bottom:9px; }
   .canon > aside .nv-out { padding-top:10px; margin-top:10px; }
 }
-.canon .nv { display:flex; align-items:center; gap:13px; padding:12px 14px; border-radius:12px; color:#93A7C4; font-size:14.5px; font-weight:500; text-align:left; position:relative; transition:.15s; width:100%; }
-.canon .nv:hover { background:rgba(255,255,255,.05); color:#D5E1F2; }
-.canon .nv.on { background:var(--navActive); color:#fff; font-weight:600; }
-.canon .nv.on::before { content:""; position:absolute; left:0; top:9px; bottom:9px; width:3px; background:var(--red); border-radius:0 3px 3px 0; }
+.canon .nv { display:flex; align-items:center; gap:13px; padding:12px 14px; border-radius:12px; color:rgba(255,255,255,.74); font-size:14.5px; font-weight:500; text-align:left; position:relative; transition:.15s; width:100%; }
+.canon .nv:hover { background:rgba(255,255,255,.07); color:#fff; }
+.canon .nv.on { background:var(--role-soft); color:var(--navy); font-weight:700; --role-icon:var(--navy); --ai-icon:var(--navy); }
+.canon .nv.on:hover { background:var(--role-soft); color:var(--navy); }
+/* AI entry points carry a small "AI" tag beside the label (crimson always comes with its marker). */
+.canon .nv .lbl-t { flex:1 1 auto; min-width:0; }
+.canon .nv .ai-tag { margin-left:auto; flex:0 0 auto; padding:3px 4px; gap:2px; letter-spacing:.04em; }
+.canon .nv:has(.ai-tag) { gap:11px; padding-right:10px; }
+/* Ops: the four role pastels as a stripe across the top of the sidebar, and as the active item's edge. */
+.canon[data-role="ops"] > aside { position:sticky; }
+.canon[data-role="ops"] > aside::before { content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--ops-band); }
+.canon[data-role="ops"] .nv.on::before { content:""; position:absolute; left:0; top:8px; bottom:8px; width:4px; border-radius:0 3px 3px 0;
+  background:linear-gradient(180deg,#9AC2FF,#79DFC6,#F1C482,#EFA5BC); }
 .canon .nv-out { border-top:1px solid rgba(255,255,255,.08); padding-top:14px; margin-top:14px; }
-.canon > main { flex:1; min-width:0; padding:26px 34px 70px; max-width:1560px; }
+.canon > main { flex:1; min-width:0; padding:26px 34px 70px; max-width:1560px; position:relative; }
+/* A 3px rule in the role colour across the top of the content area. */
+.canon > main::before { content:""; position:absolute; left:0; right:0; top:0; height:3px; background:var(--role-deep); }
 
 /* ---------- PRIMITIVES ---------- */
 .canon .card { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:26px; }
 .canon .pbar { display:flex; align-items:center; justify-content:space-between; background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:20px 26px; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
-.canon .pbar .eyebrow { display:flex; align-items:center; gap:8px; color:var(--red); font-size:12px; font-weight:800; letter-spacing:.13em; }
+.canon .pbar .eyebrow { display:flex; align-items:center; gap:8px; color:var(--role-deep); font-size:12px; font-weight:800; letter-spacing:.13em; }
 .canon .pbar h1 { font-size:31px; font-weight:800; margin-top:5px; }
 .canon .pbar .sub { color:var(--mut); font-size:13.5px; margin-top:4px; }
 .canon .acts { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .canon .btn { padding:11px 18px; border-radius:12px; font-size:13.5px; font-weight:700; display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:#fff; transition:.15s; color:var(--ink); }
 .canon .btn:hover:not(:disabled) { border-color:#C9D6E8; }
-.canon .btn.pri { background:var(--ink); color:#fff; border-color:var(--ink); }
+.canon .btn.pri { background:var(--role-btn); color:#fff; border-color:var(--role-btn); }
+/* Crimson buttons: .red is risk (destructive or urgent), .ai is an AI entry point and always carries the Sparkle. */
 .canon .btn.red { background:var(--red); color:#fff; border-color:var(--red); }
+.canon .btn.ai { background:var(--ai); color:#fff; border-color:var(--ai); }
+.canon .btn.ai:hover:not(:disabled) { background:#C8163F; }
+/* The AI marker: a small "AI" tag (with the Sparkle icon beside it in markup). Never used on risk. */
+.canon .ai-tag { display:inline-flex; align-items:center; gap:3px; font-size:9.5px; font-weight:800; letter-spacing:.1em; line-height:1;
+  padding:3px 6px; border-radius:6px; background:var(--ai-wash); color:var(--ai-ink); vertical-align:middle; white-space:nowrap; }
+.canon .btn.ai .ai-tag, .canon .ai-solid .ai-tag, .canon .nv .ai-tag, .canon .hero .ai-tag { background:rgba(255,255,255,.18); color:#fff; }
+.canon > aside .nv:not(.on) .ai-tag { background:color-mix(in srgb, var(--ai-dark) 22%, transparent); color:#FFD1DA; }
+.canon .nv.on .ai-tag { background:rgba(0,33,71,.12); color:var(--navy); }
+.canon .ch.ai { background:var(--ai-wash); color:var(--ai-ink); }
+/* Ask bars (an AI entry point): crimson outline; the send button carries the Sparkle and the tag. */
+.canon .cp-input.ask-ai textarea { border-color:color-mix(in srgb, var(--ai) 55%, #fff); }
+.canon .cp-input.ask-ai textarea:focus { outline-color:var(--ai); border-color:var(--ai); }
 .canon .btn.sm { padding:6px 12px; font-size:11.5px; }
-.canon .hero { border-radius:24px; padding:34px 36px; color:#fff; background:linear-gradient(103deg,#072044 0%,#123F84 52%,#0F5AB8 100%); margin-bottom:22px; position:relative; overflow:hidden; }
+.canon .hero { border-radius:24px; padding:34px 36px; color:#fff; background:radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), var(--navy);
+  --role-icon:var(--role-soft); --ai-icon:var(--ai-dark); margin-bottom:22px; position:relative; overflow:hidden; }
 .canon .hero h1 { font-size:40px; font-weight:800; }
-.canon .hero .hsub { color:#A9C4E8; font-size:14.5px; margin-top:7px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+/* A card on the hero's navy-with-role-glow ground (e.g. the student's AI learning path). */
+.canon .card.dark-card { background:radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), var(--navy); --role-icon:var(--role-soft); --ai-icon:var(--ai-dark); }
+.canon .hero .hsub { color:rgba(255,255,255,.72); font-size:14.5px; margin-top:7px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .canon .chip { display:inline-block; background:rgba(255,255,255,.14); border-radius:8px; padding:4px 11px; font-size:12px; font-weight:600; color:#DCE9FA; }
 .canon .chip.mono { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11.5px; }
 .canon .hgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; margin-top:26px; }
 .canon .hstat { background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:20px 22px; display:flex; justify-content:space-between; align-items:flex-start; width:100%; text-align:left; color:#fff; transition:background .15s, transform .15s; }
 .canon button.hstat:hover:not(:disabled) { background:rgba(255,255,255,.14); transform:translateY(-1px); }
-.canon .hstat .lb { font-size:11.5px; font-weight:800; letter-spacing:.11em; color:#9FBBE0; }
+.canon .hstat .lb { font-size:11.5px; font-weight:800; letter-spacing:.11em; color:color-mix(in srgb, var(--role-soft) 70%, #fff); }
 .canon .hstat .vl { font-size:34px; font-weight:800; margin-top:6px; line-height:1; }
-.canon .hstat .nt { font-size:12.5px; color:#8FAED6; margin-top:6px; }
+.canon .hstat .nt { font-size:12.5px; color:rgba(255,255,255,.66); margin-top:6px; }
 .canon .hstat .ic { width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.14); display:grid; place-items:center; flex:0 0 44px; }
 .canon .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; margin-bottom:22px; }
 .canon .kpi { background:#fff; border-radius:var(--r); box-shadow:var(--sh); padding:24px 26px; position:relative; overflow:hidden; }
@@ -120,7 +165,7 @@
 .canon .empty p { color:var(--mut); font-size:14px; margin-top:6px; }
 .canon .tabs { display:inline-flex; flex-wrap:wrap; background:#fff; border-radius:14px; padding:6px; box-shadow:var(--sh); gap:4px; margin-bottom:20px; }
 .canon .tab { padding:11px 22px; border-radius:10px; font-size:14px; font-weight:700; color:var(--mut); }
-.canon .tab.on { background:var(--green); color:#fff; }
+.canon .tab.on { background:var(--role-btn); color:#fff; }
 .canon .tab.on.blue { background:var(--ink); }
 .canon .note { background:#FFF8E7; border-left:3px solid var(--amber); border-radius:10px; padding:14px 16px; font-size:13px; color:#7A5A08; line-height:1.6; }
 .canon .note.info { background:#EFF6FF; border-left-color:var(--sky); color:#1E3A6B; }
@@ -205,7 +250,7 @@
 .canon button.hstat:active:not(:disabled) { transform:translateY(0) scale(.985); }
 .canon .btn, .canon .tab, .canon .en-card { transition:background .15s, border-color .15s, color .15s, transform .12s ease; }
 .canon .tab:hover:not(.on) { background:var(--body); color:var(--ink); }
-.canon .btn.pri:hover:not(:disabled) { background:#0B2E5C; }
+.canon .btn.pri:hover:not(:disabled) { background:color-mix(in srgb, var(--role-btn) 86%, #000); }
 .canon .btn.red:hover:not(:disabled) { background:#C8163F; }
 
 /* Content eases in on route mount. Kept short (no stagger) so a tab switch
@@ -254,11 +299,12 @@
   .canon > aside { width:78px; flex:0 0 78px; padding:22px 12px; }
   .canon .brand { padding:0 0 22px; text-align:center; }
   .canon .brand b { font-size:17px; }
-  .canon .brand i { font-size:0; height:3px; background:var(--red); border-radius:2px; width:22px; margin:6px auto 0; }
+  .canon .brand i { font-size:0; height:3px; background:var(--role-soft); border-radius:2px; width:22px; margin:6px auto 0; }
   .canon .nv { justify-content:center; padding:13px 0; }
   .canon .nv span.lbl-t { display:none; }
   .canon .nv.on::before { display:none; }
-  .canon .nv.on { background:var(--red); }
+  .canon .nv.on { background:var(--role-soft); }
+  .canon .nv .ai-tag { display:none; }
   .canon .hero h1 { font-size:30px; } .canon .pbar h1 { font-size:25px; }
   .canon .kpi .vl { font-size:38px; }
 }
@@ -268,7 +314,7 @@
     justify-content:space-around; padding:8px 4px calc(10px + env(safe-area-inset-bottom)); box-shadow:0 -6px 24px rgba(0,33,71,.06); }
   .canon .tabbar a { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; font-weight:700; color:var(--mut2); padding:4px 0; border-radius:10px; }
   .canon .tabbar a.on { color:var(--ink); }
-  .canon .tabbar a.on span.t { color:var(--red); }
+  .canon .tabbar a.on span.t { color:var(--role-deep); }
   .canon .toast { bottom:calc(84px + env(safe-area-inset-bottom)); }
   .canon > main { padding:16px 14px 110px; }
   .canon .pbar, .canon .card { padding:18px; }
@@ -309,11 +355,11 @@
 .canon .more-sheet .hd b { font-size:16px; font-weight:800; }
 .canon .more-sheet .hd button { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--mut); }
 .canon .more-sheet a, .canon .more-sheet .out { display:flex; align-items:center; gap:13px; padding:12px 10px; border-radius:14px; font-size:15px; font-weight:600; width:100%; text-align:left; }
-.canon .more-sheet a.on { background:var(--pale); }
-.canon .more-sheet .out { border-top:1px solid var(--line); border-radius:0; margin-top:8px; padding-top:16px; color:var(--red); }
+.canon .more-sheet a.on { background:var(--role-w10); color:var(--role-deep); }
+.canon .more-sheet .out { border-top:1px solid var(--line); border-radius:0; margin-top:8px; padding-top:16px; color:var(--role-deep); }
 .canon .tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; font-weight:700; color:var(--mut2); padding:4px 0; border-radius:10px; }
 .canon .tabbar button.on { color:var(--ink); }
-.canon .tabbar button.on span.t { color:var(--red); }
+.canon .tabbar button.on span.t { color:var(--role-deep); }
 @keyframes canon-sheet { from { transform:translateY(100%); } }
 @keyframes canon-fade { from { opacity:0; } }
 
@@ -401,7 +447,7 @@
 .canon .g-lane { position:relative; height:26px; background:#F4F7FC; border-radius:8px; }
 .canon .g-bar { position:absolute; top:3px; bottom:3px; border-radius:6px; overflow:hidden; background:#DCE6F8; min-width:6px; }
 .canon .g-bar i { position:absolute; left:0; top:0; bottom:0; background:var(--blue); opacity:.85; }
-.canon .g-today { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--red); border-radius:2px; z-index:1; }
+.canon .g-today { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--role-deep); border-radius:2px; z-index:1; }
 .canon .g-months { position:relative; height:18px; font-size:10.5px; font-weight:800; color:var(--mut2); letter-spacing:.04em; }
 .canon .g-months span { position:absolute; top:0; transform:translateX(-50%); white-space:nowrap; }
 .canon .g-edit { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 0 4px; }
@@ -522,7 +568,7 @@
 .canon .st-body { display:grid; grid-template-columns:minmax(260px,340px) minmax(0,1fr); gap:0; }
 .canon .st-settings { padding:16px 18px; border-right:1px solid var(--line); background:#fff; }
 .canon .st-preview { padding:16px 18px; min-width:0; }
-.canon .st-step { font-size:11px; font-weight:800; letter-spacing:.1em; color:var(--red); margin-bottom:12px; }
+.canon .st-step { font-size:11px; font-weight:800; letter-spacing:.1em; color:var(--role-deep); margin-bottom:12px; }
 .canon .st-spec { display:flex; flex-direction:column; gap:3px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:12px; }
 .canon .st-spec b { font-size:14px; } .canon .st-spec span { font-size:11.5px; color:var(--mut); }
 .canon .st-sample { max-height:430px; overflow:auto; border-radius:16px; }
@@ -546,6 +592,10 @@
 .canon .tbl tbody tr.click { cursor:pointer; }
 .canon .tbl tbody tr.click:hover td { background:#F8FAFD; }
 .canon .num { font-variant-numeric:tabular-nums; }
+/* Scores and KPI figures line their digits up. */
+.canon .kpi .vl, .canon .hstat .vl, .canon .hm .cell, .canon .bar + b { font-variant-numeric:tabular-nums; }
+/* A TML band as a pill (BandPill in canon/ui): the label always travels with the colour. */
+.canon .band-pill { display:inline-flex; align-items:center; padding:3px 9px; border-radius:99px; font-size:10.5px; font-weight:800; letter-spacing:.02em; white-space:nowrap; }
 .canon .who { display:flex; align-items:center; gap:11px; }
 .canon .who .ic { width:34px; height:34px; flex:0 0 34px; border-radius:50%; background:var(--pale); color:var(--blue); display:grid; place-items:center; }
 .canon .row-btn { display:flex; width:100%; text-align:left; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line); background:none; }
@@ -565,13 +615,13 @@
 .canon .bp-bar-top { position:sticky; top:0; z-index:5; display:flex; gap:10px; align-items:center; width:100%; max-width:210mm; background:var(--body); padding:4px 0 10px; font-size:13px; flex-wrap:wrap; }
 .canon .bp-page { position:relative; width:210mm; min-height:297mm; background:#fff; color:var(--bp-ink); box-shadow:0 1px 2px rgba(0,33,71,.06),0 18px 40px rgba(0,33,71,.10); padding:18mm 16mm 26mm; overflow:hidden; font-size:10.5pt; line-height:1.45; }
 .canon .bp-cover { padding:0 0 26mm; }
-.canon .bp-hero { background:linear-gradient(115deg,#062347 0%,#123F84 58%,#0F5AB8 100%); color:#fff; padding:14mm 16mm 16mm; min-height:96mm; display:flex; flex-direction:column; justify-content:space-between; }
+.canon .bp-hero { background:radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), #002147; color:#fff; padding:14mm 16mm 16mm; min-height:96mm; display:flex; flex-direction:column; justify-content:space-between; }
 .canon .bp-brand { font-size:17pt; font-weight:800; letter-spacing:-.01em; }
 .canon .bp-brand i { display:block; font-style:normal; color:#FF5A7A; font-size:7pt; font-weight:800; letter-spacing:.16em; margin-top:1mm; }
 .canon .bp-hero h1 { font-size:30pt; font-weight:800; line-height:1.08; letter-spacing:-.02em; margin:3mm 0 3mm; }
 .canon .bp-hero p { color:#BBD3F2; font-size:10pt; max-width:140mm; }
 .canon .bp-body { padding:10mm 16mm 0; }
-.canon .bp-kicker { color:var(--red); font-size:7.5pt; font-weight:800; letter-spacing:.16em; }
+.canon .bp-kicker { color:var(--navy); font-size:7.5pt; font-weight:800; letter-spacing:.16em; }
 .canon .bp-kicker.light { color:#9FBBE0; }
 .canon .bp-head { border-bottom:2px solid var(--bp-ink); padding-bottom:4mm; margin-bottom:6mm; }
 .canon .bp-head h2 { font-size:20pt; font-weight:800; letter-spacing:-.015em; margin-top:1.5mm; }
@@ -738,7 +788,7 @@
   .canon .lp-print { display:block; color:#002147; font-size:10.5pt; line-height:1.5; }
 }
 .canon .lp-print h1 { font-size:19pt; font-weight:800; letter-spacing:-.02em; margin:3mm 0 2mm; }
-.canon .lp-print h2 { font-size:9pt; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#E11D48; margin:0 0 2mm; }
+.canon .lp-print h2 { font-size:9pt; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#002147; margin:0 0 2mm; }
 .canon .lp-print section { margin:0 0 5mm; break-inside:avoid; }
 .canon .lp-print ul { margin:0; padding-left:5mm; }
 .canon .lp-print li { margin:0 0 1mm; }
@@ -1103,7 +1153,7 @@
   .reg-doc.rd-day { page:regday; font-size:10pt; }
   .reg-doc.rd-month { page:regmonth; font-size:8pt; }
   .reg-doc .rd-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12mm; border-bottom:2px solid #002147; padding-bottom:3mm; margin-bottom:4mm; }
-  .reg-doc .rd-kicker { font-size:7.5pt; font-weight:800; letter-spacing:.16em; color:#E11D48; }
+  .reg-doc .rd-kicker { font-size:7.5pt; font-weight:800; letter-spacing:.16em; color:#002147; }
   .reg-doc h1 { font-size:18pt; font-weight:800; margin:1mm 0 0; line-height:1.15; }
   .reg-doc.rd-month h1 { font-size:14pt; }
   .reg-doc .rd-head p { margin:1mm 0 0; color:#556378; font-size:9pt; }

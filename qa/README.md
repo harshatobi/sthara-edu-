@@ -51,6 +51,7 @@ npm run e2e:local                 # sign-in, routing, headers, and the API gate 
 npm run e2e:demo                  # local demo mode, every portal page (slow; needs a quiet machine)
 npm run e2e:prod                  # signed-in, read-only sweep of the test school (needs e2e.env)
 npm run e2e:journeys              # end-to-end journeys that write records (test school only)
+npm run e2e:visual                # each role's shell and home (desktop, tablet, phone) against approved images
 npm run report                    # open the last Playwright report
 ```
 

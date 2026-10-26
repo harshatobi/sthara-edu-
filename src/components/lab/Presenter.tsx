@@ -145,7 +145,7 @@ function Show({ scene, from }: { scene: LabScene; from: { class: string | null; 
                   </select>
                 </div>
               )}
-              <button className="btn red" onClick={() => go(1)}>
+              <button className="btn pri" onClick={() => go(1)}>
                 {questions.length ? <>Start: {questions.length} prediction{questions.length === 1 ? '' : 's'}</> : 'Start exploring'} <ArrowRight size={15} weight="bold" />
               </button>
             </>

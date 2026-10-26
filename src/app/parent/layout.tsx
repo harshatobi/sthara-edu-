@@ -27,7 +27,7 @@ import '@/styles/parent.css';
 // Canon parent nav (mockup ROLES.parent), with Ask the School OS as the hero.
 const NAV: CanonNavItem[] = [
   { href: '/parent', label: 'Home', icon: House, exact: true },
-  { href: '/parent/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle },
+  { href: '/parent/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle, ai: true },
   { href: '/parent/results', label: 'Report Cards', short: 'Results', icon: Certificate },
   { href: '/parent/timeline', label: 'Timeline', icon: ClockCounterClockwise },
   { href: '/parent/progress', label: 'Mastery & Reports', short: 'Progress', icon: ChartLineUp },
@@ -50,7 +50,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   // The parent portal only runs on real records: the local no-backend bypass gets a pointer, not a fake family.
   if (!user) {
     return (
-      <CanonShell subtitle="PARENT PORTAL" nav={NAV} label="Parent navigation">
+      <CanonShell role="parent" subtitle="PARENT PORTAL" nav={NAV} label="Parent navigation">
         <PageBar eyebrow="PARENT PORTAL" title="Sign in as a parent" />
         <div className="card"><Empty icon={<Student size={34} weight="duotone" />} title="The parent portal runs on live school records">
           Sign in with a parent account (for example parent.aarav@test.sthara.in) to see a real family.
@@ -60,7 +60,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   }
   return (
     <FamilyProvider>
-      <CanonShell subtitle="PARENT PORTAL" nav={NAV} label="Parent navigation">{children}</CanonShell>
+      <CanonShell role="parent" subtitle="PARENT PORTAL" nav={NAV} label="Parent navigation">{children}</CanonShell>
     </FamilyProvider>
   );
 }

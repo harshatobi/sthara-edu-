@@ -8,7 +8,7 @@ import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { NotePencilIcon as NotePencil } from '@phosphor-icons/react/dist/ssr/NotePencil';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { SealCheckIcon as SealCheck } from '@phosphor-icons/react/dist/ssr/SealCheck';
-import { Bar, Chip, Empty, PageBar, hmColor } from '@/components/canon/ui';
+import { Bar, Chip, Empty, PageBar, heatColor } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import type { AdminDesk } from '@/lib/admin/desk';
 import { daysBetween, fmtDate, isoDay, plural } from '@/lib/admin/format';
@@ -79,7 +79,7 @@ function Wellness({ desk }: { desk: AdminDesk }) {
         actions={<>
           <Chip tone={filed ? 'g' : 'a'}>{filed ? 'FILED' : 'DRAFT'}</Chip>
           <button className="btn" onClick={() => window.print()}><Printer size={16} /> Print</button>
-          {!filed && canFile && <button className="btn red" disabled={doneCount < sections.length || busy !== null} onClick={() => setConfirming(true)}
+          {!filed && canFile && <button className="btn pri" disabled={doneCount < sections.length || busy !== null} onClick={() => setConfirming(true)}
             title={doneCount < sections.length ? 'Complete every section first' : undefined}><SealCheck size={16} weight="bold" /> File report</button>}
         </>} />
       <MissingNotice desk={desk} tables={['school_filings', 'school_wellness_report']} />
@@ -90,7 +90,7 @@ function Wellness({ desk }: { desk: AdminDesk }) {
           <p className="muted" style={{ marginTop: 6, fontSize: 13.5, lineHeight: 1.6 }}>The live figures are frozen as they stand today and the report can no longer be edited. The filing is recorded in the audit log under your name.</p>
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <button className="btn" onClick={() => setConfirming(false)}>Not yet</button>
-            <button className="btn red" disabled={busy !== null} onClick={file}>{busy === 'file' ? 'Filing…' : 'File report'}</button>
+            <button className="btn pri" disabled={busy !== null} onClick={file}>{busy === 'file' ? 'Filing…' : 'File report'}</button>
           </div>
         </div>
       )}
@@ -101,7 +101,7 @@ function Wellness({ desk }: { desk: AdminDesk }) {
         <Kpi label="CHECK-IN PARTICIPATION" value={W.participation !== null ? `${Math.min(100, W.participation)}%` : '—'} icon={UsersThree}
           note={`${W.students} of ${plural(desk.students.length, 'student')} this session`} />
         <Kpi label="SCHOOL AVG ENERGY" value={W.energy !== null ? `${W.energy}%` : '—'} icon={BatteryMedium}
-          valueColor={W.energy !== null ? hmColor(W.energy) : undefined}
+          valueColor={W.energy !== null ? heatColor(W.energy) : undefined}
           note={W.energy !== null ? `${W.lowShare}% of check-ins at energy 2 or below` : W.students ? 'Hidden until 5 or more students check in' : 'No check-ins yet'} />
         <Kpi label="WELLNESS CONSENT" value={consents.coverage !== null ? `${consents.coverage}%` : '—'} icon={Heart}
           valueColor={consents.coverage !== null && consents.coverage < 100 ? 'var(--amber)' : 'var(--green)'} note={`${consents.granted} parents have consented`} />
@@ -152,7 +152,7 @@ function Wellness({ desk }: { desk: AdminDesk }) {
                 <div className="spark" role="img" aria-label={`School-wide energy by week: ${W.weeks.map(w => (w.energy !== null ? `${w.energy}%` : 'hidden')).join(', ')}`}>
                   {W.weeks.map(w => (
                     <div key={w.week} className={w.energy === null ? 'na' : undefined} title={`Week of ${fmtDate(w.week, true)}: ${w.energy !== null ? `${w.energy}%` : w.students ? `${w.students} students, hidden` : 'no check-ins'}`}
-                      style={{ height: `${w.energy !== null ? Math.max(6, (w.energy / maxWeek) * 100) : 18}%`, background: w.energy !== null ? hmColor(w.energy) : undefined, opacity: 0.92 }} />
+                      style={{ height: `${w.energy !== null ? Math.max(6, (w.energy / maxWeek) * 100) : 18}%`, background: w.energy !== null ? heatColor(w.energy) : undefined, opacity: 0.92 }} />
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
@@ -166,8 +166,8 @@ function Wellness({ desk }: { desk: AdminDesk }) {
             {W.grades.length ? W.grades.map(g => (
               <div className="row" key={g.grade}>
                 <b style={{ flex: '0 0 84px', fontSize: 14 }}>Grade {g.grade}</b>
-                {g.energy !== null ? <Bar value={g.energy} /> : <div className="bar" />}
-                <b style={{ width: 70, textAlign: 'right', color: g.energy !== null ? hmColor(g.energy) : 'var(--mut2)', fontSize: g.energy !== null ? 15 : 12 }}>{g.energy !== null ? `${g.energy}%` : 'hidden'}</b>
+                {g.energy !== null ? <Bar value={g.energy} color={heatColor(g.energy)} /> : <div className="bar" />}
+                <b style={{ width: 70, textAlign: 'right', color: g.energy !== null ? heatColor(g.energy) : 'var(--mut2)', fontSize: g.energy !== null ? 15 : 12 }}>{g.energy !== null ? `${g.energy}%` : 'hidden'}</b>
               </div>
             )) : <p className="muted" style={{ fontSize: 13.5 }}>No check-ins yet.</p>}
           </div>

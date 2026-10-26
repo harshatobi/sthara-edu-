@@ -12,7 +12,7 @@ import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { CopyIcon as Copy } from '@phosphor-icons/react/dist/ssr/Copy';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
-import { Chip } from '@/components/canon/ui';
+import { Chip, AiTag } from '@/components/canon/ui';
 import type { Course } from '@/lib/teacher/useCourse';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { normClass, normSubject } from '@/lib/teacher/scope';
@@ -21,7 +21,7 @@ import type { LessonPrefill } from './SyllabusWorkspace';
 import LessonPrint from './LessonPrint';
 import LessonLabDemos from '@/components/lab/LessonLabDemos';
 
-const STAGE_COLORS = ['#4C8DFF', '#7C5CFC', '#10B981', '#F59E0B', '#F45E77', '#14B8A6', '#E11D48', '#64748B'];
+const STAGE_COLORS = ['#4C8DFF', '#7C5CFC', '#10B981', '#F59E0B', '#F45E77', '#14B8A6', '#0891B2', '#64748B'];
 type Draft = Omit<Lesson, 'id' | 'teacherId' | 'taughtOn' | 'aiDrafted'> & { aiDrafted: boolean };
 
 function blank(course: Course, p: LessonPrefill): Draft {
@@ -148,7 +148,7 @@ export default function LessonEditor({ course, cls, subject, lesson, prefill, on
               <button key={s} className={d.status === s ? 'on' : ''} aria-pressed={d.status === s} onClick={() => set('status', s)}>{s === 'draft' ? 'Draft' : s === 'ready' ? 'Ready' : 'Taught'}</button>
             ))}
           </div>
-          <button className="btn red" disabled={!!busy} onClick={() => save()}>{busy === 'save' ? 'Saving…' : 'Save plan'}</button>
+          <button className="btn pri" disabled={!!busy} onClick={() => save()}>{busy === 'save' ? 'Saving…' : 'Save plan'}</button>
         </div>
       </div>
 
@@ -290,11 +290,11 @@ export default function LessonEditor({ course, cls, subject, lesson, prefill, on
               {confirm === 'ai'
                 ? <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                     <span className="muted" style={{ fontSize: 12 }}>Replaces the plan&apos;s current content.</span>
-                    <button className="btn sm red" disabled={!!busy} onClick={draftWithAi}>{busy === 'ai' ? 'Drafting…' : 'Replace'}</button>
+                    <button className="btn sm ai" disabled={!!busy} onClick={draftWithAi}>{busy === 'ai' ? 'Drafting…' : 'Replace'} <AiTag /></button>
                     <button className="btn sm" onClick={() => setConfirm(null)}>Keep mine</button>
                   </div>
-                : <button className="btn red" style={{ marginTop: 10, width: '100%', justifyContent: 'center' }} disabled={!!busy || !d.chapterKey}
-                    onClick={() => (hasContent ? setConfirm('ai') : draftWithAi())}>{busy === 'ai' ? 'Drafting…' : 'Draft this lesson'}</button>}
+                : <button className="btn ai" style={{ marginTop: 10, width: '100%', justifyContent: 'center' }} disabled={!!busy || !d.chapterKey}
+                    onClick={() => (hasContent ? setConfirm('ai') : draftWithAi())}>{busy === 'ai' ? 'Drafting…' : 'Draft this lesson'} <AiTag /></button>}
               {d.aiDrafted && <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>Contains AI-drafted content. Review every part before teaching it.</div>}
             </div>
 

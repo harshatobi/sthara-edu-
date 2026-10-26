@@ -17,7 +17,7 @@ import type { TAssignment, WorkType } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { isScienceSubject } from '@/lib/teacher/copilot';
 import { buildLabQuestion } from '@/lib/lab/question';
-import { Skeleton } from '@/components/canon/ui';
+import { Skeleton, AiTag } from '@/components/canon/ui';
 
 // The simulations load only when a lab question is being added or shown.
 const LabQuestionPicker = dynamic(() => import('@/components/lab/LabQuestionPicker'), { ssr: false, loading: () => <Skeleton h={160} /> });
@@ -241,8 +241,8 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
           {!locked && canLab && pickingLab && <LabQuestionPicker cls={cls} chapter={chapter} onAdd={addLab} onClose={() => setPickingLab(false)} />}
           {!locked && (
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-              <button className="btn red" disabled={generating || (!chapter && !topic)} onClick={generate}>
-                <Sparkle size={15} weight="fill" /> {generating ? 'Generating…' : `Generate ${genCount} with AI`}
+              <button className="btn ai" disabled={generating || (!chapter && !topic)} onClick={generate}>
+                <Sparkle size={15} weight="fill" /> {generating ? 'Generating…' : `Generate ${genCount} with AI`} <AiTag />
               </button>
               <select className="cmp-sel" style={{ width: 'auto' }} aria-label="How many questions to generate" value={genCount} onChange={e => setGenCount(Number(e.target.value))}>
                 {[3, 4, 5, 8, 10].map(n => <option key={n} value={n}>{n} questions</option>)}
@@ -310,7 +310,7 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
           {(!initial || initial.status === 'draft') && (
             <button className="btn" disabled={!!saving || !classes.length} onClick={() => save('draft')}>{saving === 'draft' ? 'Saving…' : 'Save as draft'}</button>
           )}
-          <button className="btn red" disabled={!!saving || !classes.length} onClick={() => save('published')}>
+          <button className="btn pri" disabled={!!saving || !classes.length} onClick={() => save('published')}>
             <PaperPlaneTilt size={15} weight="fill" />
             {saving === 'published' ? 'Posting…' : initial?.status === 'published' ? 'Save changes' : `Post to ${cls || 'class'}`}
           </button>

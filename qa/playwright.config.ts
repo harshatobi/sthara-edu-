@@ -10,6 +10,7 @@ import { ROOT } from './tools/inventory';
  *   demo      local only: every portal page opens in the app's development demo mode
  *   prod-*    the dedicated test school: signs each role in, then read-only checks of every page
  *   journeys  end-to-end business journeys across roles; they write records (E2E_ALLOW_WRITES=1)
+ *   visual    each role's shell and home at desktop, tablet and phone widths against approved images
  *
  * Locally (E2E_BASE_URL unset or localhost) the app is started from its own folder with
  * `next dev` on port 3100. That only writes the app's gitignored .next cache; no source changes.
@@ -52,6 +53,7 @@ export default defineConfig({
     { name: 'prod-setup', testDir: './e2e/prod', testMatch: /auth\.setup\.ts/ },
     { name: 'prod', testDir: './e2e/prod', testIgnore: /auth\.setup\.ts/, dependencies: ['prod-setup'], use: { ...devices['Desktop Chrome'] } },
     { name: 'journeys', testDir: './e2e/journeys', dependencies: ['prod-setup'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'visual', testDir: './e2e/visual', dependencies: ['prod-setup'], use: { ...devices['Desktop Chrome'] } },
   ].map(p => ({ ...p, use: { ...p.use, ...(process.env.E2E_BROWSER === 'chromium' ? {} : { channel: 'chrome' }) } })),
   webServer: IS_LOCAL && !process.env.E2E_NO_SERVER ? {
     command: `npx next dev -p ${port}`,

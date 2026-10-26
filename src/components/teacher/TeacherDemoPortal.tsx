@@ -12,7 +12,7 @@ import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
 import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { CheckSquareIcon as CheckSquare } from '@phosphor-icons/react/dist/ssr/CheckSquare';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
-import { colorForIcon } from '@/lib/iconColors';
+import { bandColor, bandInk } from '@/lib/tml/bands';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTeacherDemo } from '@/lib/demo/useTeacherDemo';
 import { STUDENTS, TEACHER_SCOPE, TOPICS, isAssignedClass, type ClassId, type DemoAction, type TeacherView } from '@/lib/demo/teacher';
@@ -24,7 +24,7 @@ const NAV = [
   ['review', 'Grade Review', CheckSquare], ['feed', 'Activity History', Bell], ['well', 'Student Wellness', Heart],
 ] as const;
 const average = (values: readonly number[]) => Math.round(values.reduce((a,b) => a+b, 0) / values.length);
-const heatColor = (v: number) => v >= 75 ? '#10B981' : v >= 55 ? '#5FC79B' : v >= 40 ? '#D9A008' : v >= 25 ? '#F98A4B' : '#E11D48';
+const heatColor = bandColor;
 
 export default function TeacherDemoPortal({ initialView = 'dash' }: { initialView?: TeacherView }) {
   const { profile, user, startDemo, signOut } = useAuth();
@@ -79,7 +79,8 @@ export default function TeacherDemoPortal({ initialView = 'dash' }: { initialVie
   return <div className="portal-shell teacher-demo">
       <style jsx>{`
         .portal-shell {
-          --nav:#062347; --nav2:#0A2C57; --navActive:#14365E;
+          --navy:#002147; --role-deep:#167762; --role-soft:#79DFC6; --role-dusk:color-mix(in srgb, #167762 38%, #0A1324); --role-btn:var(--role-deep); --role-icon:#167762;
+          --ai:#E11D48; --ai-dark:#FB7185; --ai-icon:var(--ai);
           --ink:#002147; --body:#F7F9FB; --line:#E8EDF4;
           --red:#E11D48; --blue:#2F6BFF; --sky:#4C8DFF;
           --green:#10B981; --amber:#F59E0B; --purple:#7C5CFC; --coral:#F45E77;
@@ -87,37 +88,37 @@ export default function TeacherDemoPortal({ initialView = 'dash' }: { initialVie
           --r:20px; --sh:0 1px 2px rgba(0,33,71,.05),0 10px 30px rgba(0,33,71,.05);
         }
         .portal-shell { display: flex; min-height: 100vh; background: var(--body); color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; }
-        .portal-shell > aside { width: 264px; flex: 0 0 264px; background: var(--nav); min-height: 100vh; padding: 26px 18px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+        .portal-shell > aside { width: 264px; flex: 0 0 264px; background: linear-gradient(180deg, var(--role-dusk) 0%, var(--navy) 100%); --role-icon: var(--role-soft); --ai-icon: var(--ai-dark); min-height: 100vh; padding: 26px 18px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
         .brand { padding: 0 10px 26px; }
         .brand b { display: block; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
-        .brand i { display: block; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .14em; font-style: normal; margin-top: 2px; }
+        .brand i { display: block; color: var(--role-soft); font-size: 11px; font-weight: 800; letter-spacing: .14em; font-style: normal; margin-top: 2px; }
         .portal-shell nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-        .nv { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border-radius: 12px; color: #93A7C4; font-size: 14.5px; font-weight: 500; text-align: left; position: relative; transition: .15s; background: none; border: none; cursor: pointer; width: 100%; }
-        .nv:hover { background: rgba(255,255,255,.05); color: #D5E1F2; }
-        .nv.on { background: var(--navActive); color: #fff; font-weight: 600; }
-        .nv.on:before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; background: var(--red); border-radius: 0 3px 3px 0; }
-        .nv-out { border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-top: 14px; }
+        .nv { display: flex; align-items: center; gap: 13px; padding: 12px 14px; border-radius: 12px; color: rgba(255,255,255,.74); font-size: 14.5px; font-weight: 500; text-align: left; position: relative; transition: .15s; background: none; border: none; cursor: pointer; width: 100%; }
+        .nv:hover { background: rgba(255,255,255,.07); color: #fff; }
+        .nv.on, .nv.on:hover { background: var(--role-soft); color: var(--navy); font-weight: 700; --role-icon: var(--navy); --ai-icon: var(--navy); }
+                .nv-out { border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-top: 14px; }
         .portal-shell > main { flex: 1; min-width: 0; padding: 26px 34px 70px; max-width: 1560px; }
 
         .card { background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 26px; }
         .pbar { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 20px 26px; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
-        .pbar .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--red); font-size: 12px; font-weight: 800; letter-spacing: .13em; }
+        .pbar .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--role-deep); font-size: 12px; font-weight: 800; letter-spacing: .13em; }
         .pbar h1 { font-size: 31px; font-weight: 800; margin-top: 5px; }
         .pbar .sub { color: var(--mut); font-size: 13.5px; margin-top: 4px; }
         .acts { display: flex; gap: 10px; align-items: center; }
         .btn { padding: 11px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; transition: .15s; }
         .btn:hover { border-color: #C9D6E8; }
-        .btn.pri { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .btn.pri { background: var(--role-btn); color: #fff; border-color: var(--role-btn); }
+        .btn.ai { background: var(--ai); color: #fff; border-color: var(--ai); }
         .btn.red { background: var(--red); color: #fff; border-color: var(--red); }
-        .hero { border-radius: 24px; padding: 34px 36px; color: #fff; background: linear-gradient(103deg,#072044 0%,#123F84 52%,#0F5AB8 100%); margin-bottom: 22px; position: relative; overflow: hidden; }
+        .hero { border-radius: 24px; padding: 34px 36px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--role-deep) 70%, transparent), transparent 60%), var(--navy); --role-icon: var(--role-soft); --ai-icon: var(--ai-dark); margin-bottom: 22px; position: relative; overflow: hidden; }
         .hero h1 { font-size: 40px; font-weight: 800; }
-        .hero .hsub { color: #A9C4E8; font-size: 14.5px; margin-top: 7px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .hero .hsub { color: rgba(255,255,255,.72); font-size: 14.5px; margin-top: 7px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .chip { display: inline-block; background: rgba(255,255,255,.14); border-radius: 8px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: #DCE9FA; }
         .hgrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 16px; margin-top: 26px; }
         .hstat { background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 20px 22px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .hstat .lb { font-size: 11.5px; font-weight: 800; letter-spacing: .11em; color: #9FBBE0; }
+        .hstat .lb { font-size: 11.5px; font-weight: 800; letter-spacing: .11em; color: color-mix(in srgb, var(--role-soft) 70%, #fff); }
         .hstat .vl { font-size: 34px; font-weight: 800; margin-top: 6px; line-height: 1; }
-        .hstat .nt { font-size: 12.5px; color: #8FAED6; margin-top: 6px; }
+        .hstat .nt { font-size: 12.5px; color: rgba(255,255,255,.66); margin-top: 6px; }
         .hstat .ic { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.14); display: grid; place-items: center; font-size: 18px; }
         .kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 18px; margin-bottom: 22px; }
         .kpi { background: #fff; border-radius: var(--r); box-shadow: var(--sh); padding: 24px 26px; position: relative; overflow: hidden; }
@@ -152,7 +153,7 @@ export default function TeacherDemoPortal({ initialView = 'dash' }: { initialVie
         /* Floating Role Switcher */
         .role-sw { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 50; background: var(--ink); border-radius: 99px; padding: 7px; display: flex; gap: 4px; box-shadow: 0 14px 40px rgba(0,33,71,.35); }
         .role-sw button { padding: 10px 20px; border-radius: 99px; color: #93A7C4; font-size: 13px; font-weight: 700; text-decoration: none; }
-        .role-sw button.on { background: var(--red); color: #fff; }
+        .role-sw button.on { background: var(--role-soft); color: var(--navy); }
         @media(max-width:760px) {
           .portal-shell { flex-direction: column; }
           .portal-shell > aside { width: 100%; flex-basis: auto; min-height: auto; height: auto; position: static; padding: 16px; }
@@ -193,9 +194,9 @@ export default function TeacherDemoPortal({ initialView = 'dash' }: { initialVie
       <div className="brand"><b>Sthara</b><i>TEACHING COPILOT</i></div>
       <nav aria-label="Teacher navigation">
         {NAV.map(([key, label, Icon]) => <button key={key} className={`nv ${view === key ? 'on' : ''}`} aria-current={view === key ? 'page' : undefined} onClick={() => { setView(key); setMessage(''); }}>
-          <InteractiveIcon icon={Icon} color={colorForIcon(Icon)} active={view === key} /><span>{label}</span>
+          <InteractiveIcon icon={Icon} active={view === key} /><span>{label}</span>
         </button>)}
-        <div className="nv-out"><button className="nv" onClick={() => void signOut()}><InteractiveIcon icon={SignOut} color={colorForIcon(SignOut)} /><span>Sign Out</span></button></div>
+        <div className="nv-out"><button className="nv" onClick={() => void signOut()}><InteractiveIcon icon={SignOut} /><span>Sign Out</span></button></div>
       </nav>
     </aside>
     <main>
@@ -222,24 +223,24 @@ export default function TeacherDemoPortal({ initialView = 'dash' }: { initialVie
 
       {view === 'syl' && <>
         <div className="pbar"><div><div className="eyebrow">SYLLABUS & HOMEWORK</div><h1>Class Task Manager</h1><p className="sub">Class {classId} · Mathematics · sample curriculum</p></div></div>
-        <div className="g2"><section className="card"><h2>Create homework</h2><form onSubmit={e => { e.preventDefault(); if (createTask('Homework', title)) setTitle(''); }}><label>Assignment title<input aria-label="Assignment title" value={title} maxLength={160} onChange={e => setTitle(e.target.value)} placeholder="For example, linear equations practice" required /></label><button className="btn red" type="submit">Assign homework</button></form><button className="btn" onClick={() => setTitle('Sample chapter: Algebra foundations')}>Use sample chapter</button></section>
+        <div className="g2"><section className="card"><h2>Create homework</h2><form onSubmit={e => { e.preventDefault(); if (createTask('Homework', title)) setTitle(''); }}><label>Assignment title<input aria-label="Assignment title" value={title} maxLength={160} onChange={e => setTitle(e.target.value)} placeholder="For example, linear equations practice" required /></label><button className="btn pri" type="submit">Assign homework</button></form><button className="btn" onClick={() => setTitle('Sample chapter: Algebra foundations')}>Use sample chapter</button></section>
           <section className="card"><h2>Assigned tasks ({tasks.length})</h2>{tasks.map(t => <div className="row" key={t.id}><div style={{ flex: 1 }}><b>{t.title}</b><p className="muted">{t.type} · {t.classId} · Mathematics</p></div><span className="ch b">DEMO</span></div>)}</section></div>
         <section className="card" style={{ marginTop: 20 }}><h2>Class roster</h2>{roster.map(s => <div className="row" key={s.id}><b style={{ flex: 1 }}>{s.name}</b><button className="btn" onClick={() => act({ type: 'note', classId, text: `Reminder drafted for ${s.name}; not sent` }, 'Reminder recorded in demo history. No message was sent.')}>Draft reminder</button></div>)}</section>
       </>}
 
       {view === 'quiz' && <>
-        <div className="pbar"><div><div className="eyebrow">QUIZ CREATOR</div><h1>Create a Quiz</h1><p className="sub">Class {classId} · Mathematics · linear equations</p></div><button className="btn red" disabled={quizPosted} onClick={() => { if (createTask('Quiz', 'Linear equations quiz')) setQuizPosted(true); }}>{quizPosted ? 'Posted in demo' : 'Post Quiz to Students'}</button></div>
+        <div className="pbar"><div><div className="eyebrow">QUIZ CREATOR</div><h1>Create a Quiz</h1><p className="sub">Class {classId} · Mathematics · linear equations</p></div><button className="btn pri" disabled={quizPosted} onClick={() => { if (createTask('Quiz', 'Linear equations quiz')) setQuizPosted(true); }}>{quizPosted ? 'Posted in demo' : 'Post Quiz to Students'}</button></div>
         <section className="card"><span className="ch b">SAMPLE QUESTION · 1 MARK</span><h2 style={{ margin: '20px 0' }}>Solve 2x + 4 = 10. What is x?</h2><div className="g2">{['2', '3', '5', '7'].map((answer, i) => <button key={answer} className={`qopt ${quizAnswer === i ? 'ok' : ''}`} aria-pressed={quizAnswer === i} onClick={() => setQuizAnswer(i)}><b>{'ABCD'[i]}</b>{answer}</button>)}</div>{quizAnswer !== null && <p className="note" role="status" style={{ marginTop: 20 }}>{quizAnswer === 1 ? 'Correct.' : 'Try again.'} Subtract 4 from both sides, then divide by 2. The answer is 3.</p>}</section>
       </>}
 
       {view === 'ai' && <>
         <div className="pbar"><div><div className="eyebrow">AI ASSISTANT · OFFLINE SAMPLE</div><h1>Teacher Copilot</h1><p className="sub">Preview document workflows without an AI or backend connection.</p></div><div className="acts"><button className="btn" onClick={() => void copyDocument()}>Copy</button><button className="btn pri" onClick={downloadDocument}>Download text</button><button className="btn" onClick={() => window.print()}>Print / Save PDF</button></div></div>
-        <div className="g2"><section className="card"><h2>Document type</h2>{['Worksheet', 'Lesson plan', 'Exercise set', 'Remedial pack', 'Answer key', 'Parent note'].map(t => <button key={t} className={`btn ${documentType === t ? 'pri' : ''}`} style={{ margin: '6px 6px 6px 0' }} aria-pressed={documentType === t} onClick={() => setDocumentType(t)}>{t}</button>)}<button className="btn red" onClick={() => { setEdition(n => n+1); setMessage('Another local sample is ready. No AI request was made.'); }}>Generate sample</button></section><section className="card demo-document"><pre>{worksheet}</pre></section></div>
+        <div className="g2"><section className="card"><h2>Document type</h2>{['Worksheet', 'Lesson plan', 'Exercise set', 'Remedial pack', 'Answer key', 'Parent note'].map(t => <button key={t} className={`btn ${documentType === t ? 'pri' : ''}`} style={{ margin: '6px 6px 6px 0' }} aria-pressed={documentType === t} onClick={() => setDocumentType(t)}>{t}</button>)}<button className="btn pri" onClick={() => { setEdition(n => n+1); setMessage('Another local sample is ready. No AI request was made.'); }}>Generate sample</button></section><section className="card demo-document"><pre>{worksheet}</pre></section></div>
       </>}
 
       {view === 'heat' && <>
         <div className="pbar"><div><div className="eyebrow">CLASS HEAT MAP</div><h1>Topic-level TML · Class {classId}</h1><p className="sub">Illustrative mastery scores for the selected assigned class.</p></div><button className="btn pri" disabled={!roster.some(s => s.scores.some(v => v < 40))} onClick={() => createTask('Remedial', 'Targeted practice for topics below 40%')}>Assign remedial to red</button></div>
-        <section className="card table-scroll"><table className="hm"><caption className="sr-only">Sample mastery by student and topic</caption><thead><tr><th>Student</th>{TOPICS.map(t => <th key={t}>{t}</th>)}<th>Average</th></tr></thead><tbody>{roster.map(s => <tr key={s.id}><th scope="row"><button className="student-link" onClick={() => { setSelectedStudent(s.id); setView('mast'); }}>{s.name}</button></th>{s.scores.map((v,i) => <td key={i} className="cell" style={{ background: heatColor(v), color: v >= 25 && v < 75 ? '#002147' : '#fff' }}>{v}%</td>)}<td>{average(s.scores)}%</td></tr>)}</tbody></table></section>
+        <section className="card table-scroll"><table className="hm"><caption className="sr-only">Sample mastery by student and topic</caption><thead><tr><th>Student</th>{TOPICS.map(t => <th key={t}>{t}</th>)}<th>Average</th></tr></thead><tbody>{roster.map(s => <tr key={s.id}><th scope="row"><button className="student-link" onClick={() => { setSelectedStudent(s.id); setView('mast'); }}>{s.name}</button></th>{s.scores.map((v,i) => <td key={i} className="cell" style={{ background: heatColor(v), color: bandInk(v) }}>{v}%</td>)}<td>{average(s.scores)}%</td></tr>)}</tbody></table></section>
       </>}
 
       {view === 'mast' && <>
@@ -250,7 +251,7 @@ export default function TeacherDemoPortal({ initialView = 'dash' }: { initialVie
       {view === 'review' && <>
         <div className="pbar"><div><div className="eyebrow">TEACHER APPROVAL</div><h1>Grade Review</h1><p className="sub">AI suggests; you approve. Amendments require a reason.</p></div></div>
         <div className="g2"><section className="card"><h2>Class {classId} review queue</h2>{roster.map(s => { const g = state.grades.find(g => g.studentId === s.id)!; return <button className="row demo-review-row" key={s.id} aria-pressed={student.id === s.id} onClick={() => { setSelectedStudent(s.id); setGradeScore(''); setReason(''); setMessage(''); }}><b>{s.name}</b><span className={`ch ${g.status === 'approved' ? 'g' : 'a'}`}>{g.status === 'approved' ? 'APPROVED' : 'PENDING'}</span></button>; })}</section>
-          <section className="card"><h2>{student.name}</h2><p className="muted">Algebra practice · maximum 15 marks</p><p className="note">{grade.status === 'approved' ? 'Official demo grade' : 'AI-suggested grade · not official'}: {grade.score}/15</p><form onSubmit={e => { e.preventDefault(); const score = gradeScore.trim() ? Number(gradeScore) : grade.score; if (act({ type: 'grade', classId, studentId: student.id, score, reason }, 'Grade saved with before/after history in this browser.')) { setGradeScore(''); setReason(''); } }}><label>Score out of 15<input aria-label="Score out of 15" type="number" min="0" max="15" step="0.5" value={gradeScore || String(grade.score)} onChange={e => setGradeScore(e.target.value)} required /></label><label>{grade.status === 'approved' ? 'Reason for amendment (required)' : 'Review note (optional)'}<textarea aria-label="Review reason" value={reason} onChange={e => setReason(e.target.value)} required={grade.status === 'approved'} maxLength={1000} /></label><button className="btn red" type="submit">{grade.status === 'approved' ? 'Save amendment' : 'Approve grade'}</button></form></section></div>
+          <section className="card"><h2>{student.name}</h2><p className="muted">Algebra practice · maximum 15 marks</p><p className="note">{grade.status === 'approved' ? 'Official demo grade' : 'AI-suggested grade · not official'}: {grade.score}/15</p><form onSubmit={e => { e.preventDefault(); const score = gradeScore.trim() ? Number(gradeScore) : grade.score; if (act({ type: 'grade', classId, studentId: student.id, score, reason }, 'Grade saved with before/after history in this browser.')) { setGradeScore(''); setReason(''); } }}><label>Score out of 15<input aria-label="Score out of 15" type="number" min="0" max="15" step="0.5" value={gradeScore || String(grade.score)} onChange={e => setGradeScore(e.target.value)} required /></label><label>{grade.status === 'approved' ? 'Reason for amendment (required)' : 'Review note (optional)'}<textarea aria-label="Review reason" value={reason} onChange={e => setReason(e.target.value)} required={grade.status === 'approved'} maxLength={1000} /></label><button className="btn pri" type="submit">{grade.status === 'approved' ? 'Save amendment' : 'Approve grade'}</button></form></section></div>
         <p className="muted" style={{ marginTop: 20 }}>Approval history is saved only in this browser.</p>
       </>}
 

@@ -89,7 +89,7 @@ function Homework() {
         </div>
       ) : (
         <div className="card">
-          <Empty icon={<InteractiveIcon icon={FileText} color={colorForIcon(FileText)} size={32} active />} title="Nothing submitted yet">
+          <Empty icon={<InteractiveIcon icon={FileText} size={32} active />} title="Nothing submitted yet">
             Work you hand in shows up here, with your grade and feedback once it&apos;s reviewed.
           </Empty>
         </div>

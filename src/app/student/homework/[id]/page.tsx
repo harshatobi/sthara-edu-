@@ -567,9 +567,9 @@ export default function HomeworkWorkspace() {
             <button
               disabled={!isTyped && pages.length === 0}
               onClick={() => setConfirmOpen(true)}
-              className="inline-flex items-center gap-2 px-[18px] py-[11px] rounded-xl bg-[#E11D48] text-white text-[13.5px] font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+              className={`inline-flex items-center gap-2 px-[18px] py-[11px] rounded-xl ${isTyped ? 'bg-[var(--role-btn)]' : 'ai-solid bg-[var(--ai)]'} text-white text-[13.5px] font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
             >
-              {isTyped ? 'Review & submit' : <>Submit for AI grading <ArrowRight size={15} weight="bold" /></>}
+              {isTyped ? 'Review & submit' : <><Sparkle size={15} weight="fill" aria-hidden="true" />Submit for AI grading <span className="ai-tag">AI</span><ArrowRight size={15} weight="bold" /></>}
             </button>
           )}
         </div>
@@ -590,8 +590,8 @@ export default function HomeworkWorkspace() {
                 <button disabled={submitting} onClick={() => setConfirmOpen(false)} className="flex-1 justify-center px-[18px] py-[11px] rounded-xl border border-[#E8EDF4] bg-white text-[13.5px] font-bold text-[#002147]">
                   Continue working
                 </button>
-                <button disabled={submitting} onClick={() => handleSubmit(false)} className="flex-1 justify-center inline-flex items-center gap-2 px-[18px] py-[11px] rounded-xl bg-[#E11D48] text-white text-[13.5px] font-bold">
-                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                <button disabled={submitting} onClick={() => handleSubmit(false)} className={`flex-1 justify-center inline-flex items-center gap-2 px-[18px] py-[11px] rounded-xl ${isTyped ? 'bg-[var(--role-btn)]' : 'bg-[var(--ai)]'} text-white text-[13.5px] font-bold`}>
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : !isTyped && <Sparkle size={15} weight="fill" aria-hidden="true" />}
                   {submitting ? (isTyped ? 'Submitting…' : 'Grading with AI…') : 'Submit assignment'}
                 </button>
               </div>

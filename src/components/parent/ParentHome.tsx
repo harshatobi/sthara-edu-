@@ -14,7 +14,7 @@ import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
-import { Bar, Donut, Empty } from '@/components/canon/ui';
+import { Bar, Donut, Empty, AiTag } from '@/components/canon/ui';
 import YearEndCard from '@/components/students/YearEndCard';
 import { ago, fmtDate, inr } from '@/lib/admin/format';
 import { ENERGY_LABEL, upcoming, workDone } from '@/lib/parent/family';
@@ -61,10 +61,10 @@ export default function ParentHome() {
                 )}
               </div>
               <form className="pa-ask" onSubmit={e => { e.preventDefault(); if (q.trim()) ask(q.trim()); }}>
-                <ChatsCircle size={22} weight="duotone" aria-hidden="true" />
+                <Sparkle size={22} weight="fill" aria-hidden="true" />
                 <label htmlFor="pa-ask-in" className="sr-only">Ask the School OS</label>
                 <input id="pa-ask-in" value={q} onChange={e => setQ(e.target.value)} placeholder={`Ask the School OS anything about ${c.firstName}…`} autoComplete="off" />
-                <button className="btn red" type="submit" disabled={!q.trim()}><PaperPlaneRight size={16} weight="fill" /> Ask</button>
+                <button className="btn ai" type="submit" disabled={!q.trim()}><PaperPlaneRight size={16} weight="fill" /> Ask <AiTag /></button>
               </form>
               <div className="pa-starters">
                 {starters.map(s => <button key={s} type="button" onClick={() => ask(s)}>{s}</button>)}

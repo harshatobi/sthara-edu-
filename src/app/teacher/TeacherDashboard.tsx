@@ -95,7 +95,7 @@ export default function TeacherDashboard() {
               <div className="vl">{avgTml !== null ? `${avgTml}%` : '—'}</div>
               <div className="nt">{avgTml === null ? 'Builds as you confirm grades' : lowest && desk.classes.length > 1 ? `Lowest: ${lowest.cls} at ${lowest.tml}%` : 'Across your classes'}</div>
             </div>
-            <div className="ic"><InteractiveIcon icon={ChartLineUp} color={colorForIcon(ChartLineUp)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={ChartLineUp} size={21} /></div>
           </button>
           <button className="hstat" onClick={() => router.push('/teacher/feed')}
             style={desk.flags.length ? { background: 'rgba(225,29,72,.16)', borderColor: 'rgba(225,29,72,.3)' } : undefined}>
@@ -112,12 +112,12 @@ export default function TeacherDashboard() {
               <div className="vl">{pending}</div>
               <div className="nt">{pending ? 'Needs your confirmation before it counts' : 'All caught up'}</div>
             </div>
-            <div className="ic"><InteractiveIcon icon={NotePencil} color={colorForIcon(NotePencil)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={NotePencil} size={21} /></div>
           </button>
         </div>
       </div>
 
-      <h3 className="sec"><span className="dot" style={{ background: '#FFE4EA', color: 'var(--red)' }}><BookOpen size={15} weight="bold" /></span>Your assigned classes</h3>
+      <h3 className="sec"><span className="dot" style={{ background: 'var(--role-w10)', color: 'var(--role-deep)' }}><BookOpen size={15} weight="bold" /></span>Your assigned classes</h3>
       {desk.classes.length ? (
         <div className="g3">
           {desk.classes.map(c => {

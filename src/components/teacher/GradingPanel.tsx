@@ -6,7 +6,7 @@ import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/Arr
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
-import { Chip, Skeleton, scoreTone } from '@/components/canon/ui';
+import { AiTag, Chip, Skeleton, scoreTone } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { marksOf, mcqCorrect, TYPE_LABEL, type Question } from '@/lib/teacher/questions';
 import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
@@ -209,7 +209,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 18px', background: '#F4F7FC', borderRadius: 14, flexWrap: 'wrap' }}>
             {suggested !== null && (
-              <div><div className="muted" style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em' }}>AI SUGGESTED</div><div style={{ fontSize: 22, fontWeight: 800 }}>{suggested}/{max}</div></div>
+              <div><div className="muted" style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em' }}>AI SUGGESTED <AiTag /></div><div style={{ fontSize: 22, fontWeight: 800 }}>{suggested}/{max}</div></div>
             )}
             <div style={{ flex: 1, minWidth: 12 }} />
             {perQuestion ? (
@@ -239,7 +239,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
           {error && <div className="err" role="alert" style={{ marginBottom: 12 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             {suggested !== null && <button className="btn" disabled={working === suggested} onClick={() => setOverall(suggested)}>Match AI score</button>}
-            <button className="btn red" disabled={saving} onClick={confirm}>
+            <button className="btn pri" disabled={saving} onClick={confirm}>
               <Check size={15} weight="bold" /> {saving ? 'Saving…' : sub.state === 'graded' ? 'Update grade' : 'Confirm grade'}
             </button>
             {sub.state === 'graded' && <Chip tone="g">Graded {sub.score}/{sub.max}</Chip>}

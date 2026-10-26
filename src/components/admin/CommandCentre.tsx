@@ -16,7 +16,6 @@ import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-ic
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { Bar, Empty, hmColor } from '@/components/canon/ui';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
-import { colorForIcon } from '@/lib/iconColors';
 import { subjectName, type AdminDesk } from '@/lib/admin/desk';
 import { STAGE_LABEL } from '@/lib/admin/admissions';
 import { ago, daysBetween, fmtDate, inr, inrShort, isoDay, pct, plural } from '@/lib/admin/format';
@@ -79,7 +78,7 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
               <div className="vl">{ac.schoolTml !== null ? `${ac.schoolTml}%` : '—'}</div>
               <div className="nt">{ac.schoolTml === null ? 'Builds as teachers confirm grades' : deltaText(ac.schoolTml, ac.schoolTmlBefore) ?? `${plural(ac.evidenced, 'student')} with evidence`}</div>
             </div>
-            <div className="ic"><InteractiveIcon icon={ChartLineUp} color={colorForIcon(ChartLineUp)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={ChartLineUp} size={21} /></div>
           </button>}
           {a.can('fees.read') && <button className="hstat" onClick={() => router.push('/admin/fees')}>
             <div>
@@ -87,7 +86,7 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
               <div className="vl">{fees.totals.collectionRate !== null ? `${Math.round(fees.totals.collectionRate)}%` : '—'}</div>
               <div className="nt">{fees.totals.billed ? `${inrShort(fees.totals.outstanding)} outstanding` : fees.structures.length ? 'No invoices raised yet' : 'Set fee structures to start billing'}</div>
             </div>
-            <div className="ic"><InteractiveIcon icon={CurrencyInr} color={colorForIcon(CurrencyInr)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={CurrencyInr} size={21} /></div>
           </button>}
           {a.can('wellness.read') && <button className="hstat" onClick={() => router.push('/admin/wellness')}
             style={filing.status === 'draft' && dueIn !== null && dueIn <= 30 ? { background: 'rgba(245,182,11,.16)', borderColor: 'rgba(245,182,11,.3)' } : undefined}>
@@ -100,7 +99,7 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
                 {filing.status === 'filed' ? `On ${fmtDate(filing.filedAt)}` : wl.participation !== null ? `${Math.min(100, wl.participation)}% of students checking in` : 'No check-ins yet this session'}
               </div>
             </div>
-            <div className="ic"><InteractiveIcon icon={Heart} color={colorForIcon(Heart)} size={21} /></div>
+            <div className="ic"><InteractiveIcon icon={Heart} size={21} /></div>
           </button>}
         </div>
       </div>

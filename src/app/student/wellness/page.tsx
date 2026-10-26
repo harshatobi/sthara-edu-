@@ -9,7 +9,7 @@ import { RocketIcon as Rocket } from '@phosphor-icons/react/dist/ssr/Rocket';
 import { NotePencilIcon as NotePencil } from '@phosphor-icons/react/dist/ssr/NotePencil';
 import { ShieldCheckIcon as ShieldCheck } from '@phosphor-icons/react/dist/ssr/ShieldCheck';
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
-import { Chip, Empty, PageBar, Skeleton, hmColor, type Tone } from '@/components/canon/ui';
+import { Chip, Empty, PageBar, Skeleton, heatColor, type Tone } from '@/components/canon/ui';
 import { dmy } from '@/lib/student/shape';
 import { useToast } from '@/components/canon/useToast';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
@@ -82,9 +82,9 @@ export default function WellnessPage() {
               const on = today === i;
               return (
                 <button key={lvl.label} className={`en-card${on ? ' on' : ''}`} aria-pressed={on} aria-label={lvl.label}
-                  style={{ '--lvl': hmColor(lvl.value) } as React.CSSProperties}
+                  style={{ '--lvl': heatColor(lvl.value) } as React.CSSProperties}
                   onClick={async () => { setSaved(''); await setEnergy(i); toast(`Energy logged as ${lvl.label}`); }}>
-                  <InteractiveIcon icon={Icon} color={hmColor(lvl.value)} size={30} active={on} />
+                  <InteractiveIcon icon={Icon} color={heatColor(lvl.value)} size={30} active={on} />
                   <div className="l">{lvl.label}</div>
                 </button>
               );
@@ -92,7 +92,7 @@ export default function WellnessPage() {
           </div>
           <p className="muted" style={{ fontSize: 12.5, marginBottom: 24 }} aria-live="polite">
             {today !== null
-              ? <>Today logged as <b style={{ color: hmColor(todayVal!) }}>{ENERGY_LEVELS[today].label}</b> — that&apos;s the last bar on your fortnight chart.</>
+              ? <>Today logged as <b style={{ color: heatColor(todayVal!) }}>{ENERGY_LEVELS[today].label}</b> — that&apos;s the last bar on your fortnight chart.</>
               : 'No check-in yet today.'}
           </p>
 
@@ -117,10 +117,10 @@ export default function WellnessPage() {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, height: 150 }} role="img"
               aria-label={`Fortnightly energy chart. Today is ${today !== null ? ENERGY_LEVELS[today].label : 'not logged'}.`}>
               {state.fortnight.map((d, i) => d.value !== null
-                ? <div key={i} title={`${d.day}: ${d.value}%`} style={{ flex: 1, height: `${d.value}%`, background: hmColor(d.value), borderRadius: '6px 6px 0 0', opacity: 0.55 }} />
+                ? <div key={i} title={`${d.day}: ${d.value}%`} style={{ flex: 1, height: `${d.value}%`, background: heatColor(d.value), borderRadius: '6px 6px 0 0', opacity: 0.55 }} />
                 : <div key={i} title={`${d.day}: no check-in`} style={{ flex: 1, height: '6%', background: '#EDF1F7', borderRadius: '6px 6px 0 0' }} />)}
               {todayVal !== null
-                ? <div style={{ flex: 1, height: `${todayVal}%`, background: hmColor(todayVal), borderRadius: '6px 6px 0 0', boxShadow: `0 0 0 2px #fff,0 0 0 4px ${hmColor(todayVal)}55`, transition: 'height .3s ease' }} />
+                ? <div style={{ flex: 1, height: `${todayVal}%`, background: heatColor(todayVal), borderRadius: '6px 6px 0 0', boxShadow: `0 0 0 2px #fff,0 0 0 4px ${heatColor(todayVal)}55`, transition: 'height .3s ease' }} />
                 : <div style={{ flex: 1, height: '14%', border: '2px dashed var(--line)', borderRadius: '6px 6px 0 0' }} />}
             </div>
             <div style={{ display: 'flex', gap: 9, marginTop: 7 }}>
@@ -148,7 +148,7 @@ export default function WellnessPage() {
       <h3 className="sec"><span className="dot" style={{ background: 'var(--pale)', color: 'var(--blue)' }}><NotePencil size={15} weight="bold" /></span>Your journal</h3>
       <div className="card">
         {state.entries.length === 0 ? (
-          <Empty icon={<InteractiveIcon icon={NotePencil} color="#7C3AED" size={30} active />} title="No journal entries yet">
+          <Empty icon={<InteractiveIcon icon={NotePencil} size={30} active />} title="No journal entries yet">
             Anything you save above will show up here for you to read later.
           </Empty>
         ) : state.entries.map(e => (

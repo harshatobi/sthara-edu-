@@ -50,7 +50,7 @@ export default function LabArtifact({ a, sample, onRefine }: { a: Extract<Artifa
       </div>
       {sample ? <div className="art-ft muted" style={{ fontSize: 12 }}>{sample}</div> : (
         <div className="art-ft">
-          <Link className="btn sm red" href={`/teacher/lab/present?scene=${link}`}><Presentation size={13} weight="fill" /> Present to class</Link>
+          <Link className="btn sm pri" href={`/teacher/lab/present?scene=${link}`}><Presentation size={13} weight="fill" /> Present to class</Link>
           <Link className="btn sm" href={`/teacher/lab/build?scene=${link}`}><Flask size={13} weight="bold" /> Open in Live Lab</Link>
           <button className="btn sm" onClick={() => setRunKey(k => k + 1)}><Play size={13} weight="fill" /> Run</button>
           <span style={{ flex: 1 }} />

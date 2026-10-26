@@ -5,6 +5,7 @@ import { RESULT_LABEL } from '@/lib/exams/card';
 import { fmtDate } from '@/lib/admin/format';
 import PrintFoot from '@/components/ui/PrintFoot';
 import '@/styles/exams.css';
+import { engineBandLabel } from '@/lib/tml/bands';
 
 /** Prints the report cards on the page (and nothing else), one per A4 sheet. */
 export function printCards() {
@@ -159,7 +160,7 @@ export default function ReportCard({ card, doc = true, preview = false }: { card
             <>
               <h2>Mastery (Sthara TML)</h2>
               <ul className="rc-tml">
-                {c.tml.map(t => <li key={t.subject}><span className="rc-dot" style={{ background: t.color }} aria-hidden="true" />{t.subject}<b>{t.band}</b></li>)}
+                {c.tml.map(t => <li key={t.subject}><span className="rc-dot" style={{ background: t.color }} aria-hidden="true" />{t.subject}<b>{engineBandLabel(t.band, 'family')}</b></li>)}
               </ul>
               <p className="rc-note">How securely the student has learnt each subject so far, from homework, quizzes and tutor work. Not part of the marks.</p>
             </>

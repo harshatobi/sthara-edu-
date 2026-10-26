@@ -4,11 +4,20 @@
  * src/styles/canon.css — these render canon class names, not Tailwind.
  */
 import type { ReactNode } from 'react';
+import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
+import { bandColor, bandInk, bandLabel, type BandAudience } from '@/lib/tml/bands';
 
 export type Tone = 'g' | 'a' | 'r' | 'b' | 'p' | 'n';
 
-/** Heat colour for a 0–100 score — identical thresholds to the mockup and the teacher heat map. */
-export const hmColor = (v: number) =>
+/** Colour for a 0–100 mastery score: its TML band (lib/tml/bands), the same in every role. */
+export const hmColor = (v: number) => bandColor(v);
+/** Text colour on a band fill (heat-map cells, filled avatars). */
+export const hmInk = (v: number) => bandInk(v);
+/**
+ * The older five-step heat scale, for 0–100 figures that aren't mastery scores (wellness energy, syllabus
+ * coverage), so they don't read as TML bands.
+ */
+export const heatColor = (v: number) =>
   v >= 75 ? '#10B981' : v >= 55 ? '#5FC79B' : v >= 40 ? '#F5B60B' : v >= 25 ? '#F98A4B' : '#E11D48';
 
 /** Chip tone for a raw score/total (≥80% green, ≥60% amber, else red) — the mockup's scoreChip(). */
@@ -36,6 +45,16 @@ export function Donut({ value, color, size = 96 }: { value: number; color: strin
         strokeDasharray={`${(c * Math.max(0, Math.min(100, value))) / 100} ${c}`} transform="rotate(-90 50 50)" />
     </svg>
   );
+}
+
+/** The marker every AI use of crimson carries: the Sparkle and a small "AI" tag (never shown on risk). */
+export function AiTag({ label = 'AI' }: { label?: string }) {
+  return <span className="ai-tag"><Sparkle size={10} weight="fill" aria-hidden="true" />{label}</span>;
+}
+
+/** A mastery score's band as a pill: the label always travels with the colour. */
+export function BandPill({ score, audience, className = '' }: { score: number; audience: BandAudience; className?: string }) {
+  return <span className={`band-pill ${className}`} style={{ background: bandColor(score), color: bandInk(score) }}>{bandLabel(score, audience)}</span>;
 }
 
 export function PageBar({ eyebrow, title, sub, actions }: { eyebrow: string; title: ReactNode; sub?: ReactNode; actions?: ReactNode }) {

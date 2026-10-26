@@ -78,7 +78,7 @@ export default function SyllabusWorkspace() {
         actions={<>
           <ScopePicker classes={classes} cls={cls} subjects={subjects} subject={subject}
             onChange={n => go({ class: n.class ?? cls, subject: n.subject ?? (n.class ? null : subject), lesson: null })} />
-          {!noCurriculum && <button className="btn red" onClick={() => openLesson('new', { date: today })}><Plus size={15} weight="bold" /> Plan a lesson</button>}
+          {!noCurriculum && <button className="btn pri" onClick={() => openLesson('new', { date: today })}><Plus size={15} weight="bold" /> Plan a lesson</button>}
         </>} />
 
       {course.error && <div className="note err" role="alert" style={{ marginBottom: 18 }}>Couldn&apos;t load the syllabus: {course.error}</div>}

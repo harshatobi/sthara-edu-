@@ -42,10 +42,10 @@ export default function AuthStatus() {
   return (
     <div className="min-h-[100dvh] flex bg-[#F7F9FB]" role="status" aria-live="polite">
       <span className="sr-only">Checking your account and school access</span>
-      <aside aria-hidden="true" className="hidden md:flex w-[264px] shrink-0 flex-col bg-[#062347] px-[18px] py-[26px]">
+      <aside aria-hidden="true" className="hidden md:flex w-[264px] shrink-0 flex-col bg-[#002147] px-[18px] py-[26px]">
         <div className="px-2.5 pb-[26px]">
           <b className="block text-white text-[26px] font-extrabold tracking-tight">Sthara</b>
-          <span className="block mt-2 h-2 w-24 rounded bg-[#E11D48]/50" />
+          <span className="block mt-2 h-2 w-24 rounded bg-white/25" />
         </div>
         {[0, 1, 2, 3, 4].map(i => (
           <div key={i} className="flex items-center gap-3 px-3.5 py-3">
@@ -55,7 +55,7 @@ export default function AuthStatus() {
         ))}
       </aside>
       <main aria-hidden="true" className="flex-1 min-w-0 p-4 md:px-[34px] md:py-[26px]">
-        <div className="h-[260px] rounded-3xl bg-gradient-to-r from-[#072044] via-[#123F84] to-[#0F5AB8] opacity-90 motion-safe:animate-pulse" />
+        <div className="h-[260px] rounded-3xl bg-[#002147] opacity-90 motion-safe:animate-pulse" />
         <div className="grid md:grid-cols-2 gap-[18px] mt-[22px]">
           <div className="bg-white rounded-[20px] p-[26px] space-y-4">
             <div className={`${bar} h-5 w-48`} />

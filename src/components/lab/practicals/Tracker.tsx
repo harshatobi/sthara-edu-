@@ -214,7 +214,7 @@ function MarksPanel({ target, students, evidence }: { target: ClassOption; stude
             </div>
           )}
           <div className="lab-transport" style={{ marginTop: 12 }}>
-            <button className="btn red" disabled={!Object.keys(vals).length || busy || sheet.status !== 'open'} onClick={send}><PaperPlaneTilt size={15} weight="fill" /> {busy ? 'Saving…' : 'Save to the marks sheet'}</button>
+            <button className="btn pri" disabled={!Object.keys(vals).length || busy || sheet.status !== 'open'} onClick={send}><PaperPlaneTilt size={15} weight="fill" /> {busy ? 'Saving…' : 'Save to the marks sheet'}</button>
             {msg && <span className="muted" role="status" style={msg.ok ? undefined : { color: 'var(--red)' }}>{msg.text}</span>}
           </div>
         </>
@@ -326,7 +326,7 @@ function PartsPanel({ target, students, scheme, evidence, call }: {
             </div>
           )}
           <div className="lab-transport" style={{ marginTop: 12 }}>
-            <button className="btn red" disabled={!Object.keys(vals).length || busy || !open} onClick={send}><PaperPlaneTilt size={15} weight="fill" /> {busy ? 'Saving…' : 'Save to the marks sheet'}</button>
+            <button className="btn pri" disabled={!Object.keys(vals).length || busy || !open} onClick={send}><PaperPlaneTilt size={15} weight="fill" /> {busy ? 'Saving…' : 'Save to the marks sheet'}</button>
             {Object.keys(vals).length > 0 && <button className="btn" onClick={() => setVals({})} disabled={busy}>Undo changes</button>}
             {msg && <span className="muted" role="status" style={msg.ok ? undefined : { color: 'var(--red)' }}>{msg.text}</span>}
           </div>

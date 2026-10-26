@@ -18,7 +18,7 @@ import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/C
 import { EnvelopeSimpleIcon as EnvelopeSimple } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
-import { PageBar, Skeleton, type Tone } from '@/components/canon/ui';
+import { AiTag, PageBar, Skeleton, type Tone } from '@/components/canon/ui';
 import WhatsAppSimulator from '@/components/whatsapp/Simulator';
 import { useAuth } from '@/contexts/AuthContext';
 import type { StaffAction, StaffReply, StaffTurn } from '@/lib/staff/ask';
@@ -141,12 +141,12 @@ export default function StaffAskPage({ role }: { role: 'teacher' | 'leadership' 
             {err && <div className="note err" role="alert"><Warning size={15} weight="bold" /> {err} <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => void send(draft)}>Try again</button></div>}
             <div ref={streamEnd} />
           </div>
-          <form className="cp-input" onSubmit={e => { e.preventDefault(); void send(draft); }}>
+          <form className="cp-input ask-ai" onSubmit={e => { e.preventDefault(); void send(draft); }}>
             <label htmlFor="staff-ask-in" className="sr-only">Your question</label>
             <textarea id="staff-ask-in" rows={1} value={draft} onChange={e => setDraft(e.target.value)} disabled={busy}
               placeholder={role === 'teacher' ? 'Ask about your classes, students, homework or parents…' : 'Ask about the school…'}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(draft); } }} />
-            <button className="btn pri" type="submit" disabled={busy || !draft.trim()} aria-label="Send"><PaperPlaneRight size={17} weight="fill" /></button>
+            <button className="btn ai" type="submit" disabled={busy || !draft.trim()} aria-label="Send"><PaperPlaneRight size={17} weight="fill" /><AiTag /></button>
           </form>
         </div>
 

@@ -8,7 +8,7 @@ import { NotebookIcon as Notebook } from '@phosphor-icons/react/dist/ssr/Noteboo
 import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
 import { ClipboardTextIcon as ClipboardText } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
-import { Bar, Chip, hmColor } from '@/components/canon/ui';
+import { Bar, Chip, heatColor } from '@/components/canon/ui';
 import type { Course } from '@/lib/teacher/useCourse';
 import { fmtDay, paceOf, PACE_LABEL, PACE_TONE, STATUS_LABEL, STATUS_ORDER, STATUS_TONE, type CourseChapterView, type TopicStatus } from '@/lib/teacher/course';
 import type { LessonPrefill } from './SyllabusWorkspace';
@@ -82,7 +82,7 @@ export default function CoverageView({ course, cls, subject, tmlByChapter, today
           <div key={c.key} className={`syl-ch${isOpen ? ' open' : ''}`}>
             <div className="top">
               <button className="hd" onClick={() => setOpen(s => toggle(s, c.key))} aria-expanded={isOpen}>
-                <div className="av" style={{ background: c.pct ? hmColor(c.pct) : '#EAF2FF', color: c.pct ? '#fff' : 'var(--blue)', borderRadius: 11, fontSize: 13 }}>{String(c.seq).padStart(2, '0')}</div>
+                <div className="av" style={{ background: c.pct ? heatColor(c.pct) : '#EAF2FF', color: c.pct ? '#fff' : 'var(--blue)', borderRadius: 11, fontSize: 13 }}>{String(c.seq).padStart(2, '0')}</div>
                 <div style={{ minWidth: 0 }}>
                   <h3 style={{ fontSize: 18, fontWeight: 800 }}>{c.name}</h3>
                   <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>
@@ -97,7 +97,7 @@ export default function CoverageView({ course, cls, subject, tmlByChapter, today
                 <Chip tone={assessments.length ? 'b' : c.taught ? 'a' : 'n'}>{assessments.length ? `${assessments.length} ASSESSMENT${assessments.length === 1 ? '' : 'S'}` : 'NOT ASSESSED'}</Chip>
                 {lessons.length > 0 && <Chip tone="p">{lessons.length} LESSON{lessons.length === 1 ? '' : 'S'}</Chip>}
                 {tml !== null && <Chip tone={tml >= 75 ? 'g' : tml >= 40 ? 'a' : 'r'} title="Class TML on this chapter">TML {tml}%</Chip>}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 170 }}><Bar value={c.pct} /><b style={{ width: 42, textAlign: 'right', color: c.pct ? hmColor(c.pct) : 'var(--mut2)' }}>{c.pct}%</b></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 170 }}><Bar value={c.pct} color={heatColor(c.pct)} /><b style={{ width: 42, textAlign: 'right', color: c.pct ? heatColor(c.pct) : 'var(--mut2)' }}>{c.pct}%</b></div>
               </div>
             </div>
 

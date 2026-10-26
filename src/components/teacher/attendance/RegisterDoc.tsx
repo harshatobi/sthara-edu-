@@ -1,12 +1,13 @@
 'use client';
 
-import { MARKS, MARK_LABEL, MARK_SHORT, MIN_PCT, absentStreak, belowMin, tally, trendDelta, weeklyTrend, type SchoolDay } from '@/lib/attendance/register';
+import { memo, useEffect, useState } from 'react';
+import { MARKS, MARK_LABEL, MARK_SHORT, MIN_PCT, absentStreak, belowMin, fmtDay, tally, trendDelta, weeklyTrend, type SchoolDay } from '@/lib/attendance/register';
 import { TrendChart, weeklyPts } from '@/components/canon/TrendLine';
 import type { History } from './useRegister';
 
 export interface DocStudent { id: string; name: string; rollNo: string }
 
-const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { ...o, timeZone: 'UTC' });
+const fmt = fmtDay;
 
 /**
  * Prints the register document on the page (and only it) as an A4 PDF: the browser's print dialog,
@@ -14,17 +15,33 @@ const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T00:00:0
  */
 export function printRegister() {
   document.body.classList.add('print-register');
+  window.dispatchEvent(new Event('register-print'));
   const done = () => { document.body.classList.remove('print-register'); window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
   // Let the class land (and charts lay out) before the dialog snapshots the page.
   requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
 }
 
+const nowIst = () => new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
+
+/** The time the sheet was printed, refreshed as printing starts (the document itself rarely re-renders). */
+function PrintedAt() {
+  const [at, setAt] = useState(nowIst);
+  useEffect(() => {
+    const h = () => setAt(nowIst());
+    // register-print lands before printRegister's two frames; beforeprint covers the browser's own Print.
+    window.addEventListener('register-print', h);
+    window.addEventListener('beforeprint', h);
+    return () => { window.removeEventListener('register-print', h); window.removeEventListener('beforeprint', h); };
+  }, []);
+  return <>{at}</>;
+}
+
 /**
  * The register as a document: hidden on screen, the only thing printed under body.print-register.
  * Shows the saved register (what the school's records say), never unsaved edits.
  */
-export default function RegisterDoc(p: {
+function RegisterDoc(p: {
   kind: 'day' | 'month';
   school: string;
   cls: string;
@@ -39,7 +56,6 @@ export default function RegisterDoc(p: {
   month?: string;
   days?: SchoolDay[];
 }) {
-  const printedAt = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
   const classTrend = weeklyTrend(p.roster.map(s => p.history.marks[s.id] || {}), p.sessionStart, p.today);
   const delta = trendDelta(classTrend);
 
@@ -81,7 +97,7 @@ export default function RegisterDoc(p: {
         </table>
         <p className="rd-fine">Session % = days present or late, of days marked since {fmt(p.sessionStart, { day: 'numeric', month: 'short', year: 'numeric' })}. ▼ marks a student under {MIN_PCT}%, the CBSE minimum for board exams.</p>
         <div className="rd-sign"><div>Class teacher</div><div>Principal</div></div>
-        <footer className="rd-foot">Printed {printedAt} from the school&apos;s live records</footer>
+        <footer className="rd-foot">Printed <PrintedAt /> from the school&apos;s live records</footer>
       </div>
     );
   }
@@ -142,9 +158,12 @@ export default function RegisterDoc(p: {
           </div>
         </div>
         <div className="rd-sign"><div>Class teacher</div><div>Principal</div></div>
-        <footer className="rd-foot">Printed {printedAt} from the school&apos;s live records</footer>
+        <footer className="rd-foot">Printed <PrintedAt /> from the school&apos;s live records</footer>
       </div>
     );
   }
   return null;
 }
+
+// Hidden until printed; skip re-rendering it while the teacher marks the day.
+export default memo(RegisterDoc);

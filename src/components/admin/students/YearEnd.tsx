@@ -57,7 +57,7 @@ export default function YearEnd() {
                     <td><b>{c.cls}</b></td>
                     <td>{c.classTeacher ?? <span className="muted">Not set</span>}</td>
                     <td className="c">{c.total}</td>
-                    <td><Bar value={c.total ? (done / c.total) * 100 : 0} /><div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                    <td><Bar value={c.total ? (done / c.total) * 100 : 0} color="var(--role-deep)" /><div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
                       {c.by.proposed + c.by.approved + done} proposed · {c.by.approved + done} approved · {done} final{c.by.returned ? ` · ${c.by.returned} returned` : ''}</div></td>
                     <td><Chip tone={c.by.published === c.total ? 'g' : 'b'}>{step.toUpperCase()}</Chip></td>
                   </tr>

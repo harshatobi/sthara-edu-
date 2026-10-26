@@ -5,7 +5,8 @@ import type { ReactNode } from 'react';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { FilePdfIcon as FilePdf } from '@phosphor-icons/react/dist/ssr/FilePdf';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
-import { AT_RISK, BANDS, bandOf, LEAVE_TYPES, subjectName, type AdminDesk, type TeacherRow } from '@/lib/admin/desk';
+import { AT_RISK, BANDS, LEAVE_TYPES, subjectName, type AdminDesk, type TeacherRow } from '@/lib/admin/desk';
+import { bandColor, bandInk } from '@/lib/tml/bands';
 import { PAY_MODES } from '@/lib/admin/fees';
 import { STAGE_LABEL, STAGE_COLOR, STAGE_ONE } from '@/lib/admin/admissions';
 import { boardPackRows } from '@/lib/admin/boardPack';
@@ -28,7 +29,8 @@ export default function BoardPack() {
 
 const PAGES = 5;
 /** One colour scale for the whole pack: the TML specification's mastery bands, matching the key on page 2. */
-const hmColor = (v: number) => BANDS.find(b => b.key === bandOf(v))!.color;
+const hmColor = bandColor;
+const hmInk = bandInk;
 /** Rows that fit on page 5; the spreadsheet carries everyone. */
 /** What fits beside the trend chart on the attendance page (one A4 sheet, nothing clipped); the spreadsheet carries the rest. */
 const CLASS_ROWS = 10;
@@ -197,7 +199,7 @@ function Pack({ desk }: { desk: AdminDesk }) {
                 <td className="nm">Grade {g.grade}</td>
                 {ac.subjects.map(s => {
                   const c = ac.matrix.find(m => m.grade === g.grade && m.subject === s);
-                  return <td key={s} className={c?.tml == null ? 'na' : undefined} style={{ background: c?.tml != null ? hmColor(c.tml) : undefined }}>
+                  return <td key={s} className={c?.tml == null ? 'na' : undefined} style={{ background: c?.tml != null ? hmColor(c.tml) : undefined, color: c?.tml != null ? hmInk(c.tml) : undefined }}>
                     {c?.tml != null ? <>{c.tml}<small> n={c.n}</small></> : '—'}
                   </td>;
                 })}

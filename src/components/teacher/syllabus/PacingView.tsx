@@ -75,11 +75,11 @@ export default function PacingView({ course, today, onToast }: { course: Course;
           <button className="btn pri" disabled={!!busy || (!dirty && course.plan.saved)} onClick={saveTerm}>{busy === 'term' ? 'Saving…' : 'Save term'}</button>
           {planned && !confirmReplan
             ? <button className="btn" disabled={!!busy} onClick={() => setConfirmReplan(true)}><MagicWand size={14} weight="bold" /> Re-plan all chapters</button>
-            : !planned && <button className="btn red" disabled={!!busy} onClick={autoPlan}><MagicWand size={14} weight="fill" /> {busy === 'auto' ? 'Planning…' : 'Auto-plan chapters'}</button>}
+            : !planned && <button className="btn pri" disabled={!!busy} onClick={autoPlan}><MagicWand size={14} weight="fill" /> {busy === 'auto' ? 'Planning…' : 'Auto-plan chapters'}</button>}
           {confirmReplan && (
             <>
               <span className="muted" style={{ fontSize: 12.5 }}>This replaces every chapter&apos;s window.</span>
-              <button className="btn red" disabled={!!busy} onClick={autoPlan}>{busy === 'auto' ? 'Planning…' : 'Replace windows'}</button>
+              <button className="btn pri" disabled={!!busy} onClick={autoPlan}>{busy === 'auto' ? 'Planning…' : 'Replace windows'}</button>
               <button className="btn" onClick={() => setConfirmReplan(false)}>Keep mine</button>
             </>
           )}
@@ -97,7 +97,7 @@ export default function PacingView({ course, today, onToast }: { course: Course;
           <div className="legend">
             <span><i style={{ background: '#DCE6F8' }} />Planned window</span>
             <span><i style={{ background: 'var(--blue)' }} />Taught so far</span>
-            <span><i style={{ background: 'var(--red)', width: 3 }} />Today</span>
+            <span><i style={{ background: 'var(--role-deep)', width: 3 }} />Today</span>
           </div>
         </div>
         {!planned && <p className="muted" style={{ marginBottom: 14, fontSize: 13.5 }}>No chapter windows yet. Auto-plan fills the term in teaching order, weighted by the periods the curriculum allots each chapter; you can then adjust any chapter.</p>}

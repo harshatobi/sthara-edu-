@@ -47,7 +47,7 @@ export default function PaperArtifact({ a, onRefine }: { a: Extract<Artifact, { 
         </div>
       </div>
       <div className="art-ft">
-        <button className="btn sm red" onClick={print}><Printer size={13} weight="bold" /> Print {tab === 'paper' ? 'question paper' : 'marking scheme'}</button>
+        <button className="btn sm pri" onClick={print}><Printer size={13} weight="bold" /> Print {tab === 'paper' ? 'question paper' : 'marking scheme'}</button>
         <span style={{ flex: 1 }} />
         {onRefine && <button className="btn sm" onClick={() => onRefine('Make another paper with different questions')}><ArrowsClockwise size={13} weight="bold" /> Another paper</button>}
       </div>

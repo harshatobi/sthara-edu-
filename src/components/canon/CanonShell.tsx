@@ -11,7 +11,7 @@ import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import TrialBanner from '@/components/ui/TrialBanner';
 import PlatformNotice from '@/components/ui/PlatformNotice';
 import NotificationBell from './NotificationBell';
-import { colorForIcon } from '@/lib/iconColors';
+import { AiTag } from './ui';
 import { useAuth } from '@/contexts/AuthContext';
 import '@/styles/canon.css';
 
@@ -25,7 +25,17 @@ export interface CanonNavItem {
   short?: string;
   /** Other routes this entry owns (e.g. a nav item whose page has sibling tabs). */
   also?: string[];
+  /** An AI entry point (tutor, assistant, Probe, Ask): crimson icon plus the "AI" tag. */
+  ai?: boolean;
 }
+
+/** Whose desk this is; sets data-role on the shell, which picks the role colour tokens in canon.css. */
+export type CanonRole = 'student' | 'teacher' | 'admin' | 'parent' | 'ops';
+
+const INDIC_FONTS = `https://fonts.googleapis.com/css2?${[
+  'Noto+Sans+Devanagari', 'Noto+Sans+Bengali', 'Noto+Sans+Gujarati', 'Noto+Sans+Gurmukhi', 'Noto+Sans+Oriya',
+  'Noto+Sans+Tamil', 'Noto+Sans+Telugu', 'Noto+Sans+Kannada', 'Noto+Sans+Malayalam',
+].map(f => `family=${f}:wght@400;600;700`).join('&')}&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap`;
 
 /** Tabs that fit the phone bar; the rest (and sign-out) live behind "More". */
 const PHONE_TABS = 4;
@@ -35,7 +45,8 @@ const PHONE_TABS = 4;
  * layout: each nav entry is a real URL instead of the mockup's go(role, view)
  * innerHTML swap. Role-agnostic so teacher/admin/parent can move onto it too.
  */
-export default function CanonShell({ subtitle, nav, label, children, inbox }: {
+export default function CanonShell({ role, subtitle, nav, label, children, inbox }: {
+  role: CanonRole;
   subtitle: string;
   nav: CanonNavItem[];
   label: string;
@@ -63,13 +74,16 @@ export default function CanonShell({ subtitle, nav, label, children, inbox }: {
   }, [moreOpen]);
 
   return (
-    <div className="canon">
+    <div className="canon" data-role={role}>
       {/* Fonts the canon type scale is drawn in; React hoists this into <head>. */}
       <link
         rel="stylesheet"
         precedence="default"
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
       />
+      {/* Noto fallbacks for every Indian script in the curriculum. Each face carries a unicode-range, so a
+          script's file downloads only when text in that script is on the page. */}
+      <link rel="stylesheet" precedence="default" href={INDIC_FONTS} />
       <a className="skip" href="#canon-main">Skip to content</a>
       <aside>
         <div className="brand"><b>Sthara</b><i>{subtitle}</i></div>
@@ -78,15 +92,16 @@ export default function CanonShell({ subtitle, nav, label, children, inbox }: {
             const on = isOn(item);
             return (
               <Link key={item.href} href={item.href} className={`nv${on ? ' on' : ''}`} aria-current={on ? 'page' : undefined} title={item.label}>
-                <InteractiveIcon icon={item.icon} color={colorForIcon(item.icon)} active={on} />
+                <InteractiveIcon icon={item.icon} ai={item.ai} active={on} />
                 <span className="lbl-t">{item.label}</span>
+                {item.ai && <AiTag />}
               </Link>
             );
           })}
         </nav>
         <div className="nv-out">
           <button className="nv" onClick={() => signOut()} title="Sign out">
-            <InteractiveIcon icon={SignOut} color={colorForIcon(SignOut)} />
+            <InteractiveIcon icon={SignOut} />
             <span className="lbl-t">Sign out</span>
           </button>
         </div>
@@ -104,14 +119,14 @@ export default function CanonShell({ subtitle, nav, label, children, inbox }: {
           const on = isOn(item);
           return (
             <Link key={item.href} href={item.href} className={on ? 'on' : undefined} aria-current={on ? 'page' : undefined}>
-              <InteractiveIcon icon={item.icon} color={colorForIcon(item.icon)} active={on} size={20} />
+              <InteractiveIcon icon={item.icon} ai={item.ai} active={on} size={20} />
               <span className="t">{item.short ?? item.label}</span>
             </Link>
           );
         })}
         <button type="button" className={overflowOn ? 'on' : undefined} aria-haspopup="dialog" aria-expanded={moreOpen}
           onClick={() => setMoreOpen(o => !o)}>
-          <InteractiveIcon icon={DotsThreeCircle} color={colorForIcon(DotsThreeCircle)} active={overflowOn || moreOpen} size={20} />
+          <InteractiveIcon icon={DotsThreeCircle} active={overflowOn || moreOpen} size={20} />
           <span className="t">More</span>
         </button>
       </nav>
@@ -129,13 +144,14 @@ export default function CanonShell({ subtitle, nav, label, children, inbox }: {
               return (
                 <Link key={item.href} href={item.href} className={on ? 'on' : undefined} aria-current={on ? 'page' : undefined}
                   onClick={() => setMoreOpen(false)}>
-                  <InteractiveIcon icon={item.icon} color={colorForIcon(item.icon)} active={on} size={20} />
+                  <InteractiveIcon icon={item.icon} ai={item.ai} active={on} size={20} />
                   <span>{item.label}</span>
+                  {item.ai && <AiTag />}
                 </Link>
               );
             })}
             <button type="button" className="out" onClick={() => signOut()}>
-              <InteractiveIcon icon={SignOut} color={colorForIcon(SignOut)} size={20} />
+              <InteractiveIcon icon={SignOut} size={20} />
               <span>Sign out</span>
             </button>
           </div>

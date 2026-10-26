@@ -34,7 +34,7 @@ import { TeacherDeskProvider } from '@/lib/teacher/useTeacherDesk';
 const NAV: CanonNavItem[] = [
   { href: '/teacher', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true },
   { href: '/teacher/schedule', label: 'My Schedule', short: 'Schedule', icon: CalendarDots },
-  { href: '/teacher/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle },
+  { href: '/teacher/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle, ai: true },
   { href: '/teacher/attendance', label: 'Attendance', short: 'Register', icon: CalendarCheck },
   { href: '/teacher/exams', label: 'Exams & Marks', short: 'Exams', icon: Exam },
   { href: '/teacher/outcomes', label: 'Year-End Outcomes', short: 'Year end', icon: GraduationCap },
@@ -42,11 +42,11 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher/conduct', label: 'Conduct & Care', short: 'Conduct', icon: HandHeart },
   { href: '/teacher/timeline', label: 'Student Timelines', short: 'Timelines', icon: ClockCounterClockwise },
   { href: '/teacher/homework', label: 'Homework', icon: FileText },
-  { href: '/teacher/quiz', label: 'Quiz Creator', short: 'Quiz', icon: ClipboardText },
+  { href: '/teacher/quiz', label: 'Quiz Creator', short: 'Quiz', icon: ClipboardText, ai: true },
   { href: '/teacher/messages', label: 'Parent Messages', short: 'Parents', icon: EnvelopeSimple },
   { href: '/teacher/syllabus', label: 'Syllabus', icon: Lightning },
-  { href: '/teacher/ai-assistant', label: 'AI Assistant', short: 'AI', icon: Brain },
-  { href: '/teacher/lab', label: 'Live Lab', short: 'Lab', icon: Flask },
+  { href: '/teacher/ai-assistant', label: 'AI Assistant', short: 'AI', icon: Brain, ai: true },
+  { href: '/teacher/lab', label: 'Live Lab', short: 'Lab', icon: Flask, ai: true },
   { href: '/teacher/heatmap', label: 'Class Heat Map', short: 'Heat map', icon: Fire },
   { href: '/teacher/mastery', label: 'Mastery Tracker', short: 'Mastery', icon: ChartLineUp },
   { href: '/teacher/feed', label: 'Situational Feed', short: 'Feed', icon: Bell },
@@ -72,7 +72,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   }
   return (
     <TeacherDeskProvider>
-      <CanonShell subtitle="TEACHING COPILOT" nav={NAV} label="Teacher navigation" inbox>{children}</CanonShell>
+      <CanonShell role="teacher" subtitle="TEACHING COPILOT" nav={NAV} label="Teacher navigation" inbox>{children}</CanonShell>
     </TeacherDeskProvider>
   );
 }

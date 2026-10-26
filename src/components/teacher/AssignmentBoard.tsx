@@ -116,7 +116,7 @@ export default function AssignmentBoard({ kind }: { kind: 'work' | 'quiz' }) {
     return (
       <>
         <PageBar eyebrow={eyebrow} title={title} sub={sub$}
-          actions={classes.length ? <button className="btn red" onClick={() => go({ new: '1' })}><Plus size={15} weight="bold" /> {isQuiz ? 'New quiz' : 'Assign homework'}</button> : undefined} />
+          actions={classes.length ? <button className="btn pri" onClick={() => go({ new: '1' })}><Plus size={15} weight="bold" /> {isQuiz ? 'New quiz' : 'Assign homework'}</button> : undefined} />
         {classTabs}
         {!classes.length ? (
           <div className="card"><Empty icon={<Warning size={26} weight="duotone" />} title="No classes assigned yet">
@@ -188,12 +188,12 @@ export default function AssignmentBoard({ kind }: { kind: 'work' | 'quiz' }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
             <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: '14px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--red)' }}>{a.submissions.length}<span style={{ color: 'var(--mut2)', fontSize: 18 }}>/{a.roster.length}</span></div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--role-deep)' }}>{a.submissions.length}<span style={{ color: 'var(--mut2)', fontSize: 18 }}>/{a.roster.length}</span></div>
               <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.06em' }}>SUBMITTED</div>
             </div>
             {!sub && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                {!draft && a.roster.length > 0 && <button className="btn red" onClick={() => go({ capture: '1' })}><Camera size={15} weight="fill" /> Capture notebooks</button>}
+                {!draft && a.roster.length > 0 && <button className="btn pri" onClick={() => go({ capture: '1' })}><Camera size={15} weight="fill" /> Capture notebooks</button>}
                 <button className="btn" onClick={() => go({ edit: '1' })}><PencilSimple size={14} weight="bold" /> Edit</button>
                 {canUnpost && <button className="btn" disabled={!!busy} onClick={() => act('unpost', () => call('/api/teacher/assignments', 'PATCH', { id: a.id, status: 'draft' }), 'Withdrawn to draft')}>{busy === 'unpost' ? 'Withdrawing…' : 'Withdraw to draft'}</button>}
                 {canDelete && !confirmDelete && <button className="btn" onClick={() => setConfirmDelete(true)}><Trash size={14} weight="bold" /> Delete</button>}
@@ -218,7 +218,7 @@ export default function AssignmentBoard({ kind }: { kind: 'work' | 'quiz' }) {
             {draft && (
               <div className="note" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <span>This is a draft. Students in {a.cls} can&apos;t see it yet.{!a.dueAt ? ' Set a due date before posting.' : ''}</span>
-                <button className="btn red" disabled={!!busy} onClick={() => act('post', () => call('/api/teacher/assignments', 'PATCH', { id: a.id, status: 'published' }), `Posted to ${a.cls}`)}>
+                <button className="btn pri" disabled={!!busy} onClick={() => act('post', () => call('/api/teacher/assignments', 'PATCH', { id: a.id, status: 'published' }), `Posted to ${a.cls}`)}>
                   <PaperPlaneTilt size={15} weight="fill" /> {busy === 'post' ? 'Posting…' : `Post to ${a.cls}`}
                 </button>
               </div>

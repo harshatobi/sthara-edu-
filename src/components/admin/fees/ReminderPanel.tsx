@@ -46,7 +46,7 @@ export default function ReminderPanel({ families, school, guardianCount, call, o
 
   return (
     <Workspace wide title="Stage fee reminders" sub={`${plural(families.length, 'family', 'families')} with a balance${blocked ? ` · ${blocked} can't be reminded yet` : ''} · sent in-app to each verified parent`} onClose={onClose}
-      actions={<button className="btn red" disabled={busy || !picked.size} onClick={send}>{busy ? 'Sending…' : `Send ${plural(picked.size, 'reminder')}`}</button>}>
+      actions={<button className="btn pri" disabled={busy || !picked.size} onClick={send}>{busy ? 'Sending…' : `Send ${plural(picked.size, 'reminder')}`}</button>}>
       {err && <div className="err" role="alert" style={{ marginBottom: 14 }}>{err}</div>}
       <div className="g2" style={{ gridTemplateColumns: '1fr 360px', alignItems: 'start' }}>
         <div className="card">

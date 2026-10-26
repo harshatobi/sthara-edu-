@@ -39,8 +39,8 @@ import type { Perm } from '@/lib/admin/rbac';
 // generator) keep their URLs but are off the canon nav.
 const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true, need: ['dashboard.view'] },
-  { href: '/admin/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle, need: ['os.ask'] },
-  { href: '/admin/probe', label: 'Probe', icon: Sparkle, need: ['probe.view'] },
+  { href: '/admin/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle, ai: true, need: ['os.ask'] },
+  { href: '/admin/probe', label: 'Probe', icon: Sparkle, ai: true, need: ['probe.view'] },
   { href: '/admin/feed', label: 'Situational Feed', short: 'Feed', icon: Bell, need: ['feed.read', 'incidents.manage', 'safeguarding.read'] },
   { href: '/admin/fees', label: 'Admissions & Fees', short: 'Fees', icon: CurrencyInr, also: ['/admin/admissions'], need: ['fees.read'] },
   { href: '/admin/admissions', label: 'Admissions', icon: CurrencyInr, need: ['admissions.read'] },
@@ -81,7 +81,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     if (n.href === '/admin/admissions') return !a.can('fees.read');
     return true;
   }).map(n => (n.href === '/admin/fees' && a && !a.can('admissions.read') ? { ...n, label: 'Fees', also: [] } : n));
-  return <CanonShell subtitle="COMMAND CENTRE" nav={nav} label="Admin navigation" inbox>{children}</CanonShell>;
+  return <CanonShell role="admin" subtitle="COMMAND CENTRE" nav={nav} label="Admin navigation" inbox>{children}</CanonShell>;
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

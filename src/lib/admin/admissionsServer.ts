@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
  */
 const STATUS: Record<string, number> = {
   P0002: 404, // not found
-  '40001': 409, // someone else changed it first
+  SA409: 409, // someone else changed it first
   '23505': 409, // already exists
   '42501': 409, // maker-checker: the proposer can't approve
   '22023': 400, // not allowed from here

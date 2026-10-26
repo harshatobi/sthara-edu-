@@ -3,6 +3,7 @@
  * a direct way in. Every role lands on the dashboard, so each must find its own work there rather than charts
  * alone (the cashier once saw only the fee chart, with the counter two clicks away). Pure, for the tests.
  */
+import { EXPIRING_DAYS } from './admissions';
 import type { AdminDesk } from './desk';
 import type { Perm } from './rbac';
 
@@ -46,10 +47,18 @@ export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions
   }
   if (can('admissions.manage')) {
     const P = desk.admissions;
-    const offers = P.applicants.filter(x => x.open && x.stage === 'offer').length;
-    const parts = [P.stale.length ? `${n(P.stale.length, 'applicant')} waiting too long in their stage` : '', offers ? `${n(offers, 'offer')} not yet accepted` : ''].filter(Boolean);
+    const offers = P.applicants.filter(x => x.open && x.offer?.status === 'issued').length;
+    const expiring = (P.expiring ?? []).length;
+    const parts = [P.stale.length ? `${n(P.stale.length, 'applicant')} waiting too long in their stage` : '', offers ? `${n(offers, 'offer')} not yet accepted` : '',
+      expiring ? `${expiring} lapsing within ${EXPIRING_DAYS} days` : ''].filter(Boolean);
     out.push({ key: 'admissions', title: 'Admissions', detail: parts.length ? `${parts.join(' · ')}.` : 'Nobody is waiting on you.', count: P.stale.length + offers,
       tone: P.stale.length ? 'a' : 'n', actions: [{ label: 'New enquiry', href: '/admin/admissions?new=1', primary: true }, { label: 'Open the pipeline', href: '/admin/admissions' }] });
+  }
+  if (can('admissions.approve')) {
+    const waiting = desk.admissions.approvals ?? [];
+    const mine = waiting.filter(a => a.offer?.proposedBy !== desk.me.id);
+    if (mine.length) out.push({ key: 'offers', title: 'Offers to approve', detail: `${n(mine.length, 'offer')} waiting for your approval before going to families.`, count: mine.length, tone: 'a',
+      actions: [{ label: 'Decide', href: '/admin/admissions?view=approval', primary: true }] });
   }
   if (can('leave.approve')) {
     const waiting = desk.workforce.pendingLeave.length;

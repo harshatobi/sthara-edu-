@@ -1,6 +1,5 @@
 /** The board pack as a spreadsheet (the designed document is components/admin/BoardPack). */
 import { BANDS, subjectName, type AdminDesk } from './desk';
-import { STAGE_LABEL } from './admissions';
 import { fmtDate } from './format';
 import type { SchoolAttendance } from '@/lib/attendance/school';
 
@@ -51,7 +50,7 @@ export function boardPackRows(desk: AdminDesk, att?: SchoolAttendance | null): (
     ['Full-year billing expected', fees.totals.expectedAnnual],
     [],
     [`ADMISSIONS ${adm.session}`, 'Reached stage', 'Share of enquiries (%)'],
-    ...adm.funnel.map(f => [STAGE_LABEL[f.stage], f.reached, f.share]),
+    ...adm.funnel.map(f => [f.label, f.reached, f.share]),
     [],
     ['WORKFORCE', 'Classes', 'Students', 'Class TML (%)', 'Change in 14 days', 'Grading backlog', 'Activity (30 days)'],
     ...wf.teachers.map(t => [t.name, t.classes.join(' / '), t.students, t.tml, t.delta, t.backlog, t.activity]),

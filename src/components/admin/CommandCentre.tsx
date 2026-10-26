@@ -17,7 +17,6 @@ import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/C
 import { Bar, Empty, hmColor } from '@/components/canon/ui';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { subjectName, type AdminDesk } from '@/lib/admin/desk';
-import { STAGE_LABEL } from '@/lib/admin/admissions';
 import { ago, daysBetween, fmtDate, inr, inrShort, isoDay, pct, plural } from '@/lib/admin/format';
 import { probe, type Level } from '@/lib/admin/probe';
 import { workItems } from '@/lib/admin/work';
@@ -224,7 +223,7 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
             <Link href="/admin/admissions" className="card" style={{ color: 'inherit', textDecoration: 'none' }}>
               <CardHead title={`Admissions · AY ${adm.session.replace('-', '–')}`} sub={`${plural(adm.total, 'applicant')} · ${adm.enrolled} enrolled`} />
               {adm.funnel.map(f => (
-                <div className="row" key={f.stage}><span style={{ flex: '0 0 150px', fontSize: 13.5 }}>{STAGE_LABEL[f.stage]}</span><Bar value={f.share ?? 0} color="#4C8DFF" /><b className="num" style={{ width: 40, textAlign: 'right' }}>{f.reached}</b></div>
+                <div className="row" key={f.stage}><span style={{ flex: '0 0 150px', fontSize: 13.5 }}>{f.label}</span><Bar value={f.share ?? 0} color="#4C8DFF" /><b className="num" style={{ width: 40, textAlign: 'right' }}>{f.reached}</b></div>
               ))}
             </Link>
           )}

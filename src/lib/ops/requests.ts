@@ -26,10 +26,13 @@ const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 /** Checks a school's enrolment details against the applicant and the class list; returns the clean options or an error. */
-export async function checkEnrolment(db: SupabaseClient, schoolId: string, a: { name: string; grade: number; stage: string; student_id: string | null }, raw: Record<string, unknown>)
+export async function checkEnrolment(db: SupabaseClient, schoolId: string, a: { id: string; name: string; grade: number; stage: string; student_id: string | null }, raw: Record<string, unknown>)
   : Promise<{ options: EnrolOptions } | { error: string; status?: number }> {
   if (a.student_id) return { error: `${a.name} is already enrolled.`, status: 409 };
-  if (a.stage !== 'offer') return { error: 'Only an applicant with an offer can be enrolled. Move them to Offer first.', status: 409 };
+  if (a.stage !== 'offer') return { error: 'Only an applicant with an offer can be enrolled.', status: 409 };
+  // The family has to have said yes: an offer still out may yet be declined or lapse.
+  const { data: offer } = await db.from('admission_offers').select('status').eq('applicant_id', a.id).in('status', ['issued', 'accepted']).maybeSingle();
+  if (offer && offer.status !== 'accepted') return { error: `Record ${a.name.split(' ')[0]}'s family accepting the offer first.`, status: 409 };
   const cls = displayClass(str(raw.className, 40));
   if (!normClass(cls)) return { error: 'Pick the section they join.' };
   if (gradeOf(cls) !== a.grade) return { error: `${a.name} applied for grade ${a.grade}, but ${cls} is grade ${gradeOf(cls) ?? '?'}.` };
@@ -118,7 +121,8 @@ export async function fulfil(db: SupabaseClient, req: AccountRequest, actorId: s
     stage: 'enrolled', furthest_stage: 'enrolled', stage_changed_at: new Date().toISOString(), student_id: student.userId, parent_id: parentId,
   }).eq('id', a.id);
   if (moveErr) console.warn('[enrol] applicant not moved:', moveErr.message);
-  await db.from('admission_events').insert({ applicant_id: a.id, school_id: req.school_id, from_stage: 'offer', to_stage: 'enrolled', note: `Enrolled into ${o.className}, admission no. ${o.rollNo}`, actor_id: actorId });
+  await db.from('admission_offers').update({ status: 'enrolled', closed_at: new Date().toISOString() }).eq('applicant_id', a.id).eq('status', 'accepted');
+  await db.from('admission_events').insert({ applicant_id: a.id, school_id: req.school_id, from_stage: 'offer', to_stage: 'enrolled', note: `Enrolled into ${o.className}, admission no. ${o.rollNo}`, actor_id: actorId, offer_status: 'enrolled' });
 
   let invoices = 0;
   if (o.billFees) {

@@ -8,7 +8,6 @@ import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist
 import { AT_RISK, BANDS, LEAVE_TYPES, subjectName, type AdminDesk, type TeacherRow } from '@/lib/admin/desk';
 import { bandColor, bandInk } from '@/lib/tml/bands';
 import { PAY_MODES } from '@/lib/admin/fees';
-import { STAGE_LABEL, STAGE_COLOR, STAGE_ONE } from '@/lib/admin/admissions';
 import { boardPackRows } from '@/lib/admin/boardPack';
 import { fmtDate, inr, inrShort, isoDay, pct, plural } from '@/lib/admin/format';
 import { probe } from '@/lib/admin/probe';
@@ -302,15 +301,15 @@ function Pack({ desk }: { desk: AdminDesk }) {
           <>
             {adm.funnel.map((f, i) => (
               <div className="bp-row" key={f.stage}>
-                <b className="w150">{STAGE_LABEL[f.stage]}</b>
-                <Meter value={f.share ?? 0} color={STAGE_COLOR[f.stage]} />
+                <b className="w150">{f.label}</b>
+                <Meter value={f.share ?? 0} color={f.color} />
                 <b className="w44 r">{f.reached}</b>
                 <span className="w80 r mut">{i && f.fromPrev !== null ? `${f.fromPrev}% moved on` : ''}</span>
               </div>
             ))}
             <p className="bp-foot-note">
               {adm.enrolled} enrolled of {adm.total} applicants{adm.conversion !== null ? `; ${adm.conversion}% of decided applicants enrolled` : ''}.
-              {adm.leak ? ` Largest drop: ${STAGE_ONE[adm.leak.from].toLowerCase()} to ${STAGE_ONE[adm.leak.to].toLowerCase()} (${adm.leak.rate}% move on).` : ''}
+              {adm.leak ? ` Largest drop: ${adm.leak.fromLabel.toLowerCase()} to ${adm.leak.toLabel.toLowerCase()} (${adm.leak.rate}% move on).` : ''}
             </p>
           </>
         ) : <Nothing>No applicants recorded for the next intake yet.</Nothing>}

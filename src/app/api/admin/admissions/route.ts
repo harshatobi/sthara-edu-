@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { bad, ISO_DAY, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
-import { canMove, SOURCES, STAGES, type ApplicantStage } from '@/lib/admin/admissions';
+import { SOURCES } from '@/lib/admin/admissions';
+import { admissionError } from '@/lib/admin/admissionsServer';
 import { isSession, nextSession, sessionOf } from '@/lib/admin/format';
 
 export const dynamic = 'force-dynamic';
@@ -8,13 +9,10 @@ export const dynamic = 'force-dynamic';
 /**
  * Admissions pipeline (school admins only).
  *   POST  { name, grade, session?, dob?, guardianName?, guardianPhone?, guardianEmail?, previousSchool?, source?, notes? }
- *   PATCH { id, to, note? }                  move stage (forward one, reject, withdraw, reopen)
+ *   PATCH { id, from, to, note? }                  move stage (forward one of the school's own, reject, withdraw, reopen)
  *   PATCH { id, fields: {...} }              edit details
  * Every stage move writes an admission_events row with who and why.
  */
-
-const OPEN_STAGES: ApplicantStage[] = [...STAGES];
-const CLOSED: ApplicantStage[] = ['rejected', 'withdrawn'];
 
 function details(b: any): { row: Record<string, unknown>; error?: string } {
   const row: Record<string, unknown> = {};
@@ -52,11 +50,16 @@ export async function POST(req: NextRequest) {
   const { row, error } = details({ ...b, name: b.name ?? '', grade: b.grade ?? 0 });
   if (error) return bad(error);
   const session = isSession(b.session) ? b.session : nextSession(sessionOf());
+  // A new applicant starts at the school's first stage in use.
+  await db.rpc('admission_ensure_stages', { p_school: admin.schoolId });
+  const { data: first } = await db.from('admission_stages').select('key').eq('school_id', admin.schoolId).is('system', null).eq('active', true)
+    .order('position').limit(1).maybeSingle();
+  if (!first) return bad('Your admissions pipeline has no stages before Offer. Add one in Set up.', 409);
   const { data, error: e } = await db.from('admission_applicants').insert({
-    ...row, school_id: admin.schoolId, session, stage: 'enquiry', furthest_stage: 'enquiry', created_by: admin.id,
+    ...row, school_id: admin.schoolId, session, stage: first.key, furthest_stage: first.key, created_by: admin.id,
   }).select('id').single();
   if (e) return bad(e.message, 500);
-  await db.from('admission_events').insert({ applicant_id: data.id, school_id: admin.schoolId, from_stage: null, to_stage: 'enquiry', note: str(b.notes, 1000) || null, actor_id: admin.id });
+  await db.from('admission_events').insert({ applicant_id: data.id, school_id: admin.schoolId, from_stage: null, to_stage: first.key, note: str(b.notes, 1000) || null, actor_id: admin.id });
   return NextResponse.json({ id: data.id });
 }
 
@@ -73,33 +76,22 @@ export async function PATCH(req: NextRequest) {
     const { row, error } = details(b.fields);
     if (error) return bad(error);
     if (!Object.keys(row).length) return bad('Nothing to change.');
+    // An offer holds a seat in one grade: changing the grade under it would move the seat without approval.
+    if (row.grade !== undefined) {
+      const { data: live } = await db.from('admission_offers').select('id, grade').eq('applicant_id', b.id).in('status', ['proposed', 'waitlisted', 'issued', 'accepted']).maybeSingle();
+      if (live && live.grade !== row.grade) return bad('This applicant has an offer for their grade. Cancel or close it before changing the grade.', 409);
+    }
     const { error: e } = await db.from('admission_applicants').update(row).eq('id', b.id);
     if (e) return bad(e.message, 500);
     return NextResponse.json({ ok: true });
   }
 
-  let to = b.to as ApplicantStage;
-  const from = cur.stage as ApplicantStage;
-  const note = str(b.note, 1000);
-  // Reopening returns them to the furthest open stage they'd reached.
-  if (b.to === 'reopen') {
-    if (!CLOSED.includes(from)) return bad('Only a rejected or withdrawn applicant can be reopened.');
-    to = cur.furthest_stage === 'enrolled' ? 'offer' : cur.furthest_stage;
-  }
-  if (![...OPEN_STAGES, ...CLOSED].includes(to)) return bad('Unknown stage.');
-  // Enrolled means the logins exist: Sthara sets it when it approves the enrolment request.
-  if (to === 'enrolled') return bad('Enrolment goes through Sthara: open the applicant and use Request enrolment.', 409);
-  if (!canMove(from, to)) return bad(`An applicant at ${from} can't move straight to ${to}.`);
-  if (CLOSED.includes(to) && !note) return bad(`Give a reason — it stays on the applicant's record.`);
-
-  const rank = (s: string) => STAGES.indexOf(s as any);
-  const furthest = rank(to) > rank(cur.furthest_stage) ? to : cur.furthest_stage;
-  // Guard against a concurrent move: only update if the stage is still what we read.
-  const { data: moved, error: e } = await db.from('admission_applicants')
-    .update({ stage: to, furthest_stage: furthest, stage_changed_at: new Date().toISOString() })
-    .eq('id', b.id).eq('stage', from).select('id');
-  if (e) return bad(e.message, 500);
-  if (!moved?.length) return bad('Someone else just moved this applicant. Refresh and try again.', 409);
-  await db.from('admission_events').insert({ applicant_id: b.id, school_id: admin.schoolId, from_stage: from, to_stage: to, note: note || null, actor_id: admin.id });
-  return NextResponse.json({ stage: to });
+  // The rules (one stage at a time, Offer only through an approved offer, a reason to close) are in the database.
+  const to = str(b.to, 40);
+  if (!to) return bad('Pick where to move them.');
+  const { data, error } = await db.rpc('admission_move', {
+    p_school: admin.schoolId, p_applicant: b.id, p_from: str(b.from, 40) || cur.stage, p_to: to, p_actor: admin.id, p_note: str(b.note, 1000) || null,
+  });
+  if (error) return admissionError(error, 'Could not move the applicant.');
+  return NextResponse.json({ stage: data });
 }

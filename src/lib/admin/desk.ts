@@ -38,6 +38,10 @@ export interface AdminRows {
   reminders: any[];
   applicants: any[];
   admissionEvents: any[];
+  /** Admissions setup and offers (absent before the admissions_pipeline migration: the template stages apply). */
+  admissionStages?: any[];
+  admissionSeats?: any[];
+  admissionOffers?: any[];
   filings: any[];
   /** public.school_wellness_report rows. */
   wellness: any[];
@@ -608,7 +612,8 @@ export function assembleAdminDesk(rows: AdminRows, now = Date.now()): AdminDesk 
     structures: rows.structures, invoices: rows.invoices, payments: rows.payments, reminders: rows.reminders, today,
   });
   const admissionsSession = nextSession(session);
-  const admissions = assemblePipeline(admissionsSession, rows.applicants, rows.admissionEvents, today);
+  const admissions = assemblePipeline(admissionsSession, rows.applicants, rows.admissionEvents, today,
+    { stages: rows.admissionStages, seats: rows.admissionSeats, offers: rows.admissionOffers });
   const wellness = assembleWellness(rows.wellness, students.length, `${session.slice(0, 4)}-04-01`, now);
   const compliance = assembleCompliance(rows, students, wellness);
   const f = rows.filings.find(x => x.kind === 'cbse_wellness' && x.session === session);

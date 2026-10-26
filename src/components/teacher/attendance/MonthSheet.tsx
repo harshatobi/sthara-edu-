@@ -40,7 +40,7 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
   onPdf: () => void;
 }) {
   const weeks = useMemo(() => {
-    const per = Object.fromEntries(roster.map(s => [s.id, weeklyTrend([history.marks[s.id] || {}], sessionStart, today)]));
+    const per = Object.fromEntries(roster.map(s => [s.id, weeklyPts(weeklyTrend([history.marks[s.id] || {}], sessionStart, today))]));
     const cls = weeklyTrend(roster.map(s => history.marks[s.id] || {}), sessionStart, today);
     return { per, cls };
   }, [roster, history, sessionStart, today]);
@@ -50,8 +50,17 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
     const h = history.marks[s.id] || {};
     return { s, h, month: tally(h, open), session: tally(h) };
   }), [roster, history, open]);
-  const perDay = (d: string) => roster.filter(s => { const m = history.marks[s.id]?.[d]; return m === 'present' || m === 'late'; }).length;
-  const markedDay = (d: string) => roster.some(s => history.marks[s.id]?.[d]);
+  // Per column, once: its labels and the foot headcount (null = nobody marked that day).
+  const cols = useMemo(() => Object.fromEntries(days.map(d => {
+    let marked = false, inSchool = 0;
+    for (const s of roster) {
+      const m = history.marks[s.id]?.[d.date];
+      if (m) marked = true;
+      if (m === 'present' || m === 'late') inSchool++;
+    }
+    return [d.date, { full: dayLabel(d.date), wd: dayLabel(d.date, { weekday: 'narrow' }), inSchool: marked ? inSchool : null }];
+  })), [days, roster, history]);
+  const markedDay = (d: string) => cols[d]?.inSchool != null;
   const watch = rows.filter(r => belowMin(r.session) || absentStreak(r.h, today) >= 3)
     .sort((a, b) => (a.session.pct ?? 101) - (b.session.pct ?? 101));
   const classAvg = (() => {
@@ -99,8 +108,8 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
                   <th scope="col" className="stick">Roll</th>
                   <th scope="col" className="stick name">Student</th>
                   {days.map(d => (
-                    <th key={d.date} scope="col" className={`${d.off ? 'off' : ''} ${d.date === today ? 'today' : ''}`} title={d.off ? d.off.label : dayLabel(d.date)}>
-                      <span className="wd">{dayLabel(d.date, { weekday: 'narrow' })}</span>{Number(d.date.slice(8))}
+                    <th key={d.date} scope="col" className={`${d.off ? 'off' : ''} ${d.date === today ? 'today' : ''}`} title={d.off ? d.off.label : cols[d.date].full}>
+                      <span className="wd">{cols[d.date].wd}</span>{Number(d.date.slice(8))}
                     </th>
                   ))}
                   <th scope="col" className="tot">P</th><th scope="col" className="tot">L</th><th scope="col" className="tot">A</th><th scope="col" className="tot">E</th>
@@ -115,9 +124,9 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
                     <td className="stick roll">{s.rollNo || '–'}</td>
                     <th scope="row" className="stick name">{s.name}<HealthAlertMark alert={alerts?.get(s.id)} /></th>
                     {days.map(d => {
-                      if (d.off) return <td key={d.date} className={`off ${d.off.why}`} aria-label={`${dayLabel(d.date)}: ${d.off.label}`}>{d.off.why === 'holiday' ? 'H' : ''}</td>;
+                      if (d.off) return <td key={d.date} className={`off ${d.off.why}`} aria-label={`${cols[d.date].full}: ${d.off.label}`}>{d.off.why === 'holiday' ? 'H' : ''}</td>;
                       const m = h[d.date];
-                      const label = `${s.name}, ${dayLabel(d.date)}: ${m ? MARK_LABEL[m] : d.date > today ? 'upcoming' : 'not marked'}`;
+                      const label = `${s.name}, ${cols[d.date].full}: ${m ? MARK_LABEL[m] : d.date > today ? 'upcoming' : 'not marked'}`;
                       const canOpen = d.date <= today && d.date >= editableFrom;
                       return (
                         <td key={d.date} className={`${m || (d.date > today ? 'fut' : 'none')} ${d.date === today ? 'today' : ''}`}>
@@ -130,7 +139,7 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
                     <td className="tot">{t.present}</td><td className="tot">{t.late}</td><td className="tot">{t.absent}</td><td className="tot">{t.excused}</td>
                     <td className={`tot pct ${belowMin(t) ? 'low' : ''}`}>{t.pct ?? '—'}</td>
                     <td className={`tot pct ${belowMin(session) ? 'low' : ''}`}>{session.pct ?? '—'}</td>
-                    <td className="tot trend"><Sparkline points={weeklyPts(weeks.per[s.id])} label={`${s.name}, weekly attendance this session`} /></td>
+                    <td className="tot trend"><Sparkline points={weeks.per[s.id]} label={`${s.name}, weekly attendance this session`} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -138,7 +147,7 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
                 <tr>
                   <td className="stick roll" />
                   <th scope="row" className="stick name">In school</th>
-                  {days.map(d => <td key={d.date} className={d.off ? `off ${d.off.why}` : ''}>{!d.off && markedDay(d.date) ? perDay(d.date) : ''}</td>)}
+                  {days.map(d => <td key={d.date} className={d.off ? `off ${d.off.why}` : ''}>{d.off ? '' : cols[d.date].inSchool ?? ''}</td>)}
                   <td colSpan={7} />
                 </tr>
               </tfoot>
@@ -175,7 +184,7 @@ export default function MonthSheet({ cls, month, setMonth, minMonth, maxMonth, d
                   <b>{s.name}</b><HealthAlertMark alert={alerts?.get(s.id)} />
                   {belowMin(session) && <span className="ch r xs">{session.pct}% this session</span>}
                   {streak >= 3 && <span className="ch a xs">Absent {streak} days running</span>}
-                  <Sparkline points={weeklyPts(weeks.per[s.id])} label={`${s.name}, weekly attendance`} />
+                  <Sparkline points={weeks.per[s.id]} label={`${s.name}, weekly attendance`} />
                   <span className="muted" style={{ marginLeft: 'auto', fontSize: 12.5 }}>{session.absent} absent · {session.late} late · {session.excused} excused of {session.marked}</span>
                 </li>
               );

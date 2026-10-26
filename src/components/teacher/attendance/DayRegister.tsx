@@ -12,7 +12,7 @@ import { BellRingingIcon as BellRinging } from '@phosphor-icons/react/dist/ssr/B
 import { ArrowCounterClockwiseIcon as Undo } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
 import { UserListIcon as UserList } from '@phosphor-icons/react/dist/ssr/UserList';
 import type { TStudent } from '@/lib/teacher/desk';
-import { MARKS, MARK_LABEL, MARK_SHORT, MIN_PCT, absentStreak, addDay, belowMin, parseRollList, tally, weeklyTrend, type Mark, type SchoolDay } from '@/lib/attendance/register';
+import { MARKS, MARK_LABEL, MARK_SHORT, MIN_PCT, absentStreak, addDay, belowMin, fmtDay, parseRollList, tally, weeklyTrend, type Mark, type SchoolDay } from '@/lib/attendance/register';
 import { Sparkline, weeklyPts } from '@/components/canon/TrendLine';
 import { Empty } from '@/components/canon/ui';
 import type { History } from './useRegister';
@@ -25,8 +25,7 @@ const FILTERS: { k: Filter; label: string }[] = [
   { k: 'all', label: 'Everyone' }, { k: 'away', label: 'Not present' }, { k: 'low', label: `Under ${MIN_PCT}%` }, { k: 'notes', label: 'With notes' }, { k: 'changed', label: 'Unsaved' },
 ];
 
-export const dayLabel = (d: string, opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' }) =>
-  new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { ...opts, timeZone: 'UTC' });
+export const dayLabel = (d: string, opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' }) => fmtDay(d, opts);
 
 export interface SavePayload { marks: { studentId: string; status: Mark; note: string | null }[]; newlyAbsent: number }
 
@@ -64,6 +63,7 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
   // Edits against where each student started (their saved mark, or present on a new register), so marking
   // absentees on a register that was never saved is guarded like any other unsaved change.
   const changed = roster.filter(s => marks[s.id] !== (saved[s.id] || 'present') || (savedNotes[s.id] || '') !== (notes[s.id] || '').trim());
+  const changedIds = new Set(changed.map(c => c.id));
   const editedCount = changed.length;
   // A register nobody has saved yet still needs saving, even untouched.
   const dirty = isNew || editedCount > 0 || markedBefore < roster.length;
@@ -72,6 +72,9 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
   const session = useMemo(() => Object.fromEntries(roster.map(s => [s.id, tally(history.marks[s.id] || {})])), [roster, history]);
   // The last eight weeks for each student's trend line.
   const trend = useMemo(() => Object.fromEntries(roster.map(s => [s.id, weeklyPts(weeklyTrend([history.marks[s.id] || {}], addDay(day, -49), day))])), [roster, history, day]);
+  // Absences running up to (not including) the day, so a row's streak is one lookup as marks change.
+  const priorStreak = useMemo(() => Object.fromEntries(roster.map(s => [s.id, absentStreak(history.marks[s.id] || {}, addDay(day, -1))])), [roster, history, day]);
+  const trailDays = useMemo(() => recent.map(d => ({ date: d.date, wd: dayLabel(d.date, { weekday: 'short' }), full: dayLabel(d.date) })), [recent]);
   const counts = MARKS.map(k => ({ k, n: roster.filter(s => marks[s.id] === k).length }));
   const presentPct = roster.length ? Math.round(((counts[0].n + counts[2].n) / roster.length) * 100) : 0;
   const newlyAbsent = isToday ? roster.filter(s => marks[s.id] === 'absent' && saved[s.id] !== 'absent').length : 0;
@@ -82,7 +85,7 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
     if (filter === 'away') return marks[s.id] !== 'present';
     if (filter === 'low') return belowMin(session[s.id]);
     if (filter === 'notes') return !!(notes[s.id] || '').trim();
-    if (filter === 'changed') return changed.some(c => c.id === s.id);
+    if (filter === 'changed') return changedIds.has(s.id);
     return true;
   });
 
@@ -199,8 +202,8 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
             const m = marks[s.id];
             const t = session[s.id];
             const low = belowMin(t);
-            const streak = absentStreak({ ...(history.marks[s.id] || {}), [day]: m }, day);
-            const isChanged = changed.some(c => c.id === s.id);
+            const streak = m === 'absent' ? priorStreak[s.id] + 1 : 0;
+            const isChanged = changedIds.has(s.id);
             const note = notes[s.id] || '';
             return (
               <div key={s.id} className={`reg-row ${m}`} role="listitem" data-row={i}>
@@ -215,10 +218,10 @@ export default function DayRegister({ day, isToday, roster, history, recent, can
                       {low && <Warning size={12} weight="fill" aria-hidden="true" />}
                       {t.pct === null ? 'No days yet' : `${t.pct}% this session`}{low && <span className="sr"> (below {MIN_PCT}%)</span>}
                     </span>
-                    <span className="reg-trail" aria-label={`Last ${recent.length} school days: ${recent.map(d => `${dayLabel(d.date, { weekday: 'short' })} ${history.marks[s.id]?.[d.date] ? MARK_LABEL[history.marks[s.id][d.date]] : 'not marked'}`).join(', ')}`}>
-                      {recent.map(d => {
+                    <span className="reg-trail" aria-label={`Last ${trailDays.length} school days: ${trailDays.map(d => `${d.wd} ${history.marks[s.id]?.[d.date] ? MARK_LABEL[history.marks[s.id][d.date]] : 'not marked'}`).join(', ')}`}>
+                      {trailDays.map(d => {
                         const st = history.marks[s.id]?.[d.date];
-                        return <i key={d.date} className={st || 'none'} title={`${dayLabel(d.date)}: ${st ? MARK_LABEL[st] : 'not marked'}`}>{st ? MARK_SHORT[st] : ''}</i>;
+                        return <i key={d.date} className={st || 'none'} title={`${d.full}: ${st ? MARK_LABEL[st] : 'not marked'}`}>{st ? MARK_SHORT[st] : ''}</i>;
                       })}
                     </span>
                     <Sparkline points={trend[s.id]} label={`${s.name}, weekly attendance, last 8 weeks`} w={72} h={20} />

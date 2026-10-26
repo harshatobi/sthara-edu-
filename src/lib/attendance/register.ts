@@ -25,6 +25,18 @@ export interface SchoolDay {
 }
 
 const DAY_MS = 86_400_000;
+/**
+ * A YYYY-MM-DD date as Indian English text. One formatter per option set: building one per call (what
+ * toLocaleDateString does) cost the month sheet ~1,300 of them a render.
+ */
+const FMT = new Map<string, Intl.DateTimeFormat>();
+export function fmtDay(d: string, o: Intl.DateTimeFormatOptions): string {
+  const k = JSON.stringify(o);
+  let f = FMT.get(k);
+  if (!f) FMT.set(k, (f = new Intl.DateTimeFormat('en-IN', { ...o, timeZone: 'UTC' })));
+  return f.format(new Date(`${d}T00:00:00Z`));
+}
+
 export const addDay = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
 export const monthDays = (month: string) => {
   const y = Number(month.slice(0, 4)), m = Number(month.slice(5, 7));

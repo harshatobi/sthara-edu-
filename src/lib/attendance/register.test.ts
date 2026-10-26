@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AcademicEvent } from '@/lib/schedule/types';
-import { absentStreak, belowMin, monthCsv, monthDays, parseRollList, recentSchoolDays, schoolDays, tally, type Mark } from './register';
+import { absentStreak, addDay, belowMin, fmtDay, monthCsv, monthDays, parseRollList, recentSchoolDays, schoolDays, tally, type Mark } from './register';
 
 const ev = (o: Partial<AcademicEvent>): AcademicEvent => ({
   id: 'e', title: 'Holiday', kind: 'holiday', starts_on: '2026-10-02', ends_on: '2026-10-02', wing_ids: null, bell_schedule_id: null,
@@ -78,4 +78,19 @@ test('weekly trend: pooled by Monday weeks, empty weeks are gaps, delta compares
   const pts = [90, 90, 90, 70, 70, 70].map((pct, i) => ({ week: String(i), pct, marked: 5 }));
   assert.equal(trendDelta(pts), -20);
   assert.equal(trendDelta(pts.slice(0, 4)), null);
+});
+
+test('fmtDay: matches toLocaleDateString in UTC, cached per option set', () => {
+  for (const o of [{ weekday: 'short', day: 'numeric', month: 'short' }, { weekday: 'narrow' }, { day: 'numeric', month: 'short' }] as Intl.DateTimeFormatOptions[]) {
+    for (const d of ['2026-04-01', '2026-10-26', '2027-03-31']) {
+      assert.equal(fmtDay(d, o), new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { ...o, timeZone: 'UTC' }));
+    }
+  }
+});
+
+test('absent streak: prior streak + 1 equals the streak with the day marked absent', () => {
+  const h: Record<string, Mark> = { '2026-10-20': 'present', '2026-10-21': 'absent', '2026-10-22': 'absent', '2026-10-24': 'late' };
+  for (const day of ['2026-10-23', '2026-10-24', '2026-10-21']) {
+    assert.equal(absentStreak({ ...h, [day]: 'absent' }, day), absentStreak(h, addDay(day, -1)) + 1);
+  }
 });

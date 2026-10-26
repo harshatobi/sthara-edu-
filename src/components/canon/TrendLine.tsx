@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { fmtDay } from '@/lib/attendance/register';
 
 /**
  * Attendance-style trend charts: one series, a percentage by week, with a reference line (75% for CBSE).
@@ -11,7 +12,7 @@ export interface Pt { label: string; value: number | null; note?: string }
 
 /** Week-by-week points (from lib/attendance/register weeklyTrend), labelled by each week's Monday. */
 export const weeklyPts = (t: { week: string; pct: number | null; marked: number }[]): Pt[] => t.map(p => ({
-  label: new Date(`${p.week}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+  label: fmtDay(p.week, { day: 'numeric', month: 'short' }),
   value: p.pct, note: p.marked ? `${p.marked} marks` : undefined,
 }));
 

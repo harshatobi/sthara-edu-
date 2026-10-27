@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isoDay } from '@/lib/admin/format';
 import { DOC_BUCKET } from '@/lib/students/documentsServer';
 import {
-  canManageKind, canSeeKind, checklistOf, checkMeta, cleanFileName, DOC_MAX_BYTES, docLabel, inlineType, type DocStatus,
+  checklistOf, isMedical, checkMeta, cleanFileName, DOC_MAX_BYTES, docLabel, inlineType, type DocStatus,
 } from '@/lib/students/documents';
 import {
   ageRulesOf, assembleChecks, completeness, familyContacts, formOf, gateError, phoneKey, type Checks, type Match,
@@ -23,8 +23,10 @@ const fail = (error: string, status = 400) => ({ ok: false as const, error, stat
 
 export interface Actor { id: string; schoolId: string }
 export interface AppCan { see: boolean; manage: boolean; health: boolean; manageHealth: boolean }
-const seeing = (c: AppCan) => ({ students: c.see, health: c.health });
-const managing = (c: AppCan) => ({ students: c.manage, health: c.manageHealth });
+// Medical kinds (disability certificate, medical certificate, vaccination record) are the health roles' alone on an
+// application, to see and to handle: the admissions office never holds them.
+const maySee = (kind: string, c: AppCan) => (isMedical(kind) ? c.health : c.see);
+const mayManage = (kind: string, c: AppCan) => (isMedical(kind) ? c.manageHealth : c.manage);
 
 const DCOLS = 'id, applicant_id, kind, title, document_no, issued_on, valid_until, file_name, size_bytes, status, source, uploaded_by, verified_by, verified_at, reject_note, moved_to, moved_at, created_at';
 export interface AppDoc {
@@ -122,16 +124,16 @@ export async function loadApplication(db: Db, schoolId: string, id: string, can:
   if (!a) return null;
   const all = await docsOf(db, schoolId, id);
   const checks = await checksFor(db, a, all);
-  const shown = all.filter(d => canSeeKind(d.kind, seeing(can)));
+  const shown = all.filter(d => maySee(d.kind, can));
   const who = await names(db, shown.flatMap(d => [d.uploaded_by, d.verified_by]));
   const form = formOf(a.form);
   return {
     form, appliedOn: a.applied_on, channel: a.channel,
     completeness: completeness(form, a.date_of_birth),
     docs: shown.map(d => ({ ...d, label: docLabel(d.kind), uploadedBy: d.uploaded_by ? who.get(d.uploaded_by) ?? null : (d.source === 'family' ? 'The family' : null),
-      verifiedBy: d.verified_by ? who.get(d.verified_by) ?? null : null, canManage: canManageKind(d.kind, managing(can)) && !d.moved_to })),
+      verifiedBy: d.verified_by ? who.get(d.verified_by) ?? null : null, canManage: mayManage(d.kind, can) && !d.moved_to })),
     // Medical kinds stay off the checklist for someone who can't see them.
-    checks: { ...checks, documents: checks.documents.filter(c => canSeeKind(c.kind, seeing(can))) },
+    checks: { ...checks, documents: checks.documents.filter(c => maySee(c.kind, can)) },
     hidden: all.length - shown.length,
   };
 }
@@ -155,7 +157,7 @@ export async function uploadUrl(db: Db, a: Actor, applicantId: string, b: { kind
   const ap = await applicantOf(db, a.schoolId, applicantId);
   if (!ap) return fail('Applicant not found.', 404);
   if (ap.student_id) return fail('This applicant is admitted: add documents on the student record.', 409);
-  if (typeof b.kind !== 'string' || !canManageKind(b.kind, managing(can))) return fail('Pick a kind of document you can add.', 403);
+  if (typeof b.kind !== 'string' || !mayManage(b.kind, can)) return fail('Pick a kind of document you can add.', 403);
   if (!cleanFileName(b.fileName)) return fail('Choose a file.');
   const bytes = Number(b.fileBytes);
   if (!Number.isFinite(bytes) || bytes <= 0) return fail('That file is empty.');
@@ -172,7 +174,7 @@ export async function finishUpload(db: Db, a: Actor, applicantId: string, b: Rec
   if (!ap) return fail('Applicant not found.', 404);
   const m = checkMeta(b, isoDay());
   if ('error' in m) return fail(m.error);
-  if (!canManageKind(m.value.kind, managing(can))) return fail('You can’t add this kind of document.', 403);
+  if (!mayManage(m.value.kind, can)) return fail('You can’t add this kind of document.', 403);
   const fileName = cleanFileName(b.fileName);
   if (!fileName) return fail('Choose a file.');
   const path = typeof b.path === 'string' ? b.path : '';
@@ -209,7 +211,7 @@ async function docOf(db: Db, schoolId: string, id: string) {
 /** A two-minute link to the file, recorded; PDFs and images open in the browser, anything else downloads. */
 export async function openDoc(db: Db, a: Actor, id: string, can: AppCan): Promise<Result<{ url: string; inline: boolean }>> {
   const d = await docOf(db, a.schoolId, id);
-  if (!d || !canSeeKind(d.kind, seeing(can))) return fail('Document not found.', 404);
+  if (!d || !maySee(d.kind, can)) return fail('Document not found.', 404);
   if (d.moved_to) return fail('This document moved to the student record when they were admitted. Open it there.', 409);
   let type = d.inline_type;
   if (!type) {
@@ -233,7 +235,7 @@ export async function openDoc(db: Db, a: Actor, id: string, can: AppCan): Promis
 /** Checked against the original: verified, or rejected with a note saying what to send instead. */
 export async function decideDoc(db: Db, a: Actor, id: string, verify: boolean, note: string, can: AppCan): Promise<Result> {
   const d = await docOf(db, a.schoolId, id);
-  if (!d || !canManageKind(d.kind, managing(can))) return fail('Document not found.', 404);
+  if (!d || !mayManage(d.kind, can)) return fail('Document not found.', 404);
   if (d.moved_to) return fail('This document moved to the student record. Check it there.', 409);
   if (!verify && note.trim().length < 3) return fail('Say what is wrong, so the family knows what to send.');
   const { error } = await db.from('admission_documents').update(verify
@@ -247,7 +249,7 @@ export async function decideDoc(db: Db, a: Actor, id: string, verify: boolean, n
 /** An upload made by mistake: the record and its file go. */
 export async function removeDoc(db: Db, a: Actor, id: string, reason: string, can: AppCan): Promise<Result> {
   const d = await docOf(db, a.schoolId, id);
-  if (!d || !canManageKind(d.kind, managing(can))) return fail('Document not found.', 404);
+  if (!d || !mayManage(d.kind, can)) return fail('Document not found.', 404);
   if (d.moved_to) return fail('This document moved to the student record. Remove it there.', 409);
   if (reason.trim().length < 3) return fail('Say why it is being removed.');
   const { error } = await db.from('admission_documents').delete().eq('id', d.id);

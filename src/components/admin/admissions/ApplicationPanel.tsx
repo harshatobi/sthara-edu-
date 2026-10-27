@@ -4,18 +4,16 @@ import { useState } from 'react';
 import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
 import { ArrowSquareOutIcon as ArrowSquareOut } from '@phosphor-icons/react/dist/ssr/ArrowSquareOut';
-import { TrashIcon as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
+import { KeyIcon as Key } from '@phosphor-icons/react/dist/ssr/Key';
 import { Chip, Empty, Skeleton, type Tone } from '@/components/canon/ui';
 import { useGet } from '@/components/canon/useGet';
 import { DocumentForm, openDocument, uploadDocument } from '@/components/students/documentForms';
 import { CHECK_LABEL, CHECK_TONE } from '@/components/admin/students/DocumentsPanel';
-import { APPLICATION_FIELDS, MAX_FAMILY, type AgeState, type ApplicationForm, type Checks } from '@/lib/admin/application';
+import { type AgeState, type ApplicationForm, type Checks } from '@/lib/admin/application';
+import ApplicationFields, { draftToForm, toDraft, type Draft } from '@/components/admissions/ApplicationFields';
 import { fmtDate } from '@/lib/admin/format';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { DOC_KIND_KEYS, docLabel, isMedical, type DocStatus } from '@/lib/students/documents';
-import {
-  ADDRESS_PARTS, EDUCATION, EDUCATION_LABEL, GROUPS, RELATION_LABEL, RELATIONS, type Address, type Field as RegField,
-} from '@/lib/students/register';
 import { CardHead, Field, Workspace } from '../kit';
 
 interface AppDoc {
@@ -27,6 +25,8 @@ interface AppData {
   form: ApplicationForm; appliedOn: string | null; channel: string;
   completeness: { missing: string[]; done: boolean };
   docs: AppDoc[]; checks: Checks; hidden: number;
+  accessCode: { hint: string; expires_at: string; last_used_at: string | null; created_at: string } | null;
+  applyPath: string | null;
 }
 
 const DOC_PATH = '/api/admin/admissions/documents';
@@ -47,6 +47,7 @@ export default function ApplicationPanel({ applicantId, canManage, admitted, onC
   return (
     <>
       <ChecksCard data={data} />
+      {canManage && !admitted && <FamilyAccess applicantId={applicantId} data={data} onChanged={done} />}
       <div className="seg" role="tablist" aria-label="Application" style={{ margin: '0 0 14px' }}>
         <button role="tab" aria-selected={tab === 'form'} className={tab === 'form' ? 'on' : ''} onClick={() => setTab('form')}>
           Application{data.completeness.done ? '' : ` · ${data.completeness.missing.length} to fill`}
@@ -98,67 +99,61 @@ function ChecksCard({ data }: { data: AppData }) {
   );
 }
 
-// ── The form ────────────────────────────────────────────────────────────────
-type Draft = { fields: Record<string, string>; address: Record<string, string>; permanent_same: boolean; permanent_address: Record<string, string>; family: Record<string, string | boolean>[] };
-
-const toDraft = (f: ApplicationForm): Draft => ({
-  fields: Object.fromEntries(Object.entries(f.fields).map(([k, v]) => [k, typeof v === 'boolean' ? (v ? 'yes' : 'no') : String(v)])),
-  address: Object.fromEntries(Object.entries(f.address || {}).map(([k, v]) => [k, v ?? ''])),
-  permanent_same: f.permanent_same,
-  permanent_address: Object.fromEntries(Object.entries(f.permanent_address || {}).map(([k, v]) => [k, v ?? ''])),
-  family: f.family.map(m => ({ relation: m.relation, name: m.name, phone: m.phone ?? '', email: m.email ?? '', occupation: m.occupation ?? '', education: m.education ?? '', is_primary: m.is_primary })),
-});
-
-function FieldInput({ f, value, set, disabled }: { f: RegField; value: string; set: (v: string) => void; disabled: boolean }) {
-  const id = `af-${f.key}`;
-  const control = f.kind === 'enum' ? (
-    <select id={id} className="cmp-sel" value={value} disabled={disabled} onChange={e => set(e.target.value)}>
-      <option value="">Not given</option>
-      {f.values!.map(v => <option key={v} value={v}>{f.labels?.[v] ?? v}</option>)}
-    </select>
-  ) : f.kind === 'bool' ? (
-    <select id={id} className="cmp-sel" value={value} disabled={disabled} onChange={e => set(e.target.value)}>
-      <option value="">Not given</option><option value="yes">Yes</option><option value="no">No</option>
-    </select>
-  ) : (
-    <input id={id} className="cmp-in" value={value} disabled={disabled} type={f.kind === 'date' ? 'date' : 'text'}
-      inputMode={f.kind === 'digits' || f.kind === 'amount' ? 'numeric' : undefined} maxLength={f.kind === 'digits' ? (f.len ?? 12) + 4 : f.max}
-      onChange={e => set(e.target.value)} />
-  );
-  return <Field label={f.label.toUpperCase()} htmlFor={id} hint={f.hint}>{control}</Field>;
-}
-
-function AddressInputs({ prefix, value, set, disabled }: { prefix: string; value: Record<string, string>; set: (k: keyof Address, v: string) => void; disabled: boolean }) {
+// ── The family's access ─────────────────────────────────────────────────────
+/**
+ * A code the office gives the family so they can fill in the application and send documents themselves on the
+ * school's apply page, without a login. Shown once; a new code ends the old one.
+ */
+function FamilyAccess({ applicantId, data, onChanged }: { applicantId: string; data: AppData; onChanged: (m: string) => void }) {
+  const { call } = useAdminDesk();
+  const [fresh, setFresh] = useState<{ code: string; expiresAt: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const c = data.accessCode;
+  const link = data.applyPath && typeof window !== 'undefined' ? `${window.location.origin}${data.applyPath}` : null;
+  const act = async (action: 'code' | 'end-code') => {
+    setBusy(true); setErr(null);
+    try {
+      const r = await call<{ code?: string; expiresAt?: string }>('/api/admin/admissions/application', 'POST', { action, applicantId });
+      if (action === 'code' && r.code && r.expiresAt) setFresh({ code: r.code, expiresAt: r.expiresAt });
+      else setFresh(null);
+      onChanged(action === 'code' ? 'Access code ready: give it to the family' : 'The family’s access code no longer works');
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save.'); } finally { setBusy(false); }
+  };
   return (
-    <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-      {ADDRESS_PARTS.map(p => (
-        <Field key={p.key} label={p.label.toUpperCase()} htmlFor={`${prefix}-${p.key}`}>
-          <input id={`${prefix}-${p.key}`} className="cmp-in" maxLength={p.max} value={value[p.key] ?? ''} disabled={disabled}
-            inputMode={p.key === 'pin' ? 'numeric' : undefined} onChange={e => set(p.key, e.target.value)} />
-        </Field>
-      ))}
+    <div className="card" style={{ marginBottom: 16 }}>
+      <CardHead title="Family access"
+        sub={link ? 'Give the family a code to fill in this application and send documents themselves on your apply page. No login needed; their uploads wait for your check.' : 'Your school has no apply page yet (it needs a sign-in code from Sthara).'}
+        right={link && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {c && <button className="btn sm" disabled={busy} onClick={() => act('end-code')}>End the code</button>}
+          <button className="btn sm pri" disabled={busy} onClick={() => act('code')}><Key size={14} /> {c ? 'Give a new code' : 'Give an access code'}</button>
+        </div>} />
+      {err && <div className="note err" role="alert" style={{ marginBottom: 12 }}>{err}</div>}
+      {fresh ? (
+        <div className="note" role="status">
+          <div style={{ fontSize: 13 }}>Give the family this code. It is shown only now, and works until {fmtDate(fresh.expiresAt)}.</div>
+          <div className="mono" style={{ fontSize: 26, fontWeight: 800, letterSpacing: '.12em', margin: '8px 0' }}>{fresh.code}</div>
+          {link && <div style={{ fontSize: 13, overflowWrap: 'anywhere' }}>They open <b>{link}</b> and choose “I have an access code”.</div>}
+        </div>
+      ) : c ? (
+        <p style={{ fontSize: 13.5, margin: 0 }}>A code ending <b className="mono">{c.hint}</b> works until {fmtDate(c.expires_at)}. {c.last_used_at ? `The family last used it ${fmtDate(c.last_used_at)}.` : 'The family hasn’t used it yet.'}</p>
+      ) : link ? <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>No code given.</p> : null}
     </div>
   );
 }
 
+// ── The form ────────────────────────────────────────────────────────────────
 function FormEditor({ applicantId, data, canManage, onSaved }: { applicantId: string; data: AppData; canManage: boolean; onSaved: () => void }) {
   const { call } = useAdminDesk();
   const [d, setD] = useState<Draft>(() => toDraft(data.form));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const groups = GROUPS.filter(g => APPLICATION_FIELDS.some(f => f.group === g.key));
-  const setField = (k: string, v: string) => setD(x => ({ ...x, fields: { ...x.fields, [k]: v } }));
-  const setMember = (i: number, k: string, v: string | boolean) => setD(x => ({ ...x, family: x.family.map((m, j) => (j === i ? { ...m, [k]: v } : k === 'is_primary' && v ? { ...m, is_primary: false } : m)) }));
   const save = async () => {
     setBusy(true); setErr(null);
     try {
       await call('/api/admin/admissions', 'PATCH', {
         id: applicantId,
-        form: {
-          fields: Object.fromEntries(Object.entries(d.fields).filter(([, v]) => v !== '')),
-          address: d.address, permanent_same: d.permanent_same, permanent_address: d.permanent_same ? null : d.permanent_address,
-          family: d.family,
-        },
+        form: draftToForm(d),
       });
       onSaved();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save the application.'); } finally { setBusy(false); }
@@ -167,53 +162,7 @@ function FormEditor({ applicantId, data, canManage, onSaved }: { applicantId: st
     <div className="card">
       <CardHead title="Application" sub="What the register needs at admission, and what the transfer certificate is later made from. Name, class and date of birth are in Details above; Aadhaar is entered by the registrar at admission."
         right={canManage && <button className="btn sm pri" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save application'}</button>} />
-      {groups.map(g => (
-        <div key={g.key} style={{ marginBottom: 14 }}>
-          <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em', margin: '6px 0 8px' }}>{g.label.toUpperCase()}</div>
-          <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-            {APPLICATION_FIELDS.filter(f => f.group === g.key).map(f => (
-              <FieldInput key={f.key} f={f} value={d.fields[f.key] ?? ''} set={v => setField(f.key, v)} disabled={!canManage} />
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em', margin: '6px 0 8px' }}>ADDRESS</div>
-      <AddressInputs prefix="adr" value={d.address} disabled={!canManage} set={(k, v) => setD(x => ({ ...x, address: { ...x.address, [k]: v } }))} />
-      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, margin: '4px 0 12px' }}>
-        <input type="checkbox" checked={d.permanent_same} disabled={!canManage} onChange={e => setD(x => ({ ...x, permanent_same: e.target.checked }))} /> The permanent address is the same
-      </label>
-      {!d.permanent_same && <AddressInputs prefix="padr" value={d.permanent_address} disabled={!canManage} set={(k, v) => setD(x => ({ ...x, permanent_address: { ...x.permanent_address, [k]: v } }))} />}
-
-      <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em', margin: '14px 0 8px' }}>FAMILY</div>
-      {d.family.map((m, i) => (
-        <div key={i} className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, alignItems: 'end', paddingBottom: 10, borderBottom: '1px solid var(--line)', marginBottom: 10 }}>
-          <Field label="RELATION" htmlFor={`fm-r-${i}`}>
-            <select id={`fm-r-${i}`} className="cmp-sel" value={String(m.relation)} disabled={!canManage} onChange={e => setMember(i, 'relation', e.target.value)}>
-              {RELATIONS.map(r => <option key={r} value={r}>{RELATION_LABEL[r]}</option>)}
-            </select>
-          </Field>
-          <Field label="NAME" htmlFor={`fm-n-${i}`}><input id={`fm-n-${i}`} className="cmp-in" maxLength={120} value={String(m.name)} disabled={!canManage} onChange={e => setMember(i, 'name', e.target.value)} /></Field>
-          <Field label="MOBILE" htmlFor={`fm-p-${i}`}><input id={`fm-p-${i}`} className="cmp-in" inputMode="tel" maxLength={20} value={String(m.phone)} disabled={!canManage} onChange={e => setMember(i, 'phone', e.target.value)} /></Field>
-          <Field label="EMAIL" htmlFor={`fm-e-${i}`}><input id={`fm-e-${i}`} className="cmp-in" maxLength={160} value={String(m.email)} disabled={!canManage} onChange={e => setMember(i, 'email', e.target.value)} /></Field>
-          <Field label="OCCUPATION" htmlFor={`fm-o-${i}`}><input id={`fm-o-${i}`} className="cmp-in" maxLength={80} value={String(m.occupation)} disabled={!canManage} onChange={e => setMember(i, 'occupation', e.target.value)} /></Field>
-          <Field label="EDUCATION" htmlFor={`fm-ed-${i}`}>
-            <select id={`fm-ed-${i}`} className="cmp-sel" value={String(m.education)} disabled={!canManage} onChange={e => setMember(i, 'education', e.target.value)}>
-              <option value="">Not given</option>
-              {EDUCATION.map(x => <option key={x} value={x}>{EDUCATION_LABEL[x]}</option>)}
-            </select>
-          </Field>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', paddingBottom: 8 }}>
-            <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}><input type="radio" name="fm-primary" checked={m.is_primary === true} disabled={!canManage} onChange={() => setMember(i, 'is_primary', true)} /> Main contact</label>
-            {canManage && <button className="btn sm" aria-label={`Remove family member ${i + 1}`} onClick={() => setD(x => ({ ...x, family: x.family.filter((_, j) => j !== i) }))}><Trash size={13} /></button>}
-          </div>
-        </div>
-      ))}
-      {canManage && d.family.length < MAX_FAMILY && (
-        <button className="btn sm" onClick={() => setD(x => ({ ...x, family: [...x.family, { relation: x.family.length ? 'father' : 'mother', name: '', phone: '', email: '', occupation: '', education: '', is_primary: !x.family.length }] }))}>
-          <Plus size={13} /> Add a family member
-        </button>
-      )}
-      {!d.family.length && <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>The transfer certificate names the mother and the father or guardian: add them here.</p>}
+      <ApplicationFields d={d} setD={setD} disabled={!canManage} />
       {err && <div className="err" role="alert" style={{ marginTop: 12 }}>{err}</div>}
     </div>
   );

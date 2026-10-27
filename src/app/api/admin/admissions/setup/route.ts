@@ -4,6 +4,7 @@ import { admissionError } from '@/lib/admin/admissionsServer';
 import { isSession, nextSession, sessionOf } from '@/lib/admin/format';
 import { checkAgeRules } from '@/lib/admin/application';
 import { GRADES } from '@/lib/students/register';
+import { applyPath, onlineOf } from '@/lib/admin/familyAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,24 @@ export const dynamic = 'force-dynamic';
  *        the age for each class on the cut-off date of the admission year (blank min: Class 1 at 6, a year a class)
  *   POST { kind: 'seats', session?, seats: [{ grade, capacity | null }] }
  *        seats for new admissions per grade (null: no limit); more seats fill from the waitlist at once
+ *   POST { kind: 'online', open, note? }
+ *        whether families can apply on the school's apply page and from the parent portal, and a note shown to them
+ *   GET  (admissions.read) online applications: open or not, the note, the apply link, and how many families have
+ *        an application started but not yet sent
  */
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req, 'admissions.read');
+  if ('res' in auth) return auth.res;
+  const { db, admin } = auth;
+  const [{ data }, { count }] = await Promise.all([
+    db.from('schools').select('settings').eq('id', admin.schoolId).maybeSingle(),
+    db.from('admission_applicants').select('id', { count: 'exact', head: true }).eq('school_id', admin.schoolId)
+      .in('channel', ['online', 'portal']).is('submitted_at', null).not('stage', 'in', '(rejected,withdrawn)'),
+  ]);
+  const code = typeof (data?.settings as Record<string, unknown> | null)?.code === 'string' ? (data!.settings as Record<string, string>).code : null;
+  return NextResponse.json({ ...onlineOf(data?.settings), path: code ? applyPath(code) : null, drafts: count ?? 0 });
+}
+
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req, 'admissions.setup');
   if ('res' in auth) return auth.res;
@@ -85,6 +103,17 @@ export async function POST(req: NextRequest) {
       issued += Number(data) || 0;
     }
     return NextResponse.json({ ok: true, issued });
+  }
+
+  if (b.kind === 'online') {
+    const value = { open: b.open === true, note: str(b.note, 500) || null };
+    const { data } = await db.from('schools').select('settings').eq('id', admin.schoolId).maybeSingle();
+    const st = (data?.settings as Record<string, any>) || {};
+    if (value.open && !st.code) return bad('Your school has no sign-in code yet, so it has no apply page. Ask Sthara support.', 409);
+    const { error } = await db.from('schools').update({ settings: { ...st, admissions: { ...(st.admissions || {}), online: value } } }).eq('id', admin.schoolId);
+    if (error) return bad('Could not save.', 500);
+    await db.from('audit_log').insert({ actor_id: admin.id, actor_role: 'admin', action: 'admissions.online_changed', table_name: 'schools', row_id: admin.schoolId, school_id: admin.schoolId, new_values: value });
+    return NextResponse.json({ ok: true });
   }
 
   return bad('Unknown set-up.');

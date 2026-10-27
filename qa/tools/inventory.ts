@@ -43,7 +43,7 @@ export type Guard =
   | 'cron'          // Authorization: Bearer <CRON_SECRET>, or the import worker's x-worker-secret (IMPORT_WORKER_SECRET)
   | 'device'        // biometric device token
   | 'meta'          // WhatsApp webhook: verify token (GET) / X-Hub-Signature-256 (POST)
-  | 'public'        // deliberately open (sign-in lookup, health, contact form, error reports)
+  | 'public'        // deliberately open (sign-in lookup, health, contact form, error reports, the admissions apply page)
   | 'unguarded';    // none of the above: a finding until someone decides it is public
 
 export interface ApiRoute {
@@ -64,6 +64,8 @@ const PUBLIC: Record<string, Record<string, number[]>> = {
   // Same-origin only: without an Origin/Referer from the site itself, both methods answer 403.
   '/api/contact': { GET: [403], POST: [403] },
   '/api/errors': { POST: [204, 400, 413] },
+  // Families applying without a login (admissions phase 2b): names the school by its code, then its own session cookie.
+  '/api/apply': { POST: [400, 401, 404, 429] },
 };
 
 const METHOD = /export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)\b|export\s+const\s+(GET|POST|PUT|PATCH|DELETE)\s*=/g;

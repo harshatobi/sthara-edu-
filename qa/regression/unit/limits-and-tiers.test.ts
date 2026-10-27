@@ -42,7 +42,7 @@ test('rate limits are the signed-off values (requests per window)', () => {
     lessons: '120/10m per user', lab: '60/10m per user', labRuns: '300/10m per user', practicals: '120/10m per user', lessonDraft: '12/10m per user', leave: '20/10m per user', checkin: '20/10m per user', capturePage: '300/10m per user',
     captureGrade: '60/10m per user', parentDesk: '60/5m per user', parentAsk: '30/10m per user', timelineAsk: '30/10m per user', staffAsk: '30/10m per user',
     staffWhatsapp: '30/10m per user', schoolMessages: '40/10m per user', whatsappLink: '5/15m per user',
-    whatsappInbound: '20/10m per user', clientErrors: '30/1m per ip',
+    whatsappInbound: '20/10m per user', applySignIn: '10/15m per ip', applyWrite: '120/10m per ip', clientErrors: '30/1m per ip',
   });
 });
 

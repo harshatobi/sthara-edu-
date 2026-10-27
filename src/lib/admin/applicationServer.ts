@@ -21,7 +21,9 @@ type Db = SupabaseClient;
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; status: number };
 const fail = (error: string, status = 400) => ({ ok: false as const, error, status });
 
-export interface Actor { id: string; schoolId: string }
+/** Who acts: office staff, or (adding documents to their own application) a parent account or a family signed in
+ * on the apply page, who has no Sthara login (id null). */
+export interface Actor { id: string | null; schoolId: string; role?: 'admin' | 'parent' | 'family' }
 export interface AppCan { see: boolean; manage: boolean; health: boolean; manageHealth: boolean }
 // Medical kinds (disability certificate, medical certificate, vaccination record) are the health roles' alone on an
 // application, to see and to handle: the admissions office never holds them.
@@ -36,7 +38,7 @@ export interface AppDoc {
 }
 
 async function audit(db: Db, a: Actor, action: string, rowId: string, values: Record<string, unknown>) {
-  const { error } = await db.from('audit_log').insert({ actor_id: a.id, actor_role: 'admin', action, table_name: 'admission_documents', row_id: rowId, school_id: a.schoolId, new_values: values });
+  const { error } = await db.from('audit_log').insert({ actor_id: a.id, actor_role: a.role ?? 'admin', action, table_name: 'admission_documents', row_id: rowId, school_id: a.schoolId, new_values: values });
   if (error) console.warn('[application audit]', error.message);
 }
 
@@ -189,10 +191,12 @@ export async function finishUpload(db: Db, a: Actor, applicantId: string, b: Rec
     await db.storage.from(DOC_BUCKET).remove([path]);
     return fail('Files can be up to 25 MB. Scan at a lower resolution or split it.');
   }
-  const verified = b.verified === true;
+  // A family's upload always waits for the office's check.
+  const fromFamily = !!a.role && a.role !== 'admin';
+  const verified = !fromFamily && b.verified === true;
   const { data, error } = await db.from('admission_documents').insert({
     school_id: a.schoolId, applicant_id: applicantId, ...m.value, storage_path: path, file_name: fileName, size_bytes: size || null,
-    status: verified ? 'verified' : 'awaiting', source: 'office', uploaded_by: a.id,
+    status: verified ? 'verified' : 'awaiting', source: fromFamily ? 'family' : 'office', uploaded_by: a.id,
     verified_by: verified ? a.id : null, verified_at: verified ? new Date().toISOString() : null,
   }).select('id').single();
   if (error || !data) {

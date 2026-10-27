@@ -29,6 +29,7 @@ import { GRADES, gradeLabel } from '@/lib/students/register';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Field, Kpi, MissingNotice, Workspace, downloadCsv } from './kit';
 import { FinanceTabs } from './fees/FeesPage';
+import { useGet } from '@/components/canon/useGet';
 import ApplicationPanel from './admissions/ApplicationPanel';
 import { defaultMinAge, REQUIREMENT_LABEL, type Requirement } from '@/lib/admin/application';
 
@@ -98,6 +99,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
         </>} />
       <FinanceTabs />
       <MissingNotice desk={desk} tables={['admission_applicants']} />
+      <OnlineNotice canSetup={can('admissions.setup')} onSetup={() => setSetup(true)} />
 
       <div className="kpis">
         <Kpi label="APPLICANTS" value={P.total} icon={UsersThree} note={`${P.applicants.filter(a => a.open).length} still open${P.conversion !== null ? ` · ${P.conversion}% of decided enrolled` : ''}`} onClick={() => setView('open')} />
@@ -627,15 +629,17 @@ function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; o
 interface StageDraft { key: string | null; label: string; active: boolean; open: number; requires: string[] }
 
 function Setup({ P, call, onClose, onSaved }: { P: Pipeline; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
-  const [tab, setTab] = useState<'stages' | 'seats' | 'age'>('stages');
+  const [tab, setTab] = useState<'stages' | 'seats' | 'age' | 'online'>('stages');
   return (
     <Workspace wide title="Set up admissions" sub={`Stages for every session · seats for AY ${P.session.replace('-', '–')}`} onClose={onClose}>
       <div className="seg" role="tablist" aria-label="Set-up" style={{ marginBottom: 16 }}>
         <button role="tab" aria-selected={tab === 'stages'} className={tab === 'stages' ? 'on' : ''} onClick={() => setTab('stages')}>Stages</button>
         <button role="tab" aria-selected={tab === 'seats'} className={tab === 'seats' ? 'on' : ''} onClick={() => setTab('seats')}>Seats</button>
         <button role="tab" aria-selected={tab === 'age'} className={tab === 'age' ? 'on' : ''} onClick={() => setTab('age')}>Age for each class</button>
+        <button role="tab" aria-selected={tab === 'online'} className={tab === 'online' ? 'on' : ''} onClick={() => setTab('online')}>Online applications</button>
       </div>
-      {tab === 'stages' ? <StagesEditor P={P} call={call} onSaved={onSaved} /> : tab === 'seats' ? <SeatsEditor P={P} call={call} onSaved={onSaved} /> : <AgeEditor P={P} call={call} onSaved={onSaved} />}
+      {tab === 'stages' ? <StagesEditor P={P} call={call} onSaved={onSaved} /> : tab === 'seats' ? <SeatsEditor P={P} call={call} onSaved={onSaved} />
+        : tab === 'age' ? <AgeEditor P={P} call={call} onSaved={onSaved} /> : <OnlineEditor call={call} onSaved={onSaved} />}
     </Workspace>
   );
 }
@@ -803,6 +807,61 @@ function AgeEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (m:
       {err && <div className="err" role="alert" style={{ margin: '10px 0' }}>{err}</div>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
         <button className="btn pri" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save age rules'}</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Online applications ─────────────────────────────────────────────────────
+interface OnlineState { open: boolean; note: string | null; path: string | null; drafts: number }
+
+/** Where families apply, and how many have started an application they haven't sent (those stay off the pipeline). */
+function OnlineNotice({ canSetup, onSetup }: { canSetup: boolean; onSetup: () => void }) {
+  const { data } = useGet<OnlineState>('/api/admin/admissions/setup');
+  if (!data || (!data.open && !data.drafts)) return null;
+  const link = data.path && typeof window !== 'undefined' ? `${window.location.origin}${data.path}` : null;
+  return (
+    <div className="note" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, overflowWrap: 'anywhere' }}>
+        {data.open ? <>Families can apply online{link ? <> at <b>{link}</b></> : null} and from the parent portal.</> : 'Online applications are closed.'}
+        {data.drafts > 0 && ` ${plural(data.drafts, 'family has', 'families have')} started an application and not sent it yet; it appears here once they do.`}
+      </span>
+      {canSetup && <button className="btn sm" onClick={onSetup}>Online set-up</button>}
+    </div>
+  );
+}
+
+function OnlineEditor({ call, onSaved }: { call: Call; onSaved: (m: string) => void }) {
+  const { data, error } = useGet<OnlineState>('/api/admin/admissions/setup');
+  const [open, setOpenOnline] = useState<boolean | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (error) return <div className="note err" role="alert">{error}</div>;
+  if (!data) return <div className="card"><p className="muted">Loading…</p></div>;
+  const isOpen = open ?? data.open;
+  const text = note ?? data.note ?? '';
+  const link = data.path && typeof window !== 'undefined' ? `${window.location.origin}${data.path}` : null;
+  const save = async () => {
+    setBusy(true); setErr(null);
+    try {
+      await call('/api/admin/admissions/setup', 'POST', { kind: 'online', open: isOpen, note: text });
+      onSaved(isOpen ? 'Online applications are open' : 'Online applications are closed');
+    } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not save.'); } finally { setBusy(false); }
+  };
+  return (
+    <div className="card">
+      <CardHead title="Online applications" sub="Families apply on your school's apply page (signing in with a code on WhatsApp, or an access code you give them) and parents at the school apply for a sibling from the parent portal. An application reaches your pipeline, at your first stage, when the family sends it; their documents wait for your check." />
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 12 }}>
+        <input type="checkbox" checked={isOpen} onChange={e => setOpenOnline(e.target.checked)} /> Take new applications online
+      </label>
+      {link && <p style={{ fontSize: 13.5, overflowWrap: 'anywhere', margin: '0 0 12px' }}>Your apply page: <a href={link} target="_blank" rel="noopener noreferrer"><b>{link}</b></a>. Share it on your website and notices. Families with an access code can use it even while new applications are closed.</p>}
+      <Field label="NOTE FOR FAMILIES (OPTIONAL)" htmlFor="online-note" hint="Shown on the apply page, e.g. what to bring to the school visit. Up to 500 characters.">
+        <textarea id="online-note" className="cmp-in" maxLength={500} value={text} onChange={e => setNote(e.target.value)} />
+      </Field>
+      {err && <div className="err" role="alert" style={{ margin: '10px 0' }}>{err}</div>}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+        <button className="btn pri" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
       </div>
     </div>
   );

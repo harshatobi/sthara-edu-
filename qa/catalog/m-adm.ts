@@ -12,6 +12,10 @@ export const reqs: ReqDef[] = [
   { n: '08', process: 'P03', priority: 'Critical', text: 'The application holds what the register and the transfer certificate need, checked with the register’s own rules: gender, nationality, social category and the other UDISE+ fields, the previous school and its TC number, the address (and permanent address), and the family (mother, father or guardian, with one main contact). Name, class and date of birth are on the applicant; Aadhaar is entered by the registrar at admission. What is still missing for the register and TC is listed.', perm: 'admissions.manage', api: 'PATCH /api/admin/admissions; GET /api/admin/admissions/application', tables: 'admission_applicants', auto: [`${A.application}application form: register rules, blanks left out, family and addresses checked`] },
   { n: '09', process: 'P03', priority: 'Critical', text: 'Documents with the application: the office uploads what the family brings (up to 25 MB, private storage, two-minute links, every open recorded), marks it verified against the original or rejects it with a note; medical kinds stay with the health roles. Admitting the student onto the register moves them to the student record keeping who verified them and when (rejected ones stay behind), and fills the register from the application: every field left blank on the admission form, the family record, and the incoming TC number.', perm: 'admissions.manage', api: 'POST /api/admin/admissions/documents; POST /api/admin/students', tables: 'admission_documents, student_documents, students, family_members' },
   { n: '10', process: 'P03', priority: 'High', text: 'Checks on each applicant: the age for the class on the school’s cut-off date (default 31 March, Class 1 at 6 and a year a class; the school sets a youngest and an optional oldest age per class), the admission checklist for the class (a TC from Class 2 by default), siblings at the school (a family phone or email on their record, or the applying parent’s children) and staff in the family (a staff phone). A stage can require the documents or the age check before an applicant leaves it, including before an offer is proposed.', perm: 'admissions.setup', api: 'POST /api/admin/admissions/setup', tables: 'admission_stages, schools.settings', auto: [`${A.application}age for the class on the cut-off date: NEP default, school rules, edges`, `${A.application}checks and stage gates: documents on the checklist, age, sibling matching contacts`] },
+  { n: '11', process: 'P03', priority: 'Critical', text: 'Families apply online without a Sthara login on the school’s apply page (/apply/<school code>), once the school opens online applications (Set up › Online applications, with an optional note for families). They sign in with a 6-digit code sent on WhatsApp (five tries, ten minutes; offered only when WhatsApp can deliver it, never simulated in production, never when the school’s WhatsApp is switched off) or with an access code from the office. A session lasts four hours. One phone can have at most five open applications a year.', perm: 'admissions.setup', api: 'POST /api/apply; GET/POST /api/admin/admissions/setup', tables: 'admission_otps, admission_family_sessions, schools.settings', auto: [`${A.familyAccess}online applications are closed unless the school opened them`] },
+  { n: '12', process: 'P03', priority: 'Critical', text: 'The office gives a family an access code for one applicant (8 characters, shown once, kept only as a hash, 30 days; a new code ends the old one, and ending it signs the family out). With it the family fills in that application and sends documents, even while new online applications are closed; they cannot start another. Giving and ending codes is audited with the last two characters only.', perm: 'admissions.manage', api: 'POST /api/admin/admissions/application', tables: 'admission_access_codes, audit_log', auto: [`${A.familyAccess}access codes: Crockford letters, typed loosely, read back exactly`] },
+  { n: '13', process: 'P03', priority: 'Critical', text: 'The family fills in the same application the office does (the register’s rules), sends documents (any kind; each waits for the office’s check; one not yet verified can be taken back), and sends the application once nothing the register and TC need is missing. Until then it is a draft: off the pipeline, counted in a note for the office. Once sent it reaches the school’s first stage with a history entry, and the details are locked for the family; documents can still come until admission. The family sees Draft, With the school (at <stage>), Offer, Admitted or Closed, never the office’s notes.', perm: '—', api: 'POST /api/apply; POST /api/parent/admissions', tables: 'admission_applicants, admission_documents, admission_events', auto: [`${A.familyAccess}what the family sees of where the application stands`, `${A.familyAccess}the family edits the details only while it is a draft`] },
+  { n: '14', process: 'P03', priority: 'High', text: 'A parent with a child at the school applies for a sibling from the parent portal (Apply for a Sibling): the application starts with the family and address from their child’s record, and is marked as a sibling (portal) application; the office’s sibling check names the child already at the school.', perm: 'parent', api: 'GET/POST /api/parent/admissions', tables: 'admission_applicants, family_members, students' },
 
 ];
 
@@ -106,6 +110,42 @@ export const scripts: ScriptDef[] = [
     steps: [
       ['New enquiry for Nursery, born 10 January 2024.', 'Added; the list and seats show Nursery; Checks: right age for Nursery (3 on 31 Mar 2027).'],
       ['Set up › Seats: Nursery 40; save.', 'Seats by grade lists Nursery with 40.'],
+    ] },
+  { n: '12', title: 'A family applies online', role: 'School admin, Parent (no login), Admissions officer', priority: 'Critical', type: 'Positive', req: ['11', '13'], uat: true,
+    pre: 'Set up › Online applications: tick "Take new applications online", save. Note the apply page link.', data: 'A mobile not used before; child born 12 Jun 2016 for Class 6; a birth certificate photo',
+    steps: [
+      ['Open the apply link in a private window. With my phone: enter the mobile, tick the agreement, Send me a code; enter the code.', 'Signed in; "No applications yet".'],
+      ['Apply for a child: name, Class 6, date of birth; Start the application.', 'The application opens as DRAFT; the age line says right age for Class 6.'],
+      ['Office: Admissions.', 'The applicant is NOT in the list; the note says 1 family has started an application and not sent it yet.'],
+      ['Family: Send to the school straight away.', 'Refused, listing what is still to fill in.'],
+      ['Fill gender, nationality, category, address and the mother as main contact; Save; Send a document: the birth certificate.', 'Saved; the document shows WITH THE SCHOOL; the checklist chip shows TO CHECK.'],
+      ['Send to the school.', '"Sent to the school"; status WITH THE SCHOOL (at Enquiry); the fields are locked.'],
+      ['Office: Admissions; open the applicant.', 'Listed at the first stage, source Website; History "Application sent online by the family"; the document From: The family, TO CHECK; Verify it.'],
+      ['Family: reload.', 'The document shows VERIFIED; it can no longer be removed.'],
+    ] },
+  { n: '13', title: 'An access code for a walk-in family', role: 'Admissions officer, Parent (no login)', priority: 'Critical', type: 'Positive', req: ['12'], uat: true,
+    pre: 'An applicant the office logged at Application with no date of birth.',
+    steps: [
+      ['Open the applicant › Family access › Give an access code.', 'An 8-character code is shown once, with the apply link and the date it ends.'],
+      ['Family: apply link › I have an access code; type it in lower case without the dash.', 'The application opens straight away; name and class are locked, the date of birth can be given.'],
+      ['Family: fill in and send it.', 'Sent; office History shows it; the office list shows the applicant as before (never hidden).'],
+      ['Office: Give a new code. Family: reload.', 'The family is signed out; the old code is refused ("isn’t right, or the school has replaced it").'],
+      ['Office: End the code.', 'Family access says no code given; the new code is refused too.'],
+    ] },
+  { n: '14', title: 'Apply for a sibling from the parent portal', role: 'Parent', priority: 'High', type: 'Positive', req: ['14'],
+    pre: 'Online applications open; a parent signed in with a verified child.',
+    steps: [
+      ['Apply for a Sibling › Apply for a child: name, class, date of birth.', 'The application opens with the address and family from the child’s record.'],
+      ['Complete and send it.', 'WITH THE SCHOOL.'],
+      ['Office: open the applicant.', 'Source Sibling; Checks › Sibling at school names the existing child ("Applied from their parent account").'],
+    ] },
+  { n: '15', title: 'Apply page refusals', role: 'Parent (no login)', priority: 'High', type: 'Negative', req: ['11', '12', '13'],
+    pre: 'Online applications closed.',
+    steps: [
+      ['Open the apply link.', 'No phone sign-in; "isn’t taking new applications online"; the access-code box is offered.'],
+      ['Enter a made-up access code.', 'Refused; after ten tries in 15 minutes: "Too many tries".'],
+      ['Open /apply/nosuchschool.', '"This apply link isn’t right."'],
+      ['Production with WhatsApp not connected.', 'Phone sign-in is not offered (codes are never shown on screen in production).'],
     ] },
 
 ];

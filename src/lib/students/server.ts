@@ -12,6 +12,8 @@ import { checklistOf } from './documents';
 import { blocked, classProgress, isOutcome, stageOf, type ChainRow, type Step } from './outcomes';
 import { familyOf } from './family';
 import { checkAddress, checkFamily } from './register';
+import { formOf } from '@/lib/admin/application';
+import { moveDocsToStudent } from '@/lib/admin/applicationServer';
 
 /**
  * The register, enrolment and the year-end chain on the server. Callers have been authorised already and pass the
@@ -140,9 +142,39 @@ function aadhaarPatch(input: { aadhaar?: unknown; noAadhaar?: unknown }): { patc
   return { patch: { ...sealed, no_aadhaar: false }, masked: maskAadhaar(sealed.aadhaar_last4)! };
 }
 
-/** Admits a student onto the register: number from the form or the next one, the class from today (or the admission date). */
-export async function admit(db: Db, a: Actor, input: Record<string, any>): Promise<Result<{ id: string; admissionNo: string }>> {
-  const { values, errors } = checkFields(input.fields || {}, { creating: true });
+/**
+ * Admits a student onto the register: number from the form or the next one, the class from today (or the admission
+ * date). From an admission application, what the application holds fills every field the office left blank (name,
+ * date of birth, class admitted to, the register fields, address), its family becomes the family record, and its
+ * documents move to the student record keeping their verification: so the register, and later the transfer
+ * certificate, carry what the family gave at admission without anyone typing it twice.
+ */
+export async function admit(db: Db, a: Actor, input: Record<string, any>): Promise<Result<{ id: string; admissionNo: string; documents?: { moved: number; failed: number } }>> {
+  let app: { id: string; name: string; grade: number; date_of_birth: string | null; previous_school: string | null; guardian_name: string | null;
+    guardian_phone: string | null; guardian_email: string | null; form: unknown } | null = null;
+  if (typeof input.applicantId === 'string') {
+    const { data } = await db.from('admission_applicants').select('id, name, grade, date_of_birth, previous_school, guardian_name, guardian_phone, guardian_email, form')
+      .eq('id', input.applicantId).eq('school_id', a.schoolId).maybeSingle();
+    if (!data) return fail('That applicant isn’t at this school.', 404);
+    app = data;
+  }
+  const form = app ? formOf(app.form) : null;
+  // The application underneath, what the office typed on top (a blank on the form never wipes the application).
+  const typed = Object.fromEntries(Object.entries(input.fields || {}).filter(([, v]) => v !== '' && v != null));
+  const base = app ? { full_name: app.name, date_of_birth: app.date_of_birth, admitted_grade: app.grade, previous_school: app.previous_school, ...form!.fields } : {};
+  const merged = Object.fromEntries(Object.entries({ ...base, ...typed }).filter(([, v]) => v !== '' && v != null));
+  // The incoming transfer certificate's number, from the TC uploaded with the application, when nobody typed one.
+  if (app && merged.previous_tc_no == null) {
+    const { data: tc } = await db.from('admission_documents').select('document_no').eq('applicant_id', app.id).eq('kind', 'transfer_certificate')
+      .neq('status', 'rejected').not('document_no', 'is', null).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (tc?.document_no) merged.previous_tc_no = String(tc.document_no).slice(0, 40);
+  }
+  const { values, errors } = checkFields(merged, { creating: true });
+  if (form && input.address === undefined && form.address) {
+    values.address = form.address;
+    values.permanent_same = form.permanent_same;
+    values.permanent_address = form.permanent_same ? null : form.permanent_address;
+  }
   const ad = aadhaarPatch(input);
   if (ad.error) errors.aadhaar = ad.error;
   let admissionNo: string | null = null;
@@ -158,13 +190,10 @@ export async function admit(db: Db, a: Actor, input: Record<string, any>): Promi
     if (error || !data) return fail('Could not issue an admission number.', 500);
     admissionNo = data as string;
   }
-  let applicant: { id: string; guardian_name: string | null; guardian_phone: string | null; guardian_email: string | null } | null = null;
-  if (typeof input.applicantId === 'string') {
-    const { data } = await db.from('admission_applicants').select('id, guardian_name, guardian_phone, guardian_email').eq('id', input.applicantId).eq('school_id', a.schoolId).maybeSingle();
-    if (!data) return fail('That applicant isn’t at this school.', 404);
-    const { count } = await db.from('students').select('id', { count: 'exact', head: true }).eq('applicant_id', data.id);
+  const applicant = app;
+  if (applicant) {
+    const { count } = await db.from('students').select('id', { count: 'exact', head: true }).eq('applicant_id', applicant.id);
     if (count) return fail('That applicant is already on the register.', 409);
-    applicant = data;
   }
   const { data: row, error } = await db.from('students').insert({
     school_id: a.schoolId, admission_no: admissionNo, ...values, ...ad.patch, applicant_id: applicant?.id ?? null, created_by: a.id,
@@ -174,24 +203,42 @@ export async function admit(db: Db, a: Actor, input: Record<string, any>): Promi
   const from = (values.admitted_on as string | undefined) ?? new Date().toISOString().slice(0, 10);
   const mv = await db.rpc('student_move', { p_school: a.schoolId, p_student: row.id, p_class: target, p_from: from, p_reason: null });
   if (mv.error) return dbError(mv.error, 'The student was added, but their class could not be set.');
-  // The guardian from the admission form becomes the first family contact (the office checked the form before saving).
-  if (applicant?.guardian_name) {
+  // The application's family becomes the family record (its main contact, else the first member, is primary);
+  // without one, the guardian from the enquiry is the first contact (the office checked it before saving).
+  if (form?.family.length) {
+    const primary = Math.max(0, form.family.findIndex(m => m.is_primary));
+    const { error: fe } = await db.from('family_members').insert(form.family.map((m, i) => ({ ...m, is_primary: i === primary, school_id: a.schoolId, student_id: row.id, created_by: a.id })));
+    if (fe) console.warn('[admit] family not copied:', fe.message);
+  } else if (applicant?.guardian_name) {
     const g = checkFamily({ relation: input.guardianRelation || 'guardian', name: applicant.guardian_name, phone: applicant.guardian_phone ?? '', email: applicant.guardian_email ?? '', is_primary: true });
     if (!('error' in g)) await db.from('family_members').insert({ ...g.value, school_id: a.schoolId, student_id: row.id, created_by: a.id });
   }
-  await audit(db, a, 'student.admitted', row.id, { admissionNo: row.admission_no, class: target, applicant: applicant?.id ?? null });
-  return { ok: true, id: row.id, admissionNo: row.admission_no };
+  const documents = applicant ? await moveDocsToStudent(db, a.id, a.schoolId, applicant.id, row.id) : undefined;
+  await audit(db, a, 'student.admitted', row.id, { admissionNo: row.admission_no, class: target, applicant: applicant?.id ?? null, documents: documents ?? null });
+  return { ok: true, id: row.id, admissionNo: row.admission_no, documents };
 }
 
 /** Applicants marked enrolled who aren't on the register yet: the admission form pre-fills the new record. */
 export async function admittable(db: Db, schoolId: string) {
-  const { data: apps } = await pageAll<any>((f, t) => db.from('admission_applicants').select('id, name, grade, date_of_birth, previous_school, guardian_name, guardian_phone, guardian_email, session')
+  const { data: apps } = await pageAll<any>((f, t) => db.from('admission_applicants').select('id, name, grade, date_of_birth, previous_school, guardian_name, guardian_phone, guardian_email, session, form')
     .eq('school_id', schoolId).eq('stage', 'enrolled').order('id').range(f, t), 5_000);
   if (!apps.length) return [];
   const { data: done } = await byIds<{ applicant_id: string }>(apps.map(x => x.id), (chunk, f, t) => db.from('students').select('applicant_id').in('applicant_id', chunk).order('applicant_id').range(f, t));
   const on = new Set(done.map(d => d.applicant_id));
-  return apps.filter(x => !on.has(x.id)).map(x => ({ id: x.id, name: x.name, grade: x.grade, dob: x.date_of_birth, previousSchool: x.previous_school,
-    guardian: x.guardian_name, phone: x.guardian_phone, email: x.guardian_email, session: x.session }));
+  const left = apps.filter(x => !on.has(x.id));
+  // What moves across with each: the application's family and its documents (all but rejected ones).
+  const { data: docs } = left.length
+    ? await byIds<{ applicant_id: string }>(left.map(x => x.id), (chunk, f, t) => db.from('admission_documents').select('applicant_id').in('applicant_id', chunk)
+      .is('moved_to', null).neq('status', 'rejected').order('applicant_id').range(f, t))
+    : { data: [] as { applicant_id: string }[] };
+  const docCount = new Map<string, number>();
+  for (const d of docs) docCount.set(d.applicant_id, (docCount.get(d.applicant_id) ?? 0) + 1);
+  return left.map(x => {
+    const form = formOf(x.form);
+    return { id: x.id, name: x.name, grade: x.grade, dob: x.date_of_birth, previousSchool: x.previous_school,
+      guardian: x.guardian_name, phone: x.guardian_phone, email: x.guardian_email, session: x.session,
+      family: form.family.length, fields: Object.keys(form.fields).length, documents: docCount.get(x.id) ?? 0 };
+  });
 }
 
 /** Corrects register fields with one reason; every changed field keeps its old value in the history. */

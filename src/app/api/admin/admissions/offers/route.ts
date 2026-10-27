@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { bad, deny, ISO_DAY, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { admissionError } from '@/lib/admin/admissionsServer';
+import { stageGate } from '@/lib/admin/applicationServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
       const no = deny(admin, 'admissions.manage'); if (no) return no;
       if (!isUuid(b.applicantId)) return bad('Pick the applicant.');
       const respondBy = typeof b.respondBy === 'string' && ISO_DAY.test(b.respondBy) ? b.respondBy : null;
+      // The last own stage's checks stand between the applicant and an offer.
+      const { data: ap } = await db.from('admission_applicants').select('stage').eq('id', b.applicantId).eq('school_id', school).maybeSingle();
+      if (ap) { const why = await stageGate(db, school, b.applicantId, ap.stage); if (why) return bad(why, 409); }
       const { data, error } = await db.rpc('admission_offer_propose', { p_school: school, p_applicant: b.applicantId, p_actor: admin.id, p_note: note, p_respond_by: respondBy });
       if (error) return admissionError(error, 'Could not propose the offer.');
       return NextResponse.json({ ok: true, id: data });

@@ -25,6 +25,7 @@ export const A = {
   guards: 'qa:regression/unit/api-guards.test.ts::',
   // The app's own unit suites (src/lib/**.test.ts)
   admin: 'app:src/lib/admin/admin.test.ts::',
+  application: 'app:src/lib/admin/application.test.ts::',
   probe: 'app:src/lib/admin/probe.test.ts::',
   appRbac: 'app:src/lib/admin/rbac.test.ts::',
   usage: 'app:src/lib/ai/usage.test.ts::',

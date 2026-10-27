@@ -21,7 +21,7 @@ import YearEnd from './YearEnd';
 import RegisterSettings from './RegisterSettings';
 import Requests from './Requests';
 
-interface Applicant { id: string; name: string; grade: number; dob: string | null; previousSchool: string | null; guardian: string | null; phone: string | null; email: string | null; session: string }
+interface Applicant { id: string; name: string; grade: number; dob: string | null; previousSchool: string | null; guardian: string | null; phone: string | null; email: string | null; session: string; family: number; fields: number; documents: number }
 
 export interface ListRow {
   id: string; admissionNo: string; name: string; status: string; gender: string | null; dob: string | null; hasLogin: boolean;
@@ -142,7 +142,7 @@ function Register() {
           </div>
         )}
       </div>
-      {adding && <Admit classes={data.classes} onClose={() => setAdding(false)} onDone={(no, id) => { setAdding(false); toast(`Admitted with number ${no}.`); reload(); router.push(`/admin/students/${id}`); }} />}
+      {adding && <Admit classes={data.classes} onClose={() => setAdding(false)} onDone={(no, id, docs) => { setAdding(false); toast(`Admitted with number ${no}.${docs?.moved ? ` ${plural(docs.moved, 'document')} moved to the record.` : ''}${docs?.failed ? ` ${docs.failed} could not move: they stay with the application.` : ''}`); reload(); router.push(`/admin/students/${id}`); }} />}
     </>
   );
 }
@@ -170,7 +170,7 @@ export function FieldInput({ f, value, onChange, id }: { f: RegField; value: unk
     maxLength={f.kind === 'digits' ? (f.len ?? 12) + 4 : f.max} value={value == null ? '' : String(value)} onChange={e => onChange(e.target.value)} />;
 }
 
-function Admit({ classes, onClose, onDone }: { classes: string[]; onClose: () => void; onDone: (admissionNo: string, id: string) => void }) {
+function Admit({ classes, onClose, onDone }: { classes: string[]; onClose: () => void; onDone: (admissionNo: string, id: string, docs?: { moved: number; failed: number }) => void }) {
   const { call } = useAdminDesk();
   const [fields, setFields] = useState<Record<string, unknown>>({ indian_national: true, admitted_on: isoDay() });
   const [admissionNo, setAdmissionNo] = useState('');
@@ -192,8 +192,8 @@ function Admit({ classes, onClose, onDone }: { classes: string[]; onClose: () =>
   const save = async () => {
     setBusy(true); setErr(null);
     try {
-      const r = await call<{ id: string; admissionNo: string }>('/api/admin/students', 'POST', { fields, admissionNo: admissionNo.trim() || undefined, className, aadhaar: noAadhaar ? undefined : aadhaar, noAadhaar, applicantId: applicantId || undefined });
-      onDone(r.admissionNo, r.id);
+      const r = await call<{ id: string; admissionNo: string; documents?: { moved: number; failed: number } }>('/api/admin/students', 'POST', { fields, admissionNo: admissionNo.trim() || undefined, className, aadhaar: noAadhaar ? undefined : aadhaar, noAadhaar, applicantId: applicantId || undefined });
+      onDone(r.admissionNo, r.id, r.documents);
     } catch (e) { setErr(e instanceof Error ? e.message : 'Could not admit the student.'); setBusy(false); }
   };
   return (
@@ -201,14 +201,19 @@ function Admit({ classes, onClose, onDone }: { classes: string[]; onClose: () =>
       actions={<button className="btn pri" onClick={save} disabled={busy || !String(fields.full_name ?? '').trim() || !className}>{busy ? 'Saving' : 'Admit'}</button>}>
       {err && <div className="note err" role="alert" style={{ marginBottom: 16 }}>{err}</div>}
       {!!apps?.applicants.length && (
-        <Field label="FROM AN ADMITTED APPLICANT" htmlFor="adm-app" hint="Fills the form from the admission enquiry; the guardian becomes the first family contact. Check everything before saving.">
+        <Field label="FROM AN ADMITTED APPLICANT" htmlFor="adm-app" hint="Fills the form from the admission application. Anything you leave blank is taken from it; its family becomes the family record and its documents move to the student record, keeping their checks.">
           <select id="adm-app" className="cmp-sel" value={applicantId} onChange={e => fromApplicant(e.target.value)}>
             <option value="">Type the details instead</option>
-            {apps.applicants.map(x => <option key={x.id} value={x.id}>{x.name} · Class {x.grade} · {x.session}{x.guardian ? ` · ${x.guardian}` : ''}</option>)}
+            {apps.applicants.map(x => <option key={x.id} value={x.id}>{x.name} · {gradeLabel(x.grade)} · {x.session}{x.guardian ? ` · ${x.guardian}` : ''}</option>)}
           </select>
         </Field>
       )}
-      {applicantId && (() => { const ap = apps?.applicants.find(x => x.id === applicantId); return ap?.guardian ? <div className="note info" style={{ marginBottom: 12 }}>First family contact: {ap.guardian}{ap.phone ? `, ${ap.phone}` : ''}{ap.email ? `, ${ap.email}` : ''}.</div> : null; })()}
+      {applicantId && (() => {
+        const ap = apps?.applicants.find(x => x.id === applicantId);
+        if (!ap) return null;
+        const parts = [ap.fields ? plural(ap.fields, 'register detail') : '', ap.family ? plural(ap.family, 'family member') : ap.guardian ? `${ap.guardian} as the first family contact` : '', ap.documents ? plural(ap.documents, 'document') : ''].filter(Boolean);
+        return parts.length ? <div className="note info" style={{ marginBottom: 12 }}>From the application: {parts.join(', ')}.</div> : null;
+      })()}
       <div className="g2">
         <Field label="ADMISSION NUMBER" htmlFor="adm-no" hint="Leave blank for the next number in the school format.">
           <input className="cmp-in" id="adm-no" value={admissionNo} maxLength={30} onChange={e => setAdmissionNo(e.target.value)} />

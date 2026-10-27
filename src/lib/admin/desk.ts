@@ -613,7 +613,7 @@ export function assembleAdminDesk(rows: AdminRows, now = Date.now()): AdminDesk 
   });
   const admissionsSession = nextSession(session);
   const admissions = assemblePipeline(admissionsSession, rows.applicants, rows.admissionEvents, today,
-    { stages: rows.admissionStages, seats: rows.admissionSeats, offers: rows.admissionOffers });
+    { stages: rows.admissionStages, seats: rows.admissionSeats, offers: rows.admissionOffers, settings: rows.school.settings });
   const wellness = assembleWellness(rows.wellness, students.length, `${session.slice(0, 4)}-04-01`, now);
   const compliance = assembleCompliance(rows, students, wellness);
   const f = rows.filings.find(x => x.kind === 'cbse_wellness' && x.session === session);

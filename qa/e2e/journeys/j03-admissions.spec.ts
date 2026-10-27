@@ -20,7 +20,7 @@ test.describe.serial('SIT-02 Admissions: enquiry → application → rejected', 
       await a.page.getByRole('button', { name: 'Add enquiry' }).click();
       await expect(a.page.getByRole('alert')).toBeVisible(); // nothing filled: refused with a message
       await a.page.getByLabel("APPLICANT'S FULL NAME").fill(name);
-      await a.page.getByLabel('GRADE APPLIED FOR').selectOption('6');
+      await a.page.getByLabel('CLASS APPLIED FOR').selectOption('6');
       await a.page.getByLabel('PARENT OR GUARDIAN').fill(`${RUN_ID} Parent`);
       await a.page.getByLabel('MOBILE').fill('9800000000');
       await a.page.getByLabel('HOW THEY HEARD OF US').selectOption('website');

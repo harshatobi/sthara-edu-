@@ -11,6 +11,7 @@
  * as an application — conversion stays honest.
  */
 import { daysBetween, isoDay } from './format';
+import { ageRulesOf, type AgeRules } from './application';
 
 /** The template every school starts from; also the stage values the bulk-import format accepts. */
 export const STAGES = ['enquiry', 'application', 'assessment', 'offer', 'enrolled'] as const;
@@ -25,6 +26,8 @@ export interface StageDef {
   active: boolean;
   /** Offer only: days a family has to accept. */
   respondDays: number | null;
+  /** Checks an applicant must pass before leaving this stage ('documents', 'age'). */
+  requires: string[];
   color: string;
 }
 
@@ -47,13 +50,13 @@ export function shapeStages(rows: any[] | undefined): StageDef[] {
   const src = rows?.length ? rows : DEFAULT_ROWS;
   const list: StageDef[] = src.map(r => ({
     key: r.key, label: r.label, position: Number(r.position ?? 0), system: r.system ?? null, active: r.active !== false,
-    respondDays: r.respond_days ?? null, color: '',
+    respondDays: r.respond_days ?? null, requires: Array.isArray(r.requires) ? r.requires : [], color: '',
   })).sort((a, b) => sysRank(a.system) - sysRank(b.system) || a.position - b.position);
   // The template's system rows if a school's own list lacks them (never expected; keeps the pipeline whole).
   for (const sys of ['offer', 'enrolled'] as const) {
     if (!list.some(s => s.system === sys)) {
       const d = DEFAULT_ROWS.find(r => r.system === sys)!;
-      list.push({ key: d.key, label: d.label, position: d.position, system: sys, active: true, respondDays: d.respond_days ?? null, color: '' });
+      list.push({ key: d.key, label: d.label, position: d.position, system: sys, active: true, respondDays: d.respond_days ?? null, requires: [], color: '' });
     }
   }
   let i = 0;
@@ -211,6 +214,8 @@ export interface Pipeline {
   /** Offers out that lapse within EXPIRING_DAYS. */
   expiring: Applicant[];
   waitlisted: number;
+  /** The age for each class on the cut-off date (the school's, else NEP's). */
+  ageRules: AgeRules;
 }
 
 export const STALE_DAYS = 14;
@@ -237,7 +242,7 @@ export function shapeApplicant(r: any, events: any[], offers: Offer[], stages: S
   };
 }
 
-export interface PipelineRows { stages?: any[]; seats?: any[]; offers?: any[] }
+export interface PipelineRows { stages?: any[]; seats?: any[]; offers?: any[]; settings?: unknown }
 
 export function assemblePipeline(session: string, rows: any[], eventRows: any[], today = isoDay(), extra: PipelineRows = {}): Pipeline {
   const stages = shapeStages(extra.stages);
@@ -325,5 +330,6 @@ export function assemblePipeline(session: string, rows: any[], eventRows: any[],
     expiring: applicants.filter(a => a.offer?.status === 'issued' && a.offer.daysLeft !== null && a.offer.daysLeft <= EXPIRING_DAYS)
       .sort((a, b) => a.offer!.daysLeft! - b.offer!.daysLeft!),
     waitlisted: offerRows.filter(o => o.status === 'waitlisted').length,
+    ageRules: ageRulesOf(extra.settings),
   };
 }

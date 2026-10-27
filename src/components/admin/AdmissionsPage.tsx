@@ -25,9 +25,12 @@ import {
 } from '@/lib/admin/admissions';
 import type { AdminDesk } from '@/lib/admin/desk';
 import { ago, fmtDate, gradeOf, isoDay, plural } from '@/lib/admin/format';
+import { GRADES, gradeLabel } from '@/lib/students/register';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Field, Kpi, MissingNotice, Workspace, downloadCsv } from './kit';
 import { FinanceTabs } from './fees/FeesPage';
+import ApplicationPanel from './admissions/ApplicationPanel';
+import { defaultMinAge, REQUIREMENT_LABEL, type Requirement } from '@/lib/admin/application';
 
 const OFFER_TONE: Record<OfferStatus, Tone> = {
   proposed: 'a', returned: 'r', waitlisted: 'p', issued: 'a', accepted: 'g', declined: 'n', lapsed: 'n', withdrawn: 'n', enrolled: 'g',
@@ -139,10 +142,10 @@ function Admissions({ desk }: { desk: AdminDesk }) {
             <>
               <div className="tbl-wrap">
                 <table className="tbl">
-                  <thead><tr><th>Grade</th><th className="c">Seats</th><th className="c">Held</th><th className="c">Accepted</th><th className="c">Waitlist</th><th className="c">Left</th></tr></thead>
+                  <thead><tr><th>Class</th><th className="c">Seats</th><th className="c">Held</th><th className="c">Accepted</th><th className="c">Waitlist</th><th className="c">Left</th></tr></thead>
                   <tbody>{P.seats.map(s => (
                     <tr key={s.grade}>
-                      <td><b>Grade {s.grade}</b></td>
+                      <td><b>{gradeLabel(s.grade)}</b></td>
                       <td className="c num">{s.capacity ?? <span className="muted">No limit</span>}</td>
                       <td className="c num">{s.held}</td>
                       <td className="c num">{s.accepted + s.enrolled}</td>
@@ -175,7 +178,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
         {rows.length ? (<>
           <div className="tbl-wrap">
             <table className="tbl">
-              <thead><tr><th>Applicant</th><th className="c">Grade</th><th>Stage</th><th>Offer</th><th className="c">In stage</th><th>Source</th><th /></tr></thead>
+              <thead><tr><th>Applicant</th><th className="c">Class</th><th>Stage</th><th>Offer</th><th className="c">In stage</th><th>Source</th><th /></tr></thead>
               <tbody>{shownRows.map(a => (
                 <ApplicantRow key={a.id} a={a} stages={P.stages} canManage={can('admissions.manage')} onOpen={() => setOpen(a.id)}
                   onAdvance={async to => {
@@ -277,13 +280,13 @@ function DecideRow({ a, seatNote, proposer, canDecide, mine, call, onDone, onOpe
     setBusy(true); setErr(null);
     try {
       const r = await call('/api/admin/admissions/offers', 'POST', { action, offerId: o.id, note: note || undefined });
-      onDone(action === 'return' ? `Offer for ${a.name} sent back` : r.status === 'waitlisted' ? `${a.name} approved and put on the grade ${a.grade} waitlist` : `Offer for ${a.name} approved and out`);
+      onDone(action === 'return' ? `Offer for ${a.name} sent back` : r.status === 'waitlisted' ? `${a.name} approved and put on the ${gradeLabel(a.grade)} waitlist` : `Offer for ${a.name} approved and out`);
     } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not record the decision.'); setBusy(false); }
   };
   return (
     <div className="row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
       <button onClick={onOpen} style={{ flex: '1 1 260px', textAlign: 'left', background: 'none', border: 0, padding: 0, color: 'inherit', cursor: 'pointer', font: 'inherit' }}>
-        <b style={{ fontSize: 14 }}>{a.name}</b> <span className="muted">· Grade {a.grade} · {seatNote}</span>
+        <b style={{ fontSize: 14 }}>{a.name}</b> <span className="muted">· {gradeLabel(a.grade)} · {seatNote}</span>
         <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>Proposed by {proposer} {ago(o.proposedAt)}{o.respondBy ? ` · reply by ${fmtDate(o.respondBy)}` : ''}</div>
         {o.proposalNote && <div style={{ fontSize: 12.5, marginTop: 4 }}>&ldquo;{o.proposalNote}&rdquo;</div>}
       </button>
@@ -313,10 +316,10 @@ function DetailsForm({ d, set, gradeLocked }: { d: Draft; set: (k: keyof Draft, 
     <>
       <div className="g2" style={{ gap: 16 }}>
         <Field label="APPLICANT'S FULL NAME" htmlFor="ap-name"><input id="ap-name" className="cmp-in" value={d.name} maxLength={120} onChange={e => set('name', e.target.value)} /></Field>
-        <Field label="GRADE APPLIED FOR" htmlFor="ap-grade" hint={gradeLocked ? 'Fixed while an offer is in progress: it holds a seat in this grade.' : undefined}>
+        <Field label="CLASS APPLIED FOR" htmlFor="ap-grade" hint={gradeLocked ? 'Fixed while an offer is in progress: it holds a seat in this grade.' : undefined}>
           <select id="ap-grade" className="cmp-sel" value={d.grade} disabled={gradeLocked} onChange={e => set('grade', e.target.value)}>
-            <option value="">Pick a grade</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map(g => <option key={g} value={g}>Grade {g}</option>)}
+            <option value="">Pick a class</option>
+            {GRADES.map(g => <option key={g} value={g}>{gradeLabel(g)}</option>)}
           </select>
         </Field>
         <Field label="DATE OF BIRTH" htmlFor="ap-dob"><input id="ap-dob" type="date" className="cmp-in" value={d.dob} max={isoDay()} onChange={e => set('dob', e.target.value)} /></Field>
@@ -409,7 +412,7 @@ function ApplicantRecord({ a, P, desk, call, onClose, onChanged }: {
   };
 
   return (
-    <Workspace wide title={a.name} sub={`Grade ${a.grade} · ${stageName(stages, a.stage)}${a.open ? ` for ${plural(a.daysInStage, 'day')}` : ''} · added ${fmtDate(a.createdAt)}`} onClose={onClose}
+    <Workspace wide title={a.name} sub={`${gradeLabel(a.grade)} · ${stageName(stages, a.stage)}${a.open ? ` for ${plural(a.daysInStage, 'day')}` : ''} · added ${fmtDate(a.createdAt)}`} onClose={onClose}
       actions={<div className="acts">
         {manage && a.open && <button className="btn" disabled={busy} onClick={() => setClosing('withdrawn')}>Withdrawn</button>}
         {manage && a.open && <button className="btn" disabled={busy} onClick={() => setClosing('rejected')}>Reject</button>}
@@ -452,6 +455,7 @@ function ApplicantRecord({ a, P, desk, call, onClose, onChanged }: {
           </div>
         </div>
       )}
+      <ApplicationPanel key={a.id} applicantId={a.id} canManage={manage} admitted={!!a.studentId && a.stage === 'enrolled'} onChanged={onChanged} />
       <div className="g2" style={{ gridTemplateColumns: '1fr 340px', alignItems: 'start' }}>
         <div className="card">
           <CardHead title="Details" right={manage && <button className="btn sm" disabled={busy} onClick={async () => {
@@ -513,7 +517,7 @@ function OfferCard({ a, P, desk, call, names, canPropose, onChanged }: {
   if (o?.live) {
     tone = o.status === 'accepted' ? 'var(--green)' : o.status === 'waitlisted' ? 'var(--purple, #7C5CFC)' : 'var(--amber)';
     if (o.status === 'proposed') { title = 'Offer waiting for approval'; sub = `Proposed by ${who(o.proposedBy)} ${ago(o.proposedAt)}.${o.proposalNote ? ` "${o.proposalNote}"` : ''}`; }
-    if (o.status === 'waitlisted') { title = `On the grade ${a.grade} waitlist${o.waitPosition ? `, number ${o.waitPosition}` : ''}`; sub = `Approved by ${who(o.decidedBy)}. The offer goes out by itself when a seat frees, and ${who(o.proposedBy)} is told.`; }
+    if (o.status === 'waitlisted') { title = `On the ${gradeLabel(a.grade)} waitlist${o.waitPosition ? `, number ${o.waitPosition}` : ''}`; sub = `Approved by ${who(o.decidedBy)}. The offer goes out by itself when a seat frees, and ${who(o.proposedBy)} is told.`; }
     if (o.status === 'issued') {
       title = 'Offer is out';
       sub = o.respondBy ? `The family has until ${fmtDate(o.respondBy)} to accept (${o.daysLeft! < 0 ? 'past the date: it lapses tonight' : plural(o.daysLeft!, 'day') + ' left'}). After that it lapses and the seat goes to the waitlist.`
@@ -524,7 +528,7 @@ function OfferCard({ a, P, desk, call, names, canPropose, onChanged }: {
     return <div className="note" style={{ marginBottom: 16 }}>Offer sent back by {who(o.decidedBy)}: &ldquo;{o.decisionNote}&rdquo;</div>;
   } else {
     title = `Propose an offer for ${first}`;
-    sub = `${o?.status === 'returned' ? `Sent back by ${who(o.decidedBy)}: "${o.decisionNote}". ` : ''}The principal approves it before it goes to the family. ${seat?.capacity === null || !seat ? 'Grade ' + a.grade + ' has no seat limit.' : seat.left! > 0 ? `${plural(seat.left!, 'seat')} left in grade ${a.grade}.` : `Grade ${a.grade} is full: once approved, ${first} waits on the list.`}`;
+    sub = `${o?.status === 'returned' ? `Sent back by ${who(o.decidedBy)}: "${o.decisionNote}". ` : ''}The principal approves it before it goes to the family. ${seat?.capacity === null || !seat ? `${gradeLabel(a.grade)} has no seat limit.` : seat.left! > 0 ? `${plural(seat.left!, 'seat')} left in ${gradeLabel(a.grade)}.` : `${gradeLabel(a.grade)} is full: once approved, ${first} waits on the list.`}`;
   }
 
   return (
@@ -592,8 +596,8 @@ function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; o
   }, [a.grade]);
   return (
     <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--blue)' }}>
-      <CardHead title={`Request enrolment for ${a.name}`} sub={`Grade ${a.grade}. Sthara creates the student's login and the parent's (or links their existing account), raises the fees if you ask, and moves them to Enrolled. You'll get the sign-in details from Sthara.`} />
-      {sections && !sections.length && <div className="note" style={{ marginBottom: 12 }}>Your class list has no grade {a.grade} section yet. Ask Sthara to add one.</div>}
+      <CardHead title={`Request enrolment for ${a.name}`} sub={`${gradeLabel(a.grade)}. Sthara creates the student's login and the parent's (or links their existing account), raises the fees if you ask, and moves them to Enrolled. You'll get the sign-in details from Sthara.`} />
+      {sections && !sections.length && <div className="note" style={{ marginBottom: 12 }}>Your class list has no {gradeLabel(a.grade)} section yet. Ask Sthara to add one.</div>}
       <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         <Field label="SECTION" htmlFor="en-c">
           <select id="en-c" className="cmp-sel" value={v.className} onChange={e => setV({ ...v, className: e.target.value })} disabled={!sections?.length}>
@@ -605,7 +609,7 @@ function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; o
         <Field label="STUDENT EMAIL (OPTIONAL)" htmlFor="en-s" hint="Leave blank for a school login ID"><input id="en-s" className="cmp-in" value={v.studentEmail} onChange={e => setV({ ...v, studentEmail: e.target.value })} /></Field>
         <Field label="PARENT EMAIL" htmlFor="en-p" hint="An existing parent account is linked, not duplicated"><input id="en-p" className="cmp-in" value={v.parentEmail} onChange={e => setV({ ...v, parentEmail: e.target.value })} /></Field>
       </div>
-      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, margin: '4px 0 12px' }}><input type="checkbox" checked={v.billFees} onChange={e => setV({ ...v, billFees: e.target.checked })} /> Raise the fee instalments already billed to grade {a.grade} this session</label>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, margin: '4px 0 12px' }}><input type="checkbox" checked={v.billFees} onChange={e => setV({ ...v, billFees: e.target.checked })} /> Raise the fee instalments already billed to {gradeLabel(a.grade)} this session</label>
       {err && <div className="err" role="alert" style={{ marginBottom: 10 }}>{err}</div>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
         <button className="btn" onClick={onCancel}>Cancel</button>
@@ -620,24 +624,25 @@ function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; o
 }
 
 // ── Set up: stages and seats ────────────────────────────────────────────────
-interface StageDraft { key: string | null; label: string; active: boolean; open: number }
+interface StageDraft { key: string | null; label: string; active: boolean; open: number; requires: string[] }
 
 function Setup({ P, call, onClose, onSaved }: { P: Pipeline; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
-  const [tab, setTab] = useState<'stages' | 'seats'>('stages');
+  const [tab, setTab] = useState<'stages' | 'seats' | 'age'>('stages');
   return (
     <Workspace wide title="Set up admissions" sub={`Stages for every session · seats for AY ${P.session.replace('-', '–')}`} onClose={onClose}>
       <div className="seg" role="tablist" aria-label="Set-up" style={{ marginBottom: 16 }}>
         <button role="tab" aria-selected={tab === 'stages'} className={tab === 'stages' ? 'on' : ''} onClick={() => setTab('stages')}>Stages</button>
         <button role="tab" aria-selected={tab === 'seats'} className={tab === 'seats' ? 'on' : ''} onClick={() => setTab('seats')}>Seats</button>
+        <button role="tab" aria-selected={tab === 'age'} className={tab === 'age' ? 'on' : ''} onClick={() => setTab('age')}>Age for each class</button>
       </div>
-      {tab === 'stages' ? <StagesEditor P={P} call={call} onSaved={onSaved} /> : <SeatsEditor P={P} call={call} onSaved={onSaved} />}
+      {tab === 'stages' ? <StagesEditor P={P} call={call} onSaved={onSaved} /> : tab === 'seats' ? <SeatsEditor P={P} call={call} onSaved={onSaved} /> : <AgeEditor P={P} call={call} onSaved={onSaved} />}
     </Workspace>
   );
 }
 
 function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (m: string) => void }) {
   const openIn = (key: string) => P.applicants.filter(a => a.stage === key).length;
-  const [own, setOwn] = useState<StageDraft[]>(() => P.stages.filter(s => !s.system).map(s => ({ key: s.key, label: s.label, active: s.active, open: openIn(s.key) })));
+  const [own, setOwn] = useState<StageDraft[]>(() => P.stages.filter(s => !s.system).map(s => ({ key: s.key, label: s.label, active: s.active, open: openIn(s.key), requires: s.requires })));
   const offer = P.stages.find(s => s.system === 'offer')!;
   const enrolled = P.stages.find(s => s.system === 'enrolled')!;
   const [offerLabel, setOfferLabel] = useState(offer.label);
@@ -657,7 +662,7 @@ function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: 
     setBusy(true); setErr(null);
     try {
       await call('/api/admin/admissions/setup', 'POST', {
-        kind: 'stages', own: own.map(s => ({ key: s.key, label: s.label, active: s.active })),
+        kind: 'stages', own: own.map(s => ({ key: s.key, label: s.label, active: s.active, requires: s.requires })),
         offer: { label: offerLabel, respondDays: Number(days) }, enrolled: { label: enrolledLabel },
       });
       onSaved('Admissions stages saved');
@@ -677,9 +682,18 @@ function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: 
             <button className="btn sm" disabled={s.active && s.open > 0} title={s.active && s.open > 0 ? 'Move its applicants on first' : undefined}
               onClick={() => set(i, { active: !s.active })}>{s.active ? 'Retire' : 'Use again'}</button>
           ) : <button className="btn sm" onClick={() => setOwn(xs => xs.filter((_, j) => j !== i))}>Remove</button>}
+          <div style={{ flex: '1 1 100%', display: 'flex', gap: 16, flexWrap: 'wrap', paddingLeft: 32, fontSize: 12.5 }}>
+            <span className="muted">Before moving on:</span>
+            {(['documents', 'age'] as Requirement[]).map(r => (
+              <label key={r} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input type="checkbox" checked={s.requires.includes(r)} onChange={e => set(i, { requires: e.target.checked ? [...s.requires, r] : s.requires.filter(x => x !== r) })} />
+                {REQUIREMENT_LABEL[r]}
+              </label>
+            ))}
+          </div>
         </div>
       ))}
-      <button className="btn sm" style={{ margin: '10px 0 18px' }} disabled={own.length >= 12} onClick={() => setOwn(xs => [...xs, { key: null, label: '', active: true, open: 0 }])}><Plus size={13} /> Add a stage</button>
+      <button className="btn sm" style={{ margin: '10px 0 18px' }} disabled={own.length >= 12} onClick={() => setOwn(xs => [...xs, { key: null, label: '', active: true, open: 0, requires: [] }])}><Plus size={13} /> Add a stage</button>
       <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
         <Field label="OFFER STAGE NAME" htmlFor="st-offer"><input id="st-offer" className="cmp-in" maxLength={40} value={offerLabel} onChange={e => setOfferLabel(e.target.value)} /></Field>
         <Field label="DAYS TO ACCEPT AN OFFER" htmlFor="st-days" hint="After this the offer lapses and the seat goes to the waitlist.">
@@ -701,7 +715,7 @@ function SeatsEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (
     Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i + 1, line(i + 1)?.capacity != null ? String(line(i + 1)!.capacity) : ''])));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const changed = Array.from({ length: 12 }, (_, i) => i + 1).filter(g => (line(g)?.capacity ?? null) !== (cap[g] === '' ? null : Number(cap[g])));
+  const changed = GRADES.filter(g => (line(g)?.capacity ?? null) !== (cap[g] === '' ? null : Number(cap[g])));
   const save = async () => {
     setBusy(true); setErr(null);
     try {
@@ -714,14 +728,14 @@ function SeatsEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (
       <CardHead title={`Seats for new admissions · AY ${P.session.replace('-', '–')}`} sub="Blank means no limit. Fewer seats than are already held never takes an offer back; new offers wait on the list until seats free." />
       <div className="tbl-wrap">
         <table className="tbl">
-          <thead><tr><th>Grade</th><th className="c">Seats</th><th className="c">Held</th><th className="c">Waitlist</th><th className="c">Left after saving</th></tr></thead>
-          <tbody>{Array.from({ length: 12 }, (_, i) => i + 1).map(g => {
+          <thead><tr><th>Class</th><th className="c">Seats</th><th className="c">Held</th><th className="c">Waitlist</th><th className="c">Left after saving</th></tr></thead>
+          <tbody>{GRADES.map(g => {
             const l = line(g);
             const c = cap[g] === '' ? null : Number(cap[g]);
             return (
               <tr key={g}>
-                <td><b>Grade {g}</b></td>
-                <td className="c"><input className="cmp-in" style={{ width: 90, textAlign: 'center' }} inputMode="numeric" aria-label={`Seats in grade ${g}`} value={cap[g]}
+                <td><b>{gradeLabel(g)}</b></td>
+                <td className="c"><input className="cmp-in" style={{ width: 90, textAlign: 'center' }} inputMode="numeric" aria-label={`Seats in ${gradeLabel(g)}`} value={cap[g]}
                   onChange={e => setCap(x => ({ ...x, [g]: e.target.value.replace(/\D/g, '').slice(0, 4) }))} placeholder="No limit" /></td>
                 <td className="c num">{l?.held ?? 0}</td>
                 <td className="c num">{l?.waitlisted || ''}</td>
@@ -734,6 +748,61 @@ function SeatsEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (
       {err && <div className="err" role="alert" style={{ margin: '10px 0' }}>{err}</div>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
         <button className="btn pri" disabled={busy || !changed.length} onClick={save}>{busy ? 'Saving…' : changed.length ? `Save ${plural(changed.length, 'grade')}` : 'No changes'}</button>
+      </div>
+    </div>
+  );
+}
+
+function AgeEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (m: string) => void }) {
+  const r = P.ageRules;
+  const [cutoff, setCutoff] = useState(r.cutoff);
+  const [min, setMin] = useState<Record<string, string>>(() => Object.fromEntries(GRADES.map(g => [String(g), r.min[String(g)] != null ? String(r.min[String(g)]) : ''])));
+  const [max, setMax] = useState<Record<string, string>>(() => Object.fromEntries(GRADES.map(g => [String(g), r.max[String(g)] != null ? String(r.max[String(g)]) : ''])));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [mm, dd] = cutoff.split('-');
+  const year = P.session.slice(0, 4);
+  const save = async () => {
+    setBusy(true); setErr(null);
+    try {
+      const pick = (m: Record<string, string>) => Object.fromEntries(Object.entries(m).filter(([, v]) => v !== '').map(([g, v]) => [g, Number(v)]));
+      await call('/api/admin/admissions/setup', 'POST', { kind: 'age', cutoff, min: pick(min), max: pick(max) });
+      onSaved('Age rules saved');
+    } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not save the age rules.'); } finally { setBusy(false); }
+  };
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return (
+    <div className="card">
+      <CardHead title="Age for each class" sub={`The age a child must be on the cut-off date of the admission year (${year} for AY ${P.session.replace('-', '–')}). Blank uses the NEP rule: Class 1 at 6, a year younger for each class below and older for each above. A maximum is optional; "8" admits a child of 8 years and some months.`} />
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <Field label="CUT-OFF DAY" htmlFor="age-dd">
+          <select id="age-dd" className="cmp-sel" value={dd} onChange={e => setCutoff(`${mm}-${e.target.value}`)}>
+            {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map(d => <option key={d} value={d}>{Number(d)}</option>)}
+          </select>
+        </Field>
+        <Field label="CUT-OFF MONTH" htmlFor="age-mm">
+          <select id="age-mm" className="cmp-sel" value={mm} onChange={e => setCutoff(`${e.target.value}-${dd}`)}>
+            {months.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="tbl-wrap">
+        <table className="tbl">
+          <thead><tr><th>Class</th><th className="c">Youngest (years)</th><th className="c">Oldest (years, optional)</th></tr></thead>
+          <tbody>{GRADES.map(g => (
+            <tr key={g}>
+              <td><b>{gradeLabel(g)}</b></td>
+              <td className="c"><input className="cmp-in" style={{ width: 90, textAlign: 'center' }} inputMode="numeric" aria-label={`Youngest age for ${gradeLabel(g)}`}
+                value={min[String(g)]} placeholder={String(defaultMinAge(g))} onChange={e => setMin(x => ({ ...x, [String(g)]: e.target.value.replace(/\D/g, '').slice(0, 2) }))} /></td>
+              <td className="c"><input className="cmp-in" style={{ width: 90, textAlign: 'center' }} inputMode="numeric" aria-label={`Oldest age for ${gradeLabel(g)}`}
+                value={max[String(g)]} placeholder="No limit" onChange={e => setMax(x => ({ ...x, [String(g)]: e.target.value.replace(/\D/g, '').slice(0, 2) }))} /></td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+      {err && <div className="err" role="alert" style={{ margin: '10px 0' }}>{err}</div>}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+        <button className="btn pri" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save age rules'}</button>
       </div>
     </div>
   );

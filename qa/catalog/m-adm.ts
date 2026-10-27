@@ -2,13 +2,17 @@ import type { ReqDef, ScriptDef } from './types';
 import { A } from './auto';
 
 export const reqs: ReqDef[] = [
-  { n: '01', process: 'P03', priority: 'Critical', text: 'Log an enquiry: applicant’s name, grade applied for (1–12), parent or guardian, a 10-digit mobile, how they heard of the school (walk-in, website, referral, sibling, school event, advertisement, other).', perm: 'admissions.manage', api: 'POST /api/admin/admissions', tables: 'admission_applicants', auto: [`${A.j03}1–4. Office logs, moves and closes an applicant`] },
+  { n: '01', process: 'P03', priority: 'Critical', text: 'Log an enquiry: applicant’s name, class applied for (Nursery, LKG, UKG or 1–12), parent or guardian, a 10-digit mobile, how they heard of the school (walk-in, website, referral, sibling, school event, advertisement, other).', perm: 'admissions.manage', api: 'POST /api/admin/admissions', tables: 'admission_applicants', auto: [`${A.j03}1–4. Office logs, moves and closes an applicant`] },
   { n: '02', process: 'P03', priority: 'Critical', text: 'Applicants move forward one stage at a time through the school’s own stages (by default Enquiry → Application → Assessment), then Offer and Enrolled; rejecting or withdrawing needs a reason kept on the record; only a rejected or withdrawn applicant can be reopened; two people moving the same applicant are warned.', perm: 'admissions.manage', api: 'PATCH /api/admin/admissions', tables: 'admission_events', auto: [`${A.admin}admissions: funnel counts furthest stage reached, next steps follow the stages a school sets`] },
   { n: '03', process: 'P03', priority: 'Critical', text: 'Enrolment goes through Sthara: once the family has accepted the offer the school requests enrolment (section, admission number, optional student email, parent email, optionally bill the instalments already raised); an operator approves it and the logins are created; an existing parent account is linked, not duplicated. A pending request can be withdrawn.', perm: 'admissions.manage', api: 'POST/DELETE /api/admin/admissions/enrol, PATCH /api/ops/requests' },
   { n: '04', process: 'P03', priority: 'High', text: 'Funnel and conversion count everyone who reached a stage; conversion between stages shows once three applicants reach a stage; applicants idle over two weeks are flagged; export.', perm: 'admissions.read', auto: [`${A.admin}admissions: funnel counts furthest stage reached, next steps follow the stages a school sets`] },
   { n: '05', process: 'P03', priority: 'Critical', text: 'Each school sets its own stages before the offer: rename, reorder, add (up to 12) or retire them; a stage with applicants in it can’t be retired, two stages can’t share a name, and a retired stage keeps its name in past records. Offer and Enrolled are always last: they can be renamed, not moved or removed. The school sets how many days a family has to accept an offer (1–90).', perm: 'admissions.setup', api: 'POST /api/admin/admissions/setup', tables: 'admission_stages', auto: [`${A.admin}admissions: funnel counts furthest stage reached, next steps follow the stages a school sets`] },
   { n: '06', process: 'P03', priority: 'Critical', text: 'Offers are maker-checker: the admissions office proposes an offer (optionally with a reply-by date and a note) for an applicant at the last of the school’s own stages; the principal or school admin approves or sends it back with a reason; the person who proposed an offer can never approve it. An offer can be cancelled until it goes out.', perm: 'admissions.approve', api: 'POST /api/admin/admissions/offers', tables: 'admission_offers, admission_events' },
   { n: '07', process: 'P03', priority: 'Critical', text: 'Seats per grade for the intake (blank: no limit). An applicant at Offer or enrolled holds a seat. Approving an offer when the grade is full puts the applicant on the waitlist; when a seat frees (an offer declined, lapsed or withdrawn, the applicant rejected or withdrawn, or seats added) the longest-waiting approved applicant gets the offer without a second approval and the proposer is told. Offers not accepted by their date lapse overnight and the applicant is marked withdrawn.', perm: 'admissions.setup', api: 'POST /api/admin/admissions/setup', tables: 'admission_seats, admission_offers' },
+  { n: '08', process: 'P03', priority: 'Critical', text: 'The application holds what the register and the transfer certificate need, checked with the register’s own rules: gender, nationality, social category and the other UDISE+ fields, the previous school and its TC number, the address (and permanent address), and the family (mother, father or guardian, with one main contact). Name, class and date of birth are on the applicant; Aadhaar is entered by the registrar at admission. What is still missing for the register and TC is listed.', perm: 'admissions.manage', api: 'PATCH /api/admin/admissions; GET /api/admin/admissions/application', tables: 'admission_applicants', auto: [`${A.application}application form: register rules, blanks left out, family and addresses checked`] },
+  { n: '09', process: 'P03', priority: 'Critical', text: 'Documents with the application: the office uploads what the family brings (up to 25 MB, private storage, two-minute links, every open recorded), marks it verified against the original or rejects it with a note; medical kinds stay with the health roles. Admitting the student onto the register moves them to the student record keeping who verified them and when (rejected ones stay behind), and fills the register from the application: every field left blank on the admission form, the family record, and the incoming TC number.', perm: 'admissions.manage', api: 'POST /api/admin/admissions/documents; POST /api/admin/students', tables: 'admission_documents, student_documents, students, family_members' },
+  { n: '10', process: 'P03', priority: 'High', text: 'Checks on each applicant: the age for the class on the school’s cut-off date (default 31 March, Class 1 at 6 and a year a class; the school sets a youngest and an optional oldest age per class), the admission checklist for the class (a TC from Class 2 by default), siblings at the school (a family phone or email on their record, or the applying parent’s children) and staff in the family (a staff phone). A stage can require the documents or the age check before an applicant leaves it, including before an offer is proposed.', perm: 'admissions.setup', api: 'POST /api/admin/admissions/setup', tables: 'admission_stages, schools.settings', auto: [`${A.application}age for the class on the cut-off date: NEP default, school rules, edges`, `${A.application}checks and stage gates: documents on the checklist, age, sibling matching contacts`] },
+
 ];
 
 export const scripts: ScriptDef[] = [
@@ -75,6 +79,33 @@ export const scripts: ScriptDef[] = [
     pre: 'An offer out with a reply-by date in the past (or wait out the days).',
     steps: [
       ['The next morning, open the applicant.', 'Withdrawn; History: "Offer lapsed: not accepted by <date>"; the seat went to the next family on the waitlist, if any.'],
+    ] },
+
+  { n: '09', title: 'Application through to the register, with documents', role: 'Admissions officer, Registrar', priority: 'Critical', type: 'Positive', req: ['08', '09'], uat: true,
+    pre: 'A Class 6 applicant at Application.', data: 'Mother and father with phones, address with PIN, social category SC; birth certificate and TC (no. TC/2026/114) as PDFs',
+    steps: [
+      ['Open the applicant › Application: fill gender, nationality, category, the address and both parents (mother as main contact); Save application.', '"Application saved"; Checks no longer lists them as missing.'],
+      ['Documents › Add a document: the birth certificate, ticking "I have seen the original".', 'It shows VERIFIED by you; the checklist chip turns green.'],
+      ['Add the TC without ticking; then Reject it with a note; add it again and Verify.', 'Rejected shows the note; the second upload is VERIFIED.'],
+      ['Take the applicant through to Enrolled (scripts 05, 06, 02).', 'Enrolled.'],
+      ['Registrar: Students › Admit › FROM AN ADMITTED APPLICANT: pick them.', '"From the application: … register details, 2 family members, 2 documents."'],
+      ['Admit with only the class filled.', '"Admitted… 2 documents moved to the record."'],
+      ['Open the student › Documents and Family.', 'Both documents, still verified by the officer with the date; mother and father, mother primary; the register shows SC and TC no. TC/2026/114.'],
+      ['Certificates › prepare a TC for the student.', 'Mother’s and father’s names, nationality, SC/ST and first admission (date and class) are filled from the register.'],
+    ] },
+  { n: '10', title: 'Age and document checks hold a stage', role: 'School admin, Admissions officer', perm: 'admissions.setup', priority: 'High', type: 'Negative', req: ['10'],
+    pre: 'Set up › Stages: tick both checks on Application. Set up › Age: leave the defaults.',
+    steps: [
+      ['Officer: an applicant for Class 1 born 1 May 2021, AY 2027-28, at Application; Move to assessment.', 'Refused: "Too young for Class 1: 5 y 11 m on 31 Mar 2027, needs 6 years or more." and the documents still to verify.'],
+      ['School admin: Age › Class 1 youngest 5; save. Officer: verify the documents; move again.', 'Moves on.'],
+      ['An applicant whose mother’s phone matches a current student’s family record.', 'Checks shows SIBLING with the student’s name and class.'],
+      ['An applicant whose father’s phone is a staff member’s.', 'Checks shows STAFF WARD with their designation.'],
+    ] },
+  { n: '11', title: 'Pre-primary admissions', role: 'Admissions officer', priority: 'Medium', type: 'Positive', req: ['01', '10'],
+    pre: 'Admissions page.',
+    steps: [
+      ['New enquiry for Nursery, born 10 January 2024.', 'Added; the list and seats show Nursery; Checks: right age for Nursery (3 on 31 Mar 2027).'],
+      ['Set up › Seats: Nursery 40; save.', 'Seats by grade lists Nursery with 40.'],
     ] },
 
 ];

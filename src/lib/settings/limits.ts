@@ -56,6 +56,7 @@ export const RATE_LIMITS = {
   whatsappLink:    { limit: 5,   windowMs: 15 * MIN, per: 'user',    route: '/api/parent/whatsapp',         label: 'WhatsApp number linking' },
   whatsappInbound: { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/whatsapp/webhook',        label: 'Ask the School OS (WhatsApp), per number' },
   applySignIn:     { limit: 10,  windowMs: 15 * MIN, per: 'ip',      route: '/api/apply',                   label: 'Admissions apply page: phone and access codes' },
+  applyEnquiry:    { limit: 5,   windowMs: 15 * MIN, per: 'ip',      route: '/api/apply',                   label: 'Admission enquiries (apply page and QR poster)' },
   applyWrite:      { limit: 120, windowMs: 10 * MIN, per: 'ip',      route: '/api/apply, /api/parent/admissions', label: 'Online admission applications' },
   clientErrors:    { limit: 30,  windowMs: MIN,      per: 'ip',      route: '/api/errors',                  label: 'Browser error reports (ops error log)' },
 } as const satisfies Record<string, RateLimit>;

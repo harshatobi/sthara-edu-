@@ -28,13 +28,14 @@ export function normaliseAccessCode(raw: unknown): string | null {
 export const codeHint = (normalised: string) => normalised.slice(-2);
 
 // ── The school's switch ─────────────────────────────────────────────────────
-export interface OnlineSettings { open: boolean; note: string | null }
+/** open: families can apply; enquiries: anyone can ask about admission without signing in (the form and QR poster). */
+export interface OnlineSettings { open: boolean; enquiries: boolean; note: string | null }
 
 /** settings.admissions.online: closed unless the school opened it. */
 export function onlineOf(settings: unknown): OnlineSettings {
   const raw = (settings as { admissions?: { online?: Record<string, unknown> } } | null)?.admissions?.online;
   const note = typeof raw?.note === 'string' && raw.note.trim() ? raw.note.trim().slice(0, 500) : null;
-  return { open: raw?.open === true, note };
+  return { open: raw?.open === true, enquiries: raw?.enquiries === true, note };
 }
 
 /** The apply page for a school code (codes are matched in upper case, written in lower case in links). */

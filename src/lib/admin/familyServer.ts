@@ -10,6 +10,7 @@ import { checklistFor, checklistOf, docLabel, type DocStatus } from '@/lib/stude
 import { cleanPhone, GRADES, type FamilyInput } from '@/lib/students/register';
 import { ageCheck, ageRulesOf, checkForm, completeness, formOf, EMPTY_FORM, type ApplicationForm } from './application';
 import { finishUpload, uploadUrl, type Actor, type AppCan } from './applicationServer';
+import { flushSoon } from './crmServer';
 import {
   accessCodeFrom, codeHint, CODE_DAYS, CODE_LENGTH, familyCanEdit, familyCanSend, familyStatus, MAX_PER_PHONE, normaliseAccessCode, onlineOf,
 } from './familyAccess';
@@ -42,7 +43,7 @@ export const SESSION_COOKIE = '__apply';
 
 // ── The school ──────────────────────────────────────────────────────────────
 
-export interface ApplySchool { id: string; name: string; code: string; open: boolean; note: string | null; phoneSignIn: boolean; settings: unknown }
+export interface ApplySchool { id: string; name: string; code: string; open: boolean; enquiries: boolean; note: string | null; phoneSignIn: boolean; settings: unknown }
 
 /**
  * A school's apply page, by its sign-in code. Phone sign-in needs WhatsApp to deliver the code: while the channel is
@@ -57,7 +58,7 @@ export async function schoolByCode(db: Db, raw: unknown): Promise<ApplySchool | 
   const p = schoolPolicy(data[0] as SchoolRow);
   if (!p.active) return null;
   const online = onlineOf(data[0].settings);
-  return { id: p.id, name: p.name, code, open: online.open, note: online.note, phoneSignIn: phoneSignInAvailable(p.off.includes('whatsapp')), settings: data[0].settings };
+  return { id: p.id, name: p.name, code, open: online.open, enquiries: online.enquiries, note: online.note, phoneSignIn: phoneSignInAvailable(p.off.includes('whatsapp')), settings: data[0].settings };
 }
 
 export const phoneSignInAvailable = (whatsappOff: boolean) => !whatsappOff && (whatsappConfig().mode === 'live' || process.env.VERCEL_ENV !== 'production');
@@ -359,6 +360,7 @@ export async function submitForFamily(db: Db, p: Principal, id: unknown): Promis
     applicant_id: app.id, school_id: p.schoolId, from_stage: null, to_stage: data[0].stage, actor_id: p.kind === 'parent' ? p.parentId : null,
     note: p.kind === 'parent' ? 'Application sent from the parent portal' : 'Application sent online by the family',
   });
+  flushSoon(db, p.schoolId);
   return { ok: true };
 }
 

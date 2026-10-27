@@ -16,6 +16,11 @@ export const reqs: ReqDef[] = [
   { n: '12', process: 'P03', priority: 'Critical', text: 'The office gives a family an access code for one applicant (8 characters, shown once, kept only as a hash, 30 days; a new code ends the old one, and ending it signs the family out). With it the family fills in that application and sends documents, even while new online applications are closed; they cannot start another. Giving and ending codes is audited with the last two characters only.', perm: 'admissions.manage', api: 'POST /api/admin/admissions/application', tables: 'admission_access_codes, audit_log', auto: [`${A.familyAccess}access codes: Crockford letters, typed loosely, read back exactly`] },
   { n: '13', process: 'P03', priority: 'Critical', text: 'The family fills in the same application the office does (the register’s rules), sends documents (any kind; each waits for the office’s check; one not yet verified can be taken back), and sends the application once nothing the register and TC need is missing. Until then it is a draft: off the pipeline, counted in a note for the office. Once sent it reaches the school’s first stage with a history entry, and the details are locked for the family; documents can still come until admission. The family sees Draft, With the school (at <stage>), Offer, Admitted or Closed, never the office’s notes.', perm: '—', api: 'POST /api/apply; POST /api/parent/admissions', tables: 'admission_applicants, admission_documents, admission_events', auto: [`${A.familyAccess}what the family sees of where the application stands`, `${A.familyAccess}the family edits the details only while it is a draft`] },
   { n: '14', process: 'P03', priority: 'High', text: 'A parent with a child at the school applies for a sibling from the parent portal (Apply for a Sibling): the application starts with the family and address from their child’s record, and is marked as a sibling (portal) application; the office’s sibling check names the child already at the school.', perm: 'parent', api: 'GET/POST /api/parent/admissions', tables: 'admission_applicants, family_members, students' },
+  { n: '15', process: 'P03', priority: 'High', text: 'Each applicant has a counsellor (anyone in the office who can work admissions; the person who logs an enquiry owns it; whoever is given one is notified) and a next follow-up date. The pipeline shows a follow-up queue (yours and everyone’s: overdue, due today, with no counsellor) and filters for Due, Mine and Unassigned.', perm: 'admissions.manage', api: 'GET/POST /api/admin/admissions/crm', tables: 'admission_applicants, notifications', auto: [`${A.crm}follow-up queue: overdue, today, upcoming, no date, nobody owning`] },
+  { n: '16', process: 'P03', priority: 'High', text: 'A contact log on each applicant: calls (with how they went), WhatsApp, visits, emails, SMS and notes, each with who and when, and an optional next follow-up. Logging a contact with the family without a next date clears the follow-up; a note leaves it. Messages Sthara sent and messages from the family appear in the same log.', perm: 'admissions.manage', api: 'POST /api/admin/admissions/crm', tables: 'admission_contacts', auto: [`${A.crm}contacts: a call says how it went, a note has words, follow-ups are not in the past`] },
+  { n: '17', process: 'P03', priority: 'High', text: 'Stage messages: each stage (including Offer and Enrolled) can have a WhatsApp message ({child}, {school}, {stage} filled in, up to 600 characters) sent to the family once when they reach it, including an offer issued from the waitlist overnight (sent when the office next opens admissions). Never to an online draft, never twice for one stage, never to a family who opted out. Families can reply STOP or START; the office can stop them too. Other replies from a family are logged on the application and get an acknowledgement at most once a day.', perm: 'admissions.setup', api: 'POST /api/admin/admissions/setup; POST /api/whatsapp/webhook', tables: 'admission_stages, admission_messages, admission_contacts, whatsapp_log', auto: [`${A.crm}stage messages are filled in and say how to stop them; STOP and START`] },
+  { n: '18', process: 'P03', priority: 'High', text: 'Public enquiries: with "Take enquiries online" on, anyone can ask about admission on the apply page without signing in (their name, mobile, child’s name, class, an optional question, consent); it reaches the first stage, due for follow-up today, with source Website, or QR poster from the printable A4 QR poster. A repeat enquiry for the same child adds to the existing record instead. Five per 15 minutes per network; bots are turned away quietly.', perm: '—', api: 'POST /api/apply (enquire)', tables: 'admission_applicants, admission_events, admission_contacts' },
+  { n: '19', process: 'P03', priority: 'High', text: 'Duplicates: an applicant with the same child’s name and the same date of birth, phone or email as another this year is flagged (POSSIBLE DUPLICATE, and a filter); adding one in the office asks for confirmation first. The same phone with a different child’s name is a sibling, not a duplicate.', perm: 'admissions.manage', api: 'POST /api/admin/admissions', tables: 'admission_applicants', auto: [`${A.crm}duplicates: same child twice, not a sibling`] },
 
 ];
 
@@ -146,6 +151,33 @@ export const scripts: ScriptDef[] = [
       ['Enter a made-up access code.', 'Refused; after ten tries in 15 minutes: "Too many tries".'],
       ['Open /apply/nosuchschool.', '"This apply link isn’t right."'],
       ['Production with WhatsApp not connected.', 'Phone sign-in is not offered (codes are never shown on screen in production).'],
+    ] },
+  { n: '16', title: 'Working enquiries: counsellor, follow-ups and the log', role: 'Admissions officer (two)', priority: 'High', type: 'Positive', req: ['15', '16'], uat: true,
+    pre: 'Two admissions officers, A and B.',
+    steps: [
+      ['A: New enquiry.', 'A is the counsellor; the row says A.'],
+      ['A: open it › Follow-up › Counsellor: B.', 'B gets a notification "… is yours to follow up".'],
+      ['B: Log › Call, "Asked to call back", next follow-up tomorrow; Log it.', 'The log shows the call by B; the follow-up is tomorrow.'],
+      ['Next day, B: Admissions.', 'Follow-ups card: 1 due today for B; Due filter lists it.'],
+      ['B: Log › Visit with no next date.', 'The follow-up clears.'],
+      ['B: Log › Note.', 'The follow-up date is not touched.'],
+    ] },
+  { n: '17', title: 'Stage messages and STOP', role: 'School admin, Admissions officer, Parent (WhatsApp)', priority: 'High', type: 'Positive', req: ['17'], uat: true,
+    pre: 'Set up › Stages: Add a WhatsApp message to Application (the suggestion is fine) and to Offer.',
+    steps: [
+      ['Officer: move an enquiry with a mobile to Application.', 'Its log shows "Stage message (simulated…)" with the child’s and school’s names filled in.'],
+      ['Reopen and move them to Application again.', 'No second message.'],
+      ['From the family’s phone: reply STOP.', '"Done. You won’t get messages…"; the log shows it; Send stage messages is unticked.'],
+      ['Approve an offer for them.', 'No message; the stage message shows NOT SENT (Family opted out) if one was queued.'],
+      ['Family: reply START, then any question.', 'Messages on again; the question is in the log; one acknowledgement reply.'],
+    ] },
+  { n: '18', title: 'Enquiry from the QR poster, and a repeat', role: 'School admin, Public, Admissions officer', priority: 'High', type: 'Positive', req: ['18', '19'], uat: true,
+    pre: 'Set up › Online applications: tick Take enquiries online; save.',
+    steps: [
+      ['Show the QR code; Print the poster.', 'An A4 poster with the school, the QR code, the link and "Powered by Sthara".'],
+      ['Scan it on a phone; Ask about admission: fill in and Send.', '"Thank you"; Office: a new applicant at the first stage, source QR poster, due for follow-up today.'],
+      ['Send the same child and phone again.', 'Same thank-you; no second applicant; the first one’s log shows "Enquired again on the QR poster".'],
+      ['Office: New enquiry with that child’s name and phone.', '"This looks like someone already entered this year", naming them; Add anyway adds it; both are flagged POSSIBLE DUPLICATE.'],
     ] },
 
 ];

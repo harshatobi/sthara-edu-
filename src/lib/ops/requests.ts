@@ -1,4 +1,5 @@
 import 'server-only';
+import { flushSoon } from '@/lib/admin/crmServer';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { gradeOf } from '@/lib/admin/format';
 import { displayClass, normClass } from '@/lib/teacher/scope';
@@ -123,6 +124,7 @@ export async function fulfil(db: SupabaseClient, req: AccountRequest, actorId: s
   if (moveErr) console.warn('[enrol] applicant not moved:', moveErr.message);
   await db.from('admission_offers').update({ status: 'enrolled', closed_at: new Date().toISOString() }).eq('applicant_id', a.id).eq('status', 'accepted');
   await db.from('admission_events').insert({ applicant_id: a.id, school_id: req.school_id, from_stage: 'offer', to_stage: 'enrolled', note: `Enrolled into ${o.className}, admission no. ${o.rollNo}`, actor_id: actorId, offer_status: 'enrolled' });
+  flushSoon(db, req.school_id);
 
   let invoices = 0;
   if (o.billFees) {

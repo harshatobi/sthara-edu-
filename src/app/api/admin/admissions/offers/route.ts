@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { bad, deny, ISO_DAY, isUuid, requireAdmin, str } from '@/lib/admin/serverAuth';
 import { admissionError } from '@/lib/admin/admissionsServer';
 import { stageGate } from '@/lib/admin/applicationServer';
+import { flushSoon } from '@/lib/admin/crmServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
       if (!isUuid(b.offerId)) return bad('Pick the offer.');
       const { data, error } = await db.rpc('admission_offer_decide', { p_school: school, p_offer: b.offerId, p_actor: admin.id, p_approve: b.action === 'approve', p_note: note });
       if (error) return admissionError(error, 'Could not record the decision.');
+      flushSoon(db, school);
       return NextResponse.json({ ok: true, status: data });
     }
     case 'accept':
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
       if (!isUuid(b.offerId)) return bad('Pick the offer.');
       const { data, error } = await db.rpc('admission_offer_respond', { p_school: school, p_offer: b.offerId, p_actor: admin.id, p_accept: b.action === 'accept', p_note: note });
       if (error) return admissionError(error, 'Could not record the family’s answer.');
+      flushSoon(db, school);
       return NextResponse.json({ ok: true, status: data });
     }
     case 'cancel': {

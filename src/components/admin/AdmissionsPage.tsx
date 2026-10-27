@@ -32,6 +32,9 @@ import { FinanceTabs } from './fees/FeesPage';
 import { useGet } from '@/components/canon/useGet';
 import ApplicationPanel from './admissions/ApplicationPanel';
 import { defaultMinAge, REQUIREMENT_LABEL, type Requirement } from '@/lib/admin/application';
+import { duplicateMap, duplicatesOf, followUps, MESSAGE_MAX, MESSAGE_SUGGESTIONS, type DupMatch } from '@/lib/admin/crm';
+import CrmCard from './admissions/CrmCard';
+import { applyQrSvg, printPoster } from '@/components/admissions/poster';
 
 const OFFER_TONE: Record<OfferStatus, Tone> = {
   proposed: 'a', returned: 'r', waitlisted: 'p', issued: 'a', accepted: 'g', declined: 'n', lapsed: 'n', withdrawn: 'n', enrolled: 'g',
@@ -66,11 +69,21 @@ function Admissions({ desk }: { desk: AdminDesk }) {
   const done = (msg: string) => { toast(msg); reload(); };
   const shown = activeStages(P.stages);
 
+  const meId = desk.me.id;
+  const today = isoDay();
+  const dups = useMemo(() => duplicateMap(P.applicants), [P.applicants]);
+  const queue = useMemo(() => followUps(P.applicants, today), [P.applicants, today]);
+  const mine = useMemo(() => followUps(P.applicants, today, meId), [P.applicants, today, meId]);
+  const officeNames = useMemo(() => new Map(desk.workforce.admins.map(x => [x.id, x.name])), [desk.workforce.admins]);
   const rows = useMemo(() => P.applicants.filter(a =>
     view === 'all' ? true : view === 'open' ? a.open
+      : view === 'due' ? a.open && !!a.followUpOn && a.followUpOn <= today
+      : view === 'mine' ? a.open && a.ownerId === meId
+      : view === 'unowned' ? a.open && !a.ownerId
+      : view === 'dups' ? dups.has(a.id)
       : view === 'approval' ? a.offer?.status === 'proposed'
       : view === 'waitlist' ? a.offer?.status === 'waitlisted'
-      : a.stage === view), [P.applicants, view]);
+      : a.stage === view), [P.applicants, view, today, meId, dups]);
   const { shown: shownRows, pager } = usePaged(rows, view);
 
   const capped = P.seats.filter(s => s.capacity !== null);
@@ -83,7 +96,11 @@ function Admissions({ desk }: { desk: AdminDesk }) {
       a.previousSchool, a.guardianName, a.guardianPhone, a.guardianEmail, a.assessmentOn, a.createdAt.slice(0, 10)]),
   ]);
 
-  const views: [View, string][] = [['open', 'Open'], ...(P.approvals.length ? [['approval', `Approval · ${P.approvals.length}`] as [View, string]] : []),
+  const due = queue.overdue.length + queue.today.length;
+  const views: [View, string][] = [['open', 'Open'],
+    ...(due ? [['due', `Due · ${due}`] as [View, string]] : []), ['mine', 'Mine'],
+    ...(queue.unowned.length ? [['unowned', `Unassigned · ${queue.unowned.length}`] as [View, string]] : []),
+    ...(dups.size ? [['dups', `Possible duplicates · ${dups.size}`] as [View, string]] : []), ...(P.approvals.length ? [['approval', `Approval · ${P.approvals.length}`] as [View, string]] : []),
     ...(P.waitlisted ? [['waitlist', `Waitlist · ${P.waitlisted}`] as [View, string]] : []),
     ...shown.map(s => [s.key, s.label] as [View, string]), ['rejected', 'Rejected'], ['withdrawn', 'Withdrawn'], ['all', 'All']];
 
@@ -115,6 +132,25 @@ function Admissions({ desk }: { desk: AdminDesk }) {
           note={P.stale.length ? `Longest: ${P.stale[0].name}, ${P.stale[0].daysInStage} days` : 'Every open applicant moved recently'}
           noteColor={P.stale.length ? 'var(--amber)' : 'var(--mut)'} />
       </div>
+
+      {(mine.overdue.length + mine.today.length > 0 || queue.overdue.length > 0 || queue.unowned.length > 0) && (
+        <div className="card" style={{ marginBottom: 22, borderLeft: `4px solid ${queue.overdue.length ? 'var(--red)' : 'var(--blue)'}` }}>
+          <CardHead title="Follow-ups"
+            sub={`Yours: ${plural(mine.overdue.length, 'overdue')}, ${mine.today.length} due today. Everyone: ${plural(queue.overdue.length, 'overdue')}, ${queue.today.length} due today, ${queue.unowned.length} with no counsellor.`}
+            right={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn sm pri" onClick={() => setView('due')}>Due now</button>
+              <button className="btn sm" onClick={() => setView('mine')}>Mine</button>
+              {queue.unowned.length > 0 && <button className="btn sm" onClick={() => setView('unowned')}>Unassigned</button>}
+            </div>} />
+          {[...mine.overdue, ...mine.today].slice(0, 5).map(a => (
+            <div className="row click" key={a.id} onClick={() => setOpen(a.id)} style={{ cursor: 'pointer' }}>
+              <b style={{ flex: 1, fontSize: 13.5 }}>{a.name}</b>
+              <span className="muted" style={{ fontSize: 12.5 }}>{gradeLabel(a.grade)} · {stageName(P.stages, a.stage)}</span>
+              <Chip tone={a.followUpOn! < today ? 'r' : 'a'}>{a.followUpOn! < today ? `OVERDUE ${fmtDate(a.followUpOn!)}` : 'TODAY'}</Chip>
+            </div>
+          ))}
+        </div>
+      )}
 
       {P.approvals.length > 0 && (can('admissions.approve') || can('admissions.manage')) && (
         <Approvals P={P} desk={desk} call={call} onDone={done} onOpen={setOpen} />
@@ -183,6 +219,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
               <thead><tr><th>Applicant</th><th className="c">Class</th><th>Stage</th><th>Offer</th><th className="c">In stage</th><th>Source</th><th /></tr></thead>
               <tbody>{shownRows.map(a => (
                 <ApplicantRow key={a.id} a={a} stages={P.stages} canManage={can('admissions.manage')} onOpen={() => setOpen(a.id)}
+                  owner={a.ownerId ? officeNames.get(a.ownerId) ?? 'Office' : null} dup={dups.has(a.id)} today={today}
                   onAdvance={async to => {
                     await call('/api/admin/admissions', 'PATCH', { id: a.id, from: a.stage, to });
                     done(`${a.name} moved to ${stageName(P.stages, to).toLowerCase()}`);
@@ -198,13 +235,13 @@ function Admissions({ desk }: { desk: AdminDesk }) {
         )}
       </div>
 
-      {adding && <NewApplicant session={P.session} onClose={() => setAdding(false)} onSave={async body => {
+      {adding && <NewApplicant session={P.session} existing={P.applicants} onClose={() => setAdding(false)} onSave={async body => {
         const r = await call('/api/admin/admissions', 'POST', body);
         setAdding(false);
         done(`${body.name} added as an enquiry`);
         setOpen(r.id);
       }} />}
-      {setup && <Setup P={P} call={call} onClose={() => setSetup(false)} onSaved={m => done(m)} />}
+      {setup && <Setup P={P} school={desk.school.name} call={call} onClose={() => setSetup(false)} onSaved={m => done(m)} />}
       {current && <ApplicantRecord a={current} P={P} desk={desk} call={call} onClose={() => setOpen(null)} onChanged={done} />}
     </>
   );
@@ -219,8 +256,9 @@ function OfferChip({ o }: { o: Offer | null }) {
   return <Chip tone={OFFER_TONE[o.status]}>{OFFER_LABEL[o.status].toUpperCase()}{extra}</Chip>;
 }
 
-function ApplicantRow({ a, stages, canManage, onOpen, onAdvance }: {
+function ApplicantRow({ a, stages, canManage, onOpen, onAdvance, owner, dup, today }: {
   a: Applicant; stages: StageDef[]; canManage: boolean; onOpen: () => void; onAdvance: (to: string) => Promise<void>;
+  owner: string | null; dup: boolean; today: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -229,7 +267,10 @@ function ApplicantRow({ a, stages, canManage, onOpen, onAdvance }: {
   const offerBusy = a.offer?.live;
   return (
     <tr className="click" onClick={onOpen} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }}>
-      <td><b style={{ fontSize: 14 }}>{a.name}</b><div className="muted" style={{ fontSize: 12 }}>{a.previousSchool || 'Previous school not recorded'}</div>
+      <td><b style={{ fontSize: 14 }}>{a.name}</b>{dup && <> <Chip tone="a">POSSIBLE DUPLICATE</Chip></>}
+        <div className="muted" style={{ fontSize: 12 }}>{a.previousSchool || 'Previous school not recorded'}</div>
+        {a.open && <div className="muted" style={{ fontSize: 12 }}>{owner ?? 'No counsellor'}{a.followUpOn
+          ? <span style={{ color: a.followUpOn < today ? 'var(--red)' : undefined }}> · follow up {a.followUpOn < today ? `overdue (${fmtDate(a.followUpOn)})` : a.followUpOn === today ? 'today' : fmtDate(a.followUpOn)}</span> : ''}</div>}
         {err && <div style={{ color: 'var(--red)', fontSize: 12 }}>{err}</div>}</td>
       <td className="c num">{a.grade}</td>
       <td><Chip tone={stageTone(stages, a.stage)}>{stageName(stages, a.stage).toUpperCase()}</Chip></td>
@@ -342,21 +383,43 @@ function DetailsForm({ d, set, gradeLocked }: { d: Draft; set: (k: keyof Draft, 
 
 const blank: Draft = { name: '', grade: '', dob: '', guardianName: '', guardianPhone: '', guardianEmail: '', previousSchool: '', source: 'walk_in', notes: '' };
 
-function NewApplicant({ session, onClose, onSave }: { session: string; onClose: () => void; onSave: (b: Record<string, unknown>) => Promise<void> }) {
+function NewApplicant({ session, existing, onClose, onSave }: { session: string; existing: Applicant[]; onClose: () => void; onSave: (b: Record<string, unknown>) => Promise<void> }) {
   const [d, setD] = useState<Draft>(blank);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const save = async () => {
+  // The server refuses a likely duplicate (same child's name with the same date of birth, phone or email) until confirmed.
+  const [dupOf, setDupOf] = useState<(DupMatch & { name: string })[] | null>(null);
+  const save = async (allowDuplicate = false) => {
     if (!d.name.trim()) { setErr('Enter the applicant\'s name.'); return; }
     if (!d.grade) { setErr('Pick the grade applied for.'); return; }
     setBusy(true); setErr(null);
-    try { await onSave({ ...d, grade: Number(d.grade), session }); } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not save.'); setBusy(false); }
+    try { await onSave({ ...d, grade: Number(d.grade), session, allowDuplicate }); }
+    catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not save.';
+      if (/already entered this year/.test(msg)) {
+        const found = duplicatesOf({ id: '', name: d.name, dob: d.dob || null, guardianPhone: d.guardianPhone || null, guardianEmail: d.guardianEmail || null }, existing)
+          .map(m => ({ ...m, name: existing.find(x => x.id === m.id)?.name ?? '' }));
+        setDupOf(found);
+      } else setErr(msg);
+      setBusy(false);
+    }
   };
   return (
     <Workspace title="New enquiry" sub={`Admissions · AY ${session.replace('-', '–')}`} onClose={onClose}
-      actions={<button className="btn pri" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Add enquiry'}</button>}>
+      actions={<button className="btn pri" disabled={busy} onClick={() => save()}>{busy ? 'Saving…' : 'Add enquiry'}</button>}>
       <div className="card">
-        <DetailsForm d={d} set={(k, v) => setD(x => ({ ...x, [k]: v }))} />
+        {dupOf && (
+          <div className="note" role="alert" style={{ marginBottom: 14 }}>
+            <b>This looks like someone already entered this year</b>
+            {dupOf.length ? <ul style={{ margin: '6px 0 0 18px' }}>{dupOf.map(m => <li key={m.id}>{m.name} ({m.why})</li>)}</ul>
+              : <div style={{ fontSize: 13, marginTop: 4 }}>A family has an online application for this child that they haven’t sent yet.</div>}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              <button className="btn sm" onClick={onClose}>Don’t add: I’ll use the existing one</button>
+              <button className="btn sm pri" disabled={busy} onClick={() => save(true)}>Add anyway</button>
+            </div>
+          </div>
+        )}
+        <DetailsForm d={d} set={(k, v) => { setDupOf(null); setD(x => ({ ...x, [k]: v })); }} />
         {err && <div className="err" role="alert">{err}</div>}
       </div>
     </Workspace>
@@ -457,6 +520,7 @@ function ApplicantRecord({ a, P, desk, call, onClose, onChanged }: {
           </div>
         </div>
       )}
+      <CrmCard key={`crm-${a.id}`} applicantId={a.id} ownerId={a.ownerId} followUpOn={a.followUpOn} optOut={a.optOut} open={a.open} canManage={manage} onChanged={onChanged} />
       <ApplicationPanel key={a.id} applicantId={a.id} canManage={manage} admitted={!!a.studentId && a.stage === 'enrolled'} onChanged={onChanged} />
       <div className="g2" style={{ gridTemplateColumns: '1fr 340px', alignItems: 'start' }}>
         <div className="card">
@@ -626,9 +690,9 @@ function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; o
 }
 
 // ── Set up: stages and seats ────────────────────────────────────────────────
-interface StageDraft { key: string | null; label: string; active: boolean; open: number; requires: string[] }
+interface StageDraft { key: string | null; label: string; active: boolean; open: number; requires: string[]; message: string }
 
-function Setup({ P, call, onClose, onSaved }: { P: Pipeline; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
+function Setup({ P, school, call, onClose, onSaved }: { P: Pipeline; school: string; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
   const [tab, setTab] = useState<'stages' | 'seats' | 'age' | 'online'>('stages');
   return (
     <Workspace wide title="Set up admissions" sub={`Stages for every session · seats for AY ${P.session.replace('-', '–')}`} onClose={onClose}>
@@ -639,19 +703,21 @@ function Setup({ P, call, onClose, onSaved }: { P: Pipeline; call: Call; onClose
         <button role="tab" aria-selected={tab === 'online'} className={tab === 'online' ? 'on' : ''} onClick={() => setTab('online')}>Online applications</button>
       </div>
       {tab === 'stages' ? <StagesEditor P={P} call={call} onSaved={onSaved} /> : tab === 'seats' ? <SeatsEditor P={P} call={call} onSaved={onSaved} />
-        : tab === 'age' ? <AgeEditor P={P} call={call} onSaved={onSaved} /> : <OnlineEditor call={call} onSaved={onSaved} />}
+        : tab === 'age' ? <AgeEditor P={P} call={call} onSaved={onSaved} /> : <OnlineEditor P={P} school={school} call={call} onSaved={onSaved} />}
     </Workspace>
   );
 }
 
 function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (m: string) => void }) {
   const openIn = (key: string) => P.applicants.filter(a => a.stage === key).length;
-  const [own, setOwn] = useState<StageDraft[]>(() => P.stages.filter(s => !s.system).map(s => ({ key: s.key, label: s.label, active: s.active, open: openIn(s.key), requires: s.requires })));
+  const [own, setOwn] = useState<StageDraft[]>(() => P.stages.filter(s => !s.system).map(s => ({ key: s.key, label: s.label, active: s.active, open: openIn(s.key), requires: s.requires, message: s.message ?? '' })));
   const offer = P.stages.find(s => s.system === 'offer')!;
   const enrolled = P.stages.find(s => s.system === 'enrolled')!;
   const [offerLabel, setOfferLabel] = useState(offer.label);
   const [days, setDays] = useState(String(offer.respondDays ?? 14));
   const [enrolledLabel, setEnrolledLabel] = useState(enrolled.label);
+  const [offerMsg, setOfferMsg] = useState(offer.message ?? '');
+  const [enrolledMsg, setEnrolledMsg] = useState(enrolled.message ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const set = (i: number, patch: Partial<StageDraft>) => setOwn(xs => xs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
@@ -666,15 +732,15 @@ function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: 
     setBusy(true); setErr(null);
     try {
       await call('/api/admin/admissions/setup', 'POST', {
-        kind: 'stages', own: own.map(s => ({ key: s.key, label: s.label, active: s.active, requires: s.requires })),
-        offer: { label: offerLabel, respondDays: Number(days) }, enrolled: { label: enrolledLabel },
+        kind: 'stages', own: own.map(s => ({ key: s.key, label: s.label, active: s.active, requires: s.requires, message: s.message })),
+        offer: { label: offerLabel, respondDays: Number(days), message: offerMsg }, enrolled: { label: enrolledLabel, message: enrolledMsg },
       });
       onSaved('Admissions stages saved');
     } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not save the stages.'); } finally { setBusy(false); }
   };
   return (
     <div className="card">
-      <CardHead title="Stages" sub="Your own stages run in this order before the offer. Rename, reorder, add or retire them; a retired stage keeps its name in past records. Offer and Enrolled always come last: they can be renamed, not moved." />
+      <CardHead title="Stages" sub="Your own stages run in this order before the offer. Rename, reorder, add or retire them; a retired stage keeps its name in past records. Offer and Enrolled always come last: they can be renamed, not moved. Each stage can send the family a WhatsApp message when they reach it ({child}, {school} and {stage} are filled in; families can reply STOP)." />
       {own.map((s, i) => (
         <div className="row" key={s.key ?? `new-${i}`} style={{ gap: 10, flexWrap: 'wrap', opacity: s.active ? 1 : 0.6 }}>
           <span className="muted num" style={{ width: 22 }}>{i + 1}</span>
@@ -695,9 +761,10 @@ function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: 
               </label>
             ))}
           </div>
+          <StageMessage id={`msg-${i}`} value={s.message} suggestion={MESSAGE_SUGGESTIONS[s.key ?? ''] ?? MESSAGE_SUGGESTIONS.application} set={v => set(i, { message: v })} />
         </div>
       ))}
-      <button className="btn sm" style={{ margin: '10px 0 18px' }} disabled={own.length >= 12} onClick={() => setOwn(xs => [...xs, { key: null, label: '', active: true, open: 0, requires: [] }])}><Plus size={13} /> Add a stage</button>
+      <button className="btn sm" style={{ margin: '10px 0 18px' }} disabled={own.length >= 12} onClick={() => setOwn(xs => [...xs, { key: null, label: '', active: true, open: 0, requires: [], message: '' }])}><Plus size={13} /> Add a stage</button>
       <div className="g3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
         <Field label="OFFER STAGE NAME" htmlFor="st-offer"><input id="st-offer" className="cmp-in" maxLength={40} value={offerLabel} onChange={e => setOfferLabel(e.target.value)} /></Field>
         <Field label="DAYS TO ACCEPT AN OFFER" htmlFor="st-days" hint="After this the offer lapses and the seat goes to the waitlist.">
@@ -705,6 +772,10 @@ function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: 
         </Field>
         <Field label="ENROLLED STAGE NAME" htmlFor="st-enr"><input id="st-enr" className="cmp-in" maxLength={40} value={enrolledLabel} onChange={e => setEnrolledLabel(e.target.value)} /></Field>
       </div>
+      <div className="row" style={{ display: 'block' }}><b style={{ fontSize: 13.5 }}>{offerLabel || 'Offer'}</b>
+        <StageMessage id="msg-offer" value={offerMsg} suggestion={MESSAGE_SUGGESTIONS.offer} set={setOfferMsg} /></div>
+      <div className="row" style={{ display: 'block', marginBottom: 12 }}><b style={{ fontSize: 13.5 }}>{enrolledLabel || 'Enrolled'}</b>
+        <StageMessage id="msg-enr" value={enrolledMsg} suggestion={MESSAGE_SUGGESTIONS.enrolled} set={setEnrolledMsg} /></div>
       {err && <div className="err" role="alert" style={{ marginBottom: 10 }}>{err}</div>}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button className="btn pri" disabled={busy || own.some(s => !s.label.trim()) || !own.some(s => s.active)} onClick={save}>{busy ? 'Saving…' : 'Save stages'}</button>
@@ -813,17 +884,18 @@ function AgeEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (m:
 }
 
 // ── Online applications ─────────────────────────────────────────────────────
-interface OnlineState { open: boolean; note: string | null; path: string | null; drafts: number }
+interface OnlineState { open: boolean; enquiries: boolean; note: string | null; path: string | null; drafts: number }
 
 /** Where families apply, and how many have started an application they haven't sent (those stay off the pipeline). */
 function OnlineNotice({ canSetup, onSetup }: { canSetup: boolean; onSetup: () => void }) {
   const { data } = useGet<OnlineState>('/api/admin/admissions/setup');
-  if (!data || (!data.open && !data.drafts)) return null;
+  if (!data || (!data.open && !data.enquiries && !data.drafts)) return null;
   const link = data.path && typeof window !== 'undefined' ? `${window.location.origin}${data.path}` : null;
   return (
     <div className="note" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
       <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, overflowWrap: 'anywhere' }}>
         {data.open ? <>Families can apply online{link ? <> at <b>{link}</b></> : null} and from the parent portal.</> : 'Online applications are closed.'}
+        {data.enquiries ? ' Anyone can ask about admission there or from your QR poster.' : ''}
         {data.drafts > 0 && ` ${plural(data.drafts, 'family has', 'families have')} started an application and not sent it yet; it appears here once they do.`}
       </span>
       {canSetup && <button className="btn sm" onClick={onSetup}>Online set-up</button>}
@@ -831,22 +903,25 @@ function OnlineNotice({ canSetup, onSetup }: { canSetup: boolean; onSetup: () =>
   );
 }
 
-function OnlineEditor({ call, onSaved }: { call: Call; onSaved: (m: string) => void }) {
+function OnlineEditor({ P, school, call, onSaved }: { P: Pipeline; school: string; call: Call; onSaved: (m: string) => void }) {
   const { data, error } = useGet<OnlineState>('/api/admin/admissions/setup');
   const [open, setOpenOnline] = useState<boolean | null>(null);
+  const [enq, setEnq] = useState<boolean | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (error) return <div className="note err" role="alert">{error}</div>;
   if (!data) return <div className="card"><p className="muted">Loading…</p></div>;
   const isOpen = open ?? data.open;
+  const takesEnquiries = enq ?? data.enquiries;
   const text = note ?? data.note ?? '';
   const link = data.path && typeof window !== 'undefined' ? `${window.location.origin}${data.path}` : null;
   const save = async () => {
     setBusy(true); setErr(null);
     try {
-      await call('/api/admin/admissions/setup', 'POST', { kind: 'online', open: isOpen, note: text });
-      onSaved(isOpen ? 'Online applications are open' : 'Online applications are closed');
+      await call('/api/admin/admissions/setup', 'POST', { kind: 'online', open: isOpen, enquiries: takesEnquiries, note: text });
+      onSaved(isOpen ? 'Online applications are open' : takesEnquiries ? 'Online enquiries are open' : 'Online applications are closed');
     } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not save.'); } finally { setBusy(false); }
   };
   return (
@@ -855,7 +930,20 @@ function OnlineEditor({ call, onSaved }: { call: Call; onSaved: (m: string) => v
       <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 12 }}>
         <input type="checkbox" checked={isOpen} onChange={e => setOpenOnline(e.target.checked)} /> Take new applications online
       </label>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 12 }}>
+        <input type="checkbox" checked={takesEnquiries} onChange={e => setEnq(e.target.checked)} /> Take enquiries online: anyone can ask about admission without signing in (name, phone, class); each one reaches your first stage for follow-up
+      </label>
       {link && <p style={{ fontSize: 13.5, overflowWrap: 'anywhere', margin: '0 0 12px' }}>Your apply page: <a href={link} target="_blank" rel="noopener noreferrer"><b>{link}</b></a>. Share it on your website and notices. Families with an access code can use it even while new applications are closed.</p>}
+      {link && (
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', margin: '0 0 14px' }}>
+          {qr ? <div style={{ width: 132, height: 132 }} dangerouslySetInnerHTML={{ __html: qr }} aria-label="QR code for your apply page" role="img" />
+            : <button className="btn sm" onClick={async () => setQr(await applyQrSvg(`${link}?src=qr`))}>Show the QR code</button>}
+          <div style={{ flex: 1, minWidth: 220, fontSize: 13.5 }}>
+            The QR code opens your apply page; enquiries from it show as “QR poster” so you can see what it brings in.
+            <div style={{ marginTop: 8 }}><button className="btn sm" onClick={() => printPoster({ school, url: `${link}?src=qr`, session: P.session, note: text || null }).catch(e => setErr(e instanceof Error ? e.message : 'Could not print.'))}>Print the poster</button></div>
+          </div>
+        </div>
+      )}
       <Field label="NOTE FOR FAMILIES (OPTIONAL)" htmlFor="online-note" hint="Shown on the apply page, e.g. what to bring to the school visit. Up to 500 characters.">
         <textarea id="online-note" className="cmp-in" maxLength={500} value={text} onChange={e => setNote(e.target.value)} />
       </Field>
@@ -863,6 +951,19 @@ function OnlineEditor({ call, onSaved }: { call: Call; onSaved: (m: string) => v
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
         <button className="btn pri" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
       </div>
+    </div>
+  );
+}
+
+/** The WhatsApp message for one stage: blank sends nothing. */
+function StageMessage({ id, value, suggestion, set }: { id: string; value: string; suggestion: string; set: (v: string) => void }) {
+  const [open, setOpen] = useState(!!value);
+  if (!open) return <div style={{ paddingLeft: 32, marginTop: 6 }}><button className="btn sm" onClick={() => { setOpen(true); if (!value) set(suggestion); }}>Add a WhatsApp message</button></div>;
+  return (
+    <div style={{ flex: '1 1 100%', paddingLeft: 32, marginTop: 6 }}>
+      <label htmlFor={id} className="muted" style={{ fontSize: 12, fontWeight: 700 }}>WHATSAPP MESSAGE ON REACHING THIS STAGE ({value.length}/{MESSAGE_MAX})</label>
+      <textarea id={id} className="cmp-in" maxLength={MESSAGE_MAX} value={value} onChange={e => set(e.target.value)} />
+      <button className="btn sm" style={{ marginTop: 6 }} onClick={() => { set(''); setOpen(false); }}>No message</button>
     </div>
   );
 }

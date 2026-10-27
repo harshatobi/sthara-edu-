@@ -28,6 +28,8 @@ export interface StageDef {
   respondDays: number | null;
   /** Checks an applicant must pass before leaving this stage ('documents', 'age'). */
   requires: string[];
+  /** The WhatsApp message a family gets on reaching this stage, or null. */
+  message: string | null;
   color: string;
 }
 
@@ -50,13 +52,13 @@ export function shapeStages(rows: any[] | undefined): StageDef[] {
   const src = rows?.length ? rows : DEFAULT_ROWS;
   const list: StageDef[] = src.map(r => ({
     key: r.key, label: r.label, position: Number(r.position ?? 0), system: r.system ?? null, active: r.active !== false,
-    respondDays: r.respond_days ?? null, requires: Array.isArray(r.requires) ? r.requires : [], color: '',
+    respondDays: r.respond_days ?? null, requires: Array.isArray(r.requires) ? r.requires : [], message: r.message ?? null, color: '',
   })).sort((a, b) => sysRank(a.system) - sysRank(b.system) || a.position - b.position);
   // The template's system rows if a school's own list lacks them (never expected; keeps the pipeline whole).
   for (const sys of ['offer', 'enrolled'] as const) {
     if (!list.some(s => s.system === sys)) {
       const d = DEFAULT_ROWS.find(r => r.system === sys)!;
-      list.push({ key: d.key, label: d.label, position: d.position, system: sys, active: true, respondDays: d.respond_days ?? null, requires: [], color: '' });
+      list.push({ key: d.key, label: d.label, position: d.position, system: sys, active: true, respondDays: d.respond_days ?? null, requires: [], message: null, color: '' });
     }
   }
   let i = 0;
@@ -98,7 +100,7 @@ export function nextStage(stages: StageDef[], key: string): string | null {
 }
 
 export const SOURCES: Record<string, string> = {
-  walk_in: 'Walk-in', website: 'Website', referral: 'Referral', sibling: 'Sibling', event: 'School event',
+  walk_in: 'Walk-in', website: 'Website', qr: 'QR poster', referral: 'Referral', sibling: 'Sibling', event: 'School event',
   advertisement: 'Advertisement', other: 'Other',
 };
 
@@ -166,6 +168,13 @@ export interface Applicant {
   stageChangedAt: string;
   /** The student account made at enrolment, when there is one. */
   studentId: string | null;
+  /** The counsellor who owns them, and when they are next to be followed up. */
+  ownerId: string | null;
+  followUpOn: string | null;
+  /** The family asked for no WhatsApp messages about this application. */
+  optOut: boolean;
+  /** office | online | portal | import */
+  channel: string;
   createdAt: string;
   /** Days in the current stage (open applicants only). */
   daysInStage: number;
@@ -232,6 +241,7 @@ export function shapeApplicant(r: any, events: any[], offers: Offer[], stages: S
     furthest: rankOf(stages, r.furthest_stage) >= 0 ? r.furthest_stage : stages[0].key,
     assessmentOn: r.assessment_on ?? null, notes: r.notes ?? null,
     stageChangedAt: r.stage_changed_at, createdAt: r.created_at, studentId: r.student_id ?? null,
+    ownerId: r.owner_id ?? null, followUpOn: r.follow_up_on ?? null, optOut: r.whatsapp_opt_out === true, channel: r.channel ?? 'office',
     daysInStage: open ? Math.max(0, daysBetween(String(r.stage_changed_at).slice(0, 10), today)) : 0,
     open,
     offer: sorted.find(o => o.live) ?? sorted[0] ?? null,

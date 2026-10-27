@@ -7,10 +7,11 @@ import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { PageBar, Skeleton } from '@/components/canon/ui';
 import { CardHead, Field } from '@/components/admin/kit';
 import FamilyApplications, { type Send } from './FamilyApplications';
+import { GRADES, gradeLabel } from '@/lib/students/register';
 import '@/styles/canon.css';
 
 interface Me {
-  school: { name: string; code: string; open: boolean; note: string | null; phoneSignIn: boolean };
+  school: { name: string; code: string; open: boolean; enquiries: boolean; note: string | null; phoneSignIn: boolean };
   me: { kind: 'phone' | 'code'; label: string } | null;
 }
 
@@ -61,10 +62,66 @@ export default function ApplyPortal({ code }: { code: string }) {
             {state.me
               ? <FamilyApplications key={state.me.label} send={send} canCreate={state.me.kind === 'phone' && state.school.open} startOpen={state.me.kind === 'code'}
                 closedNote={state.me.kind === 'code' ? 'Your access code is for this application. To apply for another child, ask the admissions office.' : 'The school isn’t taking new applications online at the moment.'} />
-              : <SignIn school={state.school} post={post} onIn={refresh} />}
+              : (
+                <div className="g2" style={{ alignItems: 'start', gap: 16 }}>
+                  <SignIn school={state.school} post={post} onIn={refresh} />
+                  {state.school.enquiries && <Enquiry school={state.school} post={post} />}
+                </div>
+              )}
           </>)}
         <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 28 }}>Powered by Sthara · The Institutional OS</p>
       </main>
+    </div>
+  );
+}
+
+/** Ask about admission without signing in: it reaches the admissions office, who call back. */
+function Enquiry({ school, post }: { school: Me['school']; post: <T>(b: Record<string, unknown>) => Promise<T> }) {
+  const [f, setF] = useState({ parentName: '', phone: '', childName: '', grade: '', message: '', website: '' });
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const set = (k: keyof typeof f, v: string) => setF(x => ({ ...x, [k]: v }));
+  const send = async () => {
+    setBusy(true); setErr(null);
+    try {
+      // From the QR poster: its link carries src=qr, so the school can see what the poster brings in.
+      const source = new URLSearchParams(window.location.search).get('src') === 'qr' ? 'qr' : 'website';
+      await post({ action: 'enquire', ...f, grade: Number(f.grade), consent, source });
+      setSent(true);
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not send.'); } finally { setBusy(false); }
+  };
+  if (sent) return (
+    <div className="card" role="status">
+      <CardHead title="Thank you" sub={`${school.name}'s admissions office has your enquiry and will contact you on ${f.phone}.`} />
+    </div>
+  );
+  return (
+    <div className="card">
+      <CardHead title="Ask about admission" sub="Not ready to apply? Leave your details and the admissions office will call you back." />
+      <div className="g2" style={{ gap: 12 }}>
+        <Field label="YOUR NAME" htmlFor="en-parent"><input id="en-parent" className="cmp-in" maxLength={120} autoComplete="name" value={f.parentName} onChange={e => set('parentName', e.target.value)} /></Field>
+        <Field label="MOBILE NUMBER" htmlFor="en-phone"><input id="en-phone" className="cmp-in" inputMode="tel" autoComplete="tel" maxLength={20} value={f.phone} onChange={e => set('phone', e.target.value)} /></Field>
+        <Field label="CHILD’S NAME" htmlFor="en-child"><input id="en-child" className="cmp-in" maxLength={120} value={f.childName} onChange={e => set('childName', e.target.value)} /></Field>
+        <Field label="CLASS" htmlFor="en-grade">
+          <select id="en-grade" className="cmp-sel" value={f.grade} onChange={e => set('grade', e.target.value)}>
+            <option value="">Pick a class</option>
+            {GRADES.map(g => <option key={g} value={String(g)}>{gradeLabel(g)}</option>)}
+          </select>
+        </Field>
+      </div>
+      <Field label="YOUR QUESTION (OPTIONAL)" htmlFor="en-msg"><textarea id="en-msg" className="cmp-in" maxLength={1000} value={f.message} onChange={e => set('message', e.target.value)} /></Field>
+      {/* Left empty by people; bots fill it in. */}
+      <div aria-hidden="true" style={{ position: 'absolute', left: -10000, width: 1, height: 1, overflow: 'hidden' }}>
+        <label htmlFor="en-website">Website</label><input id="en-website" tabIndex={-1} autoComplete="off" value={f.website} onChange={e => set('website', e.target.value)} />
+      </div>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13.5, margin: '4px 0 14px' }}>
+        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} style={{ marginTop: 3 }} />
+        <span>I agree to {school.name} contacting me by phone and WhatsApp about admission.</span>
+      </label>
+      {err && <div className="err" role="alert" style={{ marginBottom: 10 }}>{err}</div>}
+      <button className="btn pri" disabled={busy || !consent || !f.parentName.trim() || !f.phone.trim() || !f.childName.trim() || !f.grade} onClick={send}>{busy ? 'Sending…' : 'Send'}</button>
     </div>
   );
 }

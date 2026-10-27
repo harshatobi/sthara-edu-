@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
+import { enquire } from '@/lib/admin/crmServer';
 import {
   codeSignIn, endSession, familyAction, otpStart, otpVerify, readSession, schoolByCode, SESSION_COOKIE, whoLabel,
 } from '@/lib/admin/familyServer';
@@ -17,6 +18,8 @@ export const dynamic = 'force-dynamic';
  *   POST { school, action: 'otp-verify', phone, code }
  *   POST { school, action: 'code', code }                      an access code from the admissions office
  *   POST { school, action: 'sign-out' }
+ *   POST { school, action: 'enquire', parentName, phone, childName, grade, message?, consent, source? }
+ *        ask about admission without signing in (when the school takes enquiries online)
  *   POST { school, action: 'list' | 'load' | 'create' | 'save' | 'submit' | 'upload-url' | 'upload-done' | 'remove-doc', ... }
  *        the family's own applications (lib/admin/familyServer familyAction)
  */
@@ -47,6 +50,13 @@ export async function POST(req: NextRequest) {
     const r = b.action === 'code' ? await codeSignIn(db, school, b.code) : await otpVerify(db, school, b);
     return r.ok ? signedIn(r) : err(r);
   }
+  if (b.action === 'enquire') {
+    if (!checkRateLimit(`apply-enquire:${ip}`, ...limitOf('applyEnquiry')).allowed) {
+      return NextResponse.json({ error: 'Too many enquiries from here. Wait 15 minutes, or call the school.' }, { status: 429 });
+    }
+    const r = await enquire(db, school, b);
+    return r.ok ? NextResponse.json({ ok: true }) : err(r);
+  }
   if (b.action === 'sign-out') {
     await endSession(db, token);
     const res = NextResponse.json({ ok: true });
@@ -57,7 +67,7 @@ export async function POST(req: NextRequest) {
   const p = await readSession(db, token, school.id);
   if (b.action === 'me') {
     return NextResponse.json({
-      school: { name: school.name, code: school.code, open: school.open, note: school.note, phoneSignIn: school.phoneSignIn },
+      school: { name: school.name, code: school.code, open: school.open, enquiries: school.enquiries, note: school.note, phoneSignIn: school.phoneSignIn },
       me: p ? { kind: p.kind, label: whoLabel(p) } : null,
     });
   }

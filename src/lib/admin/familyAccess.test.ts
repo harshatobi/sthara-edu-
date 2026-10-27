@@ -18,9 +18,10 @@ test('access codes: Crockford letters, typed loosely, read back exactly', () => 
 });
 
 test('online applications are closed unless the school opened them', () => {
-  assert.deepEqual(onlineOf(null), { open: false, note: null });
-  assert.deepEqual(onlineOf({ admissions: { online: { open: 'yes' } } }), { open: false, note: null });
-  assert.deepEqual(onlineOf({ admissions: { online: { open: true, note: '  Bring originals on the visit.  ' } } }), { open: true, note: 'Bring originals on the visit.' });
+  assert.deepEqual(onlineOf(null), { open: false, enquiries: false, note: null });
+  assert.deepEqual(onlineOf({ admissions: { online: { open: 'yes' } } }), { open: false, enquiries: false, note: null });
+  assert.deepEqual(onlineOf({ admissions: { online: { open: true, note: '  Bring originals on the visit.  ' } } }), { open: true, enquiries: false, note: 'Bring originals on the visit.' });
+  assert.equal(onlineOf({ admissions: { online: { enquiries: true } } }).enquiries, true, 'enquiries open on their own');
   assert.equal(applyPath('VNSS'), '/apply/vnss');
 });
 

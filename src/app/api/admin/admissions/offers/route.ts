@@ -3,6 +3,7 @@ import { bad, deny, ISO_DAY, isUuid, requireAdmin, str } from '@/lib/admin/serve
 import { admissionError } from '@/lib/admin/admissionsServer';
 import { stageGate } from '@/lib/admin/applicationServer';
 import { flushSoon } from '@/lib/admin/crmServer';
+import { meritOfApplicant } from '@/lib/admin/meritServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,9 @@ export const dynamic = 'force-dynamic';
  *   POST { action: 'approve' | 'return', offerId, note? }         admissions.approve (never the proposer; return needs a note)
  *   POST { action: 'accept' | 'decline', offerId, note? }         admissions.manage (decline needs a note)
  *   POST { action: 'cancel', offerId, note? }                     admissions.manage (only before the offer goes out)
- * The rules and the seat count are in the database functions (admission_offer_*), under a lock per grade.
+ * The rules and the seat count are in the database functions (admission_offer_*), under a lock per grade. A proposed
+ * offer carries the applicant's merit (assessment score plus sibling and staff-ward points); a full class's waitlist
+ * fills highest merit first.
  */
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req, ['admissions.manage', 'admissions.approve']);
@@ -34,7 +37,10 @@ export async function POST(req: NextRequest) {
       if (ap) { const why = await stageGate(db, school, b.applicantId, ap.stage); if (why) return bad(why, 409); }
       const { data, error } = await db.rpc('admission_offer_propose', { p_school: school, p_applicant: b.applicantId, p_actor: admin.id, p_note: note, p_respond_by: respondBy });
       if (error) return admissionError(error, 'Could not propose the offer.');
-      return NextResponse.json({ ok: true, id: data });
+      // Its merit orders the waitlist if the class is full when it is approved.
+      const merit = await meritOfApplicant(db, school, b.applicantId);
+      if (merit != null) await db.from('admission_offers').update({ merit }).eq('id', data);
+      return NextResponse.json({ ok: true, id: data, merit });
     }
     case 'approve':
     case 'return': {

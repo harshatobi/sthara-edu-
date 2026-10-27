@@ -12,6 +12,7 @@
  */
 import { daysBetween, isoDay } from './format';
 import { ageRulesOf, type AgeRules } from './application';
+import { assessmentOf, type AssessmentRules } from './merit';
 
 /** The template every school starts from; also the stage values the bulk-import format accepts. */
 export const STAGES = ['enquiry', 'application', 'assessment', 'offer', 'enrolled'] as const;
@@ -225,6 +226,8 @@ export interface Pipeline {
   waitlisted: number;
   /** The age for each class on the cut-off date (the school's, else NEP's). */
   ageRules: AgeRules;
+  /** The assessment's highest score, family booking and merit points. */
+  assessment: AssessmentRules;
 }
 
 export const STALE_DAYS = 14;
@@ -341,5 +344,6 @@ export function assemblePipeline(session: string, rows: any[], eventRows: any[],
       .sort((a, b) => a.offer!.daysLeft! - b.offer!.daysLeft!),
     waitlisted: offerRows.filter(o => o.status === 'waitlisted').length,
     ageRules: ageRulesOf(extra.settings),
+    assessment: assessmentOf(extra.settings),
   };
 }

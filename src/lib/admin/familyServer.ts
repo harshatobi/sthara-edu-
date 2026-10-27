@@ -11,6 +11,7 @@ import { cleanPhone, GRADES, type FamilyInput } from '@/lib/students/register';
 import { ageCheck, ageRulesOf, checkForm, completeness, formOf, EMPTY_FORM, type ApplicationForm } from './application';
 import { finishUpload, uploadUrl, type Actor, type AppCan } from './applicationServer';
 import { flushSoon } from './crmServer';
+import { assessmentFor, book, cancelBooking, rulesOf } from './meritServer';
 import {
   accessCodeFrom, codeHint, CODE_DAYS, CODE_LENGTH, familyCanEdit, familyCanSend, familyStatus, MAX_PER_PHONE, normaliseAccessCode, onlineOf,
 } from './familyAccess';
@@ -245,6 +246,7 @@ export async function loadForFamily(db: Db, p: Principal, id: unknown) {
     canSend: familyCanSend(a),
     // An office applicant reached by an access code keeps the name and class the office set.
     canEditBasics: a.channel !== 'office' && familyCanEdit(a, stage?.system ?? null),
+    assessment: await familyAssessment(db, p.schoolId, a),
     form,
     completeness: completeness(form, a.date_of_birth),
     age: ageCheck(a.date_of_birth, a.grade, a.session, ageRulesOf(school?.settings)).text,
@@ -253,6 +255,23 @@ export async function loadForFamily(db: Db, p: Principal, id: unknown) {
       id: d.id, kind: d.kind, label: docLabel(d.kind), title: d.title, file_name: d.file_name, status: d.status as DocStatus, reject_note: d.reject_note,
       source: d.source, created_at: d.created_at, canRemove: d.source === 'family' && d.status !== 'verified' && familyCanSend(a),
     })) as FamilyDoc[],
+  };
+}
+
+/** The family's assessment booking and the slots they can pick, when the school lets families book once they have sent the application. */
+async function familyAssessment(db: Db, schoolId: string, a: Row) {
+  const sent = !!a.submitted_at || a.channel === 'office';
+  if (!sent || !familyCanSend(a) || !(await rulesOf(db, schoolId)).familyBooking) return null;
+  const r = await assessmentFor(db, schoolId, a.id);
+  if (!r) return null;
+  const strip = (s: { id: string; when: string; place: string | null; note: string | null } | null) => s && { id: s.id, when: s.when, place: s.place, note: s.note };
+  const live = r.bookings.find(b => b.status === 'booked');
+  const done = r.bookings.find(b => b.status === 'attended' || b.status === 'no_show');
+  return {
+    booking: live ? { slot: strip(live.slot) } : null,
+    // Whether they sat it; the score stays with the school.
+    sat: done ? done.status === 'attended' : null,
+    open: r.open.map(s => strip(s)!),
   };
 }
 
@@ -418,6 +437,12 @@ export async function familyAction(db: Db, p: Principal, school: { open: boolean
     case 'upload-url': return familyUploadUrl(db, p, b);
     case 'upload-done': return familyUploadDone(db, p, b);
     case 'remove-doc': return familyRemoveDoc(db, p, b);
+    case 'book':
+    case 'cancel-booking': {
+      const app = await loadForFamily(db, p, b.applicantId);
+      if (!app?.assessment) return fail('Booking isn’t open for this application. Contact the admissions office.', 409);
+      return b.action === 'book' ? book(db, p.schoolId, b.slotId, app.id, null) : cancelBooking(db, p.schoolId, app.id, null);
+    }
     default: return fail('Unknown action.');
   }
 }

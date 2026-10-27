@@ -28,10 +28,13 @@ interface Listed { id: string; name: string; grade: number; session: string; cre
 interface Loaded {
   id: string; name: string; grade: number; dob: string | null; session: string; channel: string; submittedAt: string | null;
   status: FamilyStatus; canEdit: boolean; canSend: boolean; canEditBasics: boolean;
+  assessment: null | { booking: { slot: FamSlot | null } | null; sat: boolean | null; open: FamSlot[] };
   form: ApplicationForm; completeness: { missing: string[]; done: boolean }; age: string;
   checklist: { kind: string; label: string; state: keyof typeof CHECK_LABEL }[];
   docs: { id: string; kind: string; label: string; title: string; file_name: string; status: DocStatus; reject_note: string | null; source: 'office' | 'family'; created_at: string; canRemove: boolean }[];
 }
+
+interface FamSlot { id: string; when: string; place: string | null; note: string | null }
 
 const DOC_TONE: Record<DocStatus, 'g' | 'b' | 'r'> = { verified: 'g', awaiting: 'b', rejected: 'r' };
 const DOC_LABEL: Record<DocStatus, string> = { verified: 'VERIFIED', awaiting: 'WITH THE SCHOOL', rejected: 'SEND AGAIN' };
@@ -153,9 +156,44 @@ function ApplicationView({ id, send, onBack }: { id: string; send: Send; onBack:
         </div>
       </div>
       {flash && <div className="note" role="status" style={{ marginBottom: 16 }}>{flash}</div>}
+      {app.assessment && <AssessmentBooking app={app} send={send} onChanged={changed} />}
       <Details app={app} send={send} onSaved={changed} />
       <Documents app={app} send={send} onChanged={changed} />
     </>
+  );
+}
+
+/** Booking the admission assessment, when the school lets families book. The score stays with the school. */
+function AssessmentBooking({ app, send, onChanged }: { app: Loaded; send: Send; onChanged: (m: string) => void }) {
+  const a = app.assessment!;
+  const [slot, setSlot] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const run = async (body: Record<string, unknown>, msg: string) => {
+    setBusy(true); setErr(null);
+    try { await send({ ...body, applicantId: app.id }); setSlot(''); onChanged(msg); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save.'); } finally { setBusy(false); }
+  };
+  const booked = a.booking?.slot;
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <CardHead title="Admission assessment"
+        sub={a.sat !== null && !booked ? (a.sat ? 'Done. The admissions office will contact you about the next step.' : 'Marked as not attended. Book another slot if one is open, or contact the office.')
+          : booked ? `Booked: ${booked.when}${booked.place ? `, ${booked.place}` : ''}.` : 'Pick a time for your child to sit the assessment.'} />
+      {booked?.note && <p style={{ fontSize: 13.5, marginTop: -6 }}>{booked.note}</p>}
+      {err && <div className="note err" role="alert" style={{ marginBottom: 10 }}>{err}</div>}
+      {a.open.length > 0 && a.sat !== true ? (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'end' }}>
+          <Field label={booked ? 'CHANGE TO' : 'SLOT'} htmlFor="fa-slot">
+            <select id="fa-slot" className="cmp-sel" value={slot} onChange={e => setSlot(e.target.value)}>
+              <option value="">Pick a time</option>
+              {a.open.filter(s => s.id !== booked?.id).map(s => <option key={s.id} value={s.id}>{s.when}{s.place ? `, ${s.place}` : ''}</option>)}
+            </select>
+          </Field>
+          <button className="btn pri" disabled={busy || !slot} onClick={() => run({ action: 'book', slotId: slot }, 'Booked. Please arrive ten minutes early.')}>{booked ? 'Change' : 'Book'}</button>
+          {booked && <button className="btn" disabled={busy} onClick={() => run({ action: 'cancel-booking' }, 'Booking cancelled')}>Cancel booking</button>}
+        </div>
+      ) : !booked && a.sat !== true ? <p className="muted" style={{ fontSize: 13.5 }}>No times are open right now. The admissions office will contact you.</p> : null}
+    </div>
   );
 }
 

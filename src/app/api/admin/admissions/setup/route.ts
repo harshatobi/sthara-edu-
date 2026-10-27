@@ -6,6 +6,7 @@ import { checkAgeRules } from '@/lib/admin/application';
 import { GRADES } from '@/lib/students/register';
 import { applyPath, onlineOf } from '@/lib/admin/familyAccess';
 import { flushSoon } from '@/lib/admin/crmServer';
+import { checkAssessmentRules } from '@/lib/admin/merit';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,9 @@ export const dynamic = 'force-dynamic';
  *   POST { kind: 'online', open, enquiries, note? }
  *        whether families can apply on the school's apply page and from the parent portal, whether anyone can ask
  *        about admission there without signing in (and from the QR poster), and a note shown to them
+ *   POST { kind: 'assessment', maxScore, familyBooking, siblingPoints, staffPoints }
+ *        the assessment's highest score, whether families book slots themselves, and the merit points for a sibling
+ *        at the school and a parent on the staff
  *   GET  (admissions.read) online applications: open or not, the note, the apply link, and how many families have
  *        an application started but not yet sent. Also sends any stage messages still queued (the overnight sweep
  *        queues them when a waitlisted family gets a seat), so they go out when the office next opens admissions.
@@ -111,6 +115,17 @@ export async function POST(req: NextRequest) {
     }
     if (issued) flushSoon(db, admin.schoolId);
     return NextResponse.json({ ok: true, issued });
+  }
+
+  if (b.kind === 'assessment') {
+    const r = checkAssessmentRules(b);
+    if ('error' in r) return bad(r.error);
+    const { data } = await db.from('schools').select('settings').eq('id', admin.schoolId).maybeSingle();
+    const st = (data?.settings as Record<string, any>) || {};
+    const { error } = await db.from('schools').update({ settings: { ...st, admissions: { ...(st.admissions || {}), assessment: r.value } } }).eq('id', admin.schoolId);
+    if (error) return bad('Could not save.', 500);
+    await db.from('audit_log').insert({ actor_id: admin.id, actor_role: 'admin', action: 'admissions.assessment_rules_changed', table_name: 'schools', row_id: admin.schoolId, school_id: admin.schoolId, new_values: r.value });
+    return NextResponse.json({ ok: true });
   }
 
   if (b.kind === 'online') {

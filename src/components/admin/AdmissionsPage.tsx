@@ -34,6 +34,7 @@ import ApplicationPanel from './admissions/ApplicationPanel';
 import { defaultMinAge, REQUIREMENT_LABEL, type Requirement } from '@/lib/admin/application';
 import { duplicateMap, duplicatesOf, followUps, MESSAGE_MAX, MESSAGE_SUGGESTIONS, type DupMatch } from '@/lib/admin/crm';
 import CrmCard from './admissions/CrmCard';
+import { AssessmentCard, AssessmentSetup, MeritList } from './admissions/Assessment';
 import { applyQrSvg, printPoster } from '@/components/admissions/poster';
 
 const OFFER_TONE: Record<OfferStatus, Tone> = {
@@ -63,6 +64,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
   // ?new=1 (from "New enquiry" on the dashboard) opens the form straight away.
   const [adding, setAdding] = useState(() => params.get('new') === '1' && can('admissions.manage'));
   const [setup, setSetup] = useState(false);
+  const [merit, setMerit] = useState(false);
   const openId = params.get('applicant');
   const current = openId ? P.applicants.find(a => a.id === openId) ?? null : null;
   const setOpen = useCallback((id: string | null) => router.replace(id ? `/admin/admissions?applicant=${id}` : '/admin/admissions', { scroll: false }), [router]);
@@ -111,6 +113,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
         sub={`${plural(P.total, 'applicant')} · ${P.enrolled} enrolled · ${plural(P.closed.rejected, 'rejection')} · ${P.closed.withdrawn} withdrawn`}
         actions={<>
           <button className="btn" onClick={exportCsv} disabled={!P.total}><DownloadSimple size={16} /> Export</button>
+          <button className="btn" onClick={() => setMerit(true)}><SealCheck size={16} /> Merit list</button>
           {can('admissions.setup') && <button className="btn" onClick={() => setSetup(true)}><GearSix size={16} /> Set up</button>}
           {can('admissions.manage') && <button className="btn pri" onClick={() => setAdding(true)}><UserPlus size={16} weight="bold" /> New enquiry</button>}
         </>} />
@@ -241,6 +244,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
         done(`${body.name} added as an enquiry`);
         setOpen(r.id);
       }} />}
+      {merit && <MeritList session={P.session} stageName={k => stageName(P.stages, k)} onClose={() => setMerit(false)} onOpen={id => { setMerit(false); setOpen(id); }} />}
       {setup && <Setup P={P} school={desk.school.name} call={call} onClose={() => setSetup(false)} onSaved={m => done(m)} />}
       {current && <ApplicantRecord a={current} P={P} desk={desk} call={call} onClose={() => setOpen(null)} onChanged={done} />}
     </>
@@ -520,6 +524,7 @@ function ApplicantRecord({ a, P, desk, call, onClose, onChanged }: {
           </div>
         </div>
       )}
+      <AssessmentCard key={`as-${a.id}`} applicantId={a.id} open={a.open} canManage={manage} onChanged={onChanged} />
       <CrmCard key={`crm-${a.id}`} applicantId={a.id} ownerId={a.ownerId} followUpOn={a.followUpOn} optOut={a.optOut} open={a.open} canManage={manage} onChanged={onChanged} />
       <ApplicationPanel key={a.id} applicantId={a.id} canManage={manage} admitted={!!a.studentId && a.stage === 'enrolled'} onChanged={onChanged} />
       <div className="g2" style={{ gridTemplateColumns: '1fr 340px', alignItems: 'start' }}>
@@ -693,17 +698,19 @@ function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; o
 interface StageDraft { key: string | null; label: string; active: boolean; open: number; requires: string[]; message: string }
 
 function Setup({ P, school, call, onClose, onSaved }: { P: Pipeline; school: string; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
-  const [tab, setTab] = useState<'stages' | 'seats' | 'age' | 'online'>('stages');
+  const [tab, setTab] = useState<'stages' | 'seats' | 'age' | 'assessment' | 'online'>('stages');
   return (
     <Workspace wide title="Set up admissions" sub={`Stages for every session · seats for AY ${P.session.replace('-', '–')}`} onClose={onClose}>
       <div className="seg" role="tablist" aria-label="Set-up" style={{ marginBottom: 16 }}>
         <button role="tab" aria-selected={tab === 'stages'} className={tab === 'stages' ? 'on' : ''} onClick={() => setTab('stages')}>Stages</button>
         <button role="tab" aria-selected={tab === 'seats'} className={tab === 'seats' ? 'on' : ''} onClick={() => setTab('seats')}>Seats</button>
         <button role="tab" aria-selected={tab === 'age'} className={tab === 'age' ? 'on' : ''} onClick={() => setTab('age')}>Age for each class</button>
+        <button role="tab" aria-selected={tab === 'assessment'} className={tab === 'assessment' ? 'on' : ''} onClick={() => setTab('assessment')}>Assessment</button>
         <button role="tab" aria-selected={tab === 'online'} className={tab === 'online' ? 'on' : ''} onClick={() => setTab('online')}>Online applications</button>
       </div>
       {tab === 'stages' ? <StagesEditor P={P} call={call} onSaved={onSaved} /> : tab === 'seats' ? <SeatsEditor P={P} call={call} onSaved={onSaved} />
-        : tab === 'age' ? <AgeEditor P={P} call={call} onSaved={onSaved} /> : <OnlineEditor P={P} school={school} call={call} onSaved={onSaved} />}
+        : tab === 'age' ? <AgeEditor P={P} call={call} onSaved={onSaved} />
+        : tab === 'assessment' ? <AssessmentSetup session={P.session} rules={P.assessment} onSaved={onSaved} /> : <OnlineEditor P={P} school={school} call={call} onSaved={onSaved} />}
     </Workspace>
   );
 }

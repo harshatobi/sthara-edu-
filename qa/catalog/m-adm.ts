@@ -21,6 +21,9 @@ export const reqs: ReqDef[] = [
   { n: '17', process: 'P03', priority: 'High', text: 'Stage messages: each stage (including Offer and Enrolled) can have a WhatsApp message ({child}, {school}, {stage} filled in, up to 600 characters) sent to the family once when they reach it, including an offer issued from the waitlist overnight (sent when the office next opens admissions). Never to an online draft, never twice for one stage, never to a family who opted out. Families can reply STOP or START; the office can stop them too. Other replies from a family are logged on the application and get an acknowledgement at most once a day.', perm: 'admissions.setup', api: 'POST /api/admin/admissions/setup; POST /api/whatsapp/webhook', tables: 'admission_stages, admission_messages, admission_contacts, whatsapp_log', auto: [`${A.crm}stage messages are filled in and say how to stop them; STOP and START`] },
   { n: '18', process: 'P03', priority: 'High', text: 'Public enquiries: with "Take enquiries online" on, anyone can ask about admission on the apply page without signing in (their name, mobile, child’s name, class, an optional question, consent); it reaches the first stage, due for follow-up today, with source Website, or QR poster from the printable A4 QR poster. A repeat enquiry for the same child adds to the existing record instead. Five per 15 minutes per network; bots are turned away quietly.', perm: '—', api: 'POST /api/apply (enquire)', tables: 'admission_applicants, admission_events, admission_contacts' },
   { n: '19', process: 'P03', priority: 'High', text: 'Duplicates: an applicant with the same child’s name and the same date of birth, phone or email as another this year is flagged (POSSIBLE DUPLICATE, and a filter); adding one in the office asks for confirmation first. The same phone with a different child’s name is a sibling, not a duplicate.', perm: 'admissions.manage', api: 'POST /api/admin/admissions', tables: 'admission_applicants', auto: [`${A.crm}duplicates: same child twice, not a sibling`] },
+  { n: '20', process: 'P03', priority: 'High', text: 'Assessment slots for the admission year: a day and time, minutes, seats, a place, one class or every class. The office books an applicant into a slot (a slot for their class, still ahead, not cancelled, not full; the last seat can’t be taken twice); a new booking replaces the old one. With "Families book a slot themselves" on, a family that has sent the application books, changes or cancels on the apply page. Cancelling a slot unbooks everyone in it and puts them on the follow-up list.', perm: 'admissions.manage', api: 'GET/POST /api/admin/admissions/assessment; POST /api/apply (book)', tables: 'admission_slots, admission_bookings', auto: [`${A.merit}open slots: for the class, ahead, not cancelled, not full`] },
+  { n: '21', process: 'P03', priority: 'High', text: 'One score per applicant (0 to the school’s highest score), or marked as did not come (due for follow-up). The family sees whether they sat it, never the score.', perm: 'admissions.manage', api: 'POST /api/admin/admissions/assessment (result)', tables: 'admission_bookings, admission_applicants', auto: [`${A.merit}assessment rules: defaults, the school’s own, and what is refused`] },
+  { n: '22', process: 'P03', priority: 'High', text: 'Merit list per class: score plus the school’s points for a sibling at the school and for a staff ward; highest first, equal merit to whoever applied first (sharing a rank when the date is the same too); unscored applicants after, unranked. A proposed offer carries the merit, and a full class’s waitlist fills highest merit first (then by waiting time).', perm: 'admissions.read', api: 'GET /api/admin/admissions/assessment?merit=', tables: 'admission_offers', auto: [`${A.merit}merit: score plus sibling and staff points, highest first, earlier application on a tie`] },
 
 ];
 
@@ -178,6 +181,22 @@ export const scripts: ScriptDef[] = [
       ['Scan it on a phone; Ask about admission: fill in and Send.', '"Thank you"; Office: a new applicant at the first stage, source QR poster, due for follow-up today.'],
       ['Send the same child and phone again.', 'Same thank-you; no second applicant; the first one’s log shows "Enquired again on the QR poster".'],
       ['Office: New enquiry with that child’s name and phone.', '"This looks like someone already entered this year", naming them; Add anyway adds it; both are flagged POSSIBLE DUPLICATE.'],
+    ] },
+  { n: '19', title: 'Assessment slots, scores and the merit list', role: 'School admin, Admissions officer, Principal', priority: 'High', type: 'Positive', req: ['20', '21', '22'], uat: true,
+    pre: 'Set up › Assessment: highest score 100, sibling points 5; add a Class 1 slot tomorrow with 2 seats.', data: 'Three Class 1 applicants; one has a sibling at the school',
+    steps: [
+      ['Book all three into the slot.', 'The first two book; the third is refused: "That slot is full."'],
+      ['Next day: scores 70 (sibling), 72, and Did not come for the third.', 'Merit list › Class 1: the sibling first (75), then 72; the third unranked.'],
+      ['Set the class seats to 1; propose and approve offers for both scored applicants, the 72 first.', 'The 72 gets the seat; the sibling is waitlisted.'],
+      ['The 72’s family declines.', 'The sibling (highest merit on the waitlist) gets the offer.'],
+    ] },
+  { n: '20', title: 'A family books the assessment', role: 'Parent (no login), School admin', priority: 'Medium', type: 'Positive', req: ['20'],
+    pre: 'Set up › Assessment: tick families book; a slot ahead for the class.',
+    steps: [
+      ['Family: a draft application.', 'No assessment card yet.'],
+      ['Send it.', 'Admission assessment card: pick a time; Book.'],
+      ['Office: open the applicant.', 'Assessment: Booked (by the family); the log says the family booked it.'],
+      ['Family: Change to another time; then Cancel booking.', 'Both work; the office sees each in the log.'],
     ] },
 
 ];

@@ -16,6 +16,7 @@ import type { FamilyStatus } from '@/lib/admin/familyAccess';
 import { fmtDate } from '@/lib/admin/format';
 import { DOC_KIND_KEYS, type DocStatus } from '@/lib/students/documents';
 import { GRADES, gradeLabel } from '@/lib/students/register';
+import { rupees } from '@/lib/admin/rteFees';
 
 /**
  * A family's own admission applications: the list, starting one, filling it in, sending documents and sending it to
@@ -29,6 +30,7 @@ interface Loaded {
   id: string; name: string; grade: number; dob: string | null; session: string; channel: string; submittedAt: string | null;
   status: FamilyStatus; canEdit: boolean; canSend: boolean; canEditBasics: boolean;
   assessment: null | { booking: { slot: FamSlot | null } | null; sat: boolean | null; open: FamSlot[] };
+  fees: null | { lines: { kind: string; label: string; amount: number; why: string | null; paid: boolean; receiptNo: string | null }[]; depositDue: string | null };
   form: ApplicationForm; completeness: { missing: string[]; done: boolean }; age: string;
   checklist: { kind: string; label: string; state: keyof typeof CHECK_LABEL }[];
   docs: { id: string; kind: string; label: string; title: string; file_name: string; status: DocStatus; reject_note: string | null; source: 'office' | 'family'; created_at: string; canRemove: boolean }[];
@@ -156,6 +158,18 @@ function ApplicationView({ id, send, onBack }: { id: string; send: Send; onBack:
         </div>
       </div>
       {flash && <div className="note" role="status" style={{ marginBottom: 16 }}>{flash}</div>}
+      {app.fees && app.fees.lines.length > 0 && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <CardHead title="Fees" sub={app.fees.depositDue ? `Pay the seat deposit by ${fmtDate(app.fees.depositDue)} to keep the place: after that the offer lapses.` : 'Paid at the school’s admissions office, which gives you a receipt.'} />
+          {app.fees.lines.map(l => (
+            <div className="row" key={l.kind} style={{ gap: 10 }}>
+              <span style={{ flex: 1, fontSize: 14 }}><b>{l.label}</b> {rupees(l.amount)}{l.why ? <span className="muted" style={{ fontSize: 12.5 }}> ({l.why})</span> : null}
+                {l.receiptNo && <span className="muted" style={{ fontSize: 12.5 }}> · receipt {l.receiptNo}</span>}</span>
+              <Chip tone={l.paid ? 'g' : 'a'}>{l.paid ? 'PAID' : 'TO PAY'}</Chip>
+            </div>
+          ))}
+        </div>
+      )}
       {app.assessment && <AssessmentBooking app={app} send={send} onChanged={changed} />}
       <Details app={app} send={send} onSaved={changed} />
       <Documents app={app} send={send} onChanged={changed} />

@@ -31,11 +31,13 @@ import { CardHead, DeskGate, Field, Kpi, MissingNotice, Workspace, downloadCsv }
 import { FinanceTabs } from './fees/FeesPage';
 import { useGet } from '@/components/canon/useGet';
 import ApplicationPanel from './admissions/ApplicationPanel';
-import { defaultMinAge, REQUIREMENT_LABEL, type Requirement } from '@/lib/admin/application';
+import { defaultMinAge, REQUIREMENT_LABEL, REQUIREMENTS } from '@/lib/admin/application';
 import { duplicateMap, duplicatesOf, followUps, MESSAGE_MAX, MESSAGE_SUGGESTIONS, type DupMatch } from '@/lib/admin/crm';
 import CrmCard from './admissions/CrmCard';
 import { AssessmentCard, AssessmentSetup, MeritList } from './admissions/Assessment';
+import { FeesCard, FeesSetup, RteCard, RteSetup } from './admissions/RteFees';
 import { applyQrSvg, printPoster } from '@/components/admissions/poster';
+import { suggestRteSeats } from '@/lib/admin/rteFees';
 
 const OFFER_TONE: Record<OfferStatus, Tone> = {
   proposed: 'a', returned: 'r', waitlisted: 'p', issued: 'a', accepted: 'g', declined: 'n', lapsed: 'n', withdrawn: 'n', enrolled: 'g',
@@ -245,7 +247,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
         setOpen(r.id);
       }} />}
       {merit && <MeritList session={P.session} stageName={k => stageName(P.stages, k)} onClose={() => setMerit(false)} onOpen={id => { setMerit(false); setOpen(id); }} />}
-      {setup && <Setup P={P} school={desk.school.name} call={call} onClose={() => setSetup(false)} onSaved={m => done(m)} />}
+      {setup && <Setup P={P} school={desk.school.name} canApprove={can('admissions.approve')} call={call} onClose={() => setSetup(false)} onSaved={m => done(m)} />}
       {current && <ApplicantRecord a={current} P={P} desk={desk} call={call} onClose={() => setOpen(null)} onChanged={done} />}
     </>
   );
@@ -524,6 +526,8 @@ function ApplicantRecord({ a, P, desk, call, onClose, onChanged }: {
           </div>
         </div>
       )}
+      <FeesCard key={`fee-${a.id}`} applicantId={a.id} canManage={manage} onChanged={onChanged} />
+      <RteCard key={`rte-${a.id}-${a.rte}`} applicantId={a.id} rte={a.rte} rank={a.rteRank} mode={P.rteMode} allotment={{ no: a.rteAllotmentNo, on: a.rteAllottedOn }} canManage={manage && a.open} onChanged={onChanged} />
       <AssessmentCard key={`as-${a.id}`} applicantId={a.id} open={a.open} canManage={manage} onChanged={onChanged} />
       <CrmCard key={`crm-${a.id}`} applicantId={a.id} ownerId={a.ownerId} followUpOn={a.followUpOn} optOut={a.optOut} open={a.open} canManage={manage} onChanged={onChanged} />
       <ApplicationPanel key={a.id} applicantId={a.id} canManage={manage} admitted={!!a.studentId && a.stage === 'enrolled'} onChanged={onChanged} />
@@ -697,8 +701,8 @@ function EnrolPanel({ a, call, onCancel, onDone }: { a: Applicant; call: Call; o
 // ── Set up: stages and seats ────────────────────────────────────────────────
 interface StageDraft { key: string | null; label: string; active: boolean; open: number; requires: string[]; message: string }
 
-function Setup({ P, school, call, onClose, onSaved }: { P: Pipeline; school: string; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
-  const [tab, setTab] = useState<'stages' | 'seats' | 'age' | 'assessment' | 'online'>('stages');
+function Setup({ P, school, canApprove, call, onClose, onSaved }: { P: Pipeline; school: string; canApprove: boolean; call: Call; onClose: () => void; onSaved: (m: string) => void }) {
+  const [tab, setTab] = useState<'stages' | 'seats' | 'age' | 'assessment' | 'fees' | 'rte' | 'online'>('stages');
   return (
     <Workspace wide title="Set up admissions" sub={`Stages for every session · seats for AY ${P.session.replace('-', '–')}`} onClose={onClose}>
       <div className="seg" role="tablist" aria-label="Set-up" style={{ marginBottom: 16 }}>
@@ -706,11 +710,15 @@ function Setup({ P, school, call, onClose, onSaved }: { P: Pipeline; school: str
         <button role="tab" aria-selected={tab === 'seats'} className={tab === 'seats' ? 'on' : ''} onClick={() => setTab('seats')}>Seats</button>
         <button role="tab" aria-selected={tab === 'age'} className={tab === 'age' ? 'on' : ''} onClick={() => setTab('age')}>Age for each class</button>
         <button role="tab" aria-selected={tab === 'assessment'} className={tab === 'assessment' ? 'on' : ''} onClick={() => setTab('assessment')}>Assessment</button>
+        <button role="tab" aria-selected={tab === 'fees'} className={tab === 'fees' ? 'on' : ''} onClick={() => setTab('fees')}>Fees</button>
+        <button role="tab" aria-selected={tab === 'rte'} className={tab === 'rte' ? 'on' : ''} onClick={() => setTab('rte')}>RTE</button>
         <button role="tab" aria-selected={tab === 'online'} className={tab === 'online' ? 'on' : ''} onClick={() => setTab('online')}>Online applications</button>
       </div>
       {tab === 'stages' ? <StagesEditor P={P} call={call} onSaved={onSaved} /> : tab === 'seats' ? <SeatsEditor P={P} call={call} onSaved={onSaved} />
         : tab === 'age' ? <AgeEditor P={P} call={call} onSaved={onSaved} />
-        : tab === 'assessment' ? <AssessmentSetup session={P.session} rules={P.assessment} onSaved={onSaved} /> : <OnlineEditor P={P} school={school} call={call} onSaved={onSaved} />}
+        : tab === 'assessment' ? <AssessmentSetup session={P.session} rules={P.assessment} onSaved={onSaved} />
+        : tab === 'fees' ? <FeesSetup rules={P.fees} onSaved={onSaved} />
+        : tab === 'rte' ? <RteSetup session={P.session} mode={P.rteMode} canDraw={canApprove} onSaved={onSaved} /> : <OnlineEditor P={P} school={school} call={call} onSaved={onSaved} />}
     </Workspace>
   );
 }
@@ -761,7 +769,7 @@ function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: 
           ) : <button className="btn sm" onClick={() => setOwn(xs => xs.filter((_, j) => j !== i))}>Remove</button>}
           <div style={{ flex: '1 1 100%', display: 'flex', gap: 16, flexWrap: 'wrap', paddingLeft: 32, fontSize: 12.5 }}>
             <span className="muted">Before moving on:</span>
-            {(['documents', 'age'] as Requirement[]).map(r => (
+            {REQUIREMENTS.map(r => (
               <label key={r} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input type="checkbox" checked={s.requires.includes(r)} onChange={e => set(i, { requires: e.target.checked ? [...s.requires, r] : s.requires.filter(x => x !== r) })} />
                 {REQUIREMENT_LABEL[r]}
@@ -793,35 +801,43 @@ function StagesEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: 
 
 function SeatsEditor({ P, call, onSaved }: { P: Pipeline; call: Call; onSaved: (m: string) => void }) {
   const line = (g: number) => P.seats.find(s => s.grade === g);
-  const [cap, setCap] = useState<Record<number, string>>(() =>
-    Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i + 1, line(i + 1)?.capacity != null ? String(line(i + 1)!.capacity) : ''])));
+  const init = (f: (g: number) => number | null | undefined) => Object.fromEntries(GRADES.map(g => [g, f(g) != null ? String(f(g)) : ''])) as Record<number, string>;
+  const [cap, setCap] = useState<Record<number, string>>(() => init(g => line(g)?.capacity));
+  const [rte, setRte] = useState<Record<number, string>>(() => init(g => line(g)?.rteSeats));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const changed = GRADES.filter(g => (line(g)?.capacity ?? null) !== (cap[g] === '' ? null : Number(cap[g])));
+  const val = (x: string) => (x === '' ? null : Number(x));
+  const changed = GRADES.filter(g => (line(g)?.capacity ?? null) !== val(cap[g]) || (line(g)?.rteSeats ?? null) !== (val(cap[g]) === null ? null : val(rte[g])));
   const save = async () => {
     setBusy(true); setErr(null);
     try {
-      const r = await call('/api/admin/admissions/setup', 'POST', { kind: 'seats', session: P.session, seats: changed.map(g => ({ grade: g, capacity: cap[g] === '' ? null : Number(cap[g]) })) });
+      const r = await call('/api/admin/admissions/setup', 'POST', { kind: 'seats', session: P.session, seats: changed.map(g => ({ grade: g, capacity: val(cap[g]), rteSeats: val(rte[g]) })) });
       onSaved(r.issued ? `Seats saved; ${plural(r.issued, 'offer')} went out from the waitlist` : 'Seats saved');
     } catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Could not save the seats.'); } finally { setBusy(false); }
   };
+  const digits = (v: string) => v.replace(/\D/g, '').slice(0, 4);
   return (
     <div className="card">
-      <CardHead title={`Seats for new admissions · AY ${P.session.replace('-', '–')}`} sub="Blank means no limit. Fewer seats than are already held never takes an offer back; new offers wait on the list until seats free." />
+      <CardHead title={`Seats for new admissions · AY ${P.session.replace('-', '–')}`} sub="Blank means no limit. Fewer seats than are already held never takes an offer back; new offers wait on the list until seats free. RTE seats are reserved within the class's seats (the RTE Act asks at least a quarter of the entry class): RTE applicants hold those and everyone else the rest, each with its own waitlist." />
       <div className="tbl-wrap">
         <table className="tbl">
-          <thead><tr><th>Class</th><th className="c">Seats</th><th className="c">Held</th><th className="c">Waitlist</th><th className="c">Left after saving</th></tr></thead>
+          <thead><tr><th>Class</th><th className="c">Seats</th><th className="c">Of them RTE</th><th className="c">Held (RTE)</th><th className="c">Waitlist</th><th className="c">Left after saving</th></tr></thead>
           <tbody>{GRADES.map(g => {
             const l = line(g);
-            const c = cap[g] === '' ? null : Number(cap[g]);
+            const c = val(cap[g]), rs = c === null ? null : val(rte[g]);
             return (
               <tr key={g}>
                 <td><b>{gradeLabel(g)}</b></td>
                 <td className="c"><input className="cmp-in" style={{ width: 90, textAlign: 'center' }} inputMode="numeric" aria-label={`Seats in ${gradeLabel(g)}`} value={cap[g]}
-                  onChange={e => setCap(x => ({ ...x, [g]: e.target.value.replace(/\D/g, '').slice(0, 4) }))} placeholder="No limit" /></td>
-                <td className="c num">{l?.held ?? 0}</td>
+                  onChange={e => setCap(x => ({ ...x, [g]: digits(e.target.value) }))} placeholder="No limit" /></td>
+                <td className="c"><div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
+                  <input className="cmp-in" style={{ width: 80, textAlign: 'center' }} inputMode="numeric" aria-label={`RTE seats in ${gradeLabel(g)}`} value={c === null ? '' : rte[g]} disabled={c === null}
+                    onChange={e => setRte(x => ({ ...x, [g]: digits(e.target.value) }))} placeholder="None" />
+                  {c !== null && rte[g] === '' && <button className="btn sm" title="A quarter of the seats, rounded up" onClick={() => setRte(x => ({ ...x, [g]: String(suggestRteSeats(c)) }))}>25%</button>}
+                </div></td>
+                <td className="c num">{l?.held ?? 0}{l?.rteHeld ? ` (${l.rteHeld})` : ''}</td>
                 <td className="c num">{l?.waitlisted || ''}</td>
-                <td className="c num">{c === null ? '—' : c - (l?.held ?? 0)}</td>
+                <td className="c num">{c === null ? '—' : rs !== null ? `${c - rs - ((l?.held ?? 0) - (l?.rteHeld ?? 0))} + ${rs - (l?.rteHeld ?? 0)} RTE` : c - (l?.held ?? 0)}</td>
               </tr>
             );
           })}</tbody>

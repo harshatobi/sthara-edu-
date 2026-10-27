@@ -137,7 +137,7 @@ export async function assessmentFor(db: Db, schoolId: string, applicantId: strin
  * record, or the applying parent's children) or a parent on the staff (a family phone on the staff register),
  * worked out for the lot in a few queries.
  */
-async function priorities(db: Db, schoolId: string, rows: { id: string; form: unknown; guardian_phone: string | null; guardian_email: string | null; parent_id: string | null }[]) {
+export async function priorities(db: Db, schoolId: string, rows: { id: string; form: unknown; guardian_phone: string | null; guardian_email: string | null; parent_id: string | null }[]) {
   const contacts = new Map(rows.map(r => [r.id, familyContacts(formOf(r.form), { phone: r.guardian_phone, email: r.guardian_email })]));
   const phones = [...new Set([...contacts.values()].flatMap(c => c.phones))];
   const emails = [...new Set([...contacts.values()].flatMap(c => c.emails))];

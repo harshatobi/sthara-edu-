@@ -12,6 +12,7 @@ import { ageCheck, ageRulesOf, checkForm, completeness, formOf, EMPTY_FORM, type
 import { finishUpload, uploadUrl, type Actor, type AppCan } from './applicationServer';
 import { flushSoon } from './crmServer';
 import { assessmentFor, book, cancelBooking, rulesOf } from './meritServer';
+import { feesFor } from './rteFeesServer';
 import {
   accessCodeFrom, codeHint, CODE_DAYS, CODE_LENGTH, familyCanEdit, familyCanSend, familyStatus, MAX_PER_PHONE, normaliseAccessCode, onlineOf,
 } from './familyAccess';
@@ -247,6 +248,7 @@ export async function loadForFamily(db: Db, p: Principal, id: unknown) {
     // An office applicant reached by an access code keeps the name and class the office set.
     canEditBasics: a.channel !== 'office' && familyCanEdit(a, stage?.system ?? null),
     assessment: await familyAssessment(db, p.schoolId, a),
+    fees: await familyFees(db, p.schoolId, a.id),
     form,
     completeness: completeness(form, a.date_of_birth),
     age: ageCheck(a.date_of_birth, a.grade, a.session, ageRulesOf(school?.settings)).text,
@@ -255,6 +257,16 @@ export async function loadForFamily(db: Db, p: Principal, id: unknown) {
       id: d.id, kind: d.kind, label: docLabel(d.kind), title: d.title, file_name: d.file_name, status: d.status as DocStatus, reject_note: d.reject_note,
       source: d.source, created_at: d.created_at, canRemove: d.source === 'family' && d.status !== 'verified' && familyCanSend(a),
     })) as FamilyDoc[],
+  };
+}
+
+/** What the family owes and has paid (they pay at the school office; no amounts are typed in here). */
+async function familyFees(db: Db, schoolId: string, applicantId: string) {
+  const f = await feesFor(db, schoolId, applicantId);
+  if (!f || !f.fees.length) return null;
+  return {
+    lines: f.fees.filter(x => x.kind !== 'deposit' || f.offerLive || x.paid).map(x => ({ kind: x.kind, label: x.label, amount: x.amount, why: x.why, paid: !!x.paid, receiptNo: x.paid?.receipt_no ?? null })),
+    depositDue: f.depositPaid ? null : f.depositDue,
   };
 }
 
@@ -340,7 +352,8 @@ export async function saveForFamily(db: Db, p: Principal, b: Record<string, unkn
   if (!app.canEdit) return fail('This application has been sent to the school, so the details can’t be changed here. Contact the admissions office to correct anything.', 409);
   const f = checkForm(b.form);
   if ('error' in f) return fail(f.error);
-  const patch: Record<string, unknown> = { form: f.value };
+  // RTE decides which seats an offer would hold; a draft has no offer, so the family's answer stands.
+  const patch: Record<string, unknown> = { form: f.value, rte: f.value.fields.rte_seat === true };
   if (app.canEditBasics) {
     const v = basics(b);
     if ('error' in v) return fail(v.error);

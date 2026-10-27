@@ -60,3 +60,11 @@ test('checks and stage gates: documents on the checklist, age, sibling matching 
   const c2 = assembleChecks({ grade: 6, session: '2027-28', dob: '2016-01-01' }, DEFAULT_AGE_RULES, DEFAULT_CHECKLIST, docs, '2026-10-27', [], []);
   assert.ok(c2.documents.some(d => d.kind === 'transfer_certificate' && d.state === 'missing'), 'a TC is needed above the entry classes');
 });
+
+test('a stage can require the application fee; a school that charges none has nothing to wait for', () => {
+  const base = assembleChecks({ grade: 6, session: '2027-28', dob: '2016-01-01' }, DEFAULT_AGE_RULES, [], [], '2026-10-27', [], []);
+  assert.equal(gateError(['fee'], base, 'Application'), null, 'no fee charged');
+  const owed = assembleChecks({ grade: 6, session: '2027-28', dob: '2016-01-01' }, DEFAULT_AGE_RULES, [], [], '2026-10-27', [], [], { required: true, paid: false });
+  assert.match(gateError(['fee'], owed, 'Application') ?? '', /application fee isn’t recorded/);
+  assert.equal(gateError(['fee'], { ...owed, fee: { required: true, paid: true } }, 'Application'), null);
+});

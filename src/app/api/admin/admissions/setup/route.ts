@@ -7,6 +7,7 @@ import { GRADES } from '@/lib/students/register';
 import { applyPath, onlineOf } from '@/lib/admin/familyAccess';
 import { flushSoon } from '@/lib/admin/crmServer';
 import { checkAssessmentRules } from '@/lib/admin/merit';
+import { checkFees } from '@/lib/admin/rteFees';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,14 +19,18 @@ export const dynamic = 'force-dynamic';
  *        ('documents', 'age') an applicant must pass before leaving the stage
  *   POST { kind: 'age', cutoff: 'MM-DD', min: { grade: years }, max: { grade: years } }
  *        the age for each class on the cut-off date of the admission year (blank min: Class 1 at 6, a year a class)
- *   POST { kind: 'seats', session?, seats: [{ grade, capacity | null }] }
- *        seats for new admissions per grade (null: no limit); more seats fill from the waitlist at once
+ *   POST { kind: 'seats', session?, seats: [{ grade, capacity | null, rteSeats? }] }
+ *        seats for new admissions per grade (null: no limit), and how many of them are reserved for RTE (blank: none);
+ *        more seats fill from the waitlist at once
  *   POST { kind: 'online', open, enquiries, note? }
  *        whether families can apply on the school's apply page and from the parent portal, whether anyone can ask
  *        about admission there without signing in (and from the QR poster), and a note shown to them
  *   POST { kind: 'assessment', maxScore, familyBooking, siblingPoints, staffPoints }
  *        the assessment's highest score, whether families book slots themselves, and the merit points for a sibling
  *        at the school and a parent on the staff
+ *   POST { kind: 'fees', application, deposit, depositDays, admission, siblingPct, staffPct }
+ *        the admission fees (blank: none) and the concessions on the admission fee
+ *   POST { kind: 'rte', mode: 'portal' | 'lottery' }   how RTE seats are allotted
  *   GET  (admissions.read) online applications: open or not, the note, the apply link, and how many families have
  *        an application started but not yet sent. Also sends any stage messages still queued (the overnight sweep
  *        queues them when a waitlisted family gets a seat), so they go out when the office next opens admissions.
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(b.own)) return bad('Send the stages in order.');
     const own = b.own.slice(0, 13).map((s: any) => ({
       key: str(s?.key, 40) || null, label: str(s?.label, 60), active: s?.active !== false,
-      requires: Array.isArray(s?.requires) ? s.requires.filter((r: unknown) => r === 'documents' || r === 'age') : [],
+      requires: Array.isArray(s?.requires) ? s.requires.filter((r: unknown) => r === 'documents' || r === 'age' || r === 'fee') : [],
       message: str(s?.message, 600) || null,
     }));
     const msg = (x: any) => (x && 'message' in x ? { message: str(x.message, 600) || null } : {});
@@ -86,7 +91,7 @@ export async function POST(req: NextRequest) {
   if (b.kind === 'seats') {
     const session = isSession(b.session) ? b.session : nextSession(sessionOf());
     if (!Array.isArray(b.seats)) return bad('Send the seats per grade.');
-    const set: { grade: number; capacity: number }[] = [];
+    const set: { grade: number; capacity: number; rte_seats: number | null }[] = [];
     const cleared: number[] = [];
     for (const s of b.seats) {
       const g = Number(s?.grade);
@@ -94,11 +99,13 @@ export async function POST(req: NextRequest) {
       if (s.capacity === null || s.capacity === '') { cleared.push(g); continue; }
       const c = Number(s.capacity);
       if (!Number.isInteger(c) || c < 0 || c > 5000) return bad(`Grade ${g}: seats must be a whole number from 0 to 5,000.`);
-      set.push({ grade: g, capacity: c });
+      const rs = s.rteSeats === '' || s.rteSeats == null ? null : Number(s.rteSeats);
+      if (rs !== null && (!Number.isInteger(rs) || rs < 0 || rs > c)) return bad(`Grade ${g}: RTE seats are a whole number up to the class's seats.`);
+      set.push({ grade: g, capacity: c, rte_seats: rs });
     }
     if (set.length) {
       const { error } = await db.from('admission_seats').upsert(
-        set.map(s => ({ school_id: admin.schoolId, session, grade: s.grade, capacity: s.capacity, updated_by: admin.id })),
+        set.map(s => ({ school_id: admin.schoolId, session, grade: s.grade, capacity: s.capacity, rte_seats: s.rte_seats, updated_by: admin.id })),
         { onConflict: 'school_id,session,grade' });
       if (error) return admissionError(error, 'Could not save the seats.');
     }
@@ -115,6 +122,18 @@ export async function POST(req: NextRequest) {
     }
     if (issued) flushSoon(db, admin.schoolId);
     return NextResponse.json({ ok: true, issued });
+  }
+
+  if (b.kind === 'fees' || b.kind === 'rte') {
+    let value: unknown;
+    if (b.kind === 'fees') { const r = checkFees(b); if ('error' in r) return bad(r.error); value = r.value; }
+    else value = { mode: b.mode === 'lottery' ? 'lottery' : 'portal' };
+    const { data } = await db.from('schools').select('settings').eq('id', admin.schoolId).maybeSingle();
+    const st = (data?.settings as Record<string, any>) || {};
+    const { error } = await db.from('schools').update({ settings: { ...st, admissions: { ...(st.admissions || {}), [b.kind]: value } } }).eq('id', admin.schoolId);
+    if (error) return bad('Could not save.', 500);
+    await db.from('audit_log').insert({ actor_id: admin.id, actor_role: 'admin', action: `admissions.${b.kind}_changed`, table_name: 'schools', row_id: admin.schoolId, school_id: admin.schoolId, new_values: value });
+    return NextResponse.json({ ok: true });
   }
 
   if (b.kind === 'assessment') {

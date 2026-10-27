@@ -89,9 +89,14 @@ export async function PATCH(req: NextRequest) {
   if (b.form) {
     const f = checkForm(b.form);
     if ('error' in f) return bad(f.error);
-    const patch: Record<string, unknown> = { form: f.value };
+    const patch: Record<string, unknown> = { form: f.value, rte: f.value.fields.rte_seat === true };
     if (typeof f.value.fields.previous_school === 'string') patch.previous_school = f.value.fields.previous_school;
-    const { data: was } = await db.from('admission_applicants').select('applied_on').eq('id', b.id).maybeSingle();
+    const { data: was } = await db.from('admission_applicants').select('applied_on, rte').eq('id', b.id).maybeSingle();
+    // RTE decides which seats an offer holds: not to be switched under a live offer.
+    if (was && was.rte !== patch.rte) {
+      const { data: live } = await db.from('admission_offers').select('id').eq('applicant_id', b.id).in('status', ['proposed', 'waitlisted', 'issued', 'accepted']).maybeSingle();
+      if (live) return bad('This applicant has an offer in progress. Cancel or close it before changing the RTE seat answer.', 409);
+    }
     if (!was?.applied_on) patch.applied_on = new Date().toISOString().slice(0, 10);
     const { error: e } = await db.from('admission_applicants').update(patch).eq('id', b.id);
     if (e) return bad(e.message, 500);

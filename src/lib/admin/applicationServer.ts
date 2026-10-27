@@ -9,6 +9,7 @@ import {
 import {
   ageRulesOf, assembleChecks, completeness, familyContacts, formOf, gateError, phoneKey, type Checks, type Match,
 } from './application';
+import { feePaid } from './rteFeesServer';
 
 /**
  * The admission application, server side: the applicant with their form, documents and checks; documents with the
@@ -108,9 +109,10 @@ async function rulesOf(db: Db, schoolId: string) {
 }
 
 async function checksFor(db: Db, a: NonNullable<Awaited<ReturnType<typeof applicantOf>>>, docs: AppDoc[]): Promise<Checks> {
-  const [{ checklist, age }, m] = await Promise.all([rulesOf(db, a.school_id), matches(db, a.school_id, a)]);
+  const [{ checklist, age }, m, fee] = await Promise.all([rulesOf(db, a.school_id), matches(db, a.school_id, a), feePaid(db, a.school_id, a.id, 'application')]);
   return assembleChecks({ grade: a.grade, session: a.session, dob: a.date_of_birth }, age, checklist,
-    docs.filter(d => !d.moved_to).map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), isoDay(), m.siblings, m.staff);
+    docs.filter(d => !d.moved_to).map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), isoDay(), m.siblings, m.staff,
+    { required: fee.required, paid: fee.paid });
 }
 
 async function docsOf(db: Db, schoolId: string, applicantId: string) {

@@ -29,6 +29,7 @@ export const A = {
   familyAccess: 'app:src/lib/admin/familyAccess.test.ts::',
   crm: 'app:src/lib/admin/crm.test.ts::',
   merit: 'app:src/lib/admin/merit.test.ts::',
+  rteFees: 'app:src/lib/admin/rteFees.test.ts::',
   probe: 'app:src/lib/admin/probe.test.ts::',
   appRbac: 'app:src/lib/admin/rbac.test.ts::',
   usage: 'app:src/lib/ai/usage.test.ts::',

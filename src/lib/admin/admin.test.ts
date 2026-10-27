@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { daysBetween, gradeOf, inr, inrShort, isSession, nextSession, sessionOf, toCsv } from './format';
 import { assembleLedger, evenSchedule, reminderTone, shapeInvoice, validateSchedule } from './fees';
-import { assemblePipeline, canMove, nextStage } from './admissions';
+import { assemblePipeline, nextStage, shapeStages, stageName } from './admissions';
 import { assembleAdminDesk, auditSummary, bandOf, energyPct, tmlAsOf, type AdminRows } from './desk';
 
 const NOW = new Date('2026-09-24T10:00:00+05:30').getTime();
@@ -106,28 +106,47 @@ test('ledger totals, ageing and instalment runs', () => {
   assert.equal(L.families.find(f => f.name === 'Aarav')!.lateHistory.late, 1);
 });
 
-test('admissions: funnel counts furthest stage reached, moves are validated', () => {
-  assert.equal(nextStage('enquiry'), 'application');
-  assert.equal(nextStage('enrolled'), null);
-  assert.ok(canMove('enquiry', 'application'));
-  assert.ok(!canMove('enquiry', 'offer'), 'no skipping');
-  assert.ok(canMove('offer', 'rejected'));
-  assert.ok(canMove('rejected', 'assessment'));
-  assert.ok(!canMove('rejected', 'enrolled'));
-  assert.ok(canMove('enrolled', 'withdrawn'));
+test('admissions: funnel counts furthest stage reached, next steps follow the stages a school sets', () => {
+  const T = shapeStages([]);
+  assert.deepEqual(T.map(s => s.key), ['enquiry', 'application', 'assessment', 'offer', 'enrolled'], 'the template when a school has none');
+  assert.equal(nextStage(T, 'enquiry'), 'application');
+  assert.equal(nextStage(T, 'assessment'), 'offer', 'the last own stage leads to an offer');
+  assert.equal(nextStage(T, 'offer'), 'enrolled');
+  assert.equal(nextStage(T, 'enrolled'), null);
+  assert.equal(nextStage(T, 'rejected'), null);
+  const own = shapeStages([
+    { key: 'enrolled', label: 'Joined', position: 101, system: 'enrolled' }, { key: 'offer', label: 'Offer', position: 100, system: 'offer', respond_days: 7 },
+    { key: 'interview', label: 'Interview', position: 2 }, { key: 'enquiry', label: 'Enquiry', position: 1 }, { key: 'assessment', label: 'Assessment', position: 3, active: false },
+  ]);
+  assert.deepEqual(own.map(s => s.key), ['enquiry', 'interview', 'assessment', 'offer', 'enrolled'], 'own stages by position, then Offer and Enrolled');
+  assert.equal(nextStage(own, 'interview'), 'offer', 'a retired stage is skipped');
+  assert.equal(nextStage(own, 'assessment'), 'offer', 'someone left at a retired stage still moves on');
+  assert.equal(stageName(own, 'enrolled'), 'Joined');
+  assert.equal(stageName(own, 'withdrawn'), 'Withdrawn');
+
   const row = (id: string, stage: string, furthest: string, changedDaysAgo = 1) => ({
     id, name: id, grade: 6, stage, furthest_stage: furthest, source: 'website', stage_changed_at: iso(changedDaysAgo), created_at: iso(40),
   });
   const P = assemblePipeline('2027-28', [
     row('a', 'enrolled', 'enrolled'), row('b', 'rejected', 'assessment'), row('c', 'application', 'application', 20),
-    row('d', 'enquiry', 'enquiry'), row('e', 'offer', 'offer'),
-  ], [], '2026-09-24');
-  assert.deepEqual(P.funnel.map(f => f.reached), [5, 4, 3, 2, 1]);
-  assert.equal(P.funnel[1].fromPrev, 80);
+    row('d', 'enquiry', 'enquiry'), row('e', 'offer', 'offer'), row('f', 'assessment', 'assessment', 30),
+  ], [], '2026-09-24', {
+    seats: [{ session: '2027-28', grade: 6, capacity: 3 }],
+    offers: [
+      { id: 'o1', applicant_id: 'e', session: '2027-28', grade: 6, status: 'issued', proposed_at: iso(5), respond_by: '2026-09-26' },
+      { id: 'o2', applicant_id: 'f', session: '2027-28', grade: 6, status: 'proposed', proposed_at: iso(4), proposed_by: 'officer' },
+    ],
+  });
+  assert.deepEqual(P.funnel.map(f => f.reached), [6, 5, 4, 2, 1]);
+  assert.deepEqual(P.funnel.map(f => f.label), ['Enquiry', 'Application', 'Assessment', 'Offer', 'Enrolled']);
+  assert.equal(P.funnel[1].fromPrev, 83);
   assert.equal(P.enrolled, 1);
   assert.equal(P.conversion, 50, '1 enrolled of 2 decided');
-  assert.equal(P.stale.map(a => a.id).join(), 'c');
-  assert.deepEqual(P.leak, { from: 'assessment', to: 'offer', rate: 67 }, 'offer->enrolled skipped: only 2 reached offer');
+  assert.equal(P.stale.map(a => a.id).join(), 'c', 'f waits on the principal, not on the office');
+  assert.deepEqual(P.leak && [P.leak.from, P.leak.to, P.leak.rate], ['assessment', 'offer', 50]);
+  assert.deepEqual(P.seats.map(s => [s.grade, s.capacity, s.held, s.left, s.proposed]), [[6, 3, 2, 1, 1]], 'Offer and Enrolled hold seats');
+  assert.deepEqual(P.approvals.map(a => a.id), ['f']);
+  assert.deepEqual(P.expiring.map(a => [a.id, a.offer?.daysLeft]), [['e', 2]]);
 });
 
 test('TML as of a date uses only snapshots that existed then', () => {

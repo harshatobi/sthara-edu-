@@ -10,7 +10,7 @@
  */
 import { normClass } from '@/lib/teacher/scope';
 import { AT_RISK, subjectKey, subjectName, type AdminDesk, type AStudent, type TeacherRow } from './desk';
-import { STAGE_ONE, STAGES } from './admissions';
+import { stageName } from './admissions';
 import { daysBetween, fmtDate, inr, inrShort, isoDay, plural } from './format';
 import type { Perm } from './rbac';
 
@@ -453,20 +453,21 @@ function finance(d: AdminDesk, today: string): Finding[] {
 }
 
 // ── Admissions ──────────────────────────────────────────────────────────────
-function admissions(d: AdminDesk): Finding[] {
+function admissions(d: AdminDesk, today: string): Finding[] {
   const out: Finding[] = [];
+  const daysSince = (at: string) => daysBetween(at.slice(0, 10), today);
   const P = d.admissions;
   if (P.stale.length) {
     out.push(make({
       key: 'stale-applicants', module: 'admissions', severity: 25 + Math.min(25, P.stale.length * 3),
       title: `${plural(P.stale.length, 'applicant')} idle for over two weeks`,
       summary: 'Families who hear nothing tend to accept another school\'s offer.',
-      evidence: P.stale.slice(0, 5).map(a => ({ label: a.name, value: `${STAGE_ONE[a.stage]} · ${a.daysInStage} days` })),
+      evidence: P.stale.slice(0, 5).map(a => ({ label: a.name, value: `${stageName(P.stages, a.stage)} · ${a.daysInStage} days` })),
       actions: [{ kind: 'link', label: 'Open admissions', href: '/admin/admissions' }],
       fingerprint: `${band(P.stale.length, 3)}`,
     }));
   }
-  const offers = P.applicants.filter(a => a.stage === 'offer' && a.daysInStage > 14);
+  const offers = P.applicants.filter(a => a.offer?.status === 'issued' && a.daysInStage > 14);
   if (offers.length) {
     out.push(make({
       key: 'offers-unconverted', module: 'admissions', severity: 38,
@@ -477,13 +478,24 @@ function admissions(d: AdminDesk): Finding[] {
       fingerprint: `${offers.length}`,
     }));
   }
-  for (let i = 1; i < STAGES.length; i++) {
-    const f = P.funnel[i];
-    if (P.funnel[i - 1].reached < 5 || f.fromPrev === null || f.fromPrev >= 50) continue;
+  const slow = (P.approvals ?? []).filter(a => a.offer && daysSince(a.offer.proposedAt) > 3);
+  if (slow.length) {
     out.push(make({
-      key: `leak:${STAGES[i]}`, module: 'admissions', severity: 30 + (50 - f.fromPrev) * 0.6,
-      title: `Only ${f.fromPrev}% move from ${STAGE_ONE[STAGES[i - 1]].toLowerCase()} to ${STAGE_ONE[STAGES[i]].toLowerCase()}`,
-      summary: `${P.funnel[i - 1].reached} reached ${STAGE_ONE[STAGES[i - 1]].toLowerCase()}, ${f.reached} went on.`,
+      key: 'offers-unapproved', module: 'admissions', severity: 34,
+      title: `${plural(slow.length, 'offer')} waiting over three days for approval`,
+      summary: 'A family that hears nothing after the assessment keeps looking. Approve or send these back.',
+      evidence: slow.slice(0, 5).map(a => ({ label: a.name, value: `Grade ${a.grade} · proposed ${daysSince(a.offer!.proposedAt)} days ago` })),
+      actions: [{ kind: 'link', label: 'Decide', href: '/admin/admissions?view=approval' }],
+      fingerprint: `${slow.length}`,
+    }));
+  }
+  for (let i = 1; i < P.funnel.length; i++) {
+    const f = P.funnel[i], prev = P.funnel[i - 1];
+    if (prev.reached < 5 || f.fromPrev === null || f.fromPrev >= 50) continue;
+    out.push(make({
+      key: `leak:${f.stage}`, module: 'admissions', severity: 30 + (50 - f.fromPrev) * 0.6,
+      title: `Only ${f.fromPrev}% move from ${prev.label.toLowerCase()} to ${f.label.toLowerCase()}`,
+      summary: `${prev.reached} reached ${prev.label.toLowerCase()}, ${f.reached} went on.`,
       evidence: [{ label: 'Step conversion', value: `${f.fromPrev}%`, tone: 'a' }],
       actions: [{ kind: 'link', label: 'Open admissions', href: '/admin/admissions' }],
       fingerprint: `${band(f.fromPrev, 10)}`,
@@ -602,7 +614,7 @@ export function probe(d: AdminDesk, now = Date.now()): ProbeResult {
   const today = isoDay(new Date(now));
   const a = d.me.access;
   const all = correlate([
-    ...academics(d), ...workforce(d, today), ...finance(d, today), ...admissions(d), ...compliance(d, today),
+    ...academics(d), ...workforce(d, today), ...finance(d, today), ...admissions(d, today), ...compliance(d, today),
   ]);
   const visible = all
     .filter(f => a.can(MODULES[f.module].perm) || (f.module === 'compliance' && f.needs && a.can(f.needs)))

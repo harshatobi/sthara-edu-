@@ -8,6 +8,8 @@ import { toWhatsAppText } from '@/lib/parent/ask';
 import { parentPost, MessageError } from '@/lib/parent/messages';
 import { linkUsable } from './config';
 import { handleStaffInbound } from '@/lib/staff/whatsapp';
+import { familyOpt, logApplicantMessage } from '@/lib/admin/crmServer';
+import { optCommand } from '@/lib/admin/crm';
 import { handleRegisterInbound } from '@/lib/attendance/whatsapp';
 import { sendWhatsApp } from './send';
 
@@ -39,6 +41,9 @@ export async function handleInbound(db: SupabaseClient, msg: { from: string; tex
     const { data: member } = await db.from('staff_members').select('id, school_id, name, active, whatsapp_opt_in')
       .eq('phone_e164', phone).eq('active', true).eq('whatsapp_opt_in', true).is('user_id', null).limit(1).maybeSingle();
     if (member) { await handleRegisterInbound(db, member, phone, text, mark); return; }
+    // A family with an admission application (no account yet): STOP / START their stage messages; anything else is
+    // logged on the application for the admissions office.
+    if (await handleApplicantInbound(db, phone, text)) { await mark({ status: 'received' }); return; }
     await mark({ status: 'ignored' });
     // Answer an unknown number at most once a day.
     const { data: recent } = await db.from('whatsapp_log').select('id').eq('phone_e164', phone).eq('direction', 'out').eq('kind', 'system')
@@ -122,4 +127,23 @@ export async function handleInbound(db: SupabaseClient, msg: { from: string; tex
     console.error('[whatsapp in] ask:', e?.message);
     await reply('Sorry, I couldn’t answer that just now. Try again in a minute, or open the parent portal.');
   }
+}
+
+async function handleApplicantInbound(db: SupabaseClient, phone: string, text: string): Promise<boolean> {
+  const cmd = optCommand(text);
+  if (cmd) {
+    const n = await familyOpt(db, phone, cmd);
+    if (n === null) return false;
+    await sendWhatsApp(db, { to: phone, kind: 'system', body: cmd === 'stop'
+      ? 'Done. You won’t get messages about your admission application here. Reply START to have them again.'
+      : 'Welcome back. You’ll get messages about your admission application here again.' });
+    return true;
+  }
+  const logged = await logApplicantMessage(db, phone, text);
+  if (!logged) return false;
+  // Answer at most once a day, so a conversation isn't met with the same line each time.
+  const { data: recent } = await db.from('whatsapp_log').select('id').eq('phone_e164', phone).eq('direction', 'out').eq('kind', 'system')
+    .gte('created_at', new Date(Date.now() - HISTORY_MS).toISOString()).limit(1);
+  if (!recent?.length) await sendWhatsApp(db, { to: phone, kind: 'system', body: 'Thank you. Your message is with the school’s admissions office, who will get back to you. Reply STOP to stop messages about your application.' });
+  return true;
 }

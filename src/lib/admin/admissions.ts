@@ -12,6 +12,8 @@
  */
 import { daysBetween, isoDay } from './format';
 import { ageRulesOf, type AgeRules } from './application';
+import { assessmentOf, type AssessmentRules } from './merit';
+import { feesOf, rteModeOf, type FeeRules, type RteMode } from './rteFees';
 
 /** The template every school starts from; also the stage values the bulk-import format accepts. */
 export const STAGES = ['enquiry', 'application', 'assessment', 'offer', 'enrolled'] as const;
@@ -28,6 +30,8 @@ export interface StageDef {
   respondDays: number | null;
   /** Checks an applicant must pass before leaving this stage ('documents', 'age'). */
   requires: string[];
+  /** The WhatsApp message a family gets on reaching this stage, or null. */
+  message: string | null;
   color: string;
 }
 
@@ -50,13 +54,13 @@ export function shapeStages(rows: any[] | undefined): StageDef[] {
   const src = rows?.length ? rows : DEFAULT_ROWS;
   const list: StageDef[] = src.map(r => ({
     key: r.key, label: r.label, position: Number(r.position ?? 0), system: r.system ?? null, active: r.active !== false,
-    respondDays: r.respond_days ?? null, requires: Array.isArray(r.requires) ? r.requires : [], color: '',
+    respondDays: r.respond_days ?? null, requires: Array.isArray(r.requires) ? r.requires : [], message: r.message ?? null, color: '',
   })).sort((a, b) => sysRank(a.system) - sysRank(b.system) || a.position - b.position);
   // The template's system rows if a school's own list lacks them (never expected; keeps the pipeline whole).
   for (const sys of ['offer', 'enrolled'] as const) {
     if (!list.some(s => s.system === sys)) {
       const d = DEFAULT_ROWS.find(r => r.system === sys)!;
-      list.push({ key: d.key, label: d.label, position: d.position, system: sys, active: true, respondDays: d.respond_days ?? null, requires: [], color: '' });
+      list.push({ key: d.key, label: d.label, position: d.position, system: sys, active: true, respondDays: d.respond_days ?? null, requires: [], message: null, color: '' });
     }
   }
   let i = 0;
@@ -98,7 +102,7 @@ export function nextStage(stages: StageDef[], key: string): string | null {
 }
 
 export const SOURCES: Record<string, string> = {
-  walk_in: 'Walk-in', website: 'Website', referral: 'Referral', sibling: 'Sibling', event: 'School event',
+  walk_in: 'Walk-in', website: 'Website', qr: 'QR poster', referral: 'Referral', sibling: 'Sibling', event: 'School event',
   advertisement: 'Advertisement', other: 'Other',
 };
 
@@ -166,6 +170,19 @@ export interface Applicant {
   stageChangedAt: string;
   /** The student account made at enrolment, when there is one. */
   studentId: string | null;
+  /** The counsellor who owns them, and when they are next to be followed up. */
+  ownerId: string | null;
+  followUpOn: string | null;
+  /** The family asked for no WhatsApp messages about this application. */
+  optOut: boolean;
+  /** office | online | portal | import */
+  channel: string;
+  /** Applying for an RTE seat; their place in the school's RTE lottery; the assessment score. */
+  rte: boolean;
+  rteRank: number | null;
+  rteAllotmentNo: string | null;
+  rteAllottedOn: string | null;
+  score: number | null;
   createdAt: string;
   /** Days in the current stage (open applicants only). */
   daysInStage: number;
@@ -182,6 +199,9 @@ export interface SeatLine {
   grade: number;
   /** Null: the school set no limit for this grade. */
   capacity: number | null;
+  /** Of the seats, how many are reserved for RTE (null: none), and how many RTE applicants hold one. */
+  rteSeats: number | null;
+  rteHeld: number;
   /** Holding a seat: at Offer (out or accepted) or enrolled. */
   held: number;
   out: number;
@@ -216,6 +236,10 @@ export interface Pipeline {
   waitlisted: number;
   /** The age for each class on the cut-off date (the school's, else NEP's). */
   ageRules: AgeRules;
+  /** The assessment's highest score, family booking and merit points. */
+  assessment: AssessmentRules;
+  fees: FeeRules;
+  rteMode: RteMode;
 }
 
 export const STALE_DAYS = 14;
@@ -232,6 +256,8 @@ export function shapeApplicant(r: any, events: any[], offers: Offer[], stages: S
     furthest: rankOf(stages, r.furthest_stage) >= 0 ? r.furthest_stage : stages[0].key,
     assessmentOn: r.assessment_on ?? null, notes: r.notes ?? null,
     stageChangedAt: r.stage_changed_at, createdAt: r.created_at, studentId: r.student_id ?? null,
+    ownerId: r.owner_id ?? null, followUpOn: r.follow_up_on ?? null, optOut: r.whatsapp_opt_out === true, channel: r.channel ?? 'office',
+    rte: r.rte === true, rteRank: r.rte_rank ?? null, rteAllotmentNo: r.rte_allotment_no ?? null, rteAllottedOn: r.rte_allotted_on ?? null, score: r.assessment_score == null ? null : Number(r.assessment_score),
     daysInStage: open ? Math.max(0, daysBetween(String(r.stage_changed_at).slice(0, 10), today)) : 0,
     open,
     offer: sorted.find(o => o.live) ?? sorted[0] ?? null,
@@ -294,7 +320,12 @@ export function assemblePipeline(session: string, rows: any[], eventRows: any[],
   const sources = [...new Set(applicants.map(a => a.source))];
 
   const cap = new Map<number, number>();
-  for (const s of extra.seats || []) if (s.session === session || s.session === undefined) cap.set(Number(s.grade), Number(s.capacity));
+  const rteCap = new Map<number, number>();
+  for (const s of extra.seats || []) {
+    if (s.session !== session && s.session !== undefined) continue;
+    cap.set(Number(s.grade), Number(s.capacity));
+    if (s.rte_seats != null) rteCap.set(Number(s.grade), Number(s.rte_seats));
+  }
   const seatGrades = [...new Set([...cap.keys(), ...grades])].sort((a, b) => a - b);
   const seats: SeatLine[] = seatGrades.map(g => {
     const inGrade = applicants.filter(a => a.grade === g);
@@ -303,6 +334,8 @@ export function assemblePipeline(session: string, rows: any[], eventRows: any[],
     const capacity = cap.has(g) ? cap.get(g)! : null;
     return {
       grade: g, capacity, held,
+      rteSeats: rteCap.has(g) ? rteCap.get(g)! : null,
+      rteHeld: inGrade.filter(a => a.rte && (a.stage === offerKey || a.stage === enrolledKey)).length,
       out: live.filter(o => o.status === 'issued').length, accepted: live.filter(o => o.status === 'accepted').length,
       enrolled: inGrade.filter(a => a.stage === enrolledKey).length,
       waitlisted: live.filter(o => o.status === 'waitlisted').length, proposed: live.filter(o => o.status === 'proposed').length,
@@ -331,5 +364,8 @@ export function assemblePipeline(session: string, rows: any[], eventRows: any[],
       .sort((a, b) => a.offer!.daysLeft! - b.offer!.daysLeft!),
     waitlisted: offerRows.filter(o => o.status === 'waitlisted').length,
     ageRules: ageRulesOf(extra.settings),
+    assessment: assessmentOf(extra.settings),
+    fees: feesOf(extra.settings),
+    rteMode: rteModeOf(extra.settings),
   };
 }

@@ -1,4 +1,6 @@
 import 'server-only';
+import { flushSoon } from '@/lib/admin/crmServer';
+import { feePaid } from '@/lib/admin/rteFeesServer';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { gradeOf } from '@/lib/admin/format';
 import { displayClass, normClass } from '@/lib/teacher/scope';
@@ -33,6 +35,8 @@ export async function checkEnrolment(db: SupabaseClient, schoolId: string, a: { 
   // The family has to have said yes: an offer still out may yet be declined or lapse.
   const { data: offer } = await db.from('admission_offers').select('status').eq('applicant_id', a.id).in('status', ['issued', 'accepted']).maybeSingle();
   if (offer && offer.status !== 'accepted') return { error: `Record ${a.name.split(' ')[0]}'s family accepting the offer first.`, status: 409 };
+  const fee = await feePaid(db, schoolId, a.id, 'admission');
+  if (!fee.paid) return { error: `Record ${a.name.split(' ')[0]}'s admission fee before enrolment.`, status: 409 };
   const cls = displayClass(str(raw.className, 40));
   if (!normClass(cls)) return { error: 'Pick the section they join.' };
   if (gradeOf(cls) !== a.grade) return { error: `${a.name} applied for grade ${a.grade}, but ${cls} is grade ${gradeOf(cls) ?? '?'}.` };
@@ -123,6 +127,7 @@ export async function fulfil(db: SupabaseClient, req: AccountRequest, actorId: s
   if (moveErr) console.warn('[enrol] applicant not moved:', moveErr.message);
   await db.from('admission_offers').update({ status: 'enrolled', closed_at: new Date().toISOString() }).eq('applicant_id', a.id).eq('status', 'accepted');
   await db.from('admission_events').insert({ applicant_id: a.id, school_id: req.school_id, from_stage: 'offer', to_stage: 'enrolled', note: `Enrolled into ${o.className}, admission no. ${o.rollNo}`, actor_id: actorId, offer_status: 'enrolled' });
+  flushSoon(db, req.school_id);
 
   let invoices = 0;
   if (o.billFees) {

@@ -49,3 +49,9 @@ test('the family edits the details only while it is a draft', () => {
   assert.equal(familyCanSend({ stage: 'offer', student_id: null }), true, 'documents can still come at an offer');
   assert.equal(familyCanSend({ stage: 'enquiry', student_id: 's' }), false);
 });
+
+test('today in India, whatever clock the server runs on', async () => {
+  const { indiaDay } = await import('./format');
+  assert.equal(indiaDay(new Date('2026-10-27T18:29:00Z')), '2026-10-27');
+  assert.equal(indiaDay(new Date('2026-10-27T18:31:00Z')), '2026-10-28', 'past midnight IST while it is still the 27th in UTC');
+});

@@ -2,7 +2,7 @@ import 'server-only';
 import { after } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { activeGrants, Access, type Perm } from '@/lib/admin/rbac';
-import { isoDay, nextSession, sessionOf } from '@/lib/admin/format';
+import { indiaDay, nextSession, sessionOf } from '@/lib/admin/format';
 import { toE164 } from '@/lib/whatsapp/config';
 import { sendWhatsApp } from '@/lib/whatsapp/send';
 import { GRADES } from '@/lib/students/register';
@@ -36,7 +36,7 @@ export async function counsellors(db: Db, schoolId: string): Promise<{ id: strin
     db.from('users').select('id, name').eq('school_id', schoolId).eq('role', 'admin').limit(500),
     db.from('role_grants').select('*').eq('school_id', schoolId).is('revoked_at', null).limit(2000),
   ]);
-  const active = activeGrants(grants || [], isoDay());
+  const active = activeGrants(grants || [], indiaDay());
   const can = (id: string, p: Perm) => new Access(active.filter(g => g.userId === id).map(g => g.role)).can(p);
   return (users || []).filter(u => can(u.id, 'admissions.manage')).map(u => ({ id: u.id, name: u.name || 'Office' })).sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -63,7 +63,7 @@ export async function crmRecord(db: Db, schoolId: string, applicantId: string) {
 export async function logContact(db: Db, a: Actor, applicantId: string, raw: unknown): Promise<Result> {
   const ap = await applicant(db, a.schoolId, applicantId);
   if (!ap) return fail('Applicant not found.', 404);
-  const c = checkContact(raw, isoDay());
+  const c = checkContact(raw, indiaDay());
   if ('error' in c) return fail(c.error);
   const { error } = await db.from('admission_contacts').insert({ ...c.value, school_id: a.schoolId, applicant_id: applicantId, actor_id: a.id });
   if (error) return fail('Could not save.', 500);
@@ -75,7 +75,7 @@ export async function logContact(db: Db, a: Actor, applicantId: string, raw: unk
 
 export async function setFollowUp(db: Db, a: Actor, applicantId: string, on: unknown): Promise<Result> {
   const date = typeof on === 'string' && on ? on : null;
-  if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < isoDay())) return fail('Pick today or a later day.');
+  if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < indiaDay())) return fail('Pick today or a later day.');
   const { data, error } = await db.from('admission_applicants').update({ follow_up_on: date }).eq('id', applicantId).eq('school_id', a.schoolId).select('id');
   if (error) return fail('Could not save.', 500);
   return data?.length ? { ok: true } : fail('Applicant not found.', 404);
@@ -183,7 +183,7 @@ export async function enquire(db: Db, school: ApplySchool, b: Record<string, unk
   if (open) {
     await db.from('admission_contacts').insert({ school_id: school.id, applicant_id: open.id, kind: 'note', direction: 'in', auto: true,
       note: `Enquired again on the ${source === 'qr' ? 'QR poster' : 'apply page'}${message ? `: ${message}` : ''}` });
-    await db.from('admission_applicants').update({ follow_up_on: isoDay() }).eq('id', open.id);
+    await db.from('admission_applicants').update({ follow_up_on: indiaDay() }).eq('id', open.id);
     return { ok: true };
   }
   await db.rpc('admission_ensure_stages', { p_school: school.id });
@@ -192,7 +192,7 @@ export async function enquire(db: Db, school: ApplySchool, b: Record<string, unk
   const now = new Date().toISOString();
   const { data, error } = await db.from('admission_applicants').insert({
     school_id: school.id, session, name: child, grade, stage: first.key, furthest_stage: first.key, source, channel: 'online',
-    guardian_name: parent, guardian_phone: phone, notes: message || null, submitted_at: now, follow_up_on: isoDay(),
+    guardian_name: parent, guardian_phone: phone, notes: message || null, submitted_at: now, follow_up_on: indiaDay(),
   }).select('id').single();
   if (error || !data) { console.error('[enquiry]', error?.message); return fail('Could not send. Try again.', 500); }
   await db.from('admission_events').insert({ applicant_id: data.id, school_id: school.id, from_stage: null, to_stage: first.key, actor_id: null,
@@ -230,7 +230,7 @@ export async function logApplicantMessage(db: Db, phone: string, text: string): 
   if (!rows.length) return false;
   await db.from('admission_contacts').insert(rows.map(r => ({ school_id: r.school_id, applicant_id: r.id, kind: 'whatsapp', direction: 'in', auto: true,
     note: text.slice(0, 1000) || '(a message with no text)' })));
-  await db.from('admission_applicants').update({ follow_up_on: isoDay() }).in('id', rows.map(r => r.id)).is('follow_up_on', null);
+  await db.from('admission_applicants').update({ follow_up_on: indiaDay() }).in('id', rows.map(r => r.id)).is('follow_up_on', null);
   return true;
 }
 

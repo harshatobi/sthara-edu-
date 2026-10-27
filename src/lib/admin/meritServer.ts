@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isoDay } from '@/lib/admin/format';
+import { indiaDay } from '@/lib/admin/format';
 import { GRADES } from '@/lib/students/register';
 import { familyContacts, formOf, phoneKey } from './application';
 import { assessmentOf, checkScore, meritList, meritOf, openSlots, slotWhen, type AssessmentRules } from './merit';
@@ -63,7 +63,7 @@ export async function cancelSlot(db: Db, a: { id: string; schoolId: string }, sl
   if (gone?.length) {
     await db.from('admission_contacts').insert(gone.map(g => ({ school_id: a.schoolId, applicant_id: g.applicant_id, kind: 'note', auto: true, actor_id: a.id,
       note: `Assessment slot ${slotWhen(s)} cancelled: book another and tell the family` })));
-    await db.from('admission_applicants').update({ follow_up_on: isoDay(), assessment_on: null }).in('id', gone.map(g => g.applicant_id));
+    await db.from('admission_applicants').update({ follow_up_on: indiaDay(), assessment_on: null }).in('id', gone.map(g => g.applicant_id));
   }
   return { ok: true, unbooked: gone?.length ?? 0 };
 }
@@ -99,7 +99,7 @@ export async function recordResult(db: Db, a: { id: string; schoolId: string }, 
   if (b.status === 'no_show') {
     await db.from('admission_bookings').update({ status: 'no_show', score: null, scored_by: a.id, scored_at: new Date().toISOString() }).eq('id', bk.id);
     await db.from('admission_contacts').insert({ school_id: a.schoolId, applicant_id: bk.applicant_id, kind: 'note', actor_id: a.id, auto: true, note: 'Did not come to the assessment' });
-    await db.from('admission_applicants').update({ follow_up_on: isoDay() }).eq('id', bk.applicant_id);
+    await db.from('admission_applicants').update({ follow_up_on: indiaDay() }).eq('id', bk.applicant_id);
     return { ok: true };
   }
   const rules = await rulesOf(db, a.schoolId);

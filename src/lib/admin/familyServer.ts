@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isoDay, nextSession, sessionOf } from '@/lib/admin/format';
+import { indiaDay, nextSession, sessionOf } from '@/lib/admin/format';
 import { normaliseCode, schoolPolicy, type SchoolRow } from '@/lib/settings/registry';
 import { maskPhone, toE164, whatsappConfig } from '@/lib/whatsapp/config';
 import { sendWhatsApp } from '@/lib/whatsapp/send';
@@ -239,7 +239,7 @@ export async function loadForFamily(db: Db, p: Principal, id: unknown) {
   const stage = stages.get(a.stage) ?? null;
   const form = formOf(a.form);
   const live = (docs || []).filter(d => !d.moved_to);
-  const checklist = checklistFor(checklistOf(school?.settings), a.grade, live.map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), isoDay());
+  const checklist = checklistFor(checklistOf(school?.settings), a.grade, live.map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), indiaDay());
   return {
     id: a.id, name: a.name, grade: a.grade, dob: a.date_of_birth, session: a.session, channel: a.channel, submittedAt: a.submitted_at,
     status: familyStatus(a, stage),
@@ -294,7 +294,7 @@ function basics(b: Record<string, unknown>): { value: { name: string; grade: num
   if (!GRADES.includes(grade)) return { error: 'Pick the class you are applying for.' };
   const dob = typeof b.dob === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.dob) ? b.dob : null;
   if (b.dob && !dob) return { error: 'Enter the date of birth.' };
-  if (dob && (dob > isoDay() || dob < '1995-01-01')) return { error: 'Check the date of birth.' };
+  if (dob && (dob > indiaDay() || dob < '1995-01-01')) return { error: 'Check the date of birth.' };
   return { value: { name, grade, dob } };
 }
 
@@ -384,7 +384,7 @@ export async function submitForFamily(db: Db, p: Principal, id: unknown): Promis
   if (!app.canEdit) return fail('This application has already been sent.', 409);
   if (!app.completeness.done) return fail(`Fill in before sending: ${app.completeness.missing.join(', ')}.`);
   const now = new Date().toISOString();
-  const { data, error } = await db.from('admission_applicants').update({ submitted_at: now, applied_on: now.slice(0, 10) })
+  const { data, error } = await db.from('admission_applicants').update({ submitted_at: now, applied_on: indiaDay() })
     .eq('id', app.id).eq('school_id', p.schoolId).is('submitted_at', null).select('stage');
   if (error) return fail('Could not send. Try again.', 500);
   if (!data?.length) return fail('This application has already been sent.', 409);

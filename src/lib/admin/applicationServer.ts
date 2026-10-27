@@ -1,7 +1,7 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isoDay } from '@/lib/admin/format';
+import { indiaDay } from '@/lib/admin/format';
 import { DOC_BUCKET } from '@/lib/students/documentsServer';
 import {
   checklistOf, isMedical, checkMeta, cleanFileName, DOC_MAX_BYTES, docLabel, inlineType, type DocStatus,
@@ -111,7 +111,7 @@ async function rulesOf(db: Db, schoolId: string) {
 async function checksFor(db: Db, a: NonNullable<Awaited<ReturnType<typeof applicantOf>>>, docs: AppDoc[]): Promise<Checks> {
   const [{ checklist, age }, m, fee] = await Promise.all([rulesOf(db, a.school_id), matches(db, a.school_id, a), feePaid(db, a.school_id, a.id, 'application')]);
   return assembleChecks({ grade: a.grade, session: a.session, dob: a.date_of_birth }, age, checklist,
-    docs.filter(d => !d.moved_to).map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), isoDay(), m.siblings, m.staff,
+    docs.filter(d => !d.moved_to).map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), indiaDay(), m.siblings, m.staff,
     { required: fee.required, paid: fee.paid });
 }
 
@@ -176,7 +176,7 @@ export async function uploadUrl(db: Db, a: Actor, applicantId: string, b: { kind
 export async function finishUpload(db: Db, a: Actor, applicantId: string, b: Record<string, unknown>, can: AppCan): Promise<Result<{ id: string }>> {
   const ap = await applicantOf(db, a.schoolId, applicantId);
   if (!ap) return fail('Applicant not found.', 404);
-  const m = checkMeta(b, isoDay());
+  const m = checkMeta(b, indiaDay());
   if ('error' in m) return fail(m.error);
   if (!mayManage(m.value.kind, can)) return fail('You can’t add this kind of document.', 403);
   const fileName = cleanFileName(b.fileName);

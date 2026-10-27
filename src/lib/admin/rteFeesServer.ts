@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isoDay } from '@/lib/admin/format';
+import { indiaDay } from '@/lib/admin/format';
 import { priorities } from './meritServer';
 import { checkPayment, FEE_LABEL, feeDue, feesOf, lotteryOrder, rupees, rteModeOf, type FeeKind } from './rteFees';
 
@@ -57,7 +57,7 @@ export async function feePaid(db: Db, schoolId: string, applicantId: string, kin
 }
 
 export async function recordPayment(db: Db, a: Actor, applicantId: string, raw: unknown): Promise<Result<{ id: string; receiptNo: string }>> {
-  const p = checkPayment(raw, isoDay());
+  const p = checkPayment(raw, indiaDay());
   if ('error' in p) return fail(p.error);
   const { data, error } = await db.rpc('admission_pay', {
     p_school: a.schoolId, p_applicant: applicantId, p_kind: p.value.kind, p_amount: p.value.amount, p_mode: p.value.mode,
@@ -86,7 +86,7 @@ export async function voidPayment(db: Db, a: Actor, paymentId: string, reason: u
 export async function recordGatewayPayment(db: Db, x: { schoolId: string; applicantId: string; kind: FeeKind; amount: number; paymentId: string; payload: Record<string, unknown> }) {
   const { data, error } = await db.rpc('admission_pay', {
     p_school: x.schoolId, p_applicant: x.applicantId, p_kind: x.kind, p_amount: x.amount, p_mode: 'gateway', p_reference: x.paymentId,
-    p_paid_on: isoDay(), p_actor: null, p_gateway: x.payload,
+    p_paid_on: indiaDay(), p_actor: null, p_gateway: x.payload,
   });
   return error ? rpcFail(error, 'Could not record the payment.') : { ok: true as const, ...(data as { id: string; receiptNo: string }) };
 }
@@ -113,7 +113,7 @@ export async function setRte(db: Db, a: Actor, applicantId: string, b: Record<st
   const { data: live } = await db.from('admission_offers').select('status').eq('applicant_id', applicantId).in('status', ['proposed', 'waitlisted', 'issued', 'accepted']).maybeSingle();
   const allotmentNo = typeof b.allotmentNo === 'string' ? b.allotmentNo.trim().slice(0, 60) || null : null;
   const allottedOn = typeof b.allottedOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.allottedOn) ? b.allottedOn : null;
-  if (allottedOn && allottedOn > isoDay()) return fail('The allotment date is today or earlier.');
+  if (allottedOn && allottedOn > indiaDay()) return fail('The allotment date is today or earlier.');
   const { data: cur } = await db.from('admission_applicants').select('rte').eq('id', applicantId).maybeSingle();
   // Changing pools under an offer would move the seat without approval.
   if (live && cur && cur.rte !== rte) return fail('This applicant has an offer in progress. Cancel or close it before changing RTE.', 409);

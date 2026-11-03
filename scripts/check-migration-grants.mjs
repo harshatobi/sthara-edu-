@@ -110,11 +110,15 @@ for (const file of files) {
       if (/\banon\b/i.test(m[2])) for (const x of m[1].matchAll(/public\.("?\w+"?)\s*\(/gi)) revokedFromAnon.add(x[1].replace(/"/g, '').toLowerCase());
     }
   }
+  // Some files revoke their functions in a loop, by names built at run time. CREATE OR REPLACE keeps grants, so that covers later versions too.
+  for (const f of allFiles) {
+    const text = fs.readFileSync(f, 'utf8');
+    if (!/EXECUTE\s+format\(\s*'REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.%s\s+FROM[^']*\banon\b/i.test(text)) continue;
+    for (const m of text.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.("?\w+"?)\s*\(/gi)) revokedFromAnon.add(m[1].replace(/"/g, '').toLowerCase());
+  }
   for (const file of files) {
     if (file.endsWith('_baseline.sql')) continue;
     const text = fs.readFileSync(file, 'utf8');
-    // Files that revoke their functions in a loop, by a list of names built at run time.
-    if (/EXECUTE\s+format\(\s*'REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.%s\s+FROM[^']*\banon\b/i.test(text)) continue;
     for (const m of text.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.("?\w+"?)\s*\([\s\S]*?(?:\$\$|\$\w+\$)/gi)) {
       if (!/SECURITY\s+DEFINER/i.test(m[0])) continue;
       const name = m[1].replace(/"/g, '').toLowerCase();

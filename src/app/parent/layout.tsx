@@ -16,6 +16,7 @@ import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileTex
 import { GearSixIcon as GearSix } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { StudentIcon as Student } from '@phosphor-icons/react/dist/ssr/Student';
 import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
+import { UserPlusIcon as UserPlus } from '@phosphor-icons/react/dist/ssr/UserPlus';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
 import { Empty, PageBar } from '@/components/canon/ui';
 import AuthStatus from '@/components/ui/AuthStatus';
@@ -39,6 +40,7 @@ const NAV: CanonNavItem[] = [
   { href: '/parent/health', label: 'Health Card', short: 'Health', icon: FirstAidKit },
   { href: '/parent/documents', label: 'Documents', short: 'Documents', icon: FileText },
   { href: '/parent/kirti', label: 'Kirti', icon: Trophy },
+  { href: '/parent/admissions', label: 'Apply for a Sibling', short: 'Apply', icon: UserPlus },
   { href: '/parent/conduct', label: 'Conduct & Care', short: 'Conduct', icon: HandHeart },
   { href: '/parent/settings', label: 'WhatsApp & Privacy', short: 'Settings', icon: GearSix, also: ['/parent/consent'] },
 ];

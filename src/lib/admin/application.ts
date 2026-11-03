@@ -186,21 +186,26 @@ export interface Checks {
   documentsDone: boolean;
   siblings: Match[];
   staff: Match[];
+  /** The application fee: whether the school charges one, and whether it is recorded. */
+  fee: { required: boolean; paid: boolean };
 }
 
 export function assembleChecks(a: { grade: number; session: string; dob: string | null }, rules: AgeRules, checklist: ChecklistItem[],
-  docs: DocLite[], today: string, siblings: Match[], staff: Match[]): Checks {
+  docs: DocLite[], today: string, siblings: Match[], staff: Match[], fee: Checks['fee'] = { required: false, paid: true }): Checks {
   const documents = checklistFor(checklist, a.grade, docs, today);
-  return { age: ageCheck(a.dob, a.grade, a.session, rules), documents, documentsDone: documents.every(d => d.state === 'verified'), siblings, staff };
+  return { age: ageCheck(a.dob, a.grade, a.session, rules), documents, documentsDone: documents.every(d => d.state === 'verified'), siblings, staff, fee };
 }
 
-export type Requirement = 'documents' | 'age';
-export const REQUIREMENT_LABEL: Record<Requirement, string> = { documents: 'Every checklist document verified', age: 'Right age for the class' };
+export type Requirement = 'documents' | 'age' | 'fee';
+export const REQUIREMENTS: Requirement[] = ['documents', 'age', 'fee'];
+export const REQUIREMENT_LABEL: Record<Requirement, string> = { documents: 'Every checklist document verified', age: 'Right age for the class', fee: 'Application fee paid' };
 
 /** Why an applicant can't leave a stage that requires these checks, or null when they pass. */
 export function gateError(requires: readonly string[], c: Checks, stageLabel: string): string | null {
   const why: string[] = [];
   if (requires.includes('age') && c.age.state !== 'ok') why.push(c.age.text);
+  // A school that charges no application fee has nothing to wait for.
+  if (requires.includes('fee') && c.fee.required && !c.fee.paid) why.push('The application fee isn’t recorded yet.');
   if (requires.includes('documents') && !c.documentsDone) {
     const left = c.documents.filter(d => d.state !== 'verified').map(d => d.label.toLowerCase());
     why.push(`Documents still to verify: ${left.join(', ')}.`);

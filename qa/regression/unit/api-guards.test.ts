@@ -21,7 +21,7 @@ test('no API route is without a recognised gate', () => {
 
 test('only the deliberate public endpoints are open', () => {
   assert.deepEqual(routes.filter(r => r.guard === 'public').map(r => r.route).sort(),
-    ['/api/auth/verify-school', '/api/contact', '/api/errors', '/api/health', '/api/platform/public']);
+    ['/api/apply', '/api/auth/verify-school', '/api/contact', '/api/errors', '/api/health', '/api/platform/public']);
 });
 
 test('every /api/ops route is operator-only; every /api/admin route checks the office or the caller’s role', () => {

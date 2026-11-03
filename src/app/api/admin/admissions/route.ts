@@ -4,13 +4,16 @@ import { SOURCES } from '@/lib/admin/admissions';
 import { admissionError } from '@/lib/admin/admissionsServer';
 import { checkForm } from '@/lib/admin/application';
 import { stageGate } from '@/lib/admin/applicationServer';
+import { findDuplicates, flushSoon } from '@/lib/admin/crmServer';
 import { isSession, nextSession, sessionOf } from '@/lib/admin/format';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Admissions pipeline (school admins only).
- *   POST  { name, grade, session?, dob?, guardianName?, guardianPhone?, guardianEmail?, previousSchool?, source?, notes? }
+ *   POST  { name, grade, session?, dob?, guardianName?, guardianPhone?, guardianEmail?, previousSchool?, source?, notes?, allowDuplicate? }
+ *         a likely duplicate already this year (same child's name with the same date of birth, phone or email) is
+ *         refused with 409 { duplicates } unless allowDuplicate; the person adding them owns them
  *   PATCH { id, from, to, note? }                  move stage (forward one of the school's own, reject, withdraw, reopen)
  *   PATCH { id, fields: {...} }              edit details
  *   PATCH { id, form: {...} }                save the application (register fields, address, family; lib/admin/application)
@@ -54,16 +57,23 @@ export async function POST(req: NextRequest) {
   const { row, error } = details({ ...b, name: b.name ?? '', grade: b.grade ?? 0 });
   if (error) return bad(error);
   const session = isSession(b.session) ? b.session : nextSession(sessionOf());
+  if (b.allowDuplicate !== true) {
+    const duplicates = await findDuplicates(db, admin.schoolId, session, {
+      name: String(row.name), dob: (row.date_of_birth as string | null) ?? null, phone: (row.guardian_phone as string | null) ?? null, email: (row.guardian_email as string | null) ?? null,
+    });
+    if (duplicates.length) return NextResponse.json({ error: 'This looks like an applicant already entered this year.', duplicates }, { status: 409 });
+  }
   // A new applicant starts at the school's first stage in use.
   await db.rpc('admission_ensure_stages', { p_school: admin.schoolId });
   const { data: first } = await db.from('admission_stages').select('key').eq('school_id', admin.schoolId).is('system', null).eq('active', true)
     .order('position').limit(1).maybeSingle();
   if (!first) return bad('Your admissions pipeline has no stages before Offer. Add one in Set up.', 409);
   const { data, error: e } = await db.from('admission_applicants').insert({
-    ...row, school_id: admin.schoolId, session, stage: first.key, furthest_stage: first.key, created_by: admin.id,
+    ...row, school_id: admin.schoolId, session, stage: first.key, furthest_stage: first.key, created_by: admin.id, owner_id: admin.id,
   }).select('id').single();
   if (e) return bad(e.message, 500);
   await db.from('admission_events').insert({ applicant_id: data.id, school_id: admin.schoolId, from_stage: null, to_stage: first.key, note: str(b.notes, 1000) || null, actor_id: admin.id });
+  flushSoon(db, admin.schoolId);
   return NextResponse.json({ id: data.id });
 }
 
@@ -79,9 +89,14 @@ export async function PATCH(req: NextRequest) {
   if (b.form) {
     const f = checkForm(b.form);
     if ('error' in f) return bad(f.error);
-    const patch: Record<string, unknown> = { form: f.value };
+    const patch: Record<string, unknown> = { form: f.value, rte: f.value.fields.rte_seat === true };
     if (typeof f.value.fields.previous_school === 'string') patch.previous_school = f.value.fields.previous_school;
-    const { data: was } = await db.from('admission_applicants').select('applied_on').eq('id', b.id).maybeSingle();
+    const { data: was } = await db.from('admission_applicants').select('applied_on, rte').eq('id', b.id).maybeSingle();
+    // RTE decides which seats an offer holds: not to be switched under a live offer.
+    if (was && was.rte !== patch.rte) {
+      const { data: live } = await db.from('admission_offers').select('id').eq('applicant_id', b.id).in('status', ['proposed', 'waitlisted', 'issued', 'accepted']).maybeSingle();
+      if (live) return bad('This applicant has an offer in progress. Cancel or close it before changing the RTE seat answer.', 409);
+    }
     if (!was?.applied_on) patch.applied_on = new Date().toISOString().slice(0, 10);
     const { error: e } = await db.from('admission_applicants').update(patch).eq('id', b.id);
     if (e) return bad(e.message, 500);
@@ -114,5 +129,6 @@ export async function PATCH(req: NextRequest) {
     p_school: admin.schoolId, p_applicant: b.id, p_from: str(b.from, 40) || cur.stage, p_to: to, p_actor: admin.id, p_note: str(b.note, 1000) || null,
   });
   if (error) return admissionError(error, 'Could not move the applicant.');
+  flushSoon(db, admin.schoolId);
   return NextResponse.json({ stage: data });
 }

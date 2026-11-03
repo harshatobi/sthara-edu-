@@ -29,6 +29,13 @@ export const DAY = 86_400_000;
 export function isoDay(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+/**
+ * Today in India (YYYY-MM-DD), whatever clock the server runs on: Vercel's functions run in UTC, where isoDay() is
+ * still yesterday until 5:30 am IST. For server code that dates things by the school's day.
+ */
+export function indiaDay(d: Date = new Date()): string {
+  return new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10);
+}
 /** Whole days from a to b (YYYY-MM-DD or ISO timestamps), by calendar date. */
 export function daysBetween(a: string, b: string): number {
   const d = (s: string) => Date.UTC(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));

@@ -87,7 +87,9 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
     all((a, b) => s('fee_invoices', '*').eq('school_id', school).eq('session', session).order('id').range(a, b)),
     all((a, b) => s('fee_payments', '*').eq('school_id', school).gte('paid_on', since).order('id').range(a, b)),
     all((a, b) => s('fee_reminders', 'id, student_id, tone, sent_at').eq('school_id', school).gte('sent_at', since).order('id').range(a, b)),
-    all((a, b) => s('admission_applicants', '*').eq('school_id', school).eq('session', nextSession(session)).order('id').range(a, b)),
+    // Online and portal applications are the family's drafts until they send them: the office works only what was sent.
+    all((a, b) => s('admission_applicants', '*').eq('school_id', school).eq('session', nextSession(session))
+      .or('submitted_at.not.is.null,channel.in.(office,import)').order('id').range(a, b)),
     all((a, b) => s('admission_events', '*').eq('school_id', school).gte('at', since).order('id').range(a, b)),
     all((a, b) => s('school_filings', '*').eq('school_id', school).eq('session', session).range(a, b)),
     all((a, b) => s('proctor_alerts', 'id, flagged_at').eq('school_id', school).gte('flagged_at', since).order('id').range(a, b)),

@@ -1,7 +1,7 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isoDay } from '@/lib/admin/format';
+import { indiaDay } from '@/lib/admin/format';
 import { DOC_BUCKET } from '@/lib/students/documentsServer';
 import {
   checklistOf, isMedical, checkMeta, cleanFileName, DOC_MAX_BYTES, docLabel, inlineType, type DocStatus,
@@ -9,6 +9,7 @@ import {
 import {
   ageRulesOf, assembleChecks, completeness, familyContacts, formOf, gateError, phoneKey, type Checks, type Match,
 } from './application';
+import { feePaid } from './rteFeesServer';
 
 /**
  * The admission application, server side: the applicant with their form, documents and checks; documents with the
@@ -21,7 +22,9 @@ type Db = SupabaseClient;
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; status: number };
 const fail = (error: string, status = 400) => ({ ok: false as const, error, status });
 
-export interface Actor { id: string; schoolId: string }
+/** Who acts: office staff, or (adding documents to their own application) a parent account or a family signed in
+ * on the apply page, who has no Sthara login (id null). */
+export interface Actor { id: string | null; schoolId: string; role?: 'admin' | 'parent' | 'family' }
 export interface AppCan { see: boolean; manage: boolean; health: boolean; manageHealth: boolean }
 // Medical kinds (disability certificate, medical certificate, vaccination record) are the health roles' alone on an
 // application, to see and to handle: the admissions office never holds them.
@@ -36,7 +39,7 @@ export interface AppDoc {
 }
 
 async function audit(db: Db, a: Actor, action: string, rowId: string, values: Record<string, unknown>) {
-  const { error } = await db.from('audit_log').insert({ actor_id: a.id, actor_role: 'admin', action, table_name: 'admission_documents', row_id: rowId, school_id: a.schoolId, new_values: values });
+  const { error } = await db.from('audit_log').insert({ actor_id: a.id, actor_role: a.role ?? 'admin', action, table_name: 'admission_documents', row_id: rowId, school_id: a.schoolId, new_values: values });
   if (error) console.warn('[application audit]', error.message);
 }
 
@@ -106,9 +109,10 @@ async function rulesOf(db: Db, schoolId: string) {
 }
 
 async function checksFor(db: Db, a: NonNullable<Awaited<ReturnType<typeof applicantOf>>>, docs: AppDoc[]): Promise<Checks> {
-  const [{ checklist, age }, m] = await Promise.all([rulesOf(db, a.school_id), matches(db, a.school_id, a)]);
+  const [{ checklist, age }, m, fee] = await Promise.all([rulesOf(db, a.school_id), matches(db, a.school_id, a), feePaid(db, a.school_id, a.id, 'application')]);
   return assembleChecks({ grade: a.grade, session: a.session, dob: a.date_of_birth }, age, checklist,
-    docs.filter(d => !d.moved_to).map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), isoDay(), m.siblings, m.staff);
+    docs.filter(d => !d.moved_to).map(d => ({ kind: d.kind, status: d.status, valid_until: d.valid_until })), indiaDay(), m.siblings, m.staff,
+    { required: fee.required, paid: fee.paid });
 }
 
 async function docsOf(db: Db, schoolId: string, applicantId: string) {
@@ -172,7 +176,7 @@ export async function uploadUrl(db: Db, a: Actor, applicantId: string, b: { kind
 export async function finishUpload(db: Db, a: Actor, applicantId: string, b: Record<string, unknown>, can: AppCan): Promise<Result<{ id: string }>> {
   const ap = await applicantOf(db, a.schoolId, applicantId);
   if (!ap) return fail('Applicant not found.', 404);
-  const m = checkMeta(b, isoDay());
+  const m = checkMeta(b, indiaDay());
   if ('error' in m) return fail(m.error);
   if (!mayManage(m.value.kind, can)) return fail('You can’t add this kind of document.', 403);
   const fileName = cleanFileName(b.fileName);
@@ -189,10 +193,12 @@ export async function finishUpload(db: Db, a: Actor, applicantId: string, b: Rec
     await db.storage.from(DOC_BUCKET).remove([path]);
     return fail('Files can be up to 25 MB. Scan at a lower resolution or split it.');
   }
-  const verified = b.verified === true;
+  // A family's upload always waits for the office's check.
+  const fromFamily = !!a.role && a.role !== 'admin';
+  const verified = !fromFamily && b.verified === true;
   const { data, error } = await db.from('admission_documents').insert({
     school_id: a.schoolId, applicant_id: applicantId, ...m.value, storage_path: path, file_name: fileName, size_bytes: size || null,
-    status: verified ? 'verified' : 'awaiting', source: 'office', uploaded_by: a.id,
+    status: verified ? 'verified' : 'awaiting', source: fromFamily ? 'family' : 'office', uploaded_by: a.id,
     verified_by: verified ? a.id : null, verified_at: verified ? new Date().toISOString() : null,
   }).select('id').single();
   if (error || !data) {

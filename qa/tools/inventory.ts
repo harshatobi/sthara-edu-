@@ -66,6 +66,8 @@ const PUBLIC: Record<string, Record<string, number[]>> = {
   '/api/errors': { POST: [204, 400, 413] },
   // Families applying without a login (admissions phase 2b): names the school by its code, then its own session cookie.
   '/api/apply': { POST: [400, 401, 404, 429] },
+  // Sthara Pay posting to the fee ledger: the signature is the only authentication, and without one it answers 401.
+  '/api/pay/book/[schoolId]': { POST: [401] },
 };
 
 const METHOD = /export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)\b|export\s+const\s+(GET|POST|PUT|PATCH|DELETE)\s*=/g;

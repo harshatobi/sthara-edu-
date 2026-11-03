@@ -119,7 +119,7 @@ export interface FeeLedger {
 }
 
 export const PAY_MODES: Record<string, string> = {
-  upi: 'UPI', bank_transfer: 'Bank transfer', card: 'Card', cheque: 'Cheque', cash: 'Cash', dd: 'Demand draft',
+  upi: 'UPI', bank_transfer: 'Bank transfer', card: 'Card', cheque: 'Cheque', cash: 'Cash', dd: 'Demand draft', online: 'Online',
 };
 
 const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);

@@ -98,6 +98,33 @@ for (const file of files) {
   }
 }
 
+// Supabase also grants every new public function to anon and authenticated, and REVOKE ... FROM PUBLIC leaves those grants.
+// A SECURITY DEFINER function runs with the owner's rights, so one left open can be called by anyone through /rest/v1/rpc.
+// Each needs a REVOKE naming anon, in any migration, or `-- public-rpc: <reason>` on the line above when that is intended.
+// The baseline is a dump whose grants were reviewed when it was taken.
+{
+  const allFiles = fs.readdirSync(dir).filter(f => f.endsWith('.sql')).map(f => path.join(dir, f));
+  const revokedFromAnon = new Set();
+  for (const f of allFiles) {
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/REVOKE\s+[^;]*?ON\s+FUNCTION\s+([^;]*?)\s+FROM\s+([^;]*);/gi)) {
+      if (/\banon\b/i.test(m[2])) for (const x of m[1].matchAll(/public\.("?\w+"?)\s*\(/gi)) revokedFromAnon.add(x[1].replace(/"/g, '').toLowerCase());
+    }
+  }
+  for (const file of files) {
+    if (file.endsWith('_baseline.sql')) continue;
+    const text = fs.readFileSync(file, 'utf8');
+    // Files that revoke their functions in a loop, by a list of names built at run time.
+    if (/EXECUTE\s+format\(\s*'REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.%s\s+FROM[^']*\banon\b/i.test(text)) continue;
+    for (const m of text.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.("?\w+"?)\s*\([\s\S]*?(?:\$\$|\$\w+\$)/gi)) {
+      if (!/SECURITY\s+DEFINER/i.test(m[0])) continue;
+      const name = m[1].replace(/"/g, '').toLowerCase();
+      const before = text.slice(0, m.index).split('\n');
+      if (revokedFromAnon.has(name) || /--\s*public-rpc:/.test(before.at(-2) ?? '')) continue;
+      problems.push(`${path.relative(root, file)}:${before.length}  SECURITY DEFINER function public.${name} is callable by anon and authenticated. Add REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon, authenticated.`);
+    }
+  }
+}
+
 if (problems.length) {
   console.error(`Migration grants: ${problems.length} problem${problems.length === 1 ? '' : 's'}\n`);
   for (const p of problems) console.error('  ' + p);

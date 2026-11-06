@@ -66,7 +66,12 @@ export type RateLimitKey = keyof typeof RATE_LIMITS;
 /** Arguments for checkRateLimit(key, ...limitOf('tutorSession')). */
 export const limitOf = (k: RateLimitKey): [number, number] => [RATE_LIMITS[k].limit, RATE_LIMITS[k].windowMs];
 
-/** AI models by job. Routes pass these to the Gemini SDK. */
+/**
+ * AI models by job. Routes name the job with these (the Gemini model ids);
+ * src/lib/ai/generate.ts decides which provider actually runs it:
+ *   Aadhara schools        Gemini only (these models)
+ *   every other school     Claude (CLAUDE_MODELS) first, Gemini as the backup
+ */
 export const AI_MODELS = {
   standard: 'gemini-2.5-flash',
   deep: 'gemini-2.5-pro',
@@ -74,6 +79,25 @@ export const AI_MODELS = {
   handwriting: 'gemini-2.5-flash',
   /** Cheap, fast checks that gate a bigger call: the tutor's grounding check on every message. */
   fast: 'gemini-2.5-flash-lite',
-  /** Illustrations the Copilot proposes and the teacher chooses to generate. */
+  /** Illustrations the Copilot proposes and the teacher chooses to generate. Gemini on every tier: Claude does not make images. */
   image: 'gemini-2.5-flash-image',
 } as const;
+
+export type AiJob = Exclude<keyof typeof AI_MODELS, 'image'>;
+
+/**
+ * The Claude model and effort for each job, on every tier except Aadhara.
+ * Sonnet and Haiku only: Opus is never used (Moses, 2026-11-06).
+ * Effort is how hard the model thinks before answering (and so how many
+ * tokens it bills): low for quick gates, medium for everyday work, high for
+ * the deep job.
+ */
+export const CLAUDE_MODELS: Record<AiJob, { model: 'claude-sonnet-5-5' | 'claude-haiku-5-5'; effort: 'low' | 'medium' | 'high' }> = {
+  standard: { model: 'claude-sonnet-5-5', effort: 'medium' },
+  deep: { model: 'claude-sonnet-5-5', effort: 'high' },
+  handwriting: { model: 'claude-sonnet-5-5', effort: 'medium' },
+  fast: { model: 'claude-haiku-5-5', effort: 'low' },
+};
+
+/** Plans that run on Gemini alone (no Claude). */
+export const GEMINI_ONLY_PLANS: readonly string[] = ['aadhara'];

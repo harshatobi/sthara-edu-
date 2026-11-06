@@ -1,9 +1,10 @@
 /**
  * What each AI call costs, and which product feature made it.
  *
- * Prices are Google's paid-tier list prices for the Gemini API (USD per 1M
- * tokens), checked against ai.google.dev/gemini-api/docs/pricing on
- * 2026-09-25. Thinking tokens bill as output. The cost stored with each call
+ * Prices are list prices in USD per 1M tokens: Gemini from
+ * ai.google.dev/gemini-api/docs/pricing (checked 2026-09-25), Claude from
+ * Anthropic's published API prices (checked 2026-11-06). Thinking tokens bill
+ * as output on both. The cost stored with each call
  * is computed at the time of the call, so a later price change here does not
  * rewrite history.
  */
@@ -31,6 +32,13 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   'gemini-2.5-pro': {
     input: 1.25, output: 10.00, cached: 0.125,
     longAbove: 200_000, long: { input: 2.50, output: 15.00, cached: 0.25 },
+  },
+  // Claude: Sonnet and Haiku only. Sonnet 5 prices the calls Anthropic's refusal fallback hands to it.
+  'claude-sonnet-5-5': { input: 2.00, output: 10.00, cached: 0.20 },
+  'claude-sonnet-5': { input: 2.00, output: 10.00, cached: 0.20 },
+  'claude-haiku-5-5': {
+    input: 0.10, output: 0.50, cached: 0.01,
+    longAbove: 100_000, long: { input: 0.50, output: 2.50, cached: 0.05 },
   },
 };
 
@@ -87,10 +95,19 @@ export function costUsd(model: string, t: TokenCounts): number | null {
   return Math.round(usd * 1e8) / 1e8;
 }
 
-/** Gemini usageMetadata (SDK or REST) -> our counts. Missing fields count as zero. */
+/**
+ * Usage from either provider -> our counts. Missing fields count as zero.
+ *   Gemini usageMetadata (SDK or REST): promptTokenCount already includes cached tokens.
+ *   Claude usage: input_tokens excludes cache reads and writes, and output_tokens
+ *   already includes thinking, so they're folded in to match the Gemini meaning.
+ */
 export function countsFrom(u: unknown): TokenCounts {
   const m = (u && typeof u === 'object' ? u : {}) as Record<string, unknown>;
   const n = (k: string) => (typeof m[k] === 'number' && Number.isFinite(m[k]) ? Math.max(0, Math.round(m[k] as number)) : 0);
+  if ('input_tokens' in m || 'output_tokens' in m) {
+    const read = n('cache_read_input_tokens');
+    return { input: n('input_tokens') + read + n('cache_creation_input_tokens'), output: n('output_tokens'), thinking: 0, cached: read };
+  }
   return {
     input: n('promptTokenCount'),
     output: n('candidatesTokenCount'),

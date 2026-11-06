@@ -1,11 +1,10 @@
 import 'server-only';
-import { GoogleGenAI } from '@google/genai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { sanitizeQuestions } from '@/lib/teacher/questions';
 import { normClass } from '@/lib/teacher/scope';
 import { CAPTURE_PREFIX, gradingPrompt, isCapturePath, nameMatches, parseGrade, type HandwrittenGrade } from './handwritten';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 
 export const BUCKET = 'captures';
 export const MAX_PAGES = 8;
@@ -74,13 +73,11 @@ async function download(db: SupabaseClient, path: string) {
 
 /** Reads the pages with the vision model and returns the parsed suggestion. */
 export async function gradePages(db: SupabaseClient, a: any, paths: string[], meta: { source: HandwrittenGrade['source']; capturedBy: string | null; studentName: string }): Promise<HandwrittenGrade> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new GradingError('AI grading isn’t configured on this server (no AI key).', 503);
+  if (!aiConfigured()) throw new GradingError('AI grading isn’t configured on this server (no AI key).', 503);
   const { questions } = sanitizeQuestions(a.questions);
   const pages = await Promise.all(paths.map(p => download(db, p)));
-  const ai = new GoogleGenAI({ apiKey });
   const model = AI_MODELS.handwriting;
-  const res = await generateMetered(ai, {
+  const res = await generateAi({
     model,
     contents: [{ role: 'user', parts: [
       { text: gradingPrompt({ title: a.title || 'Homework', subject: a.subject || 'General', cls: a.class || '', questions, pages: pages.length, totalMarks: a.total_marks ?? null }) },

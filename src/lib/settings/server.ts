@@ -62,6 +62,11 @@ async function userSchool(userId: string, db: SupabaseClient) {
   return v;
 }
 
+/** The school a user belongs to (cached like the rest), or null for operators and unknown users. */
+export async function schoolIdOfUser(userId: string, db?: SupabaseClient): Promise<string | null> {
+  return (await userSchool(userId, db ?? createAdminClient())).schoolId;
+}
+
 /**
  * Whether a signed-in user's school lets them in (suspension, expired trial).
  * Operators and users with no school pass. Used by verifyApiToken, so every

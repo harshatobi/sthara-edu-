@@ -7,7 +7,7 @@
  * presence flags only; their values never reach this module or the browser.
  */
 import { PLATFORM_SETTINGS, type PlatformValues, type SchoolPolicy } from './registry';
-import { AI_MODELS, RATE_LIMITS } from './limits';
+import { AI_MODELS, CLAUDE_MODELS, RATE_LIMITS } from './limits';
 
 export type Status = 'ok' | 'warn' | 'crit' | 'info';
 export type Source = 'environment' | 'platform' | 'school' | 'database' | 'code' | 'runtime';
@@ -95,15 +95,25 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
         : 'NEXT_PUBLIC_SUPABASE_ANON_KEY is not set: the browser falls back to the key hard-coded in src/lib/supabase/client.ts.',
     enforcedAt: ['src/lib/supabase/client.ts'],
   });
-  const aiKey = x.secrets.GEMINI_API_KEY || x.secrets.GOOGLE_GENERATIVE_AI_API_KEY;
+  const claudeKey = x.secrets.ANTHROPIC_API_KEY;
+  const geminiKey = x.secrets.GEMINI_API_KEY;
+  add({
+    id: 'env.anthropic', group: G1, label: 'Anthropic (Claude) API key', source: 'environment',
+    value: SET(claudeKey),
+    status: claudeKey ? 'ok' : aiOn ? (geminiKey ? 'warn' : 'crit') : 'warn',
+    detail: claudeKey
+      ? 'Primary AI for every tier except Aadhara (ANTHROPIC_API_KEY). Gemini takes over when Claude fails.'
+      : aiOn ? (geminiKey ? 'Missing: every school is running on the Gemini backup. Set ANTHROPIC_API_KEY.' : 'Missing, and so is the Gemini key: the tutor, grading and generators all fail.') : 'Missing. AI is paused, so nothing is failing yet.',
+    enforcedAt: ['src/lib/ai/generate.ts'],
+  });
   add({
     id: 'env.gemini', group: G1, label: 'Gemini API key', source: 'environment',
-    value: SET(aiKey),
-    status: aiKey ? 'ok' : aiOn ? 'crit' : 'warn',
-    detail: aiKey
-      ? 'Billed key used by every AI route (GEMINI_API_KEY).'
-      : aiOn ? 'Missing while AI features are on: the tutor, grading and generators all fail. Set GEMINI_API_KEY.' : 'Missing. AI is paused, so nothing is failing yet.',
-    enforcedAt: ['every AI route under /api'],
+    value: SET(geminiKey),
+    status: geminiKey ? 'ok' : aiOn ? 'crit' : 'warn',
+    detail: geminiKey
+      ? 'Runs Aadhara schools, Copilot illustrations, and the backup when Claude fails (GEMINI_API_KEY).'
+      : aiOn ? 'Missing while AI features are on: Aadhara schools and Copilot illustrations fail, and there is no backup when Claude fails. Set GEMINI_API_KEY.' : 'Missing. AI is paused, so nothing is failing yet.',
+    enforcedAt: ['src/lib/ai/generate.ts', '/api/teacher/copilot/image'],
   });
   add({
     id: 'env.tutor_secret', group: G1, label: 'Tutor session signing secret', source: 'environment',
@@ -149,7 +159,7 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
       : 'Placeholder key: every WhatsApp message is written to whatsapp_log as "simulated" and nothing reaches a phone; link codes are shown on screen. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID at deploy, then parents re-verify their numbers.',
     enforcedAt: ['src/lib/whatsapp/config.ts', '/api/whatsapp/webhook', '/api/parent/whatsapp'],
   });
-  const stray = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'MISTRAL_API_KEY', 'FIREBASE_ADMIN_PRIVATE_KEY'].filter(k => x.secrets[k]);
+  const stray = ['OPENAI_API_KEY', 'MISTRAL_API_KEY', 'FIREBASE_ADMIN_PRIVATE_KEY'].filter(k => x.secrets[k]);
   if (stray.length) {
     add({
       id: 'env.stray', group: G1, label: 'Unused keys in the environment', source: 'environment',
@@ -339,9 +349,9 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
   const G6 = 'Limits and models';
   add({
     id: 'code.ai_models', group: G6, label: 'AI models', source: 'code',
-    value: `${AI_MODELS.standard} (standard), ${AI_MODELS.deep} (deep)`, status: 'info',
-    detail: 'Standard runs the tutor, grading, generators and copilot; deep runs operator course analysis. Change in src/lib/settings/limits.ts.',
-    enforcedAt: ['src/lib/settings/limits.ts AI_MODELS'],
+    value: `${CLAUDE_MODELS.standard.model} (Claude), ${AI_MODELS.standard} / ${AI_MODELS.deep} (Gemini)`, status: 'info',
+    detail: 'Claude runs every tier except Aadhara, with Gemini as the backup; Aadhara runs on Gemini only. Copilot illustrations are Gemini on every tier. Change in src/lib/settings/limits.ts.',
+    enforcedAt: ['src/lib/settings/limits.ts AI_MODELS, CLAUDE_MODELS', 'src/lib/ai/generate.ts'],
   });
   for (const [k, r] of Object.entries(RATE_LIMITS)) {
     const mins = r.windowMs / 60_000;

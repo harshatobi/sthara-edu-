@@ -1,10 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request);
@@ -23,13 +22,10 @@ export async function POST(request: NextRequest) {
 
     const aiBlocked = await aiGate(user.id, 'practice');
     if (aiBlocked) return aiBlocked;
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
+    if (!aiConfigured()) {
       return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `You are an expert diagnostic AI teacher.
 A student has just submitted a multiple choice quiz.
@@ -58,7 +54,7 @@ Output ONLY valid JSON with this structure:
   "summary": "Brief 1-sentence encouraging summary of their performance."
 }`;
 
-    const result = await generateMetered(ai, {
+    const result = await generateAi({
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.2 },

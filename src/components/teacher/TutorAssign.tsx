@@ -88,7 +88,7 @@ export function TutorAssign({ cls, subject, chapter, score, student, firstName, 
         {open.map(a => (
           <span key={a.id} style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
             <Chip tone={a.source === 'critical_gap' ? 'r' : 'p'}>
-              {a.source === 'critical_gap' ? `TUTOR SESSION ASSIGNED · CRITICAL GAP ${a.score !== null ? `${Math.round(a.score)}%` : ''}` : `TUTOR SESSION${a.mode === 'hots' ? ' (HOTS)' : ''} ASSIGNED${a.dueOn ? ` · DUE ${a.dueOn}` : ''}`}
+              {a.source === 'critical_gap' ? `TUTOR SESSION ASSIGNED · CRITICAL GAP ${a.score !== null ? `${Math.floor(a.score)}%` : ''}` : `TUTOR SESSION${a.mode === 'hots' ? ' (HOTS)' : ''} ASSIGNED${a.dueOn ? ` · DUE ${a.dueOn}` : ''}`}
             </Chip>
             {a.source === 'teacher' && a.mine && <button className="btn sm" onClick={() => cancel(a)} disabled={busy}>Cancel</button>}
           </span>

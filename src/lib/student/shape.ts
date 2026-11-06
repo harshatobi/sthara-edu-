@@ -31,7 +31,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** "28 Jul" — the mockup's date style everywhere. */
 export function dmy(iso: string | null | undefined): string {
   if (!iso) return '—';
-  const d = new Date(iso);
+  const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso); // a bare date is that local day, not UTC midnight
   if (Number.isNaN(d.getTime())) return '—';
   return `${String(d.getDate()).padStart(2, '0')} ${MONTHS[d.getMonth()]}`;
 }

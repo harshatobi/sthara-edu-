@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { byIds, pageAll } from '@/lib/ops/page';
+import { byIds } from '@/lib/ops/page';
 import { raise } from '@/lib/feed/raise';
 import type { Draft } from '@/lib/feed/rules';
 import {
@@ -99,20 +99,33 @@ async function draftsFor(db: Db, made: any[], students: StudentRow[]): Promise<D
   return drafts;
 }
 
-/** After one student's TML recompute: sync their gaps and raise the teacher items. Never throws. */
-export async function syncStudentGaps(db: Db, studentId: string): Promise<void> {
+/** How far back a chapter's latest snapshot still counts (snapshots are written only when TML is recomputed). */
+const SNAPSHOT_DAYS = 120;
+
+/**
+ * Sync the gaps of some students (after a recompute, when a student opens the tutor, when a
+ * teacher opens a class) and raise the teacher items. Never throws.
+ */
+export async function syncGapsFor(db: Db, schoolId: string, students: StudentRow[]): Promise<void> {
   try {
-    const { data: me } = await db.from('users').select('id, name, student_class, school_id, role').eq('id', studentId).maybeSingle();
-    if (!me?.school_id || me.role !== 'student') return;
-    const since = new Date(Date.now() - 120 * 86_400_000).toISOString();
-    const rows = await pageAll<TmlRow>((a, b) => db.from('tml_scores').select('student_id, subject, topic_name, score, computed_at, confidence_band')
-      .eq('student_id', studentId).gte('computed_at', since).order('id').range(a, b));
+    if (!students.length) return;
+    const since = new Date(Date.now() - SNAPSHOT_DAYS * 86_400_000).toISOString();
+    const rows = await byIds<TmlRow>(students.map(s => s.id), (chunk, a, b) => db.from('tml_scores')
+      .select('student_id, subject, topic_name, score, computed_at, confidence_band')
+      .eq('school_id', schoolId).in('student_id', chunk).gte('computed_at', since).order('id').range(a, b));
     if (rows.error) throw new Error(rows.error.message);
-    const drafts = await syncCriticalGaps(db, me.school_id, rows.data, [me]);
-    if (drafts.length) await raise(db, me.school_id, drafts);
+    const drafts = await syncCriticalGaps(db, schoolId, rows.data, students);
+    if (drafts.length) await raise(db, schoolId, drafts);
   } catch (e) {
     console.error('[tutor assignments] gap sync failed:', e instanceof Error ? e.message : e);
   }
+}
+
+/** After one student's TML recompute, or when they open the tutor. Never throws. */
+export async function syncStudentGaps(db: Db, studentId: string): Promise<void> {
+  const { data: me } = await db.from('users').select('id, name, student_class, school_id, role').eq('id', studentId).maybeSingle();
+  if (!me?.school_id || me.role !== 'student') return;
+  await syncGapsFor(db, me.school_id, [me]);
 }
 
 /** A finished session closes the student's open assignment on that chapter and mode. Returns its id. */

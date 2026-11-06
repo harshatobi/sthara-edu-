@@ -645,7 +645,7 @@ function Assigned({ items, onPick }: { items: TutorAssignment[]; onPick: (t: Top
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>{a.topic}{a.mode === 'hots' ? ' · HOTS' : ''}</div>
             <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-              {a.subject} · {a.source === 'critical_gap' ? `Needed: this chapter is at ${a.score !== null ? Math.round(a.score) : '–'}%` : `From ${a.by ?? 'your teacher'}`}
+              {a.subject} · {a.source === 'critical_gap' ? `Needed: this chapter is at ${a.score !== null ? Math.floor(a.score) : '–'}%` : `From ${a.by ?? 'your teacher'}`}
               {a.dueOn ? ` · due ${new Date(`${a.dueOn}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
             </div>
             {a.note && <div style={{ fontSize: 12.5, marginTop: 4 }}>{a.note}</div>}

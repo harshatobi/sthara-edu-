@@ -171,7 +171,7 @@ export default function StudentDashboard() {
                   <>
                     <p style={{ color: 'rgba(255,255,255,.74)', fontSize: 13.5, lineHeight: 1.65, marginTop: 8 }}>
                       {tutorDue[0].source === 'critical_gap'
-                        ? <>A tutor session on <b style={{ color: '#fff' }}>{tutorDue[0].topic}</b> ({tutorDue[0].subject}) is assigned: this chapter is at <b style={{ color: tutorDue[0].score !== null ? hmColor(tutorDue[0].score) : '#fff' }}>{tutorDue[0].score !== null ? Math.round(tutorDue[0].score) : '–'}%</b>, in the Critical Gap.</>
+                        ? <>A tutor session on <b style={{ color: '#fff' }}>{tutorDue[0].topic}</b> ({tutorDue[0].subject}) is assigned: this chapter is at <b style={{ color: tutorDue[0].score !== null ? hmColor(tutorDue[0].score) : '#fff' }}>{tutorDue[0].score !== null ? Math.floor(tutorDue[0].score) : '–'}%</b>, in the Critical Gap.</>
                         : <>{tutorDue[0].by ?? 'Your teacher'} assigned a {tutorDue[0].mode === 'hots' ? 'HOTS ' : ''}tutor session on <b style={{ color: '#fff' }}>{tutorDue[0].topic}</b> ({tutorDue[0].subject}){tutorDue[0].dueOn ? `, due ${dmy(tutorDue[0].dueOn)}` : ''}.</>}
                       {tutorDue.length > 1 ? ` ${tutorDue.length - 1} more waiting.` : ''}
                     </p>

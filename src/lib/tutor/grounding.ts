@@ -252,7 +252,12 @@ export function needsTurnCheck(text: string, chapterWords: string[] = []): boole
  * The model's JSON, even when it puts a raw line break or tab inside a string
  * (Gemini does this with multi-line tutor text; strict JSON.parse refuses it).
  */
-export function parseModelJson(text: string): Record<string, unknown> {
+export function parseModelJson(raw: string): Record<string, unknown> {
+  try { return JSON.parse(raw); } catch { /* repair below */ }
+  // Models sometimes work a problem out ("Check: 2800 ÷ 8000 ...") or add a code fence around the
+  // object: keep only the outermost {...}.
+  const from = raw.indexOf('{'), to = raw.lastIndexOf('}');
+  const text = from >= 0 && to > from ? raw.slice(from, to + 1) : raw;
   try { return JSON.parse(text); } catch { /* repair below */ }
   let out = '', inStr = false, esc = false;
   for (const ch of text) {

@@ -82,6 +82,16 @@ export function getTutorDepthScore(hintsUsed: number = 0, answerRevealed: boolea
   return 30; // multiple hints
 }
 
+/**
+ * A finished session's D: the Socratic rubric (30% independence, 30% reasoning,
+ * 30% transfer, 10% teach-back) since 2026-11-06; older sessions keep their
+ * hints-only score.
+ */
+export function sessionDepth(row: { depth_score?: number | string | null; hint_depth?: number | null; answer_revealed?: boolean | null }): number {
+  const d = row.depth_score == null ? NaN : Number(row.depth_score);
+  return Number.isFinite(d) ? Math.min(100, Math.max(0, d)) : getTutorDepthScore(row.hint_depth || 0, !!row.answer_revealed);
+}
+
 // ---------------------------------------------------------------------------
 // Decay-weighted average over a bucket of same-component evidence.
 // ---------------------------------------------------------------------------
@@ -295,8 +305,9 @@ export async function computeStudentTml(
       .order('id').range(a, b)),
     everyRow((a: number, b: number) => supabase
       .from('tutor_sessions')
-      .select('id, subject, topic, hint_depth, answer_revealed, created_at')
+      .select('id, subject, topic, hint_depth, answer_revealed, depth_score, created_at')
       .eq('student_id', studentId)
+      .eq('status', 'done') // open sessions are not evidence yet
       .order('id').range(a, b)),
     // Integrity violations (assignment-level).
     supabase
@@ -400,7 +411,7 @@ export async function computeStudentTml(
     const ageDays = ageInDays(row.created_at);
     if (ageDays === null) return;
     addItem(row.subject || 'General', row.topic?.trim() || 'Core Concepts', {
-      score: getTutorDepthScore(row.hint_depth || 0, !!row.answer_revealed),
+      score: sessionDepth(row),
       maxScore: 100,
       componentType: 'tutor',
       ageDays,

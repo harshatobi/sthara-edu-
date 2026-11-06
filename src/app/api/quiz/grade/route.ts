@@ -4,6 +4,8 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
+import { createAdminClient } from '@/lib/supabase/server';
+import { studentAllowance } from '@/lib/ai/allowanceServer';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request);
@@ -22,6 +24,8 @@ export async function POST(request: NextRequest) {
 
     const aiBlocked = await aiGate(user.id, 'practice');
     if (aiBlocked) return aiBlocked;
+    // Per-student AI cost cap: past 70% the quiz runs on the cheaper model (a quiz already started is always marked).
+    const allowance = await studentAllowance(createAdminClient(), user.id);
     if (!aiConfigured()) {
       return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
     }
@@ -58,7 +62,7 @@ Output ONLY valid JSON with this structure:
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.2 },
-    }, { feature: 'quizGrade', userId: user.id });
+    }, { feature: 'quizGrade', userId: user.id, economy: allowance?.level === 'economy' || allowance?.level === 'paused' });
 
     const rawText = result.text || '{}';
     const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```/g, '').trim();

@@ -72,7 +72,7 @@ async function download(db: SupabaseClient, path: string) {
 }
 
 /** Reads the pages with the vision model and returns the parsed suggestion. */
-export async function gradePages(db: SupabaseClient, a: any, paths: string[], meta: { source: HandwrittenGrade['source']; capturedBy: string | null; studentName: string }): Promise<HandwrittenGrade> {
+export async function gradePages(db: SupabaseClient, a: any, paths: string[], meta: { source: HandwrittenGrade['source']; capturedBy: string | null; studentName: string; studentId: string }): Promise<HandwrittenGrade> {
   if (!aiConfigured()) throw new GradingError('AI grading isn’t configured on this server (no AI key).', 503);
   const { questions } = sanitizeQuestions(a.questions);
   const pages = await Promise.all(paths.map(p => download(db, p)));
@@ -84,7 +84,7 @@ export async function gradePages(db: SupabaseClient, a: any, paths: string[], me
       ...pages.map(data => ({ inlineData: { data, mimeType: 'image/jpeg' } })),
     ] }],
     config: { responseMimeType: 'application/json', temperature: 0.1 },
-  }, { feature: meta.source === 'teacher_capture' ? 'captureGrade' : 'homeworkGrade', userId: meta.capturedBy, schoolId: a.school_id });
+  }, { feature: meta.source === 'teacher_capture' ? 'captureGrade' : 'homeworkGrade', userId: meta.capturedBy, schoolId: a.school_id, studentId: meta.studentId });
   let raw: unknown;
   try { raw = JSON.parse((res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim()); }
   catch { throw new GradingError('The AI couldn’t read these pages. Try clearer photos, or mark this one by hand.', 502); }

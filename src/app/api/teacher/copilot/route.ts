@@ -159,8 +159,8 @@ export async function POST(req: NextRequest) {
       recent.length && ids.length ? byIds<any>(recent, (chunk, a, b2) => db.from('submissions').select('assignment_id, student_id, answers, ai_result').in('assignment_id', chunk).order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
       // Last 90 days only: older struggles say little about this week's lesson, and the read stays small.
       ids.length ? byIds<any>(ids, (chunk, a, b2) => db.from('tutor_sessions').select('student_id, subject, topic, micro_topic, hint_depth, answer_revealed').in('student_id', chunk)
-        .gte('created_at', since)
-        .or('answer_revealed.eq.true,hint_depth.gte.3').order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
+        .gte('created_at', since).eq('status', 'done')
+        .or('answer_revealed.eq.true,hint_depth.gte.3,depth_score.lt.50').order('id').range(a, b2)) : Promise.resolve({ data: [] as any[] }),
       // Live Lab lessons with this class: what the class predicted (counted hands, no names).
       db.from('lab_runs').select('class, subject, updated_at, results').eq('school_id', staff.schoolId).eq('class', cls)
         .gte('updated_at', since).order('updated_at', { ascending: false }).limit(100),

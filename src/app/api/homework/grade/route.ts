@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   };
   if (await aiGate(user.id, 'practice')) return handIn();
   try {
-    const grade = await gradePages(db, a, pages, { source: 'student', capturedBy: null, studentName: me2.name });
+    const grade = await gradePages(db, a, pages, { source: 'student', capturedBy: null, studentName: me2.name, studentId: user.id });
     const submissionId = await storeCapture(db, a, user.id, pages, grade);
     return NextResponse.json({ success: true, pendingReview: true, aiGraded: true, submissionId });
   } catch (e: any) {

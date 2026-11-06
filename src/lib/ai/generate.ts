@@ -69,7 +69,9 @@ async function geminiOnly(meta: UsageMeta): Promise<{ only: boolean; schoolId: s
 }
 
 async function runClaude(req: AiRequest, job: AiJob, meta: UsageMeta): Promise<AiResult> {
-  const { model, effort } = claudeChoice(job, meta.feature);
+  const chosen = claudeChoice(job, meta.feature);
+  // Past 70% of the student's yearly AI allowance, Sonnet work runs on Haiku (cost cap, 2026-11-06).
+  const { model, effort } = meta.economy && chosen.model !== 'claude-haiku-5-5' ? { model: 'claude-haiku-5-5' as const, effort: chosen.effort } : chosen;
   const json = req.config?.responseMimeType === 'application/json';
   const systemText = [req.config?.systemInstruction, json ? JSON_RULE : null].filter(Boolean).join('\n\n');
   // Conversations: the system prompt (with its data brief) is the same every turn, so it gets its own cache
@@ -113,8 +115,10 @@ async function runClaude(req: AiRequest, job: AiJob, meta: UsageMeta): Promise<A
 async function runGemini(req: AiRequest, meta: UsageMeta): Promise<AiResult> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw Object.assign(new Error('AI isn’t configured on this server (no Gemini key).'), { status: 503 });
-  const res = await generateGeminiMetered(gemini(key), req, meta);
-  return { text: res.text ?? '', provider: 'gemini', model: req.model };
+  // Economy (past 70% of a student's AI allowance): text work drops to Flash-Lite.
+  const r = meta.economy && req.model !== AI_MODELS.fast ? { ...req, model: AI_MODELS.fast } : req;
+  const res = await generateGeminiMetered(gemini(key), r, meta);
+  return { text: res.text ?? '', provider: 'gemini', model: r.model };
 }
 
 /** Run one text request on the right provider for the user's school. Throws as the last provider threw. */

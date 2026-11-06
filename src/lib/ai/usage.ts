@@ -16,6 +16,13 @@ export interface UsageMeta {
   userId?: string | null;
   /** Looked up from the user when not given. */
   schoolId?: string | null;
+  /**
+   * The student this call is about, for the per-student AI cost cap (src/lib/ai/allowance.ts). A call a
+   * student makes is attributed to them by the database; staff calls about one student pass it here.
+   */
+  studentId?: string | null;
+  /** Over 70% of the student's yearly AI allowance: run Sonnet work on Haiku instead. */
+  economy?: boolean;
 }
 
 interface Row extends UsageMeta {
@@ -40,6 +47,7 @@ async function write(r: Row) {
       model: r.model,
       user_id: r.userId ?? null,
       school_id: schoolId,
+      student_id: r.studentId ?? null,
       input_tokens: t.input,
       output_tokens: t.output,
       thinking_tokens: t.thinking,

@@ -117,6 +117,9 @@ export const CLAUDE_BY_FEATURE: Partial<Record<AiFeature, ClaudeChoice>> = {
   leadershipAsk: { model: 'claude-haiku-5-5', effort: 'low' },
   timelineAsk: { model: 'claude-haiku-5-5', effort: 'low' },
   tutorSession: { model: 'claude-haiku-5-5', effort: 'medium' },
+  // Socratic engine: Sonnet judges only the stages that set the score; seeding runs once per chapter per school.
+  tutorJudge: { model: 'claude-sonnet-5-5', effort: 'low' },
+  tutorSeed: { model: 'claude-sonnet-5-5', effort: 'low' },
   quizGenerate: { model: 'claude-haiku-5-5', effort: 'medium' },
   quizGrade: { model: 'claude-haiku-5-5', effort: 'medium' },
   copilot: { model: 'claude-sonnet-5-5', effort: 'low' },
@@ -136,7 +139,7 @@ export const claudeChoice = (job: AiJob, feature: AiFeature): ClaudeChoice =>
  * input price. One-shot features stay uncached, because a cache write costs
  * 1.25x and would never be read.
  */
-export const CLAUDE_CACHED_FEATURES: readonly AiFeature[] = ['copilot', 'parentAsk', 'teacherAsk', 'leadershipAsk', 'timelineAsk', 'tutorSession'];
+export const CLAUDE_CACHED_FEATURES: readonly AiFeature[] = ['copilot', 'parentAsk', 'teacherAsk', 'leadershipAsk', 'timelineAsk', 'tutorSession', 'tutorJudge'];
 
 /** Plans that run on Gemini alone (no Claude). */
 export const GEMINI_ONLY_PLANS: readonly string[] = ['aadhara'];

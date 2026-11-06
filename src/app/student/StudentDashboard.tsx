@@ -22,6 +22,7 @@ import { colorForIcon } from '@/lib/iconColors';
 import { subjectIcon } from '@/components/canon/subjectIcon';
 import { mapMasteryBand } from '@/lib/tml/engine';
 import { useStudentDesk } from '@/lib/student/useStudentDesk';
+import { useTutorAssignments } from '@/lib/student/useTutorAssignments';
 import { ENERGY_LEVELS, useWellness } from '@/lib/student/useWellness';
 import { dmy, dueIn, mostRecentGraded, openAssignments, weakestSubject, weakestTopicOverall } from '@/lib/student/shape';
 import { engineBandLabel } from '@/lib/tml/bands';
@@ -33,6 +34,7 @@ export default function StudentDashboard() {
   const { desk, error } = useStudentDesk();
   const wellness = useWellness();
   const [toast, toastEl] = useToast();
+  const tutorDue = useTutorAssignments(!desk || desk.mode === 'demo');
 
   if (error) return <div className="note err" role="alert">{error}</div>;
   if (!desk) return <DashboardSkeleton />;
@@ -165,7 +167,20 @@ export default function StudentDashboard() {
               </div>
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 800 }}>Your AI Learning Path</h3>
-                {weakTopic ? (
+                {tutorDue[0] ? (
+                  <>
+                    <p style={{ color: 'rgba(255,255,255,.74)', fontSize: 13.5, lineHeight: 1.65, marginTop: 8 }}>
+                      {tutorDue[0].source === 'critical_gap'
+                        ? <>A tutor session on <b style={{ color: '#fff' }}>{tutorDue[0].topic}</b> ({tutorDue[0].subject}) is assigned: this chapter is at <b style={{ color: tutorDue[0].score !== null ? hmColor(tutorDue[0].score) : '#fff' }}>{tutorDue[0].score !== null ? Math.round(tutorDue[0].score) : '–'}%</b>, in the Critical Gap.</>
+                        : <>{tutorDue[0].by ?? 'Your teacher'} assigned a {tutorDue[0].mode === 'hots' ? 'HOTS ' : ''}tutor session on <b style={{ color: '#fff' }}>{tutorDue[0].topic}</b> ({tutorDue[0].subject}){tutorDue[0].dueOn ? `, due ${dmy(tutorDue[0].dueOn)}` : ''}.</>}
+                      {tutorDue.length > 1 ? ` ${tutorDue.length - 1} more waiting.` : ''}
+                    </p>
+                    <Link className="btn ai" style={{ marginTop: 16 }}
+                      href={`/student/tutor?${q({ topic: tutorDue[0].topic, subject: tutorDue[0].subject, ...(tutorDue[0].score !== null ? { score: Math.round(tutorDue[0].score) } : {}), ...(tutorDue[0].mode === 'hots' ? { mode: 'hots' } : {}) })}`}>
+                      Start the assigned session <AiTag /><ArrowRight size={15} weight="bold" />
+                    </Link>
+                  </>
+                ) : weakTopic ? (
                   <>
                     <p style={{ color: 'rgba(255,255,255,.74)', fontSize: 13.5, lineHeight: 1.65, marginTop: 8 }}>
                       {weakTopic.name} is your lowest micro-topic at <b style={{ color: hmColor(weakTopic.score) }}>{weakTopic.score}%</b>, in {weakTopic.subject}.

@@ -3,7 +3,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
-import { computeStudentTml } from '@/lib/tml/engine';
+import { recomputeTml } from '@/lib/tml/recompute';
+import { completeAssignment, hotsAllowed } from '@/lib/tutor/assignmentsServer';
 import { containsFoulLanguage, safetySignals } from '@/lib/tutor/safety';
 import {
   NO_SUBJECTS, REFUSAL, SAFETY_REPLY, TEACHABLE, WELLBEING_REPLY, isEnrolled, matchPicked, needsTurnCheck, redirectTo, suggestions,
@@ -40,7 +41,7 @@ export const dynamic = 'force-dynamic';
  * Cost cap: past 70% of the student's yearly AI allowance every call runs on
  * Haiku; at 100% no new session starts (an open one can still be finished).
  *
- * Body: { action: 'start', subject, topic }
+ * Body: { action: 'start', subject, topic, mode? }      mode 'hots': chapter at 90%+ or a teacher's HOTS assignment
  *     | { action: 'answer', id, seq, answer?, photo? }   photo: base64 JPEG of working
  *     | { action: 'stuck', id, seq }
  *     | { action: 'finish', id, seq }
@@ -146,7 +147,16 @@ async function start(db: ReturnType<typeof createAdminClient>, uid: string, body
   const chapter = studySkills ? (g.angle || topic) : g.chapter!;
   const ground: Ground = { kind: g.kind as Ground['kind'], subjectKey: g.subjectKey, level: g.level, microTopic: g.microTopic, angle: g.angle };
   const level = g.level ?? ctx.me.cls;
-  const mode = 'standard' as const; // HOTS mode unlocks at Exemplary (next phase)
+  // HOTS / Olympiad mode: only on a chapter the student has at Exemplary (90%+), or a teacher assigned in HOTS.
+  let mode: 'standard' | 'hots' = 'standard';
+  if (body.mode === 'hots') {
+    if (studySkills) return NextResponse.json({ verdict: 'refused', text: 'HOTS sessions are for syllabus chapters.', suggestions: [] });
+    const gate = await hotsAllowed(db, uid, subject, chapter);
+    if (!gate.ok) {
+      return NextResponse.json({ verdict: 'refused', text: `HOTS sessions on ${chapter} unlock at 90% mastery${gate.score !== null ? ` (you are at ${Math.round(gate.score)}%)` : ''}. A normal session is the way there.`, suggestions: [] });
+    }
+    mode = 'hots';
+  }
   const lesson = lessonOf(subject, chapter, ground, ctx.me.cls, exams, mode);
   const m: Meta = { userId: uid, schoolId: ctx.me.schoolId, economy };
 
@@ -158,6 +168,7 @@ async function start(db: ReturnType<typeof createAdminClient>, uid: string, body
     student_id: uid, school_id: ctx.me.schoolId, subject, topic: chapter, level,
     subject_key: ground.subjectKey, chapter_key: chapterKey(chapter), micro_topic: ground.microTopic, grounding: ground.kind,
     status: 'open', stage: 'diagnose', mode, state, seq: 1, hint_depth: 0, answer_revealed: false,
+    assignment_id: await openAssignmentFor(db, uid, subject, chapter, mode),
   }).select(SESSION_COLS).single();
   if (error || !row) throw new Error(`tutor_sessions: ${error?.message}`);
   const msg: Msg = { role: 'tutor', stage: 'diagnose', kind: 'question', text: out.text };
@@ -171,6 +182,13 @@ async function start(db: ReturnType<typeof createAdminClient>, uid: string, body
     if (!(await loadBank(db, k)).length) seedBankLater(db, k, { cls: level, subject, topics: ch?.topics ?? [] }, m);
   }
   return NextResponse.json({ verdict: 'session', session: view(row as SessionRow, [msg]), economy });
+}
+
+/** The student's open assignment this session answers, if any (same chapter and mode). */
+async function openAssignmentFor(db: ReturnType<typeof createAdminClient>, uid: string, subject: string, chapter: string, mode: string): Promise<string | null> {
+  const { data } = await db.from('tutor_assignments').select('id, subject, topic').eq('student_id', uid).eq('status', 'open').eq('mode', mode);
+  const k = (x: string) => x.trim().toLowerCase().replace(/\s+/g, ' ');
+  return (data ?? []).find(a => k(a.subject) === k(subject) && k(a.topic) === k(chapter))?.id ?? null;
 }
 
 async function writeMessages(db: ReturnType<typeof createAdminClient>, sessionId: string, uid: string, schoolId: string | null, turnNo: number, msgs: Msg[]) {
@@ -299,7 +317,10 @@ async function turn(db: ReturnType<typeof createAdminClient>, uid: string, body:
   await writeMessages(db, row.id, uid, me.schoolId, nextSeq, out);
 
   let topicScore: number | null = null, band: string | null = null, tagged: string[] = [];
+  let assignmentDone: string | null = null;
   if (step.stage === 'done') {
+    // A session finished in full closes the assignment on this chapter (a Critical Gap one or a teacher's).
+    assignmentDone = await completeAssignment(db, uid, { id: row.id, subject: row.subject, topic: row.topic, mode: row.mode, early: step.action.kind === 'wrap_up' && step.action.early });
     const ids = Object.keys(s.misconceptions);
     if (ids.length) {
       const { error: mErr } = await db.from('tutor_session_misconceptions').insert(ids.map(mid => ({
@@ -313,12 +334,12 @@ async function turn(db: ReturnType<typeof createAdminClient>, uid: string, body:
     // Study-skills coaching isn't a syllabus chapter, so it moves no mastery score.
     if (rs.ground.kind !== 'study_skills') {
       try {
-        const tml = await computeStudentTml(db, uid, row.subject);
+        const tml = await recomputeTml(db, uid, row.subject);
         const t = tml.topics.find((x: any) => x.topicName === row.topic);
         topicScore = t?.finalTml ?? null;
         band = t?.masteryBand?.band ?? null;
       } catch (e: any) { console.error('[tutor/session] TML recompute failed:', e?.message); }
     }
   }
-  return NextResponse.json({ verdict: 'session', session: view(claimed[0] as SessionRow, out, { topicScore, band, misconceptions: tagged }), economy });
+  return NextResponse.json({ verdict: 'session', session: view(claimed[0] as SessionRow, out, { topicScore, band, misconceptions: tagged }), economy, assignmentDone });
 }

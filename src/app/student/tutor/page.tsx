@@ -8,6 +8,8 @@ import { CameraIcon as Camera } from '@phosphor-icons/react/dist/ssr/Camera';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
 import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { FlagIcon as Flag } from '@phosphor-icons/react/dist/ssr/Flag';
+import { PushPinIcon as PushPin } from '@phosphor-icons/react/dist/ssr/PushPin';
+import { TrophyIcon as Trophy } from '@phosphor-icons/react/dist/ssr/Trophy';
 import { PaperPlaneRightIcon as PaperPlaneRight } from '@phosphor-icons/react/dist/ssr/PaperPlaneRight';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { TrendDownIcon as TrendDown } from '@phosphor-icons/react/dist/ssr/TrendDown';
@@ -24,7 +26,7 @@ import { DEMO_TUTOR } from '@/lib/demo/student';
 import { compressPhoto } from '@/lib/grading/compress';
 import { coreSubjectsForClass, flattenChapters, getCurriculum } from '@/lib/curriculum';
 
-interface Topic { subject: string; name: string; start: number | null }
+interface Topic { subject: string; name: string; start: number | null; mode?: 'hots' }
 
 export default function TutorPage() {
   return <Suspense fallback={<Skeleton h={600} style={{ borderRadius: 20 }} />}><Tutor /></Suspense>;
@@ -41,15 +43,18 @@ function Tutor() {
     if (!fromUrl) return null;
     const subject = params.get('subject') || 'General';
     const s = Number(params.get('score'));
-    return { subject, name: fromUrl, start: Number.isFinite(s) && params.get('score') !== null ? s : null };
+    return { subject, name: fromUrl, start: Number.isFinite(s) && params.get('score') !== null ? s : null, ...(params.get('mode') === 'hots' ? { mode: 'hots' as const } : {}) };
   }, [fromUrl, params]);
 
   const sessionId = params.get('session');
   // A picked topic starts a fresh session (the nonce lets "Retry" start another on the same topic).
   const [nonce, setNonce] = useState(0);
+  // History and open assignments (one fetch for the picker's cards and the history list).
+  const hist = useHistory(!desk || desk.mode === 'demo');
   const choose = (t: Topic) => {
     const p = new URLSearchParams({ topic: t.name, subject: t.subject });
     if (t.start !== null) p.set('score', String(t.start));
+    if (t.mode === 'hots') p.set('mode', 'hots');
     setNonce(n => n + 1);
     router.replace(`${pathname}?${p}`);
   };
@@ -71,7 +76,7 @@ function Tutor() {
       {demo && <DemoNote />}
       {demo && topic ? <DemoSession topic={topic} onNew={reset} />
         : sessionId || topic ? <LiveSession key={`live:${nonce}`} sessionId={sessionId} topic={topic} onNew={reset} onPick={choose} onOpened={opened} />
-        : <><Picker desk={desk} onPick={choose} demo={demo} /><History demo={demo} onOpen={openSession} onPick={choose} /></>}
+        : <><Picker desk={desk} onPick={choose} demo={demo} assignments={hist.assignments} /><History demo={demo} h={hist} onOpen={openSession} onPick={choose} /></>}
     </>
   );
 }
@@ -148,7 +153,7 @@ function useMySubjects(demo: boolean, cls: string) {
   return demo ? { subjects: demoSubjects, loading: false, err: null } : { subjects: live?.subjects ?? [], loading: !live, err: live?.err ?? null };
 }
 
-function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof useStudentDesk>['desk']>; onPick: (t: Topic) => void; demo: boolean }) {
+function Picker({ desk, onPick, demo, assignments }: { desk: NonNullable<ReturnType<typeof useStudentDesk>['desk']>; onPick: (t: Topic) => void; demo: boolean; assignments: TutorAssignment[] }) {
   const track = useExamTrack(demo);
   const mine = useMySubjects(demo, desk.me.cls);
   const taken = new Set(mine.subjects.map(s => s.name.toLowerCase()));
@@ -157,6 +162,12 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
     .filter(s => demo || taken.has(s.subject.toLowerCase()))
     .flatMap(s => s.topics.filter(t => t.score !== null).map(t => ({ subject: s.subject, name: t.name, start: t.score })))
     .sort((a, b) => (a.start ?? 0) - (b.start ?? 0))
+    .slice(0, 5);
+  // Exemplary chapters (90%+) unlock HOTS / Olympiad sessions.
+  const exemplary = desk.subjects
+    .filter(s => demo || taken.has(s.subject.toLowerCase()))
+    .flatMap(s => s.topics.filter(t => t.score !== null && t.score >= 90).map(t => ({ subject: s.subject, name: t.name, start: t.score })))
+    .sort((a, b) => (b.start ?? 0) - (a.start ?? 0))
     .slice(0, 5);
   const [subjectName, setSubject] = useState('');
   const subject = mine.subjects.find(s => s.name === subjectName) ?? mine.subjects[0];
@@ -173,6 +184,7 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
     <>
       <PageBar eyebrow="SOCRATIC AI TUTOR" title="Pick a micro-topic"
         sub="Diagnose, guided steps if you need them, a problem on your own, then explain it back. Never straight to the answer." />
+      {assignments.length > 0 && <Assigned items={assignments} onPick={onPick} />}
       <div className="g2">
         <div className="card">
           <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>Where you&apos;ll gain the most</h3>
@@ -235,6 +247,20 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
           )}
         </div>
       </div>
+      {exemplary.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><Trophy size={18} weight="bold" /> Stretch yourself: HOTS</h3>
+          <p className="muted" style={{ marginBottom: 12 }}>You&apos;re at 90% or more on these, so harder Olympiad-style sessions are open. They count toward your mastery like any session.</p>
+          {exemplary.map(t => (
+            <div key={`${t.subject}:${t.name}`} className="row">
+              <div className="av" style={{ background: `color-mix(in srgb, ${subjectColor(t.subject)} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(t.subject)} color={subjectColor(t.subject)} size={18} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{t.name}</div><div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{t.subject}</div></div>
+              <b style={{ color: hmColor(t.start ?? 0), fontSize: 15, marginRight: 8 }}>{t.start}%</b>
+              <button className="btn sm ai" onClick={() => onPick({ ...t, mode: 'hots' })}>HOTS session <ArrowRight size={13} weight="bold" /></button>
+            </div>
+          ))}
+        </div>
+      )}
       {track.available.length > 0 && (
         <div className="card" style={{ marginTop: 16 }}>
           <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Exam track</h3>
@@ -337,7 +363,7 @@ function LiveSession({ topic, sessionId, onNew, onPick, onOpened }: {
       try {
         if (sessionId) { await load(sessionId); return; }
         if (!topic) return;
-        const { res, data } = await authed('/api/tutor/session', { method: 'POST', body: JSON.stringify({ action: 'start', subject: topic.subject, topic: topic.name }) });
+        const { res, data } = await authed('/api/tutor/session', { method: 'POST', body: JSON.stringify({ action: 'start', subject: topic.subject, topic: topic.name, mode: topic.mode ?? 'standard' }) });
         if (!res.ok) throw new Error(data.error || 'The tutor had trouble starting. Try again.');
         if (data.verdict !== 'session') { setStopped({ kind: data.verdict, text: data.text, suggestions: data.suggestions, href: data.href }); return; }
         setS(data.session); setEconomy(!!data.economy);
@@ -602,6 +628,36 @@ function DemoSession({ topic, onNew }: { topic: Topic; onNew: () => void }) {
 }
 
 // ── History: resume, read back, retry ───────────────────────────────────────
+interface TutorAssignment {
+  id: string; subject: string; topic: string; mode: 'standard' | 'hots'; source: 'critical_gap' | 'teacher';
+  dueOn: string | null; note: string | null; score: number | null; assignedAt: string; by: string | null;
+}
+
+/** Sessions the student has to do: Critical Gap ones (automatic) and teacher-set ones. */
+function Assigned({ items, onPick }: { items: TutorAssignment[]; onPick: (t: Topic) => void }) {
+  return (
+    <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--purple)' }}>
+      <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><PushPin size={18} weight="fill" /> Assigned to you</h3>
+      <p className="muted" style={{ marginBottom: 8 }}>Finish the whole session (all four stages) to complete it.</p>
+      {items.map(a => (
+        <div key={a.id} className="row">
+          <div className="av" style={{ background: `color-mix(in srgb, ${subjectColor(a.subject)} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(a.subject)} color={subjectColor(a.subject)} size={18} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>{a.topic}{a.mode === 'hots' ? ' · HOTS' : ''}</div>
+            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+              {a.subject} · {a.source === 'critical_gap' ? `Needed: this chapter is at ${a.score !== null ? Math.round(a.score) : '–'}%` : `From ${a.by ?? 'your teacher'}`}
+              {a.dueOn ? ` · due ${new Date(`${a.dueOn}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+            </div>
+            {a.note && <div style={{ fontSize: 12.5, marginTop: 4 }}>{a.note}</div>}
+          </div>
+          <Chip tone={a.source === 'critical_gap' ? 'r' : 'b'}>{a.source === 'critical_gap' ? 'CRITICAL GAP' : 'TEACHER'}</Chip>
+          <button className="btn sm ai" style={{ marginLeft: 8 }} onClick={() => onPick({ subject: a.subject, name: a.topic, start: a.score, ...(a.mode === 'hots' ? { mode: 'hots' as const } : {}) })}>Start <ArrowRight size={13} weight="bold" /></button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface HistoryRow {
   id: string; subject: string; topic: string; microTopic: string | null; mode: string; status: 'open' | 'done'; stage: StageKey | null;
   depth: number | null; legacy: boolean; hints: number; revealed: boolean; startedAt: string; completedAt: string | null; updatedAt: string; previousDepth: number | null;
@@ -611,7 +667,7 @@ function useHistory(demo: boolean) {
   const { getAuthToken } = useAuth();
   const tokenRef = useRef(getAuthToken);
   useEffect(() => { tokenRef.current = getAuthToken; });
-  const [state, setState] = useState<{ rows: HistoryRow[]; paused: boolean; err: string | null } | null>(null);
+  const [state, setState] = useState<{ rows: HistoryRow[]; assignments: TutorAssignment[]; paused: boolean; err: string | null } | null>(null);
   useEffect(() => {
     if (demo) return;
     let on = true;
@@ -619,18 +675,18 @@ function useHistory(demo: boolean) {
       try {
         const res = await fetch('/api/tutor/sessions', { headers: { Authorization: `Bearer ${await tokenRef.current()}` } });
         const d = await res.json().catch(() => ({}));
-        if (on) setState(res.ok ? { rows: d.sessions ?? [], paused: d.allowance?.level === 'paused', err: null } : { rows: [], paused: false, err: d.error || 'Could not load your sessions.' });
-      } catch { if (on) setState({ rows: [], paused: false, err: 'Could not load your sessions.' }); }
+        if (on) setState(res.ok ? { rows: d.sessions ?? [], assignments: d.assignments ?? [], paused: d.allowance?.level === 'paused', err: null } : { rows: [], assignments: [], paused: false, err: d.error || 'Could not load your sessions.' });
+      } catch { if (on) setState({ rows: [], assignments: [], paused: false, err: 'Could not load your sessions.' }); }
     })();
     return () => { on = false; };
   }, [demo]);
-  return demo ? { rows: [], paused: false, err: null, loading: false } : { rows: state?.rows ?? [], paused: !!state?.paused, err: state?.err ?? null, loading: !state };
+  return demo ? { rows: [], assignments: [] as TutorAssignment[], paused: false, err: null, loading: false }
+    : { rows: state?.rows ?? [], assignments: state?.assignments ?? [], paused: !!state?.paused, err: state?.err ?? null, loading: !state };
 }
 
 const when = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
-function History({ demo, onOpen, onPick }: { demo: boolean; onOpen: (id: string) => void; onPick: (t: Topic) => void }) {
-  const h = useHistory(demo);
+function History({ demo, h, onOpen, onPick }: { demo: boolean; h: ReturnType<typeof useHistory>; onOpen: (id: string) => void; onPick: (t: Topic) => void }) {
   const [all, setAll] = useState(false);
   if (demo) return null;
   const open = h.rows.filter(r => r.status === 'open');

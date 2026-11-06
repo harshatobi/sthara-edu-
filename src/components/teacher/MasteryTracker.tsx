@@ -11,6 +11,7 @@ import { normClass, normSubject } from '@/lib/teacher/scope';
 import { BAND_LABEL, chaptersFor, scoreFor, shortLabel, studentOverall } from '@/lib/teacher/mastery';
 import type { TopicScore } from '@/lib/teacher/desk';
 import ScopePicker, { useScopeSelection } from './ScopePicker';
+import { TutorAssign, useTutorAssignments } from './TutorAssign';
 
 const initials = (n: string) => n.split(/\s+/).map(x => x[0]).join('').slice(0, 2).toUpperCase();
 const COMPONENTS = [
@@ -37,6 +38,7 @@ function Component({ label, weight, value }: { label: string; weight: string; va
 export default function MasteryTracker() {
   const { desk, error } = useTeacherDesk();
   const { classes, cls, subjects, subject, params, go } = useScopeSelection(desk?.scope ?? []);
+  const tutor = useTutorAssignments(cls, subject);
 
   if (error) return <div className="note err" role="alert">Couldn&apos;t load your classes: {error}</div>;
   if (!desk) {
@@ -130,6 +132,7 @@ export default function MasteryTracker() {
                     </div>
                   </div>
                   {COMPONENTS.map(k => <Component key={k.key} label={k.label} weight={k.weight} value={c.t[k.key]} />)}
+                  {subject && <TutorAssign cls={cls} subject={subject} chapter={c.name} score={c.t.score} student={student.id} firstName={student.name.split(' ')[0]} api={tutor} />}
                 </div>
               );
             }) : <p className="muted" style={{ marginBottom: 12 }}>Nothing graded for {student.name.split(' ')[0]} in {subject || 'this subject'} yet. Confirmed homework and quiz grades appear here chapter by chapter.</p>}

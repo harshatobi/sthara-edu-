@@ -5,6 +5,7 @@ import {
   istDay, DAY_MS, type Draft,
 } from './rules';
 import { escalate, raise } from './raise';
+import { syncCriticalGaps } from '@/lib/tutor/assignmentsServer';
 
 const THROTTLE_MS = 2 * 60_000;
 const lastRun = new Map<string, number>();
@@ -47,7 +48,7 @@ export async function scanSchool(db: SupabaseClient, schoolId: string, opts: { n
       .select('id, assignment_id, student_id, score, max_score, teacher_approved, submitted_at').in('assignment_id', aIds.slice(i, i + 150)).order('id').range(a, b)));
   }
   const [tml, wellness, attendance, proctor] = await Promise.all([
-    all<any>((a, b) => db.from('tml_scores').select('student_id, subject, topic_name, score, computed_at').eq('school_id', schoolId).gte('computed_at', iso(21)).order('id').range(a, b)),
+    all<any>((a, b) => db.from('tml_scores').select('student_id, subject, topic_name, score, computed_at, confidence_band').eq('school_id', schoolId).gte('computed_at', iso(21)).order('id').range(a, b)),
     // Only what a teacher may see: energy and whether a note was shared, never the note.
     all<any>((a, b) => db.from('wellness_logs').select('id, student_id, energy, shared, created_at').eq('school_id', schoolId).gte('created_at', iso(10)).order('id').range(a, b)),
     all<any>((a, b) => db.from('attendance').select('student_id, class_name, day, status').eq('school_id', schoolId).gte('day', dayAgo(30)).order('id').range(a, b)),
@@ -63,6 +64,9 @@ export async function scanSchool(db: SupabaseClient, schoolId: string, opts: { n
     ...detectExamAbsences(attendance.filter(r => r.day >= dayAgo(7)), assignments, students),
     ...detectProctoring(proctor, assignments, students),
   ];
+  // Critical Gap chapters get a mandatory tutor session (and a teacher item); recovered ones are cleared.
+  try { drafts.push(...await syncCriticalGaps(db, schoolId, tml, students)); }
+  catch (e) { console.error('[feed scan] tutor gap sync failed:', e instanceof Error ? e.message : e); }
   const res = await raise(db, schoolId, drafts, { now, dayEnd });
   const escalated = await escalate(db, schoolId, now);
   return { skipped: false as const, ...res, escalated };

@@ -3,7 +3,8 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
-import { computeStudentTml, normalizeComponentType } from '@/lib/tml/engine';
+import { normalizeComponentType } from '@/lib/tml/engine';
+import { recomputeTml } from '@/lib/tml/recompute';
 import { studentOnRoster } from '@/lib/grading/server';
 import { CAPTURE_PREFIX, pathBelongs } from '@/lib/grading/handwritten';
 
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
 
   // New graded evidence moves TML right away; failure here never loses the submission.
   if (allMcq) {
-    try { await computeStudentTml(supabase, user.id, a.subject || undefined); }
+    try { await recomputeTml(supabase, user.id, a.subject || undefined); }
     catch (e: any) { console.error('[submit-typed] TML recompute failed:', e?.message); }
   }
 

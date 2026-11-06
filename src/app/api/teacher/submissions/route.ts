@@ -3,7 +3,7 @@ import { requireStaff } from '@/lib/teacher/serverAuth';
 import { staffCanGrade } from '@/lib/grading/access';
 import { BUCKET } from '@/lib/grading/server';
 import { CAPTURE_PREFIX } from '@/lib/grading/handwritten';
-import { computeStudentTml } from '@/lib/tml/engine';
+import { recomputeTml } from '@/lib/tml/recompute';
 import { notifyGuardians } from '@/lib/parent/notify';
 
 export const dynamic = 'force-dynamic';
@@ -60,7 +60,7 @@ export async function PATCH(req: NextRequest) {
   // The confirmed marks must go too, or mastery keeps counting a grade that was reopened.
   const { error: clearErr } = await db.from('submission_items').delete().eq('submission_id', sub.id);
   if (clearErr) { console.error('[submissions reopen] items:', clearErr.message); return bad('The grade was reopened, but its marks could not be cleared. Try again.', 500); }
-  try { await computeStudentTml(db, sub.student_id, a.subject || undefined); } catch (e: any) { console.error('[submissions reopen] TML:', e?.message); }
+  try { await recomputeTml(db, sub.student_id, a.subject || undefined); } catch (e: any) { console.error('[submissions reopen] TML:', e?.message); }
 
   await db.from('notifications').insert({
     school_id: sub.school_id, student_id: sub.student_id, user_id: sub.student_id, type: 'grade_reopened',

@@ -135,7 +135,8 @@ export const emptyRows = (over: Partial<Rows> = {}): Rows => ({
 
 // ── The shape ────────────────────────────────────────────────────────────────
 export type Tone = 'g' | 'a' | 'r' | 'b' | 'n';
-export interface TimelineEvent { on: string; kind: Source; title: string; detail: string | null; tone: Tone }
+/** `month`: a summary of the whole month (dated the 1st), not something that happened on that day. */
+export interface TimelineEvent { on: string; kind: Source; title: string; detail: string | null; tone: Tone; month?: true }
 export interface Band { score: number; band: string; color: string }
 /** One school year. A field is left out when the viewer may not see that source, null when there is nothing. */
 export interface Year {
@@ -319,6 +320,7 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
   const inYear = (d: string | null | undefined) => !!d && sOf(day(d)) === session;
   const out: TimelineEvent[] = [];
   const push = (on: string, kind: Source, title: string, detail: string | null = null, tone: Tone = 'n') => out.push({ on: day(on), kind, title, detail, tone });
+  const pushMonth = (m: string, kind: Source, title: string, detail: string | null = null, tone: Tone = 'n') => out.push({ on: `${m}-01`, kind, title, detail, tone, month: true });
 
   if (sees(lens, 'enrolment')) {
     for (const e of v.enrolments.filter(x => x.session === session)) {
@@ -330,7 +332,7 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
   for (const m of (v.attendance?.months || []).filter(x => sOf(`${x.month}-01`) === session)) {
     const pct = m.marked ? Math.round(((m.present + m.late) / m.marked) * 100) : null;
     const bits = [m.absent ? `${m.absent} absent` : null, m.late ? `${m.late} late` : null, m.excused ? `${m.excused} excused` : null].filter(Boolean).join(', ');
-    push(`${m.month}-01`, 'attendance', `Attendance in ${monthLabel(m.month)}: ${pct ?? '—'}%`, `${bits ? `${bits} of ` : ''}${plural(m.marked, 'school day')}`, pct === null ? 'n' : pct >= 90 ? 'g' : pct >= 75 ? 'a' : 'r');
+    pushMonth(m.month, 'attendance', `Attendance in ${monthLabel(m.month)}: ${pct ?? '—'}%`, `${bits ? `${bits} of ` : ''}${plural(m.marked, 'school day')}`, pct === null ? 'n' : pct >= 90 ? 'g' : pct >= 75 ? 'a' : 'r');
   }
   for (const r of (v.attendance?.runs || []).filter(x => inYear(x.from))) {
     push(r.from, 'attendance', `Absent ${r.days} school days in a row`, `${fmtDate(r.from)} to ${fmtDate(r.to)}`, 'a');
@@ -348,7 +350,7 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
       const [y, mm] = m.split('-').map(Number);
       const end = `${mm === 12 ? y + 1 : y}-${String(mm === 12 ? 1 : mm + 1).padStart(2, '0')}-01`;
       const t = tmlAt(v.tml, end);
-      if (t) push(`${m}-01`, 'tml', `Mastery at the end of ${monthLabel(m)}: ${t.score}% · ${t.band}`, t.subjects.map(s => `${s.subject} ${s.score}%`).join(', '), t.score >= 75 ? 'g' : t.score >= 50 ? 'a' : 'r');
+      if (t) pushMonth(m, 'tml', `${m === rows.today.slice(0, 7) ? 'Mastery so far in' : 'Mastery at the end of'} ${monthLabel(m)}: ${t.score}% · ${t.band}`, t.subjects.map(s => `${s.subject} ${s.score}%`).join(', '), t.score >= 75 ? 'g' : t.score >= 50 ? 'a' : 'r');
     }
   }
   if (sees(lens, 'homework')) {
@@ -360,7 +362,7 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
     for (const [m, ws] of byMonth) {
       const done = ws.filter(w => w.done).length;
       const avg = mean(ws.map(w => w.pct).filter((p): p is number => p !== null));
-      push(`${m}-01`, 'homework', `Homework in ${monthLabel(m)}: ${done} of ${ws.length} handed in`, avg === null ? null : `Average ${avg}% where graded`, done === ws.length ? 'g' : done / ws.length >= 0.75 ? 'a' : 'r');
+      pushMonth(m, 'homework', `Homework in ${monthLabel(m)}: ${done} of ${ws.length} handed in`, avg === null ? null : `Average ${avg}% where graded`, done === ws.length ? 'g' : done / ws.length >= 0.75 ? 'a' : 'r');
     }
   }
   if (sees(lens, 'fees')) {
@@ -390,10 +392,11 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
     for (const w of v.wellness.filter(x => inYear(x.created_at))) byMonth.set(w.created_at.slice(0, 7), [...(byMonth.get(w.created_at.slice(0, 7)) || []), w]);
     for (const [m, ws] of byMonth) {
       const low = ws.filter(LOW).length;
-      push(`${m}-01`, 'wellness', `Wellbeing in ${monthLabel(m)}: ${plural(ws.length, 'check-in')}`, low ? `${plural(low, 'low day')}` : 'No low days', low >= 3 ? 'a' : 'n');
+      pushMonth(m, 'wellness', `Wellbeing in ${monthLabel(m)}: ${plural(ws.length, 'check-in')}`, low ? `${plural(low, 'low day')}` : 'No low days', low >= 3 ? 'a' : 'n');
     }
   }
-  return out.sort((a, b) => b.on.localeCompare(a.on) || SOURCES.indexOf(a.kind) - SOURCES.indexOf(b.kind));
+  // Newest first; within a month, the dated events, then the month's summaries.
+  return out.sort((a, b) => b.on.slice(0, 7).localeCompare(a.on.slice(0, 7)) || Number(!!a.month) - Number(!!b.month) || b.on.localeCompare(a.on) || SOURCES.indexOf(a.kind) - SOURCES.indexOf(b.kind));
 }
 
 /** A compact, name-free text of the summary for Ask the School OS, within the viewer's lens. */

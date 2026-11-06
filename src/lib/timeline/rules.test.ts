@@ -156,7 +156,14 @@ test('events: monthly attendance, the 3-day absence, homework months, report car
   assert.ok(ev.some(e => e.title === 'Attendance in July 2026: 83%' && e.tone === 'a'));
   assert.ok(ev.some(e => e.title === 'Homework in July 2026: 1 of 2 handed in'));
   assert.ok(ev.some(e => e.title === 'Bonafide certificate issued' && e.detail === 'No. BF/2026/9'));
-  assert.ok(ev.every((e, i) => i === 0 || ev[i - 1].on >= e.on));
+  assert.ok(ev.every((e, i) => i === 0 || ev[i - 1].on.slice(0, 7) >= e.on.slice(0, 7)), 'newest month first');
+  // Month summaries are marked and come after the month's dated events.
+  assert.equal(ev.find(e => e.title.startsWith('Attendance in July'))!.month, true);
+  assert.equal(ev.find(e => e.title === 'Absent 3 school days in a row')!.month, undefined);
+  for (let i = 1; i < ev.length; i++) if (ev[i].on.slice(0, 7) === ev[i - 1].on.slice(0, 7)) assert.ok(!ev[i - 1].month || ev[i].month, 'a summary never sits above a dated event');
+  // This month's mastery isn't "at the end of" yet.
+  const thisMonth = ev.filter(e => e.kind === 'tml' && e.on.slice(0, 7) === r.today.slice(0, 7));
+  assert.ok(thisMonth.every(e => e.title.startsWith('Mastery so far in')));
   const lastYear = yearEvents(r, lens, '2025-26');
   assert.ok(lastYear.some(e => e.title === 'Report card: Annual' && e.detail === '81% · A2'));
   assert.ok(lastYear.some(e => e.title === 'Year result: Promoted'));

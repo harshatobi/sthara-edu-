@@ -1118,8 +1118,8 @@
 
 /* Trend charts (canon/TrendLine) */
 .canon .tl-wrap { position:relative; }
-.canon .tl svg { width:100%; height:auto; display:block; overflow:visible; }
-.canon .tl svg:focus-visible { outline:2px solid var(--blue); outline-offset:4px; border-radius:8px; }
+.canon figure.tl svg { width:100%; height:auto; display:block; overflow:visible; }
+.canon figure.tl svg:focus-visible { outline:2px solid var(--blue); outline-offset:4px; border-radius:8px; }
 .canon .tl-grid { stroke:var(--line); stroke-width:1; }
 .canon .tl-ax { fill:var(--mut); font-size:10.5px; font-weight:600; }
 .canon .tl-ref { stroke:#B4123C; stroke-width:1.2; stroke-dasharray:5 4; opacity:.7; }

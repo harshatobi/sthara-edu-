@@ -101,10 +101,10 @@ export default function Timeline({ query }: { query: string }) {
 }
 
 function Stats({ y }: { y: Year }) {
-  const s: { k: Source; label: string; value: string; tone?: 'g' | 'a' | 'r' | 'b' | 'n' }[] = [];
+  const s: { k: Source; label: string; value: string; sub?: string; tone?: 'g' | 'a' | 'r' | 'b' | 'n' }[] = [];
   if (y.attendance !== undefined) s.push({ k: 'attendance', label: 'Attendance', value: y.attendance?.pct != null ? `${y.attendance.pct}%` : '—', tone: y.attendance?.pct == null ? 'n' : y.attendance.pct >= 90 ? 'g' : y.attendance.pct >= 75 ? 'a' : 'r' });
   if (y.results !== undefined) s.push({ k: 'results', label: y.results?.term ?? 'Results', value: y.results ? (y.results.pct !== null ? `${y.results.pct}%${y.results.grade ? ` ${y.results.grade}` : ''}` : y.results.subjects.map(x => `${x.name.split(' ')[0]} ${x.grade ?? (x.pct !== null ? `${x.pct}%` : '—')}`).join(', ') || '—') : '—' });
-  if (y.tml !== undefined) s.push({ k: 'tml', label: 'Mastery', value: y.tml ? `${y.tml.score}% ${y.tml.band}` : '—', tone: !y.tml ? 'n' : y.tml.score >= 75 ? 'g' : y.tml.score >= 50 ? 'a' : 'r' });
+  if (y.tml !== undefined) s.push({ k: 'tml', label: 'Mastery', value: y.tml ? `${y.tml.score}%` : '—', sub: y.tml?.band, tone: !y.tml ? 'n' : y.tml.score >= 75 ? 'g' : y.tml.score >= 50 ? 'a' : 'r' });
   if (y.homework !== undefined) s.push({ k: 'homework', label: 'Homework', value: y.homework ? `${y.homework.done}/${y.homework.set}` : '—' });
   if (y.fees !== undefined) s.push({ k: 'fees', label: 'Fees due', value: y.fees ? inr(y.fees.due) : '—', tone: y.fees && y.fees.due > 0 ? 'a' : 'n' });
   if (y.kirti !== undefined) s.push({ k: 'kirti', label: 'Kirti', value: String(y.kirti), tone: y.kirti ? 'g' : 'n' });
@@ -114,7 +114,7 @@ function Stats({ y }: { y: Year }) {
   if (y.wellness !== undefined) s.push({ k: 'wellness', label: 'Wellbeing', value: y.wellness ? `${y.wellness.checkins} check-ins` : '—', tone: y.wellness && y.wellness.low >= 3 ? 'a' : 'n' });
   return (
     <div className="tl-stats">
-      {s.map(x => <div key={x.k} className={`tl-stat t-${x.tone ?? 'n'}`}><span className="tl-ico">{ICON[x.k]}</span><div><div className="tl-k">{x.label}</div><div className="tl-v">{x.value}</div></div></div>)}
+      {s.map(x => <div key={x.k} className={`tl-stat t-${x.tone ?? 'n'}`}><span className="tl-ico">{ICON[x.k]}</span><div><div className="tl-k">{x.label}</div><div className="tl-v">{x.value}{x.sub && <span className="tl-sub">{x.sub}</span>}</div></div></div>)}
     </div>
   );
 }
@@ -145,17 +145,34 @@ function Events({ session, query, subjects }: { session: string; query: string; 
   return <EventList events={data.events} />;
 }
 
+const MONTH = new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const monthOf = (on: string) => MONTH.format(new Date(`${on.slice(0, 7)}-01T00:00:00Z`));
+
+/** A year's events under month headings: what happened on a day first, then the month's summaries. */
 function EventList({ events }: { events: TimelineEvent[] }) {
+  const months: { key: string; items: TimelineEvent[] }[] = [];
+  for (const e of events) {
+    const key = e.on.slice(0, 7);
+    if (months[months.length - 1]?.key !== key) months.push({ key, items: [] });
+    months[months.length - 1].items.push(e);
+  }
   return (
-    <ul className="tl-events">
-      {events.map((e, i) => (
-        <li key={i} className={`tl-ev t-${e.tone}`}>
-          <span className="tl-ico" title={SOURCE_LABEL[e.kind]}>{ICON[e.kind]}</span>
-          <div className="tl-when">{fmtDate(e.on, true)}</div>
-          <div><div className="tl-title">{e.title}</div>{e.detail && <div className="muted tl-detail">{e.detail}</div>}</div>
-        </li>
+    <div className="tl-events">
+      {months.map(m => (
+        <section key={m.key} className="tl-month" aria-label={monthOf(m.key)}>
+          <h4 className="tl-month-h">{monthOf(m.key)}</h4>
+          <ul>
+            {m.items.map((e, i) => (
+              <li key={i} className={`tl-ev t-${e.tone}${e.month ? ' sum' : ''}`}>
+                <span className="tl-ico" title={SOURCE_LABEL[e.kind]}>{ICON[e.kind]}</span>
+                <div className="tl-when">{e.month ? 'Month' : fmtDate(e.on, true)}</div>
+                <div><div className="tl-title">{e.title}</div>{e.detail && <div className="muted tl-detail">{e.detail}</div>}</div>
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   );
 }
 

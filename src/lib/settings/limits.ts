@@ -1,3 +1,5 @@
+import type { AiFeature } from '@/lib/ai/pricing';
+
 /**
  * Every request rate limit and AI model the API routes use, in one place.
  *
@@ -98,6 +100,43 @@ export const CLAUDE_MODELS: Record<AiJob, { model: 'claude-sonnet-5-5' | 'claude
   handwriting: { model: 'claude-sonnet-5-5', effort: 'medium' },
   fast: { model: 'claude-haiku-5-5', effort: 'low' },
 };
+
+export type ClaudeChoice = (typeof CLAUDE_MODELS)[AiJob];
+
+/**
+ * Per-feature choice for the standard job, which most features use. It beats
+ * CLAUDE_MODELS.standard; the handwriting, fast and deep jobs keep their own.
+ * Cost plan of 2026-11-06: light, high-volume work on Haiku (about 20x
+ * cheaper than Sonnet); Sonnet at low effort for teacher-facing generation;
+ * board papers and marking stay on Sonnet at medium, because accuracy
+ * matters there.
+ */
+export const CLAUDE_BY_FEATURE: Partial<Record<AiFeature, ClaudeChoice>> = {
+  parentAsk: { model: 'claude-haiku-5-5', effort: 'low' },
+  teacherAsk: { model: 'claude-haiku-5-5', effort: 'low' },
+  leadershipAsk: { model: 'claude-haiku-5-5', effort: 'low' },
+  timelineAsk: { model: 'claude-haiku-5-5', effort: 'low' },
+  tutorSession: { model: 'claude-haiku-5-5', effort: 'medium' },
+  quizGenerate: { model: 'claude-haiku-5-5', effort: 'medium' },
+  quizGrade: { model: 'claude-haiku-5-5', effort: 'medium' },
+  copilot: { model: 'claude-sonnet-5-5', effort: 'low' },
+  quizGen: { model: 'claude-sonnet-5-5', effort: 'low' },
+  homeworkGen: { model: 'claude-sonnet-5-5', effort: 'low' },
+  paperGen: { model: 'claude-sonnet-5-5', effort: 'low' },
+  lessonDraft: { model: 'claude-sonnet-5-5', effort: 'low' },
+};
+
+/** The Claude model and effort for a call: the feature's own choice for standard work, else the job's. */
+export const claudeChoice = (job: AiJob, feature: AiFeature): ClaudeChoice =>
+  (job === 'standard' && CLAUDE_BY_FEATURE[feature]) || CLAUDE_MODELS[job];
+
+/**
+ * Conversations that resend the same long system prompt (data brief) on every
+ * turn: their prompt is cached, so follow-up turns read it at a tenth of the
+ * input price. One-shot features stay uncached, because a cache write costs
+ * 1.25x and would never be read.
+ */
+export const CLAUDE_CACHED_FEATURES: readonly AiFeature[] = ['copilot', 'parentAsk', 'teacherAsk', 'leadershipAsk', 'timelineAsk', 'tutorSession'];
 
 /** Plans that run on Gemini alone (no Claude). */
 export const GEMINI_ONLY_PLANS: readonly string[] = ['aadhara'];

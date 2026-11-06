@@ -349,9 +349,9 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
   const G6 = 'Limits and models';
   add({
     id: 'code.ai_models', group: G6, label: 'AI models', source: 'code',
-    value: `${CLAUDE_MODELS.standard.model} (Claude), ${AI_MODELS.standard} / ${AI_MODELS.deep} (Gemini)`, status: 'info',
-    detail: 'Claude runs every tier except Aadhara, with Gemini as the backup; Aadhara runs on Gemini only. Copilot illustrations are Gemini on every tier. Change in src/lib/settings/limits.ts.',
-    enforcedAt: ['src/lib/settings/limits.ts AI_MODELS, CLAUDE_MODELS', 'src/lib/ai/generate.ts'],
+    value: `${CLAUDE_MODELS.standard.model} + ${CLAUDE_MODELS.fast.model} (Claude), ${AI_MODELS.standard} / ${AI_MODELS.deep} (Gemini)`, status: 'info',
+    detail: 'Claude runs every tier except Aadhara, with Gemini as the backup; Aadhara runs on Gemini only. Ask the School OS, tutoring and student quizzes run on Haiku; teacher tools, papers and marking on Sonnet. Conversations cache their prompt. Copilot illustrations are Gemini on every tier. Change in src/lib/settings/limits.ts.',
+    enforcedAt: ['src/lib/settings/limits.ts AI_MODELS, CLAUDE_MODELS, CLAUDE_BY_FEATURE', 'src/lib/ai/generate.ts'],
   });
   for (const [k, r] of Object.entries(RATE_LIMITS)) {
     const mins = r.windowMs / 60_000;

@@ -6,6 +6,7 @@ import { inScope, normClass } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
 import { pageAll } from '@/lib/ops/page';
+import { syncGapsFor } from '@/lib/tutor/assignmentsServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,8 @@ export async function GET(req: NextRequest) {
   const roster = await rosterOf(db, staff, cls);
   const ids = roster.map(s => s.id);
   if (!ids.length) return NextResponse.json({ assignments: [] });
+  // Bring the class's Critical Gap sessions up to date first (snapshots can be older than the feed scan's window).
+  await syncGapsFor(db, staff.schoolId, roster);
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
   const out: any[] = [];
   for (let i = 0; i < ids.length; i += 150) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { studentAllowance } from '@/lib/ai/allowanceServer';
-import { openAssignments } from '@/lib/tutor/assignmentsServer';
+import { openAssignments, syncStudentGaps } from '@/lib/tutor/assignmentsServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
   if (!user || error) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role && user.role !== 'student') return NextResponse.json({ error: 'Only students have tutor history.' }, { status: 403 });
   const db = createAdminClient();
+  // A chapter already in the Critical Gap gets its session even if TML hasn't been recomputed lately.
+  await syncStudentGaps(db, user.id);
   const [{ data, error: qErr }, allowance, assignments] = await Promise.all([
     db.from('tutor_sessions')
       .select('id, subject, topic, micro_topic, grounding, mode, status, stage, depth_score, hint_depth, answer_revealed, rubric, created_at, completed_at, updated_at, transcript_purged_at')

@@ -1,7 +1,7 @@
 import 'server-only';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
-import { AI_MODELS, CLAUDE_MODELS, GEMINI_ONLY_PLANS, type AiJob } from '@/lib/settings/limits';
+import { AI_MODELS, CLAUDE_CACHED_FEATURES, CLAUDE_MODELS, GEMINI_ONLY_PLANS, claudeChoice, type AiJob } from '@/lib/settings/limits';
 import { getSchoolPolicy, schoolIdOfUser } from '@/lib/settings/server';
 import { generateGeminiMetered, recordUsage, type UsageMeta } from './usage';
 import { toClaudeMessages, type AiRequest } from './messages';
@@ -69,9 +69,15 @@ async function geminiOnly(meta: UsageMeta): Promise<{ only: boolean; schoolId: s
 }
 
 async function runClaude(req: AiRequest, job: AiJob, meta: UsageMeta): Promise<AiResult> {
-  const { model, effort } = CLAUDE_MODELS[job];
+  const { model, effort } = claudeChoice(job, meta.feature);
   const json = req.config?.responseMimeType === 'application/json';
-  const system = [req.config?.systemInstruction, json ? JSON_RULE : null].filter(Boolean).join('\n\n') || undefined;
+  const systemText = [req.config?.systemInstruction, json ? JSON_RULE : null].filter(Boolean).join('\n\n');
+  // Conversations: the system prompt (with its data brief) is the same every turn, so it gets its own cache
+  // breakpoint, and automatic caching covers the growing history after it. Prompts under 512 tokens silently don't cache.
+  const cached = CLAUDE_CACHED_FEATURES.includes(meta.feature);
+  const system = !systemText ? undefined
+    : cached ? [{ type: 'text' as const, text: systemText, cache_control: { type: 'ephemeral' as const } }]
+      : systemText;
   const started = Date.now();
   let usedModel: string = model;
   try {
@@ -81,6 +87,7 @@ async function runClaude(req: AiRequest, job: AiJob, meta: UsageMeta): Promise<A
       ...(system ? { system } : {}),
       messages: toClaudeMessages(req.contents),
       output_config: { effort },
+      ...(cached ? { cache_control: { type: 'ephemeral' as const } } : {}),
       // Sonnet only (Haiku has no server-side fallback): if Sonnet 5.5's safety check declines, Anthropic
       // reruns the request on Claude Sonnet 5. Never an Opus model.
       ...(model === 'claude-sonnet-5-5' ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const } : {}),

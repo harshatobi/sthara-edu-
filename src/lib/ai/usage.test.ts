@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AI_FEATURES, MODEL_PRICES, costUsd, countsFrom } from './pricing';
 import { daysInIstMonth, usageWindow } from './window';
-import { AI_MODELS, CLAUDE_MODELS } from '../settings/limits';
+import { AI_MODELS, CLAUDE_BY_FEATURE, CLAUDE_MODELS, claudeChoice } from '../settings/limits';
 
 const zero = { input: 0, output: 0, thinking: 0, cached: 0 };
 
@@ -95,7 +95,7 @@ test('every Claude model the routes use has a price', () => {
 });
 
 test('Claude jobs run on Sonnet or Haiku only, never Opus', () => {
-  for (const { model } of Object.values(CLAUDE_MODELS)) assert.match(model, /^claude-(sonnet|haiku)-/);
+  for (const { model } of [...Object.values(CLAUDE_MODELS), ...Object.values(CLAUDE_BY_FEATURE)]) assert.match(model, /^claude-(sonnet|haiku)-/);
   assert.ok(!Object.keys(MODEL_PRICES).some(m => m.includes('opus')));
 });
 
@@ -108,4 +108,22 @@ test('Claude usage: cache reads fold into input and bill at the cached rate; thi
 
 test('Gemini usage is still read the Gemini way', () => {
   assert.deepEqual(countsFrom({ promptTokenCount: 10, candidatesTokenCount: 5, thoughtsTokenCount: 2, cachedContentTokenCount: 1 }), { input: 10, output: 5, thinking: 2, cached: 1 });
+});
+
+test('features pick their own Claude model for standard work; other jobs keep theirs', () => {
+  assert.deepEqual(claudeChoice('standard', 'parentAsk'), { model: 'claude-haiku-5-5', effort: 'low' });
+  assert.deepEqual(claudeChoice('standard', 'copilot'), { model: 'claude-sonnet-5-5', effort: 'low' });
+  assert.deepEqual(claudeChoice('standard', 'boardPaper'), CLAUDE_MODELS.standard);
+  assert.deepEqual(claudeChoice('deep', 'boardPaper'), CLAUDE_MODELS.deep);
+  assert.deepEqual(claudeChoice('handwriting', 'captureGrade'), CLAUDE_MODELS.handwriting);
+});
+
+test('Claude cache writes bill at 1.25x input, reads at the cached rate', () => {
+  const t = countsFrom({ input_tokens: 100, cache_read_input_tokens: 0, cache_creation_input_tokens: 4000, output_tokens: 200 });
+  assert.deepEqual(t, { input: 4100, output: 200, thinking: 0, cached: 0, cacheWrite: 4000 });
+  // 100 @ $2 + 4,000 @ $2.50 + 200 @ $10 per 1M
+  assert.equal(costUsd('claude-sonnet-5-5', t), 0.0122);
+  const next = countsFrom({ input_tokens: 150, cache_read_input_tokens: 4000, cache_creation_input_tokens: 0, output_tokens: 200 });
+  // 150 @ $2 + 4,000 @ $0.20 + 200 @ $10 per 1M
+  assert.equal(costUsd('claude-sonnet-5-5', next), 0.0031);
 });

@@ -14,11 +14,13 @@ export interface ModelPrice {
   input: number;
   /** USD per 1M output tokens, thinking included. */
   output: number;
-  /** USD per 1M cached input tokens. */
+  /** USD per 1M cached input tokens (cache reads). */
   cached: number;
+  /** USD per 1M tokens written to the cache (Claude: 1.25x input for the 5-minute cache). Missing = the input rate. */
+  cacheWrite?: number;
   /** Prompts longer than this bill at the `long` rates. */
   longAbove?: number;
-  long?: { input: number; output: number; cached: number };
+  long?: { input: number; output: number; cached: number; cacheWrite?: number };
 }
 
 export const PRICES_CHECKED = '2026-09-25';
@@ -34,11 +36,11 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
     longAbove: 200_000, long: { input: 2.50, output: 15.00, cached: 0.25 },
   },
   // Claude: Sonnet and Haiku only. Sonnet 5 prices the calls Anthropic's refusal fallback hands to it.
-  'claude-sonnet-5-5': { input: 2.00, output: 10.00, cached: 0.20 },
-  'claude-sonnet-5': { input: 2.00, output: 10.00, cached: 0.20 },
+  'claude-sonnet-5-5': { input: 2.00, output: 10.00, cached: 0.20, cacheWrite: 2.50 },
+  'claude-sonnet-5': { input: 2.00, output: 10.00, cached: 0.20, cacheWrite: 2.50 },
   'claude-haiku-5-5': {
-    input: 0.10, output: 0.50, cached: 0.01,
-    longAbove: 100_000, long: { input: 0.50, output: 2.50, cached: 0.05 },
+    input: 0.10, output: 0.50, cached: 0.01, cacheWrite: 0.125,
+    longAbove: 100_000, long: { input: 0.50, output: 2.50, cached: 0.05, cacheWrite: 0.625 },
   },
 };
 
@@ -79,6 +81,8 @@ export interface TokenCounts {
   output: number;
   thinking: number;
   cached: number;
+  /** Of `input`, tokens written to the cache this call (Claude only; not stored, priced at call time). */
+  cacheWrite?: number;
 }
 
 /**
@@ -91,7 +95,9 @@ export function costUsd(model: string, t: TokenCounts): number | null {
   if (!p) return null;
   const rate = p.longAbove && p.long && t.input > p.longAbove ? p.long : p;
   const cached = Math.min(t.cached, t.input);
-  const usd = ((t.input - cached) * rate.input + cached * rate.cached + (t.output + t.thinking) * rate.output) / 1_000_000;
+  const written = Math.min(t.cacheWrite ?? 0, t.input - cached);
+  const usd = ((t.input - cached - written) * rate.input + cached * rate.cached + written * (rate.cacheWrite ?? rate.input)
+    + (t.output + t.thinking) * rate.output) / 1_000_000;
   return Math.round(usd * 1e8) / 1e8;
 }
 
@@ -106,7 +112,8 @@ export function countsFrom(u: unknown): TokenCounts {
   const n = (k: string) => (typeof m[k] === 'number' && Number.isFinite(m[k]) ? Math.max(0, Math.round(m[k] as number)) : 0);
   if ('input_tokens' in m || 'output_tokens' in m) {
     const read = n('cache_read_input_tokens');
-    return { input: n('input_tokens') + read + n('cache_creation_input_tokens'), output: n('output_tokens'), thinking: 0, cached: read };
+    const written = n('cache_creation_input_tokens');
+    return { input: n('input_tokens') + read + written, output: n('output_tokens'), thinking: 0, cached: read, ...(written ? { cacheWrite: written } : {}) };
   }
   return {
     input: n('promptTokenCount'),

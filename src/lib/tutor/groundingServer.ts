@@ -1,7 +1,6 @@
 import 'server-only';
-import { GoogleGenAI } from '@google/genai';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 import { courseChapters, getCurriculum } from '@/lib/curriculum';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { getSchoolPolicy } from '@/lib/settings/server';
@@ -76,12 +75,10 @@ Everyday applications of a listed topic belong to it (e.g. "why toothpaste is ba
 Borderline: if a chapter covers the topic from a particular angle, choose that chapter and set "angle" to how the syllabus treats it in one short phrase (e.g. a question about World War I -> Nationalism in India, angle "the war's effect on India's national movement").`;
 
 async function callClassifier(prompt: string, userId: string, schoolId: string | null): Promise<Record<string, unknown>> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw Object.assign(new Error('The AI tutor is offline right now.'), { status: 503 });
-  const ai = new GoogleGenAI({ apiKey });
+  if (!aiConfigured()) throw Object.assign(new Error('The AI tutor is offline right now.'), { status: 503 });
   let res;
   try {
-    res = await generateMetered(ai, {
+    res = await generateAi({
       model: AI_MODELS.fast,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: { systemInstruction: SYSTEM, responseMimeType: 'application/json', temperature: 0 },

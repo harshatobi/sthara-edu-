@@ -1,8 +1,7 @@
 import 'server-only';
-import { GoogleGenAI } from '@google/genai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/settings/limits';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 import { isLeadership, type FeedCaller } from '@/lib/feed/access';
 import { emptyBook, PAGES, parseStaffReply, restore, tokenize, type StaffReply, type StaffRole } from './ask';
 import { leadershipBrief, teacherBrief } from './brief';
@@ -47,13 +46,11 @@ ${brief}`;
 export async function askStaffOS(db: SupabaseClient, me: FeedCaller, messages: { role: 'me' | 'os'; text: string }[], channel: 'web' | 'whatsapp'): Promise<StaffReply> {
   const role = staffRoleOf(me);
   if (!role) throw new AskError('Ask the School OS is for teachers and school leadership (school admin, principal, vice principal).', 403);
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new AskError('The School OS isn’t configured on this server yet (no AI key).', 503);
+  if (!aiConfigured()) throw new AskError('The School OS isn’t configured on this server yet (no AI key).', 503);
   const book = emptyBook();
   const brief = role === 'teacher' ? await teacherBrief(db, me, book) : await leadershipBrief(db, me, book);
-  const contents = messages.slice(-12).map(m => ({ role: m.role === 'os' ? 'model' : 'user', parts: [{ text: tokenize(m.text, book) }] }));
-  const ai = new GoogleGenAI({ apiKey });
-  const res = await generateMetered(ai, {
+  const contents = messages.slice(-12).map(m => ({ role: m.role === 'os' ? 'model' as const : 'user' as const, parts: [{ text: tokenize(m.text, book) }] }));
+  const res = await generateAi({
     model: AI_MODELS.standard, contents,
     config: { systemInstruction: systemPrompt(role, me.name, brief, channel), responseMimeType: 'application/json', temperature: 0.3 },
   }, { feature: role === 'teacher' ? 'teacherAsk' : 'leadershipAsk', userId: me.id, schoolId: me.schoolId });

@@ -3,7 +3,7 @@ import { requireStaff } from '@/lib/teacher/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
-import { recordRestUsage } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -28,9 +28,8 @@ export async function POST(request: NextRequest) {
 
     const aiBlocked = await aiGate(auth.staff.id, 'teacherTools');
     if (aiBlocked) return aiBlocked;
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API key not configured on server.' }, { status: 500 });
+    if (!aiConfigured()) {
+      return NextResponse.json({ error: 'AI isn’t configured on this server.' }, { status: 500 });
     }
 
     const topicList = (topics || []).join(', ');
@@ -77,49 +76,21 @@ You MUST return ONLY a valid JSON object. No markdown, no explanation, no code b
   ]
 }`;
 
-    // Use the Gemini REST API directly — more reliable than the SDK for JSON mode
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODELS.standard}:generateContent?key=${apiKey}`;
-    
-    const geminiBody = {
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.5,
-        maxOutputTokens: 8192,
-      },
-    };
-
-    const usageMeta = { feature: 'quizGen', userId: auth.staff.id, schoolId: auth.staff.schoolId } as const;
-    const started = Date.now();
-    const geminiRes = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody),
-    });
-
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.text();
-      recordRestUsage(AI_MODELS.standard, null, usageMeta, started, `HTTP ${geminiRes.status}`);
-      console.error('[quiz-gen] Gemini API error:', geminiRes.status, errBody.substring(0, 500));
-      return NextResponse.json(
-        { error: `AI service returned error ${geminiRes.status}. Please try again.` },
-        { status: 500 }
-      );
+    let raw: string;
+    try {
+      const res = await generateAi({
+        model: AI_MODELS.standard,
+        contents: prompt,
+        config: { responseMimeType: 'application/json', temperature: 0.5, maxOutputTokens: 8192 },
+      }, { feature: 'quizGen', userId: auth.staff.id, schoolId: auth.staff.schoolId });
+      raw = res.text;
+    } catch (e: any) {
+      console.error('[quiz-gen] AI error:', e?.message?.substring(0, 500));
+      return NextResponse.json({ error: 'The AI service didn’t answer. Please try again.' }, { status: 500 });
     }
 
-    const geminiData = await geminiRes.json();
-    recordRestUsage(AI_MODELS.standard, geminiData, usageMeta, started);
-    let raw: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    console.log('[quiz-gen] Raw AI output (first 500 chars):', raw.substring(0, 500));
-    console.log('[quiz-gen] Finish reason:', geminiData?.candidates?.[0]?.finishReason);
-
     if (!raw) {
-      const finishReason = geminiData?.candidates?.[0]?.finishReason || 'unknown';
-      console.error('[quiz-gen] Empty response from Gemini. Finish reason:', finishReason, 'Full response:', JSON.stringify(geminiData).substring(0, 500));
-      return NextResponse.json(
-        { error: `AI returned no content (reason: ${finishReason}). Please try again.` },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'AI returned no content. Please try again.' }, { status: 500 });
     }
 
     // Strip markdown wrappers

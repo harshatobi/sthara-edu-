@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { costUsd, countsFrom, type AiFeature } from './pricing';
 
 /**
- * AI metering: every model call writes one row to public.ai_usage with its
+ * AI metering: every model call (Claude or Gemini) writes one row to public.ai_usage with its
  * tokens and cost, which the operator console's Usage page reads.
  *
  * Recording never blocks or breaks the call it measures: it runs after the
@@ -47,7 +47,7 @@ async function write(r: Row) {
       cost_usd: costUsd(r.model, t),
       ok: r.ok,
       latency_ms: r.latencyMs,
-      // Long enough to keep the quota metric Google names in a 429 (it comes after the generic message).
+      // Long enough to keep the quota metric a provider names in a 429 (it comes after the generic message).
       error: r.error ? r.error.slice(0, 1500) : null,
     });
     if (error) console.error('[ai_usage] insert failed:', error.message);
@@ -65,8 +65,12 @@ export function recordUsage(r: Row) {
   }
 }
 
-/** ai.models.generateContent with metering. Same arguments, same result, same errors. */
-export async function generateMetered(ai: GoogleGenAI, params: GenerateContentParameters, meta: UsageMeta): Promise<GenerateContentResponse> {
+/**
+ * ai.models.generateContent with metering. Same arguments, same result, same errors.
+ * Text routes go through generateAi (src/lib/ai/generate.ts), which picks the provider;
+ * call this directly only for Gemini-only work (Copilot illustrations).
+ */
+export async function generateGeminiMetered(ai: GoogleGenAI, params: GenerateContentParameters, meta: UsageMeta): Promise<GenerateContentResponse> {
   const started = Date.now();
   try {
     const res = await ai.models.generateContent(params);

@@ -1,7 +1,6 @@
 import 'server-only';
-import { GoogleGenAI } from '@google/genai';
 import { AI_MODELS } from '@/lib/settings/limits';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 import { SOURCE_LABEL, timelineText, type Timeline } from './rules';
 
 /**
@@ -25,8 +24,7 @@ const VIEWER: Record<Timeline['who'], string> = {
 };
 
 export async function askTimeline(t: Timeline, fullName: string, messages: { role: 'me' | 'os'; text: string }[], meta: { userId: string; schoolId: string }): Promise<TimelineAnswer> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('Asking isn’t set up on this server yet (no AI key).');
+  if (!aiConfigured()) throw new Error('Asking isn’t set up on this server yet (no AI key).');
   const first = fullName.trim().split(/\s+/)[0] || 'the student';
   const system = `You answer questions about one student's school record over the years, for ${VIEWER[t.who]}.
 The student is written [[S]]. Use [[S]] for them; never guess a name.
@@ -38,9 +36,8 @@ Reply with ONE JSON object: {"say":"…","suggestions":["2 or 3 short follow-up 
 
 TIMELINE (newest year first)
 ${timelineText(t)}`;
-  const contents = messages.slice(-10).map(m => ({ role: m.role === 'os' ? 'model' : 'user', parts: [{ text: hideName(m.text, fullName) }] }));
-  const ai = new GoogleGenAI({ apiKey });
-  const res = await generateMetered(ai, {
+  const contents = messages.slice(-10).map(m => ({ role: m.role === 'os' ? 'model' as const : 'user' as const, parts: [{ text: hideName(m.text, fullName) }] }));
+  const res = await generateAi({
     model: AI_MODELS.standard, contents,
     config: { systemInstruction: system, responseMimeType: 'application/json', temperature: 0.3 },
   }, { feature: 'timelineAsk', userId: meta.userId, schoolId: meta.schoolId });

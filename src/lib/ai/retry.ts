@@ -1,4 +1,8 @@
 /**
+ * Claude failures normally never reach callers (generateAi hands them to Gemini),
+ * but when Gemini is not available they surface here with the same meaning:
+ * 529 overloaded / 5xx = busy, 429 rate_limit_error = quota.
+ *
  * Gemini fails in two ways that need different answers:
  *   busy   503 UNAVAILABLE / "high demand": Google's side, usually gone in seconds; wait and retry
  *   quota  429 RESOURCE_EXHAUSTED: a per-minute limit may clear after its retryDelay; a daily or
@@ -9,8 +13,8 @@ export type AiFailure = 'busy' | 'quota' | 'other';
 
 export function aiFailure(e: unknown): AiFailure {
   const m = e instanceof Error ? e.message : String(e ?? '');
-  if (/"code":\s*503|UNAVAILABLE|high demand|overloaded/i.test(m)) return 'busy';
-  if (/"code":\s*429|RESOURCE_EXHAUSTED|exceeded your current quota/i.test(m)) return 'quota';
+  if (/"code":\s*503|UNAVAILABLE|high demand|overloaded|^5\d\d\b|api_error/i.test(m)) return 'busy';
+  if (/"code":\s*429|RESOURCE_EXHAUSTED|exceeded your current quota|rate_limit_error/i.test(m)) return 'quota';
   return 'other';
 }
 

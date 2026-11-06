@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
 import { AI_FEATURES, MODEL_PRICES, PRICES_CHECKED, USD_TO_INR } from '@/lib/ai/pricing';
-import { AI_MODELS } from '@/lib/settings/limits';
+import { AI_MODELS, CLAUDE_MODELS } from '@/lib/settings/limits';
 import { usageWindow } from '@/lib/ai/window';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
     prices: MODEL_PRICES,
     pricesChecked: PRICES_CHECKED,
     usdToInr: USD_TO_INR,
-    models: AI_MODELS,
+    // Every model a route can call: Gemini by job, and Claude by job (keys prefixed claude.).
+    models: { ...AI_MODELS, ...Object.fromEntries(Object.entries(CLAUDE_MODELS).map(([job, c]) => [`claude.${job}`, c.model])) },
     features: AI_FEATURES,
     checkedAt: new Date().toISOString(),
   });

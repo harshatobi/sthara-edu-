@@ -387,13 +387,16 @@ function UserTable({ data, money }: { data: Data; money: Money }) {
   );
 }
 
+const providerOf = (model: string) => (model.startsWith('claude-') ? 'Anthropic' : model.startsWith('gemini-') ? 'Google' : 'Other');
+
 function ModelTable({ data, money }: { data: Data; money: Money }) {
   return (
     <div className="card"><div className="tbl-wrap"><table className="tbl">
-      <thead><tr><th>Model</th><th className="r">Calls</th><th className="r">Input</th><th className="r">of which cached</th><th className="r">Output</th><th className="r">Thinking</th><th className="r">Spend</th></tr></thead>
+      <thead><tr><th>Model</th><th>Provider</th><th className="r">Calls</th><th className="r">Input</th><th className="r">of which cached</th><th className="r">Output</th><th className="r">Thinking</th><th className="r">Spend</th></tr></thead>
       <tbody>{data.usage.models.map(m => (
         <tr key={m.model}>
           <td className="mono" style={{ fontWeight: 600 }}>{m.model}{!data.prices[m.model] && <> <Chip tone="a">no price</Chip></>}</td>
+          <td>{providerOf(m.model)}</td>
           <td className="r">{num(m.calls)}</td>
           <td className="r">{num(m.input)}</td>
           <td className="r">{num(m.cached)}</td>
@@ -402,7 +405,9 @@ function ModelTable({ data, money }: { data: Data; money: Money }) {
           <td className="r" style={{ fontWeight: 700 }}>{money(Number(m.cost))}</td>
         </tr>
       ))}</tbody>
-    </table></div></div>
+    </table></div>
+      <div style={{ color: 'var(--mut)', fontSize: 12, marginTop: 10 }}>Claude counts its thinking inside Output (and bills it there), so its Thinking column reads 0. Gemini reports thinking separately.</div>
+    </div>
   );
 }
 
@@ -440,14 +445,15 @@ function PriceList({ data, currency }: { data: Data; currency: Currency }) {
     <div className="card">
       <div style={{ fontWeight: 800, marginBottom: 4 }}>Price list, per 1 million tokens</div>
       <div style={{ color: 'var(--mut)', fontSize: 13, marginBottom: 14 }}>
-        Google Gemini API paid-tier list prices, checked {data.pricesChecked}. Thinking tokens bill as output. Each call is costed when it happens, so changing a price here never rewrites history.
-        {currency === 'INR' && <> Rupee figures use ₹{data.usdToInr} to the dollar; Google bills in USD.</>}
+        List prices for the Anthropic (Claude) and Google (Gemini) APIs, checked {data.pricesChecked}. Thinking tokens bill as output on both. Each call is costed when it happens, so changing a price here never rewrites history.
+        {currency === 'INR' && <> Rupee figures use ₹{data.usdToInr} to the dollar; both providers bill in USD.</>}
       </div>
       <div className="tbl-wrap"><table className="tbl">
-        <thead><tr><th>Model</th><th className="r">Input</th><th className="r">Cached input</th><th className="r">Output</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Model</th><th>Provider</th><th className="r">Input</th><th className="r">Cached input</th><th className="r">Output</th><th>Notes</th></tr></thead>
         <tbody>{Object.entries(data.prices).map(([model, pr]) => (
           <tr key={model}>
             <td className="mono" style={{ fontWeight: 600 }}>{model} {inUse.has(model) ? <Chip tone="g">in use</Chip> : <Chip tone="n">not used</Chip>}</td>
+            <td>{providerOf(model)}</td>
             <td className="r">{p(pr.input)}</td>
             <td className="r">{p(pr.cached)}</td>
             <td className="r">{p(pr.output)}</td>

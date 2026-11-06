@@ -1,5 +1,4 @@
 import 'server-only';
-import { GoogleGenAI } from '@google/genai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { fmtDate, inr } from '@/lib/admin/format';
@@ -8,7 +7,7 @@ import { probeFamily, type ProbeFinding } from './probe';
 import { loadFamily } from './load';
 import { parseAskReply, restore, tokenize, type AskReply, type NameBook } from './ask';
 import type { ParentCaller } from './serverAuth';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 import { loadRows, registerIdOf, timelineAccess } from '@/lib/timeline/server';
 import { shapeTimeline, timelineText } from '@/lib/timeline/rules';
 
@@ -121,8 +120,7 @@ export interface AskResult { reply: AskReply; view: FamilyView; findings: ProbeF
  * Throws with a user-facing message.
  */
 export async function askSchoolOS(db: SupabaseClient, parent: ParentCaller, messages: { role: 'parent' | 'os'; text: string }[], channel: 'web' | 'whatsapp'): Promise<AskResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('The School OS isn’t configured on this server yet (no AI key).');
+  if (!aiConfigured()) throw new Error('The School OS isn’t configured on this server yet (no AI key).');
   const view = await loadFamily(db, parent);
   if (!view.children.length) {
     return {
@@ -133,9 +131,8 @@ export async function askSchoolOS(db: SupabaseClient, parent: ParentCaller, mess
   const findings = probeFamily(view);
   const book = nameBook(view);
   const system = systemPrompt(view, buildBrief(view, findings, book, await histories(db, parent, view)), channel);
-  const contents = messages.slice(-12).map(m => ({ role: m.role === 'os' ? 'model' : 'user', parts: [{ text: tokenize(m.text, book) }] }));
-  const ai = new GoogleGenAI({ apiKey });
-  const res = await generateMetered(ai, {
+  const contents = messages.slice(-12).map(m => ({ role: m.role === 'os' ? 'model' as const : 'user' as const, parts: [{ text: tokenize(m.text, book) }] }));
+  const res = await generateAi({
     model: AI_MODELS.standard, contents,
     config: { systemInstruction: system, responseMimeType: 'application/json', temperature: 0.4 },
   }, { feature: 'parentAsk', userId: parent.id, schoolId: parent.schoolId });

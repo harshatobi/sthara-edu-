@@ -20,8 +20,8 @@ export const PLATFORM_SETTINGS = {
   'ai.enabled': {
     type: 'boolean', default: true, danger: 'off', group: 'AI',
     label: 'AI features',
-    help: 'Master switch for every Gemini call: tutor, grading, homework and quiz generation, the teaching copilot and the admin assistant. Off returns a clear "paused" message instead of calling the model.',
-    enforcedAt: ['src/lib/settings/server.ts aiGate()', 'every route under /api that calls Gemini'],
+    help: 'Master switch for every AI call (Claude and Gemini): tutor, grading, homework and quiz generation, the teaching copilot and the admin assistant. Off returns a clear "paused" message instead of calling the model.',
+    enforcedAt: ['src/lib/settings/server.ts aiGate()', 'every route under /api that calls an AI model'],
   },
   'trial.default_days': {
     type: 'integer', default: 30, min: 7, max: 180, unit: 'days', group: 'Accounts',

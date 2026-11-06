@@ -1,7 +1,7 @@
 import 'server-only';
-import type { GoogleGenAI } from '@google/genai';
 import type { CurriculumSubject } from '@/lib/curriculum/types';
-import { generateMetered, type UsageMeta } from '@/lib/ai/usage';
+import { generateAi } from '@/lib/ai/generate';
+import type { UsageMeta } from '@/lib/ai/usage';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { pooled, withRetry } from '@/lib/ai/retry';
 import { buildBlueprint, type BlueprintItem } from './blueprint';
@@ -68,16 +68,16 @@ Reply with ONE JSON object only: {"questions":[ … one object per slot, in orde
 interface Budget { deadline: number; stop: AbortController }
 
 /** Read by aiFailure as 'busy', so the teacher hears "try again in a few minutes", not a shape error. */
-const OUT_OF_TIME = 'UNAVAILABLE: the paper ran out of time while Gemini was overloaded';
+const OUT_OF_TIME = 'UNAVAILABLE: the paper ran out of time while the AI was overloaded';
 
-async function writeSection(ai: GoogleGenAI, design: PaperDesign, section: { id: string; title: string }, items: BlueprintItem[], meta: UsageMeta, budget: Budget): Promise<PaperSection> {
+async function writeSection(design: PaperDesign, section: { id: string; title: string }, items: BlueprintItem[], meta: UsageMeta, budget: Budget): Promise<PaperSection> {
   const prompt = sectionPrompt(design, section, items);
   const ask = async (contents: { role: 'user' | 'model'; parts: { text: string }[] }[]) => {
-    // When Gemini Flash is overloaded, wait and retry; the last try goes to Pro, which has its own capacity.
+    // When the model is overloaded, wait and retry; the last try runs the deep job (more effort on Claude, Pro on Gemini).
     const res = await withRetry(attempt => {
       const left = budget.deadline - Date.now();
       if (left < 10_000 || budget.stop.signal.aborted) throw new Error(OUT_OF_TIME);
-      return generateMetered(ai, {
+      return generateAi({
         model: attempt >= 2 ? AI_MODELS.deep : AI_MODELS.standard, contents,
         config: {
           responseMimeType: 'application/json', temperature: 0.6, maxOutputTokens: 32000,
@@ -102,12 +102,12 @@ async function writeSection(ai: GoogleGenAI, design: PaperDesign, section: { id:
 }
 
 /** `budgetMs` keeps the whole paper inside the route's time limit, with room to answer. */
-export async function generatePaper(ai: GoogleGenAI, design: PaperDesign, cur: CurriculumSubject, meta: UsageMeta, seed: number, budgetMs = 270_000): Promise<Paper> {
+export async function generatePaper(design: PaperDesign, cur: CurriculumSubject, meta: UsageMeta, seed: number, budgetMs = 270_000): Promise<Paper> {
   const plan = buildBlueprint(design, cur, seed);
   const budget: Budget = { deadline: Date.now() + budgetMs, stop: new AbortController() };
-  // Two sections at a time: all at once trips Gemini's per-minute limits and makes overload worse.
+  // Two sections at a time: all at once trips the providers' per-minute limits and makes overload worse.
   // The first section that fails stops the rest, so nothing more is billed for a paper that can't be finished.
-  const sections = await pooled(design.sections.map(sec => () => writeSection(ai, design, sec, plan.filter(i => i.section === sec.id), meta, budget)
+  const sections = await pooled(design.sections.map(sec => () => writeSection(design, sec, plan.filter(i => i.section === sec.id), meta, budget)
     .catch(e => { budget.stop.abort(); throw e; })), 2);
   return { design: design.key, title: paperTitle(design), seed, sections };
 }

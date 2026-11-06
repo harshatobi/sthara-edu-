@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
@@ -7,7 +6,7 @@ import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { courseChapters, getCurriculum } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/desk';
 import { aiGate } from '@/lib/settings/server';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -40,8 +39,7 @@ export async function POST(req: NextRequest) {
 
   const aiBlocked = await aiGate(staff.id, 'teacherTools');
   if (aiBlocked) return aiBlocked;
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'AI drafting isn’t configured on this server.' }, { status: 503 });
+  if (!aiConfigured()) return NextResponse.json({ error: 'AI drafting isn’t configured on this server.' }, { status: 503 });
 
   const prompt = `You are an experienced CBSE ${subject} teacher planning one ${duration}-minute lesson for ${cls} (session 2026-27).
 Chapter: "${chapter.name}"${chapter.number ? ` (NCERT chapter ${chapter.number})` : ''}, unit "${chapter.unitName}".
@@ -67,8 +65,7 @@ Return ONLY JSON:
 }`;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const res = await generateMetered(ai, {
+    const res = await generateAi({
       model: AI_MODELS.standard, contents: prompt, config: { responseMimeType: 'application/json', temperature: 0.4 },
     }, { feature: 'lessonDraft', userId: staff.id, schoolId: staff.schoolId });
     const raw = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();

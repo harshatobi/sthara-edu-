@@ -6,7 +6,7 @@ import { inScope } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateGeminiMetered } from '@/lib/ai/usage';
 import { aiFailure, withRetry } from '@/lib/ai/retry';
 import { IMAGE_PATH } from '@/lib/teacher/copilot';
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const res = await withRetry(() => generateMetered(ai, {
+    const res = await withRetry(() => generateGeminiMetered(ai, {
       model: AI_MODELS.image,
       contents: [{ role: 'user', parts: [{ text: framed }] }],
       config: { responseModalities: ['TEXT', 'IMAGE'] },

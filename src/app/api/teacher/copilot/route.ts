@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope, normClass, normSubject } from '@/lib/teacher/scope';
 import { checkRateLimit } from '@/lib/rateLimit';
@@ -13,7 +12,7 @@ import { designsFor } from '@/lib/papers/designs';
 import { generatePaper } from '@/lib/papers/generate';
 import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 import { byIds, pageAll } from '@/lib/ops/page';
 
 export const dynamic = 'force-dynamic';
@@ -50,8 +49,7 @@ export async function POST(req: NextRequest) {
 
   const aiBlocked = await aiGate(staff.id, 'teacherTools');
   if (aiBlocked) return aiBlocked;
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
+  if (!aiConfigured()) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
 
   // A board paper is its own job: the design fixes every question, so the class brief isn't needed.
   if (studioKind === 'board_paper') {
@@ -63,7 +61,7 @@ export async function POST(req: NextRequest) {
     const cur = getCurriculum(cls, subject);
     if (!design || !cur) return NextResponse.json({ error: `There's no board paper design for ${subject} in ${cls} yet.` }, { status: 400 });
     try {
-      const paper = await generatePaper(new GoogleGenAI({ apiKey }), design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, Math.floor(Math.random() * 1e9));
+      const paper = await generatePaper(design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, Math.floor(Math.random() * 1e9));
       const total = paper.sections.reduce((n, sec) => n + sec.questions.length, 0);
       return NextResponse.json({
         reply: {
@@ -76,8 +74,8 @@ export async function POST(req: NextRequest) {
       console.error('[copilot paper]', e?.message);
       const kind = aiFailure(e);
       return NextResponse.json({
-        error: kind === 'busy' ? 'Google’s AI is overloaded right now, even after several retries. Try again in a few minutes.'
-          : kind === 'quota' ? 'The school’s AI quota with Google has run out, so the paper couldn’t be written. Your Sthara administrator needs to check the Gemini plan and billing.'
+        error: kind === 'busy' ? 'The AI is overloaded right now, even after several retries. Try again in a few minutes.'
+          : kind === 'quota' ? 'The AI quota has run out, so the paper couldn’t be written. Your Sthara administrator needs to check the AI plan and billing.'
             : 'The paper didn’t come out in the board’s shape this time. Try again; each try writes it afresh.',
         code: kind,
       }, { status: kind === 'quota' ? 429 : kind === 'busy' ? 503 : 502 });
@@ -212,8 +210,7 @@ DATA BRIEF
 ${brief.join('\n\n')}`;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const res = await generateMetered(ai, {
+    const res = await generateAi({
       model: AI_MODELS.standard,
       contents: messages.map((m: any) => ({ role: m.role, parts: [{ text: m.text }] })),
       config: { systemInstruction: system, responseMimeType: 'application/json', temperature: 0.5 },

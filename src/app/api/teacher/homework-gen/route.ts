@@ -1,10 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,10 +19,8 @@ export async function POST(request: NextRequest) {
     const { topic, subject, studentClass, difficulty = 'medium', numQuestions = 5, questionType = 'mixed' } = await request.json();
     const aiBlocked = await aiGate(auth.staff.id, 'teacherTools');
     if (aiBlocked) return aiBlocked;
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
+    if (!aiConfigured()) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
 
-    const ai = new GoogleGenAI({ apiKey });
 
     const typeInstruction =
       questionType === 'mcq'
@@ -60,7 +57,7 @@ For MCQ, add an "options" array: ["A. option1", "B. option2", "C. option3", "D. 
 Marks: short=2-5, long=8-10, mcq=1-2.
 Make questions educationally meaningful and specific to the topic.`;
 
-    const result = await generateMetered(ai, {
+    const result = await generateAi({
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.6 },

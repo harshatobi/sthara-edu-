@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AI_FEATURES, MODEL_PRICES, costUsd, countsFrom } from './pricing';
 import { daysInIstMonth, usageWindow } from './window';
-import { AI_MODELS } from '../settings/limits';
+import { AI_MODELS, CLAUDE_MODELS } from '../settings/limits';
 
 const zero = { input: 0, output: 0, thinking: 0, cached: 0 };
 
@@ -88,4 +88,24 @@ test('unknown range falls back to 30 days', () => {
   const w = usageWindow({ range: 'forever' }, NOW);
   if ('error' in w) throw new Error(w.error);
   assert.equal(w.key, '30d');
+});
+
+test('every Claude model the routes use has a price', () => {
+  for (const { model } of Object.values(CLAUDE_MODELS)) assert.ok(MODEL_PRICES[model], `no price for ${model}`);
+});
+
+test('Claude jobs run on Sonnet or Haiku only, never Opus', () => {
+  for (const { model } of Object.values(CLAUDE_MODELS)) assert.match(model, /^claude-(sonnet|haiku)-/);
+  assert.ok(!Object.keys(MODEL_PRICES).some(m => m.includes('opus')));
+});
+
+test('Claude usage: cache reads fold into input and bill at the cached rate; thinking is already in output', () => {
+  const t = countsFrom({ input_tokens: 1000, cache_read_input_tokens: 4000, cache_creation_input_tokens: 0, output_tokens: 500 });
+  assert.deepEqual(t, { input: 5000, output: 500, thinking: 0, cached: 4000 });
+  // 1,000 @ $2 + 4,000 @ $0.20 + 500 @ $10 per 1M
+  assert.equal(costUsd('claude-sonnet-5-5', t), 0.0078);
+});
+
+test('Gemini usage is still read the Gemini way', () => {
+  assert.deepEqual(countsFrom({ promptTokenCount: 10, candidatesTokenCount: 5, thoughtsTokenCount: 2, cachedContentTokenCount: 1 }), { input: 10, output: 5, thinking: 2, cached: 1 });
 });

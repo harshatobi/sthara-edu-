@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
@@ -16,7 +15,7 @@ import { examsForChapter } from '@/lib/curriculum/exams';
 import { getSchoolPolicy } from '@/lib/settings/server';
 import { signSession, verifySession, type TutorSessionState } from '@/lib/tutor/sessionToken';
 import { aiGate } from '@/lib/settings/server';
-import { generateMetered } from '@/lib/ai/usage';
+import { generateAi, aiConfigured } from '@/lib/ai/generate';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,12 +60,10 @@ Rules you never break:
 Always reply with a single JSON object and nothing else.`;
 
 async function ask(prompt: string, cls: string, userId: string, schoolId: string | null): Promise<Record<string, unknown>> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw Object.assign(new Error('The AI tutor is offline right now.'), { status: 503 });
-  const ai = new GoogleGenAI({ apiKey });
+  if (!aiConfigured()) throw Object.assign(new Error('The AI tutor is offline right now.'), { status: 503 });
   let res;
   try {
-    res = await generateMetered(ai, {
+    res = await generateAi({
       model: MODEL,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: { systemInstruction: SYSTEM(cls), responseMimeType: 'application/json', temperature: 0.4 },

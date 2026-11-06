@@ -664,7 +664,7 @@ function History({ demo, onOpen, onPick }: { demo: boolean; onOpen: (id: string)
                   {r.subject} · {when(r.completedAt ?? r.startedAt)}{r.previousDepth !== null ? ` · before: ${Math.round(r.previousDepth)}` : ''}
                 </div>
               </button>
-              {r.depth !== null ? <b style={{ color: hmColor(r.depth), fontSize: 15 }}>{Math.round(r.depth)}</b> : <span className="muted" style={{ fontSize: 12 }}>{r.revealed ? 'revealed' : `${r.hints} hints`}</span>}
+              {r.depth !== null ? <b style={{ color: hmColor(r.depth), fontSize: 15 }}>{Math.round(r.depth)}</b> : <span className="muted" style={{ fontSize: 12 }}>{r.revealed ? 'revealed' : r.hints === 1 ? '1 hint' : `${r.hints} hints`}</span>}
               <button className="btn sm" onClick={() => onPick({ subject: r.subject, name: r.topic, start: null })} aria-label={`Retry ${r.topic}`} title="Retry this topic"><ArrowCounterClockwise size={13} weight="bold" /></button>
             </div>
           ))}

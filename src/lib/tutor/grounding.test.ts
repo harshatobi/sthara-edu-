@@ -103,5 +103,8 @@ test('model JSON with raw line breaks inside strings still parses', async () => 
   const { parseModelJson } = await import('./grounding');
   assert.deepEqual(parseModelJson('{"text": "Step 1:\nwhat is pH?\tthink"}'), { text: 'Step 1:\nwhat is pH?\tthink' });
   assert.deepEqual(parseModelJson('{"a": "say \\"hi\\"\n"}'), { a: 'say "hi"\n' });
+  // Working shown before the object, or a code fence around it (seen live from Sonnet, 2026-11-06).
+  assert.deepEqual(parseModelJson('Check: 2800 / 8000 = 0.35.\n{"result": "partial", "reasoning": 2}'), { result: 'partial', reasoning: 2 });
+  assert.deepEqual(parseModelJson('```json\n{"text": "a {b} c"}\n```'), { text: 'a {b} c' });
   assert.deepEqual(parseModelJson('{\n  "correct": true,\n  "text": "ok"\n}'), { correct: true, text: 'ok' });
 });

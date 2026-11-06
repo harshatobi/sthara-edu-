@@ -238,7 +238,7 @@ export function legacyTotals(s: SocraticState): { hints: number; revealed: boole
 export interface Summary { strengths: string[]; toFix: string[]; next: string }
 
 export function parseSummary(raw: Record<string, unknown>): Summary {
-  const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x.trim()).map(x => x.trim().slice(0, 200)).slice(0, 3) : []);
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x.trim()).map(x => x.trim().slice(0, 400)).slice(0, 3) : []);
   return { strengths: list(raw.strengths), toFix: list(raw.toFix ?? raw.to_fix), next: str(raw.next, 240) };
 }
 

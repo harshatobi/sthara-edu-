@@ -14,7 +14,7 @@ export type Kind =
   | 'proctor_flag' | 'overdue_work' | 'tml_drop' | 'low_scores'
   | 'low_energy' | 'energy_streak' | 'help_request'
   | 'absence_streak' | 'exam_absence' | 'incident'
-  | 'tutor_conduct' | 'tutor_off_topic';
+  | 'tutor_conduct' | 'tutor_off_topic' | 'tutor_critical_gap';
 
 export interface Draft {
   kind: Kind;

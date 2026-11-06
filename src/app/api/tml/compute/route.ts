@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
-import { computeStudentTml } from '@/lib/tml/engine';
+import { recomputeTml } from '@/lib/tml/recompute';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const result = await computeStudentTml(supabase, studentId, subject);
+    const result = await recomputeTml(supabase, studentId, subject);
 
     return NextResponse.json({
       success: true,

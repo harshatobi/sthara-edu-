@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { marksOf, sanitizeQuestions } from '@/lib/teacher/questions';
-import { normalizeComponentType, computeStudentTml, evidenceTopicName } from '@/lib/tml/engine';
+import { normalizeComponentType, evidenceTopicName } from '@/lib/tml/engine';
+import { recomputeTml } from '@/lib/tml/recompute';
 import { notifyGuardians } from '@/lib/parent/notify';
 import { agreement, gradeOf } from '@/lib/grading/handwritten';
 
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
   }).then(({ error }) => { if (error) console.warn('[review-submission] notification failed:', error.message); });
 
   let tmlUpdated = false;
-  try { tmlUpdated = !!(await computeStudentTml(db, sub.student_id, a.subject || undefined)); }
+  try { tmlUpdated = !!(await recomputeTml(db, sub.student_id, a.subject || undefined)); }
   catch (e: any) { console.error('[review-submission] TML recompute failed:', e?.message); }
 
   // Parents: the grade (in-app + WhatsApp if they opted in), and the TML spec's

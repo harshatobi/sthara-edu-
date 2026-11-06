@@ -1,10 +1,11 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { byIds } from '@/lib/ops/page';
+import { byIds, pageAll } from '@/lib/ops/page';
 import { raise } from '@/lib/feed/raise';
-import type { Draft } from '@/lib/feed/rules';
+import { istDay, type Draft } from '@/lib/feed/rules';
+import { displayClass, normClass } from '@/lib/teacher/scope';
 import {
-  COOLDOWN_DAYS, HOTS_MIN, completes, latestScores, planCriticalGaps,
+  COOLDOWN_DAYS, GAP_CAP, HOTS_MIN, completes, latestScores, planCriticalGaps,
   type AssignmentMode, type OpenAssignment,
 } from './assignments';
 
@@ -20,8 +21,8 @@ const lit = (v: string) => v.trim().replace(/[\\%_]/g, m => `\\${m}`);
 export interface TmlRow { student_id: string; subject: string; topic_name: string; score: number | string; computed_at: string; confidence_band?: string | null }
 export interface StudentRow { id: string; name: string | null; student_class: string | null }
 
-const OPEN_COLS = 'id, student_id, subject, topic, source, mode';
-const toOpen = (r: any): OpenAssignment => ({ id: r.id, studentId: r.student_id, subject: r.subject, topic: r.topic, source: r.source, mode: r.mode });
+const OPEN_COLS = 'id, student_id, subject, topic, source, mode, trigger_score';
+const toOpen = (r: any): OpenAssignment => ({ id: r.id, studentId: r.student_id, subject: r.subject, topic: r.topic, source: r.source, mode: r.mode, score: r.trigger_score === null ? null : Number(r.trigger_score) });
 
 /** Subject teachers of each student for each subject, from the subject links (student -> class subject -> teacher). */
 async function subjectTeachers(db: Db, studentIds: string[]): Promise<Map<string, string[]>> {
@@ -42,7 +43,7 @@ async function subjectTeachers(db: Db, studentIds: string[]): Promise<Map<string
  * Assigns Critical Gap sessions and clears recovered ones for these TML snapshots, and
  * returns the feed items for the subject teachers (the caller raises them).
  */
-export async function syncCriticalGaps(db: Db, schoolId: string, rows: TmlRow[], students: StudentRow[]): Promise<Draft[]> {
+export async function syncCriticalGaps(db: Db, schoolId: string, rows: TmlRow[], _students: StudentRow[]): Promise<Draft[]> {
   const latest = latestScores(rows);
   const ids = [...new Set(latest.map(l => l.studentId))];
   if (!ids.length) return [];
@@ -57,44 +58,74 @@ export async function syncCriticalGaps(db: Db, schoolId: string, rows: TmlRow[],
     recent.data.map(r => ({ studentId: r.student_id, subject: r.subject, topic: r.topic, closedAt: r.closed_at })));
 
   const now = new Date().toISOString();
+  const touched = new Set<string>(); // student|subject whose class digest needs refreshing
+  const openById = new Map(open.data.map(r => [r.id, r]));
   for (const c of plan.clear) {
     await db.from('tutor_assignments').update({ status: 'cleared', closed_at: now, close_reason: `Chapter back at ${Math.round(c.score)}%` })
       .eq('id', c.id).eq('status', 'open');
+    const r = openById.get(c.id); if (r) touched.add(`${r.student_id}|${r.subject}`);
   }
-  if (!plan.create.length) return [];
+  if (plan.queue.length) {
+    // Over the cap (e.g. assigned before it existed): the higher-scoring ones wait and come back as slots free.
+    await db.from('tutor_assignments').update({ status: 'cancelled', closed_at: now, close_reason: `Queued: at most ${GAP_CAP} Critical Gap sessions open at once` })
+      .in('id', plan.queue).eq('status', 'open');
+    for (const id of plan.queue) { const r = openById.get(id); if (r) touched.add(`${r.student_id}|${r.subject}`); }
+  }
   // One insert per row: the one-open-per-chapter index is on lower(...), so a racing duplicate errors (23505)
   // rather than conflicting cleanly, and it must not take the other rows down with it.
-  const made: any[] = [];
   for (const c of plan.create) {
-    const { data, error } = await db.from('tutor_assignments').insert({
+    const { error } = await db.from('tutor_assignments').insert({
       school_id: schoolId, student_id: c.studentId, subject: c.subject.trim(), topic: c.topic.trim(), mode: 'standard',
       source: 'critical_gap', trigger_score: Math.round(c.score * 100) / 100,
-    }).select('id, student_id, subject, topic, trigger_score').single();
-    if (data) made.push(data);
-    else if (error && error.code !== '23505') throw new Error(`tutor_assignments: ${error.message}`);
+    });
+    if (!error) touched.add(`${c.studentId}|${c.subject.trim()}`);
+    else if (error.code !== '23505') throw new Error(`tutor_assignments: ${error.message}`);
   }
-  return draftsFor(db, made, students);
+  if (!touched.size) return [];
+  return digestDrafts(db, schoolId, touched);
 }
 
-async function draftsFor(db: Db, made: any[], students: StudentRow[]): Promise<Draft[]> {
-  if (!made.length) return [];
-  const who = new Map(students.map(s => [s.id, s]));
-  const teachers = await subjectTeachers(db, [...new Set(made.map(m => m.student_id))]);
+/**
+ * One feed item per class and subject per day for the subject teacher(s): who has a
+ * Critical Gap tutor session open, and on which chapters (Moses, 2026-11-06: a digest,
+ * not one item per gap). Rebuilt from every open one in the class, so a later sync the
+ * same day updates the item instead of adding another.
+ */
+async function digestDrafts(db: Db, schoolId: string, touched: Set<string>): Promise<Draft[]> {
+  const roster = await pageAll<StudentRow>((a, b) => db.from('users').select('id, name, student_class')
+    .eq('school_id', schoolId).eq('role', 'student').order('id').range(a, b));
+  if (roster.error) throw new Error(roster.error.message);
+  const byId = new Map(roster.data.map(s => [s.id, s]));
+  const groups = new Map<string, { cls: string; subject: string }>();
+  for (const t of touched) {
+    const [sid, subject] = t.split('|');
+    const cls = byId.get(sid)?.student_class;
+    if (cls) groups.set(`${normClass(cls)}|${subject.trim().toLowerCase()}`, { cls, subject: subject.trim() });
+  }
   const drafts: Draft[] = [];
-  for (const m of made) {
-    const s = who.get(m.student_id);
-    const score = Math.round(Number(m.trigger_score));
+  const day = istDay(new Date());
+  for (const [gk, g] of groups) {
+    const inClass = roster.data.filter(s => normClass(s.student_class) === normClass(g.cls));
+    const { data: rows } = await byIds<any>(inClass.map(s => s.id), (chunk, a, b) => db.from('tutor_assignments').select('student_id, topic, trigger_score')
+      .eq('status', 'open').eq('source', 'critical_gap').ilike('subject', lit(g.subject)).in('student_id', chunk).order('id').range(a, b));
+    if (!rows.length) continue;
+    const per = new Map<string, string[]>();
+    for (const r of [...rows].sort((a, b) => Number(a.trigger_score) - Number(b.trigger_score))) {
+      per.set(r.student_id, [...(per.get(r.student_id) ?? []), `${r.topic} ${Math.round(Number(r.trigger_score))}%`]);
+    }
+    const list = [...per.entries()].map(([sid, ch]) => `${byId.get(sid)?.name || 'A student'} (${ch.join(', ')})`).join('; ');
+    const n = per.size;
+    const teachers = await subjectTeachers(db, [...per.keys()]);
+    const tIds = [...new Set([...per.keys()].flatMap(sid => teachers.get(`${sid}|${g.subject.toLowerCase()}`) ?? []))];
     const base: Omit<Draft, 'dedupeKey' | 'teacherId'> = {
       kind: 'tutor_critical_gap', category: 'academic', severity: 'normal',
-      title: `${s?.name || 'A student'} is in a Critical Gap on ${m.topic}`,
-      message: `${m.subject}: ${score}% (Critical Gap, 35-49%). A Socratic tutor session was assigned automatically; you'll see it close when they finish it.`,
-      studentId: m.student_id, studentName: s?.name ?? null, className: s?.student_class ?? null, subject: m.subject,
-      sourceTable: 'tutor_assignments', sourceId: m.id, metadata: { score, topic: m.topic },
+      title: `${n} student${n === 1 ? '' : 's'} in ${displayClass(g.cls)} ${g.subject} ${n === 1 ? 'has' : 'have'} Critical Gap tutor sessions`,
+      message: `Assigned automatically (chapters at 35-49%, at most ${GAP_CAP} per student, lowest first): ${list}. Each closes when the student finishes the session or the chapter recovers.`,
+      className: g.cls, subject: g.subject, sourceTable: 'tutor_assignments', metadata: { students: n, open: rows.length },
     };
-    const ts = teachers.get(`${m.student_id}|${String(m.subject).trim().toLowerCase()}`) ?? [];
-    // Addressed to the subject teacher(s); with no subject link, every teacher of the class sees it.
-    if (ts.length) for (const t of ts) drafts.push({ ...base, teacherId: t, dedupeKey: `tutor_gap:${m.id}:${t}` });
-    else drafts.push({ ...base, teacherId: null, dedupeKey: `tutor_gap:${m.id}` });
+    const key = `tutor_gap_digest:${gk}:${day}`;
+    if (tIds.length) for (const t of tIds) drafts.push({ ...base, teacherId: t, dedupeKey: `${key}:${t}` });
+    else drafts.push({ ...base, teacherId: null, dedupeKey: key });
   }
   return drafts;
 }

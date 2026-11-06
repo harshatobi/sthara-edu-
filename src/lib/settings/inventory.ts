@@ -115,15 +115,6 @@ export function buildInventory(x: InventoryInputs): InventoryItem[] {
       : aiOn ? 'Missing while AI features are on: Aadhara schools and Copilot illustrations fail, and there is no backup when Claude fails. Set GEMINI_API_KEY.' : 'Missing. AI is paused, so nothing is failing yet.',
     enforcedAt: ['src/lib/ai/generate.ts', '/api/teacher/copilot/image'],
   });
-  add({
-    id: 'env.tutor_secret', group: G1, label: 'Tutor session signing secret', source: 'environment',
-    value: SET(x.secrets.TUTOR_SESSION_SECRET),
-    status: x.secrets.TUTOR_SESSION_SECRET ? 'ok' : 'warn',
-    detail: x.secrets.TUTOR_SESSION_SECRET
-      ? 'Signs the hint state of AI tutor sessions (TUTOR_SESSION_SECRET).'
-      : 'Not set: tutor sessions are signed with the Supabase service key instead. Works, but rotating that key ends every running session and one secret does two jobs. Set TUTOR_SESSION_SECRET.',
-    enforcedAt: ['src/lib/tutor/sessionToken.ts'],
-  });
   const sentry = x.secrets.SENTRY_DSN || x.secrets.NEXT_PUBLIC_SENTRY_DSN;
   add({
     id: 'env.sentry', group: G1, label: 'Error reporting (Sentry)', source: 'environment',

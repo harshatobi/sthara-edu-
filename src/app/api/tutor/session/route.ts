@@ -1,96 +1,58 @@
-import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { AI_MODELS, limitOf } from '@/lib/settings/limits';
-import { computeStudentTml, getTutorDepthScore } from '@/lib/tml/engine';
+import { limitOf } from '@/lib/settings/limits';
+import { computeStudentTml } from '@/lib/tml/engine';
 import { containsFoulLanguage, safetySignals } from '@/lib/tutor/safety';
 import {
-  NO_SUBJECTS, QUOTA_REPLY, REFUSAL, isQuotaError, parseModelJson, SAFETY_REPLY, TEACHABLE, WELLBEING_REPLY, isEnrolled, matchPicked, needsTurnCheck, redirectTo, suggestions,
+  NO_SUBJECTS, REFUSAL, SAFETY_REPLY, TEACHABLE, WELLBEING_REPLY, isEnrolled, matchPicked, needsTurnCheck, redirectTo, suggestions,
 } from '@/lib/tutor/grounding';
-import { classifyTopic, classifyTurn, loadContext, onOffTopic, onProfanity, onSafety } from '@/lib/tutor/groundingServer';
+import { classifyTopic, classifyTurn, loadContext, onOffTopic, onProfanity, onSafety, type Student } from '@/lib/tutor/groundingServer';
 import { flattenChapters, getCurriculum } from '@/lib/curriculum';
 import { examsForChapter } from '@/lib/curriculum/exams';
-import { getSchoolPolicy } from '@/lib/settings/server';
-import { signSession, verifySession, type TutorSessionState } from '@/lib/tutor/sessionToken';
-import { aiGate } from '@/lib/settings/server';
-import { generateAi, aiConfigured } from '@/lib/ai/generate';
+import { getSchoolPolicy, aiGate } from '@/lib/settings/server';
+import { studentAllowance } from '@/lib/ai/allowanceServer';
+import { PAUSED_REPLY } from '@/lib/ai/allowance';
+import { actionPrompt, startPrompt, type Lesson } from '@/lib/tutor/prompts';
+import { advance, clampSteps, computeRubric, initialState, legacyTotals, type Action, type Event, type Stage, type Summary } from '@/lib/tutor/socratic';
+import {
+  SESSION_COLS, chapterKey, judge, loadBank, loadMessages, seedBankLater, summarise, talk, transcriptOf, view,
+  type Ground, type Meta, type Msg, type MsgKind, type RowState, type SessionRow,
+} from '@/lib/tutor/socraticServer';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/tutor/session — one structured Socratic session on a micro-topic
- * (the mockup's AI Tutor view): question → hint → answer, never the answer first.
+ * POST /api/tutor/session — the Socratic tutor (decisions of 2026-11-06).
  *
- * Grounded: a topic must sit in the student's own syllabus (their subjects, an
- * earlier-class chapter of one, or their exam track). Picked chapters are matched
- * directly; typed topics go through the grounding classifier. Off-topic is refused,
- * profanity warned, and a safety cue is never answered by the AI (see lib/tutor).
+ * A session lives on the server from its first question (tutor_sessions,
+ * status 'open'), so it can be resumed and read back. It runs in stages:
+ * diagnose -> scaffold (skipped on a strong diagnosis) -> unaided transfer ->
+ * teach-back; see lib/tutor/socratic.ts. Haiku words every turn; Sonnet marks
+ * the stages that set the score, Haiku the scaffold steps. On completion D is
+ * the rubric (30% independence, 30% reasoning, 30% transfer, 10% teach-back)
+ * and TML is recomputed for the subject.
+ *
+ * Grounded as before: a topic must sit in the student's own syllabus; off-topic
+ * is refused, profanity warned, and a safety cue is never answered by the AI.
+ *
+ * Cost cap: past 70% of the student's yearly AI allowance every call runs on
+ * Haiku; at 100% no new session starts (an open one can still be finished).
  *
  * Body: { action: 'start', subject, topic }
- *     | { action: 'answer', token, answer, history? }
- *     | { action: 'reveal', token, history? }
- *
- * Scoring state (step, hints, revealed, the question being answered) lives in
- * a server-signed token; on completion one tutor_sessions row is written and
- * TML is recomputed for the subject, so the D ("tutor depth") component moves.
+ *     | { action: 'answer', id, seq, answer?, photo? }   photo: base64 JPEG of working
+ *     | { action: 'stuck', id, seq }
+ *     | { action: 'finish', id, seq }
  */
 
-const STEPS = 3;
-const MODEL = AI_MODELS.standard;
-
-interface Turn { who: 'ai' | 'me'; text: string }
-
+const MAX_PHOTO_CHARS = 2_000_000; // ~1.5 MB of JPEG
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
-function cleanHistory(v: unknown): Turn[] {
-  if (!Array.isArray(v)) return [];
-  return v.slice(-16).flatMap((t: any) =>
-    (t?.who === 'ai' || t?.who === 'me') && typeof t.text === 'string' ? [{ who: t.who, text: t.text.slice(0, 1500) }] : []);
-}
-
-const SYSTEM = (cls: string) => `You are Sthara's Socratic AI tutor for an Indian CBSE school student${cls ? ` in class ${cls}` : ''}.
-Rules you never break:
-- Teach by questioning. Ask exactly ONE short question at a time, building towards solving one concrete, grade-appropriate problem on the topic.
-- Never state the answer to your current question unless explicitly told the student asked for it to be revealed.
-- A hint narrows the student's thinking (point at the relevant fact, rule or first step) without giving the result.
-- Be warm and brief (2–4 sentences). Plain text only: no markdown, no LaTeX; use Unicode like x², √, π, θ.
-- School environment, ages 10–18: strictly academic, age-appropriate language.
-Always reply with a single JSON object and nothing else.`;
-
-async function ask(prompt: string, cls: string, userId: string, schoolId: string | null): Promise<Record<string, unknown>> {
-  if (!aiConfigured()) throw Object.assign(new Error('The AI tutor is offline right now.'), { status: 503 });
-  let res;
-  try {
-    res = await generateAi({
-      model: MODEL,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: { systemInstruction: SYSTEM(cls), responseMimeType: 'application/json', temperature: 0.4 },
-    }, { feature: 'tutorSession', userId, schoolId });
-  } catch (e) {
-    if (isQuotaError(e)) throw Object.assign(new Error(QUOTA_REPLY), { status: 503 });
-    throw e;
-  }
-  const parsed = parseModelJson(res.text ?? '{}');
-  const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';
-  if (!text) throw new Error('Empty tutor response');
-  if (containsFoulLanguage(text)) throw new Error('Tutor output failed the safety filter');
-  return { ...parsed, text };
-}
-
-/**
- * Official scope for the chosen chapter (CBSE curriculum for the student's
- * class), so the tutor teaches what the syllabus prescribes and respects its
- * restrictions (e.g. "derivation not required"). Empty when the topic isn't a
- * curriculum chapter.
- */
 function syllabusScope(cls: string, subject: string, topic: string, exams: string[] = []): string {
   const sub = getCurriculum(cls, subject);
   const ch = sub && flattenChapters(sub).find(c => c.name.toLowerCase() === topic.toLowerCase());
   if (!sub || !ch) return '';
-  // Exam track: the student is preparing for these exams, so the tutor may go
-  // to exam depth on this chapter, including the listed beyond-board content.
   const hits = exams.length ? examsForChapter(sub.class, sub.subject, ch.name, exams) : [];
   const examBlock = hits.length
     ? `\n- The student is preparing for ${[...new Set(hits.map(h => h.exam.exam))].join(', ')}. Related exam units: ${hits.map(h => `${h.exam.exam} "${h.unit.name}"${h.unit.beyondBoard?.length ? ` (beyond the board: ${h.unit.beyondBoard.join('; ')})` : ''}`).join(' | ')}.
@@ -101,26 +63,24 @@ You may pitch questions at that exam's level and cover the beyond-board content,
 ${ch.notes?.length ? `- Restrictions: ${ch.notes.join('; ')}\n` : ''}${hits.length ? examBlock : 'Stay within this content and its restrictions; do not use methods or topics beyond it.'}`;
 }
 
-const transcript = (h: Turn[]) => h.map(t => `${t.who === 'ai' ? 'Tutor' : 'Student'}: ${t.text}`).join('\n');
-
-type Ground = NonNullable<TutorSessionState['ground']>;
-const chapterKey = (c: string) => c.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-
-/** What the tutor is teaching, in words the prompt can use. */
-function lessonLine(state: TutorSessionState): string {
-  const g = state.ground;
-  if (g?.kind === 'study_skills') return `Study skills coaching: ${state.topic}. Keep it practical and about how to study.`;
-  const where = g?.level ? `Class ${g.level} ${state.subject}` : state.subject;
-  return `Subject: ${where}. Chapter: ${state.topic}.${g?.microTopic ? ` Micro-topic: ${g.microTopic}.` : ''}${g?.kind === 'prerequisite' ? ' This is an earlier-class concept the student needs for their current syllabus: build it up from the basics.' : ''}${g?.angle ? ` Approach it the way the syllabus does: ${g.angle}.` : ''}`;
+function lessonOf(subject: string, topic: string, g: Ground, cls: string, exams: string[], mode: 'standard' | 'hots'): Lesson {
+  const studySkills = g.kind === 'study_skills';
+  const level = g.level ?? cls;
+  const where = g.level ? `Class ${g.level} ${subject}` : subject;
+  const line = studySkills
+    ? `Study skills coaching: ${topic}. Keep it practical and about how to study.`
+    : `Subject: ${where}. Chapter: ${topic}.${g.microTopic ? ` Micro-topic: ${g.microTopic}.` : ''}${g.kind === 'prerequisite' ? ' This is an earlier-class concept the student needs for their current syllabus: build it up from the basics.' : ''}${g.angle ? ` Approach it the way the syllabus does: ${g.angle}.` : ''}`;
+  return { cls: level, line, scope: studySkills ? '' : syllabusScope(level, subject, topic, exams), mode, studySkills };
 }
+
+const fail = (error: string, status: number, extra: Record<string, unknown> = {}) => NextResponse.json({ error, ...extra }, { status });
 
 export async function POST(req: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(req.headers.get('authorization'));
-  if (!user || authErr) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user || authErr) return fail('Unauthorized', 401);
   if (user.role && user.role !== 'student') {
-    return NextResponse.json({ error: 'Tutor sessions are recorded against a student’s mastery, so only students can run them.' }, { status: 403 });
+    return fail('Tutor sessions are recorded against a student’s mastery, so only students can run them.', 403);
   }
-
   const rl = checkRateLimit(`tutor-session:${user.id}`, ...limitOf('tutorSession'));
   if (!rl.allowed) {
     return NextResponse.json({ error: 'Slow down a little — try again in a moment.' },
@@ -130,201 +90,235 @@ export async function POST(req: NextRequest) {
   if (aiBlocked) return aiBlocked;
 
   let body: any;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-  const action = body?.action;
-  const history = cleanHistory(body?.history);
-  const supabase = createAdminClient();
+  try { body = await req.json(); } catch { return fail('Invalid JSON', 400); }
+  const db = createAdminClient();
+  const allowance = await studentAllowance(db, user.id);
+  const economy = allowance?.level === 'economy' || allowance?.level === 'paused';
 
   try {
-    // ── start: ground the topic in the student's own syllabus first ─────────
-    if (action === 'start') {
-      const asked = str(body.subject, 80);
-      const topic = str(body.topic, 120);
-      if (!topic) return NextResponse.json({ error: 'Pick a topic to start a session.' }, { status: 400 });
-      const ctx = await loadContext(supabase, user.id);
-      const exams = ctx.scope.exams;
-
-      // Deterministic checks, before any model sees the text.
-      if (safetySignals(topic)) {
-        await onSafety(supabase, ctx.me, topic, null);
-        return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY });
-      }
-      if (containsFoulLanguage(topic)) {
-        const picked = asked ? ctx.scope.subjects.find(s => s.name.toLowerCase() === asked.toLowerCase()) : undefined;
-        await onProfanity(supabase, ctx.me, { key: picked?.key ?? null, name: picked?.name ?? (asked || null) });
-        return NextResponse.json({ verdict: 'warning', text: 'Please keep the topic about your school work.' });
-      }
-      if (!ctx.scope.subjects.length) return NextResponse.json({ verdict: 'refused', text: NO_SUBJECTS, suggestions: [] });
-      if (asked && asked !== 'General' && !isEnrolled(ctx.scope, asked)) {
-        return NextResponse.json({ verdict: 'refused', text: `${asked} isn't one of your subjects, so the tutor can't take it.`, suggestions: suggestions(ctx.scope, ctx.weak) });
-      }
-
-      // A chapter or micro-topic picked from the list needs no classifier; anything typed does.
-      const chosen = asked ? ctx.scope.subjects.find(s => s.name.toLowerCase() === asked.toLowerCase()) : undefined;
-      const g = (asked && matchPicked(ctx.scope, asked, topic)) || await classifyTopic(ctx, topic, chosen?.key);
-      if (g.kind === 'safety') {
-        await onSafety(supabase, ctx.me, topic, g.subjectKey);
-        return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY });
-      }
-      if (g.kind === 'wellbeing') return NextResponse.json({ verdict: 'wellbeing', text: WELLBEING_REPLY, href: '/student/wellness' });
-      if (!TEACHABLE.includes(g.kind)) {
-        if (g.kind === 'off_topic') await onOffTopic(supabase, ctx.me, null);
-        return NextResponse.json({ verdict: 'refused', text: g.kind === 'greeting' ? 'Hi! Pick a chapter or type a topic from your syllabus to start.' : REFUSAL, suggestions: suggestions(ctx.scope, ctx.weak) });
-      }
-
-      const studySkills = g.kind === 'study_skills';
-      const state: TutorSessionState = {
-        uid: user.id,
-        subject: studySkills ? 'Study skills' : g.subjectName!,
-        topic: studySkills ? (g.angle || topic) : g.chapter!,
-        step: 1, hints: 0, revealed: false, done: false, sid: '', seq: 0, iat: Date.now(),
-        ground: { kind: g.kind as Ground['kind'], subjectKey: g.subjectKey, level: g.level, microTopic: g.microTopic, angle: g.angle },
-      };
-      const grounded = { subject: state.subject, chapter: state.topic, microTopic: g.microTopic, level: g.level, kind: g.kind, angle: g.angle };
-      let out: Record<string, unknown>;
-      try {
-        out = await ask(
-        `Start a ${STEPS}-step Socratic session. ${lessonLine(state)}
-Briefly set up one concrete problem on this, then ask step 1 of ${STEPS}: the first guiding question.${studySkills ? '' : syllabusScope(g.level ?? ctx.me.cls, state.subject, state.topic, exams)}
-Reply as {"text": "<setup + question 1>"}`, g.level ?? ctx.me.cls, user.id, ctx.me.schoolId);
-      } catch (e) {
-        // The topic was recognised; say so, so the student can come back to it.
-        if ((e as { status?: number }).status === 503) return NextResponse.json({ error: (e as Error).message, grounded }, { status: 503 });
-        throw e;
-      }
-      // The server-side record that makes each token work once (see the claim below).
-      state.sid = randomUUID();
-      // Sessions left open past the token lifetime are dead; clear them as new ones start.
-      await supabase.from('tutor_session_turns').delete().eq('student_id', user.id).lt('created_at', new Date(Date.now() - 3 * 3600_000).toISOString());
-      const { error: turnErr } = await supabase.from('tutor_session_turns').insert({ sid: state.sid, student_id: user.id, seq: 0 });
-      if (turnErr) throw new Error(`tutor_session_turns: ${turnErr.message}`);
-      return NextResponse.json({
-        verdict: 'question', text: out.text, step: 1, steps: STEPS, hints: 0,
-        grounded,
-        token: signSession({ ...state, question: out.text as string }),
-      });
+    if (body?.action === 'start') {
+      if (allowance?.level === 'paused') return NextResponse.json({ verdict: 'paused', text: PAUSED_REPLY });
+      return await start(db, user.id, body, economy);
     }
+    if (['answer', 'stuck', 'finish'].includes(body?.action)) return await turn(db, user.id, body, economy);
+    return fail('Unknown action', 400);
+  } catch (e: any) {
+    console.error('[tutor/session]', e?.message || e);
+    return fail(e?.status === 503 ? e.message : 'The tutor had trouble answering. Try again.', e?.status || 500);
+  }
+}
 
-    // ── answer / reveal: both continue a signed session ─────────────────────
-    const state = verifySession(body?.token, user.id);
-    if (!state) return NextResponse.json({ error: 'This session expired. Start a new one.' }, { status: 409 });
-    if (state.done) return NextResponse.json({ error: 'This session is already finished.' }, { status: 409 });
-    const question = state.question || '';
-    const { data: meRow } = await supabase.from('users').select('name, school_id, student_class, metadata').eq('id', user.id).maybeSingle();
-    const me = { id: user.id, name: meRow?.name || 'Student', schoolId: meRow?.school_id ?? null, cls: meRow?.student_class || '' };
-    const level = state.ground?.level ?? me.cls;
-    const policy = me.schoolId ? await getSchoolPolicy(me.schoolId, supabase) : null;
-    const picked: unknown = (meRow?.metadata as Record<string, unknown> | null)?.targetExams;
-    const exams = Array.isArray(picked) ? picked.filter((x): x is string => typeof x === 'string' && !!policy?.examTracks.includes(x)) : [];
-    const scope = state.ground?.kind === 'study_skills' ? '' : syllabusScope(level, state.subject, state.topic, exams);
-    const same = { step: state.step, steps: STEPS, hints: state.hints, token: body.token };
+// ── start: ground the topic, open the session, ask the diagnostic ───────────
+async function start(db: ReturnType<typeof createAdminClient>, uid: string, body: any, economy: boolean) {
+  const asked = str(body.subject, 80);
+  const topic = str(body.topic, 120);
+  if (!topic) return fail('Pick a topic to start a session.', 400);
+  const ctx = await loadContext(db, uid);
+  const exams = ctx.scope.exams;
 
-    let verdict: 'question' | 'hint' | 'complete' | 'revealed';
-    let text: string;
-    let next: TutorSessionState = { ...state };
+  if (safetySignals(topic)) {
+    await onSafety(db, ctx.me, topic, null);
+    return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY });
+  }
+  if (containsFoulLanguage(topic)) {
+    const picked = asked ? ctx.scope.subjects.find(s => s.name.toLowerCase() === asked.toLowerCase()) : undefined;
+    await onProfanity(db, ctx.me, { key: picked?.key ?? null, name: picked?.name ?? (asked || null) });
+    return NextResponse.json({ verdict: 'warning', text: 'Please keep the topic about your school work.' });
+  }
+  if (!ctx.scope.subjects.length) return NextResponse.json({ verdict: 'refused', text: NO_SUBJECTS, suggestions: [] });
+  if (asked && asked !== 'General' && !isEnrolled(ctx.scope, asked)) {
+    return NextResponse.json({ verdict: 'refused', text: `${asked} isn't one of your subjects, so the tutor can't take it.`, suggestions: suggestions(ctx.scope, ctx.weak) });
+  }
+  const chosen = asked ? ctx.scope.subjects.find(s => s.name.toLowerCase() === asked.toLowerCase()) : undefined;
+  const g = (asked && matchPicked(ctx.scope, asked, topic)) || await classifyTopic(ctx, topic, chosen?.key);
+  if (g.kind === 'safety') {
+    await onSafety(db, ctx.me, topic, g.subjectKey);
+    return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY });
+  }
+  if (g.kind === 'wellbeing') return NextResponse.json({ verdict: 'wellbeing', text: WELLBEING_REPLY, href: '/student/wellness' });
+  if (!TEACHABLE.includes(g.kind)) {
+    if (g.kind === 'off_topic') await onOffTopic(db, ctx.me, null);
+    return NextResponse.json({ verdict: 'refused', text: g.kind === 'greeting' ? 'Hi! Pick a chapter or type a topic from your syllabus to start.' : REFUSAL, suggestions: suggestions(ctx.scope, ctx.weak) });
+  }
 
-    if (action === 'answer') {
-      const answer = str(body.answer, 1500);
-      if (!answer) return NextResponse.json({ error: 'Type an answer first.' }, { status: 400 });
-      if (safetySignals(answer)) {
-        await onSafety(supabase, me, answer, state.ground?.subjectKey ?? null);
+  const studySkills = g.kind === 'study_skills';
+  const subject = studySkills ? 'Study skills' : g.subjectName!;
+  const chapter = studySkills ? (g.angle || topic) : g.chapter!;
+  const ground: Ground = { kind: g.kind as Ground['kind'], subjectKey: g.subjectKey, level: g.level, microTopic: g.microTopic, angle: g.angle };
+  const level = g.level ?? ctx.me.cls;
+  const mode = 'standard' as const; // HOTS mode unlocks at Exemplary (next phase)
+  const lesson = lessonOf(subject, chapter, ground, ctx.me.cls, exams, mode);
+  const m: Meta = { userId: uid, schoolId: ctx.me.schoolId, economy };
+
+  const out = await talk(lesson, startPrompt(), m);
+  const problem = typeof out.problem === 'string' && out.problem.trim() ? out.problem.trim().slice(0, 2000) : out.text;
+  const state: RowState = { s: initialState(mode, problem, out.text), ground, exams };
+
+  const { data: row, error } = await db.from('tutor_sessions').insert({
+    student_id: uid, school_id: ctx.me.schoolId, subject, topic: chapter, level,
+    subject_key: ground.subjectKey, chapter_key: chapterKey(chapter), micro_topic: ground.microTopic, grounding: ground.kind,
+    status: 'open', stage: 'diagnose', mode, state, seq: 1, hint_depth: 0, answer_revealed: false,
+  }).select(SESSION_COLS).single();
+  if (error || !row) throw new Error(`tutor_sessions: ${error?.message}`);
+  const msg: Msg = { role: 'tutor', stage: 'diagnose', kind: 'question', text: out.text };
+  await writeMessages(db, row.id, uid, ctx.me.schoolId, 1, [msg]);
+
+  // Misconception bank: seeded once per chapter per school, in the background.
+  if (!studySkills && ctx.me.schoolId && ground.subjectKey) {
+    const sub = getCurriculum(level, subject);
+    const ch = sub ? flattenChapters(sub).find(c => c.name === chapter) : undefined;
+    const k = { schoolId: ctx.me.schoolId, level, subjectKey: ground.subjectKey, chapter };
+    if (!(await loadBank(db, k)).length) seedBankLater(db, k, { cls: level, subject, topics: ch?.topics ?? [] }, m);
+  }
+  return NextResponse.json({ verdict: 'session', session: view(row as SessionRow, [msg]), economy });
+}
+
+async function writeMessages(db: ReturnType<typeof createAdminClient>, sessionId: string, uid: string, schoolId: string | null, turnNo: number, msgs: Msg[]) {
+  if (!msgs.length) return;
+  const { error } = await db.from('tutor_session_messages').insert(msgs.map((x, pos) => ({
+    session_id: sessionId, student_id: uid, school_id: schoolId, turn: turnNo, pos, role: x.role, stage: x.stage, kind: x.kind, text: x.text.slice(0, 4000),
+  })));
+  if (error) console.error('[tutor/session] transcript write failed:', error.message);
+}
+
+const TUTOR_KIND: Record<Action['kind'], MsgKind> = {
+  hint: 'hint', to_scaffold: 'question', next_step: 'question', walkthrough: 'walkthrough', to_transfer: 'question', transfer_review: 'feedback', wrap_up: 'summary',
+};
+
+// ── answer / stuck / finish ─────────────────────────────────────────────────
+async function turn(db: ReturnType<typeof createAdminClient>, uid: string, body: any, economy: boolean) {
+  const id = str(body.id, 40);
+  const seq = Number(body.seq);
+  if (!id || !Number.isInteger(seq)) return fail('Missing session.', 400);
+  const { data: found } = await db.from('tutor_sessions').select(`${SESSION_COLS}, school_id, subject_key`).eq('id', id).eq('student_id', uid).maybeSingle();
+  if (!found) return fail('That session was not found.', 404);
+  const row = found as SessionRow & { school_id: string | null; subject_key: string | null };
+  if (row.status !== 'open' || !row.stage || row.stage === 'done') return fail('This session is already finished.', 409);
+  if (row.seq !== seq) return fail('This step was already answered. Reload the session to carry on.', 409, { reload: true });
+  const rs = row.state as RowState;
+  if (!rs?.s) return fail('This session can no longer be continued. Start a new one.', 409);
+
+  const { data: meRow } = await db.from('users').select('name, student_class').eq('id', uid).maybeSingle();
+  const me: Student = { id: uid, name: meRow?.name || 'Student', schoolId: row.school_id, cls: meRow?.student_class || '' };
+  const policy = me.schoolId ? await getSchoolPolicy(me.schoolId, db) : null;
+  const exams = rs.exams.filter(x => policy?.examTracks.includes(x));
+  const lesson = lessonOf(row.subject, row.topic, rs.ground, me.cls, exams, row.mode);
+  const m: Meta = { userId: uid, schoolId: me.schoolId, economy };
+  const stage = row.stage as Exclude<Stage, 'done'>;
+  const level = rs.ground.level ?? me.cls;
+  const same = { session: { id: row.id, seq: row.seq } };
+
+  const history = await loadMessages(db, row.id);
+  const transcript = transcriptOf(history);
+  const out: Msg[] = [];
+  let ev: Event;
+  let summary: Summary | null = null;
+  let answerText = '';
+  let note = '';
+  let labels: string[] = [];
+
+  if (body.action === 'answer') {
+    const typed = str(body.answer, 1500);
+    const photo = typeof body.photo === 'string' && body.photo.length ? body.photo.replace(/^data:image\/\w+;base64,/, '') : null;
+    if (photo && (photo.length > MAX_PHOTO_CHARS || !/^[A-Za-z0-9+/=]+$/.test(photo.slice(0, 200)))) return fail('That photo is too large. Try again with a closer, smaller photo.', 413);
+    if (!typed && !photo) return fail('Type an answer or add a photo of your working.', 400);
+
+    if (typed) {
+      if (safetySignals(typed)) {
+        await onSafety(db, me, typed, rs.ground.subjectKey);
         return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY, ...same });
       }
-      if (containsFoulLanguage(answer)) {
-        await onProfanity(supabase, me, { key: state.ground?.subjectKey ?? null, name: state.subject });
+      if (containsFoulLanguage(typed)) {
+        await onProfanity(db, me, { key: rs.ground.subjectKey, name: row.subject });
         return NextResponse.json({ verdict: 'warning', text: 'Let’s keep it respectful — try answering the question again.', ...same });
       }
-      // Messages that aren't plainly an attempt get checked for drifting off the topic.
-      if (state.ground) {
-        const sub = state.ground.kind === 'study_skills' ? null : getCurriculum(level, state.subject);
-        const words = sub ? (flattenChapters(sub).find(c => c.name === state.topic)?.topics ?? []).concat(state.topic) : [state.topic];
-        if (needsTurnCheck(answer, words)) {
-          const kind = await classifyTurn(me, { subject: state.subject, level, chapter: state.topic, microTopic: state.ground.microTopic, studySkills: state.ground.kind === 'study_skills' }, answer);
+      // Messages that aren't plainly an attempt get checked for drifting off the topic (not the teach-back: it is meant to be prose).
+      if (stage !== 'teachback' && !photo) {
+        const sub = rs.ground.kind === 'study_skills' ? null : getCurriculum(level, row.subject);
+        const words = sub ? (flattenChapters(sub).find(c => c.name === row.topic)?.topics ?? []).concat(row.topic) : [row.topic];
+        if (needsTurnCheck(typed, words)) {
+          const kind = await classifyTurn(me, { subject: row.subject, level, chapter: row.topic, microTopic: rs.ground.microTopic, studySkills: rs.ground.kind === 'study_skills' }, typed);
           if (kind === 'safety') {
-            await onSafety(supabase, me, answer, state.ground.subjectKey);
+            await onSafety(db, me, typed, rs.ground.subjectKey);
             return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY, ...same });
           }
           if (kind === 'wellbeing') return NextResponse.json({ verdict: 'wellbeing', text: WELLBEING_REPLY, href: '/student/wellness', ...same });
           if (kind === 'off_topic' || kind === 'greeting') {
-            if (kind === 'off_topic') await onOffTopic(supabase, me, state.ground.subjectKey);
-            return NextResponse.json({ verdict: 'redirect', text: redirectTo({ chapter: state.topic, microTopic: state.ground.microTopic }), ...same });
+            if (kind === 'off_topic') await onOffTopic(db, me, rs.ground.subjectKey);
+            return NextResponse.json({ verdict: 'redirect', text: redirectTo({ chapter: row.topic, microTopic: rs.ground.microTopic }), ...same });
           }
         }
       }
-      const last = state.step >= STEPS;
-      const out = await ask(
-        `${lessonLine(state)} This is step ${state.step} of ${STEPS}.${scope}
-Conversation so far:
-${transcript(history)}
-
-The question the student is answering now (authoritative): ${question}
-Student's answer: ${answer}
-
-Decide whether the answer is correct (minor wording or arithmetic-format differences are fine; a partially right or wrong answer is not correct).
-- If NOT correct: give one hint for this same question without revealing the result. Reply {"correct": false, "text": "<hint>"}
-- If correct${last ? ': this was the final step — confirm the full solution in one or two sentences and praise the reasoning. Reply {"correct": true, "text": "<wrap-up>"}'
-        : `: acknowledge briefly, then ask step ${state.step + 1} of ${STEPS}. Reply {"correct": true, "text": "<ack + next question>"}`}`, level, user.id, me.schoolId);
-
-      if (out.correct === true) {
-        if (last) { verdict = 'complete'; next = { ...state, done: true }; }
-        else { verdict = 'question'; next = { ...state, step: state.step + 1, question: out.text as string }; }
-      } else {
-        verdict = 'hint';
-        next = { ...state, hints: state.hints + 1 };
-      }
-      text = out.text as string;
-    } else if (action === 'reveal') {
-      const out = await ask(
-        `${lessonLine(state)}
-Conversation so far:
-${transcript(history)}
-
-The student asked for the answer to be revealed. Explain the answer to this question clearly and briefly, then state the final result of the problem: ${question}
-Reply {"text": "<explanation + answer>"}`, level, user.id, me.schoolId);
-      verdict = 'revealed';
-      text = out.text as string;
-      next = { ...state, revealed: true, done: true };
-    } else {
-      return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
 
-    // One use per token: claim this turn. A stale or replayed token (an older
-    // one from before a hint, or the final one again) finds seq already moved.
-    next = { ...next, seq: state.seq + 1 };
-    const { data: claimed } = await supabase.from('tutor_session_turns').update({ seq: next.seq, updated_at: new Date().toISOString() })
-      .eq('sid', state.sid).eq('student_id', user.id).eq('seq', state.seq).select('sid');
-    if (!claimed?.length) return NextResponse.json({ error: 'This step was already answered. Carry on from your latest turn, or start a new session.' }, { status: 409 });
-
-    // ── session over: record evidence + recompute TML ──────────────────────
-    // Study-skills coaching isn't a syllabus chapter, so it carries no mastery evidence.
-    let result: { depth: number; topicScore: number | null; band: string | null } | null = null;
-    if (next.done) {
-      const depth = getTutorDepthScore(next.hints, next.revealed);
-      let topicScore: number | null = null;
-      let band: string | null = null;
-      if (next.ground?.kind !== 'study_skills') {
-        const { error: insErr } = await supabase.from('tutor_sessions').insert({
-          student_id: user.id, school_id: me.schoolId, subject: next.subject, topic: next.topic,
-          hint_depth: next.hints, answer_revealed: next.revealed,
-          subject_key: next.ground?.subjectKey ?? null, chapter_key: chapterKey(next.topic),
-          micro_topic: next.ground?.microTopic ?? null, grounding: next.ground?.kind ?? null,
-        });
-        if (insErr) console.error('[tutor/session] insert failed:', insErr.message);
-        if (!insErr) {
-          try {
-            const tml = await computeStudentTml(supabase, user.id, next.subject);
-            const t = tml.topics.find((x: any) => x.topicName === next.topic);
-            topicScore = t?.finalTml ?? null;
-            band = t?.masteryBand?.band ?? null;
-          } catch (e: any) { console.error('[tutor/session] TML recompute failed:', e?.message); }
-        }
+    const bank = me.schoolId && rs.ground.subjectKey ? await loadBank(db, { schoolId: me.schoolId, level, subjectKey: rs.ground.subjectKey, chapter: row.topic }) : [];
+    const j = await judge(lesson, stage, { problem: rs.s.problem, question: rs.s.question, answer: typed, transcript, photo, bank }, m);
+    // What the photo said is checked like typed text before anything is stored.
+    if (photo && j.verdict.transcription && (safetySignals(j.verdict.transcription) || containsFoulLanguage(j.verdict.transcription))) {
+      if (safetySignals(j.verdict.transcription)) {
+        await onSafety(db, me, j.verdict.transcription, rs.ground.subjectKey);
+        return NextResponse.json({ verdict: 'safety', text: SAFETY_REPLY, ...same });
       }
-      result = { depth, topicScore, band };
+      return NextResponse.json({ verdict: 'warning', text: 'Let’s keep it respectful — try answering the question again.', ...same });
     }
-
-    return NextResponse.json({ verdict, text, step: next.step, steps: STEPS, hints: next.hints, token: signSession(next), result });
-  } catch (e: any) {
-    console.error('[tutor/session]', e?.message || e);
-    return NextResponse.json({ error: e?.status === 503 ? e.message : 'The tutor had trouble answering. Try again.' }, { status: e?.status || 500 });
+    answerText = photo ? [typed, j.verdict.transcription ? `[working] ${j.verdict.transcription}` : '[photo of working]'].filter(Boolean).join('\n') : typed;
+    out.push({ role: 'student', stage, kind: photo ? 'photo' : 'answer', text: answerText });
+    summary = j.summary;
+    ev = { type: 'answer', verdict: j.verdict };
+    labels = bank.filter(b => j.verdict.misconceptions.includes(b.id)).map(b => b.label);
+    note = j.verdict.note;
+  } else if (body.action === 'stuck') {
+    out.push({ role: 'student', stage, kind: 'stuck', text: stage === 'teachback' ? 'I’d like to skip the explanation.' : stage === 'transfer' ? 'Please show me the solution.' : 'I’m stuck — please show me.' });
+    ev = { type: 'stuck' };
+  } else {
+    out.push({ role: 'student', stage, kind: 'stuck', text: 'I’d like to end the session here.' });
+    ev = { type: 'finish' };
   }
+
+  const step = advance(stage, rs.s, ev);
+  let s = step.state;
+  const said = await talk(lesson, actionPrompt(step.action, { s, note, misconceptions: labels, answer: answerText || null }), m);
+  if (step.action.kind === 'to_scaffold') s = { ...s, scaffoldTotal: clampSteps(said.steps) };
+  if (step.stage !== 'done') s = { ...s, question: said.text };
+  out.push({ role: 'tutor', stage: step.stage === 'done' ? 'done' : step.stage, kind: TUTOR_KIND[step.action.kind], text: said.text });
+
+  const totals = legacyTotals(s);
+  const nextSeq = row.seq + 1;
+  const patch: Record<string, unknown> = { seq: nextSeq, stage: step.stage, state: { ...rs, s }, hint_depth: totals.hints, answer_revealed: totals.revealed };
+  let rubric = null as ReturnType<typeof computeRubric> | null;
+  if (step.stage === 'done') {
+    rubric = computeRubric(s);
+    summary ??= await summarise(lesson, transcriptOf([...history, ...out]), m);
+    Object.assign(patch, { status: 'done', depth_score: rubric.depth, rubric, summary, completed_at: new Date().toISOString() });
+  }
+
+  // Claim the turn: a double-submit or a stale tab finds seq already moved and writes nothing.
+  const { data: claimed, error: upErr } = await db.from('tutor_sessions').update(patch).eq('id', row.id).eq('seq', row.seq).select(SESSION_COLS);
+  if (upErr) throw new Error(`tutor_sessions: ${upErr.message}`);
+  if (!claimed?.length) return fail('This step was already answered. Reload the session to carry on.', 409, { reload: true });
+  await writeMessages(db, row.id, uid, me.schoolId, nextSeq, out);
+
+  let topicScore: number | null = null, band: string | null = null, tagged: string[] = [];
+  if (step.stage === 'done') {
+    const ids = Object.keys(s.misconceptions);
+    if (ids.length) {
+      const { error: mErr } = await db.from('tutor_session_misconceptions').insert(ids.map(mid => ({
+        session_id: row.id, misconception_id: mid, student_id: uid, school_id: me.schoolId, subject_key: rs.ground.subjectKey,
+        chapter_key: chapterKey(row.topic), stage: s.misconceptions[mid].stage, seen: s.misconceptions[mid].seen,
+      })));
+      if (mErr) console.error('[tutor/session] misconception tags failed:', mErr.message);
+      const { data: labelRows } = await db.from('tutor_misconceptions').select('label').in('id', ids);
+      tagged = (labelRows ?? []).map(r => r.label);
+    }
+    // Study-skills coaching isn't a syllabus chapter, so it moves no mastery score.
+    if (rs.ground.kind !== 'study_skills') {
+      try {
+        const tml = await computeStudentTml(db, uid, row.subject);
+        const t = tml.topics.find((x: any) => x.topicName === row.topic);
+        topicScore = t?.finalTml ?? null;
+        band = t?.masteryBand?.band ?? null;
+      } catch (e: any) { console.error('[tutor/session] TML recompute failed:', e?.message); }
+    }
+  }
+  return NextResponse.json({ verdict: 'session', session: view(claimed[0] as SessionRow, out, { topicScore, band, misconceptions: tagged }), economy });
 }

@@ -3,30 +3,28 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { ArrowCounterClockwiseIcon as ArrowCounterClockwise } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
+import { CameraIcon as Camera } from '@phosphor-icons/react/dist/ssr/Camera';
 import { CheckIcon as Check } from '@phosphor-icons/react/dist/ssr/Check';
-import { CircleIcon as Circle } from '@phosphor-icons/react/dist/ssr/Circle';
+import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
+import { FlagIcon as Flag } from '@phosphor-icons/react/dist/ssr/Flag';
 import { PaperPlaneRightIcon as PaperPlaneRight } from '@phosphor-icons/react/dist/ssr/PaperPlaneRight';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { TrendDownIcon as TrendDown } from '@phosphor-icons/react/dist/ssr/TrendDown';
 import { TrendUpIcon as TrendUp } from '@phosphor-icons/react/dist/ssr/TrendUp';
+import { XIcon as X } from '@phosphor-icons/react/dist/ssr/X';
 import InteractiveIcon from '@/components/ui/InteractiveIcon';
 import { subjectIcon } from '@/components/canon/subjectIcon';
 import { subjectColor } from '@/lib/student/shape';
-import { Chip, Donut, PageBar, Skeleton, hmColor, AiTag } from '@/components/canon/ui';
+import { Bar, Chip, Donut, PageBar, Skeleton, hmColor, AiTag } from '@/components/canon/ui';
 import DemoNote from '@/components/canon/DemoNote';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentDesk } from '@/lib/student/useStudentDesk';
 import { DEMO_TUTOR } from '@/lib/demo/student';
-import { getTutorDepthScore } from '@/lib/tml/engine';
+import { compressPhoto } from '@/lib/grading/compress';
 import { coreSubjectsForClass, flattenChapters, getCurriculum } from '@/lib/curriculum';
 
-type Line = { who: 'ai' | 'me' | 'done'; text: string; good?: boolean };
 interface Topic { subject: string; name: string; start: number | null }
-interface Result { depth: number; topicScore: number | null }
-
-const MAX_HINTS_SHOWN = 3;
-const depthLabel = (hints: number, revealed: boolean) =>
-  revealed ? 'answer revealed' : hints === 0 ? 'unaided' : hints === 1 ? 'one hint' : `${hints} hints`;
 
 export default function TutorPage() {
   return <Suspense fallback={<Skeleton h={600} style={{ borderRadius: 20 }} />}><Tutor /></Suspense>;
@@ -46,10 +44,22 @@ function Tutor() {
     return { subject, name: fromUrl, start: Number.isFinite(s) && params.get('score') !== null ? s : null };
   }, [fromUrl, params]);
 
+  const sessionId = params.get('session');
+  // A picked topic starts a fresh session (the nonce lets "Retry" start another on the same topic).
+  const [nonce, setNonce] = useState(0);
   const choose = (t: Topic) => {
     const p = new URLSearchParams({ topic: t.name, subject: t.subject });
     if (t.start !== null) p.set('score', String(t.start));
+    setNonce(n => n + 1);
     router.replace(`${pathname}?${p}`);
+  };
+  const openSession = (id: string) => { setNonce(n => n + 1); router.replace(`${pathname}?session=${encodeURIComponent(id)}`); };
+  // Once a new session exists its id joins the URL, so a reload resumes it instead of starting another.
+  // The session component keeps its key (the nonce), so this doesn't remount it.
+  const opened = (id: string) => {
+    const p = new URLSearchParams(params.toString());
+    p.set('session', id);
+    window.history.replaceState(null, '', `${pathname}?${p}`);
   };
   const reset = () => router.replace(pathname);
 
@@ -59,9 +69,9 @@ function Tutor() {
   return (
     <>
       {demo && <DemoNote />}
-      {topic
-        ? <Session key={`${topic.subject}:${topic.name}`} topic={topic} demo={demo} onNew={reset} onPick={choose} />
-        : <Picker desk={desk} onPick={choose} demo={demo} />}
+      {demo && topic ? <DemoSession topic={topic} onNew={reset} />
+        : sessionId || topic ? <LiveSession key={`live:${nonce}`} sessionId={sessionId} topic={topic} onNew={reset} onPick={choose} onOpened={opened} />
+        : <><Picker desk={desk} onPick={choose} demo={demo} /><History demo={demo} onOpen={openSession} onPick={choose} /></>}
     </>
   );
 }
@@ -162,11 +172,11 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
   return (
     <>
       <PageBar eyebrow="SOCRATIC AI TUTOR" title="Pick a micro-topic"
-        sub="We'll ask a question, then a hint, then the answer — never straight to the answer first." />
+        sub="Diagnose, guided steps if you need them, a problem on your own, then explain it back. Never straight to the answer." />
       <div className="g2">
         <div className="card">
           <h3 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>Where you&apos;ll gain the most</h3>
-          <p className="muted" style={{ marginBottom: 12 }}>Your lowest-scoring micro-topics right now. Getting there with fewer hints counts for more.</p>
+          <p className="muted" style={{ marginBottom: 12 }}>Your lowest-scoring micro-topics right now. Reasoning it through, solving one on your own and explaining it back all count.</p>
           {weakest.length === 0 ? <p className="muted">Nothing scored yet — pick a chapter on the right.</p> : weakest.map(t => (
             <button key={`${t.subject}:${t.name}`} className="row" onClick={() => onPick(t)}>
               <div className="av" style={{ background: `color-mix(in srgb, ${subjectColor(t.subject)} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(t.subject)} color={subjectColor(t.subject)} size={18} /></div>
@@ -245,144 +255,141 @@ function Picker({ desk, onPick, demo }: { desk: NonNullable<ReturnType<typeof us
 
 // ── One Socratic session ─────────────────────────────────────────────────────
 /** Why a session didn't start (or stopped): the grounding engine's verdict, for the student. */
-interface Stopped { kind: 'refused' | 'safety' | 'wellbeing' | 'warning'; text: string; suggestions?: { subject: string; chapter: string }[]; href?: string }
-interface Grounded { subject: string; chapter: string; microTopic: string | null; level: string | null; kind: string; angle: string | null }
+interface Stopped { kind: 'refused' | 'safety' | 'wellbeing' | 'warning' | 'paused'; text: string; suggestions?: { subject: string; chapter: string }[]; href?: string }
 
-function Session({ topic, demo, onNew, onPick }: { topic: Topic; demo: boolean; onNew: () => void; onPick: (t: Topic) => void }) {
+type StageKey = 'diagnose' | 'scaffold' | 'transfer' | 'teachback' | 'done';
+interface Msg { role: 'tutor' | 'student'; stage: StageKey; kind: string; text: string }
+interface Rubric { independence: number; reasoning: number; transfer: number; teachback: number; depth: number }
+interface SessionSummary { strengths: string[]; toFix: string[]; next: string }
+interface SessionView {
+  id: string; subject: string; topic: string; mode: 'standard' | 'hots'; status: 'open' | 'done'; stage: StageKey; seq: number;
+  grounded: { subject: string; chapter: string; microTopic: string | null; level: string | null; kind: string | null };
+  progress: { stage: Exclude<StageKey, 'done'>; status: 'done' | 'current' | 'todo' | 'skipped' }[] | null;
+  step: { n: number; total: number } | null; hintsOnStep: number; messages: Msg[];
+  result: { depth: number | null; rubric: Rubric | null; summary: SessionSummary | null; topicScore: number | null; band: string | null; misconceptions: string[] } | null;
+  purged: boolean;
+}
+
+const STAGE_LABEL: Record<Exclude<StageKey, 'done'>, string> = { diagnose: 'Diagnose', scaffold: 'Guided steps', transfer: 'On your own', teachback: 'Explain it back' };
+const STAGE_HELP: Record<Exclude<StageKey, 'done'>, string> = {
+  diagnose: 'Answer and say why. A strong answer skips the guided steps.',
+  scaffold: 'Work through it step by step. Two hints per step, then I’ll show you.',
+  transfer: 'A new problem on the same idea. No hints this time: show your reasoning.',
+  teachback: 'Explain the idea in your own words, as if to a classmate.',
+};
+const STUCK_LABEL: Record<Exclude<StageKey, 'done'>, string> = {
+  diagnose: 'I’m not sure — guide me', scaffold: 'I’m stuck — show me this step', transfer: 'Show me the solution', teachback: 'Skip the explanation',
+};
+const MAX_STEP_HINTS = 2;
+
+async function readPhoto(file: File): Promise<{ data: string; url: string }> {
+  const blob = await compressPhoto(file, 1600, 0.8);
+  const data = await new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).replace(/^data:image\/\w+;base64,/, ''));
+    r.onerror = () => rej(new Error('The photo couldn’t be read.'));
+    r.readAsDataURL(blob);
+  });
+  return { data, url: URL.createObjectURL(blob) };
+}
+
+function LiveSession({ topic, sessionId, onNew, onPick, onOpened }: {
+  topic: Topic | null; sessionId: string | null; onNew: () => void; onPick: (t: Topic) => void; onOpened: (id: string) => void;
+}) {
   const { getAuthToken } = useAuth();
-  const scripted = demo; // no live session to call the model with
-  const title = scripted ? DEMO_TUTOR.topic : topic.name;
-  const start = scripted ? (topic.name === DEMO_TUTOR.topic ? topic.start ?? DEMO_TUTOR.start : DEMO_TUTOR.start) : topic.start;
-
-  // The demo opens on its first scripted question; a live session asks the tutor for it (busy until it answers).
-  const [log, setLog] = useState<Line[]>(() => (scripted ? [{ who: 'ai', text: DEMO_TUTOR.steps[0].prompt }] : []));
-  const [token, setToken] = useState<string | null>(null);
-  const [step, setStep] = useState(1);
-  const [steps, setSteps] = useState(() => (scripted ? DEMO_TUTOR.steps.length : 3));
-  const [hints, setHints] = useState(0);
-  const [revealed, setRevealed] = useState(false);
-  const [done, setDone] = useState(false);
-  const [busy, setBusy] = useState(!scripted);
+  const tokenRef = useRef(getAuthToken);
+  useEffect(() => { tokenRef.current = getAuthToken; });
+  const [s, setS] = useState<SessionView | null>(null);
+  const [busy, setBusy] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [input, setInput] = useState('');
-  const [result, setResult] = useState<Result | null>(null);
   const [stopped, setStopped] = useState<Stopped | null>(null);
-  const [grounded, setGrounded] = useState<Grounded | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [safety, setSafety] = useState(false);
+  const [economy, setEconomy] = useState(false);
+  const [input, setInput] = useState('');
+  const [photo, setPhoto] = useState<{ data: string; url: string } | null>(null);
+  const [pending, setPending] = useState<Msg | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const started = useRef(false);
+  const start = topic?.start ?? null;
 
-  useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }); }, [log, busy]);
+  useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }); }, [s?.messages.length, busy, pending]);
+  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.url); }, [photo]);
 
-  const call = async (payload: Record<string, unknown>) => {
-    const auth = await getAuthToken();
-    const res = await fetch('/api/tutor/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
-      body: JSON.stringify(payload),
-    });
+  const authed = async (url: string, init?: RequestInit) => {
+    const res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await tokenRef.current()}`, ...(init?.headers || {}) } });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'The tutor had trouble answering. Try again.');
-    return data;
+    return { res, data };
   };
 
-  const finish = (h: number, rev: boolean, r: Result) => {
-    setDone(true); setResult(r);
-    const earned = !rev && h <= 1;
-    const moved = r.topicScore !== null && start !== null ? ` ${title.split(' — ')[0]} moved from ${start}% to ${Math.round(r.topicScore)}%.` : r.topicScore !== null ? ` ${title.split(' — ')[0]} is now ${Math.round(r.topicScore)}%.` : '';
-    setLog(l => [...l, {
-      who: 'done', good: earned,
-      text: earned
-        ? `You got there ${h === 0 ? 'without me giving the answer' : 'with just one nudge'} — that is worth more to your TML than a correct copy.${moved}`
-        : `Recorded — since you needed more help this time, it counts for less evidence, but it still moved the needle.${moved}`,
-    }]);
+  const load = async (id: string) => {
+    const { res, data } = await authed(`/api/tutor/sessions/${id}`);
+    if (!res.ok) throw new Error(data.error || 'Could not open that session.');
+    setS(data.session);
   };
 
-  // Open with the first question.
+  // Open an existing session, or start a new one on the picked topic.
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    if (scripted) return;
-    call({ action: 'start', subject: topic.subject, topic: topic.name })
-      .then(d => {
-        if (d.verdict !== 'question') { setStopped({ kind: d.verdict, text: d.text, suggestions: d.suggestions, href: d.href }); return; }
-        setLog([{ who: 'ai', text: d.text }]); setToken(d.token); setStep(d.step); setSteps(d.steps); setGrounded(d.grounded ?? null);
-      })
-      .catch(e => setErr(e.message))
-      .finally(() => setBusy(false));
+    (async () => {
+      try {
+        if (sessionId) { await load(sessionId); return; }
+        if (!topic) return;
+        const { res, data } = await authed('/api/tutor/session', { method: 'POST', body: JSON.stringify({ action: 'start', subject: topic.subject, topic: topic.name }) });
+        if (!res.ok) throw new Error(data.error || 'The tutor had trouble starting. Try again.');
+        if (data.verdict !== 'session') { setStopped({ kind: data.verdict, text: data.text, suggestions: data.suggestions, href: data.href }); return; }
+        setS(data.session); setEconomy(!!data.economy);
+        onOpened(data.session.id);
+      } catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong.'); }
+      finally { setBusy(false); }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const history = () => log.filter(l => l.who !== 'done').map(l => ({ who: l.who, text: l.text }));
-
-  const send = async () => {
+  const act = async (action: 'answer' | 'stuck' | 'finish') => {
+    if (!s || busy || s.status !== 'open') return;
     const text = input.trim();
-    if (!text || done || busy) return;
-    setInput(''); setErr(null);
-    setLog(l => [...l, { who: 'me', text }]);
-
-    if (scripted) {
-      const s = DEMO_TUTOR.steps[step - 1];
-      if (s.accept.test(text)) {
-        if (step < DEMO_TUTOR.steps.length) { setStep(step + 1); setLog(l => [...l, { who: 'ai', text: DEMO_TUTOR.steps[step].prompt }]); }
-        else { setLog(l => [...l, { who: 'ai', text: `${DEMO_TUTOR.answer} is right.` }]); finish(hints, false, { depth: getTutorDepthScore(hints, false), topicScore: null }); }
-      } else {
-        const h = hints + 1; setHints(h);
-        setLog(l => [...l, { who: 'ai', text: `Hint ${Math.min(h, MAX_HINTS_SHOWN)} of ${MAX_HINTS_SHOWN}. ${s.hint}` }]);
-      }
-      return;
-    }
-
-    setBusy(true);
+    if (action === 'answer' && !text && !photo) return;
+    setErr(null); setNotice(null); setBusy(true);
+    if (action === 'answer') setPending({ role: 'student', stage: s.stage, kind: photo ? 'photo' : 'answer', text: photo ? [text, 'Photo of working attached'].filter(Boolean).join('\n') : text });
     try {
-      const d = await call({ action: 'answer', token, answer: text, history: history() });
-      if (d.verdict === 'safety') {
-        // Not answered by the AI: the session stops and the helpline shows.
-        setLog(l => [...l, { who: 'ai', text: d.text }]); setSafety(true); setDone(true);
+      const { res, data } = await authed('/api/tutor/session', {
+        method: 'POST',
+        body: JSON.stringify({ action, id: s.id, seq: s.seq, ...(action === 'answer' ? { answer: text, photo: photo?.data } : {}) }),
+      });
+      if (!res.ok) {
+        if (data.reload) await load(s.id);
+        throw new Error(data.error || 'The tutor had trouble answering. Try again.');
+      }
+      if (data.verdict === 'safety') { setNotice(data.text); setSafety(true); return; }
+      if (data.verdict !== 'session') {
+        // Warning, off-topic redirect or wellbeing: the session stays where it was.
+        setNotice(data.verdict === 'wellbeing' ? `${data.text} (Open Wellness from the menu.)` : data.text);
         return;
       }
-      if (d.verdict === 'warning' || d.verdict === 'redirect' || d.verdict === 'wellbeing') {
-        setLog(l => [...l, { who: 'ai', text: d.verdict === 'wellbeing' ? `${d.text} (Open Wellness from the menu.)` : d.text }]);
-        return;
-      }
-      setToken(d.token); setStep(d.step); setHints(d.hints);
-      setLog(l => [...l, { who: 'ai', text: d.verdict === 'hint' ? `Hint ${Math.min(d.hints, MAX_HINTS_SHOWN)} of ${MAX_HINTS_SHOWN}. ${d.text}` : d.text }]);
-      if (d.verdict === 'complete') finish(d.hints, false, d.result);
-    } catch (e: any) {
-      setErr(e.message); setInput(text); setLog(l => l.slice(0, -1));
+      setEconomy(!!data.economy);
+      setS(prev => prev ? { ...data.session, messages: [...prev.messages, ...data.session.messages] } : data.session);
+      if (action === 'answer') { setInput(''); setPhoto(null); }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
-      setBusy(false); inputRef.current?.focus();
+      setPending(null); setBusy(false);
     }
   };
 
-  const reveal = async () => {
-    if (done || busy) return;
-    setErr(null); setRevealed(true);
-    setLog(l => [...l, { who: 'me', text: 'I’m stuck — just tell me.' }]);
-    if (scripted) {
-      const s = DEMO_TUTOR.steps[step - 1];
-      setLog(l => [...l, { who: 'ai', text: `No problem. ${s.hint} The answer is ${DEMO_TUTOR.answer}.` }]);
-      finish(hints, true, { depth: getTutorDepthScore(hints, true), topicScore: null });
-      return;
-    }
-    setBusy(true);
-    try {
-      const d = await call({ action: 'reveal', token, history: history() });
-      setToken(d.token);
-      setLog(l => [...l, { who: 'ai', text: d.text }]);
-      finish(d.hints, true, d.result);
-    } catch (e: any) {
-      setErr(e.message); setRevealed(false); setLog(l => l.slice(0, -1));
-    } finally {
-      setBusy(false);
-    }
+  const pickPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setErr(null);
+    try { setPhoto(await readPhoto(file)); } catch (e) { setErr(e instanceof Error ? e.message : 'The photo couldn’t be prepared.'); }
+    if (fileRef.current) fileRef.current.value = '';
   };
 
   if (stopped) {
     return (
       <>
-        <PageBar eyebrow="SOCRATIC AI TUTOR" title={stopped.kind === 'safety' ? 'You are not alone' : stopped.kind === 'wellbeing' ? 'Let\u2019s get you to the right place' : 'Let\u2019s pick something from your syllabus'}
+        <PageBar eyebrow="SOCRATIC AI TUTOR" title={stopped.kind === 'safety' ? 'You are not alone' : stopped.kind === 'wellbeing' ? 'Let’s get you to the right place' : stopped.kind === 'paused' ? 'Tutor sessions are paused' : 'Let’s pick something from your syllabus'}
           actions={<button className="btn" onClick={onNew}>Back to topics</button>} />
         <div className="card">
           <p style={{ fontSize: 15, lineHeight: 1.6 }}>{stopped.text}</p>
@@ -405,83 +412,269 @@ function Session({ topic, demo, onNew, onPick }: { topic: Topic; demo: boolean; 
     );
   }
 
-  const after = result?.topicScore ?? null;
-  const impact = done ? (after ?? result?.depth ?? 0) : start ?? 0;
-  const impactColor = done ? hmColor(impact) : '#CBD5E1';
+  if (!s) {
+    return (
+      <>
+        <PageBar eyebrow="SOCRATIC AI TUTOR" title={topic?.name ?? 'Your session'} actions={<button className="btn" onClick={onNew}>Back to topics</button>} />
+        {err ? <div className="note err" role="alert">{err}</div> : <Skeleton h={520} style={{ borderRadius: 20 }} />}
+      </>
+    );
+  }
+
+  const open = s.status === 'open';
+  const stage = s.stage === 'done' ? null : s.stage;
+  const r = s.result;
+  const teachback = stage === 'teachback';
 
   return (
     <>
-      <PageBar eyebrow="SOCRATIC AI TUTOR" title={title}
-        sub="We'll ask a question, then a hint, then the answer — never straight to the answer first."
+      <PageBar eyebrow={s.mode === 'hots' ? 'SOCRATIC AI TUTOR · HOTS' : 'SOCRATIC AI TUTOR'} title={s.topic}
+        sub={stage ? STAGE_HELP[stage] : 'Session complete.'}
         actions={<>
-          <Chip tone={done ? 'g' : 'p'}>{done ? 'ALL DONE' : `HINTS USED: ${Math.min(hints, MAX_HINTS_SHOWN)} OF ${MAX_HINTS_SHOWN}`}</Chip>
-          <button className="btn" onClick={onNew}>New session</button>
+          {stage === 'scaffold' && <Chip tone="p">HINTS ON THIS STEP: {s.hintsOnStep} OF {MAX_STEP_HINTS}</Chip>}
+          {!open && <Chip tone="g">ALL DONE</Chip>}
+          <button className="btn" onClick={onNew}>{open ? 'Save and leave' : 'Back to topics'}</button>
         </>}
       />
-      {scripted && topic.name !== DEMO_TUTOR.topic && (
-        <div className="note" style={{ marginBottom: 18 }}>
-          Routed here from <b>{topic.name}</b>. Without a live session the tutor runs its scripted Circles · Tangents example instead — sign in to get a real session on this topic.
-        </div>
+
+      {s.progress && (
+        <ol className="tstages" aria-label="Session stages">
+          {s.progress.map((p, i) => (
+            <li key={p.stage} className={`tstage ${p.status}`} aria-current={p.status === 'current' ? 'step' : undefined}>
+              <span className="n">{p.status === 'done' ? <Check size={12} weight="bold" /> : i + 1}</span>
+              <span>{STAGE_LABEL[p.stage]}{p.stage === 'scaffold' && s.step && p.status === 'current' ? ` · ${s.step.n} of ${s.step.total}` : ''}{p.status === 'skipped' ? ' · skipped' : ''}</span>
+            </li>
+          ))}
+        </ol>
       )}
 
+      {economy && open && <div className="note" style={{ marginBottom: 14 }}>You have used most of this year&apos;s AI allowance, so the tutor is running in a lighter mode for the rest of the year.</div>}
+
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 18 }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <b style={{ fontSize: 15 }}>Session · step {Math.min(step, steps)} of {steps}</b>
-          {!scripted && <span className="muted" style={{ fontSize: 12 }}>{grounded
-            ? <>{grounded.kind === 'prerequisite' ? `Basics from Class ${grounded.level} · ` : ''}{grounded.subject} › {grounded.chapter}{grounded.microTopic ? ` › ${grounded.microTopic}` : ''}</>
-            : topic.subject}</span>}
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <b style={{ fontSize: 15 }}>{stage ? STAGE_LABEL[stage] : 'Transcript'}</b>
+          <span className="muted" style={{ fontSize: 12 }}>
+            {s.grounded.kind === 'prerequisite' ? `Basics from Class ${s.grounded.level} · ` : ''}{s.grounded.subject} › {s.grounded.chapter}{s.grounded.microTopic ? ` › ${s.grounded.microTopic}` : ''}
+          </span>
         </div>
         <div className="tlog" ref={logRef} aria-live="polite">
-          {log.map((l, i) => l.who === 'me'
-            ? <div key={i} className="bub-me">{l.text}</div>
-            : l.who === 'done'
-              ? <div key={i} className={`bub-ai bub-done ${l.good ? 'good' : 'meh'}`}>
-                  <div className="av">{l.good ? <Check size={17} weight="bold" /> : <Circle size={13} weight="fill" />}</div>
-                  <div>{l.text}</div>
-                </div>
-              : <div key={i} className="bub-ai"><div className="av"><Sparkle size={17} weight="fill" /></div><div>{l.text}</div></div>)}
+          {s.purged && <div className="note">This session&apos;s conversation was cleared at the end of the academic session. Its score and summary are kept below.</div>}
+          {s.messages.map((m, i) => m.role === 'student'
+            ? <div key={i} className="bub-me">{m.kind === 'photo' && <Camera size={13} weight="bold" style={{ marginRight: 6, verticalAlign: '-2px' }} />}{m.text}</div>
+            : <div key={i} className={`bub-ai${m.kind === 'summary' ? ' bub-done good' : ''}`}><div className="av">{m.kind === 'summary' ? <Check size={17} weight="bold" /> : <Sparkle size={17} weight="fill" />}</div><div>{m.text}</div></div>)}
+          {pending && <div className="bub-me">{pending.text}</div>}
           {busy && <div className="bub-ai"><div className="av"><Sparkle size={17} weight="fill" /></div><div><span className="typing" aria-label="Tutor is thinking"><i /><i /><i /></span></div></div>}
         </div>
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {err && <div className="note err" role="alert">{err}</div>}
-          {safety && <SafetyNote />}
-          <form style={{ display: 'flex', gap: 10 }} onSubmit={e => { e.preventDefault(); void send(); }}>
-            <input ref={inputRef} className="tin" value={input} onChange={e => setInput(e.target.value)} maxLength={1500}
-              aria-label="Your answer" placeholder={done ? 'Session finished — start a new one to keep going' : 'Type your answer…'} disabled={done || (busy && !log.length)} />
-            <button className="btn ai" disabled={done || busy || !input.trim()}><PaperPlaneRight size={15} weight="fill" /> Send <AiTag /></button>
-          </form>
-          {!done && (
-            <button className="btn sm" style={{ alignSelf: 'flex-start' }} onClick={reveal} disabled={busy || !log.length}>
-              I&apos;m stuck — just tell me
-            </button>
-          )}
-        </div>
+        {open && (
+          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {err && <div className="note err" role="alert">{err}</div>}
+            {notice && <div className="note" role="status">{notice}</div>}
+            {safety && <SafetyNote />}
+            {photo && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo.url} alt="Your working" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line)' }} />
+                <span className="muted" style={{ fontSize: 12, flex: 1 }}>The tutor reads your working, then the photo is discarded. Only what it read is kept.</span>
+                <button type="button" className="btn sm" onClick={() => setPhoto(null)} aria-label="Remove photo"><X size={13} weight="bold" /> Remove</button>
+              </div>
+            )}
+            <form style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }} onSubmit={e => { e.preventDefault(); void act('answer'); }}>
+              <textarea className="tin" value={input} onChange={e => setInput(e.target.value)} maxLength={1500} rows={teachback ? 4 : 2}
+                aria-label="Your answer" style={{ flex: 1, resize: 'vertical', minHeight: 44 }}
+                placeholder={teachback ? 'Explain it in your own words…' : 'Your answer, and why…'}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !teachback) { e.preventDefault(); void act('answer'); } }}
+                disabled={busy} />
+              {!teachback && (
+                <>
+                  <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={e => void pickPhoto(e.target.files?.[0])} />
+                  <button type="button" className="btn" onClick={() => fileRef.current?.click()} disabled={busy} aria-label="Add a photo of your working" title="Add a photo of your working"><Camera size={16} weight="bold" /></button>
+                </>
+              )}
+              <button className="btn ai" disabled={busy || (!input.trim() && !photo)}><PaperPlaneRight size={15} weight="fill" /> Send <AiTag /></button>
+            </form>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {stage && <button className="btn sm" onClick={() => void act('stuck')} disabled={busy}>{STUCK_LABEL[stage]}</button>}
+              <button className="btn sm" onClick={() => void act('finish')} disabled={busy} title="Your score counts only what you have done so far"><Flag size={13} weight="bold" /> End session now</button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {!open && r && <ResultCard s={s} start={start} onRetry={() => onPick({ subject: s.subject, name: s.topic, start: r.topicScore ?? start })} />}
+    </>
+  );
+}
+
+function ResultCard({ s, start, onRetry }: { s: SessionView; start: number | null; onRetry: () => void }) {
+  const r = s.result!;
+  const depth = r.depth ?? 0;
+  const parts: [string, keyof Rubric, string][] = [
+    ['Independence', 'independence', 'How far you got without hints'],
+    ['Reasoning', 'reasoning', 'How well you explained why'],
+    ['On your own', 'transfer', 'The new problem, unaided'],
+    ['Explain it back', 'teachback', 'Your own-words explanation'],
+  ];
+  return (
+    <div className="g2">
       <div className="card">
-        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Session impact</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-          <Donut value={impact} color={impactColor} />
+        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>What this session showed</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', marginBottom: 16 }}>
+          <Donut value={depth} color={hmColor(depth)} />
           <div>
-            <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em' }}>{title.split(' — ')[0].toUpperCase()} — MICRO-TOPIC</div>
-            <div style={{ fontSize: 38, fontWeight: 800, lineHeight: 1, margin: '8px 0', color: done ? undefined : 'var(--mut2)' }}>
-              {done ? `${Math.round(impact)}%` : start !== null ? `${start}%` : '—'}
+            <div className="muted" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.1em' }}>TUTOR DEPTH</div>
+            <div style={{ fontSize: 38, fontWeight: 800, lineHeight: 1, margin: '8px 0' }}>{Math.round(depth)}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {r.topicScore !== null && start !== null && (
+                <Chip tone={r.topicScore >= start ? 'g' : 'a'}>{r.topicScore >= start ? <TrendUp size={13} weight="bold" /> : <TrendDown size={13} weight="bold" />} topic {Math.round(start)}% to {Math.round(r.topicScore)}%</Chip>
+              )}
+              {r.topicScore !== null && start === null && <Chip tone="b">Topic now {Math.round(r.topicScore)}%</Chip>}
+              {r.band && <Chip tone="n">{r.band}</Chip>}
             </div>
-            {done ? (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {after !== null && start !== null && (
-                  <Chip tone={after >= start ? 'g' : 'a'}>{after >= start ? <TrendUp size={13} weight="bold" /> : <TrendDown size={13} weight="bold" />} {Math.abs(Math.round(after - start))} pts this session</Chip>
-                )}
-                <Chip tone="p">Tutor depth {result?.depth} · {depthLabel(hints, revealed)}</Chip>
-                {after === null && <span className="muted" style={{ fontSize: 12 }}>{scripted ? 'Demo sessions aren’t written to your TML.' : 'Saved — your TML updates on the next recompute.'}</span>}
-              </div>
-            ) : <div className="muted" style={{ fontSize: 12 }}>{start !== null ? 'Where this topic stands now · updates once you finish' : 'Updates once you finish'}</div>}
           </div>
         </div>
+        {r.rubric && parts.map(([label, k, help]) => (
+          <div key={k} style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}><b>{label}</b><span className="muted">{Math.round(r.rubric![k])}</span></div>
+            <Bar value={r.rubric![k]} />
+            <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{help}</div>
+          </div>
+        ))}
+        {!r.rubric && <p className="muted" style={{ fontSize: 13 }}>An earlier-style session, scored by hints used.</p>}
+        <button className="btn ai" style={{ marginTop: 8 }} onClick={onRetry}><ArrowCounterClockwise size={15} weight="bold" /> Retry this topic</button>
+      </div>
+      <div className="card">
+        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Your notes from the tutor <AiTag /></h3>
+        {r.summary?.strengths.length ? <><div className="lbl">YOU SHOWED</div><ul style={{ margin: '0 0 14px 18px', lineHeight: 1.6, fontSize: 14 }}>{r.summary.strengths.map(x => <li key={x}>{x}</li>)}</ul></> : null}
+        {(r.summary?.toFix.length || r.misconceptions.length) ? (
+          <>
+            <div className="lbl">TO FIX</div>
+            <ul style={{ margin: '0 0 14px 18px', lineHeight: 1.6, fontSize: 14 }}>
+              {r.summary?.toFix.map(x => <li key={x}>{x}</li>)}
+              {r.misconceptions.filter(m => !r.summary?.toFix.some(t => t.toLowerCase().includes(m.toLowerCase()))).map(m => <li key={m}>{m}</li>)}
+            </ul>
+          </>
+        ) : null}
+        {r.summary?.next && <><div className="lbl">NEXT</div><p style={{ fontSize: 14, lineHeight: 1.6 }}>{r.summary.next}</p></>}
+        {!r.summary && <p className="muted" style={{ fontSize: 13 }}>No notes for this session.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── The demo desk: a scripted session (no live model) ───────────────────────
+function DemoSession({ topic, onNew }: { topic: Topic; onNew: () => void }) {
+  const [log, setLog] = useState<{ who: 'ai' | 'me'; text: string }[]>([{ who: 'ai', text: DEMO_TUTOR.steps[0].prompt }]);
+  const [step, setStep] = useState(0);
+  const [hints, setHints] = useState(0);
+  const [done, setDone] = useState(false);
+  const [input, setInput] = useState('');
+  const send = () => {
+    const text = input.trim();
+    if (!text || done) return;
+    setInput('');
+    const s = DEMO_TUTOR.steps[step];
+    const next: { who: 'ai' | 'me'; text: string }[] = [{ who: 'me', text }];
+    if (s.accept.test(text)) {
+      if (step + 1 < DEMO_TUTOR.steps.length) { next.push({ who: 'ai', text: DEMO_TUTOR.steps[step + 1].prompt }); setStep(step + 1); }
+      else { next.push({ who: 'ai', text: `${DEMO_TUTOR.answer} is right. In a live session you would now get a new problem to solve on your own, then explain the idea back in your own words.` }); setDone(true); }
+    } else {
+      const h = Math.min(hints + 1, MAX_STEP_HINTS); setHints(h);
+      next.push({ who: 'ai', text: `Hint ${h} of ${MAX_STEP_HINTS}. ${s.hint}` });
+    }
+    setLog(l => [...l, ...next]);
+  };
+  return (
+    <>
+      <PageBar eyebrow="SOCRATIC AI TUTOR" title={DEMO_TUTOR.topic} sub="A scripted example. Sign in for a live session that diagnoses, guides, checks you on your own and asks you to explain it back."
+        actions={<button className="btn" onClick={onNew}>Back to topics</button>} />
+      {topic.name !== DEMO_TUTOR.topic && <div className="note" style={{ marginBottom: 18 }}>Routed here from <b>{topic.name}</b>. Without a live session the tutor runs its scripted Circles · Tangents example instead.</div>}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="tlog" aria-live="polite">
+          {log.map((l, i) => l.who === 'me' ? <div key={i} className="bub-me">{l.text}</div> : <div key={i} className="bub-ai"><div className="av"><Sparkle size={17} weight="fill" /></div><div>{l.text}</div></div>)}
+        </div>
+        <form style={{ display: 'flex', gap: 10, padding: '16px 24px', borderTop: '1px solid var(--line)' }} onSubmit={e => { e.preventDefault(); send(); }}>
+          <input className="tin" value={input} onChange={e => setInput(e.target.value)} aria-label="Your answer" placeholder={done ? 'Example finished' : 'Type your answer…'} disabled={done} />
+          <button className="btn ai" disabled={done || !input.trim()}><PaperPlaneRight size={15} weight="fill" /> Send</button>
+        </form>
       </div>
     </>
   );
 }
+
+// ── History: resume, read back, retry ───────────────────────────────────────
+interface HistoryRow {
+  id: string; subject: string; topic: string; microTopic: string | null; mode: string; status: 'open' | 'done'; stage: StageKey | null;
+  depth: number | null; legacy: boolean; hints: number; revealed: boolean; startedAt: string; completedAt: string | null; updatedAt: string; previousDepth: number | null;
+}
+
+function useHistory(demo: boolean) {
+  const { getAuthToken } = useAuth();
+  const tokenRef = useRef(getAuthToken);
+  useEffect(() => { tokenRef.current = getAuthToken; });
+  const [state, setState] = useState<{ rows: HistoryRow[]; paused: boolean; err: string | null } | null>(null);
+  useEffect(() => {
+    if (demo) return;
+    let on = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/tutor/sessions', { headers: { Authorization: `Bearer ${await tokenRef.current()}` } });
+        const d = await res.json().catch(() => ({}));
+        if (on) setState(res.ok ? { rows: d.sessions ?? [], paused: d.allowance?.level === 'paused', err: null } : { rows: [], paused: false, err: d.error || 'Could not load your sessions.' });
+      } catch { if (on) setState({ rows: [], paused: false, err: 'Could not load your sessions.' }); }
+    })();
+    return () => { on = false; };
+  }, [demo]);
+  return demo ? { rows: [], paused: false, err: null, loading: false } : { rows: state?.rows ?? [], paused: !!state?.paused, err: state?.err ?? null, loading: !state };
+}
+
+const when = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+function History({ demo, onOpen, onPick }: { demo: boolean; onOpen: (id: string) => void; onPick: (t: Topic) => void }) {
+  const h = useHistory(demo);
+  const [all, setAll] = useState(false);
+  if (demo) return null;
+  const open = h.rows.filter(r => r.status === 'open');
+  const done = h.rows.filter(r => r.status === 'done');
+  const shown = all ? done : done.slice(0, 8);
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}><ClockCounterClockwise size={18} weight="bold" /> Your sessions</h3>
+      <p className="muted" style={{ marginBottom: 12 }}>Pick up where you left off, read back a session, or try a topic again.</p>
+      {h.paused && <div className="note" style={{ marginBottom: 12 }}>{PAUSED_NOTE}</div>}
+      {h.loading ? <Skeleton h={120} /> : h.err ? <div className="note err">{h.err}</div> : h.rows.length === 0 ? (
+        <p className="muted">No sessions yet. Your first one will show up here.</p>
+      ) : (
+        <>
+          {open.map(r => (
+            <div key={r.id} className="row">
+              <div className="av" style={{ background: `color-mix(in srgb, ${subjectColor(r.subject)} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(r.subject)} color={subjectColor(r.subject)} size={18} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{r.topic}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{r.subject} · unfinished, at {r.stage && r.stage !== 'done' ? STAGE_LABEL[r.stage].toLowerCase() : 'the start'} · {when(r.updatedAt)}</div>
+              </div>
+              <button className="btn sm ai" onClick={() => onOpen(r.id)}>Resume <ArrowRight size={13} weight="bold" /></button>
+            </div>
+          ))}
+          {shown.map(r => (
+            <div key={r.id} className="row">
+              <div className="av" style={{ background: `color-mix(in srgb, ${subjectColor(r.subject)} 10%, #fff)` }}><InteractiveIcon icon={subjectIcon(r.subject)} color={subjectColor(r.subject)} size={18} /></div>
+              <button style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'pointer', color: 'inherit' }} onClick={() => onOpen(r.id)}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{r.topic}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                  {r.subject} · {when(r.completedAt ?? r.startedAt)}{r.previousDepth !== null ? ` · before: ${Math.round(r.previousDepth)}` : ''}
+                </div>
+              </button>
+              {r.depth !== null ? <b style={{ color: hmColor(r.depth), fontSize: 15 }}>{Math.round(r.depth)}</b> : <span className="muted" style={{ fontSize: 12 }}>{r.revealed ? 'revealed' : `${r.hints} hints`}</span>}
+              <button className="btn sm" onClick={() => onPick({ subject: r.subject, name: r.topic, start: null })} aria-label={`Retry ${r.topic}`} title="Retry this topic"><ArrowCounterClockwise size={13} weight="bold" /></button>
+            </div>
+          ))}
+          {done.length > 8 && <button className="btn sm" style={{ marginTop: 10 }} onClick={() => setAll(x => !x)}>{all ? 'Show fewer' : `Show all ${done.length}`}</button>}
+        </>
+      )}
+    </div>
+  );
+}
+const PAUSED_NOTE = 'You have used this year’s AI tutor allowance, so new sessions are paused until the next academic session. Your past sessions and scores are all still here.';
 
 /** Shown whenever the tutor stops for a safety reason. */
 function SafetyNote() {

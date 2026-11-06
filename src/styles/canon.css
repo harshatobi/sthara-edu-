@@ -226,6 +226,14 @@
 .canon .bub-done.good > div:last-child { background:#F0FDF7; border:1px solid #BBF7D0; }
 .canon .bub-done.meh .av { background:#FEF3C7; color:#92600A; }
 .canon .bub-done.meh > div:last-child { background:#FFFBEB; border:1px solid #FDE68A; }
+.canon .tstages { list-style:none; display:flex; gap:8px; margin:0 0 16px; padding:0; flex-wrap:wrap; }
+.canon .tstage { flex:1 1 140px; display:flex; align-items:center; gap:9px; padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:#fff; font-size:13px; font-weight:700; color:var(--mut); }
+.canon .tstage .n { width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11.5px; background:#F1F5F9; color:var(--mut); flex:none; }
+.canon .tstage.current { border-color:var(--purple); color:var(--ink); box-shadow:0 0 0 3px color-mix(in srgb, var(--purple) 12%, transparent); }
+.canon .tstage.current .n { background:var(--purple); color:#fff; }
+.canon .tstage.done { color:var(--ink); }
+.canon .tstage.done .n { background:#DCFCE7; color:#0B7A54; }
+.canon .tstage.skipped { opacity:.6; text-decoration:line-through; }
 .canon .tin { flex:1; border:1.5px solid var(--line); border-radius:14px; padding:11px 16px; font-family:inherit; font-size:14.5px; color:var(--ink); min-width:0; }
 .canon .tin:focus-visible { outline:2px solid var(--blue); outline-offset:1px; border-color:var(--blue); }
 .canon .typing { display:inline-flex; gap:4px; }

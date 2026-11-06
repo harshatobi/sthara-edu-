@@ -4,6 +4,8 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
+import { createAdminClient } from '@/lib/supabase/server';
+import { studentAllowance } from '@/lib/ai/allowanceServer';
 
 export async function POST(request: NextRequest) {
   const { user, error: authErr } = await verifyApiToken(request);
@@ -22,6 +24,11 @@ export async function POST(request: NextRequest) {
 
     const aiBlocked = await aiGate(user.id, 'practice');
     if (aiBlocked) return aiBlocked;
+    // Per-student AI cost cap: past 70% the quiz runs on the cheaper model, at 100% self-quizzes pause.
+    const allowance = await studentAllowance(createAdminClient(), user.id);
+    if (allowance?.level === 'paused') {
+      return NextResponse.json({ error: 'You have used this year\u2019s AI practice allowance, so new practice quizzes are paused until the next academic session.' }, { status: 429 });
+    }
     if (!aiConfigured()) {
       return NextResponse.json({ error: 'Gemini API missing' }, { status: 500 });
     }
@@ -41,7 +48,7 @@ Output ONLY valid JSON, no markdown.`;
       model: AI_MODELS.standard,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.4 },
-    }, { feature: 'quizGenerate', userId: user.id });
+    }, { feature: 'quizGenerate', userId: user.id, economy: allowance?.level === 'economy' });
     const parsed = JSON.parse(result.text || '{"questions": []}');
     return NextResponse.json(parsed);
 

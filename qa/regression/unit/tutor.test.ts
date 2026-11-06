@@ -1,5 +1,5 @@
 /**
- * TE.040 STU-TUT-04/05 (automated): the AI tutor's language filter and its signed session state.
+ * TE.040 STU-TUT-04/05 (automated): the AI tutor's language filter and its server-side scoring (the Socratic engine).
  * DEF-001 is recorded as a `todo` test: it reports every official CBSE curriculum line the filter
  * blocks without failing the run, and starts passing once the filter is fixed.
  */
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { containsFoulLanguage } from '@/lib/tutor/safety';
-import { signSession, verifySession, type TutorSessionState } from '@/lib/tutor/sessionToken';
+import { advance, computeRubric, initialState, type Verdict } from '@/lib/tutor/socratic';
 import { ROOT } from '../../tools/inventory';
 
 test('the filter matches whole words only: school words that contain a blocked word pass', () => {
@@ -53,25 +53,26 @@ test('DEF-001 evidence: how many curriculum lines the filter blocks today', () =
   assert.ok(n >= 0);
 });
 
-// ── Signed session state ────────────────────────────────────────────────────
+// ── Scoring state (server-side since 2026-11-06) ─────────────────────────────
+// The session's state lives in tutor_sessions on the server; the client only sends its answer and the turn
+// number, so it has nothing to edit. What it can't change is decided by the engine below.
 
-process.env.TUTOR_SESSION_SECRET = 'qa-tutor-secret-for-tests-only';
-const base: TutorSessionState = { uid: 'student-1', subject: 'Science', topic: 'Heredity', step: 2, hints: 1, revealed: false, done: false, question: 'Q2', sid: 'session-1', seq: 2, iat: Date.now() };
+const verdict = (o: Partial<Verdict> = {}): Verdict => ({ correct: false, partial: false, reasoning: 0, misconceptions: [], teachback: null, transcription: null, note: '', ...o });
 
-test('a session token round-trips for its own student', () => {
-  assert.deepEqual(verifySession(signSession(base), 'student-1'), base);
+test('the hint ladder cannot be skipped: nudge, method, then the step is walked through and scored as a reveal', () => {
+  let r = advance('diagnose', initialState('standard', 'P', 'Q'), { type: 'answer', verdict: verdict() });
+  r = advance('scaffold', { ...r.state, scaffoldTotal: 2 }, { type: 'answer', verdict: verdict() });
+  assert.deepEqual(r.action, { kind: 'hint', level: 1 });
+  r = advance('scaffold', r.state, { type: 'answer', verdict: verdict() });
+  assert.deepEqual(r.action, { kind: 'hint', level: 2 });
+  r = advance('scaffold', r.state, { type: 'answer', verdict: verdict() });
+  assert.equal(r.action.kind, 'walkthrough');
+  assert.equal(r.state.scaffold[0].walked, true);
 });
 
-test('the hint count cannot be lowered by editing the token', () => {
-  const [body, mac] = signSession(base).split('.');
-  const edited = JSON.parse(Buffer.from(body, 'base64url').toString());
-  edited.hints = 0;
-  const forged = `${Buffer.from(JSON.stringify(edited)).toString('base64url')}.${mac}`;
-  assert.equal(verifySession(forged, 'student-1'), null);
-});
-
-test('a token is refused for another student, when stale (3 hours), or when malformed', () => {
-  assert.equal(verifySession(signSession(base), 'student-2'), null);
-  assert.equal(verifySession(signSession({ ...base, iat: Date.now() - 3 * 3600_000 - 1000 }), 'student-1'), null);
-  for (const junk of [null, 42, '', 'no-dot', 'a.b', `${signSession(base)}x`]) assert.equal(verifySession(junk, 'student-1'), null, String(junk));
+test('tutor depth is 30% independence, 30% reasoning, 30% transfer, 10% teach-back; ending early scores what was done', () => {
+  const full = { ...initialState('standard', 'P', 'Q'), skippedScaffold: true, reasoning: [3, 3], transfer: { result: 'correct' as const, reasoning: 3 }, teachback: { score: 3 } };
+  assert.equal(computeRubric(full).depth, 100);
+  assert.equal(computeRubric({ ...full, teachback: null }).depth, 90);
+  assert.equal(computeRubric({ ...full, transfer: null, teachback: null }).depth, 60);
 });

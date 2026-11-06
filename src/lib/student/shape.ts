@@ -2,7 +2,7 @@
  * Pure shaping functions: raw Supabase rows -> the student desk view model.
  * No I/O here, so it's unit-testable and shared by the live loader and demo.
  */
-import { evidenceTopicName, getTutorDepthScore, normalizeComponentType } from '@/lib/tml/engine';
+import { evidenceTopicName, normalizeComponentType, sessionDepth } from '@/lib/tml/engine';
 import type {
   AiQuestionFeedback, ComponentScores, DeskAssignment, EvidenceItem, EvidenceKind,
   Gate, QuestionType, SubjectMastery, TopicMastery,
@@ -119,8 +119,9 @@ function evidenceFromAssignment(a: DeskAssignment): EvidenceItem {
 
 function evidenceFromTutor(t: any): EvidenceItem {
   const hints = Number(t.hint_depth) || 0;
-  const label = t.answer_revealed ? 'Answer revealed' : hints === 0 ? 'Unaided' : hints === 1 ? '1 hint' : `${hints} hints`;
-  return { title: `AI Tutor · ${t.topic || 'session'}`, kind: 'Tutor', pct: getTutorDepthScore(hints, !!t.answer_revealed), label, at: t.created_at };
+  // Socratic sessions (2026-11-06) carry a rubric depth; older ones are scored by hints.
+  const label = t.depth_score != null ? 'Socratic session' : t.answer_revealed ? 'Answer revealed' : hints === 0 ? 'Unaided' : hints === 1 ? '1 hint' : `${hints} hints`;
+  return { title: `AI Tutor · ${t.topic || 'session'}`, kind: 'Tutor', pct: sessionDepth(t), label, at: t.created_at };
 }
 
 function subjectNote(topics: TopicMastery[]): string {

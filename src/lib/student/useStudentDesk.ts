@@ -26,7 +26,7 @@ async function loadLive(profile: UserProfile): Promise<Rows> {
   const grade = gradeOf(profile.studentClass);
   const [s, t, m, light] = await Promise.all([
     supabase.from('submissions').select('*').eq('student_id', profile.uid),
-    supabase.from('tutor_sessions').select('id, subject, topic, hint_depth, answer_revealed, created_at').eq('student_id', profile.uid),
+    supabase.from('tutor_sessions').select('id, subject, topic, hint_depth, answer_revealed, depth_score, created_at').eq('student_id', profile.uid).eq('status', 'done'),
     supabase.from('tml_scores').select('subject, topic_name, score, confidence_band, item_count, components, computed_at')
       .eq('student_id', profile.uid).order('computed_at', { ascending: false }).limit(1000),
     all((from, to) => {

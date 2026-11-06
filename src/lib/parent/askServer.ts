@@ -135,7 +135,8 @@ export async function askSchoolOS(db: SupabaseClient, parent: ParentCaller, mess
   const res = await generateAi({
     model: AI_MODELS.standard, contents,
     config: { systemInstruction: system, responseMimeType: 'application/json', temperature: 0.4 },
-  }, { feature: 'parentAsk', userId: parent.id, schoolId: parent.schoolId });
+    // Cost cap: a one-child family's Ask counts toward that child; with several children it is shared school AI.
+  }, { feature: 'parentAsk', userId: parent.id, schoolId: parent.schoolId, studentId: view.children.length === 1 ? view.children[0].id : null });
   const raw = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();
   const reply = restore(parseAskReply(JSON.parse(raw), book), book);
   if (!reply.say && !reply.ask.length) throw new Error('empty reply');

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   blendFinalTml, calculateTopicTml, computeStudentTml, evidenceTopicName, getRecencyWeight, getTutorDepthScore,
-  mapMasteryBand, normalizeComponentType, normalizeTutorVolume, type TmlEvidenceItem,
+  mapMasteryBand, normalizeComponentType, normalizeTutorVolume, sessionDepth, type TmlEvidenceItem,
 } from './engine';
 
 // The TML specification (True_Mastery_Level_TML_Specification.pdf) with the 2026-09-21 engagement blend:
@@ -166,7 +166,7 @@ const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 // query like PostgREST would, so a phantom column can never pass the tests again.
 const LIVE_COLUMNS: Record<string, string[]> = {
   submissions: ['id', 'student_id', 'assignment_id', 'score', 'max_score', 'teacher_approved', 'submitted_at'],
-  tutor_sessions: ['id', 'student_id', 'subject', 'topic', 'hint_depth', 'answer_revealed', 'created_at'],
+  tutor_sessions: ['id', 'student_id', 'subject', 'topic', 'hint_depth', 'answer_revealed', 'depth_score', 'status', 'created_at'],
   submission_items: ['id', 'student_id', 'submission_id', 'score', 'max_score', 'component_type', 'created_at', 'teacher_confirmed'],
 };
 function unknownColumn(table: string, cols: string): string | null {
@@ -222,8 +222,10 @@ test('compute: blends, bands and stores one snapshot per topic from the evidence
       { id: 'subX', student_id: 'someone-else', score: 0, max_score: 10, submitted_at: ago(0), assignments: algebra }, // another student: never read
     ],
     tutor_sessions: [
-      { id: 't1', subject: 'Science', topic: 'Heredity', hint_depth: 1, answer_revealed: false, created_at: ago(1) },
-      { id: 't2', subject: 'Science', topic: 'Heredity', hint_depth: 0, answer_revealed: false, created_at: ago(40) },
+      { id: 't1', subject: 'Science', topic: 'Heredity', hint_depth: 1, answer_revealed: false, status: 'done', created_at: ago(1) },
+      { id: 't2', subject: 'Science', topic: 'Heredity', hint_depth: 0, answer_revealed: false, status: 'done', created_at: ago(40) },
+      // An open (unfinished) session is not evidence.
+      { id: 't3', subject: 'Science', topic: 'Heredity', hint_depth: 0, answer_revealed: false, status: 'open', created_at: ago(0) },
     ],
     proctor_alerts: [{ assignment_id: 'a2', switch_count: 3 }],
     engagement_scores: [{ attendance_score: 90, app_engagement_score: 60, teacher_engagement_score: 80 }],
@@ -284,7 +286,7 @@ test('compute: a subject filter leaves other subjects out entirely', async () =>
       { id: 'sub1', score: 7, max_score: 10, submitted_at: ago(0), assignments: heredity },
       { id: 'sub2', score: 9, max_score: 10, submitted_at: ago(0), assignments: algebra },
     ],
-    tutor_sessions: [{ id: 't1', subject: 'mathematics', topic: 'Polynomials', hint_depth: 0, answer_revealed: false, created_at: ago(0) }],
+    tutor_sessions: [{ id: 't1', subject: 'mathematics', topic: 'Polynomials', hint_depth: 0, answer_revealed: false, status: 'done', created_at: ago(0) }],
   });
   const out = await computeStudentTml(db, 's1', 'Mathematics');
   assert.deepEqual(out.topics.map(t => t.topicName), ['Polynomials']);
@@ -308,7 +310,7 @@ test('compute: topics are keyed by subject and normalised name', async () => {
       { id: 'b', score: 4, max_score: 10, submitted_at: ago(0), assignments: physicsLight },
       { id: 'c', score: 6, max_score: 10, submitted_at: ago(0), assignments: heredity },
     ],
-    tutor_sessions: [{ id: 't1', subject: 'science', topic: ' heredity ', hint_depth: 0, answer_revealed: false, created_at: ago(0) }],
+    tutor_sessions: [{ id: 't1', subject: 'science', topic: ' heredity ', hint_depth: 0, answer_revealed: false, status: 'done', created_at: ago(0) }],
   });
   const out = await computeStudentTml(db, 's1');
   assert.deepEqual(out.topics.map(t => `${t.subject}/${t.topicName}`).sort(), ['Physics/Light', 'Science/Heredity', 'Science/Light']);
@@ -326,7 +328,7 @@ test('compute: rows with no usable timestamp or a zero maximum are skipped, not 
       { id: 'sub3', score: 5, max_score: 0, submitted_at: ago(0), assignments: algebra },
       { id: 'sub4', score: 7, max_score: 10, submitted_at: 'not a date', created_at: null, assignments: algebra },
     ],
-    tutor_sessions: [{ id: 't1', subject: 'Science', topic: 'Heredity', hint_depth: 0, answer_revealed: false, created_at: 'garbage' }],
+    tutor_sessions: [{ id: 't1', subject: 'Science', topic: 'Heredity', hint_depth: 0, answer_revealed: false, status: 'done', created_at: 'garbage' }],
   });
   const out = await computeStudentTml(db, 's1');
   assert.equal(out.computedTopicsCount, 0);
@@ -349,4 +351,12 @@ test('compute: a failed snapshot save is reported, not swallowed', async () => {
     submissions: [{ id: 'x', score: 5, max_score: 10, submitted_at: ago(0), assignments: algebra }],
   }, ['insert:tml_scores']);
   await assert.rejects(computeStudentTml(db, 's1'), /saving tml_scores failed/);
+});
+
+test('sessionDepth: rubric score when present, hints-only score for older sessions', () => {
+  assert.equal(sessionDepth({ depth_score: 72.5, hint_depth: 3, answer_revealed: true }), 72.5);
+  assert.equal(sessionDepth({ depth_score: '40.00' }), 40);
+  assert.equal(sessionDepth({ depth_score: null, hint_depth: 1, answer_revealed: false }), 60);
+  assert.equal(sessionDepth({ hint_depth: 0 }), 100);
+  assert.equal(sessionDepth({ depth_score: 140 }), 100);
 });

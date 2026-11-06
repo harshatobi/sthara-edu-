@@ -52,6 +52,8 @@ export const AI_FEATURES = {
   tutor:            { label: 'AI tutor (legacy chat)', who: 'Student' },
   tutorSession:     { label: 'AI tutor session', who: 'Student' },
   tutorGuard:       { label: 'Tutor grounding check', who: 'Student' },
+  tutorJudge:       { label: 'Tutor judging (scoring stages)', who: 'Student' },
+  tutorSeed:        { label: 'Tutor misconception bank (per chapter)', who: 'Student' },
   quizGenerate:     { label: 'Quiz generation (student)', who: 'Student' },
   quizGrade:        { label: 'Quiz grading', who: 'Student' },
   homeworkGenerate: { label: 'Homework generation (student)', who: 'Student' },

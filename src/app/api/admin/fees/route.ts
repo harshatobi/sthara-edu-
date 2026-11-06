@@ -6,6 +6,7 @@ import { fmtDate, gradeOf, inr, isoDay, sessionOf } from '@/lib/admin/format';
 import { displayClass } from '@/lib/teacher/scope';
 import type { Perm } from '@/lib/admin/rbac';
 import { byIds, pageAll } from '@/lib/ops/page';
+import { flushPaySoon } from '@/lib/pay/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,6 +93,7 @@ export async function POST(req: NextRequest) {
       });
       if (error) return bad(error.code === 'P0002' ? 'Invoice not found.' : error.message, error.code === '22023' || error.code === 'P0002' ? 400 : 500);
       const receipt = Array.isArray(data) ? data[0] : data;
+      flushPaySoon(db, admin.schoolId);
       return NextResponse.json({ receiptNo: receipt?.receipt_no, id: receipt?.id });
     }
 
@@ -105,6 +107,7 @@ export async function POST(req: NextRequest) {
       // The database refuses a void on a closed day (22023) or an edit (42501): the user's to fix, not a server fault.
       if (error) return bad(error.message, error.code === '22023' ? 409 : error.code === '42501' ? 403 : 500);
       if (!data?.length) return bad('Receipt not found, or already void.', 404);
+      flushPaySoon(db, admin.schoolId);
       return NextResponse.json({ voided: data[0].receipt_no });
     }
 

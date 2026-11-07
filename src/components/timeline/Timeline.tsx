@@ -85,7 +85,7 @@ export default function Timeline({ query }: { query: string }) {
       <section className="card tl-top" aria-label="Journey overview">
         <header className="tl-top-head">
           <div>
-            <h2 className="tl-name">{student ? 'Your journey' : name}</h2>
+            <h2 className="tl-name">{student ? `Your ${now?.session ?? 'year'} so far` : name}</h2>
             <p className="tl-meta">
               {now?.cls ? <>{now.cls}. </> : null}
               {t.years.length ? <>{plural(t.years.length, 'school year')} recorded, {plural(milestones, 'milestone')}.</> : 'No school years recorded yet.'}
@@ -155,8 +155,11 @@ function River({ series, events, years, onPick, simple }: { series: MonthPoint[]
   const [hover, setHover] = useState<number | null>(null);
   // Months on the river: the series, widened to take in any milestone outside it.
   const months = useMemo(() => {
-    const keys = new Set(series.map(p => p.month));
-    for (const e of events) if (e.tier !== 'moment') keys.add(e.on.slice(0, 7));
+    // The student's river is this school year; everyone else's runs across every year.
+    const thisYear = years[0]?.session;
+    const inView = (session: string | undefined) => !simple || session === thisYear;
+    const keys = new Set(series.filter(p => inView(p.session)).map(p => p.month));
+    for (const e of events) if (e.tier !== 'moment' && inView(e.session)) keys.add(e.on.slice(0, 7));
     const sorted = [...keys].sort();
     if (!sorted.length) return [];
     const out: string[] = [];
@@ -169,7 +172,7 @@ function River({ series, events, years, onPick, simple }: { series: MonthPoint[]
       m++; if (m > 12) { m = 1; y++; }
     }
     return out;
-  }, [series, events]);
+  }, [series, events, years, simple]);
   const point = useMemo(() => new Map(series.map(p => [p.month, p])), [series]);
   const pins = useMemo(() => {
     const by = new Map<string, TimelineEvent[]>();
@@ -189,7 +192,7 @@ function River({ series, events, years, onPick, simple }: { series: MonthPoint[]
   const attTop = TOP + LINE_H + GAP;
   const pinY = attTop + ATT_H + 18;
   const recY = pinY + 22;
-  const axisY = (hasRecord ? recY : pinY) + 22;
+  const axisY = (hasRecord ? recY : pinY) + 32;
   const h = axisY + 8;
 
   // The mastery line, broken where a month has no score.

@@ -15,7 +15,7 @@ export interface Today {
   /** Today's registers across the school (attendance.read). */
   attendance: { marked: number; present: number; late: number; absent: number; excused: number; students: number } | null;
 }
-export type QueueKey = 'payroll' | 'certificates' | 'discipline' | 'kirti' | 'messages' | 'incidents' | 'register' | 'logins';
+export type QueueKey = 'payroll' | 'certificates' | 'discipline' | 'kirti' | 'messages' | 'incidents' | 'register' | 'logins' | 'health' | 'counselling';
 
 /** One head count with the oldest row, without fetching rows. */
 async function queue(q: any, dateCol: string): Promise<Queue> {
@@ -36,7 +36,9 @@ export async function todayFor(db: SupabaseClient, admin: SchoolAdmin, now = new
   // bounded: queue() reads only a head count and the single oldest row
   add('payroll', a.can('payroll.approve'), () => db.from('pay_runs').select().eq('school_id', school).eq('status', 'submitted'), 'created_at');
   // bounded: queue() reads only a head count and the single oldest row
-  add('certificates', a.can('certificates.approve'), () => db.from('certificates').select().eq('school_id', school).eq('status', 'pending'), 'created_at');
+  // The approver waits on certificates sent for approval; the one who prepares them, on their drafts.
+  add('certificates', a.can('certificates.approve') || a.can('certificates.prepare'),
+    () => db.from('certificates').select().eq('school_id', school).eq('status', a.can('certificates.approve') ? 'pending' : 'draft'), 'created_at');
   // A suspension needs discipline.suspend; the rest discipline.approve.
   if (a.can('discipline.approve') || a.can('discipline.suspend')) {
   // bounded: queue() reads only a head count and the single oldest row
@@ -55,7 +57,11 @@ export async function todayFor(db: SupabaseClient, admin: SchoolAdmin, now = new
   // bounded: queue() reads only a head count and the single oldest row
   add('incidents', a.can('incidents.manage'), () => db.from('incidents').select().eq('school_id', school).eq('status', 'open').neq('category', 'child_protection'), 'created_at');
   // bounded: queue() reads only a head count and the single oldest row
-  add('register', a.can('students.manage'), () => db.from('student_change_requests').select().eq('school_id', school).eq('status', 'pending'), 'created_at');
+  add('register', a.can('students.manage'), () => db.from('student_change_requests').select().eq('school_id', school).eq('status', 'pending').neq('kind', 'health'), 'created_at');
+  // bounded: queue() reads only a head count and the single oldest row
+  add('health', a.can('health.manage'), () => db.from('student_change_requests').select().eq('school_id', school).eq('status', 'pending').eq('kind', 'health'), 'created_at');
+  // bounded: queue() reads only a head count and the single oldest row
+  add('counselling', a.can('counselling.notes'), () => db.from('counselling_referrals').select().eq('school_id', school).eq('status', 'new'), 'created_at');
   // bounded: queue() reads only a head count and the single oldest row
   add('logins', a.can('people.manage'), () => db.from('account_requests').select().eq('school_id', school).eq('status', 'pending'), 'created_at');
 

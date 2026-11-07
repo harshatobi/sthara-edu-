@@ -31,7 +31,11 @@ export interface Lens {
   archive: boolean;
   /** May print the student file. */
   print: boolean;
+  /** Office only: what the timeline leads with for this office role. */
+  focus?: OfficeFocus;
 }
+/** The principal's office sees everything first; accounts the fees; the counsellor wellbeing; the registrar the register. */
+export type OfficeFocus = 'all' | 'fees' | 'care' | 'register';
 
 // ── Who sees what (decided with Moses, brief 08) ─────────────────────────────
 interface OfficeAccess { can(p: string): boolean; roles: readonly string[] }
@@ -56,7 +60,9 @@ export function officeLens(a: OfficeAccess): Lens | null {
   add('counselling', a.can('counselling.overview') || a.can('counselling.notes'));
   add('wellness', a.can('counselling.notes') || a.roles.includes('principal'));
   add('tutor', a.can('academics.read'));
-  return { who: 'office', sources: s, subjects: null, archive: a.can('discipline.archive'), print: true };
+  const lead = ['principal', 'vice_principal', 'school_admin'].some(r => a.roles.includes(r));
+  const focus: OfficeFocus = lead ? 'all' : a.can('counselling.notes') ? 'care' : a.can('fees.read') && !a.can('academics.read') ? 'fees' : a.can('students.read') ? 'register' : 'all';
+  return { who: 'office', sources: s, subjects: null, archive: a.can('discipline.archive'), print: true, focus };
 }
 
 /**
@@ -96,12 +102,12 @@ export function sessionOfDay(day: string, startMonth = 4): string {
 /** The first day after the session (exclusive end). */
 export const sessionEnd = (session: string, startMonth = 4) => `${Number(session.slice(0, 4)) + 1}-${String(startMonth).padStart(2, '0')}-01`;
 
-const monthLabel = (ym: string) => {
+export const monthLabel = (ym: string) => {
   const [y, m] = ym.split('-').map(Number);
   return `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1]} ${y}`;
 };
 const mean = (xs: number[]) => (xs.length ? Math.round(xs.reduce((s, v) => s + v, 0) / xs.length) : null);
-const day = (v: string | null | undefined) => (v ? String(v).slice(0, 10) : '');
+export const day = (v: string | null | undefined) => (v ? String(v).slice(0, 10) : '');
 
 // ── Rows (what the server loads) ─────────────────────────────────────────────
 export interface Rows {
@@ -182,7 +188,7 @@ const bandOf = (score: number | null): Band | null => {
 };
 
 /** Each source's rows, after the lens: anything the viewer may not see is dropped here. */
-function visible(rows: Rows, lens: Lens) {
+export function visible(rows: Rows, lens: Lens) {
   const on = (s: Source) => sees(lens, s);
   const discipline = !on('discipline') ? [] : rows.discipline.filter(a => {
     if (lens.who === 'parent') return parentSees(a, rows.currentSession);
@@ -208,9 +214,9 @@ function visible(rows: Rows, lens: Lens) {
     tutor: on('tutor') ? rows.tutor.filter(t => subjectOk(lens, t.subject) && t.completed_at) : [],
   };
 }
-type Visible = ReturnType<typeof visible>;
+export type Visible = ReturnType<typeof visible>;
 
-const LOW = (w: { mood: string | null; energy: number | null }) => w.mood === 'Low' || (w.energy !== null && w.energy <= 2);
+export const LOW = (w: { mood: string | null; energy: number | null }) => w.mood === 'Low' || (w.energy !== null && w.energy <= 2);
 
 /** The latest snapshot per topic up to `before`, then the mean per subject and overall. */
 function tmlAt(rows: Visible['tml'], before: string): Year['tml'] {
@@ -234,7 +240,7 @@ function tmlAt(rows: Visible['tml'], before: string): Year['tml'] {
   return overall ? { ...overall, subjects } : null;
 }
 
-function homeworkOf(work: Visible['work'], subs: Rows['subs'], today: string) {
+export function homeworkOf(work: Visible['work'], subs: Rows['subs'], today: string) {
   const sub = new Map(subs.map(s => [s.assignment_id, s]));
   return work.map(w => {
     const due = day(w.due_date) || day(w.created_at);
@@ -244,7 +250,7 @@ function homeworkOf(work: Visible['work'], subs: Rows['subs'], today: string) {
   }).filter(w => w.due);
 }
 
-function feesOf(invoices: Visible['invoices'], payments: Rows['payments']) {
+export function feesOf(invoices: Visible['invoices'], payments: Rows['payments']) {
   const paidOn = new Map<string, number>();
   for (const p of payments) paidOn.set(p.invoice_id, (paidOn.get(p.invoice_id) || 0) + Number(p.amount));
   return invoices.map(i => {
@@ -357,7 +363,7 @@ const nextMonth = (ym: string) => { const [y, m] = ym.split('-').map(Number); re
  * Personal bests from the mastery history: a chapter that climbed from under 50% to 50% or more, and a chapter's
  * first time at Exemplary (90%+). At most PER_MONTH_WINS a month (the biggest gains); the rest are counted in one line.
  */
-function chapterWins(tml: Visible['tml'], inYear: (d: string) => boolean, session: string): TimelineEvent[] {
+function chapterWins(tml: Visible['tml'], inYear: (d: string) => boolean, session: string, you: boolean): TimelineEvent[] {
   const byTopic = new Map<string, { subject: string; topic: string; snaps: { at: string; score: number }[] }>();
   for (const r of tml) {
     const k = `${normSubject(r.subject)}::${topicKey(r.topic_name)}`;
@@ -372,11 +378,11 @@ function chapterWins(tml: Visible['tml'], inYear: (d: string) => boolean, sessio
     for (const sn of snaps) {
       if (sn.score >= 90 && !exemplary) {
         exemplary = true;
-        if (inYear(sn.at)) wins.push({ on: day(sn.at), gain: 100, ev: { on: day(sn.at), kind: 'tml', title: `Exemplary in ${t.topic}: ${Math.round(sn.score)}%`, detail: t.subject, tone: 'g', tier: 'milestone', session } });
+        if (inYear(sn.at)) wins.push({ on: day(sn.at), gain: 100, ev: { on: day(sn.at), kind: 'tml', title: you ? `You reached Exemplary in ${t.topic}: ${Math.round(sn.score)}%` : `Exemplary in ${t.topic}: ${Math.round(sn.score)}%`, detail: t.subject, tone: 'g', tier: 'milestone', session } });
       }
       if (sn.score < 50) low = low === null ? sn.score : Math.min(low, sn.score);
       else if (low !== null) {
-        if (inYear(sn.at)) wins.push({ on: day(sn.at), gain: sn.score - low, ev: { on: day(sn.at), kind: 'tml', title: `${t.topic} climbed to ${Math.round(sn.score)}%`, detail: `${t.subject}, up from ${Math.round(low)}%`, tone: 'g', tier: 'milestone', session } });
+        if (inYear(sn.at)) wins.push({ on: day(sn.at), gain: sn.score - low, ev: { on: day(sn.at), kind: 'tml', title: you ? `You lifted ${t.topic} to ${Math.round(sn.score)}%` : `${t.topic} climbed to ${Math.round(sn.score)}%`, detail: `${t.subject}, up from ${Math.round(low)}%`, tone: 'g', tier: 'milestone', session } });
         low = null;
       }
     }
@@ -389,7 +395,7 @@ function chapterWins(tml: Visible['tml'], inYear: (d: string) => boolean, sessio
     out.push(...sorted.slice(0, PER_MONTH_WINS).map(w => w.ev));
     if (sorted.length > PER_MONTH_WINS) {
       const rest = sorted.slice(PER_MONTH_WINS);
-      out.push({ on: rest[0].on, kind: 'tml', title: `${plural(rest.length, 'more chapter')} improved in ${monthLabel(m)}`, detail: rest.map(w => w.ev.title.replace(/ climbed to | in /, ' ').replace(/^Exemplary /, '')).slice(0, 6).join(', '), tone: 'g', tier: 'moment', session });
+      out.push({ on: rest[0].on, kind: 'tml', title: you ? `And ${plural(rest.length, 'more chapter')} went up in ${monthLabel(m)}` : `${plural(rest.length, 'more chapter')} improved in ${monthLabel(m)}`, detail: rest.map(w => w.ev.title.replace(/^You lifted |^You reached Exemplary in |^Exemplary in /, '').replace(/ climbed to | to |: /, ' ')).slice(0, 6).join(', '), tone: 'g', tier: 'moment', session });
     }
   }
   return out;
@@ -401,13 +407,17 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
   const sOf = (d: string) => sessionOfDay(d, rows.startMonth);
   const inYear = (d: string | null | undefined) => !!d && sOf(day(d)) === session;
   const out: TimelineEvent[] = [];
+  // The student's own timeline speaks to them.
+  const you = lens.who === 'student';
   const push = (on: string, kind: Source, tier: Tier, title: string, detail: string | null = null, tone: Tone = 'n') => out.push({ on: day(on), kind, title, detail, tone, tier, session });
 
   if (sees(lens, 'enrolment')) {
     const all = [...v.enrolments].sort((a, b) => day(a.starts_on).localeCompare(day(b.starts_on)));
+    // Joining is the first enrolment, unless the school has records of the student from before it.
+    const earliest = [...(v.attendance?.months || []).map(m => `${m.month}-01`), ...v.cards.map(c => day(c.publishedAt)), ...v.tml.map(r => day(r.computed_at))].filter(Boolean).sort()[0];
     for (const e of all.filter(x => x.session === session)) {
-      const first = all[0] === e;
-      if (e.starts_on) push(e.starts_on, 'enrolment', 'milestone', first ? `Joined in ${e.class_name || 'a class not set'}` : `Started ${e.class_name || 'a new class'}`, e.roll_no ? `Roll number ${e.roll_no}` : null, 'b');
+      const first = all[0] === e && !(earliest && e.starts_on && earliest < day(e.starts_on));
+      if (e.starts_on) push(e.starts_on, 'enrolment', 'milestone', first ? (you ? `You joined ${e.class_name || 'the school'}` : `Joined in ${e.class_name || 'a class not set'}`) : (you ? `You started ${e.class_name || 'a new class'}` : `Started ${e.class_name || 'a new class'}`), e.roll_no ? `Roll number ${e.roll_no}` : null, 'b');
       if (e.ends_on && e.end_reason) push(e.ends_on, 'enrolment', 'milestone', `Left ${e.class_name || 'the class'}`, e.end_reason, 'n');
       if (e.published_at && e.outcome) push(e.published_at, 'enrolment', 'milestone', `Year result: ${OUTCOME_LABEL[e.outcome as Outcome] ?? e.outcome}`, e.class_name, e.outcome === 'promoted' || e.outcome === 'promoted_no_exam' ? 'g' : 'a');
     }
@@ -418,22 +428,24 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
     // A personal best once the year has a few months to compare.
     if (ms.length >= 3) {
       const best = [...ms].sort((a, b) => b.pct - a.pct || a.m.localeCompare(b.m))[0];
-      if (best.pct >= 95) push(`${best.m}-01`, 'attendance', 'milestone', `Best attendance month of the year: ${best.pct}%`, `${monthLabel(best.m)}, ${plural(best.marked, 'school day')}`, 'g');
+      if (best.pct >= 95) push(`${best.m}-01`, 'attendance', 'milestone', you ? `Your best attendance month this year: ${best.pct}%` : `Best attendance month of the year: ${best.pct}%`, `${monthLabel(best.m)}, ${plural(best.marked, 'school day')}`, 'g');
     }
-    for (const r of v.attendance.runs.filter(x => inYear(x.from))) push(r.from, 'attendance', 'record', `Absent ${r.days} school days in a row`, `${fmtDate(r.from)} to ${fmtDate(r.to)}`, 'a');
+    for (const r of v.attendance.runs.filter(x => inYear(x.from))) push(r.from, 'attendance', 'record', you ? `Away ${r.days} school days in a row` : `Absent ${r.days} school days in a row`, `${fmtDate(r.from)} to ${fmtDate(r.to)}`, 'a');
   }
   for (const c of v.cards.filter(x => x.session === session && x.publishedAt)) {
     const head = lens.subjects
       ? c.subjects.map(s => { const g = s.final?.grade ?? s.terms[s.terms.length - 1]?.grade; return `${s.name}${g ? ` ${g}` : ''}`; }).join(', ')
       : c.aggregate ? `${c.aggregate.pct}%${c.aggregate.grade ? `, grade ${c.aggregate.grade}` : ''}` : null;
-    push(c.publishedAt!, 'results', 'milestone', `Report card: ${c.term?.name ?? 'term'}`, head, c.result?.status === 'pass' || lens.subjects ? 'b' : c.result ? 'a' : 'b');
+    push(c.publishedAt!, 'results', 'milestone', you ? `Your ${c.term?.name ?? 'term'} report card is out` : `Report card: ${c.term?.name ?? 'term'}`, head, c.result?.status === 'pass' || lens.subjects ? 'b' : c.result ? 'a' : 'b');
   }
-  if (sees(lens, 'tml')) out.push(...chapterWins(v.tml, d => inYear(d), session));
+  if (sees(lens, 'tml')) out.push(...chapterWins(v.tml, d => inYear(d), session, you));
   for (const t of v.tutor.filter(x => inYear(x.completed_at))) {
     const d = t.depth_score === null ? null : Math.round(Number(t.depth_score));
     const hots = t.mode === 'hots';
     push(t.completed_at, 'tutor', hots || (d !== null && d >= DEPTH_MILESTONE) ? 'milestone' : 'moment',
-      `${hots ? 'HOTS tutor session' : 'Tutor session'}: ${t.topic || 'a chapter'}${d !== null ? `, depth ${d}` : ''}`, t.subject, d === null ? 'n' : d >= 75 ? 'g' : d >= 50 ? 'b' : 'a');
+      you ? (hots ? `You took on a HOTS challenge: ${t.topic || 'a chapter'}` : `You worked through ${t.topic || 'a chapter'} with the AI tutor`)
+        : `${hots ? 'HOTS tutor session' : 'Tutor session'}: ${t.topic || 'a chapter'}${d !== null ? `, depth ${d}` : ''}`,
+      you ? [t.subject, d !== null ? `depth ${d}` : null].filter(Boolean).join(', ') : t.subject, d === null ? 'n' : d >= 75 ? 'g' : d >= 50 ? 'b' : 'a');
   }
   if (sees(lens, 'fees')) {
     const mine = new Set(v.invoices.map(i => i.id));
@@ -462,7 +474,7 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
     for (const w of v.wellness.filter(x => inYear(x.created_at))) byMonth.set(w.created_at.slice(0, 7), [...(byMonth.get(w.created_at.slice(0, 7)) || []), w]);
     for (const [m, ws] of byMonth) {
       const low = ws.filter(LOW).length;
-      if (low >= 3) push(`${m}-01`, 'wellness', 'record', `A harder month: ${plural(low, 'low day')}`, `${monthLabel(m)}, ${plural(ws.length, 'check-in')}`, 'a');
+      if (low >= 3) push(`${m}-01`, 'wellness', 'record', you ? 'A tougher month' : `A harder month: ${plural(low, 'low day')}`, you ? `Your check-ins showed ${plural(low, 'low day')}. The Wellness Center is there if you want to talk.` : `${monthLabel(m)}, ${plural(ws.length, 'check-in')}`, 'a');
     }
   }
   const rank: Record<Tier, number> = { milestone: 0, moment: 1, record: 2 };

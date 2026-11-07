@@ -168,6 +168,9 @@ test('events: tiered; milestones are the story, the difficult entries sit on the
   assert.ok(!ev.some(e => e.title.startsWith('Attendance in') || e.title.startsWith('Homework in')));
   const lastYear = yearEvents(r, lens, '2025-26');
   assert.ok(lastYear.some(e => e.title === 'Joined in Class 6-A' && e.tier === 'milestone'));
+  // Records from before the first enrolment: they didn't join then, they moved up.
+  const earlier = rows({ attendance: { months: [{ month: '2025-05', present: 20, absent: 0, late: 0, excused: 0, marked: 20 }], runs: [] } });
+  assert.ok(yearEvents(earlier, lens, '2025-26').some(e => e.title === 'Started Class 6-A'));
   assert.ok(lastYear.some(e => e.title === 'Report card: Annual' && e.detail === '81%, grade A2'));
   assert.ok(lastYear.some(e => e.title === 'Year result: Promoted' && e.tier === 'milestone'));
 });
@@ -186,7 +189,7 @@ test('personal bests: a chapter climbing past 50%, a first Exemplary, the best a
       { month: '2026-08', present: 21, absent: 1, late: 0, excused: 0, marked: 22 },
     ], runs: [] },
   });
-  const ev = yearEvents(r, studentLens(), '2026-27');
+  const ev = yearEvents(r, parentLens(), '2026-27');
   const climb = ev.find(e => e.title === 'Light climbed to 61%')!;
   assert.equal(climb.detail, 'Science, up from 38%');
   assert.equal(climb.tier, 'milestone');
@@ -194,6 +197,9 @@ test('personal bests: a chapter climbing past 50%, a first Exemplary, the best a
   const best = ev.find(e => e.title.startsWith('Best attendance month'))!;
   assert.equal(best.title, 'Best attendance month of the year: 100%');
   assert.equal(best.on, '2026-07-01');
+  // The student's own timeline speaks to them.
+  const mine = yearEvents(r, studentLens(), '2026-27').map(e => e.title);
+  assert.ok(mine.includes('You lifted Light to 61%') && mine.includes('Your best attendance month this year: 100%') && mine.includes('You reached Exemplary in Light: 92%'));
 });
 
 test('tutor sessions: deep or HOTS sessions are milestones, others moments; subject teachers see only theirs', () => {
@@ -202,7 +208,7 @@ test('tutor sessions: deep or HOTS sessions are milestones, others moments; subj
     { subject: 'Mathematics', topic: 'Fractions', depth_score: 41, completed_at: '2026-10-06T10:00:00Z', mode: 'standard' },
     { subject: 'Mathematics', topic: 'Fractions', depth_score: 60, completed_at: '2026-10-07T10:00:00Z', mode: 'hots' },
   ] });
-  const ev = yearEvents(r, studentLens(), '2026-27').filter(e => e.kind === 'tutor');
+  const ev = yearEvents(r, parentLens(), '2026-27').filter(e => e.kind === 'tutor');
   assert.deepEqual(ev.map(e => [e.title, e.tier]), [
     ['HOTS tutor session: Fractions, depth 60', 'milestone'],
     ['Tutor session: Fractions, depth 41', 'moment'],
@@ -210,6 +216,12 @@ test('tutor sessions: deep or HOTS sessions are milestones, others moments; subj
   ]);
   const t = shapeTimeline(r, studentLens());
   assert.deepEqual(t.years[0].tutor, { sessions: 3, depth: 64 });
+  const mine = yearEvents(r, studentLens(), '2026-27').filter(e => e.kind === 'tutor');
+  assert.deepEqual(mine.map(e => [e.title, e.detail]), [
+    ['You took on a HOTS challenge: Fractions', 'Mathematics, depth 60'],
+    ['You worked through Fractions with the AI tutor', 'Mathematics, depth 41'],
+    ['You worked through Light with the AI tutor', 'Science, depth 92'],
+  ]);
   const maths = teacherLens({ teacherClass: null, scope: [{ cls: 'Class 7-A', subject: 'Mathematics' }] }, 'Class 7-A', normClass)!;
   assert.ok(!yearEvents(r, maths, '2026-27').some(e => e.title.includes('Light')));
   assert.equal(officeLens(new Access(['accountant']))!.sources.includes('tutor'), false);
@@ -233,7 +245,8 @@ test('month series: one point a month, mastery carried between snapshots, only w
 test('a harder wellbeing month goes on the record lane for those who see wellbeing', () => {
   const low = Array.from({ length: 3 }, (_, i) => ({ created_at: `2026-09-1${i}T08:00:00Z`, mood: 'Low', energy: 2 }));
   const ev = yearEvents(rows({ wellness: low }), studentLens(), '2026-27');
-  assert.ok(ev.some(e => e.kind === 'wellness' && e.tier === 'record' && e.title === 'A harder month: 3 low days'));
+  assert.ok(ev.some(e => e.kind === 'wellness' && e.tier === 'record' && e.title === 'A tougher month'));
+  assert.ok(yearEvents(rows({ wellness: low }), officeLens(new Access(['principal']))!, '2026-27').some(e => e.title === 'A harder month: 3 low days'));
 });
 
 test('the AI text carries no names and stays inside the lens', () => {

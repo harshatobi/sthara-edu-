@@ -6,6 +6,7 @@
 import { EXPIRING_DAYS } from './admissions';
 import type { AdminDesk } from './desk';
 import type { Perm } from './rbac';
+import type { Queue, QueueKey } from './todayServer';
 
 export interface WorkAction { label: string; href: string; primary?: boolean }
 export interface WorkItem {
@@ -15,13 +16,16 @@ export interface WorkItem {
   detail: string;
   /** How many things wait (null when the count isn't known here). */
   count: number | null;
+  /** When the longest-waiting item arrived (from the server's live counts), if known. */
+  oldest?: string | null;
   tone: 'r' | 'a' | 'g' | 'n';
   actions: WorkAction[];
 }
 
 const n = (x: number, one: string, many = `${one}s`) => `${x.toLocaleString('en-IN')} ${x === 1 ? one : many}`;
 
-export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions' | 'concessions' | 'dayBook' | 'fees' | 'compliance' | 'filing'> & { grants?: AdminDesk['grants'] }, today: string): WorkItem[] {
+export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions' | 'concessions' | 'dayBook' | 'fees' | 'compliance' | 'filing'> & { grants?: AdminDesk['grants'] }, today: string,
+  live?: Partial<Record<QueueKey, Queue>>): WorkItem[] {
   const a = desk.me.access;
   const can = (p: Perm) => a.can(p);
   const out: WorkItem[] = [];
@@ -136,5 +140,31 @@ export function workItems(desk: Pick<AdminDesk, 'me' | 'workforce' | 'admissions
     out.push({ key: 'logins', title: 'Logins', detail: 'Ask Sthara for new logins, remove accounts, set what teachers teach.', count: null, tone: 'n',
       actions: [{ label: 'User directory', href: '/admin/directory', primary: true }] });
   }
-  return out;
+  return live ? withLive(out, live) : out;
+}
+
+/** Live counts from the server (lib/admin/todayServer) for the queues the desk can't count, in words. */
+const LIVE: Record<string, { key: QueueKey; some: (n: string) => string; none: string; tone: 'r' | 'a' }> = {
+  payroll: { key: 'payroll', some: x => `${x} submitted and waiting for your approval.`, none: 'No pay run is waiting for your approval.', tone: 'a' },
+  certificates: { key: 'certificates', some: x => `${x} prepared and waiting for your approval.`, none: 'No certificate is waiting for your approval.', tone: 'a' },
+  discipline: { key: 'discipline', some: x => `${x} proposed by teachers, waiting for a decision.`, none: 'Nothing proposed is waiting.', tone: 'a' },
+  kirti: { key: 'kirti', some: x => `${x} recorded by teachers, waiting for approval.`, none: 'No Kirti is waiting.', tone: 'a' },
+  messages: { key: 'messages', some: x => `${x} from parents still open.`, none: 'No open conversation with parents.', tone: 'a' },
+  safety: { key: 'incidents', some: x => `${x} open.`, none: 'No open incident.', tone: 'r' },
+  register: { key: 'register', some: x => `${x} from parents waiting.`, none: 'No change request is waiting.', tone: 'a' },
+  logins: { key: 'logins', some: x => `${x} with Sthara.`, none: 'No login request is pending.', tone: 'a' },
+};
+const NOUN: Record<QueueKey, [string, string]> = {
+  payroll: ['pay run', 'pay runs'], certificates: ['certificate', 'certificates'], discipline: ['action', 'actions'], kirti: ['entry', 'entries'],
+  messages: ['conversation', 'conversations'], incidents: ['incident', 'incidents'], register: ['change request', 'change requests'], logins: ['login request', 'login requests'],
+};
+
+export function withLive(items: WorkItem[], live: Partial<Record<QueueKey, Queue>>): WorkItem[] {
+  return items.map(w => {
+    const l = LIVE[w.key];
+    const q = l && live[l.key];
+    if (!l || !q) return w;
+    const [one, many] = NOUN[l.key];
+    return { ...w, count: q.count, oldest: q.count ? q.oldest : null, detail: q.count ? l.some(n(q.count, one, many)) : l.none, tone: q.count ? l.tone : 'g' };
+  });
 }

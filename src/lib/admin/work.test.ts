@@ -53,3 +53,19 @@ test('own concession requests are not "waiting for your approval"', () => {
   d.concessions = [{ status: 'pending', requestedBy: 'me' }];
   assert.ok(!workItems(d, '2026-10-14').some(i => i.key === 'concessions'));
 });
+
+test('live counts fill the queues the desk cannot count, in words, with how long the oldest has waited', async () => {
+  const { withLive } = await import('./work');
+  const items = [
+    { key: 'payroll', title: 'Payroll', detail: '', count: null, tone: 'n' as const, actions: [] },
+    { key: 'messages', title: 'Parent messages', detail: '', count: null, tone: 'n' as const, actions: [] },
+    { key: 'counter', title: 'Fee counter', detail: 'x', count: null, tone: 'n' as const, actions: [] },
+  ];
+  const out = withLive(items, { payroll: { count: 1, oldest: '2026-11-01T10:00:00Z' }, messages: { count: 0, oldest: null } });
+  assert.deepEqual(out.map(w => [w.key, w.count, w.tone, w.detail]), [
+    ['payroll', 1, 'a', '1 pay run submitted and waiting for your approval.'],
+    ['messages', 0, 'g', 'No open conversation with parents.'],
+    ['counter', null, 'n', 'x'],
+  ]);
+  assert.equal(out[0].oldest, '2026-11-01T10:00:00Z');
+});

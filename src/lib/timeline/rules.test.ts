@@ -209,11 +209,15 @@ test('tutor sessions: deep or HOTS sessions are milestones, others moments; subj
     { subject: 'Mathematics', topic: 'Fractions', depth_score: 60, completed_at: '2026-10-07T10:00:00Z', mode: 'hots' },
   ] });
   const ev = yearEvents(r, parentLens(), '2026-27').filter(e => e.kind === 'tutor');
-  assert.deepEqual(ev.map(e => [e.title, e.tier]), [
-    ['HOTS tutor session: Fractions, depth 60', 'milestone'],
-    ['Tutor session: Fractions, depth 41', 'moment'],
-    ['Tutor session: Light, depth 92', 'milestone'],
+  assert.deepEqual(ev.map(e => [e.title, e.detail, e.tier]), [
+    ['Took on a HOTS challenge: Fractions', 'Mathematics, understanding 60 out of 100', 'milestone'],
+    ['Worked through Fractions with the AI tutor', 'Mathematics, understanding 41 out of 100', 'moment'],
+    ['Worked through Light with the AI tutor', 'Science, understanding 92 out of 100', 'milestone'],
   ]);
+  const staff = yearEvents(r, officeLens(new Access(['principal']))!, '2026-27').filter(e => e.kind === 'tutor').map(e => e.title);
+  assert.deepEqual(staff, ['HOTS tutor session: Fractions, depth 60', 'Tutor session: Fractions, depth 41', 'Tutor session: Light, depth 92']);
+  const early = yearEvents(rows({ tutor: [{ subject: 'Science', topic: 'Light', depth_score: 0, completed_at: '2026-10-05T10:00:00Z', mode: 'standard' }] }), parentLens(), '2026-27').find(e => e.kind === 'tutor')!;
+  assert.deepEqual([early.title, early.detail, early.tier], ['Started a tutor session on Light', 'Science, ended early', 'moment']);
   const t = shapeTimeline(r, studentLens());
   assert.deepEqual(t.years[0].tutor, { sessions: 3, depth: 64 });
   const mine = yearEvents(r, studentLens(), '2026-27').filter(e => e.kind === 'tutor');

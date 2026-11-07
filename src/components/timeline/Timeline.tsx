@@ -309,7 +309,7 @@ function yearFacts(y: Year, t: TL, focus: string | null): { k: string; v: string
   if (y.tml !== undefined) f.push({ k: 'Mastery', v: y.tml ? `${y.tml.score}%` : 'None yet', sub: y.tml?.band, tone: !y.tml ? undefined : y.tml.score >= 75 ? 'g' : y.tml.score >= 50 ? 'a' : 'r' });
   if (y.results !== undefined) f.push({ k: y.results?.term ?? 'Results', v: y.results ? (y.results.pct !== null ? `${y.results.pct}%` : y.results.subjects.map(x => `${x.name.split(' ')[0]} ${x.grade ?? (x.pct !== null ? `${x.pct}%` : '')}`).join(', ') || 'Published') : 'None yet', sub: y.results?.grade ?? undefined });
   if (y.homework !== undefined) f.push({ k: 'Homework', v: y.homework ? `${y.homework.done} of ${y.homework.set}` : 'None yet', sub: y.homework?.avg != null ? `average ${y.homework.avg}%` : undefined });
-  if (y.tutor !== undefined) f.push({ k: 'AI tutor', v: y.tutor ? plural(y.tutor.sessions, 'session') : 'None yet', sub: y.tutor?.depth != null ? `average depth ${y.tutor.depth}` : undefined });
+  if (y.tutor !== undefined) f.push({ k: 'AI tutor', v: y.tutor ? plural(y.tutor.sessions, 'session') : 'None yet', sub: y.tutor?.depth != null ? (t.who === 'parent' ? `understanding ${y.tutor.depth} out of 100` : `average depth ${y.tutor.depth}`) : undefined });
   if (y.kirti !== undefined) f.push({ k: 'Kirti', v: y.kirti ? String(y.kirti) : 'None yet', tone: y.kirti ? 'g' : undefined });
   if (y.fees !== undefined) f.push({ k: 'Fees due', v: y.fees ? inr(y.fees.due) : 'None', tone: y.fees && y.fees.due > 0 ? 'a' : undefined });
   if (y.wellness !== undefined) f.push({ k: 'Wellbeing', v: y.wellness ? plural(y.wellness.checkins, 'check-in') : 'None yet', sub: y.wellness?.low ? plural(y.wellness.low, 'low day') : undefined });

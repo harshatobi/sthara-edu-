@@ -113,7 +113,7 @@ export async function loadRows(db: Db, a: { lens: Lens; subject: Subject; docCan
   const classKeys = new Set(classes.map(c => normClass(c)));
   const grades = [...new Set(classes.map(c => String(c).match(/\d{1,2}/)?.[0]).filter((g): g is string => !!g))];
 
-  const [att, cards, tml, work, subs, invoices, kirti, certs, docs, health, discipline, incidents, counselling, wellness] = await Promise.all([
+  const [att, cards, tml, work, subs, invoices, kirti, certs, docs, health, discipline, incidents, counselling, wellness, tutor] = await Promise.all([
     on('attendance') ? db.rpc('student_attendance_timeline', { p_school: schoolId, p_student: uid, p_from: from, p_to: to ? isoDay(new Date(new Date(`${to}T00:00:00Z`).getTime() - 86_400_000)) : null }) : Promise.resolve({ data: null, error: null }),
     // bounded: a student's published report cards, a handful a year
     on('results') ? db.from('report_cards').select('published_at, term:snapshot->term, aggregate:snapshot->aggregate, result:snapshot->result, session:snapshot->>session, subjects:snapshot->subjects')
@@ -153,6 +153,12 @@ export async function loadRows(db: Db, a: { lens: Lens; subject: Subject; docCan
       if (from && to) q = q.gte('created_at', from).lt('created_at', to);
       return q.order('created_at').order('id').range(f, t);
     }, 20_000) : none,
+    // Finished tutor sessions: chapter, depth and when. The transcript stays in the tutor.
+    on('tutor') ? pageAll<any>((f, t) => {
+      let q = db.from('tutor_sessions').select('subject, topic, depth_score, completed_at, mode').eq('school_id', schoolId).eq('student_id', uid).eq('status', 'done').not('completed_at', 'is', null);
+      if (from && to) q = q.gte('completed_at', from).lt('completed_at', to);
+      return q.order('completed_at').order('id').range(f, t);
+    }, 20_000) : none,
   ]);
   if (att.error) throw new Error(`attendance: ${att.error.message}`);
 
@@ -189,6 +195,7 @@ export async function loadRows(db: Db, a: { lens: Lens; subject: Subject; docCan
     incidents: must(incidents, 'incidents'),
     counselling: must(counselling, 'counselling'),
     wellness: must(wellness, 'wellness'),
+    tutor: must(tutor, 'tutor sessions'),
   });
 }
 

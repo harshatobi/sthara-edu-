@@ -33,6 +33,14 @@ const lead = (r: Rows, lens: Lens) => {
 test('chapters now: latest score and the score a month ago', () => {
   const c = chaptersNow(rows().tml, '2026-11-06');
   assert.deepEqual(c.find(x => x.topic === 'Nationalism in India'), { subject: 'Social Science', topic: 'Nationalism in India', score: 56, prev: 21 });
+  // Both scores inside the last month: the first one is the baseline.
+  const fresh = chaptersNow([
+    { subject: 'Science', topic_name: 'Light', score: 30, computed_at: '2026-10-20T00:00:00Z' },
+    { subject: 'Science', topic_name: 'Light', score: 61, computed_at: '2026-11-05T00:00:00Z' },
+    { subject: 'Science', topic_name: 'Sound', score: 40, computed_at: '2026-11-05T00:00:00Z' },
+  ], '2026-11-06');
+  assert.equal(fresh.find(x => x.topic === 'Light')!.prev, 30);
+  assert.equal(fresh.find(x => x.topic === 'Sound')!.prev, null, 'one score: nothing to compare');
 });
 
 test('student: wins and one next step; no worry list', () => {

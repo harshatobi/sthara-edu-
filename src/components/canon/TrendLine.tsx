@@ -39,7 +39,7 @@ function paths(points: Pt[], x: (i: number) => number, y: (v: number) => number)
   return segs;
 }
 
-export function TrendChart({ points, refValue = 75, refLabel = '75% (CBSE)', title, unit = '%' }: { points: Pt[]; refValue?: number; refLabel?: string; title: string; unit?: string }) {
+export function TrendChart({ points, refValue = 75, refLabel = '75% (CBSE)', title, unit = '%', compare, compareLabel = 'Class average', seriesLabel = 'Attendance' }: { points: Pt[]; refValue?: number; refLabel?: string; title: string; unit?: string; compare?: Pt[]; compareLabel?: string; seriesLabel?: string }) {
   const id = useId();
   const [hover, setHover] = useState<number | null>(null);
   const { x, y, floor } = scale(points, refValue, W, H, PAD);
@@ -78,6 +78,7 @@ export function TrendChart({ points, refValue = 75, refLabel = '75% (CBSE)', tit
             {points.map((p, i) => (i % labelEvery === 0 || i === points.length - 1) && (
               <text key={i} x={x(i)} y={H - 8} className="tl-ax" textAnchor="middle">{p.label}</text>
             ))}
+            {compare && paths(compare, x, y).map((d, i) => <path key={`c${i}`} d={d} className="tl-cmp" />)}
             {paths(points, x, y).map((d, i) => <path key={i} d={d} className="tl-line" />)}
             {points.map((p, i) => p.value !== null && (points.length <= 16 || i === points.length - 1 || hover === i) && (
               <circle key={i} cx={x(i)} cy={y(p.value)} r={hover === i ? 5 : 3.5} className={`tl-pt ${p.value < refValue ? 'low' : ''}`} />
@@ -88,6 +89,7 @@ export function TrendChart({ points, refValue = 75, refLabel = '75% (CBSE)', tit
             <div className="tl-tip" style={{ left: `${(x(hover!) / W) * 100}%` }} role="status">
               <b>{hp.value === null ? 'No marks' : `${hp.value}${unit}`}</b>
               <span>{hp.label}{hp.note ? ` · ${hp.note}` : ''}</span>
+              {compare && compare[hover!]?.value != null && <span>{compareLabel}: {compare[hover!].value}{unit}</span>}
               {hp.value !== null && hp.value < refValue && <em>Below {refValue}{unit}</em>}
             </div>
           )}
@@ -95,8 +97,8 @@ export function TrendChart({ points, refValue = 75, refLabel = '75% (CBSE)', tit
       )}
       <table className="sr">
         <caption>{title}</caption>
-        <thead><tr><th scope="col">Week</th><th scope="col">Attendance</th></tr></thead>
-        <tbody>{points.map((p, i) => <tr key={i}><td>{p.label}</td><td>{p.value === null ? 'no marks' : `${p.value}${unit}`}</td></tr>)}</tbody>
+        <thead><tr><th scope="col">Week</th><th scope="col">{seriesLabel}</th>{compare && <th scope="col">{compareLabel}</th>}</tr></thead>
+        <tbody>{points.map((p, i) => <tr key={i}><td>{p.label}</td><td>{p.value === null ? 'no marks' : `${p.value}${unit}`}</td>{compare && <td>{compare[i]?.value == null ? '–' : `${compare[i].value}${unit}`}</td>}</tr>)}</tbody>
       </table>
     </figure>
   );

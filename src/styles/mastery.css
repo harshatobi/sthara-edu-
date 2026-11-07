@@ -78,6 +78,10 @@
 .canon .ms-hero-facts { display:grid; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid rgba(255,255,255,.12); font-size:13px; color:#BFD0EA; }
 .canon .ms-hero-facts b { color:#fff; }
 .canon .ms-trend { min-width:0; }
+/* The 75% line is the green target here, not a risk line (crimson is reserved for risk). */
+.canon .ms-trend .tl-ref { stroke:#10B981; stroke-dasharray:3 4; opacity:.7; }
+.canon .ms-trend .tl-ref-t { fill:#0B7A55; }
+.canon .ms-roster .spk-ref, .canon .ms-mv .spk-ref, .canon .ms-chlist .spk-ref, .canon .ms-ch-spark .spk-ref { stroke:var(--line); }
 .canon .tl-cmp { fill:none; stroke:var(--mut2); stroke-width:1.6; stroke-dasharray:4 4; }
 
 .canon .ms-chapters { list-style:none; margin:8px 0 0; padding:0; display:grid; gap:8px; }
@@ -127,6 +131,7 @@
 .canon .ms-notes { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin-top:14px; font-size:13px; color:#33465F; }
 .canon .ms-flag { display:inline-flex; align-items:center; gap:6px; color:#9A5B00; }
 .canon .ms-ev td { font-size:13px; }
+.canon .ms-ev .ms-meta { display:flex; margin-top:3px; }
 .canon .ms-ev .nowrap { white-space:nowrap; }
 
 .canon .ms-whatif { display:grid; gap:16px; max-width:640px; }

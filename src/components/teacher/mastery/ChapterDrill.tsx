@@ -57,11 +57,11 @@ function Why({ x, p }: { x: ReturnType<typeof explainTopic>; p: DrillInput }) {
   const segs = [...comps.filter(c => x.componentWeights[c] > 0).map(c => ({ key: c, label: COMP_LABEL[c], pts: compPts[c], color: COMP_COLOR[c] })),
     { key: 'eng', label: 'Engagement', pts: engPts, color: ENG_COLOR }];
   // Group per-question marks of one paper on one day into a single line.
-  const groups = new Map<string, { title: string; kind: string; component: TmlComponentType; atMs: number; age: number; decay: number; n: number; pctSum: number; points: number }>();
+  const groups = new Map<string, { title: string; kind: string; component: TmlComponentType; atMs: number; age: number; decay: number; n: number; pctSum: number; points: number; share: number }>();
   for (const i of x.items) {
     const k = `${i.ref.title}|${i.component}|${day(i.atMs)}`;
-    const g = groups.get(k) ?? { title: i.ref.title, kind: i.ref.kind, component: i.component, atMs: i.atMs, age: i.ageDays, decay: i.decay, n: 0, pctSum: 0, points: 0 };
-    g.n++; g.pctSum += i.pct; g.points += i.points;
+    const g = groups.get(k) ?? { title: i.ref.title, kind: i.ref.kind, component: i.component, atMs: i.atMs, age: i.ageDays, decay: i.decay, n: 0, pctSum: 0, points: 0, share: 0 };
+    g.n++; g.pctSum += i.pct; g.points += i.points; g.share += i.shareOfComponent;
     groups.set(k, g);
   }
   const rows = [...groups.values()].sort((a, b) => b.atMs - a.atMs);
@@ -77,7 +77,7 @@ function Why({ x, p }: { x: ReturnType<typeof explainTopic>; p: DrillInput }) {
           <li key={c}>
             <i style={{ background: COMP_COLOR[c] }} />
             <span><b>{COMP_LABEL[c]}</b> averages <b>{Math.round(x.componentScores[c]!)}%</b> after time decay, and carries {Math.round(x.componentWeights[c] * 70)}% of the score
-              {x.componentWeights[c] !== { homework: 0.4, quiz: 0.4, tutor: 0.2 }[c] && <span className="muted"> (re-weighted: no {comps.filter(o => x.componentWeights[o] === 0).map(o => COMP_LABEL[o].toLowerCase()).join(' or ')} yet)</span>}</span>
+              {x.componentWeights[c] !== { homework: 0.4, quiz: 0.4, tutor: 0.2 }[c] && <span className="muted"> (re-weighted: no {comps.filter(o => x.componentWeights[o] === 0).map(o => COMP_LABEL[o].replace(/^AI /, 'AI\u00a0').replace(/^[A-Z][a-z]/, m => m.toLowerCase())).join(' or ')} yet)</span>}</span>
             <b className="ms-pts">+{fmt1(compPts[c])}</b>
           </li>
         ))}
@@ -99,10 +99,10 @@ function Why({ x, p }: { x: ReturnType<typeof explainTopic>; p: DrillInput }) {
         {drift && <span className="muted">Shown live from today&apos;s evidence; the stored score ({p.stored}%) updates at the next recompute.</span>}
       </div>
       <h4 className="ms-h4">Every piece of evidence</h4>
-      <p className="muted ms-sub">Newer work counts more: a result&apos;s weight halves every 14 days. Points are what each result adds to the {Math.round(x.finalTml)}.</p>
+      <p className="muted ms-sub">Within each type, newer work counts more: a result&apos;s weight halves every 14 days, so its share of its type shrinks as newer results arrive. Points are what each result adds to the {Math.round(x.finalTml)}.</p>
       <div className="tbl-wrap">
         <table className="tbl ms-ev">
-          <thead><tr><th scope="col">Date</th><th scope="col">Evidence</th><th scope="col">Score</th><th scope="col" className="ms-num">Weight now</th><th scope="col" style={{ textAlign: 'right' }}>Points</th></tr></thead>
+          <thead><tr><th scope="col">Date</th><th scope="col">Evidence</th><th scope="col">Score</th><th scope="col" className="ms-num">Share of its type</th><th scope="col" style={{ textAlign: 'right' }}>Points</th></tr></thead>
           <tbody>
             {rows.map((g, i) => {
               const pct = Math.round(g.pctSum / g.n);
@@ -111,7 +111,7 @@ function Why({ x, p }: { x: ReturnType<typeof explainTopic>; p: DrillInput }) {
                   <td className="nowrap">{day(g.atMs)}<div className="muted ms-tiny">{g.age < 1 ? 'today' : `${Math.round(g.age)} days ago`}</div></td>
                   <td><b>{g.title}</b><div className="muted ms-tiny ms-meta"><span><i className="ms-key" style={{ background: COMP_COLOR[g.component] }} />{g.kind === 'tutor' ? 'Tutor session' : g.kind[0].toUpperCase() + g.kind.slice(1)}</span>{g.n > 1 && <span>{g.n} questions</span>}</div></td>
                   <td><b style={{ color: hmColor(pct) }}>{pct}%</b></td>
-                  <td className="ms-num">{Math.round(g.decay * 100)}%</td>
+                  <td className="ms-num">{Math.round(g.share * 100)}%</td>
                   <td style={{ textAlign: 'right' }}><b>+{fmt1(g.points)}</b></td>
                 </tr>
               );

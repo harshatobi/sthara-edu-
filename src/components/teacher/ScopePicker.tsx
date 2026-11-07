@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { normClass, scopeClasses, subjectsIn, type ScopeEntry } from '@/lib/teacher/scope';
 
 /**
@@ -9,7 +9,6 @@ import { normClass, scopeClasses, subjectsIn, type ScopeEntry } from '@/lib/teac
  */
 export function useScopeSelection(scope: ScopeEntry[]) {
   const params = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const classes = scopeClasses(scope);
   const wanted = params.get('class');
@@ -24,7 +23,10 @@ export function useScopeSelection(scope: ScopeEntry[]) {
       if (v === null) q.delete(k); else q.set(k, v);
     }
     const s = q.toString();
-    router.push(s ? `${pathname}?${s}` : pathname, { scroll: false });
+    // Same page, new query: the browser's history (Next keeps useSearchParams in sync). router.push here kept
+    // reverting to the old query on Next 16.2 (chapter / student drill-downs never opened), see
+    // docs 01-getting-started/04-linking-and-navigating "Native History API".
+    window.history.pushState(null, '', s ? `${pathname}?${s}` : pathname);
   };
   return { classes, cls, subjects, subject, params, go };
 }

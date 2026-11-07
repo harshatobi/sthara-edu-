@@ -95,11 +95,12 @@ export function TrendChart({ points, refValue = 75, refLabel = '75% (CBSE)', tit
           )}
         </div>
       )}
-      <table className="sr">
+      {/* A table sizes to its content and ignores the 1px box, so the hidden copy sits inside a hidden div. */}
+      <div className="sr"><table>
         <caption>{title}</caption>
         <thead><tr><th scope="col">Week</th><th scope="col">{seriesLabel}</th>{compare && <th scope="col">{compareLabel}</th>}</tr></thead>
         <tbody>{points.map((p, i) => <tr key={i}><td>{p.label}</td><td>{p.value === null ? 'no marks' : `${p.value}${unit}`}</td>{compare && <td>{compare[i]?.value == null ? '–' : `${compare[i].value}${unit}`}</td>}</tr>)}</tbody>
-      </table>
+      </table></div>
     </figure>
   );
 }

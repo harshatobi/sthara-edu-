@@ -463,3 +463,11 @@ test('compute: writes this week\'s history roll-up, and a failed history write d
   const out = await computeStudentTml(bad.db, 's1');
   assert.equal(out.computedTopicsCount, 1);
 });
+
+test('collect: a per-question mark is dated by when the work was handed in, not when it was marked', () => {
+  const handedIn = ago(30), marked = ago(2);
+  const [e] = collectEvidence([{ id: 'i1', score: 4, max_score: 5, created_at: marked, submission_id: 's1', assignments: heredity, submissions: { submitted_at: handedIn } }], [], []);
+  assert.equal(e.atMs, Date.parse(handedIn));
+  const [f] = collectEvidence([{ id: 'i2', score: 4, max_score: 5, created_at: marked, submission_id: 's2', assignments: heredity, submissions: null }], [], []);
+  assert.equal(f.atMs, Date.parse(marked), 'no hand-in time: the mark date');
+});

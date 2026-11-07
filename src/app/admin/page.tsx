@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import CommandCentre from '@/components/admin/CommandCentre';
+import Home from '@/components/admin/home/Home';
 
 export const metadata: Metadata = { title: 'Command Centre' };
 
 export default function AdminPage() {
-  return <CommandCentre />;
+  return <Home />;
 }

@@ -1328,3 +1328,22 @@
   .canon .cc-item .btn { grid-column:1 / -1; justify-content:center; min-height:42px; }
   .canon .cc-spark { display:none; }
 }
+
+/* ---------- OFFICE ROLE HOMES (2026-11-06): the Command Centre's band and "Waiting for you", then the role's own sections ---------- */
+.canon .rh-main { grid-template-columns:minmax(0, 1.25fr) minmax(0, 1fr); }
+.canon .rh-side { display:grid; gap:18px; min-width:0; }
+.canon .rh-rows { list-style:none; margin:0; padding:0; display:grid; }
+.canon .rh-rows li { display:grid; grid-template-columns:minmax(0, 1fr) auto; grid-template-areas:"name val" "meta val"; column-gap:12px; padding:9px 2px; border-top:1px solid var(--line); align-items:center; }
+.canon .rh-rows li:first-child { border-top:0; }
+.canon .rh-rows li > b:first-child { grid-area:name; font-size:13.5px; color:var(--ink); }
+.canon .rh-rows li > span { grid-area:meta; font-size:12.5px; color:#4A5A70; }
+.canon .rh-rows li > :last-child:not(:first-child):not(span) { grid-area:val; justify-self:end; }
+.canon .rh-rows .num { font-variant-numeric:tabular-nums; font-size:13.5px; }
+.canon .rh-r { color:var(--red); } .canon .rh-a { color:#B45309; }
+.canon .rh-sub { font-size:13px; font-weight:800; color:var(--ink); margin:14px 0 4px; }
+.canon .rh-search { display:flex; align-items:center; gap:8px; padding:6px 6px 6px 12px; border:1px solid var(--line); border-radius:12px; background:var(--body); margin-bottom:10px; color:var(--mut); }
+.canon .rh-search:focus-within { border-color:var(--blue); box-shadow:0 0 0 3px var(--pale); }
+.canon .rh-search input { flex:1; min-width:0; border:0; background:none; font:inherit; font-size:14px; color:var(--ink); outline:none; padding:6px 0; }
+.canon .rh-search input::placeholder { color:#6B778C; }
+.canon .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+@media (max-width:1100px) { .canon .rh-main { grid-template-columns:minmax(0, 1fr); } }

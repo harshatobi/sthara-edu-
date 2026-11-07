@@ -40,7 +40,7 @@ export interface Lead {
 const DAY = 86_400_000;
 const ago = (today: string, days: number) => new Date(Date.parse(`${today}T00:00:00Z`) - days * DAY).toISOString().slice(0, 10);
 
-/** Latest score per chapter, and what it was about a month earlier. */
+/** Latest score per chapter, and what it was about a month earlier (or when first scored, if that's within the month). */
 export function chaptersNow(tml: { subject: string; topic_name: string; score: number | string; computed_at: string }[], today: string): ChapterNow[] {
   const cut = ago(today, 30);
   const by = new Map<string, { subject: string; topic: string; snaps: { at: string; score: number }[] }>();
@@ -53,7 +53,9 @@ export function chaptersNow(tml: { subject: string; topic_name: string; score: n
   return [...by.values()].map(c => {
     const s = c.snaps.sort((a, b) => a.at.localeCompare(b.at));
     const before = s.filter(x => x.at <= cut);
-    return { subject: c.subject, topic: c.topic, score: Math.round(s[s.length - 1].score), prev: before.length ? Math.round(before[before.length - 1].score) : null };
+    // The score about a month ago; for a chapter first scored inside the month, its first score.
+    const base = before.length ? before[before.length - 1] : s.length > 1 ? s[0] : null;
+    return { subject: c.subject, topic: c.topic, score: Math.round(s[s.length - 1].score), prev: base ? Math.round(base.score) : null };
   });
 }
 

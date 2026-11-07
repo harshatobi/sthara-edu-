@@ -87,8 +87,9 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
   const s = (table: string, cols: string) => supabase.from(table).select(cols);
 
   // Row-level security limits an admin to their own school; the school filter keeps the queries indexed.
-  const [schoolRow, users, tml, assignments, lessons, consents, guardians, audit, leave, structures, invoices, payments,
-    reminders, applicants, events, filings, proctor] = await Promise.all([
+  // Every source starts at once (they don't depend on each other); before 2026-11-06 the access controls and the
+  // two summaries waited for the main batch, adding two more round trips to every load.
+  const mainP = Promise.all([
     supabase.from('schools').select('id, name, settings').eq('id', school).maybeSingle(),
     all((a, b) => s('users', 'id, name, email, role, student_class, custom_student_id, teacher_class, teacher_subject, assignments, created_at')
       .eq('school_id', school).order('id').range(a, b)),
@@ -115,7 +116,7 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
     all((a, b) => s('proctor_alerts', 'id, flagged_at').eq('school_id', school).gte('flagged_at', since).order('id').range(a, b)),
   ]);
   // Access and ERP controls (RLS returns only what this person's roles allow).
-  const [grants, dayCloses, concessions, leavePolicies, probeAcks, register, admStages, admSeats, admOffers] = await Promise.all([
+  const controlsP = Promise.all([
     all((a, b) => s('role_grants', '*').eq('school_id', school).order('granted_at').range(a, b)),
     all((a, b) => s('fee_day_closes', '*').eq('school_id', school).gte('day', since).order('day').range(a, b)),
     all((a, b) => s('fee_concession_requests', '*').eq('school_id', school).gte('requested_at', since).order('id').range(a, b)),
@@ -126,15 +127,17 @@ export async function loadAdminRows(supabase: SupabaseClient, who: { schoolId: s
     all((a, b) => s('admission_seats', '*').eq('school_id', school).eq('session', nextSession(session)).order('id').range(a, b)),
     all((a, b) => s('admission_offers', '*').eq('school_id', school).eq('session', nextSession(session)).order('id').range(a, b)),
   ]);
-  if (schoolRow.error || !schoolRow.data) throw new Error(schoolRow.error?.message || 'Your school record could not be found.');
-
   // (Mastery rows carry only the tutor part of their breakdown: it is all the desk reads, and the rest doubles the download.)
   // Each teacher's marking workload, counted in the database (admin_teacher_work). Before that function exists, the
   // submissions themselves, as before: every one on the school's assignments, which is megabytes in a large school.
-  const [work, wellness] = await Promise.all([
+  const summariesP = Promise.all([
     supabase.rpc('admin_teacher_work', { p_school: school }),
     supabase.rpc('school_wellness_report', { p_since: since }),
   ]);
+  const [[schoolRow, users, tml, assignments, lessons, consents, guardians, audit, leave, structures, invoices, payments,
+    reminders, applicants, events, filings, proctor], [grants, dayCloses, concessions, leavePolicies, probeAcks, register, admStages, admSeats, admOffers],
+    [work, wellness]] = await Promise.all([mainP, controlsP, summariesP]);
+  if (schoolRow.error || !schoolRow.data) throw new Error(schoolRow.error?.message || 'Your school record could not be found.');
   let subs: Result = { data: [], missing: false };
   if (work.error) {
     const asgIds = assignments.data.map(a => a.id);

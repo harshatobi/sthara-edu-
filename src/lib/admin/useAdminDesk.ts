@@ -43,15 +43,25 @@ export function AdminDeskProvider({ children }: { children: ReactNode }) {
     inFlight.current = true;
     const who = { schoolId: profile.schoolId!, uid: profile.uid, superadmin: profile.role === 'superadmin' };
     const db = createClient();
-    (wantFull ? loadAdminRows(db, who) : loadAdminCore(db, who))
-      .then(rows => {
+    const fail = (e: any) => { if (!cancelled) setError(prev => (loadedAt.current ? prev : e?.message || 'Could not load the school.')); };
+    // The core first (or alongside), so the nav and permission checks never wait on the whole school; it never
+    // replaces a whole-school desk already shown.
+    if (!loadedAt.current || !wantFull) {
+      loadAdminCore(db, who).then(rows => {
         if (cancelled) return;
-        setDesk(assembleAdminDesk(rows, Date.now(), wantFull));
+        setDesk(prev => (prev?.full && wantFull ? prev : assembleAdminDesk(rows, Date.now(), false)));
+        setError(null);
+        if (!wantFull) { loadedAt.current = Date.now(); inFlight.current = false; }
+      }).catch(fail);
+    }
+    if (wantFull) {
+      loadAdminRows(db, who).then(rows => {
+        if (cancelled) return;
+        setDesk(assembleAdminDesk(rows, Date.now(), true));
         setError(null);
         loadedAt.current = Date.now();
-      })
-      .catch(e => { if (!cancelled) setError(prev => (loadedAt.current ? prev : e?.message || 'Could not load the school.')); })
-      .finally(() => { if (!cancelled) inFlight.current = false; });
+      }).catch(fail).finally(() => { if (!cancelled) inFlight.current = false; });
+    }
     return () => { cancelled = true; };
   }, [authLoading, profile, user, nonce, wantFull]);
 

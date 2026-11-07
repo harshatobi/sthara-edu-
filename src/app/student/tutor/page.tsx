@@ -294,6 +294,8 @@ interface SessionView {
   step: { n: number; total: number } | null; hintsOnStep: number; messages: Msg[];
   result: { depth: number | null; rubric: Rubric | null; summary: SessionSummary | null; topicScore: number | null; band: string | null; misconceptions: string[] } | null;
   purged: boolean;
+  /** The chapter's mastery when the session began (recorded on the session). */
+  startScore?: number | null;
 }
 
 const STAGE_LABEL: Record<Exclude<StageKey, 'done'>, string> = { diagnose: 'Diagnose', scaffold: 'Guided steps', transfer: 'On your own', teachback: 'Explain it back' };
@@ -531,8 +533,10 @@ function LiveSession({ topic, sessionId, onNew, onPick, onOpened }: {
   );
 }
 
-function ResultCard({ s, start, onRetry }: { s: SessionView; start: number | null; onRetry: () => void }) {
+function ResultCard({ s, start: picked, onRetry }: { s: SessionView; start: number | null; onRetry: () => void }) {
   const r = s.result!;
+  // The score the topic had when this session began: from the pick, else as recorded on the session (a resume).
+  const start = picked ?? s.startScore ?? null;
   const depth = r.depth ?? 0;
   const parts: [string, keyof Rubric, string][] = [
     ['Independence', 'independence', 'How far you got without hints'],

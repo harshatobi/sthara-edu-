@@ -131,6 +131,7 @@
 .canon .ms-notes { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin-top:14px; font-size:13px; color:#33465F; }
 .canon .ms-flag { display:inline-flex; align-items:center; gap:6px; color:#9A5B00; }
 .canon .ms-ev td { font-size:13px; }
+.canon .ms-ev .ms-meta { display:flex; margin-top:3px; }
 .canon .ms-ev .nowrap { white-space:nowrap; }
 
 .canon .ms-whatif { display:grid; gap:16px; max-width:640px; }

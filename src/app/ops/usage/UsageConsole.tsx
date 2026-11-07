@@ -17,6 +17,8 @@ import { Pager, usePaged } from '@/components/canon/Pager';
 import { featureLabel, type ModelPrice } from '@/lib/ai/pricing';
 import { RANGES, daysInIstMonth, type RangeKey } from '@/lib/ai/window';
 import { useOpsApi } from '../useOpsApi';
+import AllowancePanel from './AllowancePanel';
+import { GaugeIcon as Gauge } from '@phosphor-icons/react/dist/ssr/Gauge';
 
 interface Totals {
   calls: number; failed: number; input: number; output: number; thinking: number; cached: number;
@@ -41,7 +43,7 @@ interface Data {
   features: Record<string, { label: string; who: string }>;
   checkedAt: string;
 }
-type Tab = 'features' | 'schools' | 'users' | 'models' | 'calls' | 'prices';
+type Tab = 'features' | 'schools' | 'users' | 'models' | 'calls' | 'prices' | 'cap';
 type Currency = 'INR' | 'USD';
 type Metric = 'cost' | 'tokens' | 'calls';
 
@@ -138,7 +140,7 @@ export default function UsageConsole() {
               <DailyChart data={data} money={money} />
               <div className="seg" role="tablist" aria-label="Breakdown" style={{ margin: '22px 0 18px' }}>
                 {([['features', 'By feature', Sparkle], ['schools', 'By school', Buildings], ['users', 'Top users', Users],
-                  ['models', 'By model', Cpu], ['calls', 'Recent calls', ListBullets], ['prices', 'Price list', Receipt]] as const)
+                  ['models', 'By model', Cpu], ['calls', 'Recent calls', ListBullets], ['prices', 'Price list', Receipt], ['cap', 'Cost cap', Gauge]] as const)
                   .map(([k, label, Icon]) => (
                     <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
@@ -151,6 +153,7 @@ export default function UsageConsole() {
                 : tab === 'users' ? <UserTable data={data} money={money} />
                 : tab === 'models' ? <ModelTable data={data} money={money} />
                 : tab === 'calls' ? <CallTable data={data} money={money} />
+                : tab === 'cap' ? <AllowancePanel />
                 : <PriceList data={data} currency={currency} />}
             </>
           )}

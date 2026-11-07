@@ -1,0 +1,56 @@
+/* Socratic tutor PR3 views (2026-11-06): the teacher's Tutor Insight and the parent's tutor summary.
+   Their own file so they merge independently of canon.css changes. */
+/* ---------- TUTOR INSIGHT (teacher, Socratic tutor PR3, 2026-11-06) ---------- */
+.canon .ti-summary { margin-bottom:18px; }
+.canon .ti-facts { display:flex; flex-wrap:wrap; gap:8px 32px; margin:0; }
+.canon .ti-facts dt { font-size:12px; font-weight:700; color:var(--mut); }
+.canon .ti-facts dd { margin:2px 0 0; font-size:24px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
+.canon .ti-heat { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; margin-top:16px; }
+.canon .ti-cell { display:grid; gap:2px; padding:10px 12px; border-radius:12px; border:1px solid; color:var(--ink); text-decoration:none; transition:transform .15s; }
+.canon .ti-cell:hover { transform:translateY(-1px); }
+.canon .ti-cell b { font-size:20px; font-variant-numeric:tabular-nums; }
+.canon .ti-cell span { font-size:12px; line-height:1.3; color:#4A5A70; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.canon .ti-ch { margin-bottom:16px; scroll-margin-top:16px; }
+.canon .ti-ch-h { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.canon .ti-ch-h h2 { font-size:17px; font-weight:800; color:var(--ink); }
+.canon .ti-chips { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.canon .ti-depth { font-weight:800; font-size:14px; }
+.canon .ti-cols { display:grid; grid-template-columns:minmax(0, 1.4fr) minmax(0, 1fr); gap:20px; }
+.canon .ti-cols h3, .canon .ti-bank summary { font-size:13px; font-weight:800; color:var(--ink); margin-bottom:6px; }
+.canon .ti-list { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.canon .ti-list li { display:grid; gap:2px; padding:9px 11px; border-radius:10px; background:var(--body); }
+.canon .ti-list li b { font-size:13.5px; color:var(--ink); }
+.canon .ti-list li span { font-size:12.5px; color:#4A5A70; }
+.canon .ti-list li.retired { opacity:.6; }
+.canon .ti-list li.retired b { text-decoration:line-through; }
+.canon .ti-none { font-size:13px; margin:0; }
+.canon .ti-bank { margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
+.canon .ti-bank summary { cursor:pointer; display:flex; gap:8px; align-items:baseline; list-style:none; }
+.canon .ti-bank summary::-webkit-details-marker { display:none; }
+.canon .ti-bank summary::before { content:"+"; font-weight:800; color:var(--mut); width:12px; }
+.canon .ti-bank[open] summary::before { content:"-"; }
+.canon .ti-bank > p { margin:4px 0 10px; }
+.canon .ti-bank-list { margin-bottom:10px; }
+.canon .ti-bank-list li { grid-template-columns:minmax(0, 1fr) auto; grid-template-areas:"l a" "d a"; column-gap:10px; }
+.canon .ti-bank-list li b { grid-area:l; } .canon .ti-bank-list li span { grid-area:d; } .canon .ti-bank-list .ti-acts { grid-area:a; align-self:center; }
+.canon .ti-acts { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.canon .ti-form { display:grid; gap:8px; max-width:640px; }
+.canon .ti-form label { display:grid; gap:4px; font-size:12.5px; font-weight:700; color:var(--ink); }
+@media (max-width:860px) { .canon .ti-cols { grid-template-columns:minmax(0, 1fr); } .canon .ti-bank-list li { grid-template-columns:minmax(0, 1fr); grid-template-areas:"l" "d" "a"; } }
+
+/* ---------- PARENT: AI TUTOR SESSIONS (Socratic tutor PR3, 2026-11-06) ---------- */
+.canon .pt-h { display:flex; align-items:center; gap:8px; }
+.canon .pt-sub { margin:4px 0 12px; font-size:13.5px; }
+.canon .pt-list { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.canon .pt-list > li { border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.canon .pt-row { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; padding:11px 14px; background:none; border:0; font:inherit; text-align:left; cursor:pointer; color:inherit; }
+.canon .pt-row:hover { background:var(--body); }
+.canon .pt-row:focus-visible { outline:2px solid var(--blue); outline-offset:-2px; }
+.canon .pt-t { display:grid; gap:2px; min-width:0; }
+.canon .pt-t b { font-size:14px; color:var(--ink); }
+.canon .pt-t span { font-size:12.5px; color:var(--mut); }
+.canon .pt-w { font-size:13px; font-weight:800; white-space:nowrap; }
+.canon .pt-body { padding:4px 14px 14px; font-size:13.5px; color:#4A5A70; }
+.canon .pt-body b { display:block; color:var(--ink); margin-top:8px; font-size:13px; }
+.canon .pt-body ul { margin:4px 0 0; padding-left:18px; display:grid; gap:3px; }
+.canon .pt-body p { margin:4px 0 0; }

@@ -11,6 +11,7 @@ import { Bar, Empty, PageBar } from '@/components/canon/ui';
 import { ago } from '@/lib/admin/format';
 import { bandOf } from '@/lib/parent/family';
 import { BAND_KEY, BandChip, ChildSwitcher, FamilyGate, Trend } from './common';
+import TutorSummary from './TutorSummary';
 import { contactHref } from './links';
 
 const CONF: Record<string, { label: string; tone: string; hint: string }> = {
@@ -89,6 +90,8 @@ export default function Progress() {
             </Empty></div>
           )}
 
+          <TutorSummary key={c.id} childId={c.id} firstName={c.firstName} />
+
           <div className="card" style={{ marginTop: 18 }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}><Info size={18} weight="duotone" color="#2F6BFF" /> What the bands mean</h3>
             <div className="pa-key">
@@ -96,7 +99,7 @@ export default function Progress() {
                 <div key={k.band}><i style={{ background: k.color }} aria-hidden="true" /><b>{k.band}</b><span className="muted">{k.range}%</span><p>{k.meaning}</p></div>
               ))}
             </div>
-            <p className="muted" style={{ marginTop: 12 }}>Homework and quiz marks count once a teacher confirms them. Tutor depth is higher when your child solves problems with fewer hints. Attendance isn&apos;t recorded in Sthara yet, so it isn&apos;t shown.</p>
+            <p className="muted" style={{ marginTop: 12 }}>Homework and quiz marks count once a teacher confirms them. Tutor depth shows how well your child reasons, applies and explains a chapter in the AI tutor, not just how many hints they needed. Attendance isn&apos;t recorded in Sthara yet, so it isn&apos;t shown.</p>
           </div>
         </>
       )}

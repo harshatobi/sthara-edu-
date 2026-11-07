@@ -10,6 +10,7 @@ import { ClipboardTextIcon as ClipboardText } from '@phosphor-icons/react/dist/s
 import { LightningIcon as Lightning } from '@phosphor-icons/react/dist/ssr/Lightning';
 import { BrainIcon as Brain } from '@phosphor-icons/react/dist/ssr/Brain';
 import { FireIcon as Fire } from '@phosphor-icons/react/dist/ssr/Fire';
+import { LightbulbIcon as Lightbulb } from '@phosphor-icons/react/dist/ssr/Lightbulb';
 import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
 import { BellIcon as Bell } from '@phosphor-icons/react/dist/ssr/Bell';
 import { HeartIcon as Heart } from '@phosphor-icons/react/dist/ssr/Heart';
@@ -49,6 +50,7 @@ const NAV: CanonNavItem[] = [
   { href: '/teacher/lab', label: 'Live Lab', short: 'Lab', icon: Flask, ai: true },
   { href: '/teacher/heatmap', label: 'Class Heat Map', short: 'Heat map', icon: Fire },
   { href: '/teacher/mastery', label: 'Mastery Tracker', short: 'Mastery', icon: ChartLineUp },
+  { href: '/teacher/tutor-insight', label: 'Tutor Insight', short: 'Tutor', icon: Lightbulb, ai: true },
   { href: '/teacher/feed', label: 'Situational Feed', short: 'Feed', icon: Bell },
   { href: '/teacher/wellness', label: 'Student Wellness', short: 'Wellness', icon: Heart },
   { href: '/teacher/leave', label: 'Apply Leave', short: 'Leave', icon: CalendarBlank },

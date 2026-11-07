@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const queue = [...(batch ?? [])];
   await Promise.all(Array.from({ length: 4 }, async () => {
     for (let s = queue.shift(); s; s = queue.shift()) {
-      try { rows += await backfillStudentHistory(db, s.id, dry); } catch (e) {
+      try { const n = await backfillStudentHistory(db, s.id, dry); rows += n; } catch (e) {
         failed.push(s.id);
         console.error('[tml backfill]', s.id, e instanceof Error ? e.message : e);
       }

@@ -38,7 +38,7 @@ async function main() {
   const queue = [...list];
   await Promise.all(Array.from({ length: 6 }, async () => {
     for (let s = queue.shift(); s; s = queue.shift()) {
-      try { rows += await one(s.id); } catch (e) { failed++; console.error(e instanceof Error ? e.message : e); }
+      try { const n = await one(s.id); rows += n; } catch (e) { failed++; console.error(e instanceof Error ? e.message : e); }
       if (++done % 100 === 0) console.log(`${done}/${list.length} students, ${rows} rows`);
     }
   }));

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  blendFinalTml, calculateTopicTml, computeStudentTml, evidenceTopicName, getRecencyWeight, getTutorDepthScore,
+  blendFinalTml, calculateTopicTml, computeStudentTml, collectEvidence, explainTopic, scoreTopics, simulateTopic, istWeek, istWeekEndMs, engagementAt, evidenceTopicName, getRecencyWeight, getTutorDepthScore,
   mapMasteryBand, normalizeComponentType, normalizeTutorVolume, sessionDepth, type TmlEvidenceItem,
 } from './engine';
 
@@ -167,7 +167,7 @@ const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 const LIVE_COLUMNS: Record<string, string[]> = {
   submissions: ['id', 'student_id', 'assignment_id', 'score', 'max_score', 'teacher_approved', 'submitted_at'],
   tutor_sessions: ['id', 'student_id', 'subject', 'topic', 'hint_depth', 'answer_revealed', 'depth_score', 'status', 'created_at'],
-  submission_items: ['id', 'student_id', 'submission_id', 'score', 'max_score', 'component_type', 'created_at', 'teacher_confirmed'],
+  submission_items: ['id', 'student_id', 'submission_id', 'score', 'max_score', 'component_type', 'created_at', 'teacher_confirmed', 'question_index'],
 };
 function unknownColumn(table: string, cols: string): string | null {
   const known = LIVE_COLUMNS[table];
@@ -179,6 +179,7 @@ function unknownColumn(table: string, cols: string): string | null {
 function fakeDb(rows: Record<string, Record<string, unknown>[]>, fail: string[] = []) {
   const filters: Record<string, [string, string, unknown][]> = {};
   const inserted: Record<string, unknown>[] = [];
+  const upserted: Record<string, unknown>[] = [];
   const from = (table: string) => {
     const f = (filters[table] ??= []);
     const matching = () => (rows[table] ?? []).filter(r => f.every(([op, c, v]) => op !== 'eq' || !(c in r) || r[c] === v));
@@ -198,11 +199,16 @@ function fakeDb(rows: Record<string, Record<string, unknown>[]>, fail: string[] 
         for (const row of Array.isArray(payload) ? payload : [payload]) inserted.push({ table, ...row });
         return { error: null };
       },
+      upsert: async (payload: Record<string, unknown>[], o?: { onConflict?: string }) => {
+        if (fail.includes(`upsert:${table}`)) return { error: { message: 'upsert down' } };
+        for (const row of payload) upserted.push({ table, onConflict: o?.onConflict, ...row });
+        return { error: null };
+      },
       then: (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => Promise.resolve(result()).then(ok, bad),
     };
     return q;
   };
-  return { db: { from }, filters, inserted };
+  return { db: { from }, filters, inserted, upserted };
 }
 
 const heredity = { id: 'a1', subject: 'Science', title: 'HW 1', units: ['Heredity'], type: 'homework', proctored: false };
@@ -359,4 +365,101 @@ test('sessionDepth: rubric score when present, hints-only score for older sessio
   assert.equal(sessionDepth({ depth_score: null, hint_depth: 1, answer_revealed: false }), 60);
   assert.equal(sessionDepth({ hint_depth: 0 }), 100);
   assert.equal(sessionDepth({ depth_score: 140 }), 100);
+});
+
+// ── Pure scoring, explanation, what-if and history (Mastery Tracker drill-down, 2026-11-07) ─────────────
+const NOW = Date.UTC(2026, 10, 7, 6, 0, 0);
+const ev = (pct: number, type: string, daysAgo: number, topic = 'Light', subject = 'Science', assignmentId?: string) => ({
+  subject, topicName: topic, componentType: type, score: pct, maxScore: 100, atMs: NOW - daysAgo * DAY, assignmentId,
+  ref: { source: 'item' as const, id: `${type}-${daysAgo}-${pct}`, title: `${type} ${daysAgo}`, kind: type },
+});
+const ENG = { teacherEngagement: 80, attendance: 90, appEngagement: 60, tutorVolume: 10 };
+
+test('explain: item and engagement points add up exactly to the final TML', () => {
+  const evidence = [ev(80, 'homework', 0), ev(40, 'homework', 14), ev(70, 'quiz', 3), ev(100, 'tutor', 1)];
+  const x = explainTopic(evidence, { nowMs: NOW, engagement: ENG });
+  near(x.total!, x.finalTml!, 'sum of parts');
+  const t = scoreTopics(evidence, { nowMs: NOW, engagement: ENG })[0];
+  assert.equal(x.finalTml, t.finalTml, 'same number as the engine');
+  const old = x.items.find(i => i.ref.id === 'homework-14-40')!;
+  assert.ok(Math.abs(old.decay - 0.5) < 1e-9, 'a 14-day-old item carries half weight');
+  assert.ok(Math.abs(x.items.filter(i => i.component === 'homework').reduce((a, i) => a + i.shareOfComponent, 0) - 1) < 1e-9, 'shares within a component sum to 1');
+  assert.deepEqual(x.items.map(i => i.ref.id)[0], 'homework-0-80', 'newest first');
+  assert.equal(x.engagement.length, 4);
+});
+
+test('explain: weights renormalise over the components present; unmeasured engagement is neutral', () => {
+  const x = explainTopic([ev(60, 'homework', 0), ev(90, 'quiz', 0)], { nowMs: NOW, engagement: {} });
+  assert.equal(x.componentWeights.tutor, 0);
+  assert.ok(Math.abs(x.componentWeights.homework - 0.5) < 1e-9);
+  assert.equal(x.academic, 75);
+  assert.ok(x.engagement.every(e => !e.measured && e.value === 100));
+  assert.equal(x.finalTml, 0.7 * 75 + 30);
+  assert.equal(x.margin, 8, 'two pieces of evidence: provisional, ±8');
+  assert.equal(explainTopic([], { nowMs: NOW, engagement: {} }).total, null);
+});
+
+test('as of: evidence after the moment is ignored and ages are measured from it', () => {
+  const evidence = [ev(50, 'quiz', 20), ev(100, 'quiz', 2)];
+  const past = scoreTopics(evidence, { nowMs: NOW - 10 * DAY, engagement: {} })[0];
+  assert.equal(past.calc.academicTml, 50, 'the later quiz did not exist yet');
+  assert.equal(past.calc.totalItemCount, 1);
+  const now = scoreTopics(evidence, { nowMs: NOW, engagement: {} })[0];
+  assert.ok(now.calc.academicTml! > 85, 'the recent quiz dominates today');
+  assert.deepEqual(scoreTopics(evidence, { nowMs: NOW, engagement: {}, subject: 'Mathematics' }), []);
+});
+
+test('as of: a flagged assignment costs confidence, and tutor volume counts the 30 days before the moment', () => {
+  const t = scoreTopics([ev(70, 'quiz', 1, 'Light', 'Science', 'a9')], { nowMs: NOW, engagement: {}, flagged: new Set(['a9']) })[0];
+  assert.equal(t.calc.integrityPenaltyApplied, true);
+  const sessions = [ev(80, 'tutor', 5), ev(80, 'tutor', 40)].map(e => ({ ...e, ref: { ...e.ref, source: 'tutor' as const } }));
+  assert.equal(engagementAt({}, sessions, NOW).tutorVolume, 10);
+  assert.equal(engagementAt({}, sessions, NOW - 30 * DAY).tutorVolume, 10, 'only the older one was within 30 days then');
+  assert.equal(engagementAt({}, [], NOW).tutorVolume, undefined);
+});
+
+test('what-if: one more result rescores the topic exactly as the engine would', () => {
+  const evidence = [ev(50, 'homework', 2), ev(55, 'quiz', 4)];
+  const sim = simulateTopic(evidence, { component: 'quiz', pct: 90 }, { nowMs: NOW, engagement: ENG });
+  const real = scoreTopics([...evidence, ev(90, 'quiz', 0)], { nowMs: NOW, engagement: ENG })[0];
+  assert.equal(sim.finalTml, real.finalTml);
+  assert.equal(sim.totalItemCount, 3);
+  assert.equal(simulateTopic(evidence, { component: 'quiz', pct: 400 }, { nowMs: NOW, engagement: ENG }).finalTml,
+    simulateTopic(evidence, { component: 'quiz', pct: 100 }, { nowMs: NOW, engagement: ENG }).finalTml, 'clamped to 100');
+});
+
+test('weeks are India weeks starting Monday', () => {
+  assert.equal(istWeek(Date.parse('2026-11-08T23:00:00+05:30')), '2026-11-02', 'Sunday night belongs to the week before');
+  assert.equal(istWeek(Date.parse('2026-11-09T00:10:00+05:30')), '2026-11-09', 'Monday just after midnight IST');
+  assert.equal(istWeek(Date.parse('2026-11-08T20:00:00Z')), '2026-11-09', '20:00 UTC Sunday is already Monday in India');
+  assert.equal(istWeekEndMs('2026-11-02'), Date.parse('2026-11-09T00:00:00+05:30') - 1);
+});
+
+test('collect: a whole-paper mark is skipped when its questions are marked, and refs name the evidence', () => {
+  const evidence = collectEvidence(
+    [{ id: 'i1', score: 4, max_score: 5, created_at: ago(0), submission_id: 's1', question_index: 2, assignments: heredity }],
+    [{ id: 's1', score: 1, max_score: 10, submitted_at: ago(0), assignments: heredity }, { id: 's2', score: 7, max_score: 10, submitted_at: ago(0), assignments: algebra }],
+    [{ id: 't1', subject: 'Science', topic: ' Heredity ', depth_score: 72, created_at: ago(1) }],
+  );
+  assert.deepEqual(evidence.map(e => e.ref.id), ['i1', 's2', 't1']);
+  assert.deepEqual(evidence[0].ref, { source: 'item', id: 'i1', title: 'HW 1', kind: 'homework', questionIndex: 2 });
+  assert.equal(evidence[2].score, 72);
+  assert.equal(evidence[2].topicName, 'Heredity');
+});
+
+test('compute: writes this week\'s history roll-up, and a failed history write does not fail the recompute', async () => {
+  const rows = { users: [{ id: 's1', school_id: 'sch1' }], submissions: [{ id: 'x', score: 7, max_score: 10, submitted_at: ago(0), assignments: algebra }] };
+  const { db, upserted } = fakeDb(rows);
+  await computeStudentTml(db, 's1');
+  assert.equal(upserted.length, 1);
+  const h = upserted[0];
+  assert.equal(h.table, 'tml_history');
+  assert.equal(h.onConflict, 'student_id,subject,topic_key,week');
+  assert.equal(h.topic_key, 'polynomials');
+  assert.equal(h.week, istWeek(Date.now()));
+  assert.equal(h.source, 'live');
+  assert.equal(h.academic, 70);
+  const bad = fakeDb(rows, ['upsert:tml_history']);
+  const out = await computeStudentTml(bad.db, 's1');
+  assert.equal(out.computedTopicsCount, 1);
 });

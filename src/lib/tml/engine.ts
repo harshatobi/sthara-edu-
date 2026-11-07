@@ -255,6 +255,254 @@ export function evidenceTopicName(assign: { units?: unknown; title?: string | nu
   return rawUnits.length > 0 ? rawUnits[0] : (assign?.title?.trim() || 'Core Concepts');
 }
 
+// ---------------------------------------------------------------------------
+// Evidence as plain data, scored "as of" any moment. computeStudentTml scores
+// as of now; the history backfill scores as of the end of past weeks; the
+// Mastery Tracker drill-down explains and simulates with the same functions.
+// Browser-safe (no server imports).
+// ---------------------------------------------------------------------------
+export interface EvidenceRef {
+  /** 'item' = a confirmed per-question mark, 'submission' = a whole-paper mark, 'tutor' = a finished session. */
+  source: 'item' | 'submission' | 'tutor';
+  id: string;
+  /** Assignment title, or the tutor session's topic. */
+  title: string;
+  /** Assignment type as set by the teacher (homework, classwork, quiz, test...), or 'tutor'. */
+  kind: string;
+  questionIndex?: number | null;
+}
+
+export interface Evidence {
+  subject: string;
+  topicName: string;
+  componentType: string;
+  score: number;
+  maxScore: number;
+  atMs: number;
+  assignmentId?: string;
+  ref: EvidenceRef;
+}
+
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+/** The engine's topic grouping key: subject + topic, case- and spacing-insensitive. */
+export function topicKey(topicName: string): string {
+  return topicName.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+export function groupKey(subject: string, topicName: string): string {
+  return `${subject.trim().toLowerCase()}::${topicKey(topicName)}`;
+}
+
+const msOf = (iso: unknown): number | null => {
+  if (!iso) return null;
+  const t = new Date(iso as string).getTime();
+  return Number.isFinite(t) ? t : null;
+};
+
+/**
+ * Turns the engine's three evidence reads into plain Evidence. Rows without a usable date or maximum are skipped
+ * (never aged wrongly); a whole-paper mark is skipped when its submission already has per-question marks.
+ */
+export function collectEvidence(itemsData: any[], subsData: any[], tutorData: any[]): Evidence[] {
+  const out: Evidence[] = [];
+  const covered = new Set<string>(itemsData.map(r => r.submission_id).filter(Boolean));
+  for (const row of itemsData) {
+    const atMs = msOf(row.created_at);
+    const maxScore = Number(row.max_score);
+    if (atMs === null || !(maxScore > 0)) continue;
+    const assign = row.assignments || {};
+    out.push({
+      subject: assign.subject || 'General', topicName: evidenceTopicName(assign),
+      componentType: row.component_type || assign.type, score: Number(row.score) || 0, maxScore, atMs, assignmentId: assign.id,
+      ref: { source: 'item', id: row.id, title: assign.title || 'Assignment', kind: assign.type || 'homework', questionIndex: row.question_index ?? null },
+    });
+  }
+  for (const row of subsData) {
+    if (covered.has(row.id)) continue;
+    const atMs = msOf(row.submitted_at);
+    const maxScore = Number(row.max_score);
+    if (atMs === null || !(maxScore > 0)) continue;
+    const assign = row.assignments || {};
+    out.push({
+      subject: assign.subject || 'General', topicName: evidenceTopicName(assign),
+      componentType: assign.type, score: Number(row.score) || 0, maxScore, atMs, assignmentId: assign.id,
+      ref: { source: 'submission', id: row.id, title: assign.title || 'Assignment', kind: assign.type || 'homework' },
+    });
+  }
+  for (const row of tutorData) {
+    const atMs = msOf(row.created_at);
+    if (atMs === null) continue;
+    const topic = row.topic?.trim() || 'Core Concepts';
+    out.push({
+      subject: row.subject || 'General', topicName: topic, componentType: 'tutor', score: sessionDepth(row), maxScore: 100, atMs,
+      ref: { source: 'tutor', id: row.id, title: topic, kind: 'tutor' },
+    });
+  }
+  return out;
+}
+
+/** Student-level engagement inputs as of a moment: tutor volume counts finished sessions in the 30 days before it. */
+export function engagementAt(base: Omit<EngagementInputs, 'tutorVolume'>, evidence: Evidence[], nowMs: number): EngagementInputs {
+  const sessions = evidence.filter(e => e.ref.source === 'tutor' && e.atMs <= nowMs && (nowMs - e.atMs) / DAY_MS <= 30).length;
+  // No sessions means unmeasured, neutral like the other engagement terms.
+  return { ...base, tutorVolume: sessions > 0 ? normalizeTutorVolume(sessions) : undefined };
+}
+
+export interface ScoredTopic {
+  key: string;
+  subject: string;
+  topicName: string;
+  evidence: Evidence[];
+  calc: TopicTmlResult;
+  finalTml: number | null;
+  band: ReturnType<typeof mapMasteryBand>;
+  hadIntegrityViolation: boolean;
+}
+
+/**
+ * Scores every topic from the evidence known at `nowMs` (later evidence is ignored, ages are measured from `nowMs`).
+ * `flagged` holds assignment ids with an integrity violation.
+ */
+export function scoreTopics(evidence: Evidence[], opts: { nowMs: number; engagement: EngagementInputs; flagged?: Set<string>; subject?: string }): ScoredTopic[] {
+  const groups = new Map<string, { subject: string; topicName: string; evidence: Evidence[] }>();
+  for (const e of evidence) {
+    if (e.atMs > opts.nowMs) continue;
+    if (opts.subject && e.subject.toLowerCase() !== opts.subject.toLowerCase()) continue;
+    const key = groupKey(e.subject, e.topicName);
+    let g = groups.get(key);
+    if (!g) groups.set(key, (g = { subject: e.subject, topicName: e.topicName.trim(), evidence: [] }));
+    g.evidence.push(e);
+  }
+  const flagged = opts.flagged ?? new Set<string>();
+  return [...groups.entries()].map(([key, g]) => {
+    const hadIntegrityViolation = g.evidence.some(e => e.assignmentId && flagged.has(e.assignmentId));
+    const calc = calculateTopicTml(g.evidence.map(e => toItem(e, opts.nowMs)), { hadIntegrityViolation });
+    const finalTml = blendFinalTml(calc.academicTml, opts.engagement);
+    return { key, subject: g.subject, topicName: g.topicName, evidence: g.evidence, calc, finalTml, band: mapMasteryBand(finalTml), hadIntegrityViolation };
+  });
+}
+
+const toItem = (e: Evidence, nowMs: number): TmlEvidenceItem =>
+  ({ score: e.score, maxScore: e.maxScore, componentType: e.componentType, ageDays: Math.max(0, (nowMs - e.atMs) / DAY_MS) });
+
+// ---------------------------------------------------------------------------
+// Explanation (the drill-down's score waterfall). TML is linear in every
+// input, so the final score splits exactly into points per evidence item plus
+// points per engagement term:
+//   item points = 0.70 × (component weight / weights present) × (decay weight / component's decay weights) × item %
+//   engagement points = its outer weight × its value (unmeasured = neutral 100)
+// The parts sum to the unrounded, unclamped final TML.
+// ---------------------------------------------------------------------------
+export interface ExplainedItem {
+  ref: EvidenceRef;
+  component: TmlComponentType;
+  atMs: number;
+  ageDays: number;
+  pct: number;
+  /** e^(-λ·age): 1 today, 0.5 after 14 days. */
+  decay: number;
+  /** Share of its component this item carries after decay (0-1). */
+  shareOfComponent: number;
+  /** Points this item adds to the final TML. */
+  points: number;
+}
+
+export interface TopicExplanation {
+  items: ExplainedItem[];
+  /** Effective weight of each component inside the academic score after renormalising over the ones present (0-1). */
+  componentWeights: Record<TmlComponentType, number>;
+  componentScores: Record<TmlComponentType, number | null>;
+  academic: number | null;
+  engagement: { key: keyof EngagementInputs; label: string; weight: number; value: number; measured: boolean; points: number }[];
+  /** Unrounded sum of all points; equals finalTml before rounding. */
+  total: number | null;
+  finalTml: number | null;
+  confidence: number;
+  confidenceBand: TopicTmlResult['confidenceBand'];
+  integrityPenaltyApplied: boolean;
+  /** ± margin shown while provisional (spec 2.3). */
+  margin: number | null;
+}
+
+const ENGAGEMENT_TERMS: { key: keyof EngagementInputs; label: string }[] = [
+  { key: 'teacherEngagement', label: 'Class engagement' },
+  { key: 'attendance', label: 'Attendance' },
+  { key: 'appEngagement', label: 'App use' },
+  { key: 'tutorVolume', label: 'AI Tutor practice' },
+];
+
+export function explainTopic(evidence: Evidence[], opts: { nowMs: number; engagement: EngagementInputs; hadIntegrityViolation?: boolean }): TopicExplanation {
+  const known = evidence.filter(e => e.atMs <= opts.nowMs);
+  const calc = calculateTopicTml(known.map(e => toItem(e, opts.nowMs)), { hadIntegrityViolation: opts.hadIntegrityViolation });
+  const comps: TmlComponentType[] = ['homework', 'quiz', 'tutor'];
+  const present = comps.filter(c => calc.components[c].score !== null);
+  const wSum = present.reduce((a, c) => a + ACADEMIC_WEIGHTS[c], 0);
+  const componentWeights = Object.fromEntries(comps.map(c => [c, present.includes(c) && wSum > 0 ? ACADEMIC_WEIGHTS[c] / wSum : 0])) as Record<TmlComponentType, number>;
+  const raw = known.map(e => {
+    const component = normalizeComponentType(e.componentType);
+    const ageDays = Math.max(0, (opts.nowMs - e.atMs) / DAY_MS);
+    const pct = e.maxScore > 0 ? Math.min(100, Math.max(0, (e.score / e.maxScore) * 100)) : 0;
+    return { e, component, ageDays, pct, decay: getRecencyWeight(ageDays) };
+  });
+  const decaySum = Object.fromEntries(comps.map(c => [c, raw.filter(r => r.component === c).reduce((a, r) => a + r.decay, 0)])) as Record<TmlComponentType, number>;
+  const items: ExplainedItem[] = raw.map(r => {
+    const share = decaySum[r.component] > 0 ? r.decay / decaySum[r.component] : 0;
+    return {
+      ref: r.e.ref, component: r.component, atMs: r.e.atMs, ageDays: r.ageDays, pct: r.pct, decay: r.decay,
+      shareOfComponent: share, points: OUTER_WEIGHTS.academic * componentWeights[r.component] * share * r.pct,
+    };
+  }).sort((a, b) => b.atMs - a.atMs);
+  const engagement = ENGAGEMENT_TERMS.map(t => {
+    const v = opts.engagement[t.key];
+    const value = v ?? 100;
+    const weight = OUTER_WEIGHTS[t.key];
+    return { key: t.key, label: t.label, weight, value, measured: v !== undefined, points: weight * value };
+  });
+  const academicUnrounded = items.reduce((a, i) => a + i.points, 0) / OUTER_WEIGHTS.academic;
+  const total = calc.academicTml === null ? null : items.reduce((a, i) => a + i.points, 0) + engagement.reduce((a, t) => a + t.points, 0);
+  const finalTml = blendFinalTml(calc.academicTml, opts.engagement);
+  return {
+    items, componentWeights,
+    componentScores: { homework: calc.components.homework.score, quiz: calc.components.quiz.score, tutor: calc.components.tutor.score },
+    academic: calc.academicTml === null ? null : Math.round(academicUnrounded * 10) / 10,
+    engagement, total, finalTml, confidence: calc.confidence, confidenceBand: calc.confidenceBand,
+    integrityPenaltyApplied: calc.integrityPenaltyApplied, margin: calc.confidenceBand === 'provisional' ? 8 : null,
+  };
+}
+
+/**
+ * What-if: the topic's TML if one more result came in now. `component` is homework, quiz or tutor; `pct` 0-100.
+ */
+export function simulateTopic(evidence: Evidence[], extra: { component: TmlComponentType; pct: number }, opts: { nowMs: number; engagement: EngagementInputs; hadIntegrityViolation?: boolean }) {
+  const known = evidence.filter(e => e.atMs <= opts.nowMs).map(e => toItem(e, opts.nowMs));
+  const pct = Math.min(100, Math.max(0, extra.pct));
+  const calc = calculateTopicTml([...known, { score: pct, maxScore: 100, componentType: extra.component, ageDays: 0 }], { hadIntegrityViolation: opts.hadIntegrityViolation });
+  return { finalTml: blendFinalTml(calc.academicTml, opts.engagement), confidenceBand: calc.confidenceBand, totalItemCount: calc.totalItemCount };
+}
+
+/** Monday (YYYY-MM-DD) of the India week containing `ms`. */
+export function istWeek(ms: number): string {
+  const ist = new Date(ms + 5.5 * 60 * 60 * 1000);
+  const dow = (ist.getUTCDay() + 6) % 7; // 0 = Monday
+  ist.setUTCDate(ist.getUTCDate() - dow);
+  return ist.toISOString().slice(0, 10);
+}
+
+/** End of an India week (Sunday 23:59:59.999 IST) as epoch ms, for scoring a past week. */
+export function istWeekEndMs(monday: string): number {
+  return new Date(`${monday}T00:00:00+05:30`).getTime() + 7 * DAY_MS - 1;
+}
+
+/** The tml_history row for a scored topic in a week. */
+export function historyRow(t: ScoredTopic, studentId: string, schoolId: string, week: string, source: 'live' | 'backfill', computedAt: string) {
+  const r1 = (n: number | null) => (n === null ? null : Math.round(n * 10) / 10);
+  return {
+    student_id: studentId, school_id: schoolId, subject: t.subject, topic_key: topicKey(t.topicName), topic_name: t.topicName, week,
+    score: t.finalTml ?? 0, academic: t.calc.academicTml, homework: r1(t.calc.components.homework.score), quiz: r1(t.calc.components.quiz.score),
+    tutor: r1(t.calc.components.tutor.score), item_count: t.calc.totalItemCount, confidence_band: t.calc.confidenceBand, source, computed_at: computedAt,
+  };
+}
+
 /**
  * Every row of a read, paged past the 1,000-row cap, answered as { data, error } like a single read. A table that
  * is missing counts as an error: TML must not be saved from partial evidence.
@@ -272,11 +520,11 @@ async function everyRow(build: (from: number, to: number) => PromiseLike<{ data:
 // Re-computes TML for a student from Supabase evidence and persists an
 // append-only snapshot per topic into tml_scores.
 // ---------------------------------------------------------------------------
-export async function computeStudentTml(
-  supabase: any,
-  studentId: string,
-  subjectFilter?: string
-) {
+/**
+ * Every piece of a student's TML evidence, read the way the engine scores it (confirmed marks only, finished tutor
+ * sessions, integrity alerts, latest engagement). Any failed read throws: nothing may be scored from partial evidence.
+ */
+export async function loadStudentEvidence(supabase: any, studentId: string) {
   // The reads are independent of each other, so they run together. Any failed read
   // aborts the run: a snapshot built from partial evidence would be saved as valid.
   const [userRes, itemsRes, subsRes, tutorRes, alertsRes, engagementRes] = await Promise.all([
@@ -287,7 +535,7 @@ export async function computeStudentTml(
     everyRow((a: number, b: number) => supabase
       .from('submission_items')
       .select(`
-        id, score, max_score, component_type, created_at, submission_id,
+        id, score, max_score, component_type, created_at, submission_id, question_index,
         assignments ( id, subject, title, units, type, proctored )
       `)
       .eq('student_id', studentId)
@@ -340,127 +588,66 @@ export async function computeStudentTml(
   const tutorData: any[] = tutorRes.data || [];
   const engagementRow = engagementRes.data;
 
+  return {
+    schoolId: studentUser.school_id as string,
+    evidence: collectEvidence(itemsData, subsData, tutorData),
+    flagged: new Set<string>((alertsRes.data || []).map((a: any) => a.assignment_id).filter(Boolean)),
+    engagementBase: {
+      teacherEngagement: engagementRow?.teacher_engagement_score ?? undefined,
+      attendance: engagementRow?.attendance_score ?? undefined,
+      appEngagement: engagementRow?.app_engagement_score ?? undefined,
+    } as Omit<EngagementInputs, 'tutorVolume'>,
+  };
+}
+
+export async function computeStudentTml(
+  supabase: any,
+  studentId: string,
+  subjectFilter?: string
+) {
+  const { schoolId, evidence, flagged, engagementBase } = await loadStudentEvidence(supabase, studentId);
+  const studentUser = { school_id: schoolId };
   const nowMs = Date.now();
-  // Null for a missing or unparseable timestamp, so the row is skipped rather than aged wrongly.
-  const ageInDays = (iso: unknown): number | null => {
-    if (!iso) return null;
-    const t = new Date(iso as string).getTime();
-    return Number.isFinite(t) ? (nowMs - t) / (1000 * 60 * 60 * 24) : null;
-  };
+  const engagement = engagementAt(engagementBase, evidence, nowMs);
+  const scored = scoreTopics(evidence, { nowMs, engagement, flagged, subject: subjectFilter });
 
-  const coveredSubmissionIds = new Set<string>(itemsData.map(r => r.submission_id).filter(Boolean));
-  const flaggedAssignmentIds = new Set<string>((alertsRes.data || []).map((a: any) => a.assignment_id).filter(Boolean));
-
-  const tutorSessionsInWindow = tutorData.filter(s => {
-    const age = ageInDays(s.created_at);
-    return age !== null && age <= 30;
-  }).length;
-  const engagement: EngagementInputs = {
-    teacherEngagement: engagementRow?.teacher_engagement_score ?? undefined,
-    attendance: engagementRow?.attendance_score ?? undefined,
-    appEngagement: engagementRow?.app_engagement_score ?? undefined,
-    // No sessions means unmeasured, neutral like the other engagement terms.
-    tutorVolume: tutorSessionsInWindow > 0 ? normalizeTutorVolume(tutorSessionsInWindow) : undefined,
-  };
-
-  // ---- Group everything into per-topic evidence buckets. The key is subject + topic,
-  //      case- and spacing-insensitive, so equal topics in different subjects stay
-  //      apart and "heredity " joins "Heredity". ----
-  const topicGroups = new Map<string, { topicName: string; items: TmlEvidenceItem[]; subject: string; assignmentIds: Set<string> }>();
-
-  const addItem = (subject: string, topicName: string, item: TmlEvidenceItem, assignmentId?: string) => {
-    if (subjectFilter && subject.toLowerCase() !== subjectFilter.toLowerCase()) return;
-    const key = `${subject.trim().toLowerCase()}::${topicName.trim().replace(/\s+/g, ' ').toLowerCase()}`;
-    let group = topicGroups.get(key);
-    if (!group) {
-      group = { topicName: topicName.trim(), items: [], subject, assignmentIds: new Set() };
-      topicGroups.set(key, group);
-    }
-    group.items.push(item);
-    if (assignmentId) group.assignmentIds.add(assignmentId);
-  };
-
-  itemsData.forEach(row => {
-    const ageDays = ageInDays(row.created_at);
-    const maxScore = Number(row.max_score);
-    if (ageDays === null || !(maxScore > 0)) return;
-    const assign = row.assignments || {};
-    addItem(assign.subject || 'General', evidenceTopicName(assign), {
-      score: Number(row.score) || 0,
-      maxScore,
-      componentType: row.component_type || assign.type,
-      ageDays,
-    }, assign.id);
-  });
-
-  subsData.forEach(row => {
-    if (coveredSubmissionIds.has(row.id)) return;
-    const ageDays = ageInDays(row.submitted_at);
-    const maxScore = Number(row.max_score);
-    if (ageDays === null || !(maxScore > 0)) return;
-    const assign = row.assignments || {};
-    addItem(assign.subject || 'General', evidenceTopicName(assign), {
-      score: Number(row.score) || 0,
-      maxScore,
-      componentType: assign.type,
-      ageDays,
-    }, assign.id);
-  });
-
-  tutorData.forEach(row => {
-    const ageDays = ageInDays(row.created_at);
-    if (ageDays === null) return;
-    addItem(row.subject || 'General', row.topic?.trim() || 'Core Concepts', {
-      score: sessionDepth(row),
-      maxScore: 100,
-      componentType: 'tutor',
-      ageDays,
-    });
-  });
-
-  // ---- Compute per topic, then persist all snapshots in one insert ----
-  const results: any[] = [];
-  const snapshots: Record<string, unknown>[] = [];
-  const computedAt = new Date().toISOString();
-
-  for (const group of topicGroups.values()) {
-    const hadIntegrityViolation = [...group.assignmentIds].some(id => flaggedAssignmentIds.has(id));
-    const calc = calculateTopicTml(group.items, { hadIntegrityViolation });
-    const finalTml = blendFinalTml(calc.academicTml, engagement);
-    const band = mapMasteryBand(finalTml);
-
-    snapshots.push({
-      student_id: studentId,
-      school_id: studentUser.school_id,
-      subject: group.subject,
-      topic_name: group.topicName,
-      score: finalTml !== null ? finalTml : 0,
-      confidence_band: calc.confidenceBand,
-      item_count: calc.totalItemCount,
-      components: {
-        academicTml: calc.academicTml,
-        homework: calc.components.homework,
-        quiz: calc.components.quiz,
-        tutor: calc.components.tutor,
-        engagement,
-        integrityPenaltyApplied: calc.integrityPenaltyApplied,
-        masteryBand: band?.band ?? null,
-      },
-      computed_at: computedAt,
-    });
-
-    results.push({
-      topicName: group.topicName,
-      subject: group.subject,
-      finalTml,
-      masteryBand: band,
-      ...calc,
-    });
-  }
+  // ---- Persist all snapshots in one insert, then this week's history roll-up ----
+  const computedAt = new Date(nowMs).toISOString();
+  const snapshots = scored.map(t => ({
+    student_id: studentId,
+    school_id: studentUser.school_id,
+    subject: t.subject,
+    topic_name: t.topicName,
+    score: t.finalTml !== null ? t.finalTml : 0,
+    confidence_band: t.calc.confidenceBand,
+    item_count: t.calc.totalItemCount,
+    components: {
+      academicTml: t.calc.academicTml,
+      homework: t.calc.components.homework,
+      quiz: t.calc.components.quiz,
+      tutor: t.calc.components.tutor,
+      engagement,
+      integrityPenaltyApplied: t.calc.integrityPenaltyApplied,
+      masteryBand: t.band?.band ?? null,
+    },
+    computed_at: computedAt,
+  }));
+  const results: any[] = scored.map(t => ({ topicName: t.topicName, subject: t.subject, finalTml: t.finalTml, masteryBand: t.band, ...t.calc }));
 
   if (snapshots.length > 0) {
     const { error: insertErr } = await supabase.from('tml_scores').insert(snapshots);
     if (insertErr) throw new Error(`[TML Engine] saving tml_scores failed: ${insertErr.message ?? insertErr}`);
+    // History is a roll-up of tml_scores: a failed write is logged, never fails the recompute.
+    try {
+      const week = istWeek(nowMs);
+      const rows = scored.filter(t => t.finalTml !== null).map(t => historyRow(t, studentId, studentUser.school_id, week, 'live', computedAt));
+      if (rows.length) {
+        const { error: histErr } = await supabase.from('tml_history').upsert(rows, { onConflict: 'student_id,subject,topic_key,week' });
+        if (histErr) console.warn('[TML Engine] tml_history not saved:', histErr.message ?? histErr);
+      }
+    } catch (e) {
+      console.warn('[TML Engine] tml_history not saved:', e instanceof Error ? e.message : e);
+    }
   }
 
   return {

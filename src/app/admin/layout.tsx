@@ -24,6 +24,7 @@ import { WalletIcon as Wallet } from '@phosphor-icons/react/dist/ssr/Wallet';
 import { LifebuoyIcon as Lifebuoy } from '@phosphor-icons/react/dist/ssr/Lifebuoy';
 import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
 import { UploadSimpleIcon as UploadSimple } from '@phosphor-icons/react/dist/ssr/UploadSimple';
+import { WrenchIcon as Wrench } from '@phosphor-icons/react/dist/ssr/Wrench';
 import { StudentIcon as Student } from '@phosphor-icons/react/dist/ssr/Student';
 import { FirstAidKitIcon as FirstAidKit } from '@phosphor-icons/react/dist/ssr/FirstAidKit';
 import CanonShell, { type CanonNavItem } from '@/components/canon/CanonShell';
@@ -64,6 +65,7 @@ const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin/compliance', label: 'DPDP & Compliance', short: 'DPDP', icon: ShieldCheck, group: 'Records and setup', need: ['compliance.read', 'audit.read'] },
   { href: '/admin/access', label: 'Roles & Access', short: 'Access', icon: Key, group: 'Records and setup', need: ['access.manage'] },
   { href: '/admin/directory', label: 'User Directory', short: 'Logins', icon: UsersThree, group: 'Records and setup', need: ['people.manage', 'access.manage'] },
+  { href: '/admin/setup', label: 'School setup', short: 'Setup', icon: Wrench, group: 'Records and setup', need: ['access.manage', 'people.manage', 'session.manage', 'fees.bill', 'data.import'] },
   { href: '/admin/import', label: 'Data Import', short: 'Import', icon: UploadSimple, group: 'Records and setup', need: ['data.import'] },
   // Every office account can reach Sthara.
   { href: '/admin/support', label: 'Help & Support', short: 'Help', icon: Lifebuoy, group: 'Help', need: [] },

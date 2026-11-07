@@ -1347,3 +1347,33 @@
 .canon .rh-search input::placeholder { color:#6B778C; }
 .canon .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
 @media (max-width:1100px) { .canon .rh-main { grid-template-columns:minmax(0, 1fr); } }
+
+/* ---------- SCHOOL SETUP HUB (2026-11-06) ---------- */
+.canon .su-band p { max-width:62ch; }
+.canon .su-meter { display:flex; align-items:center; gap:14px; margin-top:18px; color:var(--role-soft); }
+.canon .su-meter b { display:block; color:#fff; font-size:16px; }
+.canon .su-meter span { font-size:12.5px; color:rgba(255,255,255,.66); }
+.canon .su-ring { flex:none; }
+.canon .su-group h2 { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:6px; }
+.canon .su-steps { list-style:none; margin:0; padding:0; }
+.canon .su-step { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; gap:12px; align-items:center; padding:12px 2px; border-top:1px solid var(--line); }
+.canon .su-step:first-child { border-top:0; }
+.canon .su-ico { color:var(--mut2); display:grid; }
+.canon .su-step.s-done .su-ico { color:var(--green); }
+.canon .su-step.s-attention .su-ico { color:var(--amber); }
+.canon .su-t { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.canon .su-t b { font-size:14.5px; color:var(--ink); }
+.canon .su-step.s-done .su-t b { color:#4A5A70; }
+.canon .su-b p { margin:2px 0 0; font-size:13px; color:#4A5A70; }
+.canon .su-tag { font-size:11.5px; font-weight:700; color:#92600A; background:#FEF3C7; border-radius:999px; padding:2px 8px; }
+.canon .su-tag-s { color:var(--role-deep); background:var(--role-w10); }
+.canon .su-nudge { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; gap:10px; align-items:center; padding:12px 16px; border-radius:14px;
+  background:#FFFBEB; border:1px solid #FDE68A; color:var(--ink); text-decoration:none; font-size:13.5px; }
+.canon .su-nudge span { color:#4A5A70; }
+.canon .su-nudge:hover { border-color:var(--amber); }
+@media (max-width:680px) {
+  .canon .su-step { grid-template-columns:auto minmax(0, 1fr); }
+  .canon .su-step .btn { grid-column:2; justify-self:start; }
+  .canon .su-nudge { grid-template-columns:minmax(0, 1fr) auto; }
+  .canon .su-nudge span { grid-column:1; }
+}

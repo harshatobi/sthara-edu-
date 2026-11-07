@@ -25,10 +25,18 @@ const TABLE_NAMES: Record<string, string> = {
   consents: 'consents', guardians: 'guardians', lesson_plans: 'lesson plans', proctor_alerts: 'proctoring',
 };
 
-/** Renders children with the loaded desk, or the right loading / error / setup / no-access state. `need`: any one of. */
-export function DeskGate({ children, skeleton, need }: { children: (desk: AdminDesk) => ReactNode; skeleton?: ReactNode; need?: Perm | Perm[] }) {
-  const { desk, error } = useAdminDesk();
+/**
+ * Renders children with the loaded desk, or the right loading / error / setup / no-access state. `need`: any one of.
+ * `full`: the page reads the whole-school data (students, academics, workforce, fees...), which then loads; without
+ * it the page gets the core (school, session, who may do what) at once.
+ */
+export function DeskGate({ children, skeleton, need, full }: { children: (desk: AdminDesk) => ReactNode; skeleton?: ReactNode; need?: Perm | Perm[]; full?: boolean }) {
+  const { desk, error, ensureFull } = useAdminDesk();
   const { profile } = useAuth();
+  const needs = need ? (Array.isArray(need) ? need : [need]) : [];
+  const allowed = !!desk && (!needs.length || desk.me.access.any(...needs));
+  // Only fetch the whole school for someone who may see the page.
+  useEffect(() => { if (full && allowed) ensureFull(); }, [full, allowed, ensureFull]);
   if (profile && !profile.schoolId) {
     return (
       <div className="card"><Empty icon={<Buildings size={26} weight="duotone" />} title="No school on this account">
@@ -38,8 +46,8 @@ export function DeskGate({ children, skeleton, need }: { children: (desk: AdminD
   }
   if (error) return <div className="note err" role="alert">Couldn&apos;t load the school: {error}</div>;
   if (!desk) return <>{skeleton ?? <PageSkeleton />}</>;
-  const needs = need ? (Array.isArray(need) ? need : [need]) : [];
-  if (needs.length && !desk.me.access.any(...needs)) return <NoAccess desk={desk} need={needs} />;
+  if (!allowed) return <NoAccess desk={desk} need={needs} />;
+  if (full && !desk.full) return <>{skeleton ?? <PageSkeleton />}</>;
   return <>{children(desk)}</>;
 }
 

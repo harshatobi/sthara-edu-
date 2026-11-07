@@ -17,7 +17,7 @@ import { ago, fmtDate, isoDay, plural } from '@/lib/admin/format';
 import { CardHead, DeskGate, Kpi, downloadCsv } from './kit';
 
 export default function CompliancePage() {
-  return <DeskGate need={['compliance.read', 'audit.read']}>{desk => <Compliance desk={desk} />}</DeskGate>;
+  return <DeskGate full need={['compliance.read', 'audit.read']}>{desk => <Compliance desk={desk} />}</DeskGate>;
 }
 
 /**

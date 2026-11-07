@@ -18,7 +18,7 @@ import { roleLabel } from '@/lib/ops/roles';
 import { CardHead, DeskGate, Kpi } from './kit';
 
 export default function AccessPage() {
-  return <DeskGate need="access.manage">{desk => <Access desk={desk} />}</DeskGate>;
+  return <DeskGate full need="access.manage">{desk => <Access desk={desk} />}</DeskGate>;
 }
 
 const GROUPS: [string, Perm[]][] = [

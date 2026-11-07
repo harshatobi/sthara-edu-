@@ -22,7 +22,7 @@ import { sessionFrom, useCalendar, useHistory, wingIdOf } from '@/components/tea
 import { CardHead, DeskGate, Workspace, downloadCsv } from './kit';
 
 export default function AttendanceAdmin() {
-  return <DeskGate need="attendance.read">{desk => <Attendance desk={desk} />}</DeskGate>;
+  return <DeskGate full need="attendance.read">{desk => <Attendance desk={desk} />}</DeskGate>;
 }
 
 /** The summary rows for the session, this month and today (aggregated in the database). */

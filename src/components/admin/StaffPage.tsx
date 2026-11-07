@@ -26,7 +26,7 @@ const LEAVE_CHIP: Record<LeaveRow['status'], { t: string; tone: Tone }> = {
 };
 
 export default function StaffPage() {
-  return <DeskGate need="workforce.read">{desk => <Staff desk={desk} />}</DeskGate>;
+  return <DeskGate full need="workforce.read">{desk => <Staff desk={desk} />}</DeskGate>;
 }
 
 const range = (l: LeaveRow) => `${fmtDate(l.from, true)}${l.to !== l.from ? ` to ${fmtDate(l.to, true)}` : ''}${l.halfDay ? ' (half day)' : ''}`;

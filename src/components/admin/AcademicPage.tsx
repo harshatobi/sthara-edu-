@@ -11,7 +11,7 @@ import { ago, isoDay, plural } from '@/lib/admin/format';
 import { CardHead, DeskGate, Workspace, downloadCsv } from './kit';
 
 export default function AcademicPage() {
-  return <DeskGate need="academics.read">{desk => <Academic desk={desk} />}</DeskGate>;
+  return <DeskGate full need="academics.read">{desk => <Academic desk={desk} />}</DeskGate>;
 }
 
 function weakestSubject(s: AStudent) {

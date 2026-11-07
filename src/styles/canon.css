@@ -76,6 +76,11 @@
 }
 .canon .nv { display:flex; align-items:center; gap:13px; padding:12px 14px; border-radius:12px; color:rgba(255,255,255,.74); font-size:14.5px; font-weight:500; text-align:left; position:relative; transition:.15s; width:100%; }
 .canon .nv:hover { background:rgba(255,255,255,.07); color:#fff; }
+/* Section headings in a long menu (the office menu, 2026-11-06). */
+.canon .nv-group { margin:16px 14px 6px; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.46); }
+.canon nav .nv-group:first-child { margin-top:2px; }
+.canon .more-group { margin:14px 10px 4px; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); }
+@media (min-width:681px) and (max-height:860px) { .canon .nv-group { margin-top:12px; margin-bottom:4px; } }
 .canon .nv.on { background:var(--role-soft); color:var(--navy); font-weight:700; --role-icon:var(--navy); --ai-icon:var(--navy); }
 .canon .nv.on:hover { background:var(--role-soft); color:var(--navy); }
 /* AI entry points carry a small "AI" tag beside the label (crimson always comes with its marker). */
@@ -313,6 +318,7 @@
   .canon .nv.on::before { display:none; }
   .canon .nv.on { background:var(--role-soft); }
   .canon .nv .ai-tag { display:none; }
+  .canon .nv-group { height:1px; margin:10px 8px; padding:0; font-size:0; background:rgba(255,255,255,.14); }
   .canon .hero h1 { font-size:30px; } .canon .pbar h1 { font-size:25px; }
   .canon .kpi .vl { font-size:38px; }
 }
@@ -1215,3 +1221,110 @@
 .canon .att-tbl tbody th { padding:13px 12px; border-top:1px solid var(--line); text-transform:none; font-size:14px; color:var(--ink); letter-spacing:0; }
 .canon .bp-trend { margin:0 0 2mm; }
 .canon .bp-trend .tl svg { max-height:52mm; }
+
+/* ---------- PRINCIPAL'S COMMAND CENTRE (rebuilt 2026-11-06) ----------
+   Decisions first: the band (today in four numbers), "Waiting for you" beside the school pulse, then where to look,
+   mastery by grade, staff today and the latest changes. One accent (the admin role colour) on the navy band;
+   red, amber and green only for state. Radius: 20px cards, 14px inner tiles, 10px rows. */
+.canon .cc { display:grid; gap:18px; }
+.canon .cc-band { border-radius:var(--r); padding:26px 28px 22px; color:#fff;
+  background:radial-gradient(110% 150% at 100% 0%, color-mix(in srgb, var(--role-deep) 62%, transparent), transparent 62%), var(--navy); }
+.canon .cc-band-top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+.canon .cc-band h1 { font-size:30px; font-weight:800; letter-spacing:-.015em; line-height:1.15; }
+.canon .cc-band p { margin:6px 0 0; color:rgba(255,255,255,.72); font-size:14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.canon .cc-band .chip { margin-left:6px; }
+.canon .cc-board { background:#fff; color:var(--ink); }
+.canon .cc-pulse { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:12px; margin-top:20px; }
+.canon .cc-p { display:grid; gap:2px; padding:14px 16px; border-radius:14px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.11);
+  color:#fff; text-decoration:none; transition:background .18s, transform .18s; }
+.canon .cc-p:hover { background:rgba(255,255,255,.13); transform:translateY(-1px); }
+.canon .cc-p:active { transform:translateY(0) scale(.99); }
+.canon .cc-p:focus-visible { outline:2px solid var(--role-soft); outline-offset:2px; }
+.canon .cc-p-l { font-size:12px; font-weight:700; color:color-mix(in srgb, var(--role-soft) 75%, #fff); }
+.canon .cc-p-v { font-size:28px; font-weight:800; letter-spacing:-.01em; font-variant-numeric:tabular-nums; line-height:1.15; }
+.canon .cc-p-n { font-size:12.5px; color:rgba(255,255,255,.66); }
+.canon .cc-p.t-a { background:color-mix(in srgb, var(--role-soft) 18%, transparent); border-color:color-mix(in srgb, var(--role-soft) 32%, transparent); }
+.canon .cc-p.t-a .cc-p-v { color:var(--role-soft); }
+
+.canon .cc-main { display:grid; grid-template-columns:minmax(0, 1.55fr) minmax(0, 1fr); gap:18px; align-items:start; }
+.canon .cc-split { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:18px; align-items:start; }
+.canon .cc-split-b { grid-template-columns:minmax(0, 1.2fr) minmax(0, 1fr); }
+.canon .cc-split:empty { display:none; }
+.canon .cc-h { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.canon .cc-h h2 { font-size:17px; font-weight:800; color:var(--ink); }
+.canon .cc-count { font-size:12.5px; font-weight:700; color:var(--mut); }
+
+.canon .cc-list { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.canon .cc-item { display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; padding:12px 14px; border-radius:14px;
+  background:var(--role-w6); border-left:3px solid var(--blue); }
+.canon .cc-item.t-a { border-left-color:var(--amber); background:#FFFBEB; }
+.canon .cc-item.t-r { border-left-color:var(--red); background:#FFF1F3; }
+.canon .cc-ico { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,33,71,.06); }
+.canon .cc-item.t-a .cc-ico { color:#B45309; } .canon .cc-item.t-r .cc-ico { color:var(--red); }
+.canon .cc-item-b { min-width:0; }
+.canon .cc-item-t { display:flex; align-items:baseline; gap:8px; }
+.canon .cc-item-t b { font-size:14.5px; color:var(--ink); }
+.canon .cc-n { font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); background:#fff; border-radius:999px; padding:1px 8px; }
+.canon .cc-item-d { font-size:13px; color:#4A5A70; margin-top:2px; line-height:1.4; }
+.canon .cc-age { color:var(--mut); font-weight:600; }
+.canon .cc-rest { margin-top:12px; border-top:1px solid var(--line); padding-top:10px; }
+.canon .cc-rest-t { display:inline-flex; align-items:center; gap:6px; background:none; border:0; font:inherit; font-size:13px; font-weight:700; color:var(--mut); cursor:pointer; padding:4px 0; }
+.canon .cc-rest-t:focus-visible { outline:2px solid var(--blue); outline-offset:2px; border-radius:6px; }
+.canon .cc-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.canon .cc-chip { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; background:var(--body); border:1px solid var(--line); color:var(--ink); font-size:13px; font-weight:600; text-decoration:none; }
+.canon .cc-chip:hover { border-color:var(--role-soft); background:var(--role-w6); }
+
+.canon .cc-vital { display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; padding:12px 4px; border-top:1px solid var(--line); color:inherit; text-decoration:none; }
+.canon .cc-vital:first-of-type { border-top:0; padding-top:2px; }
+.canon .cc-vital:hover .cc-vital-v { color:var(--blue); }
+.canon .cc-vital-i { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:var(--role-w10); color:var(--role-deep); }
+.canon .cc-vital-b { display:grid; min-width:0; }
+.canon .cc-vital-l { font-size:12.5px; font-weight:700; color:var(--mut); }
+.canon .cc-vital-v { font-size:22px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1.2; transition:color .15s; }
+.canon .cc-vital-n { font-size:12.5px; color:#4A5A70; }
+.canon .cc-vital.t-r .cc-vital-v { color:var(--red); } .canon .cc-vital.t-a .cc-vital-v { color:#B45309; } .canon .cc-vital.t-g .cc-vital-v { color:#0B7A54; }
+.canon .cc-spark { color:var(--role-deep); flex:none; }
+
+.canon .cc-find { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.canon .cc-find a { display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:start; padding:10px 8px; border-radius:10px; color:inherit; text-decoration:none; }
+.canon .cc-find a:hover { background:var(--body); }
+.canon .cc-find-s { width:26px; height:26px; border-radius:8px; display:grid; place-items:center; background:#F1F5F9; color:var(--mut); margin-top:1px; }
+.canon .cc-find .t-r .cc-find-s { background:#FFE4EA; color:var(--red); } .canon .cc-find .t-a .cc-find-s { background:#FEF3C7; color:#92600A; }
+.canon .cc-find-b { display:grid; gap:2px; min-width:0; }
+.canon .cc-find-b b { font-size:14px; color:var(--ink); } .canon .cc-find-b span { font-size:12.5px; color:#4A5A70; }
+.canon .cc-go { color:var(--mut2); margin-top:6px; }
+
+.canon .cc-grades, .canon .cc-funnel { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.canon .cc-grades a, .canon .cc-funnel li { display:grid; grid-template-columns:84px 1fr 48px; gap:10px; align-items:center; padding:5px 4px; border-radius:8px; color:inherit; text-decoration:none; font-size:13.5px; }
+.canon .cc-funnel li { grid-template-columns:140px 1fr 40px; }
+.canon .cc-grades a:hover { background:var(--body); }
+.canon .cc-g-l { font-weight:700; color:var(--ink); }
+.canon .cc-g-bar { height:8px; border-radius:999px; overflow:hidden; display:block; }
+.canon .cc-g-bar i { display:block; height:100%; border-radius:999px; background:var(--sky); }
+.canon .cc-grades b, .canon .cc-funnel b { text-align:right; font-variant-numeric:tabular-nums; }
+.canon .cc-note { margin:12px 0 0; font-size:13px; color:#4A5A70; }
+.canon .cc-note.ok { color:#0B7A54; font-weight:600; }
+.canon .cc-people, .canon .cc-act { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.canon .cc-people li { display:flex; gap:8px; align-items:baseline; font-size:13.5px; color:#4A5A70; }
+.canon .cc-people li b { color:var(--ink); }
+.canon .cc-people svg, .canon .cc-act svg { color:var(--mut); flex:none; position:relative; top:2px; }
+.canon .cc-act li { display:flex; gap:10px; }
+.canon .cc-act li div { display:grid; } .canon .cc-act b { font-size:13.5px; color:var(--ink); } .canon .cc-act span { font-size:12px; color:var(--mut); }
+.canon .cc .sk { border-radius:12px; background:linear-gradient(90deg, #EEF2F7, #F6F8FB, #EEF2F7); background-size:200% 100%; }
+.canon .cc-band .sk { background:rgba(255,255,255,.12); }
+@media (prefers-reduced-motion: no-preference) {
+  .canon .cc .sk { animation:cc-shim 1.4s ease-in-out infinite; }
+  @keyframes cc-shim { from { background-position:200% 0; } to { background-position:-200% 0; } }
+  .canon .cc-item { animation:cc-in .35s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes cc-in { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+}
+@media (max-width:1100px) { .canon .cc-main, .canon .cc-split, .canon .cc-split-b { grid-template-columns:minmax(0, 1fr); } }
+@media (max-width:680px) {
+  .canon .cc-band { padding:20px 18px 18px; }
+  .canon .cc-band h1 { font-size:23px; }
+  .canon .cc-pulse { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+  .canon .cc-p-v { font-size:22px; }
+  .canon .cc-item { grid-template-columns:auto 1fr; }
+  .canon .cc-item .btn { grid-column:1 / -1; justify-content:center; min-height:42px; }
+  .canon .cc-spark { display:none; }
+}

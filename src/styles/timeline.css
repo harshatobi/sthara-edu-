@@ -7,7 +7,8 @@
   --tl-g:#0B7A54; --tl-g-pale:#E6F6EF; --tl-a:#A65A00; --tl-a-pale:#FEF3E2; --tl-r:#BE123C; --tl-r-pale:#FFE9EE;
   --tl-r14:14px;
 }
-.tl { display:grid; gap:14px; }
+.tl { display:grid; grid-template-columns:minmax(0, 1fr); gap:14px; }
+.tl > * { min-width:0; }
 
 /* ── Overview ─────────────────────────────────────────────────────────────── */
 .tl-top { padding-bottom:12px; }

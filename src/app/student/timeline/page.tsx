@@ -9,7 +9,7 @@ export default function Page() {
   const { user } = useAuth();
   return (
     <>
-      <PageBar eyebrow="MY TIMELINE" title="My years at school" sub="Attendance, results, mastery, homework and achievements, one school year at a time." />
+      <PageBar eyebrow="MY TIMELINE" title="My journey" sub="Your wins, how you are growing, and what to try next." />
       {user && <Timeline query={`login=${user.id}`} />}
     </>
   );

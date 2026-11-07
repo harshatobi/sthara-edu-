@@ -24,7 +24,8 @@ export interface Ground {
   angle: string | null;
 }
 /** What tutor_sessions.state holds while a session is open. */
-export interface RowState { s: SocraticState; ground: Ground; exams: string[] }
+/** startScore: the chapter's mastery when the session began, so the result shows start to end even when resumed later. */
+export interface RowState { s: SocraticState; ground: Ground; exams: string[]; startScore?: number | null }
 
 export interface Meta { userId: string; schoolId: string | null; economy: boolean }
 
@@ -170,6 +171,7 @@ export function view(row: SessionRow, messages: Msg[], extra: { topicScore?: num
       topicScore: extra.topicScore ?? null, band: extra.band ?? null, misconceptions: extra.misconceptions ?? [],
     } : null,
     startedAt: row.created_at,
+    startScore: (row.state as RowState).startScore ?? null,
     completedAt: row.completed_at,
     purged: !!row.transcript_purged_at,
   };

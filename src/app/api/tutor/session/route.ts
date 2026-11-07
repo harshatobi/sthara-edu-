@@ -162,7 +162,11 @@ async function start(db: ReturnType<typeof createAdminClient>, uid: string, body
 
   const out = await talk(lesson, startPrompt(), m);
   const problem = typeof out.problem === 'string' && out.problem.trim() ? out.problem.trim().slice(0, 2000) : out.text;
-  const state: RowState = { s: initialState(mode, problem, out.text), ground, exams };
+  // The chapter's mastery now, kept on the session so the result can show start to end after a resume.
+  const { data: before } = await db.from('tml_scores').select('score').eq('student_id', uid).ilike('subject', subject.replace(/[\\%_]/g, x => `\\${x}`))
+    .eq('topic_name', chapter).order('computed_at', { ascending: false }).limit(1);
+  const startScore = before?.[0] && Number.isFinite(Number(before[0].score)) ? Number(before[0].score) : null;
+  const state: RowState = { s: initialState(mode, problem, out.text), ground, exams, startScore };
 
   const { data: row, error } = await db.from('tutor_sessions').insert({
     student_id: uid, school_id: ctx.me.schoolId, subject, topic: chapter, level,

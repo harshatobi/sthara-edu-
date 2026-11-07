@@ -21,6 +21,7 @@ import { useToday } from '@/lib/admin/useToday';
 import type { Today } from '@/lib/admin/todayServer';
 import { DeskGate } from './kit';
 import { Waiting, rankWork, waited } from './home/Waiting';
+import { useSetup } from '@/lib/admin/useSetup';
 
 /**
  * The principal's Command Centre (rebuilt 2026-11-06, Moses: "build out the BEST dashboard for a principal").
@@ -60,6 +61,7 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
   return (
     <div className="cc">
       <Band desk={desk} live={live} today={today} decisions={decisions} oldest={waiting.map(w => w.oldest).filter(Boolean).sort()[0] ?? null} />
+      {a.any('access.manage', 'people.manage', 'session.manage', 'fees.bill', 'data.import') && <SetupNudge />}
       <div className="cc-main">
         <Waiting waiting={waiting} rest={rest} today={today} loading={!live} />
         <Pulse desk={desk} />
@@ -73,6 +75,20 @@ function Dashboard({ desk }: { desk: AdminDesk }) {
         {a.can('audit.read') && <Activity desk={desk} />}
       </div>
     </div>
+  );
+}
+
+/** While the school's essentials aren't all set up, one line saying how far along it is. */
+function SetupNudge() {
+  const { setup } = useSetup();
+  if (!setup || setup.ready) return null;
+  const next = setup.steps.find(s => s.required && s.status !== 'done');
+  return (
+    <Link href="/admin/setup" className="su-nudge">
+      <b>Finish setting up the school</b>
+      <span>{setup.required.done} of {setup.required.total} essentials done{next ? `. Next: ${next.title.toLowerCase()}` : ''}.</span>
+      <ArrowRight size={15} weight="bold" />
+    </Link>
   );
 }
 

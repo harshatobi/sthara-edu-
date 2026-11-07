@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { SignOutIcon as SignOut } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { DotsThreeCircleIcon as DotsThreeCircle } from '@phosphor-icons/react/dist/ssr/DotsThreeCircle';
@@ -27,6 +27,8 @@ export interface CanonNavItem {
   also?: string[];
   /** An AI entry point (tutor, assistant, Probe, Ask): crimson icon plus the "AI" tag. */
   ai?: boolean;
+  /** Section heading this entry sits under in a long menu (shown when the menu sets grouped). */
+  group?: string;
 }
 
 /** Whose desk this is; sets data-role on the shell, which picks the role colour tokens in canon.css. */
@@ -45,7 +47,7 @@ const PHONE_TABS = 4;
  * layout: each nav entry is a real URL instead of the mockup's go(role, view)
  * innerHTML swap. Role-agnostic so teacher/admin/parent can move onto it too.
  */
-export default function CanonShell({ role, subtitle, nav, label, children, inbox }: {
+export default function CanonShell({ role, subtitle, nav, label, children, inbox, grouped }: {
   role: CanonRole;
   subtitle: string;
   nav: CanonNavItem[];
@@ -53,6 +55,8 @@ export default function CanonShell({ role, subtitle, nav, label, children, inbox
   children: ReactNode;
   /** Show the notifications bell (teachers and office; parents have their own). */
   inbox?: boolean;
+  /** Show section headings (each entry's group) in the menu: for long menus. */
+  grouped?: boolean;
 }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
@@ -88,14 +92,18 @@ export default function CanonShell({ role, subtitle, nav, label, children, inbox
       <aside>
         <div className="brand"><b>Sthara</b><i>{subtitle}</i></div>
         <nav aria-label={label}>
-          {nav.map(item => {
+          {nav.map((item, i) => {
             const on = isOn(item);
+            const head = grouped && item.group && item.group !== nav[i - 1]?.group ? item.group : null;
             return (
-              <Link key={item.href} href={item.href} className={`nv${on ? ' on' : ''}`} aria-current={on ? 'page' : undefined} title={item.label}>
+              <Fragment key={item.href}>
+              {head && <div className="nv-group" role="presentation">{head}</div>}
+              <Link href={item.href} className={`nv${on ? ' on' : ''}`} aria-current={on ? 'page' : undefined} title={item.label}>
                 <InteractiveIcon icon={item.icon} ai={item.ai} active={on} />
                 <span className="lbl-t">{item.label}</span>
                 {item.ai && <AiTag />}
               </Link>
+              </Fragment>
             );
           })}
         </nav>
@@ -139,15 +147,19 @@ export default function CanonShell({ role, subtitle, nav, label, children, inbox
               <b>{subtitle.charAt(0) + subtitle.slice(1).toLowerCase()}</b>
               <button type="button" onClick={() => setMoreOpen(false)} aria-label="Close menu"><X size={18} weight="bold" /></button>
             </div>
-            {overflow.map(item => {
+            {overflow.map((item, i) => {
               const on = isOn(item);
+              const head = grouped && item.group && item.group !== overflow[i - 1]?.group ? item.group : null;
               return (
-                <Link key={item.href} href={item.href} className={on ? 'on' : undefined} aria-current={on ? 'page' : undefined}
+                <Fragment key={item.href}>
+                {head && <div className="more-group" role="presentation">{head}</div>}
+                <Link href={item.href} className={on ? 'on' : undefined} aria-current={on ? 'page' : undefined}
                   onClick={() => setMoreOpen(false)}>
                   <InteractiveIcon icon={item.icon} ai={item.ai} active={on} size={20} />
                   <span>{item.label}</span>
                   {item.ai && <AiTag />}
                 </Link>
+                </Fragment>
               );
             })}
             <button type="button" className="out" onClick={() => signOut()}>

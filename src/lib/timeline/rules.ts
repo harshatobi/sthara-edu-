@@ -442,10 +442,15 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
   for (const t of v.tutor.filter(x => inYear(x.completed_at))) {
     const d = t.depth_score === null ? null : Math.round(Number(t.depth_score));
     const hots = t.mode === 'hots';
-    push(t.completed_at, 'tutor', hots || (d !== null && d >= DEPTH_MILESTONE) ? 'milestone' : 'moment',
-      you ? (hots ? `You took on a HOTS challenge: ${t.topic || 'a chapter'}` : `You worked through ${t.topic || 'a chapter'} with the AI tutor`)
-        : `${hots ? 'HOTS tutor session' : 'Tutor session'}: ${t.topic || 'a chapter'}${d !== null ? `, depth ${d}` : ''}`,
-      you ? [t.subject, d !== null ? `depth ${d}` : null].filter(Boolean).join(', ') : t.subject, d === null ? 'n' : d >= 75 ? 'g' : d >= 50 ? 'b' : 'a');
+    const topic = t.topic || 'a chapter';
+    // A session ended before any stage was scored isn't a result; say so plainly rather than "depth 0".
+    if (d === 0) { push(t.completed_at, 'tutor', 'moment', `Started a tutor session on ${topic}`, [t.subject, 'ended early'].filter(Boolean).join(', '), 'n'); continue; }
+    const tier: Tier = hots || (d !== null && d >= DEPTH_MILESTONE) ? 'milestone' : 'moment';
+    const tone: Tone = d === null ? 'n' : d >= 75 ? 'g' : d >= 50 ? 'b' : 'a';
+    if (you) push(t.completed_at, 'tutor', tier, hots ? `You took on a HOTS challenge: ${topic}` : `You worked through ${topic} with the AI tutor`, [t.subject, d !== null ? `depth ${d}` : null].filter(Boolean).join(', '), tone);
+    // Parents get plain words: "understanding" rather than the rubric's "depth".
+    else if (lens.who === 'parent') push(t.completed_at, 'tutor', tier, hots ? `Took on a HOTS challenge: ${topic}` : `Worked through ${topic} with the AI tutor`, [t.subject, d !== null ? `understanding ${d} out of 100` : null].filter(Boolean).join(', '), tone);
+    else push(t.completed_at, 'tutor', tier, `${hots ? 'HOTS tutor session' : 'Tutor session'}: ${topic}${d !== null ? `, depth ${d}` : ''}`, t.subject, tone);
   }
   if (sees(lens, 'fees')) {
     const mine = new Set(v.invoices.map(i => i.id));

@@ -98,7 +98,7 @@ export default function Timeline({ query }: { query: string }) {
     try { setPrinting(await call<Data>(`/api/timeline?${query}&print=1`)); }
     catch (e) { setPrintErr(e instanceof Error ? e.message : 'Could not prepare the student file.'); }
   };
-  const name = t.who === 'student' ? 'Your journey' : `${first(data.student.name)}’s journey`;
+  const name = `${first(data.student.name)}’s journey`;
   const now = t.years[0];
 
   return (
@@ -106,7 +106,7 @@ export default function Timeline({ query }: { query: string }) {
       <section className="card tl-top" aria-label="Journey overview">
         <header className="tl-top-head">
           <div>
-            <h2 className="tl-name">{name}</h2>
+            {t.who !== 'student' && <h2 className="tl-name">{name}</h2>}
             <p className="tl-meta">
               {now?.cls ? <>{now.cls}. </> : null}
               {t.years.length ? <>{plural(t.years.length, 'school year')} recorded, {plural(milestones, 'milestone')}.</> : 'No school years recorded yet.'}
@@ -168,7 +168,7 @@ function useWidth<T extends HTMLElement>() {
   return { ref, w };
 }
 
-const PAD_L = 8, PAD_R = 8, TOP = 26, LINE_H = 104, ATT_H = 26, GAP = 10;
+const PAD_L = 24, PAD_R = 24, TOP = 26, LINE_H = 104, ATT_H = 26, GAP = 10;
 
 function River({ series, events, years, onPick }: { series: MonthPoint[]; events: TimelineEvent[]; years: Year[]; onPick: (month: string) => void }) {
   const { ref, w: box } = useWidth<HTMLDivElement>();
@@ -265,9 +265,9 @@ function River({ series, events, years, onPick }: { series: MonthPoint[]; events
                 <stop offset="1" stopColor="#2F6BFF" stopOpacity="0" />
               </linearGradient>
             </defs>
-            {[50, 75].map(v => <line key={v} x1={PAD_L} x2={w - PAD_R} y1={yLine(v)} y2={yLine(v)} className="tl-grid" />)}
-            <text x={w - PAD_R} y={yLine(75) - 4} className="tl-grid-t" textAnchor="end">75%</text>
-            <text x={w - PAD_R} y={yLine(50) - 4} className="tl-grid-t" textAnchor="end">50%</text>
+            {[50, 75].map(v => <line key={v} x1={PAD_L} x2={w - PAD_R + 12} y1={yLine(v)} y2={yLine(v)} className="tl-grid" />)}
+            <text x={PAD_L - 4} y={yLine(75) + 3} className="tl-grid-t" textAnchor="end">75</text>
+            <text x={PAD_L - 4} y={yLine(50) + 3} className="tl-grid-t" textAnchor="end">50</text>
             {yearStarts.map(({ m, i, s }) => (
               <g key={m}>
                 <line x1={x(i) - (i ? step / 2 : 0)} x2={x(i) - (i ? step / 2 : 0)} y1={4} y2={axisY - 14} className="tl-year-line" />
@@ -337,7 +337,8 @@ function YearBlock({ y, t, series, events, filter, flash, print }: { y: Year; t:
   const mine = events.filter(e => e.session === y.session);
   const shown = filter === 'milestones' ? mine.filter(e => e.tier === 'milestone') : mine;
   const pts = series.filter(p => p.session === y.session);
-  const keys = new Set([...(filter === 'milestones' ? [] : pts.map(p => p.month)), ...shown.map(e => e.on.slice(0, 7))]);
+  const hasStats = (p: MonthPoint) => !!(p.attendance || p.tml || p.homework || p.wellness);
+  const keys = new Set([...(filter === 'milestones' ? [] : pts.filter(hasStats).map(p => p.month)), ...shown.map(e => e.on.slice(0, 7))]);
   const months = [...keys].sort().reverse();
   const prevOf = new Map(series.map((p, i) => [p.month, series[i - 1]]));
   const facts = yearFacts(y);
@@ -356,13 +357,13 @@ function YearBlock({ y, t, series, events, filter, flash, print }: { y: Year; t:
         )}
       </header>
       {months.length
-        ? months.map(m => <MonthBlock key={m} m={m} p={pts.find(x => x.month === m) ?? null} prev={prevOf.get(m) ?? null} events={shown.filter(e => e.on.slice(0, 7) === m)} flash={flash === m} print={print} current={!print && t.years[0]?.session === y.session && m === months[0]} />)
+        ? months.map(m => <MonthBlock key={m} recLabel={t.who === 'student' ? 'Harder moments' : 'On the record'} m={m} p={pts.find(x => x.month === m) ?? null} prev={prevOf.get(m) ?? null} events={shown.filter(e => e.on.slice(0, 7) === m)} flash={flash === m} print={print} current={!print && t.years[0]?.session === y.session && m === months[0]} />)
         : <p className="tl-none">{filter === 'milestones' ? 'No milestones this year yet.' : 'Nothing recorded this year.'}</p>}
     </section>
   );
 }
 
-function MonthBlock({ m, p, prev, events, flash, print, current }: { m: string; p: MonthPoint | null; prev: MonthPoint | null; events: TimelineEvent[]; flash: boolean; print?: boolean; current: boolean }) {
+function MonthBlock({ m, p, prev, events, flash, print, current, recLabel }: { recLabel: string; m: string; p: MonthPoint | null; prev: MonthPoint | null; events: TimelineEvent[]; flash: boolean; print?: boolean; current: boolean }) {
   const story = events.filter(e => e.tier !== 'record');
   const rec = events.filter(e => e.tier === 'record');
   const d = p?.tml && prev?.tml ? p.tml.score - prev.tml.score : null;
@@ -396,7 +397,7 @@ function MonthBlock({ m, p, prev, events, flash, print, current }: { m: string; 
         )}
         {rec.length > 0 && (
           <div className="tl-record">
-            <div className="tl-record-h">On the record</div>
+            <div className="tl-record-h">{recLabel}</div>
             <ol>
               {rec.map((e, i) => (
                 <li key={i} className={`t-${e.tone}`}>

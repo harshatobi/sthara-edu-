@@ -405,8 +405,10 @@ export function yearEvents(rows: Rows, lens: Lens, session: string): TimelineEve
 
   if (sees(lens, 'enrolment')) {
     const all = [...v.enrolments].sort((a, b) => day(a.starts_on).localeCompare(day(b.starts_on)));
+    // Joining is the first enrolment, unless the school has records of the student from before it.
+    const earliest = [...(v.attendance?.months || []).map(m => `${m.month}-01`), ...v.cards.map(c => day(c.publishedAt)), ...v.tml.map(r => day(r.computed_at))].filter(Boolean).sort()[0];
     for (const e of all.filter(x => x.session === session)) {
-      const first = all[0] === e;
+      const first = all[0] === e && !(earliest && e.starts_on && earliest < day(e.starts_on));
       if (e.starts_on) push(e.starts_on, 'enrolment', 'milestone', first ? `Joined in ${e.class_name || 'a class not set'}` : `Started ${e.class_name || 'a new class'}`, e.roll_no ? `Roll number ${e.roll_no}` : null, 'b');
       if (e.ends_on && e.end_reason) push(e.ends_on, 'enrolment', 'milestone', `Left ${e.class_name || 'the class'}`, e.end_reason, 'n');
       if (e.published_at && e.outcome) push(e.published_at, 'enrolment', 'milestone', `Year result: ${OUTCOME_LABEL[e.outcome as Outcome] ?? e.outcome}`, e.class_name, e.outcome === 'promoted' || e.outcome === 'promoted_no_exam' ? 'g' : 'a');

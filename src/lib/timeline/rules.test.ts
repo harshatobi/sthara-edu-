@@ -168,6 +168,9 @@ test('events: tiered; milestones are the story, the difficult entries sit on the
   assert.ok(!ev.some(e => e.title.startsWith('Attendance in') || e.title.startsWith('Homework in')));
   const lastYear = yearEvents(r, lens, '2025-26');
   assert.ok(lastYear.some(e => e.title === 'Joined in Class 6-A' && e.tier === 'milestone'));
+  // Records from before the first enrolment: they didn't join then, they moved up.
+  const earlier = rows({ attendance: { months: [{ month: '2025-05', present: 20, absent: 0, late: 0, excused: 0, marked: 20 }], runs: [] } });
+  assert.ok(yearEvents(earlier, lens, '2025-26').some(e => e.title === 'Started Class 6-A'));
   assert.ok(lastYear.some(e => e.title === 'Report card: Annual' && e.detail === '81%, grade A2'));
   assert.ok(lastYear.some(e => e.title === 'Year result: Promoted' && e.tier === 'milestone'));
 });

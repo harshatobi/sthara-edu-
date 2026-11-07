@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Access } from '@/lib/admin/rbac';
 import { normClass } from '@/lib/teacher/scope';
-import { emptyRows, officeLens, parentLens, sessionOfDay, shapeTimeline, studentLens, teacherLens, timelineText, yearEvents, type Rows } from './rules';
+import { emptyRows, monthSeries, officeLens, parentLens, sessionOfDay, shapeTimeline, studentLens, teacherLens, timelineText, yearEvents, type Rows } from './rules';
 
 const rows = (over: Partial<Rows> = {}): Rows => emptyRows({
   student: { previousSchool: 'Little Flower School', previousClass: 'Class 5', previousTcNo: 'TC/22/118', previousStatus: 'other_school', admittedOn: '2025-06-02' },
@@ -148,18 +148,92 @@ test('the summary: attendance %, TML at each year’s end, homework only once du
   assert.equal(now.counselling, 'Ongoing');
 });
 
-test('events: monthly attendance, the 3-day absence, homework months, report card, newest first', () => {
+test('events: tiered; milestones are the story, the difficult entries sit on the record lane', () => {
   const r = rows();
   const lens = officeLens(new Access(['principal']))!;
   const ev = yearEvents(r, lens, '2026-27');
-  assert.ok(ev.some(e => e.title === 'Absent 3 school days in a row'));
-  assert.ok(ev.some(e => e.title === 'Attendance in July 2026: 83%' && e.tone === 'a'));
-  assert.ok(ev.some(e => e.title === 'Homework in July 2026: 1 of 2 handed in'));
-  assert.ok(ev.some(e => e.title === 'Bonafide certificate issued' && e.detail === 'No. BF/2026/9'));
-  assert.ok(ev.every((e, i) => i === 0 || ev[i - 1].on >= e.on));
+  const tier = (title: string) => ev.find(e => e.title === title)?.tier;
+  assert.equal(tier('Started Class 7-A'), 'milestone');
+  assert.equal(tier('Inter-school quiz'), 'milestone');
+  assert.equal(tier('Bonafide certificate issued'), 'milestone');
+  assert.equal(tier('Absent 3 school days in a row'), 'record');
+  assert.equal(tier('Suspension'), 'record');
+  assert.equal(tier('Incident: bullying'), 'record');
+  assert.equal(tier('Counselling began'), 'record');
+  assert.equal(tier('Health check-up'), 'moment');
+  assert.equal(tier('Fees paid: ₹10,000'), 'moment');
+  assert.ok(ev.every(e => e.session === '2026-27'));
+  assert.ok(ev.every((e, i) => i === 0 || ev[i - 1].on >= e.on), 'newest first');
+  // No month summaries among the events any more: those are the series.
+  assert.ok(!ev.some(e => e.title.startsWith('Attendance in') || e.title.startsWith('Homework in')));
   const lastYear = yearEvents(r, lens, '2025-26');
-  assert.ok(lastYear.some(e => e.title === 'Report card: Annual' && e.detail === '81% · A2'));
-  assert.ok(lastYear.some(e => e.title === 'Year result: Promoted'));
+  assert.ok(lastYear.some(e => e.title === 'Joined in Class 6-A' && e.tier === 'milestone'));
+  assert.ok(lastYear.some(e => e.title === 'Report card: Annual' && e.detail === '81%, grade A2'));
+  assert.ok(lastYear.some(e => e.title === 'Year result: Promoted' && e.tier === 'milestone'));
+});
+
+test('personal bests: a chapter climbing past 50%, a first Exemplary, the best attendance month', () => {
+  const r = rows({
+    tml: [
+      { subject: 'Science', topic_name: 'Light', score: 38, computed_at: '2026-06-10T00:00:00Z' },
+      { subject: 'Science', topic_name: 'Light', score: 61, computed_at: '2026-08-02T00:00:00Z' },
+      { subject: 'Science', topic_name: 'Light', score: 92, computed_at: '2026-09-02T00:00:00Z' },
+      { subject: 'Science', topic_name: 'Light', score: 95, computed_at: '2026-10-02T00:00:00Z' },
+    ],
+    attendance: { months: [
+      { month: '2026-06', present: 18, absent: 2, late: 0, excused: 0, marked: 20 },
+      { month: '2026-07', present: 22, absent: 0, late: 0, excused: 0, marked: 22 },
+      { month: '2026-08', present: 21, absent: 1, late: 0, excused: 0, marked: 22 },
+    ], runs: [] },
+  });
+  const ev = yearEvents(r, studentLens(), '2026-27');
+  const climb = ev.find(e => e.title === 'Light climbed to 61%')!;
+  assert.equal(climb.detail, 'Science, up from 38%');
+  assert.equal(climb.tier, 'milestone');
+  assert.equal(ev.filter(e => e.title.startsWith('Exemplary in Light')).length, 1, 'only the first time at Exemplary');
+  const best = ev.find(e => e.title.startsWith('Best attendance month'))!;
+  assert.equal(best.title, 'Best attendance month of the year: 100%');
+  assert.equal(best.on, '2026-07-01');
+});
+
+test('tutor sessions: deep or HOTS sessions are milestones, others moments; subject teachers see only theirs', () => {
+  const r = rows({ tutor: [
+    { subject: 'Science', topic: 'Light', depth_score: 92, completed_at: '2026-10-05T10:00:00Z', mode: 'standard' },
+    { subject: 'Mathematics', topic: 'Fractions', depth_score: 41, completed_at: '2026-10-06T10:00:00Z', mode: 'standard' },
+    { subject: 'Mathematics', topic: 'Fractions', depth_score: 60, completed_at: '2026-10-07T10:00:00Z', mode: 'hots' },
+  ] });
+  const ev = yearEvents(r, studentLens(), '2026-27').filter(e => e.kind === 'tutor');
+  assert.deepEqual(ev.map(e => [e.title, e.tier]), [
+    ['HOTS tutor session: Fractions, depth 60', 'milestone'],
+    ['Tutor session: Fractions, depth 41', 'moment'],
+    ['Tutor session: Light, depth 92', 'milestone'],
+  ]);
+  const t = shapeTimeline(r, studentLens());
+  assert.deepEqual(t.years[0].tutor, { sessions: 3, depth: 64 });
+  const maths = teacherLens({ teacherClass: null, scope: [{ cls: 'Class 7-A', subject: 'Mathematics' }] }, 'Class 7-A', normClass)!;
+  assert.ok(!yearEvents(r, maths, '2026-27').some(e => e.title.includes('Light')));
+  assert.equal(officeLens(new Access(['accountant']))!.sources.includes('tutor'), false);
+});
+
+test('month series: one point a month, mastery carried between snapshots, only what the lens sees', () => {
+  const r = rows();
+  const s = monthSeries(r, officeLens(new Access(['principal']))!);
+  assert.equal(s[0].month, '2025-07');
+  assert.equal(s[s.length - 1].month, '2026-10', 'runs to this month');
+  const jul = s.find(p => p.month === '2026-07')!;
+  assert.deepEqual(jul.attendance, { pct: 83, marked: 23 });
+  assert.deepEqual(jul.homework, { done: 1, set: 2 });
+  assert.equal(s.find(p => p.month === '2025-12')!.tml!.score, 60, 'carried from September');
+  assert.equal(s.find(p => p.month === '2026-02')!.tml!.score, 70);
+  assert.equal(s.find(p => p.month === '2026-09')!.session, '2026-27');
+  const kid = monthSeries(r, parentLens());
+  assert.ok(kid.every(p => p.wellness === null), 'no wellbeing for parents');
+});
+
+test('a harder wellbeing month goes on the record lane for those who see wellbeing', () => {
+  const low = Array.from({ length: 3 }, (_, i) => ({ created_at: `2026-09-1${i}T08:00:00Z`, mood: 'Low', energy: 2 }));
+  const ev = yearEvents(rows({ wellness: low }), studentLens(), '2026-27');
+  assert.ok(ev.some(e => e.kind === 'wellness' && e.tier === 'record' && e.title === 'A harder month: 3 low days'));
 });
 
 test('the AI text carries no names and stays inside the lens', () => {

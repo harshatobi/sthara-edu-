@@ -153,10 +153,13 @@ const LIVE: Record<string, { key: QueueKey; some: (n: string) => string; none: s
   safety: { key: 'incidents', some: x => `${x} open.`, none: 'No open incident.', tone: 'r' },
   register: { key: 'register', some: x => `${x} from parents waiting.`, none: 'No change request is waiting.', tone: 'a' },
   logins: { key: 'logins', some: x => `${x} with Sthara.`, none: 'No login request is pending.', tone: 'a' },
+  health: { key: 'health', some: x => `${x} from parents waiting.`, none: 'No health change request is waiting.', tone: 'a' },
+  counselling: { key: 'counselling', some: x => `${x} waiting to be seen.`, none: 'No new referral.', tone: 'a' },
 };
 const NOUN: Record<QueueKey, [string, string]> = {
   payroll: ['pay run', 'pay runs'], certificates: ['certificate', 'certificates'], discipline: ['action', 'actions'], kirti: ['entry', 'entries'],
   messages: ['conversation', 'conversations'], incidents: ['incident', 'incidents'], register: ['change request', 'change requests'], logins: ['login request', 'login requests'],
+  health: ['change request', 'change requests'], counselling: ['new referral', 'new referrals'],
 };
 
 export function withLive(items: WorkItem[], live: Partial<Record<QueueKey, Queue>>): WorkItem[] {
@@ -165,6 +168,9 @@ export function withLive(items: WorkItem[], live: Partial<Record<QueueKey, Queue
     const q = l && live[l.key];
     if (!l || !q) return w;
     const [one, many] = NOUN[l.key];
-    return { ...w, count: q.count, oldest: q.count ? q.oldest : null, detail: q.count ? l.some(n(q.count, one, many)) : l.none, tone: q.count ? l.tone : 'g' };
+    const preparer = w.key === 'certificates' && /^Prepare/.test(w.detail);
+    const detail = !q.count ? (preparer ? 'No draft is waiting to be finished.' : l.none)
+      : preparer ? `${n(q.count, 'draft')} to finish and send for approval.` : l.some(n(q.count, one, many));
+    return { ...w, count: q.count, oldest: q.count ? q.oldest : null, detail, tone: q.count ? l.tone : 'g' };
   });
 }

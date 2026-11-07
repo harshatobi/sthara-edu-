@@ -52,7 +52,8 @@ export default function Counter({ desk, call, onDone, openAccount, requestConces
   const L = desk.fees;
   const today = isoDay();
   const searchRef = useRef<HTMLInputElement>(null);
-  const [q, setQ] = useState('');
+  // A search can arrive in the link (the cashier's home: Find a student).
+  const [q, setQ] = useState(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('q') ?? '' : ''));
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [mode, setMode] = useState('cash');

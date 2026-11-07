@@ -25,7 +25,7 @@ export const LEVEL: Record<Level, { t: string; tone: Tone; color: string }> = {
 };
 
 export default function ProbePage() {
-  return <DeskGate need="probe.view">{desk => <Probe desk={desk} />}</DeskGate>;
+  return <DeskGate full need="probe.view">{desk => <Probe desk={desk} />}</DeskGate>;
 }
 
 function Probe({ desk }: { desk: AdminDesk }) {

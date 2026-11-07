@@ -236,6 +236,8 @@ export interface AdminDesk {
   proctorFlags14: number;
   missing: string[];
   loadedAt: string;
+  /** False when only the core is loaded (school and grants): the whole-school parts are empty until a page asks for them. */
+  full: boolean;
   /** The signed-in office account and what it may do. */
   me: { id: string; access: Access };
   /** Every grant in the school (only filled for access.manage), plus office accounts. */
@@ -586,7 +588,7 @@ function assembleCompliance(rows: AdminRows, students: AStudent[], wellness: Wel
 }
 
 // ── Assemble ────────────────────────────────────────────────────────────────
-export function assembleAdminDesk(rows: AdminRows, now = Date.now()): AdminDesk {
+export function assembleAdminDesk(rows: AdminRows, now = Date.now(), full = true): AdminDesk {
   const session = sessionOf(new Date(now));
   const tmlNow = tmlAsOf(rows.tml);
   const tmlBefore = tmlAsOf(rows.tml, now - 14 * DAY);
@@ -631,6 +633,7 @@ export function assembleAdminDesk(rows: AdminRows, now = Date.now()): AdminDesk 
     proctorFlags14: rows.proctor.filter(p => ts(p.flagged_at) >= now - 14 * DAY).length,
     missing: rows.missing,
     loadedAt: new Date(now).toISOString(),
+    full,
     me: { id: rows.meId || '', access: new Access(activeGrants((rows.grants || []).filter(g => g.user_id === rows.meId), today).map(g => g.role), !!rows.superadmin) },
     grants: activeGrants(rows.grants || [], today),
     revokedGrants: (rows.grants || []).filter(g => g.revoked_at || (g.expires_on && String(g.expires_on) < today)),

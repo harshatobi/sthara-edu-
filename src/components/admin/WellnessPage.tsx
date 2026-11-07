@@ -16,7 +16,7 @@ import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Field, Kpi, MissingNotice } from './kit';
 
 export default function WellnessPage() {
-  return <DeskGate need="wellness.read">{desk => <Wellness desk={desk} />}</DeskGate>;
+  return <DeskGate full need="wellness.read">{desk => <Wellness desk={desk} />}</DeskGate>;
 }
 
 interface Section { title: string; detail: string; auto: boolean; done: boolean }

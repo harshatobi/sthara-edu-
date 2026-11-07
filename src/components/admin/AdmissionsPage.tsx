@@ -52,7 +52,7 @@ const stageTone = (stages: StageDef[], key: string): Tone => {
 };
 
 export default function AdmissionsPage() {
-  return <DeskGate need="admissions.read">{desk => <Admissions desk={desk} />}</DeskGate>;
+  return <DeskGate full need="admissions.read">{desk => <Admissions desk={desk} />}</DeskGate>;
 }
 
 function Admissions({ desk }: { desk: AdminDesk }) {

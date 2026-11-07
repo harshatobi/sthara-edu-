@@ -20,7 +20,7 @@ import Link from 'next/link';
 import { CardHead, DeskGate, Kpi } from './kit';
 
 export default function AdminFeedPage() {
-  return <DeskGate need={['feed.read', 'incidents.manage', 'safeguarding.read']}>{desk => <Command desk={desk} />}</DeskGate>;
+  return <DeskGate full need={['feed.read', 'incidents.manage', 'safeguarding.read']}>{desk => <Command desk={desk} />}</DeskGate>;
 }
 
 interface Incident {

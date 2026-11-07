@@ -56,6 +56,26 @@ export async function allByIds(ids: string[], build: (chunk: string[], from: num
 }
 
 /**
+ * Just enough for any admin page to open: the school and the role grants (who may do what). The whole-school data
+ * (loadAdminRows) waits until a page that shows it is opened (2026-11-06: every admin page used to fetch ~150 pages
+ * of it, even Help & Support). Shaped by the same assembleAdminDesk, with the heavy sources empty.
+ */
+export async function loadAdminCore(supabase: SupabaseClient, who: { schoolId: string; uid: string; superadmin: boolean }): Promise<AdminRows> {
+  const school = who.schoolId;
+  const [schoolRow, grants] = await Promise.all([
+    supabase.from('schools').select('id, name, settings').eq('id', school).maybeSingle(),
+    all((a, b) => supabase.from('role_grants').select('*').eq('school_id', school).order('granted_at').range(a, b)),
+  ]);
+  if (schoolRow.error || !schoolRow.data) throw new Error(schoolRow.error?.message || 'Your school record could not be found.');
+  return {
+    school: schoolRow.data, users: [], tml: [], assignments: [], submissions: [], lessons: [], teacherWork: [], consents: [], guardians: [],
+    audit: [], leave: [], structures: [], invoices: [], payments: [], reminders: [], applicants: [], admissionEvents: [], filings: [],
+    wellness: [], proctor: [], missing: grants.missing ? ['role_grants'] : [], meId: who.uid, superadmin: who.superadmin, register: [],
+    grants: grants.data, dayCloses: [], concessions: [], leavePolicies: [], probeAcks: [],
+  };
+}
+
+/**
  * Everything the admin desk shows, for one school. The browser passes its own
  * (row-level-secured) client; the server passes the service client for the
  * School OS brief, where the caller's grants still decide what is shown.

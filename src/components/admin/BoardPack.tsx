@@ -23,7 +23,7 @@ import { MIN_PCT } from '@/lib/attendance/register';
  * workforce page, as they would in any board paper.
  */
 export default function BoardPack() {
-  return <DeskGate need="boardpack.view" skeleton={<PageSkeleton />}>{desk => <Pack desk={desk} />}</DeskGate>;
+  return <DeskGate full need="boardpack.view" skeleton={<PageSkeleton />}>{desk => <Pack desk={desk} />}</DeskGate>;
 }
 
 const PAGES = 5;

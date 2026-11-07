@@ -28,7 +28,7 @@ const TONE_FG = { r: 'var(--red)', a: '#92600A', n: 'var(--mut)' } as const;
 const WORK_EDGE = { r: 'var(--red)', a: '#D97706', g: 'var(--green)', n: 'var(--blue)' } as const;
 
 export default function CommandCentre() {
-  return <DeskGate>{desk => <Dashboard desk={desk} />}</DeskGate>;
+  return <DeskGate full>{desk => <Dashboard desk={desk} />}</DeskGate>;
 }
 
 /** "up 4 pts in a fortnight", or null when there's no earlier figure to compare. */

@@ -47,7 +47,7 @@ const FEE_TABLES = ['fee_structures', 'fee_invoices', 'fee_payments', 'fee_remin
 type Filter = 'all' | 'overdue' | 'outstanding' | 'paid';
 
 export default function FeesPage() {
-  return <DeskGate need="fees.read">{desk => <Fees desk={desk} />}</DeskGate>;
+  return <DeskGate full need="fees.read">{desk => <Fees desk={desk} />}</DeskGate>;
 }
 
 function Fees({ desk }: { desk: AdminDesk }) {

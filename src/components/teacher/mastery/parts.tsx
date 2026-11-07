@@ -2,7 +2,6 @@
 
 import { ArrowDownRightIcon as ArrowDownRight } from '@phosphor-icons/react/dist/ssr/ArrowDownRight';
 import { ArrowUpRightIcon as ArrowUpRight } from '@phosphor-icons/react/dist/ssr/ArrowUpRight';
-import { MinusIcon as Minus } from '@phosphor-icons/react/dist/ssr/Minus';
 import { hmColor } from '@/components/canon/ui';
 import type { Pt } from '@/components/canon/TrendLine';
 import type { Series, Spread } from '@/lib/teacher/masteryTrend';
@@ -18,10 +17,10 @@ export const pts = (s: Series, weeks: string[]): Pt[] => s.map((v, i) => ({ labe
 export function Delta({ v, title = 'Change over the last 4 weeks' }: { v: number | null; title?: string }) {
   if (v === null) return <span className="ms-delta none" title={`${title}: not enough weeks yet`}>New</span>;
   const cls = v >= 2 ? 'up' : v <= -2 ? 'down' : 'flat';
-  const Icon = cls === 'up' ? ArrowUpRight : cls === 'down' ? ArrowDownRight : Minus;
+  const Icon = cls === 'up' ? ArrowUpRight : cls === 'down' ? ArrowDownRight : null;
   return (
     <span className={`ms-delta ${cls}`} title={title}>
-      <Icon size={13} weight="bold" aria-hidden />{v > 0 ? '+' : v < 0 ? '−' : ''}{Math.abs(v)}
+      {Icon && <Icon size={13} weight="bold" aria-hidden />}{v > 0 ? '+' : v < 0 ? '−' : ''}{Math.abs(v)}
       <span className="sr"> points {title.toLowerCase()}</span>
     </span>
   );

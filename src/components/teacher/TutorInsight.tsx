@@ -1,5 +1,7 @@
 'use client';
 
+import '@/styles/tutor-views.css';
+
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LightbulbIcon as Lightbulb } from '@phosphor-icons/react/dist/ssr/Lightbulb';

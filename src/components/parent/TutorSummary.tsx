@@ -1,5 +1,7 @@
 'use client';
 
+import '@/styles/tutor-views.css';
+
 import { useState } from 'react';
 import { LightbulbIcon as Lightbulb } from '@phosphor-icons/react/dist/ssr/Lightbulb';
 import { Empty, Skeleton, hmColor } from '@/components/canon/ui';

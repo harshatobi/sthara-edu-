@@ -29,8 +29,9 @@ test('every /api/ops route is operator-only; every /api/admin route checks the o
   for (const r of routes.filter(r => r.route.startsWith('/api/admin/'))) assert.ok(['office', 'signed-in'].includes(r.guard), r.route);
 });
 
-/** Office routes any office account may use, whatever its roles: asking Sthara for help (layout: Help & Support). */
-const OPEN_TO_EVERY_OFFICE_ACCOUNT = new Set(['/api/admin/support']);
+/** Office routes any office account may use, whatever its roles: asking Sthara for help (layout: Help & Support),
+ *  and the home page's "today" (lib/admin/todayServer gates every count by its own permission, so a role sees only its own queue). */
+const OPEN_TO_EVERY_OFFICE_ACCOUNT = new Set(['/api/admin/support', '/api/admin/today']);
 
 test('office routes that use requireAdmin name real permissions', () => {
   for (const r of routes.filter(r => r.guard === 'office')) {

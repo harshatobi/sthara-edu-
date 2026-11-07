@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { loadRows, recordPrint, registerIdOf, timelineAccess } from '@/lib/timeline/server';
 import { monthSeries, shapeTimeline, yearEvents } from '@/lib/timeline/rules';
+import { leadOf } from '@/lib/timeline/lead';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   const r = await resolve(req, { studentId: p.get('studentId'), login: p.get('login') });
   if ('res' in r) return r.res;
   const { db, a } = r;
-  const student = { id: a.subject.id, name: a.subject.fullName, admissionNo: a.subject.admissionNo };
+  const student = { id: a.subject.id, name: a.subject.fullName, admissionNo: a.subject.admissionNo, userId: a.subject.userId };
   try {
     const rows = await loadRows(db, a);
     const timeline = shapeTimeline(rows, a.lens);
@@ -42,7 +43,9 @@ export async function GET(req: NextRequest) {
       if (!a.lens.print) return NextResponse.json({ error: 'The student file is printed by the school office or a parent.' }, { status: 403 });
       await recordPrint(db, a);
     }
-    return NextResponse.json({ student, timeline, events: timeline.years.flatMap(y => yearEvents(rows, a.lens, y.session)), series: monthSeries(rows, a.lens) });
+    const events = timeline.years.flatMap(y => yearEvents(rows, a.lens, y.session));
+    const series = monthSeries(rows, a.lens);
+    return NextResponse.json({ student, timeline, events, series, lead: leadOf(rows, a.lens, events, series) });
   } catch (e) {
     console.error('[timeline]', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: 'Could not load the timeline.' }, { status: 500 });

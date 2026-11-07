@@ -2,22 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { GraduationCapIcon as GraduationCap } from '@phosphor-icons/react/dist/ssr/GraduationCap';
-import { CalendarCheckIcon as CalendarCheck } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
-import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
-import { ChartLineUpIcon as ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
-import { NotebookIcon as Notebook } from '@phosphor-icons/react/dist/ssr/Notebook';
-import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
-import { TrophyIcon as Trophy } from '@phosphor-icons/react/dist/ssr/Trophy';
-import { CertificateIcon as Certificate } from '@phosphor-icons/react/dist/ssr/Certificate';
-import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
-import { FirstAidKitIcon as FirstAidKit } from '@phosphor-icons/react/dist/ssr/FirstAidKit';
-import { GavelIcon as Gavel } from '@phosphor-icons/react/dist/ssr/Gavel';
-import { WarningCircleIcon as WarningCircle } from '@phosphor-icons/react/dist/ssr/WarningCircle';
-import { HandHeartIcon as HandHeart } from '@phosphor-icons/react/dist/ssr/HandHeart';
-import { SmileyIcon as Smiley } from '@phosphor-icons/react/dist/ssr/Smiley';
-import { SignInIcon as SignIn } from '@phosphor-icons/react/dist/ssr/SignIn';
-import { BrainIcon as Brain } from '@phosphor-icons/react/dist/ssr/Brain';
 import { ClockCounterClockwiseIcon as Clock } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { Chip, Empty, Skeleton } from '@/components/canon/ui';
@@ -27,6 +11,9 @@ import { fmtDate, inr } from '@/lib/admin/format';
 import { useCall } from '@/lib/exams/useApi';
 import { SOURCE_LABEL, type MonthPoint, type Source, type Timeline as TL, type TimelineEvent, type Year } from '@/lib/timeline/rules';
 import '@/styles/timeline.css';
+import { ICON, PIN_ORDER } from './icons';
+import { Lead } from './Leads';
+import type { Lead as LeadData } from '@/lib/timeline/lead';
 
 /**
  * The unified timeline (Living Record brief 08), rebuilt as a journey (Moses, 2026-11-06), the same screen in every
@@ -36,20 +23,8 @@ import '@/styles/timeline.css';
  * sees; `query` names the student (studentId=… or login=…).
  */
 
-const ic = (n: ReactNode) => n;
-const ICON: Record<Source, ReactNode> = {
-  enrolment: ic(<GraduationCap size={16} weight="duotone" />), before: ic(<SignIn size={16} weight="duotone" />), attendance: ic(<CalendarCheck size={16} weight="duotone" />),
-  results: ic(<Exam size={16} weight="duotone" />), tml: ic(<ChartLineUp size={16} weight="duotone" />), homework: ic(<Notebook size={16} weight="duotone" />),
-  fees: ic(<CurrencyInr size={16} weight="duotone" />), kirti: ic(<Trophy size={16} weight="duotone" />), certificates: ic(<Certificate size={16} weight="duotone" />),
-  documents: ic(<FileText size={16} weight="duotone" />), health: ic(<FirstAidKit size={16} weight="duotone" />), discipline: ic(<Gavel size={16} weight="duotone" />),
-  incidents: ic(<WarningCircle size={16} weight="duotone" />), counselling: ic(<HandHeart size={16} weight="duotone" />), wellness: ic(<Smiley size={16} weight="duotone" />),
-  tutor: ic(<Brain size={16} weight="duotone" />),
-};
-/** Which milestone speaks for a month on the river when there are several. */
-const PIN_ORDER: Source[] = ['enrolment', 'results', 'kirti', 'certificates', 'tml', 'tutor', 'attendance'];
-
-interface Student { id: string; name: string; admissionNo: string | null }
-interface Data { student: Student; timeline: TL; events: TimelineEvent[]; series: MonthPoint[] }
+interface Student { id: string; name: string; admissionNo: string | null; userId: string | null }
+interface Data { student: Student; timeline: TL; events: TimelineEvent[]; series: MonthPoint[]; lead: LeadData }
 
 const WHO_NOTE: Record<TL['who'], string> = {
   office: 'What your office roles allow. Child-protection cases never appear here.',
@@ -71,7 +46,7 @@ type Filter = 'all' | 'milestones';
 
 export default function Timeline({ query }: { query: string }) {
   const { data, error } = useGet<Data>(`/api/timeline?${query}`);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [picked, setFilter] = useState<Filter | null>(null);
   const [printing, setPrinting] = useState<Data | null>(null);
   const [printErr, setPrintErr] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -87,6 +62,9 @@ export default function Timeline({ query }: { query: string }) {
   if (!data) return <Loading />;
   const t = data.timeline;
   const empty = !t.years.length && !t.before;
+  const student = t.who === 'student';
+  // The student's own timeline opens on the highlights; everyone else on everything.
+  const filter: Filter = picked ?? (student ? 'milestones' : 'all');
   const milestones = data.events.filter(e => e.tier === 'milestone').length;
 
   const goTo = (month: string) => {
@@ -102,22 +80,24 @@ export default function Timeline({ query }: { query: string }) {
   const now = t.years[0];
 
   return (
-    <div className="tl">
+    <div className={`tl${student ? ' tl-s' : ''}`}>
+      {!empty && <Lead lead={data.lead} t={t} series={data.series} events={data.events} student={data.student} />}
       <section className="card tl-top" aria-label="Journey overview">
         <header className="tl-top-head">
           <div>
-            {t.who !== 'student' && <h2 className="tl-name">{name}</h2>}
+            <h2 className="tl-name">{student ? 'Your journey' : name}</h2>
             <p className="tl-meta">
               {now?.cls ? <>{now.cls}. </> : null}
               {t.years.length ? <>{plural(t.years.length, 'school year')} recorded, {plural(milestones, 'milestone')}.</> : 'No school years recorded yet.'}
             </p>
-            <p className="tl-who">{WHO_NOTE[t.who]}</p>
+            {!student && <p className="tl-who">{WHO_NOTE[t.who]}</p>}
           </div>
           <div className="tl-actions">
             {!empty && (
               <div className="tl-seg" role="group" aria-label="What to show">
+                {student && <button aria-pressed={filter === 'milestones'} onClick={() => setFilter('milestones')}>Highlights</button>}
                 <button aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Everything</button>
-                <button aria-pressed={filter === 'milestones'} onClick={() => setFilter('milestones')}>Milestones</button>
+                {!student && <button aria-pressed={filter === 'milestones'} onClick={() => setFilter('milestones')}>Milestones</button>}
               </div>
             )}
             {t.print && <button className="btn sm" onClick={print}><Printer size={14} /> Print the student file</button>}
@@ -126,12 +106,12 @@ export default function Timeline({ query }: { query: string }) {
         {printErr && <div className="note err" role="alert">{printErr}</div>}
         {empty
           ? <Empty icon={<Clock size={26} weight="duotone" />} title="Nothing recorded yet">Attendance, results and achievements appear here as the school records them.</Empty>
-          : <River series={data.series} events={data.events} years={t.years} onPick={goTo} />}
+          : <River series={data.series} events={data.events} years={t.years} onPick={goTo} simple={student} />}
       </section>
 
       {!empty && (
         <section className="card tl-body" aria-label="Month by month">
-          {t.years.map(y => <YearBlock key={y.session} y={y} t={t} series={data.series} events={data.events} filter={filter} flash={flash} />)}
+          {t.years.map(y => <YearBlock key={y.session} y={y} t={t} series={data.series} events={data.events} filter={filter} flash={flash} focusOf={() => data.lead.focus} />)}
           {t.before && <Origin b={t.before} />}
         </section>
       )}
@@ -170,7 +150,7 @@ function useWidth<T extends HTMLElement>() {
 
 const PAD_L = 24, PAD_R = 24, TOP = 26, LINE_H = 104, ATT_H = 26, GAP = 10;
 
-function River({ series, events, years, onPick }: { series: MonthPoint[]; events: TimelineEvent[]; years: Year[]; onPick: (month: string) => void }) {
+function River({ series, events, years, onPick, simple }: { series: MonthPoint[]; events: TimelineEvent[]; years: Year[]; onPick: (month: string) => void; simple?: boolean }) {
   const { ref, w: box } = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   // Months on the river: the series, widened to take in any milestone outside it.
@@ -197,7 +177,7 @@ function River({ series, events, years, onPick }: { series: MonthPoint[]; events
     return by;
   }, [events]);
   const record = useMemo(() => new Set(events.filter(e => e.tier === 'record').map(e => e.on.slice(0, 7))), [events]);
-  const hasRecord = record.size > 0;
+  const hasRecord = record.size > 0 && !simple;
   if (!months.length) return null;
 
   const n = months.length;
@@ -249,7 +229,7 @@ function River({ series, events, years, onPick }: { series: MonthPoint[]; events
     <div className="tl-river">
       <div className="tl-legend" aria-hidden="true">
         <span><i className="k-line" /> Mastery</span>
-        <span><i className="k-bar" /> Attendance</span>
+        {!simple && <span><i className="k-bar" /> Attendance</span>}
         <span><i className="k-pin" /> Milestone</span>
         {hasRecord && <span><i className="k-rec" /> On the record</span>}
       </div>
@@ -274,7 +254,7 @@ function River({ series, events, years, onPick }: { series: MonthPoint[]; events
                 <text x={x(i) - (i ? step / 2 : 0) + 6} y={14} className={`tl-year-t${s === sessions[0] ? ' now' : ''}`}>{s}</text>
               </g>
             ))}
-            {months.map((m, i) => {
+            {!simple && months.map((m, i) => {
               const a = point.get(m)?.attendance;
               if (!a) return null;
               const bh = Math.max(2, (a.pct / 100) * ATT_H);
@@ -320,7 +300,7 @@ function River({ series, events, years, onPick }: { series: MonthPoint[]; events
 
 // ── The spine ────────────────────────────────────────────────────────────────
 
-function yearFacts(y: Year): { k: string; v: string; sub?: string; tone?: 'g' | 'a' | 'r' }[] {
+function yearFacts(y: Year, t: TL, focus: string | null): { k: string; v: string; sub?: string; tone?: 'g' | 'a' | 'r' }[] {
   const f: { k: string; v: string; sub?: string; tone?: 'g' | 'a' | 'r' }[] = [];
   if (y.attendance !== undefined) f.push({ k: 'Attendance', v: y.attendance?.pct != null ? `${y.attendance.pct}%` : 'None yet', sub: y.attendance ? plural(y.attendance.marked, 'day') : undefined, tone: y.attendance?.pct == null ? undefined : y.attendance.pct >= 90 ? 'g' : y.attendance.pct >= 75 ? 'a' : 'r' });
   if (y.tml !== undefined) f.push({ k: 'Mastery', v: y.tml ? `${y.tml.score}%` : 'None yet', sub: y.tml?.band, tone: !y.tml ? undefined : y.tml.score >= 75 ? 'g' : y.tml.score >= 50 ? 'a' : 'r' });
@@ -330,10 +310,15 @@ function yearFacts(y: Year): { k: string; v: string; sub?: string; tone?: 'g' | 
   if (y.kirti !== undefined) f.push({ k: 'Kirti', v: y.kirti ? String(y.kirti) : 'None yet', tone: y.kirti ? 'g' : undefined });
   if (y.fees !== undefined) f.push({ k: 'Fees due', v: y.fees ? inr(y.fees.due) : 'None', tone: y.fees && y.fees.due > 0 ? 'a' : undefined });
   if (y.wellness !== undefined) f.push({ k: 'Wellbeing', v: y.wellness ? plural(y.wellness.checkins, 'check-in') : 'None yet', sub: y.wellness?.low ? plural(y.wellness.low, 'low day') : undefined });
-  return f;
+  if (y.discipline !== undefined && t.who === 'office') f.push({ k: 'Discipline', v: String(y.discipline), tone: y.discipline ? 'a' : undefined });
+  // The student sees the few that matter to them; an office role sees its own focus first.
+  if (t.who === 'student') return f.filter(x => ['Attendance', 'Mastery', 'AI tutor', 'Kirti'].includes(x.k));
+  const lead: Record<string, string[]> = { fees: ['Fees due'], care: ['Wellbeing'], register: ['Attendance', 'Discipline'] };
+  const top = focus ? lead[focus] ?? [] : [];
+  return [...f.filter(x => top.includes(x.k)), ...f.filter(x => !top.includes(x.k))];
 }
 
-function YearBlock({ y, t, series, events, filter, flash, print }: { y: Year; t: TL; series: MonthPoint[]; events: TimelineEvent[]; filter: Filter; flash?: string | null; print?: boolean }) {
+function YearBlock({ y, t, series, events, filter, flash, print, focusOf }: { y: Year; t: TL; series: MonthPoint[]; events: TimelineEvent[]; filter: Filter; flash?: string | null; print?: boolean; focusOf?: () => string | null }) {
   const mine = events.filter(e => e.session === y.session);
   const shown = filter === 'milestones' ? mine.filter(e => e.tier === 'milestone') : mine;
   const pts = series.filter(p => p.session === y.session);
@@ -341,7 +326,7 @@ function YearBlock({ y, t, series, events, filter, flash, print }: { y: Year; t:
   const keys = new Set([...(filter === 'milestones' ? [] : pts.filter(hasStats).map(p => p.month)), ...shown.map(e => e.on.slice(0, 7))]);
   const months = [...keys].sort().reverse();
   const prevOf = new Map(series.map((p, i) => [p.month, series[i - 1]]));
-  const facts = yearFacts(y);
+  const facts = yearFacts(y, t, t.who === 'office' ? (focusOf?.() ?? null) : null);
   return (
     <section className="tl-yr" aria-label={`School year ${y.session}`}>
       <header className="tl-yr-head">
@@ -357,13 +342,13 @@ function YearBlock({ y, t, series, events, filter, flash, print }: { y: Year; t:
         )}
       </header>
       {months.length
-        ? months.map(m => <MonthBlock key={m} recLabel={t.who === 'student' ? 'Harder moments' : 'On the record'} m={m} p={pts.find(x => x.month === m) ?? null} prev={prevOf.get(m) ?? null} events={shown.filter(e => e.on.slice(0, 7) === m)} flash={flash === m} print={print} current={!print && t.years[0]?.session === y.session && m === months[0]} />)
+        ? months.map(m => <MonthBlock key={m} simple={t.who === 'student'} recLabel={t.who === 'student' ? 'Harder moments' : 'On the record'} m={m} p={pts.find(x => x.month === m) ?? null} prev={prevOf.get(m) ?? null} events={shown.filter(e => e.on.slice(0, 7) === m)} flash={flash === m} print={print} current={!print && t.years[0]?.session === y.session && m === months[0]} />)
         : <p className="tl-none">{filter === 'milestones' ? 'No milestones this year yet.' : 'Nothing recorded this year.'}</p>}
     </section>
   );
 }
 
-function MonthBlock({ m, p, prev, events, flash, print, current, recLabel }: { recLabel: string; m: string; p: MonthPoint | null; prev: MonthPoint | null; events: TimelineEvent[]; flash: boolean; print?: boolean; current: boolean }) {
+function MonthBlock({ m, p, prev, events, flash, print, current, recLabel, simple }: { simple?: boolean; recLabel: string; m: string; p: MonthPoint | null; prev: MonthPoint | null; events: TimelineEvent[]; flash: boolean; print?: boolean; current: boolean }) {
   const story = events.filter(e => e.tier !== 'record');
   const rec = events.filter(e => e.tier === 'record');
   const d = p?.tml && prev?.tml ? p.tml.score - prev.tml.score : null;
@@ -377,8 +362,8 @@ function MonthBlock({ m, p, prev, events, flash, print, current, recLabel }: { r
           <ul className="tl-strip" aria-label={`${mLong(m)} at a glance`}>
             {p.tml && <li><span>{current ? 'Mastery so far' : 'Mastery'}</span><b>{p.tml.score}%</b>{d !== null && d !== 0 && <em className={d > 0 ? 'up' : 'down'}>{d > 0 ? `+${d}` : d}</em>}</li>}
             {p.attendance && <li><span>Attendance</span><b className={p.attendance.pct < 75 ? 'r' : p.attendance.pct < 90 ? 'a' : ''}>{p.attendance.pct}%</b><small>{plural(p.attendance.marked, 'day')}</small></li>}
-            {p.homework && <li><span>Homework</span><b>{p.homework.done}/{p.homework.set}</b></li>}
-            {p.wellness && <li><span>Check-ins</span><b>{p.wellness.checkins}</b></li>}
+            {p.homework && !simple && <li><span>Homework</span><b>{p.homework.done}/{p.homework.set}</b></li>}
+            {p.wellness && !simple && <li><span>Check-ins</span><b>{p.wellness.checkins}</b></li>}
           </ul>
         )}
         {story.length > 0 && (

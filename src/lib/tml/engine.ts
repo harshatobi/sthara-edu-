@@ -307,7 +307,9 @@ export function collectEvidence(itemsData: any[], subsData: any[], tutorData: an
   const out: Evidence[] = [];
   const covered = new Set<string>(itemsData.map(r => r.submission_id).filter(Boolean));
   for (const row of itemsData) {
-    const atMs = msOf(row.created_at);
+    // A mark counts from when the work was handed in, not when it was marked (a late-marked paper is not fresher).
+    const sub = Array.isArray(row.submissions) ? row.submissions[0] : row.submissions;
+    const atMs = msOf(sub?.submitted_at) ?? msOf(row.created_at);
     const maxScore = Number(row.max_score);
     if (atMs === null || !(maxScore > 0)) continue;
     const assign = row.assignments || {};
@@ -536,7 +538,8 @@ export async function loadStudentEvidence(supabase: any, studentId: string) {
       .from('submission_items')
       .select(`
         id, score, max_score, component_type, created_at, submission_id, question_index,
-        assignments ( id, subject, title, units, type, proctored )
+        assignments ( id, subject, title, units, type, proctored ),
+        submissions ( submitted_at )
       `)
       .eq('student_id', studentId)
       .eq('teacher_confirmed', true)

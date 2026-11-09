@@ -30,3 +30,7 @@ Exact source wording, including punctuation, takes precedence over the design sk
 ## Verification
 
 Text comparison checks every source paragraph, table cell, list item and callout after HTML entity and whitespace normalization. Structural checks cover all 22 legal section IDs and same-page TOC targets, unique IDs, one focusable H1 per page, internal cross-page anchors and the single Contact enquiry host. Source completeness does not establish that implementation claims are independently verified or legally approved.
+
+## Approved amendments
+
+- 2026-11-05, approved by Moses Benhur: Privacy Policy section 6 (AI processing) and section 8 (sub-processors) now name Anthropic (Claude) alongside Google (Gemini) as AI model providers; "our model provider on enterprise terms" became "our model providers on commercial API terms". Applied to both this source file and company-pages.mjs so the retention test keeps guarding against unapproved drift. The Anthropic sub-processor purpose wording is provisional until the app's Claude integration is built.

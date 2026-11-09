@@ -19,9 +19,9 @@
   const roles = {
     student: {
       name: 'Student', plural: 'Students', title: 'Help me learn.',
-      caption: 'A student’s question becomes a new learning signal.',
-      description: '24×7 AI tutoring that guides students to think, understand and solve, rather than simply giving them the answer.',
-      features: ['Socratic questions, not just answers', 'Support across subjects', 'Learning connected to the school record'],
+      caption: 'A student’s question becomes part of their record.',
+      description: 'A tutor that starts with what the student has already tried and guides the next step instead of handing over the answer, any time of day.',
+      features: ['Hints, not answers', 'Works from the school’s own syllabus', 'Every session counts toward mastery'],
       routeTitle: 'Make room for<br><em>every question.</em>',
       routeDescription: 'When a lesson ends, curiosity does not. Sthara gives students a place to ask, practise and return to the ideas they are still working through.',
       steps: [
@@ -33,9 +33,9 @@
     },
     teacher: {
       name: 'Teacher', plural: 'Teachers', title: 'Help me teach.',
-      caption: 'A teacher’s review becomes a child’s next step.',
-      description: 'AI-powered assistance for lesson planning, homework review and assessment, while keeping the teacher in control.',
-      features: ['Syllabus-linked worksheets and quizzes', 'Drafts, submissions and teacher review', 'Topic-level insight for the next lesson'],
+      caption: 'A teacher’s review becomes the student’s next step.',
+      description: 'Snap the homework and confirm the suggested marks. The Copilot drafts worksheets, papers and lesson plans from your class’s real results. Live Lab puts experiments on the projector.',
+      features: ['Marking suggestions you confirm', 'Board-pattern papers in minutes', 'Live Lab simulations and CBSE practicals'],
       routeTitle: 'Your judgement.<br><em>Time to teach.</em>',
       routeDescription: 'Sthara brings assignments, handwritten work and learning evidence into one teaching workflow. AI assists with the marking. The teacher stays responsible for the review.',
       steps: [
@@ -46,10 +46,10 @@
       capture: 'The teacher’s grading-review screen, showing handwriting, the suggested mark and the teacher-confirmation control.'
     },
     admin: {
-      name: 'Administrator', plural: 'Administrators', title: 'Help me see.',
-      caption: 'An office update reaches the people who need it.',
-      description: 'Bring academic and operational information together so school leaders can identify patterns, gaps and students who need attention.',
-      features: ['Attendance, fees and admissions', 'Shared context across school teams', 'Admin-side AI on selected plans'],
+      name: 'Administrator', plural: 'Administrators', title: 'Help me run the school.',
+      caption: 'An entry made once in the office reaches everyone who needs it.',
+      description: 'Admissions, fees, attendance, exams, timetables, staff and payroll on the same record as the classroom, so the office enters things once.',
+      features: ['Admissions, fees and attendance', 'Exams, report cards and payroll', 'Admin-side AI that grows with your plan'],
       routeTitle: 'Run the school.<br><em>See it clearly.</em>',
       routeDescription: 'A school is more than a collection of registers. Sthara brings academic and administrative work together so your team can act with the same context.',
       steps: [
@@ -62,8 +62,8 @@
     parent: {
       name: 'Parent', plural: 'Parents', title: 'Help me know.',
       caption: 'A school update becomes a useful conversation at home.',
-      description: 'Meaningful visibility into learning and progress, not just attendance, fees and reminders.',
-      features: ['Progress in a parent-friendly view', 'School updates through WhatsApp', 'The next step, not just the final mark'],
+      description: 'Ask the school a question in your own language and get an answer from its records. A mastery report you can read, with updates on WhatsApp.',
+      features: ['Just ask, in your own language', 'A report you can actually read', 'School updates on WhatsApp'],
       routeTitle: 'Stay close.<br><em>Clarity at home.</em>',
       routeDescription: 'Families should not have to reconstruct a school day from scattered messages. Sthara connects the school record to a clearer parent experience.',
       steps: [
@@ -105,7 +105,7 @@
     const panel = $('#role-panel');
     panel.setAttribute('aria-labelledby', `tab-${role}`);
     panel.innerHTML = `<div class="role-panel-inner"><div class="role-copy"><h3>${info.title}</h3><p>${info.description}</p><ul>${info.features.map((feature) => `<li>${feature}</li>`).join('')}</ul><a class="text-link" href="#/${role}">Explore for ${info.plural.toLowerCase()} <span>↗</span></a></div><div class="sample-module">${moduleMarkup(role)}</div></div>`;
-    if (role === 'teacher' || role === 'student') $('.role-copy',panel).insertAdjacentHTML('beforeend', `<button class="role-evidence-link" data-open-capture="${role==='teacher'?'copilot':'tutor'}">Inspect the supplied ${role==='teacher'?'copilot':'tutor'} screen ↗</button>`);
+    if (role === 'teacher' || role === 'student') $('.role-copy',panel).insertAdjacentHTML('beforeend', `<button class="role-evidence-link" data-open-capture="${role==='teacher'?'copilot':'tutor'}">See the ${role==='teacher'?'Copilot':'tutor'} screen ↗</button>`);
   }
 
   function stopStory() {
@@ -124,9 +124,9 @@
     });
     const content = $('#story-content');
     if (step === 0) {
-      content.innerHTML = '<div class="notebook"><span class="paper-label">SAMPLE NOTEBOOK / GRADE 8</span><p>3x + 6 = 21</p><p>3x = 21 − 6 = 15</p><p>x = 5</p><small>Check: 3(5) + 6 = 21</small><span class="paper-corner">Ready to review ↗</span></div>';
+      content.innerHTML = '<div class="notebook"><span class="paper-label">SAMPLE NOTEBOOK / CLASS 8</span><p>3x + 6 = 21</p><p>3x = 21 − 6 = 15</p><p>x = 5</p><small>Check: 3(5) + 6 = 21</small><span class="paper-corner">Ready to review ↗</span></div>';
     } else if (step === 1) {
-      content.innerHTML = `<div class="review-work"><span class="sample-label">PREWRITTEN AI SUGGESTION</span><h3>Correct answer.<br>Reasoning worth recognising.</h3><p class="review-answer">3x = 15 &nbsp; → &nbsp; x = 5</p><p>The student subtracts 6 from both sides, divides by 3 and checks the answer. Suggested mark: <strong>3 / 3</strong>.</p><p class="review-hint">The record waits for a teacher’s decision.</p><button class="button" id="confirm-story">Confirm sample review <span>↗</span></button></div>`;
+      content.innerHTML = `<div class="review-work"><span class="sample-label">SUGGESTED MARKS</span><h3>Correct answer.<br>Reasoning worth recognising.</h3><p class="review-answer">3x = 15 &nbsp; → &nbsp; x = 5</p><p>The student subtracts 6 from both sides, divides by 3 and checks the answer. Suggested mark: <strong>3 / 3</strong>.</p><p class="review-hint">The record waits for a teacher’s decision.</p><button class="button" id="confirm-story">Confirm sample review <span>↗</span></button></div>`;
     } else if (!storyConfirmed) {
       content.innerHTML = '<div class="sync-story"><div class="sync-symbol">Ⅱ</div><h3>The teacher comes first.</h3><p>A suggested mark does not become a confirmed assessment on its own. Review the example before connecting the insight.</p><button class="button secondary" data-return-review style="margin-top:25px">Review the suggestion <span>↗</span></button></div>';
     } else {
@@ -216,6 +216,44 @@
   }
   $('#students').addEventListener('input', updateEstimate);
 
+  // Live Lab: predict, then reveal (two real screens from the presenter).
+  const labMoments = {
+    predict: { src: 'lab-predict', alt: 'Live Lab on the projector: a convex lens question, "Where will the image form?", with hands being counted for four answers', caption: 'The object sits between F₁ and 2F₁. The teacher asks where the image will form and counts the hands for each answer.' },
+    reveal: { src: 'lab-reveal', alt: 'Live Lab after the reveal: the rays drawn to the real image beyond 2F₂, the class tally, and the lens formula worked', caption: 'Run it. The engine draws the real image, shows that 21% of the class got it and works the lens formula. The misses tell the teacher what to re-teach.' }
+  };
+  function showLab(key) {
+    const m = labMoments[key]; if (!m) return;
+    const img = $('#lab-image'); if (!img) return;
+    const item = window.StharaCaptures?.get(m.src);
+    img.src = item?.src || img.src.replace(/lab-(predict|reveal)/, m.src); img.alt = m.alt;
+    img.closest('[data-open-capture]').dataset.openCapture = m.src;
+    $('#lab-caption').textContent = m.caption;
+    $$('[data-lab]').forEach(b => { const on = b.dataset.lab === key; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+  }
+  // Just ask: the same question in English or Hindi; the answer follows the language.
+  const askText = {
+    en: { q: 'How is Kabir doing in Maths this week?', a: 'Maths: 83%, Proficient.', s: 'Built from teacher-confirmed homework and quizzes.' },
+    hi: { q: 'कबीर गणित में कैसा कर रहा है?', a: 'गणित: 83%, दक्ष।', s: 'शिक्षक द्वारा जाँचे गए होमवर्क और क्विज़ के आधार पर।' }
+  };
+  function showAsk(lang) {
+    const t = askText[lang]; if (!t) return;
+    for (const [id, text] of [['#ask-question', t.q], ['#ask-answer', t.a], ['#ask-source', t.s]]) { const el = $(id); el.textContent = text; el.lang = lang; }
+    $$('[data-ask]').forEach(b => { const on = b.dataset.ask === lang; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+  }
+  // Follow one mark: six steps, playable.
+  let chainTimer = null;
+  function showChain(i) {
+    $$('[data-chain]').forEach(b => { const n = Number(b.dataset.chain); b.classList.toggle('active', n === i); b.classList.toggle('done', n < i); b.setAttribute('aria-pressed', String(n === i)); });
+  }
+  function stopChain() { clearInterval(chainTimer); chainTimer = null; const b = $('#chain-play'); if (b) b.innerHTML = 'Play <span>▷</span>'; }
+  function toggleChain() {
+    if (chainTimer) return stopChain();
+    let i = 0; showChain(0);
+    if (paused) { showChain(5); return; }
+    $('#chain-play').innerHTML = 'Pause <span>Ⅱ</span>';
+    chainTimer = setInterval(() => { i += 1; if (i > 5) { stopChain(); return; } showChain(i); }, 1300);
+  }
+
   const mega = $('#mega-menu');
   const megaTrigger = $('.menu-trigger');
   const mobileNav = $('#mobile-nav');
@@ -257,6 +295,13 @@
     if (target.closest('#tml-return')) inspectEvidence(-1);
     const tier = target.closest('[data-tier]');
     if (tier) selectTier(Number(tier.dataset.tier));
+    const lab = target.closest('[data-lab]');
+    if (lab) showLab(lab.dataset.lab);
+    const ask = target.closest('[data-ask]');
+    if (ask) showAsk(ask.dataset.ask);
+    const chain = target.closest('[data-chain]');
+    if (chain) { stopChain(); showChain(Number(chain.dataset.chain)); }
+    if (target.closest('#chain-play')) toggleChain();
     if (target.closest('[data-add-capture]')) { $('#capture-role').value = target.closest('[data-add-capture]').dataset.addCapture; $('#review-dialog').showModal(); }
   });
   document.addEventListener('keydown', (event) => {
@@ -302,13 +347,13 @@
       stopStory();
       // Remove the hidden homepage module, avoiding duplicate IDs and hidden control targets.
       $('#role-panel').innerHTML = '';
-      const supplied = role === 'teacher' ? ['copilot','class-mastery','curriculum'] : role === 'student' ? ['tutor','mastery','evidence'] : role === 'admin' ? ['command-centre','academic-health'] : role === 'parent' ? ['parent-home','parent-mastery'] : [];
+      const supplied = role === 'teacher' ? ['copilot','lab-predict','class-mastery'] : role === 'student' ? ['tutor','mastery'] : role === 'admin' ? ['command-centre','academic-health','fees'] : role === 'parent' ? ['parent-home','parent-mastery'] : [];
       const captureMarkup = captures[role]
         ? `<img src="${captures[role]}" alt="Locally supplied anonymised ${info.name.toLowerCase()} product screenshot"><figcaption>Locally supplied product capture. Visible only in this browser session.</figcaption>`
-        : supplied.length ? supplied.map(id => {const item=window.StharaCaptures.get(id);return `<button class="role-screen" data-open-capture="${id}"><img src="${item.src}" alt="Supplied ${item.label.toLowerCase()} design capture" loading="lazy"><span>${item.label}<b>Inspect ↗</b></span><small>${item.title}</small></button>`;}).join('')+'<figcaption>Supplied design captures. Example values, not live student records.</figcaption>'
+        : supplied.length ? supplied.map(id => {const item=window.StharaCaptures.get(id);return `<button class="role-screen" data-open-capture="${id}"><img src="${item.src}" alt="Sthara ${item.label.toLowerCase()} screen, sample school data" loading="lazy"><span>${item.label}<b>Inspect ↗</b></span><small>${item.title}</small></button>`;}).join('')+'<figcaption>Product screens from a sample school. Names and numbers are sample data.</figcaption>'
         : `<div class="capture-placeholder"><svg class="exact-brand" viewBox="0 0 196 316" aria-hidden="true"><use href="#pillar-logo"/></svg><strong>See your school's workflow.</strong><p>Explore the ${info.name.toLowerCase()} experience with the Sthara team during a pilot discussion.</p><a class="text-link" href="/contact">Talk to the team <span>↗</span></a></div><figcaption>No identifiable student or family records are displayed here.</figcaption>`;
       rolePage.innerHTML = `<div class="wrap"><section class="role-page-hero"><a class="back-link" href="#platform">← Back to the platform</a><div class="eyebrow">FOR ${info.plural.toUpperCase()}</div><h1 tabindex="-1">${info.routeTitle}</h1><p>${info.routeDescription}</p><a class="button" href="#contact">Book a School Pilot <span>↗</span></a></section><section class="role-detail-layout"><div class="role-detail-steps"><h2>A day with Sthara.</h2>${info.steps.map(([title, copy]) => `<article><h3>${title}</h3><p>${copy}</p></article>`).join('')}<div class="sample-module">${moduleMarkup(role)}</div></div><figure class="role-capture">${captureMarkup}</figure></section><nav class="role-related" aria-label="Other school roles"><span>One record connects everyone.</span>${Object.entries(roles).filter(([key]) => key !== role).map(([key, data]) => `<a href="#/${key}">${data.plural} ↗</a>`).join('')}</nav></div>`;
-      document.title = `Sthara for ${info.plural} | The Unified School OS`;
+      document.title = `Sthara for ${info.plural} | One living record for every student`;
       if (shouldFocus) { $('#role-page h1').focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: 'instant' }); }
     } else {
       rolePage.innerHTML = '';
@@ -345,8 +390,10 @@
   });
   }
 
-  function setTitle() { document.title = root.dataset.standalone ? 'Sthara | The Unified School OS' : originalTitle; }
+  function setTitle() { document.title = root.dataset.standalone ? 'Sthara | One living record for every student' : originalTitle; }
   let color = [116,172,255];
+  const ROLE_RGB = { dark: [[110,168,255],[64,214,178],[246,178,82],[242,128,170]], light: [[50,91,161],[29,118,106],[147,94,26],[156,67,98]] };
+  const roleRgb = (i) => ROLE_RGB[root.dataset.theme === 'light' ? 'light' : 'dark'][i % 4];
   function setTheme(theme) {
     root.dataset.theme = theme;
     try { sessionStorage.setItem('sthara-theme', theme); } catch {}
@@ -372,7 +419,7 @@
     canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
     if (context) context.setTransform(dpr, 0, 0, dpr, 0, 0);
     const count = width < 768 ? 29 : 62;
-    points = Array.from({length:count}, (_,i) => ({x: (i * .61803398875 % 1) * width, y: (i * .75487766625 % 1) * height, vx: Math.sin(i * 7.3) * 4, vy: Math.cos(i * 3.2) * 4, r: i % 5 === 0 ? 1.5 : .85, gold: i % 9 === 0}));
+    points = Array.from({length:count}, (_,i) => ({x: (i * .61803398875 % 1) * width, y: (i * .75487766625 % 1) * height, vx: Math.sin(i * 7.3) * 4, vy: Math.cos(i * 3.2) * 4, r: i % 5 === 0 ? 1.9 : 1.15, role: i % 4}));
     drawAtmosphere(performance.now(), false);
   }
   function drawAtmosphere(now, move = true) {
@@ -388,11 +435,12 @@
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
       if (move) { point.x += point.vx * delta; point.y += point.vy * delta; if (point.x < 0) point.x = width; if (point.x > width) point.x = 0; if (point.y < 0) point.y = height; if (point.y > height) point.y = 0; }
-      const rgb = point.gold ? (root.dataset.theme === 'dark' ? [210,179,115] : [143,99,52]) : color;
-      context.beginPath(); context.fillStyle = `rgba(${rgb.join(',')},.65)`; context.arc(point.x,point.y,point.r,0,Math.PI*2); context.fill();
+      const rgb = roleRgb(point.role);
+      const light = root.dataset.theme === 'light';
+      context.beginPath(); context.fillStyle = `rgba(${rgb.join(',')},${light ? .55 : .95})`; context.arc(point.x,point.y,point.r,0,Math.PI*2); context.fill();
       for (let j = i + 1; j < points.length; j++) {
         const other = points[j]; const distance = Math.hypot(point.x-other.x,point.y-other.y);
-        if (distance < 130) { context.beginPath(); context.strokeStyle = `rgba(${color.join(',')},${.13*(1-distance/130)})`; context.lineWidth=.6; context.moveTo(point.x,point.y); context.lineTo(other.x,other.y); context.stroke(); }
+        if (distance < 130) { context.beginPath(); context.strokeStyle = `rgba(${rgb.join(',')},${(light ? .16 : .14)*(1-distance/130)})`; context.lineWidth=.6; context.moveTo(point.x,point.y); context.lineTo(other.x,other.y); context.stroke(); }
       }
       if (pointer.active && !paused) {
         const distance = Math.hypot(point.x-pointer.sx,point.y-pointer.sy);
@@ -435,7 +483,7 @@
   $('[data-year]').textContent = new Date().getFullYear();
   if ('IntersectionObserver' in window) {
     root.classList.add('js-ready');
-    const reveals = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add('in'); reveals.unobserve(entry.target); } }), { threshold:.07 });
+    const reveals = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add('in'); reveals.unobserve(entry.target); } }), { threshold:0, rootMargin:'0px 0px 20% 0px' });
     $$('.reveal').forEach((element) => reveals.observe(element));
     const heroVisibility = new IntersectionObserver(([entry]) => document.body.classList.toggle('hero-offscreen', !entry.isIntersecting));
     heroVisibility.observe($('.hero'));

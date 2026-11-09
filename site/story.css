@@ -1,0 +1,122 @@
+/* Home story sections (2026-11 rebuild). Uses the tokens from style.css only, so both themes work. */
+
+/* Shared: product screens */
+.screen{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow);transition:transform .45s var(--ease),border-color .3s}
+.screen img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top left}
+.screen:hover{transform:translateY(-4px);border-color:var(--accent)}
+.feature-points{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:12px}
+.feature-points li{position:relative;padding-left:26px;color:var(--text);font-size:15px;line-height:1.55}
+.feature-points li::before{content:"";position:absolute;left:0;top:.62em;width:12px;height:2px;background:var(--accent)}
+.hero-kicker{color:var(--text)!important;font-weight:700;margin-top:18px}
+
+/* 2. Problem */
+.problem-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px 70px;align-items:start}
+.problem-lead{font-size:clamp(20px,2vw,26px);color:var(--text);font-weight:700;letter-spacing:-.03em;grid-column:1/-1}
+.scatter{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.scatter li{border:1px dashed var(--line);border-radius:14px;padding:16px 18px;background:var(--soft)}
+.scatter li:nth-child(odd){transform:rotate(-1.2deg)}.scatter li:nth-child(even){transform:rotate(1deg) translateY(6px)}
+.scatter b{display:block;color:var(--text);font-size:15px}.scatter span{font-size:13px;color:var(--quiet)}
+.problem-body>p:last-child{font-size:16px;align-self:center}
+
+/* 4. Students: copy + overlapping screens */
+.feature-section{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:60px;align-items:center}
+.feature-copy h2{font-size:clamp(34px,4.1vw,55px)}
+.feature-copy p{margin-top:20px;font-size:16px;max-width:560px}
+.screen-stack{position:relative;padding:0 0 70px 60px}
+.screen-stack .screen-front{position:absolute;left:0;bottom:0;width:72%}
+.screen-stack .screen-back{width:88%;margin-left:auto;opacity:.92}
+
+/* 5. Teachers: Copilot + heat map under the marking story */
+.teacher-more{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:40px}
+.teacher-more>div{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--surface)}
+.teacher-more h3{font-size:22px}.teacher-more p{margin:12px 0 16px}
+
+/* 6. Live Lab */
+.lab-section{position:relative}
+.lab-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:56px;align-items:start}
+.lab-copy h2{font-size:clamp(32px,3.7vw,50px)}
+.lab-copy>p{margin-top:20px;font-size:16px}
+.lab-copy .subtle{margin-top:20px}
+.lab-links{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:22px}
+.lab-stage{position:sticky;top:110px}
+.lab-toggle,.ask-lang{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:14px}
+.lab-toggle button,.ask-lang button{padding:9px 16px;border-radius:9px;font-size:13px;font-weight:700;color:var(--muted)}
+.lab-toggle button.active,.ask-lang button.active{background:var(--button);color:var(--button-text)}
+.lab-frame{display:block;width:100%;padding:0;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);background:#f6f8fb}
+.lab-frame img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover}
+.lab-caption{margin-top:14px;font-size:14px;min-height:3.2em}
+
+/* 8. Just ask */
+.ask-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
+.ask-demo{border:1px solid var(--line);border-radius:24px;padding:30px;background:var(--surface)}
+.ask-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 16px 16px 22px;border-radius:999px;background:var(--text);color:var(--bg);font-size:17px;font-weight:600}
+.ask-send{flex:none;padding:8px 16px;border-radius:999px;background:var(--accent);color:var(--button-text);font-size:13px;font-weight:700}
+.ask-answer{margin-top:16px;border:1px solid var(--line);border-radius:18px;padding:22px;background:var(--soft)}
+.ask-answer .eyebrow{margin-bottom:10px;color:var(--gold)}
+.ask-answer strong{display:block;font-size:clamp(24px,2.4vw,32px);letter-spacing:-.03em;color:var(--text)}
+.ask-answer p{margin-top:6px}
+.ask-demo .subtle{margin-top:14px}
+.ask-side h3{font-size:22px;margin-top:24px}.ask-side p{margin:10px 0 14px}
+
+/* 9. The whole school */
+.os-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:28px;align-items:start}
+.os-grid{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.os-grid li>*{display:block;width:100%;height:100%;text-align:left;border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--surface)}
+.os-grid li>button{transition:border-color .3s}.os-grid li>button:hover{border-color:var(--accent)}
+.os-grid li>button b::after{content:" ↗";color:var(--accent)}
+.os-grid b{display:block;font-size:14px;color:var(--text)}.os-grid span{display:block;font-size:12.5px;line-height:1.45;color:var(--quiet);margin-top:4px}
+.os-line{margin-top:28px;font-size:16px;color:var(--text)}
+
+/* 9b. Follow one mark */
+.chain{border:1px solid var(--line);border-radius:24px;padding:30px;background:var(--surface)}
+.chain-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.chain-head b{font-size:18px}
+.chain-steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;counter-reset:none}
+.chain-steps li{position:relative}
+.chain-steps li:not(:last-child)::after{content:"";position:absolute;top:26px;right:-10px;width:10px;height:2px;background:var(--line)}
+.chain-steps button{display:block;width:100%;height:100%;text-align:left;padding:16px;border:1px solid var(--line);border-radius:16px;font-size:13px;line-height:1.5;color:var(--muted);background:var(--bg);transition:border-color .3s,background .3s,color .3s}
+.chain-steps button span{display:block;font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--quiet)}
+.chain-steps button b{display:block;color:var(--text);font-size:15px;margin:6px 0 6px}
+.chain-steps button.done{border-color:var(--accent);color:var(--muted)}
+.chain-steps button.active{border-color:var(--accent);background:var(--soft);color:var(--text);box-shadow:0 0 0 3px var(--soft)}
+.chain-steps button.active span,.chain-steps button.done span{color:var(--accent)}
+.chain-line{margin-top:22px;font-size:17px;font-weight:700;color:var(--text)}
+.chain-close{margin-top:24px;font-size:16px;max-width:640px}
+
+/* Tablet */
+@media (max-width:1020px){
+  .feature-section,.lab-grid,.ask-grid,.os-layout,.problem-body{grid-template-columns:1fr}
+  .lab-stage{position:static}
+  .chain-steps{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .chain-steps li:nth-child(3n)::after{display:none}
+}
+/* Phone */
+@media (max-width:640px){
+  .teacher-more,.os-grid{grid-template-columns:1fr}
+  .screen-stack{padding:0 0 50px 24px}
+  .chain{padding:20px}
+  .chain-steps{grid-template-columns:1fr}
+  .chain-steps li::after{display:none}
+  .ask-demo{padding:20px}
+  .ask-bar{font-size:15px;border-radius:18px}
+  .scatter li{transform:none!important}
+  .lab-toggle{display:flex}.lab-toggle button{flex:1}
+}
+@media (prefers-reduced-motion:reduce){.screen,.chain-steps button{transition:none}.screen:hover{transform:none}}
+
+/* Background pattern: role-coloured dots in both themes; light is the default theme. */
+[data-theme=light] #atmosphere{opacity:.75}
+[data-theme=dark] #atmosphere{opacity:.9}
+/* Header Sign in: beside Book a School Pilot on wide screens; the mobile menu carries it on small ones. */
+.nav-actions .sign-in{padding-inline:18px}
+@media (max-width:900px){.nav-actions .sign-in{display:none}}
+/* 2026-11-09 polish (Moses approved): two-line hero headline, soft hero glow edges, banner trim, fewer section labels */
+@media(min-width:1024px){.hero h1{font-size:clamp(52px,4.4vw,66px);line-height:1.08}.hero h1 span,.hero h1 em{white-space:nowrap}}
+@media(min-width:1600px){.hero h1{font-size:72px}}
+.hero:before{-webkit-mask-image:linear-gradient(90deg,#000 70%,transparent 100%),linear-gradient(180deg,#000 65%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,#000 70%,transparent 100%),linear-gradient(180deg,#000 65%,transparent 100%);mask-composite:intersect}
+#home-page>.platform-strip{margin-top:64px}
+@media(max-width:767px){#home-page>.platform-strip{margin-top:36px}}
+
+/* Speed (2026-11-09): reveals start before a block enters view and finish faster, so scrolling never waits on content */
+.reveal{transition-duration:.45s,.45s;transform:translateY(14px)}
+.reveal.in{transform:none}

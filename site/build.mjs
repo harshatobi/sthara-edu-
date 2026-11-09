@@ -50,7 +50,7 @@ function links(html) {
     .replaceAll('https://www.sthara.in/login', escape(appURL.href))
     .replaceAll('href="#/', 'href="/')
     .replaceAll('href="#contact"', 'href="/contact"')
-    .replace(/href="#(top|platform|product|demo|tml|pricing|trust|difference|fit|outcomes)"/g, 'href="/#$1"')
+    .replace(/href="#(top|problem|platform|for-students|demo|live-lab|tml|ask|school-os|one-system|pricing|trust|final-cta)"/g, 'href="/#$1"')
     .replace(/href="mailto:sales@sthara\.in\?subject=[^"]*"/g, 'href="/contact"'));
 }
 // Role links (static and in app.js templates) point at the role pages' real URLs.
@@ -71,20 +71,20 @@ template = links(template)
   .replace('<script src="app.js"></script>', '<script src="app.js"></script>\n  <script src="enquiry-form.js"></script>');
 
 function roleHTML(key, info) {
-  const supplied = key === 'teacher' ? ['copilot','class-mastery','curriculum'] : key === 'student' ? ['tutor','mastery','evidence'] : key === 'admin' ? ['command-centre','academic-health'] : key === 'parent' ? ['parent-home','parent-mastery'] : [];
+  const supplied = key === 'teacher' ? ['copilot','lab-predict','class-mastery'] : key === 'student' ? ['tutor','mastery'] : key === 'admin' ? ['command-centre','academic-health','fees'] : key === 'parent' ? ['parent-home','parent-mastery'] : [];
   const images = supplied.length
-    ? supplied.map(id => `<figure><button class="role-screen" data-open-capture="${id}"><img src="${BASE}/assets/captures/${id}.png" loading="lazy" alt="Sthara ${id.replaceAll('-', ' ')} sample product screen"><span>Inspect product screen ↗</span></button></figure>`).join('') + '<figcaption>Supplied design captures. Example values, not live student records.</figcaption>'
+    ? supplied.map(id => `<figure><button class="role-screen" data-open-capture="${id}"><img src="${BASE}/assets/captures/${id}.jpg" loading="lazy" alt="Sthara ${id.replaceAll('-', ' ')} screen, sample school data"><span>See this screen ↗</span></button></figure>`).join('') + '<figcaption>Product screens from a sample school. Names and numbers are sample data.</figcaption>'
     : `<div class="capture-placeholder"><svg class="exact-brand" viewBox="0 0 196 316" aria-hidden="true"><use href="#pillar-logo"/></svg><strong>See your school's workflow.</strong><p>Explore the ${info.name.toLowerCase()} experience with the Sthara team during a pilot discussion.</p><a class="text-link" href="/contact">Talk to the team ↗</a></div><figcaption>No identifiable student or family records are displayed here.</figcaption>`;
   return `<div class="wrap"><section class="role-page-hero"><a class="back-link" href="/#platform">← Back to the platform</a><div class="eyebrow">FOR ${info.plural.toUpperCase()}</div><h1 tabindex="-1">${info.routeTitle}</h1><p>${info.routeDescription}</p><a class="button" href="/contact">Book a School Pilot ↗</a></section><section class="role-detail-layout"><div class="role-detail-steps"><h2>A day with Sthara.</h2>${info.steps.map(([title,copy])=>`<article><h3>${title}</h3><p>${copy}</p></article>`).join('')}<div class="sample-module">${moduleMarkup(key)}</div></div><figure class="role-capture">${images}</figure></section><nav class="role-related" aria-label="Other school roles"><span>One record connects everyone.</span>${Object.entries(roles).filter(([other])=>other!==key).map(([other,data])=>`<a href="${ROLE_PATH[other]}">${data.plural} ↗</a>`).join('')}</nav></div>`;
 }
 const pages = {
-  home: { title: 'Sthara | The Unified School OS', description: 'One connected school platform for students, teachers, administrators and parents. Explore True Mastery Level, teaching support and a paid school pilot.' },
-  ...Object.fromEntries(Object.entries(roles).map(([key,info])=>[key,{title:`Sthara for ${info.plural} | The Unified School OS`,description:info.routeDescription,html:roleHTML(key,info),role:true}])),
+  home: { title: 'Sthara | One living record for every student', description: 'One living record for every student, read by the student, the teacher, the office and the parent. Tutor, Teacher Copilot, Live Lab, True Mastery Level and the school ERP in one system.' },
+  ...Object.fromEntries(Object.entries(roles).map(([key,info])=>[key,{title:`Sthara for ${info.plural} | One living record for every student`,description:info.routeDescription,html:roleHTML(key,info),role:true}])),
   ...companyPages
 };
 await mkdir(output, { recursive: true });
 await cp(resolve(root, 'assets'), resolve(output, 'assets'), { recursive: true });
-for (const file of ['style.css','refinement.css','company-pages.css','enquiry-form.css','launch.css','hero-motion.js','capture-gallery.js','app.js','enquiry-form.js','launch.js']) {
+for (const file of ['style.css','refinement.css','story.css','company-pages.css','enquiry-form.css','launch.css','hero-motion.js','capture-gallery.js','app.js','enquiry-form.js','launch.js']) {
   let data = await readFile(resolve(root,file),'utf8');
   if (file === 'app.js') data = `const ROLE_PATH = ${JSON.stringify(ROLE_PATH)};\n${links(data)}`;
   if (appMode && file === 'capture-gallery.js') data = data.replaceAll('`assets/captures/', '`' + BASE + '/assets/captures/');
@@ -97,7 +97,7 @@ const manifest = [];
 for (const [key,page] of Object.entries(pages)) {
   const path = key === 'home' ? '/' : ROLE_PATH[key] || `/${key}`;
   let html = template
-    .replace('<html lang="en" data-theme="dark">', `<html lang="en" data-theme="dark" data-page="${key}">`)
+    .replace('<html lang="en" data-theme="light">', `<html lang="en" data-theme="light" data-page="${key}">`)
     .replace(/<title>[^<]*<\/title>/, `<title>${escape(page.title)}</title>`)
     .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${escape(page.description)}">`)
     .replace(/<meta name="robots"[^>]*>/, `<meta name="robots" content="${indexable?'index,follow':'noindex,nofollow'}">`)

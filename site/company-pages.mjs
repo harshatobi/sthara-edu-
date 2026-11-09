@@ -27,63 +27,52 @@ const related = (current) => `
       .map(([key, label]) => `<a href="/${key}">${label}<span aria-hidden="true">↗</span></a>`).join('')}
   </nav>`;
 
+// Regional partners show on About only once the partnership agreement is signed (Moses, 2026-11-05).
+const PARTNERS_LIVE = true;
+
 export const companyPages = {
   about: {
     title: 'About us | Sthara',
-    description: 'Meet the founders of Sthara and the principles behind one living school record for Indian K-12 schools.',
-    html: `${hero('About us', 'A child falling behind should never be a surprise.', 'One living record for the student, the teacher, the office and the parent.')}
+    description: 'Why Sthara exists, the people behind it and the principles behind one living record for every student.',
+    html: `${hero('About us', 'A child falling behind should never be a surprise.', 'Sthara is one living record for every student, read by the student, the teacher, the office and the parent.')}
       <div class="company-layout wrap">
-        ${contents('about', [['ab-why', 'Why Sthara exists'], ['ab-problem', 'We started with a problem'], ['ab-close', 'Close to schools'], ['ab-leadership', 'The people behind it'], ['ab-principles', 'What we believe'], ['ab-philosophy', 'Our philosophy'], ['ab-now', 'Working with us']])}
+        ${contents('about', [['ab-why', 'Why Sthara exists'], ['ab-problem', 'The problem we started with'], ['ab-close', 'Built close to schools'], ['ab-leadership', 'The people behind Sthara'], ['ab-principles', 'What we believe'], ['ab-philosophy', 'How we work'], ['ab-today', 'Sthara today'], ['ab-now', 'Working with us']])}
         <div class="company-prose">
           <section class="company-section" id="ab-why" aria-labelledby="about-why-heading">
-            <h2 id="about-why-heading">Why Sthara exists</h2>
-            <p>Sthara is a unified school operating system for Indian K-12 schools. One living record that the student, the teacher, the office and the parent all read from — so a slipping topic surfaces in the week it slips, not at the end of term.</p>
-            <p>In most schools a child's difficulty only becomes visible once it has become a mark. One topic doesn't land. The next chapter assumes it did. By the time anyone measures the gap it has compounded into a result nobody can undo — and no one was negligent, there was simply nothing in the room that was watching.</p>
-            <p>Our co-founder lived exactly that as a student, then built the system he wished had existed. It is why the <b>True Mastery Level</b> sits at the centre of Sthara rather than at the edge: one live score per child, built from real classwork, that surfaces a slipping topic while there is still term left to fix it.</p>
+            <h2 id="about-why-heading">Ten schools. No record that followed me.</h2>
+            <p>I changed schools ten times growing up. My parent's job meant a transfer every few years, and every move landed in the middle of a syllabus. The new school was always a little ahead or a little behind, and nobody there knew what I had already covered.</p>
+            <p>So the gaps stayed hidden. A topic I had missed in one school was assumed in the next. By the time a report card showed it, the gap had grown into something much harder to close. No teacher was careless. Each school simply started from nothing, because my record never came with me.</p>
+            <p>Sthara is the system I wished had existed: one record that keeps the whole picture of a student, so a slipping topic shows up the week it slips, and nothing a child has learned or missed gets lost between classrooms.</p>
+            <p class="company-signature"><b>Moses Benhur</b><br>Co-founder, Managing Director &amp; CFO</p>
             <div class="company-callout">
               <h3>What we do, in one line.</h3>
-              <p>We replace the spreadsheet, the WhatsApp group, the tutoring app and the paper register with a single living record that every role in the school reads from.</p>
+              <p>We replace the register, the spreadsheet, the WhatsApp group and the tutoring app with one living record that every role in the school reads from.</p>
             </div>
           </section>
           <section class="company-section" id="ab-problem" aria-labelledby="about-problem-heading">
             <h2 id="about-problem-heading">We didn't start with AI. We started with a problem.</h2>
-            <p>Schools generate enormous amounts of information every day: attendance, assessments, homework, teacher observations, student activity, parent interactions. Yet much of it remains fragmented across different systems.</p>
-            <p>The result? A school may know what a student scored — without always knowing what the student actually understands. And by the time a learning gap becomes visible on a report card, valuable time may already have been lost.</p>
-            <div class="company-callout">
-              <h3>Sthara was built to change that.</h3>
-              <p>We believe technology should not add another disconnected layer to education. It should bring the right signals together, help teachers make better decisions, give school leaders meaningful visibility and help students get the support they need — when they need it.</p>
-            </div>
+            <p>Schools produce a great deal of information every day: attendance, homework, tests, teacher observations, messages from home. Most of it lives in different places. A school can know what a student scored without knowing what the student understands, and by the time a gap appears on a report card, a term may already be gone.</p>
+            <p>Technology should not add one more place to look. It should bring what the school already knows into one view, help teachers decide, give leaders a clear picture and get students help while it still matters.</p>
           </section>
           <section class="company-section" id="ab-close" aria-labelledby="about-close-heading">
-            <h2 id="about-close-heading">Built close to education. Built close to schools.</h2>
-            <p>Sthara is intentionally founder-driven. We believe the best education technology is not built from a distance. It is built by staying close to the people who experience the system every day: students, teachers, school leaders and parents.</p>
-            <p>That is why we want to remain close to schools as we grow — listening to what works, understanding where the real friction lies and continuously improving what we build. We don't want to tell schools what they need. We want to understand what they actually need — and build for it.</p>
+            <h2 id="about-close-heading">Built close to schools.</h2>
+            <p>Sthara is founder-led. The best school software is built by people who stay close to the students, teachers, leaders and parents who use it every day. We listen to what works, find where the real friction is and keep improving. We don't tell schools what they need; we find out, and build for it.</p>
           </section>
           <section class="company-section" id="ab-leadership" aria-labelledby="about-leadership-heading">
-            <h2 id="about-leadership-heading">The people behind it</h2>
-            <p class="company-section-intro">Three founders. One of them wrote the platform.</p>
+            <h2 id="about-leadership-heading">The people behind Sthara.</h2>
             <div class="company-leaders">
-              <article class="company-leader company-leader-founder" aria-labelledby="leader-harsha">
+              <article class="company-leader company-leader-founder company-leader-photo" aria-labelledby="leader-moses">
                 <div class="company-leader-name">
-                  <h3 id="leader-harsha">Harsha Payala</h3>
-                  <p class="company-position">Co-founder &amp; creator of Sthara<br>President &amp; CEO</p>
-                  <p class="company-education">B.Tech, Computer Science</p>
-                </div>
-                <div class="company-leader-bio">
-                  <p>Harsha designed and built the Sthara platform — the AI tutor, the handwriting-grading pipeline and the True Mastery Level engine. He was the student who fell behind on a topic nobody caught in time, and he built Sthara so that it does not happen quietly to anyone else.</p>
-                  <p>His standard runs through the whole product: the tutor asks a student what they have already tried before it explains anything, and no AI-generated mark enters a child's record until a teacher has confirmed it.</p>
-                  <ul class="company-expertise" aria-label="Harsha's areas of work"><li>Platform architect</li><li>Handwriting OCR</li><li>True Mastery Level</li><li>Product direction</li></ul>
-                </div>
-              </article>
-              <article class="company-leader" aria-labelledby="leader-moses">
-                <div class="company-leader-name">
+                  <img class="company-leader-portrait" src="assets/people/moses-benhur.jpg" width="413" height="413" loading="lazy" alt="Moses Benhur">
                   <h3 id="leader-moses">Moses Benhur</h3>
                   <p class="company-position">Co-founder<br>Managing Director &amp; CFO</p>
                   <p class="company-education">M.S. Computer Science, University of Bridgeport</p>
                 </div>
                 <div class="company-leader-bio">
-                  <p>An engineer in the finance seat. Moses sets how Sthara is priced and holds it to a single test: an ordinary school should get the same platform as a flagship one, at a price it can actually pay.</p>
-                  <ul class="company-expertise" aria-label="Moses's areas of work"><li>Commercial model</li><li>Partnerships</li><li>Finance</li></ul>
+                  <p>An engineer in the finance seat. Moses leads the product and built the Sthara platform, from the tutor and handwriting grading to the school ERP and the record that ties them together.</p>
+                  <p>His strength is understanding how an organisation actually runs: the multi-level processes behind it and the numbers that drive it. He spent more than five years as an Oracle Fusion SCM and Financials consultant. At Scholastic Inc. he worked across supply chain, finance, middleware and technical teams on Oracle Cloud support and implementation. At Omeros Corp he implemented Oracle Procurement and Manufacturing, from setup and testing to training and process documentation.</p>
+                  <p>That is the discipline he brings to schools: turning complex operations into clear visibility that a leadership team can act on with confidence. He also sets how Sthara is priced and holds it to a single test: an ordinary school should get the same platform as a flagship one, at a price it can actually pay.</p>
+                  <ul class="company-expertise" aria-label="Moses's areas of work"><li>Product &amp; platform</li><li>Enterprise operations</li><li>Commercial model</li><li>Partnerships</li><li>Finance</li></ul>
                 </div>
               </article>
               <article class="company-leader" aria-labelledby="leader-joshua">
@@ -93,41 +82,76 @@ export const companyPages = {
                   <p class="company-education">B.Sc. Biotechnology &amp; Genetics, GITAM University<br>Research in behavioural psychology</p>
                 </div>
                 <div class="company-leader-bio">
-                  <p>Joshua came to education through behaviour rather than software. He leads how Sthara is rolled out inside a school, and is the reason wellbeing is treated here as real, kept data a counsellor can act on — not a box ticked for a circular.</p>
+                  <p>Joshua came to education through behaviour rather than software. He leads how Sthara is rolled out inside a school, and he is the reason wellbeing is treated here as real, recorded information a counsellor can act on, not a box ticked for a circular.</p>
                   <ul class="company-expertise" aria-label="Joshua's areas of work"><li>School rollout</li><li>Onboarding &amp; training</li><li>Wellbeing programme</li></ul>
                 </div>
               </article>
+              <article class="company-leader" aria-labelledby="leader-harsha">
+                <div class="company-leader-name">
+                  <h3 id="leader-harsha">Harsha Payala</h3>
+                  <p class="company-position">Co-founder</p>
+                  <p class="company-education">B.Tech, Computer Science</p>
+                </div>
+                <div class="company-leader-bio">
+                  <p>Harsha came up with the True Mastery Level: one live score for every topic, built from a student's real classwork, homework and quizzes rather than a single exam.</p>
+                  <ul class="company-expertise" aria-label="Harsha's areas of work"><li>True Mastery Level</li></ul>
+                </div>
+              </article>
             </div>
+            ${PARTNERS_LIVE ? `<div class="company-partners">
+              <h3 class="company-partners-heading">Regional leadership</h3>
+              <article class="company-leader company-leader-photo" aria-labelledby="leader-himanshu">
+                <div class="company-leader-name">
+                  <img class="company-leader-portrait" src="assets/people/himanshu-kundra.jpg" width="480" height="480" loading="lazy" alt="Dr. Himanshu Kundra">
+                  <h3 id="leader-himanshu">Dr. Himanshu Kundra</h3>
+                  <p class="company-position">Managing Partner<br>North India</p>
+                  <p class="company-education">New Delhi NCR, Uttar Pradesh, Uttarakhand &amp; Haryana</p>
+                </div>
+                <div class="company-leader-bio">
+                  <p>Dr. Kundra is a strategic business leader, education entrepreneur and AI leadership advocate with over 15 years of experience in organisational leadership, business growth, strategic partnerships and revenue optimisation.</p>
+                  <p>As Managing Partner for North India, he leads Sthara's regional growth across New Delhi NCR, Uttar Pradesh, Uttarakhand and Haryana, focusing on market development, school relationships and expansion.</p>
+                  <p>His work spans education leadership, institutional strategy, business development and organisational transformation. He is associated with Boardy in an advisory capacity and is building the 2030 Impact Network, a long-term initiative focused on AI-led transformation, leadership development and meaningful societal impact.</p>
+                  <ul class="company-expertise" aria-label="Dr. Kundra's areas of work"><li>Regional growth</li><li>Strategic partnerships</li><li>Education leadership</li><li>AI leadership</li></ul>
+                </div>
+              </article>
+            </div>` : ''}
           </section>
           <section class="company-section" id="ab-principles" aria-labelledby="about-principles-heading">
             <h2 id="about-principles-heading">What we believe</h2>
             <p class="company-section-intro">Four things we won't trade away.</p>
             <div class="company-principles">
-              <article><h3>Student outcomes before margin</h3><p>When a feature is good for the child and neutral for revenue, it still ships. Our entry tier exists so mainstream schools get the same platform as elite ones.</p></article>
-              <article><h3>One record, never four</h3><p>Every module writes to the same living record. We won't ship a feature that creates a second version of the truth about a child.</p></article>
-              <article><h3>Teacher time is sacred</h3><p>AI earns its place by giving hours back — grading, lesson prep, report drafting. If it adds a step for a teacher, it doesn't ship.</p></article>
-              <article><h3>Children's data is children's data</h3><p>Role-based access, audit trails, Indian data residency, and no advertising to children — ever. See our <a href="/dpdp">DPDP architecture</a>.</p></article>
+              <article><h3>One record, never four</h3><p>Every part of Sthara writes to the same record. We won't build anything that creates a second version of the truth about a child.</p></article>
+              <article><h3>Teacher time is sacred</h3><p>AI earns its place by giving teachers hours back: marking, lesson preparation, report writing. If a feature adds a step for a teacher, it doesn't ship.</p></article>
+              <article><h3>The office runs on facts, not follow-ups</h3><p>Fees, attendance and staff records update from the work already done, so the office stops chasing paper and re-typing what someone already entered.</p></article>
+              <article><h3>Children's data is children's data</h3><p>Role-based access, audit trails, servers and student records in India, and no advertising to children, ever. See our <a href="/dpdp">DPDP approach</a>.</p></article>
             </div>
           </section>
           <section class="company-section" id="ab-philosophy" aria-labelledby="about-philosophy-heading">
-            <h2 id="about-philosophy-heading">Our philosophy</h2>
-            <p class="company-section-intro">Stay close. Listen hard. Build better.</p>
+            <h2 id="about-philosophy-heading">How we work</h2>
+            <p class="company-section-intro">Stay close. Solve real problems. Keep people at the centre.</p>
             <div class="company-principles">
-              <article><h3>01 — Stay close to schools</h3><p>We continuously listen to school leaders, teachers, students and parents.</p></article>
-              <article><h3>02 — Solve real problems</h3><p>We don't build technology simply because it is possible. We build when it solves a meaningful problem.</p></article>
-              <article><h3>03 — Keep humans at the centre</h3><p>AI should assist teachers, not replace their judgement. AI should support students, not replace thinking. Technology should strengthen the relationship between schools, teachers, students and parents — not distance them.</p></article>
+              <article><h3>Stay close to schools</h3><p>We keep listening to school leaders, teachers, students and parents.</p></article>
+              <article><h3>Solve real problems</h3><p>We don't build something because it is possible. We build it when it fixes something that matters.</p></article>
+              <article><h3>Keep people at the centre</h3><p>AI should support a teacher's judgement, not replace it, and help a student think, not think for them.</p></article>
             </div>
             <div class="company-callout">
-              <h3>Founder driven. School focused. Always learning.</h3>
-              <p>As Sthara grows, we intend to remain close to the problem we set out to solve. Because education is too important to build from a distance. We listen. We learn. We build. We improve.</p>
+              <p>Education is too important to build from a distance.</p>
             </div>
           </section>
+          <section class="company-section" id="ab-today" aria-labelledby="about-today-heading">
+            <h2 id="about-today-heading">Sthara today</h2>
+            <ul>
+              <li>Headquartered in Massachusetts, USA, with a branch in Hyderabad, India. Our servers and student records stay in India.</li>
+              <li>Built on the CBSE 2026-27 curriculum for Classes 9 to 12, with NEET, JEE, EAPCET and Olympiad syllabi mapped to it, and support for 12 Indian languages.</li>
+              <li>Working with schools across India${PARTNERS_LIVE ? ', with a regional team for North India covering New Delhi NCR, Uttar Pradesh, Uttarakhand and Haryana' : ''}.</li>
+            </ul>
+          </section>
           <section class="company-section" id="ab-now" aria-labelledby="about-working-heading">
-            <h2 id="about-working-heading">Working with us</h2>
-            <p>Sthara is founder-led, and we intend to keep it that way. When your school contacts us you reach a founder — not a ticket queue — and every school on the platform keeps a direct line to one of us for as long as they are with us.</p>
+            <h2 id="about-working-heading">You reach a founder.</h2>
+            <p>Sthara is founder-led, and we intend to keep it that way. When your school contacts us you reach a founder, not a ticket queue, and every school on the platform keeps a direct line to one of us for as long as it is with us.</p>
             <div class="company-callout">
               <h3>Where to start.</h3>
-              <p>New school enquiries, demos and pilots go to Sales and Operations. Partnership, contract and finance conversations go to our COO and CFO. Both routes are on the <a href="/contact">contact page</a>.</p>
+              <p>New school enquiries, demos and pilots go to <a href="mailto:sales@sthara.in">sales@sthara.in</a>. Partnerships, contracts and finance go to <a href="mailto:coo@sthara.in">coo@sthara.in</a>. Both are on the <a href="/contact">contact page</a>.</p>
             </div>
           </section>
         </div>
@@ -207,11 +231,11 @@ export const companyPages = {
         </ul>
 
         <h2 id="pp-ai">6 · AI processing</h2>
-        <p>Sthara uses <b>Google's Gemini API</b> to power AI tutoring, handwriting recognition and grading, and report drafting. When a student asks the tutor a question or submits a photograph of handwritten work, that content is sent to the model provider to generate the response or the grading.</p>
+        <p>Sthara uses AI models from <b>Google (Gemini)</b> and <b>Anthropic (Claude)</b> to power AI tutoring, handwriting recognition and grading, and report drafting. When a student asks the tutor a question or submits a photograph of handwritten work, that content is sent to the model provider handling that task to generate the response or the grading.</p>
         <ul>
           <li>Content is sent for the sole purpose of returning the tutoring reply, the grade, or the drafted report.</li>
           <li>AI-generated marks are surfaced to a teacher for confirmation — the teacher, not the model, is the authority on a child's mark.</li>
-          <li>We do not use student personal data to train publicly available AI models, and we contract with our model provider on enterprise terms rather than consumer terms.</li>
+          <li>We do not use student personal data to train publicly available AI models, and we contract with our model providers on commercial API terms rather than consumer terms.</li>
           <li>Where a model output is used to flag a student as at-risk, that flag is advisory to a human being. No consequential decision about a child is taken by the system alone.</li>
         </ul>
 
@@ -227,6 +251,7 @@ export const companyPages = {
         <p>We share personal data only with sub-processors necessary to run the platform, each under contract and each restricted to the purpose stated:</p>
         <div class="company-table-scroll" role="region" aria-label="Policy details" tabindex="0"><table class="company-table"><thead><tr><th scope="col">Sub-processor</th><th scope="col">Purpose</th></tr></thead><tbody>
           <tr><td>Google Cloud / Gemini API</td><td>AI tutoring, handwriting OCR and grading, report drafting</td></tr>
+          <tr><td>Anthropic / Claude API</td><td>AI tutoring, teaching assistance and report drafting</td></tr>
           <tr><td>Managed PostgreSQL provider</td><td>System of record — the living student record</td></tr>
           <tr><td>Application hosting provider</td><td>Serving the web application</td></tr>
           <tr><td>WhatsApp Business API</td><td>Delivering parent notifications and reminders</td></tr>

@@ -95,7 +95,7 @@ html = await replaceAsync(html, /<link\b[^>]*rel="stylesheet"[^>]*href="([^"]+)"
 });
 html = await embedMarkup(html);
 
-const captureNames = (await readdir(resolve(dist, 'assets/captures'))).filter(name => name.endsWith('.png')).sort();
+const captureNames = (await readdir(resolve(dist, 'assets/captures'))).filter(name => name.endsWith('.jpg')).sort();
 const captureEntries = await Promise.all(captureNames.map(async name => [name.slice(0, -4), await dataURI(`assets/captures/${name}`)]));
 const captureMap = `window.STHARA_CAPTURE_IMAGES=${JSON.stringify(Object.fromEntries(captureEntries))};`;
 html = await replaceAsync(html, /<script\b[^>]*src="([^"]+)"[^>]*>\s*<\/script>/g, async match => {

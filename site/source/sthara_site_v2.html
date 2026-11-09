@@ -1191,11 +1191,11 @@ footer{border-top:1px solid var(--stroke);padding:52px 0 40px;}
         </ul>
 
         <h3 id="pp-ai">6 · AI processing</h3>
-        <p>Sthara uses <b>Google's Gemini API</b> to power AI tutoring, handwriting recognition and grading, and report drafting. When a student asks the tutor a question or submits a photograph of handwritten work, that content is sent to the model provider to generate the response or the grading.</p>
+        <p>Sthara uses AI models from <b>Google (Gemini)</b> and <b>Anthropic (Claude)</b> to power AI tutoring, handwriting recognition and grading, and report drafting. When a student asks the tutor a question or submits a photograph of handwritten work, that content is sent to the model provider handling that task to generate the response or the grading.</p>
         <ul>
           <li>Content is sent for the sole purpose of returning the tutoring reply, the grade, or the drafted report.</li>
           <li>AI-generated marks are surfaced to a teacher for confirmation — the teacher, not the model, is the authority on a child's mark.</li>
-          <li>We do not use student personal data to train publicly available AI models, and we contract with our model provider on enterprise terms rather than consumer terms.</li>
+          <li>We do not use student personal data to train publicly available AI models, and we contract with our model providers on commercial API terms rather than consumer terms.</li>
           <li>Where a model output is used to flag a student as at-risk, that flag is advisory to a human being. No consequential decision about a child is taken by the system alone.</li>
         </ul>
 
@@ -1212,6 +1212,7 @@ footer{border-top:1px solid var(--stroke);padding:52px 0 40px;}
         <table class="tbl">
           <tr><th>Sub-processor</th><th>Purpose</th></tr>
           <tr><td>Google Cloud / Gemini API</td><td>AI tutoring, handwriting OCR and grading, report drafting</td></tr>
+          <tr><td>Anthropic / Claude API</td><td>AI tutoring, teaching assistance and report drafting</td></tr>
           <tr><td>Managed PostgreSQL provider</td><td>System of record — the living student record</td></tr>
           <tr><td>Application hosting provider</td><td>Serving the web application</td></tr>
           <tr><td>WhatsApp Business API</td><td>Delivering parent notifications and reminders</td></tr>

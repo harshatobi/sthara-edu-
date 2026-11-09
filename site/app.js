@@ -483,7 +483,7 @@
   $('[data-year]').textContent = new Date().getFullYear();
   if ('IntersectionObserver' in window) {
     root.classList.add('js-ready');
-    const reveals = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add('in'); reveals.unobserve(entry.target); } }), { threshold:.07 });
+    const reveals = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add('in'); reveals.unobserve(entry.target); } }), { threshold:0, rootMargin:'0px 0px 20% 0px' });
     $$('.reveal').forEach((element) => reveals.observe(element));
     const heroVisibility = new IntersectionObserver(([entry]) => document.body.classList.toggle('hero-offscreen', !entry.isIntersecting));
     heroVisibility.observe($('.hero'));

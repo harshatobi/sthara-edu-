@@ -116,3 +116,7 @@
 .hero:before{-webkit-mask-image:linear-gradient(90deg,#000 70%,transparent 100%),linear-gradient(180deg,#000 65%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,#000 70%,transparent 100%),linear-gradient(180deg,#000 65%,transparent 100%);mask-composite:intersect}
 #home-page>.platform-strip{margin-top:64px}
 @media(max-width:767px){#home-page>.platform-strip{margin-top:36px}}
+
+/* Speed (2026-11-09): reveals start before a block enters view and finish faster, so scrolling never waits on content */
+.reveal{transition-duration:.45s,.45s;transform:translateY(14px)}
+.reveal.in{transform:none}

@@ -106,6 +106,7 @@
 
 /* Background pattern: role-coloured dots in both themes; light is the default theme. */
 [data-theme=light] #atmosphere{opacity:.75}
+[data-theme=dark] #atmosphere{opacity:.9}
 /* Header Sign in: beside Book a School Pilot on wide screens; the mobile menu carries it on small ones. */
 .nav-actions .sign-in{padding-inline:18px}
 @media (max-width:900px){.nav-actions .sign-in{display:none}}

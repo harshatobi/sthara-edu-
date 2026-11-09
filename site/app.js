@@ -392,7 +392,7 @@
 
   function setTitle() { document.title = root.dataset.standalone ? 'Sthara | One living record for every student' : originalTitle; }
   let color = [116,172,255];
-  const ROLE_RGB = { dark: [[143,187,255],[104,213,193],[238,188,115],[235,160,184]], light: [[50,91,161],[29,118,106],[147,94,26],[156,67,98]] };
+  const ROLE_RGB = { dark: [[110,168,255],[64,214,178],[246,178,82],[242,128,170]], light: [[50,91,161],[29,118,106],[147,94,26],[156,67,98]] };
   const roleRgb = (i) => ROLE_RGB[root.dataset.theme === 'light' ? 'light' : 'dark'][i % 4];
   function setTheme(theme) {
     root.dataset.theme = theme;
@@ -437,7 +437,7 @@
       if (move) { point.x += point.vx * delta; point.y += point.vy * delta; if (point.x < 0) point.x = width; if (point.x > width) point.x = 0; if (point.y < 0) point.y = height; if (point.y > height) point.y = 0; }
       const rgb = roleRgb(point.role);
       const light = root.dataset.theme === 'light';
-      context.beginPath(); context.fillStyle = `rgba(${rgb.join(',')},${light ? .55 : .75})`; context.arc(point.x,point.y,point.r,0,Math.PI*2); context.fill();
+      context.beginPath(); context.fillStyle = `rgba(${rgb.join(',')},${light ? .55 : .95})`; context.arc(point.x,point.y,point.r,0,Math.PI*2); context.fill();
       for (let j = i + 1; j < points.length; j++) {
         const other = points[j]; const distance = Math.hypot(point.x-other.x,point.y-other.y);
         if (distance < 130) { context.beginPath(); context.strokeStyle = `rgba(${rgb.join(',')},${(light ? .16 : .14)*(1-distance/130)})`; context.lineWidth=.6; context.moveTo(point.x,point.y); context.lineTo(other.x,other.y); context.stroke(); }

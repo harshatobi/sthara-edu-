@@ -193,7 +193,23 @@ export interface Applicant {
   events: AdmissionEvent[];
 }
 
-export interface FunnelStep { stage: string; label: string; color: string; reached: number; share: number | null; fromPrev: number | null; openNow: number }
+export interface FunnelStep {
+  stage: string; label: string; color: string; reached: number; share: number | null;
+  /**
+   * Of those who reached the previous stage and are no longer sitting at it (moved on, rejected or withdrew), the
+   * share that reached this one. Families still waiting at the previous stage aren't counted as a drop: 34 offers out
+   * and none enrolled yet is "waiting", not "0% move on". Null until at least MIN_DECIDED have left that stage.
+   */
+  fromPrev: number | null;
+  /** How many have left the previous stage, the base for fromPrev. */
+  decided: number;
+  /** Still sitting at the previous stage, so not yet counted either way. */
+  waiting: number;
+  openNow: number;
+}
+
+/** A step's conversion is only shown once this many applicants have left the earlier stage. */
+export const MIN_DECIDED = 3;
 
 export interface SeatLine {
   grade: number;
@@ -293,20 +309,22 @@ export function assemblePipeline(session: string, rows: any[], eventRows: any[],
   const shown = activeStages(stages);
   const funnel: FunnelStep[] = shown.map((s, i) => {
     const reached = applicants.filter(a => rank(a.furthest) >= rank(s.key)).length;
-    const prev = i ? applicants.filter(a => rank(a.furthest) >= rank(shown[i - 1].key)).length : null;
+    // Everyone who reached the previous stage, less those still sitting at it.
+    const left = i ? applicants.filter(a => rank(a.furthest) >= rank(shown[i - 1].key) && a.stage !== shown[i - 1].key) : [];
+    const waiting = i ? applicants.filter(a => a.stage === shown[i - 1].key).length : 0;
+    const on = left.filter(a => rank(a.furthest) >= rank(s.key)).length;
     return {
       stage: s.key, label: s.label, color: s.color, reached, share: total ? Math.round((reached / total) * 100) : null,
-      fromPrev: prev ? Math.round((reached / prev) * 100) : null,
+      fromPrev: i && left.length >= MIN_DECIDED ? Math.round((on / left.length) * 100) : null,
+      decided: left.length, waiting,
       openNow: applicants.filter(a => a.stage === s.key).length,
     };
   });
 
-  // A leak only means something once the later stage has had a chance to fill:
-  // compare steps where the earlier stage has at least 3 applicants.
+  // The weakest step among those with enough applicants through it to judge.
   let leak: Pipeline['leak'] = null;
   for (let i = 1; i < funnel.length; i++) {
-    const before = funnel[i - 1].reached;
-    if (before < 3 || funnel[i].fromPrev === null) continue;
+    if (funnel[i].fromPrev === null) continue;
     if (!leak || funnel[i].fromPrev! < leak.rate) {
       leak = { from: funnel[i - 1].stage, to: funnel[i].stage, fromLabel: funnel[i - 1].label, toLabel: funnel[i].label, rate: funnel[i].fromPrev! };
     }

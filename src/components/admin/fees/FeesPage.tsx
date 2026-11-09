@@ -4,22 +4,19 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { CurrencyInrIcon as CurrencyInr } from '@phosphor-icons/react/dist/ssr/CurrencyInr';
-import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
-import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
-import { CalendarBlankIcon as CalendarBlank } from '@phosphor-icons/react/dist/ssr/CalendarBlank';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { MagnifyingGlassIcon as MagnifyingGlass } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { ReceiptIcon as Receipt } from '@phosphor-icons/react/dist/ssr/Receipt';
 import { Pager, usePaged } from '@/components/canon/Pager';
 import { Bar, Chip, Empty, PageBar } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
-import { bucketOf, PAY_MODES, type Family } from '@/lib/admin/fees';
+import { familyBucket, PAY_MODES, type Family } from '@/lib/admin/fees';
 import type { AdminDesk } from '@/lib/admin/desk';
 import { ago, fmtDate, inr, inrShort, isoDay, plural } from '@/lib/admin/format';
 import { useAdminDesk } from '@/lib/admin/useAdminDesk';
 import { CardHead, DeskGate, Kpi, MissingNotice, downloadCsv } from '../kit';
 import Counter from './Counter';
-import FamilyLedger, { STATUS_CHIP, TONE_CHIP } from './FamilyLedger';
+import FamilyLedger, { STATUS_CHIP } from './FamilyLedger';
 import ReminderPanel from './ReminderPanel';
 import StructureEditor from './StructureEditor';
 import DayBook from './DayBook';
@@ -88,7 +85,7 @@ function Fees({ desk }: { desk: AdminDesk }) {
       if (filter === 'overdue' && !(f.overdue > 0)) return false;
       if (filter === 'outstanding' && !(f.outstanding > 0)) return false;
       if (filter === 'paid' && f.outstanding > 0) return false;
-      if (bucket && !f.invoices.some(i => i.balance > 0 && !i.voided && bucketOf(i.daysOverdue) === bucket)) return false;
+      if (bucket && !(f.outstanding > 0 && familyBucket(f) === bucket)) return false;
       return !needle || f.name.toLowerCase().includes(needle) || f.cls.toLowerCase().includes(needle);
     });
   }, [L.families, filter, q, bucket]);
@@ -117,6 +114,10 @@ function Fees({ desk }: { desk: AdminDesk }) {
 
   const overdueFamilies = L.families.filter(f => f.overdue > 0);
   const maxAgeing = Math.max(1, ...L.ageing.map(b => b.amount));
+  const oldestOpen = Math.max(0, ...L.families.map(f => f.maxDaysOverdue));
+  const owing = L.families.filter(f => f.outstanding > 0).length;
+  const name = (id: string) => desk.students.find(s => s.id === id)?.name ?? 'a student';
+  const T = L.totals;
 
   return (
     <>
@@ -148,16 +149,20 @@ function Fees({ desk }: { desk: AdminDesk }) {
       {tab === 'ledger' && <>
 
       <div className="kpis">
-        <Kpi label="BILLED SO FAR" value={<span className="num">{inrShort(L.totals.billed)}</span>} small icon={CurrencyInr}
+        <Kpi label="BILLED SO FAR" value={<span className="num">{inrShort(T.billed)}</span>} small
           note={L.runs.length ? `${L.runs.filter(r => r.raised).length} of ${L.runs.length} instalments raised` : 'No instalments scheduled'} />
-        <Kpi label="COLLECTED" value={<span className="num">{inrShort(L.totals.collected)}</span>} small valueColor="var(--green)" icon={CheckCircle}
-          note={L.totals.collectionRate !== null ? `${L.totals.collectionRate}% collection rate` : 'Nothing billed yet'} noteColor={L.totals.collectionRate !== null ? 'var(--green)' : 'var(--mut)'} />
-        <Kpi label="OUTSTANDING" value={<span className="num">{inrShort(L.totals.outstanding)}</span>} small icon={Warning}
-          valueColor={L.totals.overdue ? 'var(--red)' : undefined}
-          note={L.totals.overdue ? `${inrShort(L.totals.overdue)} overdue · ${plural(L.totals.familiesOverdue, 'family', 'families')}` : 'Nothing overdue'}
-          noteColor={L.totals.overdue ? 'var(--red)' : 'var(--mut)'} onClick={() => setFilter('overdue')} />
-        <Kpi label="AVG DAYS LATE" value={L.totals.avgDaysLate ?? '—'} icon={CalendarBlank}
-          note={L.totals.avgDaysLate === null ? 'Once invoices are settled' : L.totals.avgDaysLate === 0 ? 'Settled invoices were paid on time' : 'Past the due date, on settled invoices'} />
+        <Kpi label="COLLECTED" value={<span className="num">{inrShort(T.collected)}</span>} small valueColor="var(--green)"
+          note={T.collectionRate !== null ? `${T.collectionRate}% of what's been billed` : 'Nothing billed yet'} />
+        <Kpi label="OUTSTANDING" value={<span className="num">{inrShort(T.outstanding)}</span>} small
+          valueColor={T.overdue ? 'var(--red)' : undefined}
+          note={!T.outstanding ? 'Nothing owed'
+            : T.overdue >= T.outstanding ? `All past due · ${plural(T.familiesOverdue, 'family', 'families')}`
+            : T.overdue ? `${inrShort(T.overdue)} past due · ${plural(T.familiesOverdue, 'family', 'families')}`
+            : `None past due yet · ${plural(owing, 'family', 'families')}`}
+          noteColor={T.overdue ? 'var(--red)' : 'var(--mut)'} onClick={() => setFilter('overdue')} />
+        <Kpi label="PAID LATE BY" value={T.avgDaysLate === null ? 'None yet' : <span className="num">{T.avgDaysLate} d</span>} small={T.avgDaysLate === null}
+          note={T.avgDaysLate === null ? 'Shows once instalments are paid'
+            : `Average, on instalments already paid.${oldestOpen ? ` Oldest still open: ${oldestOpen} days.` : ''}`} />
       </div>
 
       <div className="card" id="structure" style={{ marginBottom: 22 }}>
@@ -190,11 +195,12 @@ function Fees({ desk }: { desk: AdminDesk }) {
               <div className="row" key={r.no}>
                 <div style={{ flex: 1 }}>
                   <b style={{ fontSize: 14 }}>{r.label}</b>
-                  <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>Due {fmtDate(r.dueOn)} · {r.raised} of {r.eligible} invoiced</div>
+                  <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>Due {fmtDate(r.dueOn)} · {r.raised} of {r.eligible} invoiced
+                    {r.raised > 0 && left > 0 && left <= 3 && <> · not yet billed: {r.missing.map(name).join(', ')}</>}</div>
                 </div>
-                <div style={{ width: 160 }}><Bar value={r.eligible ? (r.raised / r.eligible) * 100 : 0} color="#10B981" /></div>
+                <div style={{ width: 160 }}><Bar value={r.eligible ? (r.raised / r.eligible) * 100 : 0} color="var(--ink)" /></div>
                 {left > 0 && !a.can('fees.bill') ? <Chip tone="a">{left} TO RAISE</Chip> : left > 0
-                  ? <button className="btn sm pri" disabled={raising !== null} onClick={() => raise(r.no)}>{raising === r.no ? 'Raising…' : `Raise for ${plural(left, 'student')}`}</button>
+                  ? <button className="btn sm pri" disabled={raising !== null} onClick={() => raise(r.no)}>{raising === r.no ? 'Raising…' : left <= 3 && r.raised > 0 ? `Bill ${r.missing.length === 1 ? name(r.missing[0]).split(' ')[0] : plural(left, 'student')}` : `Raise for ${plural(left, 'student')}`}</button>
                   : <Chip tone="g">ALL RAISED</Chip>}
               </div>
             );
@@ -204,7 +210,7 @@ function Fees({ desk }: { desk: AdminDesk }) {
 
       <div className="g2" style={{ marginBottom: 22 }}>
         <div className="card" id="ageing">
-          <CardHead title="Ageing" sub="Open balances by days past due. Pick a bucket to filter the ledger below." />
+          <CardHead title="Ageing" sub="Unpaid amounts by days past due. Each family is counted once, at its oldest unpaid instalment. Pick a row to list them." />
           {L.ageing.map(b => (
             <button key={b.key} className="row-btn" onClick={() => { setBucket(bucket === b.key ? null : b.key); setFilter('all'); document.getElementById('ledger')?.scrollIntoView({ behavior: 'smooth' }); }}
               aria-pressed={bucket === b.key} style={bucket === b.key ? { background: 'var(--pale)', borderRadius: 10 } : undefined}>
@@ -214,6 +220,11 @@ function Fees({ desk }: { desk: AdminDesk }) {
               <b className="num" style={{ width: 84, textAlign: 'right', fontSize: 14.5 }}>{inrShort(b.amount)}</b>
             </button>
           ))}
+          <div className="row" style={{ borderTop: '1px solid var(--line)', marginTop: 4 }}>
+            <b style={{ flex: 1, fontSize: 14 }}>Total owed</b>
+            <span className="muted num" style={{ width: 88, textAlign: 'right', fontSize: 13 }}>{plural(owing, 'family', 'families')}</span>
+            <b className="num" style={{ width: 84, textAlign: 'right', fontSize: 14.5 }}>{inrShort(T.outstanding)}</b>
+          </div>
           <div className="note" style={{ marginTop: 16 }}>Reminder tone is matched to each family&apos;s history: gentle for families who pay on time, firm for repeat late payers, final after 60 days.</div>
         </div>
         <div className="card">
@@ -221,7 +232,7 @@ function Fees({ desk }: { desk: AdminDesk }) {
           {L.byMode.length ? L.byMode.map(m => (
             <div className="row" key={m.mode}>
               <b style={{ flex: '0 0 120px', fontSize: 14 }}>{PAY_MODES[m.mode] || m.mode}</b>
-              <Bar value={(m.amount / Math.max(1, L.totals.collected)) * 100} color="#4C8DFF" />
+              <Bar value={(m.amount / Math.max(1, L.totals.collected)) * 100} color="var(--ink)" />
               <span className="muted num" style={{ width: 70, textAlign: 'right', fontSize: 13 }}>{plural(m.count, 'receipt')}</span>
               <b className="num" style={{ width: 84, textAlign: 'right' }}>{inrShort(m.amount)}</b>
             </div>
@@ -258,18 +269,21 @@ function Fees({ desk }: { desk: AdminDesk }) {
         {rows.length ? (<>
           <div className="tbl-wrap">
             <table className="tbl">
-              <thead><tr><th>Student</th><th className="r">Billed</th><th className="r">Paid</th><th className="r">Outstanding</th><th className="c">Status</th><th className="c">Tone</th><th>Reminded</th></tr></thead>
+              <thead><tr><th>Student</th><th className="r">Billed</th><th className="r">Paid</th><th className="r">Outstanding</th><th>Status</th><th>Last reminder</th></tr></thead>
               <tbody>{shownRows.map(f => {
                 const worst = f.invoices.find(i => i.status === 'overdue') ?? f.invoices.find(i => i.status === 'partial' || i.status === 'due') ?? f.invoices[0];
                 return (
                   <tr key={f.studentId} className="click" onClick={() => setStudent(f.studentId)} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') setStudent(f.studentId); }}>
                     <td><b style={{ fontSize: 14 }}>{f.name}</b><div className="muted" style={{ fontSize: 12 }}>{f.cls}</div></td>
                     <td className="r num">{inr(f.billed)}</td>
-                    <td className="r num" style={{ color: 'var(--green)' }}>{inr(f.paid)}</td>
-                    <td className="r num"><b style={{ color: f.overdue ? 'var(--red)' : undefined }}>{inr(f.outstanding)}</b>{f.maxDaysOverdue ? <div style={{ fontSize: 11.5, color: 'var(--red)' }}>{f.maxDaysOverdue} days overdue</div> : null}</td>
-                    <td className="c">{worst && <Chip tone={STATUS_CHIP[worst.status].tone}>{STATUS_CHIP[worst.status].t}</Chip>}</td>
-                    <td className="c">{f.outstanding > 0 ? <Chip tone={TONE_CHIP[f.tone]}>{f.tone.toUpperCase()}</Chip> : <span className="muted">—</span>}</td>
-                    <td className="muted" style={{ fontSize: 12.5 }}>{f.lastReminderAt ? ago(f.lastReminderAt) : 'Never'}</td>
+                    <td className="r num">{f.paid ? inr(f.paid) : <span className="muted">Nothing yet</span>}</td>
+                    <td className="r num"><b style={{ color: f.overdue ? 'var(--red)' : undefined }}>{f.outstanding ? inr(f.outstanding) : <span className="muted" style={{ fontWeight: 400 }}>Clear</span>}</b></td>
+                    <td>{f.maxDaysOverdue
+                      ? <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: 13 }}>{plural(f.maxDaysOverdue, 'day')} overdue</span>
+                      : worst && <Chip tone={STATUS_CHIP[worst.status].tone}>{STATUS_CHIP[worst.status].t}</Chip>}</td>
+                    <td className="muted" style={{ fontSize: 12.5 }}>{f.outstanding > 0
+                      ? <>{f.lastReminderAt ? ago(f.lastReminderAt) : 'Never'}<div style={{ fontSize: 11.5 }}>Next tone: {f.tone}</div></>
+                      : f.lastReminderAt ? ago(f.lastReminderAt) : ''}</td>
                   </tr>
                 );
               })}</tbody>

@@ -924,6 +924,10 @@
 .canon .ops-check a, .canon .ops-check button { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; font-size:13.5px; font-weight:600; text-align:left; }
 .canon .ops-check a:hover, .canon .ops-check button:hover { background:var(--body); }
 .canon .kpis.ops-kpis-5 { grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:18px; }
+/* Five KPIs on one row on a desktop, so none sits alone on a second line; wraps to fit below that. */
+.canon .kpis.five { grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; }
+.canon .kpis.five .vl { font-size:34px; }
+@media (max-width:1100px) { .canon .kpis.five { grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); } }
 .canon .kpis.ops-kpis-5 .vl { font-size:28px !important; }
 .canon .ops-hls { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden; margin-bottom:18px; }
 .canon .ops-hl { display:flex; flex-direction:column; gap:4px; align-items:flex-start; text-align:left; padding:12px 14px; background:#fff; min-width:0; }

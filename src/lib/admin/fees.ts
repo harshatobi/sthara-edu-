@@ -89,6 +89,8 @@ export interface InstalmentRun {
   /** Students whose grade schedules this instalment. */
   eligible: number;
   raised: number;
+  /** Eligible students not yet invoiced for it, so a straggler can be named rather than counted. */
+  missing: string[];
 }
 
 export interface FeeLedger {
@@ -225,6 +227,8 @@ const AGEING: { key: string; label: string; min: number; max: number; tone: 'g' 
   { key: '90+', label: '90+ days', min: 91, max: Infinity, tone: 'r' },
 ];
 export const bucketOf = (daysOverdue: number) => AGEING.find(b => daysOverdue >= b.min && daysOverdue <= b.max)!.key;
+/** The bucket of a family's oldest unpaid instalment: where the ageing table counts them. */
+export const familyBucket = (f: { maxDaysOverdue: number }) => bucketOf(f.maxDaysOverdue);
 
 export interface LedgerInput {
   session: string;
@@ -284,9 +288,14 @@ export function assembleLedger(input: LedgerInput): FeeLedger {
     return Math.max(0, daysBetween(i.dueOn, last));
   });
 
+  // Amounts age by instalment (standard receivables ageing). Families are counted once, at their oldest unpaid
+  // instalment, so the bucket counts add up to the families owing, the same number the overdue card shows.
   const ageing: AgeingBucket[] = AGEING.map(b => {
     const open = live.filter(i => i.balance > 0 && bucketOf(i.daysOverdue) === b.key);
-    return { key: b.key, label: b.label, tone: b.tone, families: new Set(open.map(i => i.studentId)).size, amount: r2(open.reduce((t, i) => t + i.balance, 0)) };
+    return {
+      key: b.key, label: b.label, tone: b.tone, amount: r2(open.reduce((t, i) => t + i.balance, 0)),
+      families: families.filter(f => f.outstanding > 0 && familyBucket(f) === b.key).length,
+    };
   });
 
   const modes = new Map<string, { amount: number; count: number }>();
@@ -310,9 +319,11 @@ export function assembleLedger(input: LedgerInput): FeeLedger {
     const eligibleGrades = new Set(items.map(i => i.grade));
     const eligibleIds = new Set(input.students.filter(s => eligibleGrades.has(gradeOf(s.cls) ?? -1)).map(s => s.id));
     const first = [...items].sort((a, b) => (a.dueOn < b.dueOn ? -1 : 1))[0];
+    const invoiced = new Set(invoices.filter(i => i.instalmentNo === no && eligibleIds.has(i.studentId)).map(i => i.studentId));
     return {
       no, label: first.label, dueOn: first.dueOn, eligible: eligibleIds.size,
-      raised: new Set(invoices.filter(i => i.instalmentNo === no && eligibleIds.has(i.studentId)).map(i => i.studentId)).size,
+      raised: invoiced.size,
+      missing: [...eligibleIds].filter(id => !invoiced.has(id)),
     };
   });
 

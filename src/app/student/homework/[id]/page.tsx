@@ -14,6 +14,7 @@ import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/Arrow
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { PaperclipIcon as Paperclip } from '@phosphor-icons/react/dist/ssr/Paperclip';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
+import { SpeakerHighIcon as SpeakerHigh } from '@phosphor-icons/react/dist/ssr/SpeakerHigh';
 import type { LabRef } from '@/lib/lab/question';
 
 // A Live Lab question's simulation, loaded only when the homework has one.
@@ -66,6 +67,8 @@ export default function HomeworkWorkspace() {
 
   const [assignment, setAssignment] = useState<any>(null);
   const [submission, setSubmission] = useState<any>(null);
+  /** The student's own version (Studio): why it focuses where it does, and how to show it. */
+  const [own, setOwn] = useState<{ reason: string | null; access: string[]; label: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -120,7 +123,19 @@ export default function HomeworkWorkspace() {
           .from('submissions').select('*')
           .eq('assignment_id', id).eq('student_id', profile.uid).maybeSingle();
 
-        if (!cancelled) { setAssignment(a); setSubmission(sub || null); }
+        // Their own version, if the teacher made one per student (or A/B/C sets): it replaces the class questions.
+        let mine: any = null;
+        try {
+          const token = await getAuthToken();
+          const r = token ? await fetch(`/api/student/variant?assignment=${encodeURIComponent(String(id))}`, { headers: { Authorization: `Bearer ${token}` } }) : null;
+          if (r?.ok) mine = (await r.json()).variant ?? null;
+        } catch { /* the class questions stand */ }
+
+        if (!cancelled) {
+          setAssignment(mine ? { ...a, questions: mine.questions } : a);
+          setOwn(mine ? { reason: mine.reason ?? null, access: Array.isArray(mine.access) ? mine.access : [], label: mine.label ?? null } : null);
+          setSubmission(sub || null);
+        }
       } catch (e: any) {
         if (!cancelled) setLoadError(e?.message || 'Failed to load this assignment.');
       } finally {
@@ -129,7 +144,7 @@ export default function HomeworkWorkspace() {
     })();
 
     return () => { cancelled = true; };
-  }, [id, profile?.uid, user]);
+  }, [id, profile?.uid, user, getAuthToken]);
 
   const questions: Question[] = assignment?.questions || [];
   const isTyped = assignment?.submission_mode === 'typed';
@@ -370,6 +385,13 @@ export default function HomeworkWorkspace() {
 
   // ── Active workspace — fullscreen overlay, matches #workspace in the design ─
   const q = questions[qi];
+  /** Reads a question and its options aloud with the browser's own voice (no AI cost, works offline). */
+  const speak = (x: Question | undefined) => {
+    if (!x || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const opts = x.type === 'mcq' && Array.isArray(x.options) ? x.options.map((o, i) => `Option ${'ABCD'[i] || i + 1}. ${o}.`).join(' ') : '';
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${questionLabel(x)}. ${opts}`));
+  };
 
   return (
     <div className="fixed inset-0 z-[70] bg-[#F7F9FB] flex flex-col overflow-y-auto">
@@ -434,8 +456,16 @@ export default function HomeworkWorkspace() {
             <div className="flex-1 min-w-[320px]">
               {q ? (
                 <div className={`bg-white rounded-[20px] ${SH} p-[30px]`}>
-                  <div className="text-[11.5px] font-extrabold tracking-[.08em] text-[#7A8699]">QUESTION {qi + 1} OF {questions.length}</div>
-                  <h2 className="text-[21px] font-extrabold text-[#002147] leading-[1.5] mt-2.5 mb-[22px]">{questionLabel(q)}</h2>
+                  {own?.reason && qi === 0 && <p className="text-[14px] text-[#2B3A52] bg-[#F1F8F6] border border-[#D3EAE4] rounded-xl px-4 py-2.5 mb-4">{own.reason}</p>}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-[11.5px] font-extrabold tracking-[.08em] text-[#56637A]">QUESTION {qi + 1} OF {questions.length}</div>
+                    {(own?.access.includes('read_aloud') || own?.access.includes('large_print')) && (
+                      <button type="button" onClick={() => speak(q)} className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#167762] border border-[#D3EAE4] rounded-xl px-3 py-1.5 hover:bg-[#F1F8F6]">
+                        <SpeakerHigh size={15} weight="bold" /> Read aloud
+                      </button>
+                    )}
+                  </div>
+                  <h2 className={`${own?.access.includes('large_print') ? 'text-[28px]' : 'text-[21px]'} font-extrabold text-[#002147] leading-[1.5] mt-2.5 mb-[22px]`}>{questionLabel(q)}</h2>
                   {q.lab && <LabQuestionSim lab={q.lab} />}
 
                   {q.type === 'mcq' && Array.isArray(q.options) ? (

@@ -39,8 +39,9 @@ function tokenize(src: string): Tok[] | null {
 /** Evaluates a whitelisted arithmetic expression; null for anything it doesn't understand or a non-finite result. */
 export function evaluate(expr: string): number | null {
   if (typeof expr !== 'string' || expr.length > 400) return null;
-  const toks = tokenize(expr);
-  if (!toks || !toks.length) return null;
+  const parsed = tokenize(expr);
+  if (!parsed || !parsed.length) return null;
+  const toks: Tok[] = parsed;
   let p = 0;
   const peek = () => toks[p];
   // expr := term (('+'|'-') term)* ; term := unary (('*'|'/') unary | implicit-multiply)* ; unary := '-' unary | power

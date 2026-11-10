@@ -151,4 +151,9 @@ GRANT ALL ON public.studio_materials TO service_role;
 GRANT ALL ON public.studio_material_versions TO service_role;
 GRANT ALL ON public.bank_item_uses TO service_role;
 GRANT ALL ON public.assignment_variants TO service_role;
+-- The teacher desk (browser client) reads a student's own version to review their work. Staff of the school only:
+-- a version holds the answers, so students read theirs through /api/student/variant, which strips the key.
+GRANT SELECT ON public.assignment_variants TO authenticated;
+CREATE POLICY assignment_variants_staff_read ON public.assignment_variants FOR SELECT TO authenticated
+  USING (school_id = (SELECT app.current_school_id()) AND ((SELECT app.is_teacher()) OR (SELECT app.has_perm('academics.read'))));
 GRANT ALL ON public.student_access_needs TO service_role;

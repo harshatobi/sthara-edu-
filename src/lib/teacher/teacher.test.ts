@@ -91,3 +91,26 @@ test('assembleDesk: rosters, pending review, and class TML from the latest snaps
   assert.equal(a.chapter, 'Quadratic Equations');
   assert.equal(a.submissions[0].state, 'pending');
 });
+
+test('assembleDesk: a student with their own version (Studio) is reviewed on their own questions', () => {
+  const scope = teachingScope({ assignments: [{ class: 'Class 10-A', subject: 'Science' }] });
+  const desk = assembleDesk({
+    students: [{ id: 's1', name: 'Aarav', student_class: 'Class 10-A' }, { id: 's2', name: 'Diya', student_class: 'Class 10-A' }],
+    assignments: [{ id: 'a1', title: 'Catch-up', type: 'homework', class: 'Class 10-A', subject: 'Science', status: 'published',
+      questions: [{ type: 'mcq', questionText: 'Class Q', options: ['a', 'b'], answer: 0 }] }],
+    submissions: [
+      { id: 'x1', assignment_id: 'a1', student_id: 's1', teacher_approved: null, score: null, answers: { 0: 1, 1: 'because' }, type: 'typed' },
+      { id: 'x2', assignment_id: 'a1', student_id: 's2', teacher_approved: null, score: null, answers: { 0: 0 }, type: 'typed' },
+    ],
+    tml: [], alerts: [], items: [],
+    variants: [{ assignment_id: 'a1', student_id: 's1', questions: [
+      { type: 'mcq', questionText: 'Own Q1', options: ['a', 'b'], answer: 1 }, { type: 'short', questionText: 'Own Q2', marks: 3 },
+    ] }],
+  }, { id: 't', name: 'Priya', subject: 'Science' }, scope, 'live');
+  const subs = desk.assignments[0].submissions;
+  const aarav = subs.find(s => s.studentId === 's1')!, diya = subs.find(s => s.studentId === 's2')!;
+  assert.deepEqual(aarav.questions?.map(q => q.questionText), ['Own Q1', 'Own Q2']);
+  assert.deepEqual(aarav.suggestedByQuestion, [1, null], 'his MCQ is marked against his own key');
+  assert.equal(diya.questions, undefined, 'no version: the class questions apply');
+  assert.deepEqual(diya.suggestedByQuestion, [1]);
+});

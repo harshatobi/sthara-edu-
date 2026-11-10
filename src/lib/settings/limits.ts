@@ -45,6 +45,9 @@ export const RATE_LIMITS = {
   labRuns:         { limit: 300, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lab/runs',        label: 'Live Lab class predictions' },
   practicals:      { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/practicals',      label: 'Live Lab practicals tracker' },
   lessonDraft:     { limit: 12,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons/draft',   label: 'Lesson plan drafting' },
+  studioBuild:     { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/studio/build',    label: 'Studio: build a question set or material' },
+  studioItem:      { limit: 80,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/studio/item',     label: 'Studio: change one question' },
+  studioWrites:    { limit: 200, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/studio/materials, /api/teacher/bank, /api/teacher/access-needs', label: 'Studio: library, bank and access-needs writes' },
   leave:           { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/leave',           label: 'Leave requests' },
   checkin:         { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/me/attendance',           label: 'Staff check-in from the app' },
   capturePage:     { limit: 300, windowMs: 10 * MIN, per: 'user',    route: '/api/grading/pages',           label: 'Photographed work: page uploads' },
@@ -127,6 +130,10 @@ export const CLAUDE_BY_FEATURE: Partial<Record<AiFeature, ClaudeChoice>> = {
   homeworkGen: { model: 'claude-sonnet-5-5', effort: 'low' },
   paperGen: { model: 'claude-sonnet-5-5', effort: 'low' },
   lessonDraft: { model: 'claude-sonnet-5-5', effort: 'low' },
+  // Studio: only the questions the bank can't supply are written (Sonnet); every check and translation is light work (Haiku).
+  studioWrite: { model: 'claude-sonnet-5-5', effort: 'low' },
+  studioCheck: { model: 'claude-haiku-5-5', effort: 'low' },
+  studioTranslate: { model: 'claude-haiku-5-5', effort: 'low' },
 };
 
 /** The Claude model and effort for a call: the feature's own choice for standard work, else the job's. */

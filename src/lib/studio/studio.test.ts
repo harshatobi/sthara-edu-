@@ -139,3 +139,38 @@ test('parseItem and parseQuestionSet drop what can’t be valid', () => {
   assert.equal(blocking(set!).length, 1, 'a flagged item blocks handing out');
   assert.equal(parseQuestionSet({ type: 'lesson' }), null);
 });
+
+import { judge } from './checks';
+import { matchTopic, rankWeakTopics } from './weak';
+
+const solve = (p: Partial<{ choice: number | null; expression: string | null; inSyllabus: boolean; clear: boolean; syllabusNote: string }>) =>
+  ({ n: 1, choice: null, expression: null, inSyllabus: true, syllabusNote: '', clear: true, clarityNote: '', ...p });
+
+test('judge: separate solve, computed numericals, syllabus, clarity and repeats', () => {
+  const mcq = { ...item({}), text: 'Which way does light bend entering glass?', options: ['Away from the normal', 'Towards the normal', 'No bend', 'Along the surface'], answer: 1 };
+  assert.deepEqual(judge(mcq, solve({ choice: 1 }), []).fails, []);
+  assert.match(judge(mcq, solve({ choice: 0 }), []).fails[0], /picked option A, not the keyed B/);
+  const num = { ...item({}), text: 'Speed of light in glass (n = 1.5)?', options: ['4.5 x 10^8 m/s', '2 x 10^8 m/s', '1.5 x 10^8 m/s', '3 x 10^8 m/s'], answer: 1 };
+  assert.equal(judge(num, solve({ expression: '3e8/1.5' }), []).computed, true);
+  assert.match(judge({ ...num, answer: 0 }, solve({ expression: '3e8/1.5' }), []).fails[0], /working gives/);
+  const written = { ...item({ marks: 3, qtype: 'numerical' }), value: 12, unit: 'cm' };
+  assert.deepEqual(judge(written, solve({ expression: '1/(1/20 + 1/30)' }), []).fails, []);
+  assert.match(judge(mcq, solve({ choice: 1, inSyllabus: false, syllabusNote: 'needs the lens-maker formula' }), []).fails[0], /Outside the CBSE syllabus.*lens-maker/);
+  assert.match(judge(mcq, solve({ choice: 1, clear: false }), []).fails[0], /Not clear/);
+  assert.match(judge(mcq, solve({ choice: 1 }), [{ text: 'Which way does light bend when entering glass?', where: 'Quiz 3, question 4' }]).fails[0], /Repeats Quiz 3, question 4/);
+});
+
+test('weak topics: ranked from answers and tutor struggles; no evidence keeps the teacher order', () => {
+  const chosen = ['Refraction through a glass slab', 'Refractive index', 'Spherical lenses'];
+  assert.equal(matchTopic('refractive index of glass', chosen), 'Refractive index');
+  assert.equal(matchTopic('Photosynthesis', chosen), null);
+  const ranked = rankWeakTopics([
+    { studentId: 'a', topic: 'Refractive index', kind: 'answer', score: 0, max: 2 },
+    { studentId: 'a', topic: 'Refraction through a glass slab', kind: 'answer', score: 2, max: 2 },
+    { studentId: 'b', topic: 'spherical lenses', kind: 'tutor', score: 0, max: 0, struggled: true },
+  ], chosen, ['a', 'b', 'c']);
+  assert.equal(ranked.get('a')![0], 'Refractive index');
+  assert.equal(ranked.get('a')!.at(-1), 'Spherical lenses', 'unknown is not weak: it ranks after measured topics');
+  assert.equal(ranked.get('b')![0], 'Spherical lenses');
+  assert.deepEqual(ranked.get('c'), chosen);
+});

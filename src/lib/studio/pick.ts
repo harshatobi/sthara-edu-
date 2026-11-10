@@ -75,11 +75,12 @@ export interface StudentNeed { studentId: string; weakTopics: string[] }
  * One version per student. Within a version no item repeats. Across versions items can be shared (two students
  * weak in the same topic may get the same question); the point is each student's own gaps, not uniqueness.
  */
-export function perStudent(slots: Slot[], pool: StudioItem[], students: StudentNeed[], opts: { exclude?: Set<string>; seed?: number; topics?: string[] } = {}):
+export function perStudent(slots: Slot[], pool: StudioItem[], students: StudentNeed[], opts: { exclude?: Set<string>; seed?: number; topics?: string[]; bands?: Band[] } = {}):
   { versions: { studentId: string; picked: (StudioItem | null)[] }[]; bands: Band[]; gaps: Gap[] } {
   const rank = ranks(pool, opts.seed ?? 1);
   const base = usable(pool, opts.exclude ?? new Set());
-  const bands = slots.map(s => slotBand(base.filter(i => fits(i, s))));
+  // Bands are fixed once (pass them back in after the AI fills gaps, so the re-pick keeps every version equal).
+  const bands = opts.bands ?? slots.map(s => slotBand(base.filter(i => fits(i, s))));
   const gapCount = new Map<string, Gap>();
   const versions = students.map(st => {
     const wanted = [...st.weakTopics, ...(opts.topics ?? [])];
@@ -100,11 +101,11 @@ export function perStudent(slots: Slot[], pool: StudioItem[], students: StudentN
   return { versions, bands, gaps: [...gapCount.values()].map(g => ({ ...g, count: 1 })) };
 }
 
-export function abcSets(slots: Slot[], pool: StudioItem[], n = 3, opts: { exclude?: Set<string>; seed?: number; topics?: string[] } = {}):
+export function abcSets(slots: Slot[], pool: StudioItem[], n = 3, opts: { exclude?: Set<string>; seed?: number; topics?: string[]; bands?: Band[] } = {}):
   { sets: (StudioItem | null)[][]; bands: Band[]; gaps: Gap[] } {
   const rank = ranks(pool, opts.seed ?? 1);
   const avail = order(usable(pool, opts.exclude ?? new Set()), opts.topics ?? [], rank);
-  const bands = slots.map(s => slotBand(avail.filter(i => fits(i, s))));
+  const bands = opts.bands ?? slots.map(s => slotBand(avail.filter(i => fits(i, s))));
   const used = new Set<string>();
   const sets: (StudioItem | null)[][] = Array.from({ length: n }, () => []);
   const gaps: Gap[] = [];
@@ -119,6 +120,9 @@ export function abcSets(slots: Slot[], pool: StudioItem[], n = 3, opts: { exclud
   });
   return { sets, bands, gaps };
 }
+
+/** A difficulty in the middle of a band: what a newly written item for that slot is placed at until students answer it. */
+export const bandMid = (b: Band) => (b === 'easy' ? 0.8 : b === 'hard' ? 0.3 : 0.55);
 
 /** The gentle line a student reads at the top of their own version. */
 export function reasonFor(topics: string[]): string {

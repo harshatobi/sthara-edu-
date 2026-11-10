@@ -1,0 +1,52 @@
+/**
+ * From Studio items to what students get. Pure.
+ *   toQuestion      a StudioItem as an assignment Question (the shape every marking path already understands)
+ *   forStudent      a student's questions with their access needs applied
+ *   readingLevel    a quick check that wording suits the class
+ */
+import type { Question } from '@/lib/teacher/questions';
+import { isChoice, type AccessNeed, type StudioItem } from './types';
+
+export function toQuestion(it: StudioItem): Question {
+  const figureText = it.figure?.alt ? `\n\nFigure: ${it.figure.alt}` : '';
+  if (isChoice(it.qtype) && it.options?.length && typeof it.answer === 'number') {
+    return { type: 'mcq', questionText: it.text, options: it.options, answer: it.answer, marks: 1, ...(it.scheme ? { why: it.scheme } : {}), level: levelOf(it) };
+  }
+  // Written answers carry their value points as `why`, which the marking prompt and the teacher's review read.
+  return { type: 'short', questionText: `${it.text}${it.figure && !it.figure.svg ? figureText : ''}`, marks: it.marks, ...(it.scheme ? { why: it.scheme } : {}), level: levelOf(it) };
+}
+
+const levelOf = (it: StudioItem): Question['level'] =>
+  it.difficulty === null || it.difficulty === undefined ? 'MEDIUM' : it.difficulty >= 0.7 ? 'EASY' : it.difficulty >= 0.4 ? 'MEDIUM' : 'HARD';
+
+/**
+ * A student's version with their needs applied. Large print and read aloud are how the workspace shows it (kept on
+ * the variant as `access`); "no figures" is applied to the text here, so it holds on paper too.
+ */
+export function forStudent(items: StudioItem[], needs: AccessNeed[]): { questions: Question[]; access: AccessNeed[] } {
+  const noFigures = needs.includes('no_figures');
+  const questions = items.map(it => {
+    const q = toQuestion(it);
+    if (noFigures && it.figure?.alt && !q.questionText.includes(it.figure.alt)) q.questionText = `${q.questionText}\n\nFigure described: ${it.figure.alt}`;
+    return q;
+  });
+  return { questions, access: needs };
+}
+
+/** Words per sentence a class can comfortably read in a question (CBSE papers sit well inside these). */
+export function readingLimit(cls: string): number {
+  const n = Number(String(cls).match(/\d+/)?.[0] ?? 10);
+  return n <= 5 ? 14 : n <= 8 ? 20 : n <= 10 ? 26 : 32;
+}
+
+/** Null when the wording suits the class; otherwise a plain note. Only for English (other scripts aren't measured). */
+export function readingLevel(text: string, cls: string, language = 'en'): string | null {
+  if (language !== 'en') return null;
+  const sentences = text.split(/[.?!]+\s|\n+/).map(s => s.trim()).filter(s => s.split(/\s+/).length > 2);
+  if (!sentences.length) return null;
+  const longest = Math.max(...sentences.map(s => s.split(/\s+/).length));
+  const limit = readingLimit(cls);
+  return longest > limit ? `One sentence is ${longest} words long; for ${cls} keep sentences under ${limit}.` : null;
+}
+
+export const LETTERS = 'ABCDEF';

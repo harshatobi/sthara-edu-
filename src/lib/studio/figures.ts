@@ -48,7 +48,8 @@ export function parseTextVersion(raw: unknown): TextVersion | null {
 export const FIGURE_BUCKET = 'bank-figures';
 
 export function figureUrl(path: string): string {
-  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/+$/, '');
+  // Same fallback as lib/supabase/client: the env value can be absent in the browser build.
+  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || 'https://nqwvsuyiwswnsqbyhghb.supabase.co').replace(/\/+$/, '');
   return `${base}/storage/v1/object/public/${FIGURE_BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 

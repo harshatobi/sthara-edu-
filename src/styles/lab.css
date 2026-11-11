@@ -66,6 +66,35 @@
   .lab-svg .lb-flow { animation:none; }
 }
 
+/* ── 3D bench (prototype: reactions) ─────────────────────────────────────── */
+.lab-3d-wrap { position:relative; }
+.lab-3d-switch { position:absolute; top:4px; right:4px; z-index:3; display:flex; gap:2px; padding:3px; border-radius:999px; background:#EEF2F7; }
+.lab-3d-switch button { border:0; background:transparent; padding:5px 12px; border-radius:999px; font:700 12px 'Plus Jakarta Sans',system-ui,sans-serif; color:#556378; cursor:pointer; }
+.lab-3d-switch button.on { background:#fff; color:#002147; box-shadow:0 1px 3px rgba(0,33,71,.18); }
+.lab-3d { position:relative; width:100%; aspect-ratio:1000 / 480; border-radius:14px; overflow:hidden; background:radial-gradient(120% 90% at 50% 35%, #FFFFFF 0%, #EEF3FA 60%, #DDE6F2 100%); font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; user-select:none; }
+.lab-3d-wait { animation:lab-fade 1s ease-in-out infinite alternate; }
+.lab-3d-stage { position:absolute; inset:0; }
+.lab-3d-stage canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+.lab-3d-stage canvas:active { cursor:grabbing; }
+.lab-3d-top { position:absolute; top:12px; left:0; right:0; text-align:center; pointer-events:none; display:flex; flex-direction:column; gap:2px; }
+.lab-3d-top b { font-size:clamp(15px,2.2cqw,24px); font-weight:800; }
+.lab-3d-top span { font-size:12.5px; font-weight:600; color:#556378; }
+.lab-3d-label { position:absolute; top:0; left:0; pointer-events:none; white-space:nowrap; font-size:clamp(12px,1.6cqw,17px); font-weight:800; padding:2px 9px; border-radius:999px; background:rgba(255,255,255,.82); will-change:transform; }
+.lab-3d-foot { position:absolute; left:14px; right:14px; bottom:10px; display:flex; flex-direction:column; gap:6px; pointer-events:none; }
+.lab-3d-key { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12.5px; font-weight:700; color:#33415A; }
+.lab-3d-key span { display:inline-flex; align-items:center; gap:6px; }
+.lab-3d-key i { width:12px; height:12px; border-radius:50%; border:1px solid #002147; }
+.lab-3d-scrub { display:flex; align-items:center; gap:10px; font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#556378; pointer-events:auto; max-width:520px; }
+.lab-3d-scrub input { flex:1; accent-color:#0F766E; }
+.lab-3d-note { margin:0; font-size:13px; font-weight:700; min-height:18px; }
+.lab-3d-wrap { container-type:inline-size; }
+.lab-3d-switch button:disabled { opacity:.4; cursor:not-allowed; }
+.lab-3d-dim { position:absolute; inset:0; background:#060B16; opacity:0; pointer-events:none; }
+.lab-3d-top.lab-3d-plate b { align-self:center; padding:2px 14px; border-radius:999px; background:rgba(255,255,255,.84); }
+.lab-3d-top.lab-3d-plate span { align-self:center; padding:0 10px; border-radius:999px; background:rgba(255,255,255,.84); }
+.lab-3d-scrub.lab-3d-plate { align-self:flex-start; width:min(520px,100%); padding:4px 12px; border-radius:999px; background:rgba(255,255,255,.84); }
+.canon .lab-show .lab-3d { max-height:calc(100vh - 210px); }
+
 /* ── Builder ─────────────────────────────────────────────────────────────── */
 .canon .lab-qs { display:flex; flex-direction:column; gap:8px; }
 .canon .lab-q { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:12px; font-size:13px; cursor:pointer; text-align:left; }

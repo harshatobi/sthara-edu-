@@ -1,5 +1,6 @@
 'use client';
 
+import { BooksIcon as Books } from '@phosphor-icons/react/dist/ssr/Books';
 import { FlaskIcon as Flask } from '@phosphor-icons/react/dist/ssr/Flask';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { SquaresFourIcon as SquaresFour } from '@phosphor-icons/react/dist/ssr/SquaresFour';
@@ -44,6 +45,7 @@ const NAV: (CanonNavItem & { cap: Capability | null })[] = [
   { href: '/ops/traffic', label: 'Request explorer', short: 'Requests', icon: Pulse, cap: 'debug.read' },
   { href: '/ops/delivery', label: 'Delivery and jobs', short: 'Delivery', icon: PaperPlaneTilt, cap: 'debug.read' },
   { href: '/ops/quality', label: 'Quality (test runs)', short: 'Quality', icon: Flask, cap: 'qa.read' },
+  { href: '/ops/bank', label: 'Question bank', short: 'Bank', icon: Books, cap: 'bank.read' },
   { href: '/ops/health', label: 'System health', short: 'Health', icon: Heartbeat, cap: 'health.read' },
   { href: '/ops/audit', label: 'Audit log', short: 'Audit', icon: ClockCounterClockwise, cap: 'audit.read' },
   { href: '/ops/territories', label: 'Territories', icon: MapTrifold, cap: null },

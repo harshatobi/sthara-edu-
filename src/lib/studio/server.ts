@@ -170,7 +170,7 @@ export async function writeGapItems(ctx: StudioCtx, gaps: Gap[], feedback: Map<n
     model: AI_MODELS.standard,
     contents: [{ role: 'user', parts: [{ text: `${chapterBrief(ctx)}\n\nWRITE THESE ${want.length} QUESTIONS (in English):\n${slots.join('\n')}` }] }],
     config: { systemInstruction: WRITER, responseMimeType: 'application/json', temperature: 0.6, abortSignal: ctx.signal },
-  }, { feature: 'studioWrite', userId: ctx.userId, schoolId: ctx.schoolId });
+  }, { feature: 'studioWrite', userId: ctx.userId, schoolId: ctx.schoolId || null });
   const raw = Array.isArray(jsonOf(res.text)?.items) ? jsonOf(res.text).items : [];
   const out: StudioItem[] = [];
   want.forEach((g, i) => {
@@ -200,7 +200,7 @@ async function solveSeparately(ctx: StudioCtx, items: StudioItem[]): Promise<Che
     model: AI_MODELS.standard,
     contents: [{ role: 'user', parts: [{ text: `${chapterBrief(ctx)}\n\nQUESTIONS:\n${list.join('\n\n')}` }] }],
     config: { systemInstruction: CHECKER, responseMimeType: 'application/json', temperature: 0, abortSignal: ctx.signal },
-  }, { feature: 'studioCheck', userId: ctx.userId, schoolId: ctx.schoolId });
+  }, { feature: 'studioCheck', userId: ctx.userId, schoolId: ctx.schoolId || null });
   const raw = Array.isArray(jsonOf(res.text)?.results) ? jsonOf(res.text).results : [];
   return items.map((_, i) => {
     const r = raw.find((x: any) => Number(x?.n) === i + 1) ?? {};
@@ -258,7 +258,7 @@ export async function translateItems(ctx: StudioCtx, items: StudioItem[], langua
     model: AI_MODELS.standard,
     contents: [{ role: 'user', parts: [{ text: JSON.stringify({ items: list }) }] }],
     config: { systemInstruction: TRANSLATOR(`${lang.name} (${lang.native})`), responseMimeType: 'application/json', temperature: 0.2, abortSignal: ctx.signal },
-  }, { feature: 'studioTranslate', userId: ctx.userId, schoolId: ctx.schoolId });
+  }, { feature: 'studioTranslate', userId: ctx.userId, schoolId: ctx.schoolId || null });
   const raw = Array.isArray(jsonOf(res.text)?.items) ? jsonOf(res.text).items : [];
   return items.map((it, i) => {
     const r = raw.find((x: any) => Number(x?.n) === i + 1);

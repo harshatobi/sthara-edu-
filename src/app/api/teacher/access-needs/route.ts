@@ -55,8 +55,10 @@ export async function GET(req: NextRequest) {
   const suggest = new Map<string, string[]>();
   if (req.nextUrl.searchParams.get('suggest') === '1' && access?.can('health.read') && ids.length) {
     // Health records hang off the student spine; match through its link to the login.
+    // bounded: the spine rows of one class’s students
     const { data: spine } = await db.from('students').select('id, user_id').eq('school_id', staff.schoolId).in('user_id', ids);
     const userOf = new Map<string, string>((spine || []).map((s: any) => [s.id, s.user_id]));
+    // bounded: the health rows of one class’s students
     const { data: health } = userOf.size ? await db.from('student_health').select('student_id, impairments').in('student_id', [...userOf.keys()]) : { data: [] as any[] };
     for (const h of health || []) {
       const n = suggestedNeeds(h.impairments || []);

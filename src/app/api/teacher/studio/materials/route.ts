@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
       outcome.set(id, { in: s.length, graded: g.length, avg: g.length ? Math.round(g.reduce((n, x) => n + (Number(x.score) / Number(x.max_score)) * 100, 0) / g.length) : null });
     }
   }
+  // bounded: at most 300 teacher names (sliced)
   const { data: names } = await db.from('users').select('id, name').in('id', [...new Set(rows.map(m => m.teacher_id))].slice(0, 300));
   const nameOf = new Map((names || []).map(u => [u.id, u.name]));
   return NextResponse.json({

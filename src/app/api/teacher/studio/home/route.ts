@@ -29,8 +29,10 @@ export async function GET(req: NextRequest) {
   const [{ data: users }, { data: work }, { data: progress }, { data: plan }, { data: lessons }, { data: events }, { data: versions }, { data: mats }, { data: school }] = await Promise.all([
     pageAll<any>((a, b) => db.from('users').select('id, name, student_class').eq('school_id', staff.schoolId).eq('role', 'student').order('id').range(a, b)),
     pageAll<any>((a, b) => db.from('assignments').select('id, class, subject, status, due_date, assigned_student_ids').eq('school_id', staff.schoolId).eq('status', 'published').order('id').range(a, b), 5000),
+    // bounded: one class and subject’s syllabus topics (under a hundred)
     db.from('syllabus_progress').select('chapter_key, topic, status').eq('school_id', staff.schoolId).eq('class', cls).eq('subject', subject).eq('session', CURRENT_SESSION),
     db.from('course_plans').select('term_start, term_end, periods_per_week').eq('school_id', staff.schoolId).eq('class', cls).eq('subject', subject).eq('session', CURRENT_SESSION).maybeSingle(),
+    // bounded: three weeks of one teacher’s lessons for one class
     db.from('lesson_plans').select('id, lesson_date, period, title, chapter_name, status, materials, taught_on').eq('school_id', staff.schoolId).eq('teacher_id', staff.id)
       .eq('class', cls).eq('subject', subject).gte('lesson_date', monday).lte('lesson_date', addDays(today, 14)).order('lesson_date'),
     db.from('academic_events').select('kind, title, starts_on, ends_on, suspends_classes').eq('school_id', staff.schoolId).gte('ends_on', monday).lte('starts_on', addDays(today, 30)).order('starts_on'),
@@ -58,6 +60,7 @@ export async function GET(req: NextRequest) {
   // This teacher's periods with the class, from the timetable in force.
   const ver = versions?.[0];
   const { data: slots } = ver
+    // bounded: one teacher’s periods in one timetable version (a few dozen)
     ? await db.from('timetable_slots').select('weekday, period_no, subject, class').eq('version_id', ver.id).eq('teacher_id', staff.id)
     : { data: [] as any[] };
   const mySlots = (slots || []).filter(s => normClass(s.class) === normClass(cls) && normSubject(s.subject) === normSubject(subject));

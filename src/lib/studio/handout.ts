@@ -50,3 +50,19 @@ export function readingLevel(text: string, cls: string, language = 'en'): string
 }
 
 export const LETTERS = 'ABCDEF';
+
+/**
+ * Access needs the office may pre-fill from a student's health record (impairments, as UDISE records them). Only
+ * suggestions: a person confirms them, and teachers only ever see the resulting needs, never the impairment.
+ */
+export function suggestedNeeds(impairments: string[]): AccessNeed[] {
+  const out = new Set<AccessNeed>();
+  for (const i of impairments) {
+    if (i === 'low_vision') { out.add('large_print'); out.add('read_aloud'); }
+    if (i === 'blindness') { out.add('read_aloud'); out.add('no_figures'); out.add('extra_time'); }
+    if (i === 'specific_learning') { out.add('read_aloud'); out.add('extra_time'); out.add('simplified_language'); }
+    if (i === 'intellectual' || i === 'autism') { out.add('simplified_language'); out.add('extra_time'); }
+    if (i === 'locomotor' || i === 'cerebral_palsy' || i === 'multiple') out.add('extra_time');
+  }
+  return [...out];
+}

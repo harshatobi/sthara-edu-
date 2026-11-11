@@ -174,3 +174,43 @@ test('weak topics: ranked from answers and tutor struggles; no evidence keeps th
   assert.equal(ranked.get('b')![0], 'Spherical lenses');
   assert.deepEqual(ranked.get('c'), chosen);
 });
+
+import { pace, readyFor, standing, week } from './home';
+
+test('home: standing, pace, the week and what is worth doing', () => {
+  const roster = [{ id: 'a', name: 'Aditi Rao' }, { id: 'b', name: 'Kabir M' }, { id: 'c', name: 'Sneha P' }];
+  const st = standing(roster, [
+    { student_id: 'a', topic_name: 'Light', score: 20, computed_at: '2026-11-01' },
+    { student_id: 'a', topic_name: 'Light', score: 30, computed_at: '2026-11-08' },
+    { student_id: 'b', topic_name: 'Light', score: 50, computed_at: '2026-11-08' },
+    { student_id: 'c', topic_name: 'Light', score: 70, computed_at: '2026-11-08' },
+    { student_id: 'c', topic_name: 'Electricity', score: 90, computed_at: '2026-11-08' },
+  ]);
+  assert.equal(st.lowest?.chapter, 'Light', 'Electricity has one student, not enough to call it');
+  assert.equal(st.lowest?.score, 50, 'latest per student: 30, 50, 70');
+  assert.deepEqual(st.belowForty.map(s => s.id), ['a']);
+  assert.equal(pace({ today: '2026-10-01', termStart: '2026-04-01', termEnd: '2027-02-28', periodsPerWeek: 6, totalTopics: 60, taught: 20 }), -62, 'a third taught at the half-way mark');
+  assert.ok(Math.abs(pace({ today: '2026-10-01', termStart: '2026-04-01', termEnd: '2027-02-28', periodsPerWeek: 6, totalTopics: 60, taught: 33 })!) <= 1, 'on pace');
+  assert.equal(pace({ today: '2026-03-01', termStart: '2026-04-01', termEnd: '2027-02-28', periodsPerWeek: 6, totalTopics: 60, taught: 0 }), null);
+  const w = week({
+    today: '2026-11-10', // a Tuesday
+    slots: [{ weekday: 1, period_no: 2 }, { weekday: 2, period_no: 3 }, { weekday: 4, period_no: 1 }, { weekday: 5, period_no: 1 }],
+    lessons: [
+      { id: 'l1', lesson_date: '2026-11-09', period: 2, title: 'Mirrors', chapter_name: 'Light', status: 'taught', materials: [], taught_on: '2026-11-09' },
+      { id: 'l2', lesson_date: '2026-11-10', period: 3, title: 'Refraction', chapter_name: 'Light', status: 'draft', materials: [{ label: 'Demo' }], taught_on: null },
+      { id: 'l3', lesson_date: '2026-11-12', period: 1, title: 'Refraction 2', chapter_name: 'Light', status: 'draft', materials: [], taught_on: null },
+    ],
+    events: [{ kind: 'holiday', title: 'Guru Nanak Jayanti', starts_on: '2026-11-13', ends_on: '2026-11-13', suspends_classes: true }],
+  });
+  assert.equal(w.length, 6);
+  assert.equal(w[0].periods[0].state, 'done');
+  assert.equal(w[1].label, 'Today');
+  assert.equal(w[1].periods[0].state, 'ready');
+  assert.equal(w[3].periods[0].state, 'partial');
+  assert.equal(w[4].periods[0].state, 'off');
+  const ready = readyFor({ standing: st, className: '10-B', today: '2026-11-10', missing: [{ id: 'b', name: 'Kabir M', count: 3 }], drafts: [], nextExam: null,
+    nextLesson: { id: 'l3', lesson_date: '2026-11-12', title: 'Refraction 2', chapter_name: 'Light', hasMaterials: false } });
+  assert.equal(ready[0].kind, 'catchup');
+  assert.deepEqual(ready[0].preset.students, ['a']);
+  assert.ok(ready.some(r => r.kind === 'lesson') && ready.some(r => r.kind === 'parent_note'));
+});

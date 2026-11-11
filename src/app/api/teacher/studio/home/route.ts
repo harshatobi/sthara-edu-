@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const today = todayIso();
   const monday = addDays(today, -((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7));
 
-  const [{ data: users }, { data: work }, { data: progress }, { data: plan }, { data: lessons }, { data: events }, { data: versions }, { data: mats }] = await Promise.all([
+  const [{ data: users }, { data: work }, { data: progress }, { data: plan }, { data: lessons }, { data: events }, { data: versions }, { data: mats }, { data: school }] = await Promise.all([
     pageAll<any>((a, b) => db.from('users').select('id, name, student_class').eq('school_id', staff.schoolId).eq('role', 'student').order('id').range(a, b)),
     pageAll<any>((a, b) => db.from('assignments').select('id, class, subject, status, due_date, assigned_student_ids').eq('school_id', staff.schoolId).eq('status', 'published').order('id').range(a, b), 5000),
     db.from('syllabus_progress').select('chapter_key, topic, status').eq('school_id', staff.schoolId).eq('class', cls).eq('subject', subject).eq('session', CURRENT_SESSION),
@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
     db.from('academic_events').select('kind, title, starts_on, ends_on, suspends_classes').eq('school_id', staff.schoolId).gte('ends_on', monday).lte('starts_on', addDays(today, 30)).order('starts_on'),
     db.from('timetable_versions').select('id, effective_from').eq('school_id', staff.schoolId).eq('status', 'published').lte('effective_from', today).order('effective_from', { ascending: false }).limit(1),
     db.from('studio_materials').select('id, title, kind, status, updated_at, assignment_ids').eq('school_id', staff.schoolId).eq('teacher_id', staff.id).eq('class', cls).neq('status', 'archived').order('updated_at', { ascending: false }).limit(6),
+    db.from('schools').select('name').eq('id', staff.schoolId).maybeSingle(),
   ]);
   const roster = users.filter(u => normClass(u.student_class) === normClass(cls)).map(u => ({ id: u.id, name: u.name || 'Student' }));
 
@@ -87,6 +88,9 @@ export async function GET(req: NextRequest) {
     },
     ready, week: days, hasTimetable: mySlots.length > 0,
     recent: mats || [],
+    school: { name: school?.name || '' },
+    // Upcoming lessons, for "Attach to a lesson".
+    lessons: (lessons || []).filter(l => l.lesson_date && l.lesson_date >= today && l.status !== 'taught').map(l => ({ id: l.id, date: l.lesson_date, period: l.period, title: l.title, chapter: l.chapter_name })),
     chapters: chapters.map(c => ({ name: c.name, seq: c.seq, topics: c.topics })),
   });
 }

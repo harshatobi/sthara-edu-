@@ -11,6 +11,7 @@ import { forStudent, toQuestion } from '@/lib/studio/handout';
 import { saveToBank } from '@/lib/studio/server';
 import { MATERIAL_COLS, accessNeeds, isSubjectLead, loadMaterial, moderationOf, needsApproval, saveVersion } from '@/lib/studio/materials';
 import type { QuestionSetContent, StudioItem } from '@/lib/studio/types';
+import { isLanguage } from '@/lib/studio/languages';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,6 +92,7 @@ export async function PATCH(req: NextRequest) {
         if (!content) return bad('That change couldn’t be saved: something in it isn’t valid.');
         const extra: Record<string, unknown> = {};
         if (typeof b.title === 'string' && str(b.title, 200)) extra.title = str(b.title, 200);
+        if (typeof b.language === 'string' && isLanguage(b.language)) extra.language = b.language;
         // A change to approved common material sends it back for approval.
         if (m.moderation === 'approved') extra.moderation = 'pending';
         return NextResponse.json({ material: await saveVersion(db, staff, m, content, str(b.note, 300) || 'Edited', extra) });

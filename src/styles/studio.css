@@ -1,0 +1,187 @@
+/*
+ * Copilot Studio (approved v2 mockup, 2026-11-10). Scoped under .canon, classes prefixed sd- (canon already has
+ * .bar/.lbl/.sm and the Live Lab uses lb-/lab-). Compact, Sthara's own look; accessibility first:
+ *   reading text >= 13px, muted text darkened to pass 4.5:1, focus ring on every control, status by icon + word.
+ * Reading options: .sd-root.sd-large (larger text) and .sd-root.sd-contrast (higher contrast).
+ */
+.canon .sd-root { --sd-mut:#56637A; --sd-line:#E3E9F1; --sd-w6:color-mix(in srgb, var(--role-deep) 6%, #fff); --sd-w10:color-mix(in srgb, var(--role-deep) 10%, #fff); --sd-w18:color-mix(in srgb, var(--role-deep) 18%, #fff); }
+.canon .sd-root.sd-contrast { --sd-mut:#3A4659; --sd-line:#C9D3E0; }
+.canon .sd-root.sd-large { zoom:1.15; }
+.canon .sd-root :focus-visible { outline:3px solid #2F6BFF; outline-offset:2px; border-radius:8px; }
+.canon .sd-mut { color:var(--sd-mut); }
+
+/* Page bar extras: reading options */
+.canon .sd-acc { display:flex; gap:3px; padding:3px; border-radius:12px; background:#EEF2F7; }
+.canon .sd-acc button { padding:6px 10px; border-radius:9px; font-size:13px; font-weight:700; display:flex; gap:6px; align-items:center; color:var(--sd-mut); }
+.canon .sd-acc button[aria-pressed=true] { background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,33,71,.1); }
+.canon .sd-acc select { background:transparent; font-size:13px; font-weight:700; color:var(--ink); padding:4px 6px; border-radius:8px; }
+.canon .sd-tabs { display:flex; gap:3px; background:#EEF2F7; padding:3px; border-radius:13px; width:max-content; max-width:100%; overflow-x:auto; margin-bottom:14px; }
+.canon .sd-tabs button { padding:8px 15px; border-radius:10px; font-size:14px; font-weight:700; color:var(--sd-mut); white-space:nowrap; }
+.canon .sd-tabs button[aria-selected=true] { background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,33,71,.1); }
+
+/* Cards and headings */
+.canon .sd-card { background:#fff; border-radius:var(--r); box-shadow:var(--sh); }
+.canon .sd-pad { padding:16px 18px; }
+.canon .sd-hd { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.canon .sd-hd h2 { font-size:18px; font-weight:800; letter-spacing:-.01em; }
+.canon .sd-hd p { font-size:13.5px; color:var(--sd-mut); }
+.canon .sd-chip { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:3px 8px; border-radius:8px; background:#EEF2F7; color:#334155; white-space:nowrap; }
+.canon .sd-chip.g { background:#E7F6EF; color:#0F7A55; } .canon .sd-chip.a { background:#FEF3E2; color:#B45309; }
+.canon .sd-chip.r { background:var(--ai-wash); color:var(--ai-ink); } .canon .sd-chip.t { background:var(--sd-w10); color:var(--role-deep); }
+
+/* Home: where the class stands (dashboard hero style) */
+.canon .sd-hero { border-radius:var(--r); padding:18px 20px; color:#fff; margin-bottom:14px;
+  background:radial-gradient(110% 160% at 100% 0%, color-mix(in srgb, var(--role-deep) 75%, transparent), transparent 60%), var(--navy); }
+.canon .sd-hero .top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.canon .sd-hero h2 { font-size:19px; font-weight:800; } .canon .sd-hero .top p { font-size:13.5px; color:#C8D6E6; }
+.canon .sd-tiles { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; }
+.canon .sd-tile { border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:4px; text-align:left; color:#fff; }
+.canon .sd-tile:hover { background:rgba(255,255,255,.09); }
+.canon .sd-tile .lb { font-size:11.5px; font-weight:800; letter-spacing:.12em; color:#B9C9DC; }
+.canon .sd-tile b { font-size:28px; font-weight:800; line-height:1.1; }
+.canon .sd-tile span { font-size:13px; color:#C8D6E6; }
+.canon .sd-tile .fix { margin-top:auto; padding-top:6px; font-size:13px; font-weight:700; color:var(--role-soft); display:flex; gap:5px; align-items:center; }
+.canon .sd-am { color:#FBBF24; } .canon .sd-rd { color:#FB7185; } .canon .sd-gr { color:#6EE7B7; }
+
+.canon .sd-two { display:grid; grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr); gap:14px; margin-bottom:14px; }
+.canon .sd-ri { display:grid; grid-template-columns:36px minmax(0, 1fr) auto; gap:12px; align-items:center; padding:11px 0; }
+.canon .sd-ri + .sd-ri { border-top:1px solid var(--sd-line); }
+.canon .sd-ic { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--sd-w10); color:var(--role-deep); font-size:19px; flex:none; }
+.canon .sd-ri h3 { font-size:14.5px; font-weight:700; } .canon .sd-ri p { font-size:13px; color:var(--sd-mut); margin-top:1px; line-height:1.45; }
+.canon .sd-tools { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+.canon .sd-tool { padding:12px; display:flex; flex-direction:column; gap:5px; text-align:left; border:1.5px solid var(--sd-line); border-radius:16px; background:#fff; }
+.canon .sd-tool:hover { border-color:var(--sd-w18); background:var(--sd-w6); }
+.canon .sd-tool h3 { font-size:14.5px; font-weight:800; } .canon .sd-tool p { font-size:12.5px; color:var(--sd-mut); line-height:1.4; }
+.canon .sd-wk { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:8px; }
+.canon .sd-day { display:flex; flex-direction:column; gap:6px; }
+.canon .sd-day > .d { font-size:13.5px; font-weight:800; color:var(--sd-mut); text-align:center; }
+.canon .sd-day > .d.today { color:var(--role-deep); }
+.canon .sd-per { border-radius:11px; padding:9px 11px; font-size:13.5px; line-height:1.3; border:1px solid var(--sd-line); text-align:left; min-height:62px; display:flex; flex-direction:column; gap:3px; background:#fff; }
+.canon .sd-per b { font-size:14px; } .canon .sd-per .s { display:flex; gap:4px; align-items:center; font-weight:700; font-size:13px; margin-top:auto; }
+.canon .sd-per.done, .canon .sd-per.ready { background:#E7F6EF; border-color:#C6EBD9; } .canon .sd-per.done .s, .canon .sd-per.ready .s { color:#0F7A55; }
+.canon .sd-per.partial { background:#FEF3E2; border-color:#F8DDB4; } .canon .sd-per.partial .s { color:#B45309; }
+.canon .sd-per.none { border-style:dashed; } .canon .sd-per.none .s { color:var(--sd-mut); }
+.canon .sd-per.test { background:#FDF2F4; border-color:#F7C4CF; } .canon .sd-per.test .s { color:var(--ai-ink); }
+.canon .sd-per.off { background:#F2F5F9; color:var(--sd-mut); }
+.canon .sd-legend { display:flex; gap:12px; flex-wrap:wrap; font-size:12.5px; color:var(--sd-mut); margin-top:10px; }
+.canon .sd-legend span { display:flex; gap:5px; align-items:center; }
+.canon .sd-tbl { width:100%; border-collapse:collapse; font-size:14px; }
+.canon .sd-tbl th { text-align:left; padding:8px 10px; border-bottom:1px solid var(--sd-line); font-size:11.5px; font-weight:800; letter-spacing:.12em; color:var(--sd-mut); }
+.canon .sd-tbl td { padding:10px; border-top:1px solid #EEF2F7; vertical-align:middle; }
+.canon .sd-tbl td b { display:block; } .canon .sd-tbl td small { font-size:12.5px; color:var(--sd-mut); }
+
+/* Setup */
+.canon .sd-setup { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1.1fr); gap:18px; padding:16px 18px; }
+.canon .sd-why { display:flex; gap:10px; background:var(--sd-w6); border:1px solid var(--sd-w18); border-radius:14px; padding:11px 13px; font-size:14px; line-height:1.5; margin-bottom:14px; }
+.canon .sd-fld { margin-bottom:13px; }
+.canon .sd-fld > label, .canon .sd-fld > .lb { display:block; font-size:13px; font-weight:800; margin-bottom:6px; }
+.canon .sd-seg { display:inline-flex; flex-wrap:wrap; gap:3px; background:#EEF2F7; padding:3px; border-radius:12px; }
+.canon .sd-seg button { padding:7px 12px; border-radius:9px; font-size:13.5px; font-weight:700; color:var(--sd-mut); }
+.canon .sd-seg button[aria-pressed=true] { background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,33,71,.1); }
+.canon .sd-opt { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1.5px solid var(--sd-line); border-radius:13px; text-align:left; width:100%; background:#fff; }
+.canon .sd-opt + .sd-opt { margin-top:6px; }
+.canon .sd-opt[aria-checked=true] { border-color:var(--role-deep); background:var(--sd-w6); }
+.canon .sd-opt .rb { width:18px; height:18px; border-radius:50%; border:2px solid #A9B7CB; flex:none; margin-top:2px; }
+.canon .sd-opt[aria-checked=true] .rb { border:5px solid var(--role-deep); }
+.canon .sd-opt b { font-size:14px; } .canon .sd-opt p { font-size:13px; color:var(--sd-mut); margin-top:1px; }
+.canon .sd-topics { display:flex; gap:5px; flex-wrap:wrap; }
+.canon .sd-topics button { font-size:12.5px; font-weight:700; padding:5px 9px; border-radius:9px; border:1.5px solid var(--sd-line); text-align:left; }
+.canon .sd-topics button[aria-pressed=true] { border-color:var(--role-deep); background:var(--sd-w10); color:var(--role-deep); }
+.canon .sd-pick { max-height:180px; overflow:auto; border:1px solid var(--sd-line); border-radius:12px; padding:6px 10px; margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:2px 12px; }
+.canon .sd-pick label { display:flex; gap:7px; align-items:center; font-size:13.5px; padding:4px 0; }
+.canon .sd-bp { width:100%; border-collapse:separate; border-spacing:4px; font-size:13.5px; }
+.canon .sd-bp th { font-size:12.5px; color:var(--sd-mut); font-weight:700; }
+.canon .sd-bp td:first-child { font-weight:700; white-space:nowrap; }
+.canon .sd-cell { width:100%; height:36px; border-radius:9px; background:#F2F5F9; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:14px; color:var(--sd-mut); display:flex; align-items:center; justify-content:center; gap:2px; }
+.canon .sd-cell.f { background:var(--sd-w10); color:var(--role-deep); }
+.canon .sd-cell button { width:22px; height:22px; border-radius:6px; font-size:14px; color:var(--sd-mut); }
+.canon .sd-cell button:hover { background:#fff; color:var(--ink); }
+.canon .sd-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--sd-line); flex-wrap:wrap; font-size:13.5px; color:var(--sd-mut); }
+.canon .sd-building { display:flex; gap:14px; align-items:center; padding:28px 22px; }
+
+/* Workspace */
+.canon .sd-ws { display:grid; grid-template-columns:minmax(0, 1fr) 300px; gap:14px; align-items:start; }
+.canon .sd-dh { padding:14px 18px; border-bottom:1px solid var(--sd-line); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; }
+.canon .sd-dh h2 { font-size:19px; font-weight:800; } .canon .sd-dh p { font-size:13.5px; color:var(--sd-mut); margin-top:2px; }
+.canon .sd-dh input { font-size:19px; font-weight:800; border:1px solid var(--sd-line); border-radius:10px; padding:4px 8px; width:100%; }
+.canon .sd-vb { display:flex; gap:8px; padding:9px 18px; background:#FAFBFD; border-bottom:1px solid var(--sd-line); align-items:center; flex-wrap:wrap; font-size:13.5px; color:var(--sd-mut); }
+.canon .sd-q { padding:13px 18px; display:grid; grid-template-columns:26px minmax(0, 1fr); gap:2px 10px; }
+.canon .sd-q + .sd-q { border-top:1px solid var(--sd-line); }
+.canon .sd-q .qn { font-weight:800; font-family:'IBM Plex Mono',monospace; color:var(--sd-mut); font-size:15px; }
+.canon .sd-q .tx { font-size:15px; font-weight:600; line-height:1.5; white-space:pre-wrap; }
+.canon .sd-q .op { display:grid; grid-template-columns:1fr 1fr; gap:2px 16px; margin-top:6px; font-size:14px; color:#2B3A52; }
+.canon .sd-q .op .c { color:#0F7A55; font-weight:700; }
+.canon .sd-q .sch { margin-top:6px; font-size:13px; color:#2B3A52; background:#F7F9FB; border-radius:10px; padding:7px 10px; white-space:pre-wrap; }
+.canon .sd-q .mt { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+.canon .sd-q .mt .st { font-size:12.5px; color:var(--sd-mut); display:flex; gap:4px; align-items:center; }
+.canon .sd-q .qa { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+.canon .sd-q .qa button { font-size:12.5px; font-weight:700; padding:5px 9px; border-radius:9px; border:1px solid var(--sd-line); display:flex; gap:5px; align-items:center; color:#2B3A52; background:#fff; }
+.canon .sd-q .qa button:hover:not(:disabled) { border-color:#C3D0E2; }
+.canon .sd-q .qa button:disabled { opacity:.5; }
+.canon .sd-q.flag { background:#FFF7F8; box-shadow:inset 4px 0 0 var(--ai); }
+.canon .sd-fn { margin-top:8px; font-size:13.5px; color:var(--ai-ink); border:1px solid #F7C4CF; background:#fff; border-radius:12px; padding:9px 11px; display:flex; gap:8px; }
+.canon .sd-edit textarea, .canon .sd-edit input, .canon .sd-edit select { width:100%; border:1px solid var(--sd-line); border-radius:10px; padding:7px 9px; font-size:14px; font-family:inherit; }
+.canon .sd-edit .row2 { display:grid; grid-template-columns:auto 1fr; gap:6px; align-items:center; margin-top:5px; }
+.canon .sd-rail { display:flex; flex-direction:column; gap:12px; position:sticky; top:12px; }
+.canon .sd-dest { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.canon .sd-dest > button, .canon .sd-dest > div { display:flex; gap:10px; align-items:center; padding:9px 11px; border:1px solid var(--sd-line); border-radius:13px; text-align:left; font-size:14px; font-weight:700; background:#fff; width:100%; }
+.canon .sd-dest > button:hover:not([aria-disabled=true]) { background:var(--sd-w6); border-color:var(--sd-w18); }
+.canon .sd-dest i, .canon .sd-dest svg { color:var(--role-deep); flex:none; }
+.canon .sd-dest small { display:block; font-size:12.5px; font-weight:500; color:var(--sd-mut); }
+.canon .sd-dest > [aria-disabled=true] { opacity:.6; cursor:not-allowed; }
+.canon .sd-chips { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+.canon .sd-chips button { font-size:12.5px; font-weight:700; padding:5px 9px; border-radius:999px; border:1px solid var(--sd-line); background:#fff; }
+.canon .sd-ta { width:100%; border:1px solid var(--sd-line); border-radius:12px; padding:9px 11px; font-size:13.5px; min-height:56px; margin-top:8px; font-family:inherit; resize:vertical; }
+
+/* Access needs */
+.canon .sd-needs { width:100%; border-collapse:collapse; font-size:14px; }
+.canon .sd-needs td, .canon .sd-needs th { padding:8px 10px; border-top:1px solid #EEF2F7; text-align:left; }
+.canon .sd-needs th { font-size:12px; color:var(--sd-mut); font-weight:800; }
+.canon .sd-needs .tg { display:flex; gap:4px; flex-wrap:wrap; }
+.canon .sd-needs .tg button { font-size:12px; font-weight:700; padding:4px 8px; border-radius:8px; border:1.5px solid var(--sd-line); background:#fff; }
+.canon .sd-needs .tg button[aria-pressed=true] { border-color:var(--role-deep); background:var(--sd-w10); color:var(--role-deep); }
+
+/* Present mode (projector) */
+.sd-present { position:fixed; inset:0; z-index:90; background:#0A1324; color:#fff; display:flex; flex-direction:column; font-family:'Plus Jakarta Sans','Noto Sans Devanagari',system-ui,sans-serif; }
+.sd-present .bar { display:flex; justify-content:space-between; align-items:center; padding:16px 28px; gap:12px; }
+.sd-present .bar button { color:#fff; border:1px solid rgba(255,255,255,.25); border-radius:12px; padding:9px 14px; font-weight:700; font-size:15px; display:flex; gap:7px; align-items:center; background:none; cursor:pointer; }
+.sd-present .q { flex:1; display:flex; flex-direction:column; justify-content:center; padding:0 7vw; gap:28px; }
+.sd-present .q h2 { font-size:clamp(28px, 3.6vw, 52px); font-weight:800; line-height:1.3; white-space:pre-wrap; }
+.sd-present .q ol { list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:0; margin:0; }
+.sd-present .q li { font-size:clamp(20px, 2.2vw, 32px); border:2px solid rgba(255,255,255,.2); border-radius:18px; padding:16px 20px; display:flex; gap:14px; }
+.sd-present .q li.right { border-color:#6EE7B7; background:rgba(110,231,183,.12); }
+.sd-present .q li b { color:var(--role-soft, #79DFC6); }
+.sd-present .q .ans { font-size:clamp(18px, 1.8vw, 26px); color:#C8D6E6; }
+.sd-present .timer { font-family:'IBM Plex Mono',monospace; font-size:22px; }
+
+/* Print: one sheet per version, then the answer key */
+.sd-print { display:none; }
+@media print {
+  body.sd-printing * { visibility:hidden; }
+  body.sd-printing .sd-print, body.sd-printing .sd-print * { visibility:visible; }
+  body.sd-printing .sd-print { display:block; position:absolute; left:0; top:0; width:100%; color:#000; font-family:'Plus Jakarta Sans','Noto Sans Devanagari',system-ui,sans-serif; }
+  .sd-print .sheet { page-break-after:always; padding:0 4mm; }
+  .sd-print .lh { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:10px; }
+  .sd-print .lh h1 { font-size:18pt; margin:0; } .sd-print .lh p { margin:2px 0 0; font-size:10pt; }
+  .sd-print .who { display:grid; grid-template-columns:2fr 1fr 1fr; gap:14px; font-size:11pt; margin:10px 0 14px; }
+  .sd-print .who span { border-bottom:1px solid #000; padding-bottom:2px; }
+  .sd-print .why { font-size:10.5pt; font-style:italic; margin-bottom:10px; }
+  .sd-print .pq { break-inside:avoid; margin-bottom:12px; font-size:11.5pt; }
+  .sd-print.large .pq { font-size:16pt; }
+  .sd-print .pq .op { display:grid; grid-template-columns:1fr 1fr; gap:3px 18px; margin:4px 0 0 18px; }
+  .sd-print .pq .lines { margin:6px 0 0 18px; }
+  .sd-print .pq .lines div { border-bottom:1px solid #999; height:9mm; }
+  .sd-print .key h2 { font-size:14pt; }
+}
+
+@media (max-width:1180px) { .canon .sd-tools { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (max-width:1024px) { .canon .sd-two, .canon .sd-setup, .canon .sd-ws { grid-template-columns:1fr; } .canon .sd-rail { position:static; } .canon .sd-tiles { grid-template-columns:1fr 1fr; } }
+@media (max-width:640px) {
+  .canon .sd-wk { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+  .canon .sd-q .op, .canon .sd-pick { grid-template-columns:1fr; }
+  .canon .sd-ri { grid-template-columns:36px minmax(0, 1fr); } .canon .sd-ri > :last-child { grid-column:2; }
+  .canon .sd-tbl th:nth-child(3), .canon .sd-tbl td:nth-child(3) { display:none; }
+  .canon .sd-bp td:first-child { white-space:normal; }
+  .sd-present .q ol { grid-template-columns:1fr; }
+}
+@media (prefers-reduced-motion:reduce) { .canon .sd-root * { transition:none !important; animation:none !important; } }

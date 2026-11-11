@@ -64,6 +64,14 @@ export interface StudioItem {
   scheme: string;
   /** A figure the question relies on, with a text version for students who can't use it. */
   figure?: { svg?: string | null; alt: string } | null;
+  /** Pictures from the bank (CBSE's diagrams and maps), shown with the question. */
+  figures?: import('./figures').BankFigure[];
+  /** Pictures that belong to the answer (labelled map, worked figure): the teacher's side only. */
+  schemeFigures?: import('./figures').BankFigure[];
+  /** CBSE's own text-only version, given to students who need text instead of figures. */
+  textVersion?: import('./figures').TextVersion | null;
+  /** Where an official question came from ("CBSE Sample Question Paper 2026-27, Class X Science, Q2"). */
+  sourceRef?: string | null;
   check: ItemCheck;
   stats?: ItemStats | null;
   /** Measured share correct (0-1) when known, else the writer's estimate. */

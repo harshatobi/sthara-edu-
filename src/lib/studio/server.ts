@@ -16,6 +16,7 @@ import { withRetry } from '@/lib/ai/retry';
 import type { CourseChapter } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/topicKey';
 import { normClass, normSubject } from '@/lib/teacher/scope';
+import { gradeOf } from '@/lib/admin/format';
 import { pageAll, byIds } from '@/lib/ops/page';
 import { sanitizeQuestions } from '@/lib/teacher/questions';
 import { fingerprint } from './fingerprint';
@@ -40,20 +41,23 @@ export interface StudioCtx {
 }
 
 // ── The bank ─────────────────────────────────────────────────────────────────
-const BANK_COLS = 'id, scope, school_id, class, subject, chapter_key, topic, outcome_code, competency, qtype, marks, language, body, status, checks';
+const BANK_COLS = 'id, scope, school_id, class, subject, chapter_key, topic, outcome_code, competency, qtype, marks, language, body, status, checks, source_ref';
 
 /** Bank items for a chapter: Sthara's (any status but retired) and this school's own, in English. */
 export async function loadPool(ctx: Pick<StudioCtx, 'db' | 'schoolId' | 'cls' | 'subject'>, chapterKey: string): Promise<StudioItem[]> {
   const { data } = await pageAll<any>((a, b) => ctx.db.from('bank_items').select(BANK_COLS)
     .eq('chapter_key', chapterKey).eq('language', 'en').neq('status', 'retired')
     .or(`school_id.is.null,school_id.eq.${ctx.schoolId}`).order('id').range(a, b), 3000);
-  const rows = data.filter(r => normClass(r.class) === normClass(ctx.cls) && normSubject(r.subject) === normSubject(ctx.subject));
+  // A bank is per grade, not per section: Sthara's rows say "Class 10" and a school's own were saved from one section
+  // ("Class 10-A"), and both serve every section of that grade.
+  const grade = gradeOf(ctx.cls);
+  const rows = data.filter(r => (grade != null ? gradeOf(r.class) === grade : normClass(r.class) === normClass(ctx.cls)) && normSubject(r.subject) === normSubject(ctx.subject));
   const stats = await itemStats(ctx.db, ctx.schoolId, rows.map(r => r.id));
   return rows.map(r => bankToItem(r, stats.get(r.id))).filter((x): x is StudioItem => !!x);
 }
 
 export function bankToItem(r: any, stats?: { attempts: number; correct: number }): StudioItem | null {
-  const it = parseItem({ ...r.body, id: r.id, bankId: r.id, source: 'bank', qtype: r.qtype, competency: r.competency, marks: r.marks, chapterKey: r.chapter_key, topic: r.topic, outcomeCode: r.outcome_code, check: r.checks?.status ? r.checks : { status: 'passed', notes: [] } });
+  const it = parseItem({ ...r.body, sourceRef: r.source_ref, id: r.id, bankId: r.id, source: 'bank', qtype: r.qtype, competency: r.competency, marks: r.marks, chapterKey: r.chapter_key, topic: r.topic, outcomeCode: r.outcome_code, check: r.checks?.status ? r.checks : { status: 'passed', notes: [] } });
   if (!it) return null;
   if (stats && stats.attempts > 0) {
     it.stats = { attempts: stats.attempts, correct: stats.correct, schools: 1 };
@@ -292,7 +296,7 @@ export async function saveToBank(ctx: Pick<StudioCtx, 'db' | 'schoolId' | 'userI
   const rows = fresh.map(it => ({
     scope: 'school', school_id: ctx.schoolId, class: ctx.cls, subject: ctx.subject, chapter_key: it.chapterKey || 'general', topic: it.topic || null,
     outcome_code: it.outcomeCode ?? null, competency: it.competency, qtype: it.qtype, marks: it.marks, language,
-    body: { text: it.text, options: it.options, answer: it.answer, value: it.value, unit: it.unit, scheme: it.scheme, figure: it.figure, difficulty: it.difficulty },
+    body: { text: it.text, options: it.options, answer: it.answer, value: it.value, unit: it.unit, scheme: it.scheme, figure: it.figure, figures: it.figures, schemeFigures: it.schemeFigures, textVersion: it.textVersion, difficulty: it.difficulty },
     status: 'unreviewed', source: it.source === 'teacher' ? 'teacher' : 'ai', checks: it.check,
     fingerprint: fingerprint(it.text, it.options ?? []), created_by: ctx.userId,
   }));

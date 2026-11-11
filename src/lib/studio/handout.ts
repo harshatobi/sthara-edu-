@@ -9,11 +9,25 @@ import { isChoice, type AccessNeed, type StudioItem } from './types';
 
 export function toQuestion(it: StudioItem): Question {
   const figureText = it.figure?.alt ? `\n\nFigure: ${it.figure.alt}` : '';
+  // Bank pictures go with the question; the answer's pictures (schemeFigures) never reach students.
+  const figs = it.figures?.length ? { figures: it.figures } : {};
   if (isChoice(it.qtype) && it.options?.length && typeof it.answer === 'number') {
-    return { type: 'mcq', questionText: it.text, options: it.options, answer: it.answer, marks: 1, ...(it.scheme ? { why: it.scheme } : {}), level: levelOf(it) };
+    return { type: 'mcq', questionText: it.text, options: it.options, answer: it.answer, marks: 1, ...(it.scheme ? { why: it.scheme } : {}), level: levelOf(it), ...figs };
   }
   // Written answers carry their value points as `why`, which the marking prompt and the teacher's review read.
-  return { type: 'short', questionText: `${it.text}${it.figure && !it.figure.svg ? figureText : ''}`, marks: it.marks, ...(it.scheme ? { why: it.scheme } : {}), level: levelOf(it) };
+  return { type: 'short', questionText: `${it.text}${it.figure && !it.figure.svg ? figureText : ''}`, marks: it.marks, ...(it.scheme ? { why: it.scheme } : {}), level: levelOf(it), ...figs };
+}
+
+/**
+ * The question for a student who needs text instead of figures: CBSE's own text-only version when the paper
+ * printed one (same marks, its own key), else the question with its pictures described.
+ */
+export function withoutFigures(it: StudioItem): StudioItem {
+  const tv = it.textVersion;
+  if (!tv || !(it.figures?.length || it.figure)) return it;
+  const choice = isChoice(it.qtype);
+  if (choice && !(tv.options?.length && typeof tv.answer === 'number')) return it;
+  return { ...it, text: tv.text, figures: undefined, figure: null, ...(choice ? { options: tv.options, answer: tv.answer as number } : {}), scheme: tv.scheme || it.scheme };
 }
 
 const levelOf = (it: StudioItem): Question['level'] =>
@@ -25,7 +39,8 @@ const levelOf = (it: StudioItem): Question['level'] =>
  */
 export function forStudent(items: StudioItem[], needs: AccessNeed[]): { questions: Question[]; access: AccessNeed[] } {
   const noFigures = needs.includes('no_figures');
-  const questions = items.map(it => {
+  const questions = items.map(raw => {
+    const it = noFigures ? withoutFigures(raw) : raw;
     const q = toQuestion(it);
     if (noFigures && it.figure?.alt && !q.questionText.includes(it.figure.alt)) q.questionText = `${q.questionText}\n\nFigure described: ${it.figure.alt}`;
     return q;

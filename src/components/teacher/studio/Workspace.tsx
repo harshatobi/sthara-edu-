@@ -32,6 +32,7 @@ import { LETTERS } from '@/lib/studio/handout';
 import { useStudioApi, type HomeData, type Material } from './api';
 import PresentMode from './PresentMode';
 import PrintSheet, { printStudio } from './PrintSheet';
+import BankFigures from '@/components/studio/BankFigures';
 
 type ItemAction = 'swap' | 'harder' | 'easier' | 'rewrite';
 type View = { kind: 'class' } | { kind: 'student'; id: string } | { kind: 'set'; label: string };
@@ -312,11 +313,15 @@ function ItemCard({ n, it, first, last, editable, busy, onAction, onEdit, onRemo
       <div>
         <div className="tx">{it.text}</div>
         {it.figure?.alt && <div className="sch"><b>Figure:</b> {it.figure.alt}</div>}
+        <BankFigures figs={it.figures} />
         {isChoice(it.qtype) && it.options && (
           <div className="op">{it.options.map((o, k) => <span key={k} className={k === it.answer ? 'c' : ''}>{LETTERS[k]}. {o}{k === it.answer ? ' (answer)' : ''}</span>)}</div>
         )}
         {it.qtype === 'numerical' && it.value !== null && it.value !== undefined && <div className="op"><span className="c">Answer: {it.value}{it.unit ? ` ${it.unit}` : ''}</span></div>}
         {it.scheme && <div className="sch">{isChoice(it.qtype) ? 'Why: ' : 'Marking: '}{it.scheme}</div>}
+        <BankFigures figs={it.schemeFigures} label="Figure from the marking scheme" />
+        {it.textVersion && <div className="sch"><b>Text-only version</b> (from CBSE, for students who need text instead of figures): {it.textVersion.text}</div>}
+        {it.sourceRef && <div className="sch" style={{ fontStyle: 'italic' }}>{it.sourceRef}</div>}
         <div className="mt">
           {it.topic && <span className="sd-chip">{it.topic}</span>}
           <span className="sd-chip">{COMPETENCY_SHORT[it.competency]}</span>

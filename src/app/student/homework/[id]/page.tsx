@@ -16,6 +16,8 @@ import { PaperclipIcon as Paperclip } from '@phosphor-icons/react/dist/ssr/Paper
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
 import { SpeakerHighIcon as SpeakerHigh } from '@phosphor-icons/react/dist/ssr/SpeakerHigh';
 import type { LabRef } from '@/lib/lab/question';
+import BankFigures from '@/components/studio/BankFigures';
+import { parseFigures } from '@/lib/studio/figures';
 
 // A Live Lab question's simulation, loaded only when the homework has one.
 const LabQuestionSim = dynamic(() => import('@/components/lab/LabQuestionSim'), {
@@ -24,6 +26,8 @@ const LabQuestionSim = dynamic(() => import('@/components/lab/LabQuestionSim'), 
 
 interface Question {
   questionText?: string;
+  /** Pictures from the question bank (validated paths in the bank-figures bucket). */
+  figures?: unknown;
   question?: string;
   prompt?: string;
   type?: 'short' | 'mcq' | 'upload';
@@ -466,6 +470,7 @@ export default function HomeworkWorkspace() {
                     )}
                   </div>
                   <h2 className={`${own?.access.includes('large_print') ? 'text-[28px]' : 'text-[21px]'} font-extrabold text-[#002147] leading-[1.5] mt-2.5 mb-[22px]`}>{questionLabel(q)}</h2>
+                  <BankFigures figs={parseFigures(q.figures)} scale={own?.access.includes('large_print') ? 1.3 : 1} />
                   {q.lab && <LabQuestionSim lab={q.lab} />}
 
                   {q.type === 'mcq' && Array.isArray(q.options) ? (

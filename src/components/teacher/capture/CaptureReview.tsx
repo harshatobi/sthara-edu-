@@ -17,6 +17,7 @@ import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import type { Confidence } from '@/lib/grading/handwritten';
 import Reversals from './Reversals';
+import BankFigures from '@/components/studio/BankFigures';
 
 const CONF: Record<Confidence, { label: string; tone: 'g' | 'a' | 'r' }> = {
   high: { label: 'Clear', tone: 'g' }, medium: { label: 'Check', tone: 'a' }, low: { label: 'Check first', tone: 'r' },
@@ -161,6 +162,7 @@ export default function CaptureReview({ a, sub, onPick, onBack }: { a: TAssignme
                   </label>
                 </div>
                 <div className="cr-q-text">{q.questionText}</div>
+                <BankFigures figs={q.figures} scale={0.7} />
                 {ai ? (
                   <>
                     {ai.attempted ? <blockquote className="cr-read">{ai.transcription || '(nothing legible)'}</blockquote> : <div className="muted" style={{ fontSize: 13 }}>Not attempted</div>}

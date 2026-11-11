@@ -4,6 +4,8 @@ import { isChoice, type QuestionSetContent, type StudioItem } from '@/lib/studio
 import { LETTERS } from '@/lib/studio/handout';
 import { isRtl } from '@/lib/studio/languages';
 import type { Material } from './api';
+import BankFigures from '@/components/studio/BankFigures';
+import { withoutFigures } from '@/lib/studio/handout';
 
 /** Prints the sheets below (hidden on screen). The global footer adds "Powered by Sthara" to every page. */
 export function printStudio() {
@@ -22,7 +24,7 @@ export default function PrintSheet({ material: m, set, school, nameOf }: { mater
   const byId = new Map(set.items.map(i => [i.id, i]));
   const items = (ids: string[]) => ids.map(id => byId.get(id)).filter((x): x is StudioItem => !!x);
   const sheets: { key: string; label: string | null; who: string | null; reason: string | null; large: boolean; list: StudioItem[] }[] =
-    set.audience === 'per_student' ? set.versions.map(v => ({ key: v.studentId, label: null, who: nameOf(v.studentId), reason: v.reason || null, large: v.access.includes('large_print'), list: items(v.itemIds) }))
+    set.audience === 'per_student' ? set.versions.map(v => ({ key: v.studentId, label: null, who: nameOf(v.studentId), reason: v.reason || null, large: v.access.includes('large_print'), list: v.access.includes('no_figures') ? items(v.itemIds).map(withoutFigures) : items(v.itemIds) }))
       : set.audience === 'abc' ? set.sets.map(s => ({ key: s.label, label: `Set ${s.label}`, who: null, reason: null, large: false, list: items(s.itemIds) }))
         : [{ key: 'class', label: null, who: null, reason: null, large: false, list: items(set.order) }];
   const marks = (l: StudioItem[]) => l.reduce((n, i) => n + i.marks, 0);
@@ -41,6 +43,7 @@ export default function PrintSheet({ material: m, set, school, nameOf }: { mater
             <div className="pq" key={it.id}>
               <div><b>{k + 1}.</b> {it.text} <i>({it.marks} mark{it.marks === 1 ? '' : 's'})</i></div>
               {it.figure?.alt && <div style={{ marginLeft: 18 }}>Figure: {it.figure.alt}</div>}
+              <div style={{ marginLeft: 18 }}><BankFigures figs={it.figures} scale={s.large ? 1.3 : 1} /></div>
               {isChoice(it.qtype) && it.options
                 ? <div className="op">{it.options.map((o, j) => <span key={j}>({LETTERS[j]}) {o}</span>)}</div>
                 : <div className="lines">{Array.from({ length: Math.min(12, it.marks * 2 + 1) }, (_, j) => <div key={j} />)}</div>}
@@ -54,7 +57,7 @@ export default function PrintSheet({ material: m, set, school, nameOf }: { mater
           <div key={s.key} style={{ marginBottom: 10 }}>
             {(s.label || s.who) && <b>{s.label ?? s.who}</b>}
             {s.list.map((it, k) => (
-              <div className="pq" key={it.id}>{k + 1}. {isChoice(it.qtype) && typeof it.answer === 'number' ? `(${LETTERS[it.answer]}) ` : it.qtype === 'numerical' && it.value !== null && it.value !== undefined ? `${it.value}${it.unit ? ` ${it.unit}` : ''}. ` : ''}{it.scheme}</div>
+              <div className="pq" key={it.id}>{k + 1}. {isChoice(it.qtype) && typeof it.answer === 'number' ? `(${LETTERS[it.answer]}) ` : it.qtype === 'numerical' && it.value !== null && it.value !== undefined ? `${it.value}${it.unit ? ` ${it.unit}` : ''}. ` : ''}{it.scheme}<BankFigures figs={it.schemeFigures} label="Figure from the marking scheme" /></div>
             ))}
           </div>
         ))}

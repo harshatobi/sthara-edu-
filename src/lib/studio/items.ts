@@ -2,6 +2,7 @@
  * Sanitising Studio items and question-set content, whoever sent them (the AI, the bank, a teacher's edit, a
  * stored row). Pure. Anything that can't be made valid is dropped, never stored broken.
  */
+import { parseFigures, parseTextVersion } from './figures';
 import { sanitizeSvg } from '@/lib/teacher/svg';
 import { parseBlueprint, defaultBlueprint } from './blueprint';
 import { ACCESS_NEEDS, COMPETENCIES, QTYPES, isChoice, newItemId, type AccessNeed, type Audience, type CheckStatus, type QuestionSetContent, type SetKind, type StudioItem } from './types';
@@ -52,6 +53,12 @@ export function parseItem(raw: unknown, defaults: Partial<StudioItem> = {}): Stu
   const alt = s(r.figure?.alt, 600);
   const svg = r.figure?.svg ? sanitizeSvg(r.figure.svg) : null;
   if (alt || svg) item.figure = { svg: svg || null, alt: alt || 'A figure for this question.' };
+  const figures = parseFigures(r.figures), schemeFigures = parseFigures(r.schemeFigures);
+  if (figures.length) item.figures = figures;
+  if (schemeFigures.length) item.schemeFigures = schemeFigures;
+  const tv = parseTextVersion(r.textVersion ?? r.access);
+  if (tv) item.textVersion = tv;
+  if (typeof r.sourceRef === 'string' && r.sourceRef.trim()) item.sourceRef = r.sourceRef.trim().slice(0, 300);
   return item;
 }
 

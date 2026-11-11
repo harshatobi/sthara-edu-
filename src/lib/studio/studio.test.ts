@@ -214,3 +214,30 @@ test('home: standing, pace, the week and what is worth doing', () => {
   assert.deepEqual(ready[0].preset.students, ['a']);
   assert.ok(ready.some(r => r.kind === 'lesson') && ready.some(r => r.kind === 'parent_note'));
 });
+
+test('bank pictures: only paths in the bank folder survive, and they reach students but the answer pictures do not', async () => {
+  const { parseFigures, figureWidth } = await import('./figures');
+  const { sanitizeQuestions } = await import('../teacher/questions');
+  const ok = { path: 'cbse/2026-27/class-10/science/sqp/q2_1.png', w: 300.4, h: 162.8, col: 438 };
+  assert.deepEqual(parseFigures([ok, 'https://evil.example/x.png', 'cbse/../secret.png', 'cbse/a.svg', 'other/x/y.png', { path: 'cbse/x/y.png' }]).map(f => f.path),
+    ['cbse/2026-27/class-10/science/sqp/q2_1.png', 'cbse/x/y.png']);
+  assert.equal(figureWidth(parseFigures([ok])[0]), 69);
+  assert.equal(figureWidth({ path: 'cbse/x/y.png' }), 100);
+
+  const it = parseItem({ qtype: 'mcq', competency: 'apply', marks: 1, text: 'In which setup is lime water cloudiest?', options: ['P', 'Q', 'R', 'S'], answer: 2, scheme: 'C. R',
+    figures: [ok], schemeFigures: [{ path: 'cbse/2026-27/class-10/science/ms/q2_1.png' }],
+    access: { text: 'Which statement is incorrect?', options: ['w', 'x', 'y', 'z'], answer: 1, scheme: 'B' } })!;
+  assert.equal(it.figures?.length, 1);
+  assert.equal(it.textVersion?.answer, 1);
+  const q = toQuestion(it);
+  assert.equal(q.figures?.[0].path, ok.path);
+  assert.equal((q as any).schemeFigures, undefined, 'answer pictures stay on the teacher side');
+  assert.equal(sanitizeQuestions([{ ...q, figures: [...(q.figures ?? []), 'https://evil.example/x.png'] }]).questions[0].figures?.length, 1);
+
+  // Text instead of figures: CBSE's own text-only version with its own key, and no pictures.
+  const [tv] = forStudent([it], ['no_figures']).questions;
+  assert.equal(tv.questionText, 'Which statement is incorrect?');
+  assert.equal(tv.answer, 1);
+  assert.equal(tv.figures, undefined);
+  assert.equal(forStudent([it], []).questions[0].figures?.length, 1);
+});

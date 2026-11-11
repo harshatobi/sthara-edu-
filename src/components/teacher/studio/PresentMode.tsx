@@ -10,6 +10,7 @@ import { TimerIcon as Timer } from '@phosphor-icons/react/dist/ssr/Timer';
 import { isChoice, type StudioItem } from '@/lib/studio/types';
 import { LETTERS } from '@/lib/studio/handout';
 import { isRtl } from '@/lib/studio/languages';
+import BankFigures from '@/components/studio/BankFigures';
 
 /**
  * The set on the projector, one question at a time: big text, a timer, and the answer revealed when the teacher
@@ -55,6 +56,7 @@ export default function PresentMode({ title, items, language, onClose }: { title
       <div className="q">
         <h2>{it.text}</h2>
         {it.figure?.alt && <p className="ans">Figure: {it.figure.alt}</p>}
+        <BankFigures figs={it.figures} scale={1.4} />
         {isChoice(it.qtype) && it.options && (
           <ol>{it.options.map((o, k) => <li key={k} className={shown && k === it.answer ? 'right' : ''}><b>{LETTERS[k]}</b>{o}</li>)}</ol>
         )}

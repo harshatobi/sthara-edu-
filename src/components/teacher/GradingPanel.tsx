@@ -13,6 +13,7 @@ import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { useAuth } from '@/contexts/AuthContext';
 import Reversals from './capture/Reversals';
+import BankFigures from '@/components/studio/BankFigures';
 
 const LETTERS = 'ABCDEF';
 
@@ -174,6 +175,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
                       </label>
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 6, fontWeight: 600 }}>{q.questionText}</div>
+                    <BankFigures figs={q.figures} scale={0.7} />
                     <Answer q={q} value={sub.answers[i]} link={links === undefined ? undefined : links?.answers[i] ?? null} />
                   </div>
                 ))}

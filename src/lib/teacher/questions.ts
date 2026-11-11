@@ -5,6 +5,7 @@
  * Pure — no I/O — so the browser and the server validate identically.
  */
 
+import { parseFigures, type BankFigure } from '@/lib/studio/figures';
 import { buildLabQuestion, type LabRef } from '@/lib/lab/question';
 
 export type QType = 'short' | 'mcq' | 'upload';
@@ -24,6 +25,8 @@ export interface Question {
   why?: string;
   /** Live Lab: the simulation set-up this MCQ is asked on. Its options, answer and `why` are the engine's. */
   lab?: LabRef;
+  /** Pictures from the question bank (CBSE diagrams and maps), shown with the question. */
+  figures?: BankFigure[];
 }
 
 export const MAX_QUESTIONS = 50;
@@ -81,6 +84,8 @@ export function sanitizeQuestions(raw: unknown): { questions: Question[]; error:
     if (level === 'EASY' || level === 'MEDIUM' || level === 'HARD') out.level = level;
     const why = clip(q.why ?? q.explanation, 1000);
     if (why) out.why = why;
+    const figures = parseFigures(q.figures);
+    if (figures.length) out.figures = figures;
     questions.push(out);
   }
   return { questions, error: null };

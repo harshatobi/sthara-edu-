@@ -12,6 +12,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { generateAi } from '@/lib/ai/generate';
+import { withRetry } from '@/lib/ai/retry';
 import type { CourseChapter } from '@/lib/curriculum';
 import { topicKey } from '@/lib/teacher/topicKey';
 import { normClass, normSubject } from '@/lib/teacher/scope';
@@ -132,6 +133,16 @@ export async function topicEvidence(db: SupabaseClient, schoolId: string, studen
 }
 
 // ── AI ───────────────────────────────────────────────────────────────────────
+/**
+ * A Studio AI call. A model that's briefly busy (the provider's own "high demand" reply) is asked again twice,
+ * with a short wait, before the teacher is told the AI is overloaded; a stopped request is never retried.
+ */
+const ai = (...args: Parameters<typeof generateAi>) =>
+  withRetry(() => {
+    if (args[0].config?.abortSignal?.aborted) throw new Error('aborted');
+    return generateAi(...args);
+  }, { tries: 3, baseMs: 1500 });
+
 const jsonOf = (text: string) => JSON.parse((text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim());
 
 function chapterBrief(ctx: StudioCtx): string {
@@ -166,7 +177,7 @@ export async function writeGapItems(ctx: StudioCtx, gaps: Gap[], feedback: Map<n
   const want = gaps.flatMap(g => Array.from({ length: g.count }, () => g)).slice(0, 30);
   if (!want.length) return [];
   const slots = want.map((g, i) => `${i + 1}. ${COMPETENCY_LABEL[g.slot.competency]} (${g.slot.competency}), ${g.slot.marks} mark${g.slot.marks === 1 ? '' : 's'}, ${QTYPE_LABEL[g.slot.qtype]} (${g.slot.qtype})${g.topic ? `, on: ${g.topic}` : ''}${feedback.get(i) ? `\n   Previous attempt failed a check: ${feedback.get(i)} Write a different, correct question.` : ''}`);
-  const res = await generateAi({
+  const res = await ai({
     model: AI_MODELS.standard,
     contents: [{ role: 'user', parts: [{ text: `${chapterBrief(ctx)}\n\nWRITE THESE ${want.length} QUESTIONS (in English):\n${slots.join('\n')}` }] }],
     config: { systemInstruction: WRITER, responseMimeType: 'application/json', temperature: 0.6, abortSignal: ctx.signal },
@@ -196,7 +207,7 @@ async function solveSeparately(ctx: StudioCtx, items: StudioItem[]): Promise<Che
     it.figure?.alt ? `   Figure: ${it.figure.alt}` : '',
     it.options ? it.options.map((o, k) => `   ${k}. ${o}`).join('\n') : '',
   ].filter(Boolean).join('\n'));
-  const res = await generateAi({
+  const res = await ai({
     model: AI_MODELS.standard,
     contents: [{ role: 'user', parts: [{ text: `${chapterBrief(ctx)}\n\nQUESTIONS:\n${list.join('\n\n')}` }] }],
     config: { systemInstruction: CHECKER, responseMimeType: 'application/json', temperature: 0, abortSignal: ctx.signal },
@@ -254,7 +265,7 @@ export async function translateItems(ctx: StudioCtx, items: StudioItem[], langua
   if (language === 'en' || !items.length) return items;
   const lang = languageOf(language);
   const list = items.map((it, i) => ({ n: i + 1, text: it.text, options: it.options, scheme: it.scheme, figure: it.figure?.alt ? { alt: it.figure.alt } : null }));
-  const res = await generateAi({
+  const res = await ai({
     model: AI_MODELS.standard,
     contents: [{ role: 'user', parts: [{ text: JSON.stringify({ items: list }) }] }],
     config: { systemInstruction: TRANSLATOR(`${lang.name} (${lang.native})`), responseMimeType: 'application/json', temperature: 0.2, abortSignal: ctx.signal },

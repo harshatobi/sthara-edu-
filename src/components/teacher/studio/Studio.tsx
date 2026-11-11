@@ -140,6 +140,7 @@ export default function Studio() {
       {tab === 'make' && screen.kind === 'setup' && home && (
         <SetupView key={screen.key} cls={cls} subject={subject} home={home} students={students} language={prefs.language} preset={screen.preset}
           onCancel={() => setScreen({ kind: 'home' })}
+          onBoardPaper={() => ask('board_paper')}
           onBuilt={(m: Material, s) => {
             toast(`${s.fromBank} from the bank, ${s.written} new and checked${s.flagged ? `, ${s.flagged} need${s.flagged === 1 ? 's' : ''} you` : ''}`);
             setScreen({ kind: 'material', id: m.id });

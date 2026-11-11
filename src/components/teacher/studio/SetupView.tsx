@@ -11,14 +11,17 @@ import { MARK_COLUMNS, defaultBlueprint, itemCount, markTotal, minutesFor, slots
 import { assembleClass } from '@/lib/studio/pick';
 import { ACCESS_LABEL, COMPETENCIES, COMPETENCY_LABEL, SET_KIND_LABEL, type AccessNeed, type Audience, type SetKind, type StudioItem } from '@/lib/studio/types';
 import { languageOf } from '@/lib/studio/languages';
+import { designsFor } from '@/lib/papers/designs';
 import { useStudioApi, type HomeData, type Material, type SetupPreset } from './api';
 
 const KINDS: SetKind[] = ['worksheet', 'quiz', 'catchup', 'exit_ticket', 'test'];
 const STEPS = ['Picking questions from the bank', 'Writing the ones the bank doesn’t have', 'Solving each new question separately to check the answer', 'Checking the syllabus and your class’s past work'];
 
 /** Set up a question set: kind, chapter and topics, who it's for, the blueprint, then build it (one request). */
-export default function SetupView({ cls, subject, home, students, language, preset, onBuilt, onCancel }: {
+export default function SetupView({ cls, subject, home, students, language, preset, onBuilt, onCancel, onBoardPaper }: {
   cls: string; subject: string; home: HomeData | null; students: TStudent[]; language: string; preset: SetupPreset | null;
+  /** A full CBSE board-pattern paper is its own generator (fixed design, marking scheme): open it. */
+  onBoardPaper?: () => void;
   onBuilt: (m: Material, summary: { fromBank: number; written: number; flagged: number; unfilled: number }) => void; onCancel: () => void;
 }) {
   const api = useStudioApi();
@@ -109,6 +112,12 @@ export default function SetupView({ cls, subject, home, students, language, pres
           {preset?.basis && <div className="sd-why"><Info size={19} weight="duotone" style={{ color: 'var(--role-deep)', flex: 'none' }} /><div>{preset.basis} Change anything.</div></div>}
           <div className="sd-fld"><span className="lb" id="sd-kind">Kind</span>
             <div className="sd-seg" role="group" aria-labelledby="sd-kind">{KINDS.map(k => <button key={k} aria-pressed={kind === k} onClick={() => pickKind(k)}>{SET_KIND_LABEL[k]}</button>)}</div></div>
+          {kind === 'test' && onBoardPaper && designsFor(cls, subject).length > 0 && (
+            <div className="sd-why" style={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+              <div>Need the whole syllabus instead? A board exam paper follows the CBSE 2026-27 design, with its marking scheme.</div>
+              <button className="btn sm" onClick={onBoardPaper}>Board exam paper</button>
+            </div>
+          )}
           <div className="sd-fld"><label htmlFor="sd-ch">Chapter</label>
             <select id="sd-ch" className="cmp-sel" value={chapter} onChange={e => pickChapter(e.target.value)}>
               {chapters.map(c => <option key={c.name} value={c.name}>{c.seq}. {c.name}{home?.tiles.lowest?.chapter === c.name ? ` (weakest, ${home.tiles.lowest.score}%)` : ''}</option>)}

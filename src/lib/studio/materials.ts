@@ -19,6 +19,30 @@ export async function moderationOf(db: SupabaseClient, schoolId: string): Promis
   return v === 'common_tests' || v === 'all_shared' ? v : 'none';
 }
 
+export const MODERATION_MODES: Moderation[] = ['none', 'common_tests', 'all_shared'];
+export const isModeration = (v: unknown): v is Moderation => MODERATION_MODES.includes(v as Moderation);
+
+/**
+ * Sets the school's moderation setting, keeping every other setting as it is, and records who changed it.
+ * Loosening it doesn't approve anything by itself: material already waiting stays waiting until the lead decides
+ * or the teacher shares it again.
+ */
+export async function setModeration(db: SupabaseClient, schoolId: string, actor: { id: string; role: string }, mode: Moderation): Promise<{ ok: true; moderation: Moderation } | { ok: false; error: string; status: number }> {
+  const { data, error } = await db.from('schools').select('settings').eq('id', schoolId).maybeSingle();
+  if (error || !data) return { ok: false, error: 'School not found.', status: 404 };
+  const st = (data.settings && typeof data.settings === 'object' ? data.settings : {}) as Record<string, any>;
+  const was: Moderation = isModeration(st.studio?.moderation) ? st.studio.moderation : 'none';
+  if (was === mode) return { ok: true, moderation: mode };
+  const { error: upErr } = await db.from('schools').update({ settings: { ...st, studio: { ...(st.studio || {}), moderation: mode } } }).eq('id', schoolId);
+  if (upErr) return { ok: false, error: 'Could not save the setting.', status: 500 };
+  const { error: logErr } = await db.from('audit_log').insert({
+    actor_id: actor.id, actor_role: actor.role, action: 'studio_moderation_set', table_name: 'schools', row_id: schoolId, school_id: schoolId,
+    old_values: { moderation: was }, new_values: { moderation: mode },
+  });
+  if (logErr) console.warn('[studio moderation audit]', logErr.message);
+  return { ok: true, moderation: mode };
+}
+
 /** Does this share need the subject lead's approval under the school's setting? */
 export const needsApproval = (mode: Moderation, m: { share: string; common_test: boolean }) =>
   mode === 'all_shared' ? m.share === 'department' || m.common_test : mode === 'common_tests' ? m.common_test : false;

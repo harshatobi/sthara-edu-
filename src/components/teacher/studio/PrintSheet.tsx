@@ -43,7 +43,7 @@ export default function PrintSheet({ material: m, set, school, nameOf }: { mater
             <div className="pq" key={it.id}>
               <div><b>{k + 1}.</b> {it.text} <i>({it.marks} mark{it.marks === 1 ? '' : 's'})</i></div>
               {it.figure?.alt && <div style={{ marginLeft: 18 }}>Figure: {it.figure.alt}</div>}
-              <div style={{ marginLeft: 18 }}><BankFigures figs={it.figures} scale={s.large ? 1.3 : 1} /></div>
+              <div style={{ marginLeft: 18 }}><BankFigures figs={it.figures} scale={s.large ? 1.3 : 1} eager /></div>
               {isChoice(it.qtype) && it.options
                 ? <div className="op">{it.options.map((o, j) => <span key={j}>({LETTERS[j]}) {o}</span>)}</div>
                 : <div className="lines">{Array.from({ length: Math.min(12, it.marks * 2 + 1) }, (_, j) => <div key={j} />)}</div>}
@@ -57,7 +57,7 @@ export default function PrintSheet({ material: m, set, school, nameOf }: { mater
           <div key={s.key} style={{ marginBottom: 10 }}>
             {(s.label || s.who) && <b>{s.label ?? s.who}</b>}
             {s.list.map((it, k) => (
-              <div className="pq" key={it.id}>{k + 1}. {isChoice(it.qtype) && typeof it.answer === 'number' ? `(${LETTERS[it.answer]}) ` : it.qtype === 'numerical' && it.value !== null && it.value !== undefined ? `${it.value}${it.unit ? ` ${it.unit}` : ''}. ` : ''}{it.scheme}<BankFigures figs={it.schemeFigures} label="Figure from the marking scheme" /></div>
+              <div className="pq" key={it.id}>{k + 1}. {isChoice(it.qtype) && typeof it.answer === 'number' ? `(${LETTERS[it.answer]}) ` : it.qtype === 'numerical' && it.value !== null && it.value !== undefined ? `${it.value}${it.unit ? ` ${it.unit}` : ''}. ` : ''}{it.scheme}<BankFigures figs={it.schemeFigures} label="Figure from the marking scheme" eager /></div>
             ))}
           </div>
         ))}

@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { equationText, parseFormula, pretty, solveReaction, type ReactionParams } from '@/lib/lab/engines/reactions';
 import { ATOM_COLOUR } from '@/lib/lab/molecules';
 import { BENCHES } from '@/lib/lab/benches';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
+import { use3d } from './use3d';
 import { useRun } from './useRun';
 
 const W = 1000, H = 480;
@@ -92,16 +93,9 @@ const LEVELS: { value: Level; label: string }[] = [{ value: 'bench', label: 'Ben
  * draw it; the diagram is what prints.
  */
 export default function ReactionsView(props: ViewProps<ReactionParams>) {
-  const box = useRef<HTMLDivElement>(null);
-  const [can3d, setCan3d] = useState(false);
+  const { box, can3d, fail } = use3d();
   // What the teacher chose; null = the richest level this reaction has.
   const [chosen, setChosen] = useState<Level | null>(null);
-  const fail = useCallback(() => setCan3d(false), []);
-  useEffect(() => {
-    const el = box.current;
-    // Small cards and printed sheets keep the diagram.
-    if (el && !el.closest('.lab-print') && el.clientWidth >= 480) setCan3d(true);
-  }, []);
   const hasBench = props.params.reaction in BENCHES;
   const level: Level = !can3d ? 'flat' : chosen === 'bench' && !hasBench ? 'particles' : chosen ?? (hasBench ? 'bench' : 'particles');
   return (

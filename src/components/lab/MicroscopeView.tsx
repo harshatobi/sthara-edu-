@@ -1,9 +1,14 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { optics, SLIDES, suits, type MicroscopeParams, type SlideKey } from '@/lib/lab/engines/microscope';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
+import { use3d } from './use3d';
+
+// The 3D microscope and its library load only when it is shown.
+const Microscope3D = dynamic(() => import('./Microscope3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 const W = 1000, H = 480;
 const R = 200; // field radius, px
@@ -17,7 +22,7 @@ const ns = { vectorEffect: 'non-scaling-stroke' as const };
  * are drawn once at the centre. Colours follow the usual stains: safranin
  * pink-red for plant walls, methylene blue for cheek cells.
  */
-function tile(slide: SlideKey): { w: number; h: number; body: ReactNode } | null {
+export function tile(slide: SlideKey): { w: number; h: number; body: ReactNode } | null {
   switch (slide) {
     case 'onion':
       return {
@@ -144,7 +149,7 @@ function tile(slide: SlideKey): { w: number; h: number; body: ReactNode } | null
 }
 
 /** Organisms drawn once, centred, in micrometres. */
-function organism(slide: SlideKey): ReactNode {
+export function organism(slide: SlideKey): ReactNode {
   if (slide === 'amoeba') {
     const cell = (x: number, stage: 0 | 1 | 2) => (
       <g transform={`translate(${x} 0)`}>
@@ -194,7 +199,7 @@ function organism(slide: SlideKey): ReactNode {
 }
 
 /** The eyepiece view: a round field, the slide at true scale for this objective, and the optics beside it. */
-export default function MicroscopeView({ params: p, conceal }: ViewProps<MicroscopeParams>) {
+function MicroscopeDiagram({ params: p, conceal }: ViewProps<MicroscopeParams>) {
   const id = useId().replace(/:/g, '');
   const o = optics(p), s = SLIDES[p.slide];
   const pxPerUm = (2 * R) / (o.fov * 1000);
@@ -231,5 +236,27 @@ export default function MicroscopeView({ params: p, conceal }: ViewProps<Microsc
         </div>
       </foreignObject>
     </svg>
+  );
+}
+
+/**
+ * The microscope in 3D (focus it, turn the nosepiece, move the slide) where
+ * there is room and the browser can draw it; the flat eyepiece view with its
+ * list of features is one tap away and is what prints.
+ */
+export default function MicroscopeView(props: ViewProps<MicroscopeParams>) {
+  const { box, can3d, fail } = use3d(640);
+  const [flat, setFlat] = useState(false);
+  const in3d = can3d && !flat;
+  return (
+    <div ref={box} className="lab-3d-wrap">
+      {can3d && (
+        <div className="lab-3d-switch" role="radiogroup" aria-label="How the microscope is shown">
+          <button type="button" role="radio" aria-checked={in3d} className={in3d ? 'on' : ''} onClick={() => setFlat(false)}>3D</button>
+          <button type="button" role="radio" aria-checked={!in3d} className={in3d ? '' : 'on'} onClick={() => setFlat(true)}>Diagram</button>
+        </div>
+      )}
+      {in3d ? <Microscope3D {...props} onFail={fail} /> : <MicroscopeDiagram {...props} />}
+    </div>
   );
 }

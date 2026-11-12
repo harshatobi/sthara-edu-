@@ -1,15 +1,23 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { combined, solveBench, type BenchParams, type BenchSolution } from '@/lib/lab/engines/lensBench';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
 import { useRun } from './useRun';
+import With3D from './With3D';
+
+const LensBench3D = dynamic(() => import('./LensBench3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 const W = 1000, H = 480;
 const AXIS = 250;
 
 /** The bench seen from the side: needles, the mirror or lens, and two rays that locate the image. */
-export default function LensBenchView({ params: p, conceal, runKey }: ViewProps<BenchParams>) {
+export default function LensBenchView(props: ViewProps<BenchParams>) {
+  return <With3D label="How the bench is shown" solid={fail => <LensBench3D {...props} onFail={fail} />} flat={<LensBenchDiagram {...props} />} />;
+}
+
+function LensBenchDiagram({ params: p, conceal, runKey }: ViewProps<BenchParams>) {
   const k = useRun(runKey, conceal, 1800);
   const s = solveBench(p) as Required<BenchSolution>;
   const mirror = p.device === 'concave-mirror' || p.device === 'convex-mirror';

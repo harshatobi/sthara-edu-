@@ -165,6 +165,18 @@ export function makeArrow(stage: Stage, parent: THREE.Object3D, colour: string, 
   };
 }
 
+/** A straight rod between two points that can be moved every frame: a ray of light, a wire. */
+export function makeRod(stage: Stage, parent: THREE.Object3D, colour: string, thick = 0.03, opacity = 1) {
+  const shape = stage.G(new THREE.CylinderGeometry(thick, thick, 1, 8)); shape.translate(0, 0.5, 0);
+  const rod = new THREE.Mesh(shape, stage.M(new THREE.MeshBasicMaterial({ color: colour, transparent: opacity < 1, opacity })));
+  parent.add(rod);
+  const d = new THREE.Vector3();
+  return {
+    rod,
+    set: (from: THREE.Vector3, to: THREE.Vector3) => { d.subVectors(to, from); const len = d.length(); rod.position.copy(from); rod.scale.y = Math.max(len, 0.0001); rod.quaternion.setFromUnitVectors(UP, d.divideScalar(len || 1)); },
+  };
+}
+
 /** Dots moving along a path, to show which way something flows; a negative speed runs them backwards. */
 export function makeFlow(stage: Stage, parent: THREE.Object3D, path: THREE.Curve<THREE.Vector3>, count: number, colour: string, size: number) {
   const dots = new THREE.InstancedMesh(stage.G(new THREE.SphereGeometry(1, 12, 10)), stage.M(new THREE.MeshBasicMaterial({ color: colour })), count);

@@ -97,6 +97,7 @@
 
 /* 3D physics scenes: labels on the apparatus and buttons for set views */
 .lab-3d-tag { font-size:clamp(11px,1.35cqw,15px); box-shadow:0 1px 3px rgba(0,33,71,.2); transition:opacity .15s; }
+.lab-3d-mini { border:1px solid #CBD5E1; background:#fff; border-radius:999px; padding:2px 10px; font:700 11px 'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; cursor:pointer; text-transform:none; letter-spacing:0; }
 .lab-3d-looks { position:absolute; left:12px; top:10px; display:flex; gap:6px; }
 .lab-3d-looks button { border:0; border-radius:999px; padding:5px 12px; background:rgba(255,255,255,.88); font:700 12px 'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; cursor:pointer; box-shadow:0 1px 3px rgba(0,33,71,.18); }
 

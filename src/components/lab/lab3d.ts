@@ -43,8 +43,8 @@ export interface Stage {
   onFrame: (fn: (t: number, dt: number) => void) => void;
   /** Puts an HTML label over a point of the scene; null text hides it. */
   tag: (node: HTMLElement | null, at: THREE.Vector3, text: string | null) => void;
-  /** Swings the camera round to look from this direction. */
-  view: (from: Vec3) => void;
+  /** Swings the camera round to look from this direction, and optionally moves in on another point and size. */
+  view: (from: Vec3, at?: { target: Vec3; span: number }) => void;
   dispose: () => void;
 }
 
@@ -85,13 +85,15 @@ export function createStage(el: HTMLElement, o: StageOptions): Stage | null {
   controls.enablePan = false; controls.enableZoom = false; controls.enableDamping = true; controls.rotateSpeed = 0.6;
   controls.minPolarAngle = Math.PI * (o.tip?.[0] ?? 0.08); controls.maxPolarAngle = Math.PI * (o.tip?.[1] ?? 0.92);
 
+  // How much the camera takes in: the whole apparatus, or less when the class moves in on a scale.
+  let span = o.span;
+  const reachOf = () => { const t = Math.tan((camera.fov * Math.PI) / 360); return Math.max(span / t, (span * (o.wide ?? 1.4)) / (t * camera.aspect)); };
   const fit = () => {
     const w = el.clientWidth, h = el.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    const t = Math.tan((camera.fov * Math.PI) / 360), d = Math.max(o.span / t, (o.span * (o.wide ?? 1.4)) / (t * camera.aspect));
-    camera.position.sub(target).setLength(d).add(target);
+    camera.position.sub(target).setLength(reachOf()).add(target);
     camera.updateProjectionMatrix();
   };
   fit();
@@ -99,7 +101,7 @@ export function createStage(el: HTMLElement, o: StageOptions): Stage | null {
   ro.observe(el);
 
   // A view the class asked for: the camera eases round to it until they take hold again.
-  let wanted: THREE.Vector3 | null = null;
+  let wanted: THREE.Vector3 | null = null, wantedAt: { target: THREE.Vector3; span: number } | null = null;
   const letGo = () => { wanted = null; };
   controls.addEventListener('start', letGo);
 
@@ -110,11 +112,16 @@ export function createStage(el: HTMLElement, o: StageOptions): Stage | null {
     raf = requestAnimationFrame(loop);
     // Paced by the clock, not the frame count, so a slow machine keeps time.
     const dt = Math.min(0.25, last ? (now - last) / 1000 : 0.016); last = now;
-    if (wanted) {
-      const d = camera.position.distanceTo(target);
-      dirNow.copy(camera.position).sub(target).normalize().lerp(wanted, 1 - Math.exp(-dt * 6)).normalize();
-      camera.position.copy(target).addScaledVector(dirNow, d);
-      if (dirNow.distanceTo(wanted) < 0.002) wanted = null;
+    if (wanted || wantedAt) {
+      const ease = 1 - Math.exp(-dt * 6);
+      dirNow.copy(camera.position).sub(target).normalize();
+      if (wanted) { dirNow.lerp(wanted, ease).normalize(); if (dirNow.distanceTo(wanted) < 0.002) wanted = null; }
+      if (wantedAt) {
+        target.lerp(wantedAt.target, ease); span += (wantedAt.span - span) * ease;
+        if (target.distanceTo(wantedAt.target) < 0.002 && Math.abs(span - wantedAt.span) < 0.002) wantedAt = null;
+        controls.target.copy(target);
+      }
+      camera.position.copy(target).addScaledVector(dirNow, reachOf());
     }
     for (const f of frames) f(now / 1000, dt);
     controls.update();
@@ -135,7 +142,7 @@ export function createStage(el: HTMLElement, o: StageOptions): Stage | null {
       node.style.transform = `translate(-50%, -50%) translate(${((spot.x + 1) / 2) * el.clientWidth}px, ${((1 - spot.y) / 2) * el.clientHeight}px)`;
       node.style.opacity = spot.z < 1 ? '1' : '0';
     },
-    view: from => { wanted = new THREE.Vector3(...from).normalize(); },
+    view: (from, at) => { wanted = new THREE.Vector3(...from).normalize(); if (at) wantedAt = { target: new THREE.Vector3(...at.target), span: at.span }; },
     dispose: () => {
       cancelAnimationFrame(raf); ro.disconnect(); controls.removeEventListener('start', letGo); controls.dispose();
       for (const x of keep) x.dispose();
@@ -163,6 +170,17 @@ export function makeArrow(stage: Stage, parent: THREE.Object3D, colour: string, 
       shaft.scale.y = len - headLen; head.position.y = len - headLen;
     },
   };
+}
+
+/** Words or a number painted on a small flat plate, for scales engraved on an instrument. `height` is in scene units. */
+export function makeText(stage: Stage, text: string, height: number, colour = '#0F172A') {
+  const c = document.createElement('canvas'), px = 96, ctx = c.getContext('2d')!;
+  ctx.font = `700 ${px}px 'Plus Jakarta Sans', system-ui, sans-serif`;
+  c.width = Math.ceil(ctx.measureText(text).width) + 16; c.height = px + 24;
+  ctx.font = `700 ${px}px 'Plus Jakarta Sans', system-ui, sans-serif`; ctx.fillStyle = colour; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, c.width / 2, c.height / 2 + 4);
+  const map = stage.M(new THREE.CanvasTexture(c)); map.anisotropy = 8;
+  return new THREE.Mesh(stage.G(new THREE.PlaneGeometry((height * c.width) / c.height, height)), stage.M(new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false })));
 }
 
 /** A straight rod between two points that can be moved every frame: a ray of light, a wire. */

@@ -1,9 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { neutralPoint, SEP, type EfieldParams } from '@/lib/lab/engines/efield';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
+import With3D from './With3D';
+
+const Efield3D = dynamic(() => import('./Efield3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 const W = 1000, H = 480;
 const PX = 18; // px per cm
@@ -11,7 +15,11 @@ const PX = 18; // px per cm
 type Charge = { x: number; y: number; q: number };
 
 /** Field lines traced from the positive charges (step along E), and equipotentials as contour rings. */
-export default function EfieldView({ params: p, conceal }: ViewProps<EfieldParams>) {
+export default function EfieldView(props: ViewProps<EfieldParams>) {
+  return <With3D label="How the field is shown" solid={fail => <Efield3D {...props} onFail={fail} />} flat={<EfieldDiagram {...props} />} />;
+}
+
+function EfieldDiagram({ params: p, conceal }: ViewProps<EfieldParams>) {
   const charges: Charge[] = useMemo(() => {
     if (p.setup === 'single') return [{ x: 300, y: 240, q: p.q }];
     if (p.setup === 'dipole') return [{ x: 500 - (SEP / 2) * PX, y: 240, q: p.q }, { x: 500 + (SEP / 2) * PX, y: 240, q: -p.q }];

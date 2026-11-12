@@ -8,7 +8,7 @@ import { useLabParams } from '@/components/lab/useLabParams';
 import '@/styles/canon.css';
 import '@/styles/lab.css';
 
-const PROTOTYPES = ['reactions', 'microscope'];
+const PROTOTYPES = ['reactions', 'microscope', 'magnetism', 'emi'];
 
 /** A 3D prototype as the builder and the presenter show it (?e=reactions or ?e=microscope), with a switch for "the class is predicting". */
 export default function Preview() {

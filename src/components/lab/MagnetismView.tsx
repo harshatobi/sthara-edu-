@@ -1,15 +1,25 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { deflection, motorForce, solenoidPoles, wireField, type MagParams } from '@/lib/lab/engines/magnetism';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
 import { useRun } from './useRun';
+import With3D from './With3D';
+
+// The 3D scenes and their library load only when they are shown.
+const Magnetism3D = dynamic(() => import('./Magnetism3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 const W = 1000, H = 480;
 /** Trig differs in the last digits between server and browser; rounded coordinates hydrate cleanly. */
 const q = (n: number) => Math.round(n * 100) / 100;
 
+/** In 3D where there is room (these are lessons about three directions at right angles), with the flat diagram one tap away. */
 export default function MagnetismView(props: ViewProps<MagParams>) {
+  return <With3D label="How the experiment is shown" solid={fail => <Magnetism3D {...props} onFail={fail} />} flat={<MagnetismDiagram {...props} />} />;
+}
+
+function MagnetismDiagram(props: ViewProps<MagParams>) {
   const s = props.params.scenario;
   return s === 'wire' ? <Wire {...props} /> : s === 'solenoid' ? <Solenoid {...props} /> : s === 'motor' ? <Motor {...props} /> : <Induction {...props} />;
 }

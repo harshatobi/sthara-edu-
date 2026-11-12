@@ -1,14 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { circle, PARTICLES, selectorSpeed, type LorentzParams } from '@/lib/lab/engines/lorentz';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
 import { useRun } from './useRun';
+import With3D from './With3D';
+
+const Lorentz3D = dynamic(() => import('./Lorentz3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 const W = 1000, H = 480;
 
 /** The field region (crosses: B into the page), and the particle's path drawn as it moves. */
-export default function LorentzView({ params: p, conceal, runKey }: ViewProps<LorentzParams>) {
+export default function LorentzView(props: ViewProps<LorentzParams>) {
+  return <With3D label="How the experiment is shown" solid={fail => <Lorentz3D {...props} onFail={fail} />} flat={<LorentzDiagram {...props} />} />;
+}
+
+function LorentzDiagram({ params: p, conceal, runKey }: ViewProps<LorentzParams>) {
   const k = useRun(runKey, conceal, 3000);
   const s = PARTICLES[p.particle];
   const x0 = 400, y0 = PARTICLES[p.particle].q > 0 ? 420 : 60, fx = 200, fy = 40, fw = 760, fh = 420;

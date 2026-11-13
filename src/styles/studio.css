@@ -153,6 +153,8 @@
 .sd-present .q li b { color:var(--role-soft, #79DFC6); }
 .sd-present .q .ans { font-size:clamp(18px, 1.8vw, 26px); color:#C8D6E6; }
 .sd-present .timer { font-family:'IBM Plex Mono',monospace; font-size:22px; }
+.sd-present .q li .hands { width:84px; font-size:clamp(18px, 2vw, 28px); border-radius:10px; border:2px solid rgba(255,255,255,.4); background:rgba(255,255,255,.08); color:#fff; text-align:center; padding:2px 6px; font-family:'IBM Plex Mono',monospace; }
+.sd-present .q li .hands:focus-visible { outline:3px solid #79DFC6; outline-offset:2px; }
 
 /* Print: one sheet per version, then the answer key */
 .sd-print { display:none; }
@@ -174,6 +176,30 @@
   .sd-print .key h2 { font-size:14pt; }
 }
 
+/* After marking (PR B) */
+.canon .sd-bar { display:block; height:6px; border-radius:4px; background:#EEF2F7; margin-top:4px; overflow:hidden; min-width:48px; }
+.canon .sd-bar > i { display:block; height:100%; background:var(--role-deep); border-radius:4px; }
+.canon .sd-an td:first-child { width:34px; color:var(--sd-mut); font-weight:800; vertical-align:top; padding-top:12px; }
+.canon .sd-an td:nth-child(3), .canon .sd-an td:nth-child(4) { width:120px; vertical-align:top; }
+.canon .sd-an tr.needs td:first-child { box-shadow:inset 3px 0 0 #B45309; }
+.canon .sd-an-q { display:flex; gap:6px; align-items:flex-start; text-align:left; font-size:14px; line-height:1.45; color:inherit; }
+.canon .sd-an-q svg { margin-top:4px; flex:none; color:var(--sd-mut); }
+.canon .sd-an-q:focus-visible { outline:2px solid var(--role-deep); outline-offset:2px; border-radius:6px; }
+.canon .sd-an-x td { border-top:0; padding-top:0; }
+.canon .sd-picks { display:flex; flex-direction:column; gap:5px; margin:2px 0 10px; }
+.canon .sd-picks > div { display:grid; grid-template-columns:22px minmax(0, 1fr) 110px 28px; gap:8px; align-items:center; font-size:13.5px; padding:4px 6px; border-radius:8px; }
+.canon .sd-picks .l { font-weight:800; color:var(--sd-mut); } .canon .sd-picks .n { text-align:right; font-weight:700; }
+.canon .sd-picks .right { background:#E7F6EF; } .canon .sd-picks .right .sd-bar > i { background:#0F7A55; }
+.canon .sd-picks .wrong { background:#FEF3E2; } .canon .sd-picks .wrong .sd-bar > i { background:#B45309; }
+.canon .sd-mis { display:flex; gap:10px; background:var(--ai-wash); color:var(--ai-ink); border-radius:12px; padding:10px 12px; font-size:13.5px; line-height:1.5; margin-bottom:8px; }
+.canon .sd-mis p { margin-top:3px; color:#3A2530; }
+.canon .sd-flagline { display:flex; gap:6px; align-items:center; font-size:13px; font-weight:700; color:#B45309; margin-top:4px; }
+.canon .sd-steps { margin:8px 0 0 18px; display:flex; flex-direction:column; gap:7px; font-size:13.5px; line-height:1.5; }
+.canon .sd-who { display:flex; flex-direction:column; gap:2px; margin-top:8px; max-height:280px; overflow:auto; }
+.canon .sd-who label { display:flex; gap:8px; align-items:flex-start; padding:6px 4px; border-radius:8px; font-size:14px; font-weight:600; }
+.canon .sd-who label:hover { background:var(--sd-w6); } .canon .sd-who small { display:block; font-size:12.5px; font-weight:500; color:var(--sd-mut); }
+.canon .sd-who input { margin-top:3px; }
+
 @media (max-width:1180px) { .canon .sd-tools { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 @media (max-width:1024px) { .canon .sd-two, .canon .sd-setup, .canon .sd-ws { grid-template-columns:1fr; } .canon .sd-rail { position:static; } .canon .sd-tiles { grid-template-columns:1fr 1fr; } }
 @media (max-width:640px) {
@@ -181,6 +207,8 @@
   .canon .sd-q .op, .canon .sd-pick { grid-template-columns:1fr; }
   .canon .sd-ri { grid-template-columns:36px minmax(0, 1fr); } .canon .sd-ri > :last-child { grid-column:2; }
   .canon .sd-tbl th:nth-child(3), .canon .sd-tbl td:nth-child(3) { display:none; }
+  .canon .sd-an th:nth-child(3), .canon .sd-an td:nth-child(3) { display:table-cell; } .canon .sd-an th:nth-child(4), .canon .sd-an td:nth-child(4) { display:none; }
+  .canon .sd-picks > div { grid-template-columns:22px minmax(0, 1fr) 28px; } .canon .sd-picks .sd-bar { display:none; }
   .canon .sd-bp td:first-child { white-space:normal; }
   .sd-present .q ol { grid-template-columns:1fr; }
 }

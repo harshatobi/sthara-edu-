@@ -20,9 +20,11 @@ import SetupView from './SetupView';
 import Workspace from './Workspace';
 import LibraryView from './LibraryView';
 import AccessNeedsPanel from './AccessNeedsPanel';
+import AnalysisView from './AnalysisView';
+import RetentionPanel from './RetentionPanel';
 
 type Tab = 'make' | 'mine' | 'department' | 'ask';
-type Screen = { kind: 'home' } | { kind: 'setup'; preset: SetupPreset | null; key: number } | { kind: 'material'; id: string };
+type Screen = { kind: 'home' } | { kind: 'setup'; preset: SetupPreset | null; key: number } | { kind: 'material'; id: string } | { kind: 'analysis'; assignmentId: string };
 
 const PREFS = 'sthara.studio.prefs';
 function loadPrefs(): { large: boolean; contrast: boolean; language: string } {
@@ -46,6 +48,7 @@ export default function Studio() {
   const [homeError, setHomeError] = useState<string | null>(null);
   const [needsOpen, setNeedsOpen] = useState(false);
   const [askStart, setAskStart] = useState<AskStart | null>(null);
+  const [retentionId, setRetentionId] = useState<string | null>(null);
   // Rendered in the browser only (it waits for the teacher's desk), so local preferences can be read up front.
   const [prefs, setPrefs] = useState(() => (typeof window === 'undefined' ? { large: false, contrast: false, language: 'en' } : loadPrefs()));
   const setPref = (p: Partial<typeof prefs>) => setPrefs(cur => { const next = { ...cur, ...p }; try { localStorage.setItem(PREFS, JSON.stringify(next)); } catch { /* a convenience only */ } return next; });
@@ -68,10 +71,13 @@ export default function Studio() {
   const setup = (preset: SetupPreset | null) => { setTab('make'); setScreen({ kind: 'setup', preset, key: Date.now() }); toTop(); };
   const ask = (kind: AskStart['kind'], preset: AskStart['preset'] = null) => { setAskStart({ kind, preset, key: Date.now() }); setTab('ask'); toTop(); };
   const open = (id: string) => { setTab('make'); setScreen({ kind: 'material', id }); toTop(); };
+  const analysis = (assignmentId: string) => { setTab('make'); setScreen({ kind: 'analysis', assignmentId }); toTop(); };
 
   function onReady(r: ReadyItem) {
     const p = r.preset;
     if (p.tool === 'open' && p.materialId) return open(p.materialId);
+    if (p.tool === 'analysis' && p.assignmentId) return analysis(p.assignmentId);
+    if (p.tool === 'retention' && p.followupId) return setRetentionId(p.followupId);
     if (p.tool === 'parent_note') return ask('parent_note', { student: p.studentId });
     setup({ setKind: p.setKind, chapter: p.chapter, audience: p.audience, students: p.students, lessonId: p.lessonId, basis: r.detail });
   }
@@ -129,6 +135,7 @@ export default function Studio() {
       </div>
 
       {needsOpen && <AccessNeedsPanel cls={cls} onClose={() => setNeedsOpen(false)} onToast={toast} />}
+      {retentionId && tab === 'make' && screen.kind === 'home' && <RetentionPanel id={retentionId} onClose={() => setRetentionId(null)} onChanged={m => { toast(m); setRetentionId(null); loadHome(); }} />}
 
       {tab === 'make' && screen.kind !== 'home' && (
         <button className="btn sm" style={{ marginBottom: 10 }} onClick={() => { setScreen({ kind: 'home' }); loadHome(); }}><ArrowLeft size={13} weight="bold" /> Studio</button>
@@ -146,8 +153,9 @@ export default function Studio() {
             setScreen({ kind: 'material', id: m.id });
           }} />
       )}
-      {tab === 'make' && screen.kind === 'material' && <Workspace key={screen.id} id={screen.id} students={students} home={home} onBack={() => setScreen({ kind: 'home' })} onToast={toast} />}
-      {tab === 'mine' && <LibraryView view="mine" cls={cls} subject={subject} onOpen={open} />}
+      {tab === 'make' && screen.kind === 'material' && <Workspace key={screen.id} id={screen.id} students={students} home={home} onBack={() => setScreen({ kind: 'home' })} onToast={toast} onAnalysis={analysis} />}
+      {tab === 'make' && screen.kind === 'analysis' && <AnalysisView key={screen.assignmentId} assignmentId={screen.assignmentId} onRetest={p => setup(p)} onOpenMaterial={open} onToast={toast} />}
+      {tab === 'mine' && <LibraryView view="mine" cls={cls} subject={subject} onOpen={open} onAnalysis={analysis} />}
       {tab === 'department' && <LibraryView view="department" cls={cls} subject={subject} onOpen={open} />}
       {tab === 'ask' && <Copilot embedded start={askStart} onQuestionSet={p => setup({ ...p })} />}
       {toastEl}

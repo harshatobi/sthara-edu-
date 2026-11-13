@@ -95,11 +95,11 @@ export function week(input: {
   return out;
 }
 
-export type ReadyKind = 'catchup' | 'lesson' | 'parent_note' | 'draft' | 'test';
+export type ReadyKind = 'catchup' | 'lesson' | 'parent_note' | 'draft' | 'test' | 'marked' | 'retention';
 export interface ReadyItem {
   id: string; kind: ReadyKind; title: string; detail: string;
   /** What opening it sets up (the Studio opens with these values; nothing is generated until the teacher says so). */
-  preset: { tool: 'questions' | 'lesson' | 'parent_note' | 'open'; setKind?: string; chapter?: string; audience?: string; students?: string[]; materialId?: string; lessonId?: string; studentId?: string };
+  preset: { tool: 'questions' | 'lesson' | 'parent_note' | 'open' | 'analysis' | 'retention'; setKind?: string; chapter?: string; audience?: string; students?: string[]; materialId?: string; lessonId?: string; studentId?: string; assignmentId?: string; followupId?: string };
 }
 
 /** The handful of things most worth doing for this class this week, most useful first. */
@@ -110,9 +110,21 @@ export function readyFor(input: {
   drafts: { id: string; title: string; updated_at: string }[];
   nextExam: { title: string; starts_on: string } | null;
   today: string;
+  /** Recently due Studio work with marks in: worth a look at how it went. */
+  marked?: { assignmentId: string; title: string; handedIn: number } | null;
+  /** Retention checks coming up in the next few days, or ones the bank couldn't supply. */
+  retention?: { id: string; chapter: string; due_on: string; status: string }[];
 }): ReadyItem[] {
   const out: ReadyItem[] = [];
   const s = input.standing;
+  if (input.marked) {
+    out.push({ id: `marked-${input.marked.assignmentId}`, kind: 'marked', title: `How ${input.marked.title} went`, detail: `${input.marked.handedIn} handed in. Question by question, the wrong answers that were popular, and who needs the retest.`, preset: { tool: 'analysis', assignmentId: input.marked.assignmentId } });
+  }
+  for (const r of (input.retention ?? []).slice(0, 1)) {
+    out.push(r.status === 'failed'
+      ? { id: `ret-${r.id}`, kind: 'retention', title: `Retention check on ${r.chapter}`, detail: 'Due now, but the bank has too few quick questions on these topics. Make a short quiz instead.', preset: { tool: 'questions', setKind: 'quiz', chapter: r.chapter, audience: 'class' } }
+      : { id: `ret-${r.id}`, kind: 'retention', title: `Retention check: ${r.chapter}`, detail: `Goes out ${r.due_on === input.today ? 'today' : r.due_on === addDays(input.today, 1) ? 'tomorrow' : `on ${r.due_on}`} on its own: a few quick questions, marked instantly. Skip or move it if the timing is wrong.`, preset: { tool: 'retention', followupId: r.id } });
+  }
   if (s.lowest && s.lowest.score < 60) {
     const who = s.belowForty.length;
     out.push({
@@ -137,5 +149,5 @@ export function readyFor(input: {
   for (const d of input.drafts.slice(0, 1)) {
     out.push({ id: `draft-${d.id}`, kind: 'draft', title: `Finish: ${d.title}`, detail: 'A draft you started. Check it and hand it out.', preset: { tool: 'open', materialId: d.id } });
   }
-  return out.slice(0, 4);
+  return out.slice(0, 5);
 }

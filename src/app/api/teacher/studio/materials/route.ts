@@ -9,6 +9,7 @@ import { sanitizeQuestions, totalMarks } from '@/lib/teacher/questions';
 import { blocking, parseNeeds, parseQuestionSet } from '@/lib/studio/items';
 import { forStudent, toQuestion } from '@/lib/studio/handout';
 import { saveToBank } from '@/lib/studio/server';
+import { scheduleRetention } from '@/lib/studio/after';
 import { MATERIAL_COLS, accessNeeds, isSubjectLead, loadMaterial, moderationOf, needsApproval, saveVersion } from '@/lib/studio/materials';
 import type { QuestionSetContent, StudioItem } from '@/lib/studio/types';
 import { isLanguage } from '@/lib/studio/languages';
@@ -262,6 +263,11 @@ async function assign(staff: Staff, db: any, m: any, set: QuestionSetContent, b:
   if (useRows.length) await db.from('bank_item_uses').insert(useRows);
 
   const material = await saveVersion(db, staff, m, withBankIds(set, banked), 'Assigned', { status: 'assigned', assignment_ids: [...(m.assignment_ids || []), a.id] });
+  // About 17 days after it's due, a few quick questions check it has stayed (the teacher can skip or move it).
+  await scheduleRetention(db, {
+    schoolId: staff.schoolId, teacherId: staff.id, assignmentId: a.id, materialId: m.id, cls: m.class, subject,
+    chapterKey: m.chapter_key, chapterName: m.chapter_name, topics: set.topics, studentIds: targets, due,
+  });
   return NextResponse.json({ material, assignmentId: a.id, students: own.length || roster.length });
 }
 

@@ -39,7 +39,12 @@ export interface ItemCheck {
 }
 
 /** How a bank item has done with real students (this school's results in PR A; pooled across schools in PR B). */
-export interface ItemStats { attempts: number; correct: number; schools: number }
+/**
+ * How a bank question has gone. Sthara's items are pooled across schools (counts only: `pooled`), a school's own
+ * items count that school's answers only. `discrimination` (-1..1) is how well it separates students who know the
+ * work from those who don't; `hands` are present-mode tallies (class-level).
+ */
+export interface ItemStats { attempts: number; correct: number; schools: number; pooled?: boolean; discrimination?: number | null; handsTotal?: number; handsCorrect?: number }
 
 export interface StudioItem {
   /** Stable within a material (a uuid). */

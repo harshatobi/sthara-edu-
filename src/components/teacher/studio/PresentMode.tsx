@@ -7,6 +7,7 @@ import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/Arrow
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { EyeIcon as Eye } from '@phosphor-icons/react/dist/ssr/Eye';
 import { TimerIcon as Timer } from '@phosphor-icons/react/dist/ssr/Timer';
+import { HandPalmIcon as HandPalm } from '@phosphor-icons/react/dist/ssr/HandPalm';
 import { isChoice, type StudioItem } from '@/lib/studio/types';
 import { LETTERS } from '@/lib/studio/handout';
 import { isRtl } from '@/lib/studio/languages';
@@ -14,16 +15,32 @@ import BankFigures from '@/components/studio/BankFigures';
 
 /**
  * The set on the projector, one question at a time: big text, a timer, and the answer revealed when the teacher
- * chooses. Keyboard: arrows move, space reveals, Escape closes. Nothing is recorded (class tallies come in PR B).
+ * chooses. Keyboard: arrows move, space reveals, Escape closes. For a choice question the teacher can count hands
+ * per option (H): the count is class-level evidence for the question, never a mark against any student.
  */
-export default function PresentMode({ title, items, language, onClose }: { title: string; items: StudioItem[]; language: string; onClose: () => void }) {
+export default function PresentMode({ title, items, language, onClose, onCount }: {
+  title: string; items: StudioItem[]; language: string; onClose: () => void;
+  /** Saves a hands count for one question; resolves to a line for the teacher, or throws with the reason. */
+  onCount?: (itemId: string, counts: number[]) => Promise<string>;
+}) {
   const [i, setI] = useState(0);
+  const [counting, setCounting] = useState(false);
+  const [counts, setCounts] = useState<number[]>([]);
+  const [saved, setSaved] = useState<Record<string, string>>({});
+  const [countError, setCountError] = useState<string | null>(null);
   const [shown, setShown] = useState(false);
   const [secs, setSecs] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const it = items[i];
   /** Moving to another question hides the answer and stops the timer. */
-  const goTo = (n: number) => { setI(Math.max(0, Math.min(items.length - 1, n))); setShown(false); setSecs(null); };
+  const goTo = (n: number) => { setI(Math.max(0, Math.min(items.length - 1, n))); setShown(false); setSecs(null); setCounting(false); setCounts([]); setCountError(null); };
+  const canCount = !!onCount && !!it && isChoice(it.qtype) && !!it.options?.length;
+  async function saveCount() {
+    if (!onCount || !it) return;
+    setCountError(null);
+    try { const line = await onCount(it.id, it.options!.map((_, k) => counts[k] ?? 0)); setSaved(x => ({ ...x, [it.id]: line })); setCounting(false); setShown(true); }
+    catch (e: any) { setCountError(e?.message || 'The count couldn’t be saved.'); }
+  }
 
   useEffect(() => { box.current?.focus(); }, []);
   useEffect(() => {
@@ -33,6 +50,9 @@ export default function PresentMode({ title, items, language, onClose }: { title
   }, [secs]);
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
+      // Typing a count: the keys belong to the box.
+      if ((e.target as HTMLElement)?.tagName === 'INPUT') { if (e.key === 'Escape') setCounting(false); return; }
+      if (e.key === 'h' || e.key === 'H') { if (canCount) setCounting(c => !c); return; }
       if (e.key === 'Escape') onClose();
       else if (e.key === 'ArrowRight') goTo(i + 1);
       else if (e.key === 'ArrowLeft') goTo(i - 1);
@@ -58,14 +78,27 @@ export default function PresentMode({ title, items, language, onClose }: { title
         {it.figure?.alt && <p className="ans">Figure: {it.figure.alt}</p>}
         <BankFigures figs={it.figures} scale={1.4} />
         {isChoice(it.qtype) && it.options && (
-          <ol>{it.options.map((o, k) => <li key={k} className={shown && k === it.answer ? 'right' : ''}><b>{LETTERS[k]}</b>{o}</li>)}</ol>
+          <ol>{it.options.map((o, k) => (
+            <li key={k} className={shown && k === it.answer ? 'right' : ''}><b>{LETTERS[k]}</b><span style={{ flex: 1 }}>{o}</span>
+              {counting && <input type="number" min={0} max={500} inputMode="numeric" aria-label={`Hands for ${LETTERS[k]}`} className="hands" value={counts[k] ?? ''}
+                autoFocus={k === 0} onChange={e => setCounts(c => { const n = [...c]; n[k] = Math.max(0, Math.min(500, Number(e.target.value) || 0)); return n; })}
+                onKeyDown={e => { if (e.key === 'Enter') saveCount(); }} />}
+            </li>
+          ))}</ol>
         )}
         {shown && !isChoice(it.qtype) && <p className="ans">{it.qtype === 'numerical' && it.value !== null && it.value !== undefined ? `Answer: ${it.value}${it.unit ? ` ${it.unit}` : ''}. ` : ''}{it.scheme}</p>}
         {shown && isChoice(it.qtype) && it.scheme && <p className="ans">{it.scheme}</p>}
+        {saved[it.id] && <p className="ans" aria-live="polite">{saved[it.id]}</p>}
+        {countError && <p className="ans" role="alert" style={{ color: '#FCA5A5' }}>{countError}</p>}
       </div>
       <div className="bar">
         <button onClick={() => goTo(i - 1)} disabled={i === 0}><ArrowLeft size={18} weight="bold" /> Back</button>
-        <button onClick={() => setShown(s => !s)}><Eye size={18} weight="bold" /> {shown ? 'Hide the answer' : 'Show the answer'}</button>
+        <span style={{ display: 'flex', gap: 8 }}>
+          {canCount && (counting
+            ? <><button onClick={saveCount}><HandPalm size={18} weight="bold" /> Save the count</button><button onClick={() => setCounting(false)}>Cancel</button></>
+            : <button onClick={() => setCounting(true)} aria-keyshortcuts="h"><HandPalm size={18} weight="bold" /> Count hands</button>)}
+          <button onClick={() => setShown(s => !s)}><Eye size={18} weight="bold" /> {shown ? 'Hide the answer' : 'Show the answer'}</button>
+        </span>
         <button onClick={() => goTo(i + 1)} disabled={i === items.length - 1}>Next <ArrowRight size={18} weight="bold" /></button>
       </div>
     </div>,

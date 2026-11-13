@@ -36,7 +36,12 @@ export function parseItem(raw: unknown, defaults: Partial<StudioItem> = {}): Stu
       ...(r.check?.computed ? { computed: true } : {}),
     },
     difficulty: typeof r.difficulty === 'number' && r.difficulty >= 0 && r.difficulty <= 1 ? r.difficulty : null,
-    stats: r.stats && Number.isFinite(r.stats.attempts) ? { attempts: Math.max(0, r.stats.attempts | 0), correct: Math.max(0, r.stats.correct | 0), schools: Math.max(0, r.stats.schools | 0) } : null,
+    stats: r.stats && Number.isFinite(r.stats.attempts) ? {
+      attempts: Math.max(0, r.stats.attempts | 0), correct: Math.max(0, r.stats.correct | 0), schools: Math.max(0, r.stats.schools | 0),
+      pooled: r.stats.pooled === true,
+      discrimination: Number.isFinite(r.stats.discrimination) ? Math.max(-1, Math.min(1, Number(r.stats.discrimination))) : null,
+      handsTotal: Math.max(0, r.stats.handsTotal | 0), handsCorrect: Math.max(0, r.stats.handsCorrect | 0),
+    } : null,
   };
   if (isChoice(qtype)) {
     const options = (Array.isArray(r.options) ? r.options : []).slice(0, 6).map((o: unknown) => s(o, 500).replace(/^\(?[A-F][.)]\s+/, ''));

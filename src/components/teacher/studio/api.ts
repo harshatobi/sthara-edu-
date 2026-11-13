@@ -46,5 +46,5 @@ export interface Material {
 
 /** What the Setup panel opens with: from a "Ready for you" item, a tile, or a tool. */
 export interface SetupPreset {
-  setKind?: string; chapter?: string; audience?: string; students?: string[]; lessonId?: string; basis?: string;
+  setKind?: string; chapter?: string; audience?: string; students?: string[]; lessonId?: string; basis?: string; topics?: string[];
 }

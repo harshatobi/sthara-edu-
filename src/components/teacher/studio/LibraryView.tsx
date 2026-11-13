@@ -9,11 +9,11 @@ import { KIND_LABEL, StatusChip } from './HomeView';
 
 interface Row {
   id: string; teacher: string; teacher_id: string; class: string; subject: string; chapter_name: string | null; kind: string; title: string;
-  status: string; share: string; common_test: boolean; moderation: string; handedIn: number; graded: number; average: number | null; updated_at: string;
+  status: string; share: string; common_test: boolean; moderation: string; handedIn: number; graded: number; average: number | null; updated_at: string; assignment_ids: string[];
 }
 
 /** My materials, or the department's shared ones (with what's waiting for the subject lead). */
-export default function LibraryView({ view, cls, subject, onOpen }: { view: 'mine' | 'department'; cls: string; subject: string; onOpen: (id: string) => void }) {
+export default function LibraryView({ view, cls, subject, onOpen, onAnalysis }: { view: 'mine' | 'department'; cls: string; subject: string; onOpen: (id: string) => void; onAnalysis?: (assignmentId: string) => void }) {
   const api = useStudioApi();
   const [got, setGot] = useState<{ key: string; rows: Row[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +59,10 @@ export default function LibraryView({ view, cls, subject, onOpen }: { view: 'min
                     {r.common_test && <span className="sd-chip">Common test</span>}
                   </td>
                   <td>{r.handedIn ? <>{r.handedIn} handed in{r.average !== null ? <>, average <b className="mono" style={{ display: 'inline' }}>{r.average}%</b></> : ''}</> : <span className="sd-mut">Not used yet</span>}</td>
-                  <td style={{ textAlign: 'right' }}><button className="btn sm" onClick={() => onOpen(r.id)}>Open</button></td>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    {onAnalysis && r.handedIn > 0 && r.assignment_ids?.length > 0 && <button className="btn sm" style={{ marginRight: 6 }} onClick={() => onAnalysis(r.assignment_ids[r.assignment_ids.length - 1])}>How it went</button>}
+                    <button className="btn sm" onClick={() => onOpen(r.id)}>Open</button>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>

@@ -3,11 +3,11 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
-import { normalizeComponentType } from '@/lib/tml/engine';
 import { recomputeTml } from '@/lib/tml/recompute';
 import { studentOnRoster } from '@/lib/grading/server';
 import { CAPTURE_PREFIX, pathBelongs } from '@/lib/grading/handwritten';
 import { withVariant } from '@/lib/studio/variants';
+import { componentOf } from '@/lib/studio/after';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,9 +90,11 @@ export async function POST(req: NextRequest) {
   // Instantly-marked work is evidence now; anything with written answers
   // becomes evidence when the teacher confirms their marks (review-submission).
   if (allMcq) {
+    // A retention check's marks count as retention evidence (Studio follow-ups).
+    const component = await componentOf(supabase, a);
     const { error: itemsErr } = await supabase.from('submission_items').insert(mcq.map(({ i }) => ({
       submission_id: sub.id, assignment_id: assignmentId, student_id: user.id, school_id: me.school_id,
-      question_index: i, component_type: normalizeComponentType(a.type) === 'quiz' ? 'quiz' : 'homework', score: correct(i) ? 1 : 0, max_score: 1, teacher_confirmed: true,
+      question_index: i, component_type: component, score: correct(i) ? 1 : 0, max_score: 1, teacher_confirmed: true,
     })));
     if (itemsErr) console.error('[submit-typed] items insert failed:', itemsErr.message);
   }

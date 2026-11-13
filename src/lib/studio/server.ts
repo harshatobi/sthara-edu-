@@ -25,7 +25,7 @@ import { parseItem } from './items';
 import { readingLevel } from './handout';
 import { languageOf } from './languages';
 import type { Gap } from './pick';
-import { COMPETENCY_LABEL, QTYPE_LABEL, isChoice, type StudioItem } from './types';
+import { COMPETENCY_LABEL, QTYPE_LABEL, isChoice, type ItemStats, type StudioItem } from './types';
 import type { TopicEvidence } from './weak';
 
 export interface StudioCtx {
@@ -56,11 +56,11 @@ export async function loadPool(ctx: Pick<StudioCtx, 'db' | 'schoolId' | 'cls' | 
   return rows.map(r => bankToItem(r, stats.get(r.id))).filter((x): x is StudioItem => !!x);
 }
 
-export function bankToItem(r: any, stats?: { attempts: number; correct: number }): StudioItem | null {
+export function bankToItem(r: any, stats?: ItemStats): StudioItem | null {
   const it = parseItem({ ...r.body, sourceRef: r.source_ref, id: r.id, bankId: r.id, source: 'bank', qtype: r.qtype, competency: r.competency, marks: r.marks, chapterKey: r.chapter_key, topic: r.topic, outcomeCode: r.outcome_code, check: r.checks?.status ? r.checks : { status: 'passed', notes: [] } });
   if (!it) return null;
-  if (stats && stats.attempts > 0) {
-    it.stats = { attempts: stats.attempts, correct: stats.correct, schools: 1 };
+  if (stats && (stats.attempts > 0 || (stats.handsTotal ?? 0) > 0)) {
+    it.stats = stats;
     // Ten answers are enough to trust the measured difficulty over the writer's estimate.
     if (stats.attempts >= 10) it.difficulty = stats.correct / stats.attempts;
   }
@@ -68,27 +68,20 @@ export function bankToItem(r: any, stats?: { attempts: number; correct: number }
 }
 
 /**
- * How this school's students did on each item, from the marks teachers confirmed. A use with a student is that
- * student's own version; a use without one is the whole-class set (students who had their own version excluded).
+ * How each bank item has gone, from the marks teachers confirmed (bank_item_stats in the database): Sthara's items
+ * pooled across every school that used them (counts only), this school's own items from this school only.
  */
-export async function itemStats(db: SupabaseClient, schoolId: string, itemIds: string[]): Promise<Map<string, { attempts: number; correct: number }>> {
-  const out = new Map<string, { attempts: number; correct: number }>();
-  if (!itemIds.length) return out;
-  const { data: uses } = await byIds<any>(itemIds, (chunk, a, b) => db.from('bank_item_uses').select('item_id, assignment_id, student_id, question_index')
-    .in('item_id', chunk).eq('school_id', schoolId).not('assignment_id', 'is', null).order('id').range(a, b));
-  if (!uses.length) return out;
-  const assignmentIds = [...new Set(uses.map(u => u.assignment_id))];
-  const { data: marks } = await byIds<any>(assignmentIds, (chunk, a, b) => db.from('submission_items').select('assignment_id, student_id, question_index, score, max_score')
-    .in('assignment_id', chunk).eq('teacher_confirmed', true).order('id').range(a, b));
-  const own = new Set(uses.filter(u => u.student_id).map(u => `${u.assignment_id}|${u.student_id}`));
-  for (const u of uses) {
-    for (const m of marks) {
-      if (m.assignment_id !== u.assignment_id || m.question_index !== u.question_index) continue;
-      if (u.student_id ? m.student_id !== u.student_id : own.has(`${m.assignment_id}|${m.student_id}`)) continue;
-      const s = out.get(u.item_id) ?? { attempts: 0, correct: 0 };
-      s.attempts++;
-      if (Number(m.max_score) > 0 && Number(m.score) >= Number(m.max_score)) s.correct++;
-      out.set(u.item_id, s);
+export async function itemStats(db: SupabaseClient, schoolId: string, itemIds: string[]): Promise<Map<string, ItemStats>> {
+  const out = new Map<string, ItemStats>();
+  for (let i = 0; i < itemIds.length; i += 500) {
+    const { data, error } = await db.rpc('bank_item_stats', { p_items: itemIds.slice(i, i + 500), p_school: schoolId });
+    if (error) { console.error('[studio stats]', error.message); return out; }
+    for (const r of (data || []) as any[]) {
+      out.set(r.item_id, {
+        attempts: Number(r.attempts) || 0, correct: Number(r.full_marks) || 0, schools: 0, pooled: !!r.pooled,
+        discrimination: r.discrimination === null ? null : Number(r.discrimination),
+        handsTotal: Number(r.hands_total) || 0, handsCorrect: Number(r.hands_correct) || 0,
+      });
     }
   }
   return out;

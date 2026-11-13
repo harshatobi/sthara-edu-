@@ -22,6 +22,7 @@ import { CalendarPlusIcon as CalendarPlus } from '@phosphor-icons/react/dist/ssr
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
 import { ArrowCounterClockwiseIcon as Undo } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
 import { SealCheckIcon as SealCheck } from '@phosphor-icons/react/dist/ssr/SealCheck';
+import { HandPalmIcon as HandPalm } from '@phosphor-icons/react/dist/ssr/HandPalm';
 import { AiTag, Skeleton } from '@/components/canon/ui';
 import type { TStudent } from '@/lib/teacher/desk';
 import { parseItem, parseQuestionSet } from '@/lib/studio/items';
@@ -45,8 +46,8 @@ const CHANGES = [
 ];
 
 /** One material, open for editing and handing out. Every change is saved as a new version and can be undone. */
-export default function Workspace({ id, students, home, onBack, onToast }: {
-  id: string; students: TStudent[]; home: HomeData | null; onBack: () => void; onToast: (m: string) => void;
+export default function Workspace({ id, students, home, onBack, onToast, onAnalysis }: {
+  id: string; students: TStudent[]; home: HomeData | null; onBack: () => void; onToast: (m: string) => void; onAnalysis?: (assignmentId: string) => void;
 }) {
   const api = useStudioApi();
   const [m, setM] = useState<Material | null>(null);
@@ -63,6 +64,13 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
   const [reviewNote, setReviewNote] = useState('');
   const [bankOpen, setBankOpen] = useState(false);
   const [again, setAgain] = useState(false);
+  const [tallies, setTallies] = useState<Record<string, { counts: number[]; answer: number; class: string; at: string }>>({});
+  const [tallyTick, setTallyTick] = useState(0);
+  useEffect(() => {
+    let live = true;
+    api<{ tallies: typeof tallies }>(`/api/teacher/studio/tallies?materialId=${id}`).then(r => { if (live) setTallies(r.tallies); }).catch(() => { /* a help only */ });
+    return () => { live = false; };
+  }, [api, id, tallyTick]);
 
   const [tick, setTick] = useState(0);
   const load = () => setTick(t => t + 1);
@@ -211,7 +219,7 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
                 try { const r = await api<{ item: StudioItem }>('/api/teacher/studio/item', 'POST', { materialId: m.id, itemId: it.id, action: 'edit', item: next }); await replaceItem(r.item); setEditing(null); }
                 catch (e: any) { setError(e?.message); } finally { setBusy(null); }
               }} />
-            : <ItemCard key={it.id} n={i + 1} it={it} first={i === 0} last={i === shown.length - 1} editable={can.edit} busy={busy}
+            : <ItemCard key={it.id} n={i + 1} it={it} first={i === 0} last={i === shown.length - 1} editable={can.edit} busy={busy} hands={tallies[it.id]}
                 onAction={a => itemAction(it, a)} onEdit={() => setEditing(it.id)} onRemove={() => remove(it)} onMove={d => move(it, d)} />)}
           {!shown.length && <p className="sd-mut" style={{ padding: 18, fontSize: 14 }}>No questions here yet.</p>}
         </div>
@@ -248,6 +256,7 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
               <div aria-disabled={!!assignBlock} style={{ flexWrap: 'wrap' }}>
                 <PaperPlaneTilt size={19} weight="duotone" />
                 <span style={{ flex: 1 }}>Assign {set.audience === 'per_student' ? `to ${set.versions.length} students` : `to ${m.class}`}<small>{assignBlock ?? (assigned && !again ? `Already assigned${assigned > 1 ? ` ${assigned} times` : ''}. Hand-ins and marks are in My materials.` : set.handout === 'online' ? 'Answered on Sthara' : 'Handed in on paper, marked from photos')}</small></span>
+                {assigned > 0 && !again && onAnalysis && <button className="btn sm" onClick={() => onAnalysis(m.assignment_ids[m.assignment_ids.length - 1])}>How it went</button>}
                 {!assignBlock && assigned > 0 && !again && <button className="btn sm" onClick={() => setAgain(true)}>Assign again</button>}
                 {!assignBlock && (!assigned || again) && (
                   <span style={{ display: 'flex', gap: 6, width: '100%' }}>
@@ -297,14 +306,19 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
         )}
       </div>
 
-      {present && <PresentMode title={m.title} items={shown} language={m.language} onClose={() => setPresent(false)} />}
+      {present && <PresentMode title={m.title} items={shown} language={m.language} onClose={() => { setPresent(false); setTallyTick(t => t + 1); }}
+        onCount={async (itemId, counts) => {
+          const r = await api<{ total: number; right: number }>('/api/teacher/studio/tallies', 'POST', { materialId: m.id, itemId, counts });
+          return `${r.right} of ${r.total} hands on the right answer. Saved for the class.`;
+        }} />}
       <PrintSheet material={m} set={set} school={home?.school.name ?? ''} nameOf={nameOf} />
     </div>
   );
 }
 
-function ItemCard({ n, it, first, last, editable, busy, onAction, onEdit, onRemove, onMove }: {
+function ItemCard({ n, it, first, last, editable, busy, hands, onAction, onEdit, onRemove, onMove }: {
   n: number; it: StudioItem; first: boolean; last: boolean; editable: boolean; busy: string | null;
+  hands?: { counts: number[]; answer: number; class: string };
   onAction: (a: ItemAction) => void; onEdit: () => void; onRemove: () => void; onMove: (d: -1 | 1) => void;
 }) {
   const flagged = it.check.status === 'flagged';
@@ -333,7 +347,9 @@ function ItemCard({ n, it, first, last, editable, busy, onAction, onEdit, onRemo
           {it.source === 'bank' ? <span className="sd-chip t"><Database size={12} weight="bold" /> Bank</span>
             : it.source === 'teacher' ? <span className="sd-chip"><PencilSimple size={12} weight="bold" /> Yours</span>
               : <span className="sd-chip r"><Sparkle size={12} weight="fill" /> New</span>}
-          {pct !== null && <span className="st">{pct}% got it right ({it.stats!.attempts} answers)</span>}
+          {pct !== null && <span className="st">{pct}% got it right ({it.stats!.attempts} answers{it.stats!.pooled ? ' across schools' : ''})</span>}
+          {it.stats && it.stats.attempts >= 10 && it.stats.discrimination !== null && it.stats.discrimination !== undefined && it.stats.discrimination < 0.15 && <span className="st"><WarningCircle size={13} weight="bold" /> Hardly separates stronger from weaker students</span>}
+          {hands && <span className="st"><HandPalm size={13} weight="bold" /> In {hands.class}: {hands.counts[hands.answer] ?? 0} of {hands.counts.reduce((a, b) => a + b, 0)} hands right</span>}
           {!flagged && it.check.computed && <span className="st"><Calculator size={13} weight="bold" /> Answer worked out separately and matches</span>}
           {!flagged && !it.check.computed && it.check.status !== 'unchecked' && it.check.notes[0] && <span className="st"><CheckCircle size={13} weight="bold" /> {it.check.notes[0]}</span>}
         </div>

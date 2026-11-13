@@ -68,6 +68,8 @@ export const AI_FEATURES = {
   studioWrite:      { label: 'Studio: writing questions and materials', who: 'Teacher' },
   studioCheck:      { label: 'Studio: answer and syllabus checks', who: 'Teacher' },
   studioTranslate:  { label: 'Studio: Indian-language versions', who: 'Teacher' },
+  studioAnalyse:    { label: 'Studio: misconceptions after marking', who: 'Teacher' },
+  studioSheet:      { label: 'Studio: reading bubble sheets from photos', who: 'Teacher' },
   captureGrade:     { label: 'Capture & AI grading', who: 'Teacher' },
   homeworkGrade:    { label: 'Homework photo grading', who: 'Student' },
   adminAi:          { label: 'Admin AI assistant', who: 'Admin' },

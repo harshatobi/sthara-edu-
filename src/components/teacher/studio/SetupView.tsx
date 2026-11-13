@@ -12,6 +12,7 @@ import { assembleClass } from '@/lib/studio/pick';
 import { ACCESS_LABEL, COMPETENCIES, COMPETENCY_LABEL, SET_KIND_LABEL, type AccessNeed, type Audience, type SetKind, type StudioItem } from '@/lib/studio/types';
 import { languageOf } from '@/lib/studio/languages';
 import { designsFor } from '@/lib/papers/designs';
+import { matchTopic } from '@/lib/studio/weak';
 import { useStudioApi, type HomeData, type Material, type SetupPreset } from './api';
 
 const KINDS: SetKind[] = ['worksheet', 'quiz', 'catchup', 'exit_ticket', 'test'];
@@ -30,7 +31,11 @@ export default function SetupView({ cls, subject, home, students, language, pres
   const [kind, setKind] = useState<SetKind>(startKind);
   const [chapter, setChapter] = useState(preset?.chapter && chapters.some(c => c.name === preset.chapter) ? preset.chapter : home?.tiles.lowest?.chapter ?? chapters[0]?.name ?? '');
   const ch = chapters.find(c => c.name === chapter);
-  const [topics, setTopics] = useState<string[]>([]);
+  // A retest from the after-marking screen opens on the topics that were missed (bank wording matched to the syllabus's).
+  const [topics, setTopics] = useState<string[]>(() => {
+    const ch = chapters.find(c => c.name === chapter);
+    return ch && preset?.topics?.length ? [...new Set(preset.topics.map(t => matchTopic(t, ch.topics)).filter((t): t is string => !!t))] : [];
+  });
   const [audience, setAudience] = useState<Audience>((['class', 'per_student', 'abc'] as string[]).includes(preset?.audience ?? '') ? preset!.audience as Audience : startKind === 'test' ? 'abc' : 'class');
   const [picked, setPicked] = useState<string[]>(preset?.students?.length ? preset.students : (home?.tiles.needSupport ?? []).map(s => s.id));
   const [bp, setBp] = useState<Blueprint>(defaultBlueprint(startKind));

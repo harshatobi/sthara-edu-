@@ -48,6 +48,7 @@ export const RATE_LIMITS = {
   studioBuild:     { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/studio/build',    label: 'Studio: build a question set or material' },
   studioItem:      { limit: 80,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/studio/item',     label: 'Studio: change one question' },
   studioWrites:    { limit: 200, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/studio/materials, /api/teacher/bank, /api/teacher/access-needs', label: 'Studio: library, bank and access-needs writes' },
+  studioSheets:    { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/studio/sheets',   label: 'Studio: bubble-sheet photos read' },
   leave:           { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/leave',           label: 'Leave requests' },
   checkin:         { limit: 20,  windowMs: 10 * MIN, per: 'user',    route: '/api/me/attendance',           label: 'Staff check-in from the app' },
   capturePage:     { limit: 300, windowMs: 10 * MIN, per: 'user',    route: '/api/grading/pages',           label: 'Photographed work: page uploads' },
@@ -134,6 +135,9 @@ export const CLAUDE_BY_FEATURE: Partial<Record<AiFeature, ClaudeChoice>> = {
   studioWrite: { model: 'claude-sonnet-5-5', effort: 'low' },
   studioCheck: { model: 'claude-haiku-5-5', effort: 'low' },
   studioTranslate: { model: 'claude-haiku-5-5', effort: 'low' },
+  // After marking: naming the misconception behind a popular wrong answer is light work; reading bubbles from a photo needs care.
+  studioAnalyse: { model: 'claude-haiku-5-5', effort: 'low' },
+  studioSheet: { model: 'claude-sonnet-5-5', effort: 'low' },
 };
 
 /** The Claude model and effort for a call: the feature's own choice for standard work, else the job's. */

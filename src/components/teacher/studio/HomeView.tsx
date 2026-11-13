@@ -13,6 +13,8 @@ import { WarningCircleIcon as WarningCircle } from '@phosphor-icons/react/dist/s
 import { PlusCircleIcon as PlusCircle } from '@phosphor-icons/react/dist/ssr/PlusCircle';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { FileTextIcon as FileText } from '@phosphor-icons/react/dist/ssr/FileText';
+import { ChartBarIcon as ChartBar } from '@phosphor-icons/react/dist/ssr/ChartBar';
+import { ClockCounterClockwiseIcon as ClockCounterClockwise } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { Skeleton } from '@/components/canon/ui';
 import type { ReadyItem, WeekPeriod } from '@/lib/studio/home';
 import type { HomeData } from './api';
@@ -22,6 +24,7 @@ export type Tool = 'questions' | 'test' | 'lesson' | 'ideas' | 'visual' | 'paren
 const READY_ICON: Record<ReadyItem['kind'], ReactNode> = {
   catchup: <ArrowsClockwise size={19} weight="duotone" />, lesson: <ChalkboardTeacher size={19} weight="duotone" />,
   parent_note: <EnvelopeSimple size={19} weight="duotone" />, draft: <FileText size={19} weight="duotone" />, test: <Exam size={19} weight="duotone" />,
+  marked: <ChartBar size={19} weight="duotone" />, retention: <ClockCounterClockwise size={19} weight="duotone" />,
 };
 
 export const TOOLS: { key: Tool; label: string; blurb: string; icon: ReactNode }[] = [

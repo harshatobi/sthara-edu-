@@ -3,7 +3,8 @@ import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { marksOf, sanitizeQuestions } from '@/lib/teacher/questions';
 import { withVariant } from '@/lib/studio/variants';
-import { normalizeComponentType, evidenceTopicName } from '@/lib/tml/engine';
+import { componentOf } from '@/lib/studio/after';
+import { evidenceTopicName } from '@/lib/tml/engine';
 import { recomputeTml } from '@/lib/tml/recompute';
 import { notifyGuardians } from '@/lib/parent/notify';
 import { agreement, gradeOf } from '@/lib/grading/handwritten';
@@ -47,7 +48,8 @@ export async function POST(req: NextRequest) {
   const own = await withVariant(db, a, sub.student_id);
   const { questions } = sanitizeQuestions(own.questions);
   const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 4000) : '';
-  const component = normalizeComponentType(a.type) === 'quiz' ? 'quiz' : 'homework';
+  // A retention check's marks count as retention evidence (Studio follow-ups).
+  const component = await componentOf(db, a);
 
   let score: number;
   let max: number;

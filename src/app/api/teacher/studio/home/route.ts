@@ -5,6 +5,7 @@ import { pageAll, byIds } from '@/lib/ops/page';
 import { courseChapters, getCurriculum, CURRENT_SESSION } from '@/lib/curriculum';
 import { defaultTerm, todayIso, addDays } from '@/lib/teacher/course';
 import { pace, readyFor, standing, week } from '@/lib/studio/home';
+import { runRetention } from '@/lib/studio/after';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,8 @@ export async function GET(req: NextRequest) {
   if (!cls || !subject) return bad('Pick a class and subject.');
   if (staff.role === 'teacher' && !inScope(staff.scope, cls, subject)) return bad(`You don't teach ${subject} to ${cls}.`, 403);
   const today = todayIso();
+  // Retention checks that fell due are handed out when their teacher opens the Studio (until a scheduler runs them).
+  await runRetention(db, { today, teacherId: staff.id }).catch(e => console.warn('[studio home] retention run failed:', e?.message));
   const monday = addDays(today, -((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7));
 
   const [{ data: users }, { data: work }, { data: progress }, { data: plan }, { data: lessons }, { data: events }, { data: versions }, { data: mats }, { data: school }] = await Promise.all([
@@ -75,12 +78,29 @@ export async function GET(req: NextRequest) {
   const missing = roster.map(s => ({ ...s, count: due.filter(a => (!a.assigned_student_ids?.length || a.assigned_student_ids.includes(s.id)) && !handed.has(`${a.id}|${s.id}`)).length }))
     .filter(s => s.count >= 2).sort((a, b) => b.count - a.count);
 
+  // The latest Studio work for this class that was due in the last three weeks and has work handed in.
+  const studioAsg = new Set((mats || []).flatMap(m => m.assignment_ids || []));
+  const recentDue = work.filter(a => studioAsg.has(a.id) && a.due_date && a.due_date <= today && a.due_date >= addDays(today, -21)).sort((x, y) => y.due_date.localeCompare(x.due_date));
+  // bounded: hand-ins for at most six recent Studio assignments of one class
+  const { data: recentSubs } = recentDue.length
+    ? await db.from('submissions').select('assignment_id').in('assignment_id', recentDue.slice(0, 6).map(a => a.id)).limit(600)
+    : { data: [] as any[] };
+  const markedOne = recentDue.slice(0, 6).map(a => ({ a, n: (recentSubs || []).filter(s => s.assignment_id === a.id).length })).find(x => x.n > 0);
+  const titleOf = new Map<string, string>((mats || []).flatMap(m => (m.assignment_ids || []).map((id: string) => [id, String(m.title)] as [string, string])));
+  // bounded: one teacher's retention checks for one class in the next few days
+  const { data: rets } = await db.from('studio_followups').select('id, class, subject, chapter_name, due_on, status').eq('teacher_id', staff.id)
+    .in('status', ['scheduled', 'failed']).gte('due_on', addDays(today, -14)).lte('due_on', addDays(today, 3)).order('due_on').limit(20);
+  const retention = (rets || []).filter(r => normClass(r.class) === normClass(cls) && normSubject(r.subject) === normSubject(subject))
+    .map(r => ({ id: r.id, chapter: r.chapter_name || subject, due_on: r.due_on, status: r.status }));
+
   const next = (lessons || []).find(l => l.lesson_date && l.lesson_date > today && l.status !== 'taught');
   const nextExam = (events || []).find(e => e.kind === 'exam' && e.starts_on >= today) ?? null;
   const ready = readyFor({
     standing: st, className: cls, today, missing, nextExam,
     nextLesson: next ? { id: next.id, lesson_date: next.lesson_date, title: next.title, chapter_name: next.chapter_name, hasMaterials: Array.isArray(next.materials) && next.materials.length > 0 } : null,
     drafts: (mats || []).filter(m => m.status === 'draft'),
+    marked: markedOne ? { assignmentId: markedOne.a.id, title: titleOf.get(markedOne.a.id) || 'the latest set', handedIn: markedOne.n } : null,
+    retention,
   });
 
   return NextResponse.json({

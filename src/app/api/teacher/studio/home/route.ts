@@ -6,6 +6,7 @@ import { courseChapters, getCurriculum, CURRENT_SESSION } from '@/lib/curriculum
 import { defaultTerm, todayIso, addDays } from '@/lib/teacher/course';
 import { pace, readyFor, standing, week } from '@/lib/studio/home';
 import { runRetention } from '@/lib/studio/after';
+import { absentees, loadUnit } from '@/lib/studio/plan';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,14 @@ export async function GET(req: NextRequest) {
   const retention = (rets || []).filter(r => normClass(r.class) === normClass(cls) && normSubject(r.subject) === normSubject(subject))
     .map(r => ({ id: r.id, chapter: r.chapter_name || subject, due_on: r.due_on, status: r.status }));
 
+  // Unit plans that slipped, and lessons absent students missed (each opens Lessons and units).
+  // bounded: one teacher's unit plans (a handful per class)
+  const { data: unitMats } = await db.from('studio_materials').select('id, title, class, subject, content, teacher_id').eq('school_id', staff.schoolId).eq('teacher_id', staff.id)
+    .eq('kind', 'lesson').neq('status', 'archived').order('updated_at', { ascending: false }).limit(20);
+  const units = (unitMats || []).filter(m => normClass(m.class) === normClass(cls) && normSubject(m.subject) === normSubject(subject) && m.content?.type === 'unit_plan').slice(0, 4);
+  const slipped = (await Promise.all(units.map(async m => ({ title: m.title, behind: (await loadUnit(db, staff, m)).behind })))).filter(u => u.behind > 0);
+  const missedLessons = await absentees(db, staff, cls, subject).catch(() => []);
+
   const next = (lessons || []).find(l => l.lesson_date && l.lesson_date > today && l.status !== 'taught');
   const nextExam = (events || []).find(e => e.kind === 'exam' && e.starts_on >= today) ?? null;
   const ready = readyFor({
@@ -100,8 +109,13 @@ export async function GET(req: NextRequest) {
     nextLesson: next ? { id: next.id, lesson_date: next.lesson_date, title: next.title, chapter_name: next.chapter_name, hasMaterials: Array.isArray(next.materials) && next.materials.length > 0 } : null,
     drafts: (mats || []).filter(m => m.status === 'draft'),
     marked: markedOne ? { assignmentId: markedOne.a.id, title: titleOf.get(markedOne.a.id) || 'the latest set', handedIn: markedOne.n } : null,
-    retention,
+    retention, behind: slipped,
   });
+  if (missedLessons.length) {
+    const ml = missedLessons[0];
+    ready.splice(1, 0, { id: `missed-${ml.lessonId}`, kind: 'plan', title: `${ml.students.length} missed ${ml.title}`, detail: `Absent on ${ml.date}: ${ml.students.slice(0, 3).map(x => x.name.split(' ')[0]).join(', ')}${ml.students.length > 3 ? ' and others' : ''}. Send them a catch-up: what it covered and three quick questions.`, preset: { tool: 'plan' } });
+    ready.splice(5);
+  }
 
   return NextResponse.json({
     tiles: {

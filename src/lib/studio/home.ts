@@ -95,11 +95,11 @@ export function week(input: {
   return out;
 }
 
-export type ReadyKind = 'catchup' | 'lesson' | 'parent_note' | 'draft' | 'test' | 'marked' | 'retention';
+export type ReadyKind = 'catchup' | 'lesson' | 'parent_note' | 'draft' | 'test' | 'marked' | 'retention' | 'plan';
 export interface ReadyItem {
   id: string; kind: ReadyKind; title: string; detail: string;
   /** What opening it sets up (the Studio opens with these values; nothing is generated until the teacher says so). */
-  preset: { tool: 'questions' | 'lesson' | 'parent_note' | 'open' | 'analysis' | 'retention'; setKind?: string; chapter?: string; audience?: string; students?: string[]; materialId?: string; lessonId?: string; studentId?: string; assignmentId?: string; followupId?: string };
+  preset: { tool: 'questions' | 'lesson' | 'parent_note' | 'open' | 'analysis' | 'retention' | 'plan'; setKind?: string; chapter?: string; audience?: string; students?: string[]; materialId?: string; lessonId?: string; studentId?: string; assignmentId?: string; followupId?: string };
 }
 
 /** The handful of things most worth doing for this class this week, most useful first. */
@@ -114,9 +114,14 @@ export function readyFor(input: {
   marked?: { assignmentId: string; title: string; handedIn: number } | null;
   /** Retention checks coming up in the next few days, or ones the bank couldn't supply. */
   retention?: { id: string; chapter: string; due_on: string; status: string }[];
+  /** Unit plans with lessons past their date, not taught. */
+  behind?: { title: string; behind: number }[];
 }): ReadyItem[] {
   const out: ReadyItem[] = [];
   const s = input.standing;
+  for (const u of (input.behind ?? []).slice(0, 1)) {
+    out.push({ id: `behind-${u.title}`, kind: 'plan', title: `${u.title} has slipped`, detail: `${u.behind} lesson${u.behind === 1 ? '' : 's'} went past ${u.behind === 1 ? 'its' : 'their'} date without being taught. Re-pace it onto your next free periods.`, preset: { tool: 'plan' } });
+  }
   if (input.marked) {
     out.push({ id: `marked-${input.marked.assignmentId}`, kind: 'marked', title: `How ${input.marked.title} went`, detail: `${input.marked.handedIn} handed in. Question by question, the wrong answers that were popular, and who needs the retest.`, preset: { tool: 'analysis', assignmentId: input.marked.assignmentId } });
   }
@@ -141,7 +146,7 @@ export function readyFor(input: {
     });
   }
   if (input.nextExam) {
-    out.push({ id: 'test', kind: 'test', title: `${input.nextExam.title} on ${input.nextExam.starts_on}`, detail: s.lowest ? `A revision set weighted to ${s.lowest.chapter}, the weakest chapter, with A, B and C sets.` : 'A revision test with A, B and C sets.', preset: { tool: 'questions', setKind: 'test', chapter: s.lowest?.chapter, audience: 'abc' } });
+    out.push({ id: 'test', kind: 'test', title: `${input.nextExam.title} on ${input.nextExam.starts_on}`, detail: 'Exam mode: chapters ranked by board marks against where the class stands, revision fitted to the periods left, and a mock paper.', preset: { tool: 'plan' } });
   }
   for (const m of input.missing.slice(0, 1)) {
     out.push({ id: `parent-${m.id}`, kind: 'parent_note', title: `Note to ${m.name.split(' ')[0]}'s family`, detail: `${m.count} pieces of work not handed in. A short, warm note with one thing to do at home.`, preset: { tool: 'parent_note', studentId: m.id } });

@@ -22,9 +22,10 @@ import LibraryView from './LibraryView';
 import AccessNeedsPanel from './AccessNeedsPanel';
 import AnalysisView from './AnalysisView';
 import RetentionPanel from './RetentionPanel';
+import PlanView from './PlanView';
 
 type Tab = 'make' | 'mine' | 'department' | 'ask';
-type Screen = { kind: 'home' } | { kind: 'setup'; preset: SetupPreset | null; key: number } | { kind: 'material'; id: string } | { kind: 'analysis'; assignmentId: string };
+type Screen = { kind: 'home' } | { kind: 'setup'; preset: SetupPreset | null; key: number } | { kind: 'material'; id: string } | { kind: 'analysis'; assignmentId: string } | { kind: 'plan' };
 
 const PREFS = 'sthara.studio.prefs';
 function loadPrefs(): { large: boolean; contrast: boolean; language: string } {
@@ -78,13 +79,14 @@ export default function Studio() {
     if (p.tool === 'open' && p.materialId) return open(p.materialId);
     if (p.tool === 'analysis' && p.assignmentId) return analysis(p.assignmentId);
     if (p.tool === 'retention' && p.followupId) return setRetentionId(p.followupId);
+    if (p.tool === 'plan') { setScreen({ kind: 'plan' }); toTop(); return; }
     if (p.tool === 'parent_note') return ask('parent_note', { student: p.studentId });
     setup({ setKind: p.setKind, chapter: p.chapter, audience: p.audience, students: p.students, lessonId: p.lessonId, basis: r.detail });
   }
   function onTool(t: Tool) {
     if (t === 'questions') return setup(null);
     if (t === 'test') return setup({ setKind: 'test', audience: 'abc', chapter: home?.tiles.lowest?.chapter });
-    if (t === 'lesson') return ask('lesson');
+    if (t === 'lesson') { setTab('make'); setScreen({ kind: 'plan' }); toTop(); return; }
     if (t === 'ideas') return ask('explain');
     if (t === 'visual') return ask(/science|physics|chemistry/i.test(subject) ? 'lab_demo' : 'diagram');
     return ask('parent_note');
@@ -154,6 +156,7 @@ export default function Studio() {
           }} />
       )}
       {tab === 'make' && screen.kind === 'material' && <Workspace key={screen.id} id={screen.id} students={students} home={home} onBack={() => setScreen({ kind: 'home' })} onToast={toast} onAnalysis={analysis} />}
+      {tab === 'make' && screen.kind === 'plan' && <PlanView key={homeKey} cls={cls} subject={subject} home={home} onOpen={open} onOneLesson={() => ask('lesson')} onMock={() => ask('board_paper')} onToast={toast} />}
       {tab === 'make' && screen.kind === 'analysis' && <AnalysisView key={screen.assignmentId} assignmentId={screen.assignmentId} onRetest={p => setup(p)} onOpenMaterial={open} onToast={toast} />}
       {tab === 'mine' && <LibraryView view="mine" cls={cls} subject={subject} onOpen={open} onAnalysis={analysis} />}
       {tab === 'department' && <LibraryView view="department" cls={cls} subject={subject} onOpen={open} />}

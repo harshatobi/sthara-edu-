@@ -25,11 +25,12 @@ const READY_ICON: Record<ReadyItem['kind'], ReactNode> = {
   catchup: <ArrowsClockwise size={19} weight="duotone" />, lesson: <ChalkboardTeacher size={19} weight="duotone" />,
   parent_note: <EnvelopeSimple size={19} weight="duotone" />, draft: <FileText size={19} weight="duotone" />, test: <Exam size={19} weight="duotone" />,
   marked: <ChartBar size={19} weight="duotone" />, retention: <ClockCounterClockwise size={19} weight="duotone" />,
+  plan: <ChalkboardTeacher size={19} weight="duotone" />,
 };
 
 export const TOOLS: { key: Tool; label: string; blurb: string; icon: ReactNode }[] = [
   { key: 'questions', label: 'Question set', blurb: 'Worksheet, quiz, catch-up or exit ticket, built to a blueprint', icon: <ListChecks size={21} weight="duotone" /> },
-  { key: 'lesson', label: 'Lesson', blurb: 'A period plan with stages, support and stretch', icon: <ChalkboardTeacher size={21} weight="duotone" /> },
+  { key: 'lesson', label: 'Lessons and units', blurb: 'A chapter dated to your timetable, catch-ups, exam revision, or one lesson', icon: <ChalkboardTeacher size={21} weight="duotone" /> },
   { key: 'test', label: 'Test or paper', blurb: 'Unit test with A, B and C sets, or a CBSE board-pattern paper', icon: <Exam size={21} weight="duotone" /> },
   { key: 'ideas', label: 'Teaching ideas', blurb: 'Explain it three ways, discussion prompts, fix wrong ideas', icon: <Lightbulb size={21} weight="duotone" /> },
   { key: 'visual', label: 'Visual or Live Lab', blurb: 'Labelled diagram, picture, or a simulation for the board', icon: <Shapes size={21} weight="duotone" /> },

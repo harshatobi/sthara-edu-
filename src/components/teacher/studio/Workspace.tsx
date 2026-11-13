@@ -37,6 +37,7 @@ import PrintSheet, { printStudio } from './PrintSheet';
 import BankFigures from '@/components/studio/BankFigures';
 import BubbleSheets, { type SheetData } from './BubbleSheets';
 import SheetMarker from './SheetMarker';
+import { PlanDetail } from './PlanView';
 
 type ItemAction = 'swap' | 'harder' | 'easier' | 'rewrite';
 type View = { kind: 'class' } | { kind: 'student'; id: string } | { kind: 'set'; label: string };
@@ -182,6 +183,7 @@ export default function Workspace({ id, students, home, onBack, onToast, onAnaly
 
   if (error && !m) return <div className="note err" role="alert">{error} <button className="btn sm" onClick={onBack}>Back</button></div>;
   if (!m) return <div aria-busy="true"><Skeleton h={420} /></div>;
+  if (!set && ['unit_plan', 'revision_plan'].includes((m.content as any)?.type)) return <PlanDetail id={m.id} onToast={onToast} />;
   if (!set) return <div className="note info">This material opens in the Ask tab. <button className="btn sm" onClick={onBack}>Back</button></div>;
 
   const needsApproval = moderation !== 'none' && (m.common_test || (moderation === 'all_shared' && m.share === 'department'));

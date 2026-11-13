@@ -9,6 +9,7 @@ import { DatabaseIcon as Database } from '@phosphor-icons/react/dist/ssr/Databas
 import { CaretDownIcon as CaretDown } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { CaretRightIcon as CaretRight } from '@phosphor-icons/react/dist/ssr/CaretRight';
 import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
+import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
 import { Skeleton } from '@/components/canon/ui';
 import { LETTERS } from '@/lib/studio/handout';
 import { useStudioApi, type SetupPreset } from './api';
@@ -28,6 +29,7 @@ interface Data {
   topics: { topic: string; facility: number; students: number; missed: string[]; missedNames: string[] }[];
   retest: { topics: string[]; students: { id: string; name: string; topics: string[] }[] };
   retention: { id: string; due_on: string; status: string; note: string | null; assignment_id: string | null } | null;
+  practiceSheets: { id: string; code: string; name: string }[];
   wordingNote: string | null;
 }
 
@@ -203,6 +205,19 @@ export default function AnalysisView({ assignmentId, onRetest, onOpenMaterial, o
           </div>
         )}
         <RetentionCard r={d.retention} onChanged={m => { onToast(m); setTick(t => t + 1); }} />
+        {!notYet && (
+          <div className="sd-card sd-pad">
+            <h2 style={{ fontSize: 17, fontWeight: 800, display: 'flex', gap: 7, alignItems: 'center' }}><Exam size={18} weight="duotone" /> Put in Exams</h2>
+            {d.practiceSheets.length ? (
+              <>
+                <p className="sd-mut" style={{ fontSize: 13.5, marginTop: 4 }}>As a practice assessment: the class teacher and you see the marks in Exams; they never count on a report card. You check the marks before they&apos;re saved.</p>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                  {d.practiceSheets.map(s => <a key={s.id} className="btn sm" href={`/teacher/exams?${new URLSearchParams({ sheet: s.id, from: d.assignment.id })}`}>Fill {s.code}: {s.name}</a>)}
+                </div>
+              </>
+            ) : <p className="sd-mut" style={{ fontSize: 13.5, marginTop: 4 }}>For a mock or pre-board: the exam cell adds a practice assessment (Exams, Assessment schemes, kind Practice) and opens marks entry. It then shows here.</p>}
+          </div>
+        )}
       </div>
     </div>
   );

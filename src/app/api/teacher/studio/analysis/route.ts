@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
-import { inScope } from '@/lib/teacher/scope';
+import { inScope, normClass, normSubject } from '@/lib/teacher/scope';
 import { aiGate } from '@/lib/settings/server';
 import { aiConfigured } from '@/lib/ai/generate';
 import { ASSIGNMENT_COLS, loadMarked, misconceptions, type Misconception } from '@/lib/studio/after';
@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
     else wording = await misconceptions(db, marked, { userId: staff.id, chapter });
   }
 
+  const practiceSheets = await practiceSheetsFor(db, staff.schoolId, a.class, a.subject);
   const qBy = new Map(marked.questions.map(q => [q.key, q]));
   const nameOf = new Map(marked.students.map(s => [s.id, s.name]));
   return NextResponse.json({
@@ -66,6 +67,31 @@ export async function GET(req: NextRequest) {
     students: marked.analysis.students,
     retest: proposeRetest(marked.analysis),
     retention: followup ?? null,
+    practiceSheets,
     wordingNote,
   });
+}
+
+/**
+ * Open marks sheets of practice assessments (Exams kind 'practice': never on a report card) for this class and subject,
+ * so a mock's marks can be filled into Exams from here.
+ */
+async function practiceSheetsFor(db: any, schoolId: string, cls: string, subject: string) {
+  // bounded: a school's practice assessments (a handful a year)
+  const { data: as } = await db.from('exam_assessments').select('id, code, name').eq('school_id', schoolId).eq('kind', 'practice').limit(100);
+  if (!as?.length) return [];
+  // bounded: open sheets of those assessments (classes x subjects, a few hundred at most)
+  const { data: sheets } = await db.from('exam_sheets').select('id, assessment_id, class_id, class_subject_id').eq('school_id', schoolId).eq('status', 'open').in('assessment_id', as.map((x: any) => x.id)).limit(2000);
+  if (!sheets?.length) return [];
+  // bounded: the classes and subjects of at most 2,000 sheets, each list limited
+  const [{ data: classes }, { data: subjects }] = await Promise.all([
+    db.from('classes').select('id, name').in('id', [...new Set(sheets.map((s: any) => s.class_id))]).limit(1000),
+    db.from('class_subjects').select('id, subject_name').in('id', [...new Set(sheets.map((s: any) => s.class_subject_id))]).limit(2000),
+  ]);
+  const clsOf = new Map((classes || []).map((c: any) => [c.id, c.name]));
+  const subOf = new Map((subjects || []).map((c: any) => [c.id, c.subject_name]));
+  const aOf = new Map(as.map((x: any) => [x.id, x]));
+  return sheets
+    .filter((s: any) => normClass(String(clsOf.get(s.class_id) ?? '')) === normClass(cls) && normSubject(String(subOf.get(s.class_subject_id) ?? '')) === normSubject(subject))
+    .map((s: any) => ({ id: s.id, code: (aOf.get(s.assessment_id) as any)?.code, name: (aOf.get(s.assessment_id) as any)?.name }));
 }

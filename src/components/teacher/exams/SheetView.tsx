@@ -24,7 +24,7 @@ const shown = (m: SheetData['students'][number]['mark']) => (!m ? '' : m.code ? 
  * One marks sheet: type marks (or AB / ML / EX) down the class, import a spreadsheet, or fill from a Sthara test
  * or scanned scripts. Nothing is saved until Save; Submit saves and sends it to the class teacher.
  */
-export default function SheetView({ id, call, toast, onChanged, onClose }: { id: string; call: Call; toast: (m: string) => void; onChanged: () => void; onClose: () => void }) {
+export default function SheetView({ id, fillFrom = null, call, toast, onChanged, onClose }: { id: string; fillFrom?: string | null; call: Call; toast: (m: string) => void; onChanged: () => void; onClose: () => void }) {
   const { data, error, reload } = useApi<SheetData>(`/api/teacher/exams?sheet=${id}`);
   // Edits on top of what's saved; cleared after a save, so the grid always starts from the saved marks.
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -33,7 +33,8 @@ export default function SheetView({ id, call, toast, onChanged, onClose }: { id:
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [filling, setFilling] = useState(false);
+  // Opened from the Studio with a test to fill from: the fill panel opens on it.
+  const [filling, setFilling] = useState(!!fillFrom);
   const [returning, setReturning] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
@@ -125,7 +126,7 @@ export default function SheetView({ id, call, toast, onChanged, onClose }: { id:
       </>}
 
       {importing && data && <ImportPop students={data.students} max={max} onApply={(rows) => { setVals({ ...vals, ...rows }); setOrigin({ source: 'import', ref: null }); setImporting(false); toast(`${Object.keys(rows).length} marks filled in. Check them and save.`); }} onClose={() => setImporting(false)} />}
-      {filling && data && <FillPop sheetId={id} sources={data.sources} students={data.students}
+      {filling && data && data.canEdit && <FillPop sheetId={id} sources={data.sources} first={fillFrom} students={data.students}
         onApply={(p) => {
           const next = { ...vals }, qs = { ...questions };
           for (const r of p.rows) { next[r.studentId] = String(r.marks); qs[r.studentId] = r.questions; }
@@ -163,8 +164,8 @@ function ImportPop({ students, max, onApply, onClose }: { students: SheetData['s
   );
 }
 
-function FillPop({ sheetId, sources, students, onApply, onClose }: { sheetId: string; sources: SheetData['sources']; students: SheetData['students']; onApply: (p: Proposal) => void; onClose: () => void }) {
-  const [pick, setPick] = useState(sources[0]?.id ?? '');
+function FillPop({ sheetId, sources, first = null, students, onApply, onClose }: { sheetId: string; sources: SheetData['sources']; first?: string | null; students: SheetData['students']; onApply: (p: Proposal) => void; onClose: () => void }) {
+  const [pick, setPick] = useState(first && sources.some(s => s.id === first) ? first : sources[0]?.id ?? '');
   const q = useApi<Proposal>(pick ? `/api/teacher/exams?sheet=${sheetId}&from=${pick}` : null);
   const p = q.data && !q.data.error ? q.data : null;
   const err = q.error ?? q.data?.error ?? null;

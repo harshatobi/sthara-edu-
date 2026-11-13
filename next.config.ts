@@ -25,6 +25,9 @@ const MARKETING_HEADERS = [
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
+      // The CP-SAT timetable solver is a Python function (api/cpsat.py). On Vercel it is served at /api/cpsat; in
+      // development `npm run dev:solver` serves it, and without it the page falls back to the in-browser solver.
+      ...(process.env.NODE_ENV === 'development' ? [{ source: '/api/cpsat', destination: `http://127.0.0.1:${process.env.SOLVER_PORT || 8787}/` }] : []),
       ...MARKETING.map(([source, file]) => ({ source, destination: `/site/${file}.html` })),
       { source: '/robots.txt', destination: '/site/robots.txt' },
       { source: '/sitemap.xml', destination: '/site/sitemap.xml' },

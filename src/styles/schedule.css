@@ -104,3 +104,118 @@
   .canon .sch-periods .r { grid-template-columns:1fr 1fr; }
   .canon .sch-periods .r.hd { display:none; }
 }
+
+/* ── Auto-build: the three steps, readiness findings, options to compare ── */
+.canon .sch-solve { padding:0; overflow:hidden; }
+.canon .sch-solve-head { display:flex; gap:14px; align-items:flex-start; padding:22px 24px; background:linear-gradient(180deg, color-mix(in srgb, var(--purple) 7%, #fff), #fff); border-bottom:1px solid var(--line); }
+.canon .sch-solve-ic { width:40px; height:40px; flex:0 0 40px; border-radius:12px; display:grid; place-items:center; background:color-mix(in srgb, var(--purple) 14%, #fff); color:var(--purple); }
+.canon .sch-solve-head h3 { font-size:18px; font-weight:800; }
+.canon .sch-solve-head p { color:var(--mut); font-size:13px; line-height:1.5; margin-top:3px; max-width:76ch; }
+.canon .sch-step { display:grid; grid-template-columns:28px minmax(0,1fr); gap:14px; padding:20px 24px; border-bottom:1px solid var(--line); }
+.canon .sch-step:last-child { border-bottom:0; }
+.canon .sch-step-n { width:28px; height:28px; border-radius:50%; background:var(--navy); color:#fff; font-size:12.5px; font-weight:800; display:grid; place-items:center; }
+.canon .sch-step-t { display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-height:28px; }
+.canon .sch-step-t b { font-size:15px; font-weight:800; }
+.canon .sch-step-s { color:var(--mut); font-size:12.5px; line-height:1.5; margin-top:4px; }
+.canon .sch-find { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:11px; margin-top:8px; font-size:13px; line-height:1.45; }
+.canon .sch-find svg { flex:0 0 auto; margin-top:2px; }
+.canon .sch-find b { display:block; font-weight:800; }
+.canon .sch-find span { color:inherit; opacity:.86; }
+.canon .sch-find.block { background:#FFF1F4; color:#8A1736; }
+.canon .sch-find.block svg { color:var(--red); }
+.canon .sch-find.warn { background:#FFF8E7; color:#7A5A08; }
+.canon .sch-find.warn svg { color:var(--amber); }
+.canon .sch-find.ok { background:#EFFBF6; color:#0B6B4C; }
+.canon .sch-find.ok svg { color:var(--green); }
+.canon .sch-more { display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:700; color:var(--blue); }
+.canon .sch-ctl { display:flex; gap:14px 22px; flex-wrap:wrap; align-items:flex-end; margin-top:12px; }
+.canon .sch-ctl-f { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.canon .sch-ctl-f .lbl { margin:0; }
+.canon .sch-seg { flex-wrap:wrap; }
+.canon .sch-seg button:disabled { opacity:.45; cursor:not-allowed; }
+.canon .sch-seg.sm button { padding:5px 11px; font-size:12px; }
+.canon .sch-go { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.canon .sch-tick { display:flex; gap:8px; align-items:center; font-size:13px; cursor:pointer; }
+.canon .sch-tick.sm { display:inline-flex; font-size:12.5px; margin-right:10px; gap:5px; }
+.canon .sch-tick input { width:15px; height:15px; accent-color:var(--navy); }
+.canon .sch-prog { margin-top:14px; }
+.canon .sch-prog .bar { height:6px; border-radius:6px; background:#EEF2F7; overflow:hidden; }
+.canon .sch-prog .bar i { display:block; height:100%; border-radius:6px; background:var(--purple); transition:width 1s linear; }
+.canon .sch-prog span { display:block; margin-top:7px; font-size:12.5px; color:var(--mut); font-variant-numeric:tabular-nums; }
+.canon .sch-opts { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:14px 0 16px; }
+.canon .sch-opt { text-align:left; border:1.5px solid var(--line); border-radius:14px; padding:14px 16px; background:#fff; min-width:0; transition:border-color .15s, box-shadow .15s; }
+.canon .sch-opt:hover { border-color:color-mix(in srgb, var(--navy) 35%, var(--line)); }
+.canon .sch-opt.on { border-color:var(--navy); box-shadow:0 0 0 3px color-mix(in srgb, var(--navy) 10%, transparent); }
+.canon .sch-opt .h { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+.canon .sch-opt .h b { font-size:14.5px; font-weight:800; }
+.canon .sch-opt .n { font-size:12px; color:var(--mut); margin-top:2px; }
+.canon .sch-opt dl { margin-top:10px; }
+.canon .sch-opt .m { display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-top:1px solid var(--line); font-size:12.5px; }
+.canon .sch-opt .m dt { color:var(--mut); }
+.canon .sch-opt .m dd { font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.canon .sch-opt .m dd small { font-weight:600; color:var(--mut); }
+.canon .sch-opt .m.good dd { color:#0B6B4C; }
+.canon .sch-opt .m.mid dd { color:#8A5A00; }
+.canon .sch-opt .m.bad dd { color:var(--red); }
+.canon .sch-unplaced { border:1px solid #F7D9E0; background:#FFF8F9; border-radius:12px; padding:12px 14px; margin-bottom:12px; font-size:13px; }
+.canon .sch-unplaced > b { display:block; margin-bottom:6px; }
+.canon .sch-unplaced > div { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; padding:7px 0; border-top:1px solid #F7D9E0; }
+.canon .sch-unplaced span { font-weight:700; }
+.canon .sch-unplaced em { font-style:normal; font-weight:800; color:var(--red); }
+.canon .sch-unplaced p { grid-column:1 / -1; color:var(--mut); font-size:12.5px; }
+.canon .sch-save { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+
+/* requirements sheet: the placement rules button; priorities */
+.canon .sch-rulebtn { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:9px; border:1.5px solid var(--line); font-size:12px; font-weight:700; color:var(--mut); background:#fff; white-space:nowrap; max-width:190px; overflow:hidden; text-overflow:ellipsis; }
+.canon .sch-rulebtn.on { border-color:color-mix(in srgb, var(--purple) 45%, var(--line)); color:var(--ink); background:color-mix(in srgb, var(--purple) 6%, #fff); }
+.canon .sch-prio-r { display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:12px 0; border-top:1px solid var(--line); }
+.canon .sch-prio-r:first-child { border-top:0; padding-top:0; }
+.canon .sch-prio-r > div:first-child { flex:1 1 320px; min-width:0; }
+.canon .sch-prio-r b { display:block; font-size:13.5px; }
+.canon .sch-prio-r span { display:block; font-size:12.5px; color:var(--mut); margin-top:2px; }
+
+/* availability picker */
+.canon .sch-avail { width:100%; min-width:520px; border-collapse:separate; border-spacing:4px; table-layout:fixed; padding:6px; }
+.canon .sch-avail th { font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--mut); text-transform:uppercase; }
+.canon .sch-avail th button { width:100%; padding:6px 4px; border-radius:8px; font:inherit; color:inherit; letter-spacing:inherit; text-transform:inherit; }
+.canon .sch-avail th button:hover { background:#F1F4F9; color:var(--ink); }
+.canon .sch-avail th small { display:block; font-weight:600; letter-spacing:0; color:var(--mut2); }
+.canon .sch-avail tbody th { width:72px; }
+.canon .sch-avail td button { width:100%; height:38px; border-radius:9px; background:#EFFBF6; border:1px solid #CDEFE0; font-size:11.5px; font-weight:800; color:#9F1239; }
+.canon .sch-avail td button:hover { border-color:var(--green); }
+.canon .sch-avail td button.off { background:#FFF1F4; border-color:#F5C2CF; }
+.canon .sch-avail td button:focus-visible, .canon .sch-avail th button:focus-visible { outline:2px solid var(--blue); outline-offset:1px; }
+
+/* timetable workspace: the grid with its side panel, and moving a lesson */
+.canon .sch-work { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:18px; align-items:start; }
+.canon .sch-side { display:flex; flex-direction:column; gap:18px; position:sticky; top:18px; max-height:calc(100vh - 36px); overflow:auto; }
+.canon .sch-side .card { margin:0; }
+.canon .sch-side h3 { font-size:14px; font-weight:800; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.canon .sch-side .sch-load { grid-template-columns:minmax(0,1fr) 70px 30px; font-size:12.5px; padding:6px 0; }
+@media (max-width:1180px) { .canon .sch-work { grid-template-columns:minmax(0,1fr); } .canon .sch-side { position:static; max-height:none; } }
+.canon .sch-stats { display:flex; gap:10px; flex-wrap:wrap; }
+.canon .sch-stat { display:flex; align-items:baseline; gap:7px; padding:8px 13px; border-radius:11px; background:#F7F9FB; font-size:12.5px; color:var(--mut); font-weight:700; }
+.canon .sch-stat b { font-size:16px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
+.canon .sch-stat.bad { background:#FFF1F4; color:#8A1736; }
+.canon .sch-stat.bad b { color:var(--red); }
+.canon .sch-stat.good b { color:#0B6B4C; }
+.canon .sch-cell.pick { outline:2px solid var(--navy); outline-offset:-2px; background:#F2F6FB; }
+.canon .sch-cell.can { background:#EFFBF6; outline:1.5px dashed #6FCFA9; outline-offset:-2px; }
+.canon .sch-cell.can-swap { background:#FFF8E7; outline:1.5px dashed #E9B949; outline-offset:-2px; }
+.canon .sch-cell.cant { opacity:.5; }
+.canon .sch-cell.can .sch-add, .canon .sch-cell.can-swap .sch-add { opacity:1; color:#0B6B4C; }
+.canon .sch-movebar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:11px 14px; border-radius:12px; background:var(--navy); color:#fff; font-size:13px; margin-bottom:12px; }
+.canon .sch-movebar .k { display:inline-flex; align-items:center; gap:6px; font-size:12px; opacity:.9; }
+.canon .sch-movebar .k i { width:12px; height:12px; border-radius:4px; display:inline-block; }
+.canon .sch-movebar .btn { background:rgba(255,255,255,.14); color:#fff; border-color:transparent; }
+.canon .sch-clash { display:flex; gap:9px; align-items:flex-start; width:100%; text-align:left; padding:9px 0; border-top:1px solid var(--line); font-size:12.5px; line-height:1.4; }
+.canon .sch-clash:first-of-type { border-top:0; }
+.canon .sch-seg button { white-space:nowrap; }
+
+/* the module's tabs, grouped by the work they belong to */
+.canon .sch-nav { display:flex; flex-wrap:wrap; gap:12px 18px; margin-bottom:20px; align-items:flex-end; }
+.canon .sch-nav-g { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.canon .sch-nav-g > span { font-size:10.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); padding-left:8px; }
+.canon .sch-nav .tabs { margin-bottom:0; }
+.canon .sch-nav .tab { padding:9px 16px; font-size:13.5px; }
+@media (max-width:680px) { .canon .sch-nav-g { max-width:100%; } }

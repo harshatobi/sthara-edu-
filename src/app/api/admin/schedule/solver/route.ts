@@ -45,10 +45,16 @@ function cleanRequirement(b: Record<string, unknown>, staff: Set<string>, rooms:
   if (roomKind && !ROOM_KINDS.includes(roomKind)) return 'Unknown room kind.';
   const roomId = typeof b.roomId === 'string' && b.roomId ? b.roomId : null;
   if (roomId && !rooms.has(roomId)) return 'That room isn\'t in this school.';
+  const timePref = b.timePref === 'morning' || b.timePref === 'afternoon' ? b.timePref : null;
+  const notAfter = str(b.notAfter, 80) || null;
+  if (notAfter && notAfter.toLowerCase() === subject.toLowerCase()) return `${cls} ${subject}: "not straight after" names the subject itself.`;
+  // The placement rules are sent only when the page knows the database has their columns (`rich`).
+  const rich = b.rich === true || 'timePref' in b || 'neverLast' in b || 'notAfter' in b;
   return {
     class: cls, subject, group_label: str(b.groupLabel, 40), ...(teacher ? personCols(teacher) : { user_id: null, staff_member_id: null }),
     periods_per_week: periods, doubles, room_kind: roomKind, room_id: roomId, max_per_day: maxPerDay,
     combined_key: str(b.combinedKey, 40) || null, notes: str(b.notes, 500) || null,
+    ...(rich ? { time_pref: timePref, never_last: b.neverLast === true, not_after: notAfter } : {}),
   };
 }
 const asRow = (r: Exclude<ReturnType<typeof cleanRequirement>, string>) => {
@@ -71,7 +77,10 @@ export async function PUT(req: NextRequest) {
     const fields = { target_per_week: int(b.targetPerWeek, 0, 60), max_per_day: int(b.maxPerDay, 1, 12), max_per_week: int(b.maxPerWeek, 1, 60), max_consecutive: int(b.maxConsecutive, 1, 12) };
     if (Object.values(fields).some(v => Number.isNaN(v))) return bad('Target 0-60 a week; caps 1-12 a day, 1-60 a week, 1-12 in a row.');
     if (fields.max_per_week !== null && fields.max_per_day !== null && fields.max_per_week < fields.max_per_day) return bad('The weekly cap is below the daily cap.');
-    const unavailable = (Array.isArray(b.unavailable) ? b.unavailable : []).slice(0, 21).map((u: { weekday?: unknown; periods?: unknown; from?: unknown; to?: unknown }) => ({
+    const rich = 'maxDays' in b || 'avoidFirst' in b || 'avoidLast' in b;
+    const maxDays = int(b.maxDays, 1, 7);
+    if (Number.isNaN(maxDays)) return bad('Days in school a week is 1 to 7.');
+    const unavailable = (Array.isArray(b.unavailable) ? b.unavailable : []).slice(0, rich ? 28 : 14).map((u: { weekday?: unknown; periods?: unknown; from?: unknown; to?: unknown }) => ({
       weekday: Number(u?.weekday), periods: [...new Set((Array.isArray(u?.periods) ? u.periods : []).map(Number))].filter(p => Number.isInteger(p) && p >= 1 && p <= 16).sort((x, y) => x - y),
       // A clock window, "HH:MM" to "HH:MM": checked against each lesson's own bell time, so it means the same in every wing.
       ...(u?.from || u?.to ? { from: time(u.from), to: time(u.to) } : {}),
@@ -80,7 +89,10 @@ export async function PUT(req: NextRequest) {
     if (unavailable.some((u: { from?: string | null; to?: string | null }) => ('from' in u) && (!u.from || !u.to || u.from >= u.to))) return bad('A time off needs a start before its end, like 9:00-11:30.');
     const cols = personCols(person);
     const col = cols.user_id ? 'user_id' : 'staff_member_id';
-    const row: Record<string, unknown> = { school_id: admin.schoolId, ...cols, ...fields, unavailable, updated_by: admin.id, updated_at: now };
+    const row: Record<string, unknown> = {
+      school_id: admin.schoolId, ...cols, ...fields, unavailable, updated_by: admin.id, updated_at: now,
+      ...(rich ? { max_days: maxDays, avoid_first: b.avoidFirst === true, avoid_last: b.avoidLast === true } : {}),
+    };
     const { data: existing } = await db.from('teacher_load_rules').select('id').eq(col, cols.user_id ?? cols.staff_member_id).maybeSingle();
     const { error } = existing ? await db.from('teacher_load_rules').update(row).eq('id', existing.id) : await db.from('teacher_load_rules').insert(row);
     return error ? dbError(error, 'Could not save their load.') : NextResponse.json({ ok: true });
@@ -96,6 +108,10 @@ export async function PUT(req: NextRequest) {
       default_target_per_week: int(b.defaultTargetPerWeek ?? 30, 1, 60), default_max_per_day: int(b.defaultMaxPerDay ?? 7, 1, 12),
       default_max_consecutive: int(b.defaultMaxConsecutive ?? 4, 1, 12), class_teacher_first: b.classTeacherFirst !== false, subject_spread: b.subjectSpread !== false,
       updated_by: admin.id, updated_at: now,
+      ...('weights' in b || 'noStudentGaps' in b ? {
+        no_student_gaps: b.noStudentGaps === true,
+        weights: Object.fromEntries(['classTeacher', 'spread', 'gaps', 'balance', 'prefs'].map(k => [k, int(b.weights?.[k] ?? 2, 0, 3)]).filter(([, v]) => typeof v === 'number' && !Number.isNaN(v))),
+      } : {}),
     };
     if ([row.default_target_per_week, row.default_max_per_day, row.default_max_consecutive].some(v => v === null || Number.isNaN(v))) return bad('Target 1-60 a week, at most 1-12 a day and 1-12 in a row.');
     const { error } = await db.from('sched_solver_settings').upsert(row, { onConflict: 'school_id' });

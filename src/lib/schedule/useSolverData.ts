@@ -14,6 +14,8 @@ export interface SolverData {
   settings: SolverSettingsRow;
   /** False when the phase-4 tables aren't in this database yet. */
   available: boolean;
+  /** False until 20261112090000_solver_rules.sql is in the database: the placement rules and priorities can't be saved yet. */
+  richRules: boolean;
 }
 
 /** The requirements sheet, load rules and solver defaults for this school (read through RLS: builders, HR, leadership). */
@@ -27,23 +29,31 @@ export function useSolverData(session = sessionOf()) {
     if (loading || !schoolId) return;
     let cancelled = false;
     const db = createClient();
-    Promise.all([
+    const REQ = 'id, session, class, subject, group_label, teacher_id, staff_member_id, periods_per_week, doubles, room_kind, room_id, max_per_day, combined_key, notes';
+    const RULE = 'id, user_id, staff_member_id, target_per_week, max_per_day, max_per_week, max_consecutive, unavailable';
+    const SET = 'default_target_per_week, default_max_per_day, default_max_consecutive, class_teacher_first, subject_spread';
+    const noColumn = (e: { message?: string; code?: string } | null) => !!e && (e.code === '42703' || /column .* does not exist|Could not find the .* column/i.test(e.message || ''));
+    const read = (rich: boolean) => Promise.all([
       // Every requirement, a page at a time: .limit(3000) still stopped at the database's 1,000-row ceiling.
-      all((a, b) => db.from('sched_requirements').select('id, session, class, subject, group_label, teacher_id, staff_member_id, periods_per_week, doubles, room_kind, room_id, max_per_day, combined_key, notes')
+      all((a, b) => db.from('sched_requirements').select(rich ? `${REQ}, time_pref, never_last, not_after` : REQ)
         .eq('school_id', schoolId).eq('session', session).order('class').order('id').range(a, b))
-        .then(r => ({ data: r.data, error: r.missing ? { message: 'sched_requirements does not exist' } : null }), (e: Error) => ({ data: null, error: e })),
-      db.from('teacher_load_rules').select('id, user_id, staff_member_id, target_per_week, max_per_day, max_per_week, max_consecutive, unavailable').eq('school_id', schoolId).limit(2000),
-      db.from('sched_solver_settings').select('default_target_per_week, default_max_per_day, default_max_consecutive, class_teacher_first, subject_spread').eq('school_id', schoolId).maybeSingle(),
-    ]).then(([r, l, s]) => {
+        .then(r => ({ data: r.data, error: r.missing ? { message: 'sched_requirements does not exist' } : null }), (e: Error) => ({ data: null, error: e as { message: string; code?: string } })),
+      db.from('teacher_load_rules').select(rich ? `${RULE}, max_days, avoid_first, avoid_last` : RULE).eq('school_id', schoolId).limit(2000),
+      db.from('sched_solver_settings').select(rich ? `${SET}, no_student_gaps, weights` : SET).eq('school_id', schoolId).maybeSingle(),
+    ]);
+    // The newer columns first; a database without them yet answers with the older ones.
+    read(true).then(async first => {
+      const rich = !first.some(x => noColumn(x.error));
+      const [r, l, s] = rich ? first : await read(false);
       if (cancelled) return;
       const missing = [r.error, l.error].some(e => e && /does not exist|Could not find the table/i.test(e.message));
       if (!missing && (r.error || l.error || s.error)) { setError((r.error || l.error || s.error)!.message); return; }
       setData({
         session,
-        requirements: (r.data || []) as RequirementRow[],
-        rules: ((l.data || []) as LoadRuleRow[]).map(x => ({ ...x, unavailable: Array.isArray(x.unavailable) ? x.unavailable : [] })),
-        settings: (s.data as SolverSettingsRow | null) ?? DEFAULT_SOLVER_SETTINGS,
-        available: !missing,
+        requirements: (r.data || []) as unknown as RequirementRow[],
+        rules: ((l.data || []) as unknown as LoadRuleRow[]).map(x => ({ ...x, unavailable: Array.isArray(x.unavailable) ? x.unavailable : [] })),
+        settings: (s.data as unknown as SolverSettingsRow | null) ?? DEFAULT_SOLVER_SETTINGS,
+        available: !missing, richRules: rich,
       });
       setError(null);
     });

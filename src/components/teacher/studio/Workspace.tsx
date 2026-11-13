@@ -62,6 +62,7 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
   const [instruction, setInstruction] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [bankOpen, setBankOpen] = useState(false);
+  const [again, setAgain] = useState(false);
 
   const [tick, setTick] = useState(0);
   const load = () => setTick(t => t + 1);
@@ -171,6 +172,8 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
   const assignBlock = flagged.length ? `Fix ${flagged.length === 1 ? 'the question marked red' : `the ${flagged.length} questions marked red`} first`
     : needsApproval && m.moderation !== 'approved' ? 'Waiting for the subject lead’s approval' : null;
   const marks = shown.reduce((n, i) => n + i.marks, 0);
+  // Handing the same set out twice makes a second assignment: only on purpose.
+  const assigned = (m.assignment_ids ?? []).length;
   const versionCount = set.audience === 'per_student' ? set.versions.length : set.audience === 'abc' ? set.sets.length : 1;
 
   return (
@@ -229,7 +232,7 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
         {can.review && (
           <div className="sd-card sd-pad">
             <h2 style={{ fontSize: 17, fontWeight: 800 }}>Approve for the department</h2>
-            <p className="sd-mut" style={{ fontSize: 13.5, marginTop: 4 }}>You lead {m.subject}. Approving also approves its new questions in the school bank.</p>
+            <p className="sd-mut" style={{ fontSize: 13.5, marginTop: 4 }}>You can approve this for the {m.subject} department. Approving also approves its new questions in the school bank.</p>
             <textarea className="sd-ta" value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="Note to the teacher (needed when asking for changes)" aria-label="Review note" />
             <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
               <button className="btn sm pri" disabled={!!busy} onClick={() => patch({ action: 'review', decision: 'approve', note: reviewNote }, 'Approved')}><SealCheck size={13} weight="bold" /> Approve</button>
@@ -244,11 +247,12 @@ export default function Workspace({ id, students, home, onBack, onToast }: {
             <div className="sd-dest">
               <div aria-disabled={!!assignBlock} style={{ flexWrap: 'wrap' }}>
                 <PaperPlaneTilt size={19} weight="duotone" />
-                <span style={{ flex: 1 }}>Assign {set.audience === 'per_student' ? `to ${set.versions.length} students` : `to ${m.class}`}<small>{assignBlock ?? (set.handout === 'online' ? 'Answered on Sthara' : 'Handed in on paper, marked from photos')}</small></span>
-                {!assignBlock && (
+                <span style={{ flex: 1 }}>Assign {set.audience === 'per_student' ? `to ${set.versions.length} students` : `to ${m.class}`}<small>{assignBlock ?? (assigned && !again ? `Already assigned${assigned > 1 ? ` ${assigned} times` : ''}. Hand-ins and marks are in My materials.` : set.handout === 'online' ? 'Answered on Sthara' : 'Handed in on paper, marked from photos')}</small></span>
+                {!assignBlock && assigned > 0 && !again && <button className="btn sm" onClick={() => setAgain(true)}>Assign again</button>}
+                {!assignBlock && (!assigned || again) && (
                   <span style={{ display: 'flex', gap: 6, width: '100%' }}>
                     <input type="date" className="cmp-in" aria-label="Due date" value={due} min={new Date().toISOString().slice(0, 10)} onChange={e => setDue(e.target.value)} style={{ flex: 1, padding: '6px 8px' }} />
-                    <button className="btn sm pri" disabled={!due || !!busy} onClick={async () => { const r = await post('assign', { dueDate: due }); if (r) onToast(`Assigned to ${r.students} student${r.students === 1 ? '' : 's'}`); }}>Assign</button>
+                    <button className="btn sm pri" disabled={!due || !!busy} onClick={async () => { const r = await post('assign', { dueDate: due }); if (r) { setAgain(false); setDue(''); } if (r) onToast(`Assigned to ${r.students} student${r.students === 1 ? '' : 's'}`); }}>Assign</button>
                   </span>
                 )}
               </div>

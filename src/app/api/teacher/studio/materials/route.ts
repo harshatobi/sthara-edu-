@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       isSubjectLead(db, staff, m.subject),
       moderationOf(db, staff.schoolId),
     ]);
-    return NextResponse.json({ material: m, versions: versions || [], can: { edit: m.teacher_id === staff.id, review: lead && m.moderation === 'pending' }, moderation: mode });
+    return NextResponse.json({ material: m, versions: versions || [], can: { edit: m.teacher_id === staff.id, review: m.moderation === 'pending' && canReview(staff, m, lead) }, moderation: mode });
   }
   const view = p.get('view') === 'department' ? 'department' : 'mine';
   const cls = str(p.get('class'), 40), subject = str(p.get('subject'), 80);
@@ -75,6 +75,12 @@ export async function GET(req: NextRequest) {
     }),
   });
 }
+
+/**
+ * Who may approve: a lead of the subject, never for their own material (a check by the author is no check).
+ * The principal (admin) may approve too, so a lead's own common test isn't stuck when they're the only lead.
+ */
+const canReview = (staff: Staff, m: any, lead: boolean) => m.teacher_id !== staff.id && (lead || staff.role === 'admin');
 
 export async function PATCH(req: NextRequest) {
   const auth = await requireStaff(req, { academic: true });
@@ -115,7 +121,8 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ material: data });
       }
       case 'review': {
-        if (!(await isSubjectLead(db, staff, m.subject))) return bad(`Only the ${m.subject} subject lead can approve this.`, 403);
+        if (owner) return bad('Someone else has to approve your own material: another subject lead or the principal.', 403);
+        if (!canReview(staff, m, await isSubjectLead(db, staff, m.subject))) return bad(`Only the ${m.subject} subject lead can approve this.`, 403);
         if (m.moderation !== 'pending') return bad('This isn’t waiting for approval.', 409);
         const approve = b.decision === 'approve';
         const note = str(b.note, 1000);

@@ -95,7 +95,9 @@ export async function loadMarked(db: SupabaseClient, a: any): Promise<Marked> {
       marks.push({ studentId: sub.student_id, key, score: Number(r.score) || 0, max: Number(r.max_score) || 0, pick });
     }
   }
-  const questions = [...qmap.values()];
+  // With per-student versions the assignment's own questions are only a placeholder (the first version): show a
+  // question when someone was marked on it, or when everyone sat the same paper.
+  const questions = [...qmap.values()].filter(q => !variants.length || marks.some(m => m.key === q.key));
   const latest = [...subs.map(s => s.updated_at || ''), ...rows.map(r => r.created_at || '')].sort().pop() || '';
   return {
     assignment: a, questions, marks, students, handedIn: subs.length,

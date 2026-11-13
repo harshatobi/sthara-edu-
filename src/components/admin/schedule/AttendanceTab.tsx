@@ -1,5 +1,6 @@
 'use client';
 
+import { Stat, Stats } from '@/components/schedule/Stats';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { CaretLeftIcon as CaretLeft } from '@phosphor-icons/react/dist/ssr/CaretLeft';
 import { CaretRightIcon as CaretRight } from '@phosphor-icons/react/dist/ssr/CaretRight';
@@ -11,7 +12,7 @@ import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist
 import { MapPinIcon as MapPin } from '@phosphor-icons/react/dist/ssr/MapPin';
 import { Pager, pageWindow, usePageNumber } from '@/components/canon/Pager';
 import { Chip, Empty, Skeleton } from '@/components/canon/ui';
-import { CardHead, Kpi, downloadCsv } from '@/components/admin/kit';
+import { CardHead, downloadCsv } from '@/components/admin/kit';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
 import { fmtDate, plural } from '@/lib/admin/format';
 import { dayOf, hm, localOf, monthOf, parsePunchTable, type Day, type Person } from '@/lib/attendance/engine';
@@ -77,13 +78,13 @@ export default function AttendanceTab({ toast, canEdit }: { toast: (m: string) =
         </>}
       </div>
 
-      <div className="kpis">
-        <Kpi label="PRESENT" value={count(['present', 'late', 'half_day'])} note={`${count(['late'])} late`} valueColor="var(--green)" />
-        <Kpi label={date === now.date ? 'NOT IN YET' : 'ABSENT'} value={count(date === now.date ? ['not_in'] : ['absent'])} valueColor={count(['not_in', 'absent']) ? 'var(--red)' : undefined}
+      <Stats>
+        <Stat label="PRESENT" value={count(['present', 'late', 'half_day'])} note={`${count(['late'])} late`} valueColor="var(--green)" />
+        <Stat label={date === now.date ? 'NOT IN YET' : 'ABSENT'} value={count(date === now.date ? ['not_in'] : ['absent'])} valueColor={count(['not_in', 'absent']) ? 'var(--red)' : undefined}
           note={date === now.date ? `${count(['absent'])} absent after the day ended` : 'Expected but no record'} />
-        <Kpi label="ON LEAVE" value={count(['leave'])} />
-        <Kpi label="OFF" value={count(['off'])} note="Weekly off, holiday or not rostered" />
-      </div>
+        <Stat label="ON LEAVE" value={count(['leave'])} />
+        <Stat label="OFF" value={count(['off'])} note="Weekly off, holiday or not rostered" />
+      </Stats>
 
       <div className="card" style={{ marginBottom: 18 }}>
         <CardHead title="The day" sub="A supervisor's register mark or an HR correction beats the biometric device, which beats app and WhatsApp check-ins. Every punch is kept." />

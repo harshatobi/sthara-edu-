@@ -224,7 +224,7 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
             {movable && (
               <div className="sch-seg" role="radiogroup" aria-label="What a click does">
                 <button role="radio" aria-checked={!moving} className={!moving ? 'on' : ''} onClick={() => setMoving(false)}>Edit</button>
-                <button role="radio" aria-checked={moving} className={moving ? 'on' : ''} onClick={() => setMoving(true)}><ArrowsOut size={13} style={{ verticalAlign: -2, marginRight: 4 }} />Move</button>
+                <button role="radio" aria-checked={moving} className={moving ? 'on' : ''} onClick={() => setMoving(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><ArrowsOut size={13} />Move</button>
               </div>
             )}
           </div>

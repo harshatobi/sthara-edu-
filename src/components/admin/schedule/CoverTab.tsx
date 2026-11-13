@@ -1,5 +1,6 @@
 'use client';
 
+import { Stat, Stats } from '@/components/schedule/Stats';
 import { useEffect, useMemo, useState } from 'react';
 import { dayOf, hm, localOf } from '@/lib/attendance/engine';
 import { useAttendance } from '@/lib/attendance/useAttendance';
@@ -13,7 +14,7 @@ import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { ChatCircleTextIcon as ChatCircleText } from '@phosphor-icons/react/dist/ssr/ChatCircleText';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { Chip, Empty, type Tone } from '@/components/canon/ui';
-import { CardHead, Kpi, downloadCsv } from '@/components/admin/kit';
+import { CardHead, downloadCsv } from '@/components/admin/kit';
 import { LEAVE_TYPES } from '@/lib/admin/constants';
 import { fmtDate, isoDay, plural, sessionOf, sessionStart } from '@/lib/admin/format';
 import { candidatesFor, fairness, lessonsOn, needsOn, type Candidate, type Need } from '@/lib/schedule/cover';
@@ -93,12 +94,12 @@ export default function CoverTab({ rows, call, reload, toast }: { rows: Schedule
         <button className="btn sm" onClick={printSheet} disabled={!needs.length}><Printer size={13} /> Print cover sheet</button>
       </div>
 
-      <div className="kpis">
-        <Kpi label="NEED COVER" value={openCount} valueColor={openCount ? 'var(--red)' : 'var(--green)'} note={openCount ? 'Lessons with nobody yet' : needs.length ? 'Every lesson is covered' : 'Nothing to cover'} />
-        <Kpi label="COVERED" value={needs.filter(n => n.state === 'assigned').length} note={`${needs.filter(n => n.state === 'not_needed').length} marked not needed`} />
-        <Kpi label="AWAY" value={awayPeople.length} note={awayPeople.length ? awayPeople.slice(0, 3).map(a => (names.get(a.key) || '').split(' ')[0]).join(', ') + (awayPeople.length > 3 ? '…' : '') : 'Everyone is in'} />
-        <Kpi label="TO CONFIRM" value={reported.length} valueColor={reported.length ? 'var(--amber)' : undefined} note="Absences reported on WhatsApp" />
-      </div>
+      <Stats>
+        <Stat label="NEED COVER" value={openCount} valueColor={openCount ? 'var(--red)' : 'var(--green)'} note={openCount ? 'Lessons with nobody yet' : needs.length ? 'Every lesson is covered' : 'Nothing to cover'} />
+        <Stat label="COVERED" value={needs.filter(n => n.state === 'assigned').length} note={`${needs.filter(n => n.state === 'not_needed').length} marked not needed`} />
+        <Stat label="AWAY" value={awayPeople.length} note={awayPeople.length ? awayPeople.slice(0, 3).map(a => (names.get(a.key) || '').split(' ')[0]).join(', ') + (awayPeople.length > 3 ? '…' : '') : 'Everyone is in'} />
+        <Stat label="TO CONFIRM" value={reported.length} valueColor={reported.length ? 'var(--amber)' : undefined} note="Absences reported on WhatsApp" />
+      </Stats>
 
       {!versionOn(rows.versions, date) && <div className="note info" style={{ marginBottom: 18 }}>No timetable is in force on this date, so there are no lessons to cover.</div>}
 

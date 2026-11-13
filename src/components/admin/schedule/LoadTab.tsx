@@ -1,10 +1,11 @@
 'use client';
 
+import { Stat, Stats } from '@/components/schedule/Stats';
 import { useMemo, useState } from 'react';
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { ChartBarIcon as ChartBar } from '@phosphor-icons/react/dist/ssr/ChartBar';
 import { Chip, Empty, Skeleton, type Tone } from '@/components/canon/ui';
-import { CardHead, Kpi, downloadCsv } from '@/components/admin/kit';
+import { CardHead, downloadCsv } from '@/components/admin/kit';
 import { isoDay, plural, sessionOf, sessionStart } from '@/lib/admin/format';
 import { addDays, monthStart, weekStart } from '@/lib/schedule/engine';
 import { staffLoad, type LoadFlag, type PersonLoad } from '@/lib/schedule/analytics';
@@ -99,12 +100,12 @@ export default function LoadTab({ rows, call, toast, canEditTargets }: { rows: S
         </div>
       </div>
 
-      <div className="kpis">
-        <Kpi label="AVERAGE TIMETABLE" value={summary.averages.timetable} note={`periods a week (school target ${data.settings.default_target_per_week})`} />
-        <Kpi label="OVER TARGET" value={summary.counts.over + summary.counts.over_cap} valueColor={summary.counts.over + summary.counts.over_cap ? 'var(--red)' : 'var(--green)'} note="teachers above their target or cap" />
-        <Kpi label="UNDER-USED" value={summary.counts.under} valueColor={summary.counts.under ? 'var(--amber)' : undefined} note="timetabled below 70% of target" />
-        <Kpi label="COVERS" value={summary.averages.covers} note={`on average each; ${summary.counts.covers} carrying far more`} />
-      </div>
+      <Stats>
+        <Stat label="AVERAGE TIMETABLE" value={summary.averages.timetable} note={`periods a week (school target ${data.settings.default_target_per_week})`} />
+        <Stat label="OVER TARGET" value={summary.counts.over + summary.counts.over_cap} valueColor={summary.counts.over + summary.counts.over_cap ? 'var(--red)' : 'var(--green)'} note="teachers above their target or cap" />
+        <Stat label="UNDER-USED" value={summary.counts.under} valueColor={summary.counts.under ? 'var(--amber)' : undefined} note="timetabled below 70% of target" />
+        <Stat label="COVERS" value={summary.averages.covers} note={`on average each; ${summary.counts.covers} carrying far more`} />
+      </Stats>
 
       <div className="card" style={{ marginBottom: 18 }}>
         <CardHead title="Staff load" sub="Timetable against each teacher's target; what they taught, covered and did besides in the period. Flags compare each teacher with their own target and with colleagues."

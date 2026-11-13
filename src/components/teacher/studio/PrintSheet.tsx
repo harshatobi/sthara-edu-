@@ -8,9 +8,10 @@ import BankFigures from '@/components/studio/BankFigures';
 import { withoutFigures } from '@/lib/studio/handout';
 
 /** Prints the sheets below (hidden on screen). The global footer adds "Powered by Sthara" to every page. */
-export function printStudio() {
+export function printStudio(what: 'sheets' | 'bubbles' = 'sheets') {
   document.body.classList.add('sd-printing');
-  const done = () => { document.body.classList.remove('sd-printing'); window.removeEventListener('afterprint', done); };
+  if (what === 'bubbles') document.body.classList.add('sd-bubbles-only');
+  const done = () => { document.body.classList.remove('sd-printing', 'sd-bubbles-only'); window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
   window.print();
 }

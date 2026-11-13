@@ -23,6 +23,7 @@ import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/Use
 import { ArrowCounterClockwiseIcon as Undo } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
 import { SealCheckIcon as SealCheck } from '@phosphor-icons/react/dist/ssr/SealCheck';
 import { HandPalmIcon as HandPalm } from '@phosphor-icons/react/dist/ssr/HandPalm';
+import { CameraIcon as Camera } from '@phosphor-icons/react/dist/ssr/Camera';
 import { AiTag, Skeleton } from '@/components/canon/ui';
 import type { TStudent } from '@/lib/teacher/desk';
 import { parseItem, parseQuestionSet } from '@/lib/studio/items';
@@ -34,6 +35,8 @@ import { useStudioApi, type HomeData, type Material } from './api';
 import PresentMode from './PresentMode';
 import PrintSheet, { printStudio } from './PrintSheet';
 import BankFigures from '@/components/studio/BankFigures';
+import BubbleSheets, { type SheetData } from './BubbleSheets';
+import SheetMarker from './SheetMarker';
 
 type ItemAction = 'swap' | 'harder' | 'easier' | 'rewrite';
 type View = { kind: 'class' } | { kind: 'student'; id: string } | { kind: 'set'; label: string };
@@ -64,6 +67,11 @@ export default function Workspace({ id, students, home, onBack, onToast, onAnaly
   const [reviewNote, setReviewNote] = useState('');
   const [bankOpen, setBankOpen] = useState(false);
   const [again, setAgain] = useState(false);
+  const [paper, setPaper] = useState(false);
+  const [bubbles, setBubbles] = useState<SheetData[] | null>(null);
+  const [marking, setMarking] = useState(false);
+  // Bubble sheets print once they're on the page.
+  useEffect(() => { if (bubbles?.length) { const t = setTimeout(() => printStudio('bubbles'), 60); return () => clearTimeout(t); } }, [bubbles]);
   const [tallies, setTallies] = useState<Record<string, { counts: number[]; answer: number; class: string; at: string }>>({});
   const [tallyTick, setTallyTick] = useState(0);
   useEffect(() => {
@@ -160,7 +168,7 @@ export default function Workspace({ id, students, home, onBack, onToast, onAnaly
     if (!m) return null;
     setBusy(action); setError(null);
     try {
-      const r = await api<{ material: Material; students?: number; lesson?: { title: string } }>('/api/teacher/studio/materials', 'POST', { id: m.id, action, ...body });
+      const r = await api<{ material: Material; students?: number; assignmentId?: string; lesson?: { title: string } }>('/api/teacher/studio/materials', 'POST', { id: m.id, action, ...body });
       setM(r.material);
       return r;
     } catch (e: any) { setError(e?.message); return null; } finally { setBusy(null); }
@@ -180,12 +188,21 @@ export default function Workspace({ id, students, home, onBack, onToast, onAnaly
   const assignBlock = flagged.length ? `Fix ${flagged.length === 1 ? 'the question marked red' : `the ${flagged.length} questions marked red`} first`
     : needsApproval && m.moderation !== 'approved' ? 'Waiting for the subject lead’s approval' : null;
   const marks = shown.reduce((n, i) => n + i.marks, 0);
+  const allChoice = set.items.length > 0 && set.items.every(i => isChoice(i.qtype));
+  const lastAssignment = m.assignment_ids?.[m.assignment_ids.length - 1] ?? null;
+  async function printBubbles(assignmentId: string | null | undefined) {
+    if (!assignmentId) return;
+    try { const r = await api<{ sheets: SheetData[] }>(`/api/teacher/studio/sheets?assignmentId=${assignmentId}`); setBubbles(null); setTimeout(() => setBubbles(r.sheets), 0); }
+    catch (e: any) { setError(e?.message); }
+  }
   // Handing the same set out twice makes a second assignment: only on purpose.
   const assigned = (m.assignment_ids ?? []).length;
   const versionCount = set.audience === 'per_student' ? set.versions.length : set.audience === 'abc' ? set.sets.length : 1;
 
   return (
     <div className="sd-ws">
+      <div>
+      {marking && lastAssignment && <SheetMarker assignmentId={lastAssignment} nameOf={nameOf} onClose={() => setMarking(false)} onSaved={onToast} />}
       <div className="sd-card" style={{ overflow: 'hidden' }}>
         <div className="sd-dh">
           <div style={{ flex: 1, minWidth: 220 }}>
@@ -235,6 +252,7 @@ export default function Workspace({ id, students, home, onBack, onToast, onAnaly
         {bankOpen && <BankPicker cls={m.class} subject={m.subject} chapter={m.chapter_name ?? ''} have={new Set(set.items.map(i => i.bankId || i.id))} onPick={it => { add(it); onToast('Added from the bank'); }} />}
         {error && <div className="note err" role="alert" style={{ margin: 12 }}>{error}</div>}
       </div>
+      </div>
 
       <div className="sd-rail">
         {can.review && (
@@ -258,15 +276,25 @@ export default function Workspace({ id, students, home, onBack, onToast, onAnaly
                 <span style={{ flex: 1 }}>Assign {set.audience === 'per_student' ? `to ${set.versions.length} students` : `to ${m.class}`}<small>{assignBlock ?? (assigned && !again ? `Already assigned${assigned > 1 ? ` ${assigned} times` : ''}. Hand-ins and marks are in My materials.` : set.handout === 'online' ? 'Answered on Sthara' : 'Handed in on paper, marked from photos')}</small></span>
                 {assigned > 0 && !again && onAnalysis && <button className="btn sm" onClick={() => onAnalysis(m.assignment_ids[m.assignment_ids.length - 1])}>How it went</button>}
                 {!assignBlock && assigned > 0 && !again && <button className="btn sm" onClick={() => setAgain(true)}>Assign again</button>}
-                {!assignBlock && (!assigned || again) && (
+                {!assignBlock && (!assigned || again) && (<>
                   <span style={{ display: 'flex', gap: 6, width: '100%' }}>
                     <input type="date" className="cmp-in" aria-label="Due date" value={due} min={new Date().toISOString().slice(0, 10)} onChange={e => setDue(e.target.value)} style={{ flex: 1, padding: '6px 8px' }} />
-                    <button className="btn sm pri" disabled={!due || !!busy} onClick={async () => { const r = await post('assign', { dueDate: due }); if (r) { setAgain(false); setDue(''); } if (r) onToast(`Assigned to ${r.students} student${r.students === 1 ? '' : 's'}`); }}>Assign</button>
+                    <button className="btn sm pri" disabled={!due || !!busy} onClick={async () => { const r = await post('assign', { dueDate: due, paper: paper && allChoice }); if (r) { setAgain(false); setDue(''); if (paper && allChoice) printBubbles(r.assignmentId); } if (r) onToast(`Assigned to ${r.students} student${r.students === 1 ? '' : 's'}`); }}>Assign</button>
                   </span>
-                )}
+                  {allChoice && <label style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center', width: '100%' }}><input type="checkbox" checked={paper} onChange={e => setPaper(e.target.checked)} /> On paper: print a bubble sheet each, mark from photos</label>}
+                </>)}
               </div>
               <button aria-disabled={!!flagged.length} onClick={() => { if (flagged.length) return; printStudio(); post('printed'); }}><Printer size={19} weight="duotone" /><span>Print<small>{set.audience === 'class' ? 'One sheet, answer key at the end' : 'A named sheet each, answer keys at the end'}</small></span></button>
               <button onClick={() => setPresent(true)}><ProjectorScreen size={19} weight="duotone" /><span>Present in class<small>Big text, one question at a time</small></span></button>
+              {allChoice && lastAssignment && (
+                <div style={{ flexWrap: 'wrap' }}>
+                  <Camera size={19} weight="duotone" /><span style={{ flex: 1 }}>Paper quiz<small>A coded bubble sheet per student; mark the class from photos</small></span>
+                  <span style={{ display: 'flex', gap: 6, width: '100%' }}>
+                    <button className="btn sm" disabled={!!busy} onClick={() => printBubbles(lastAssignment)}>Print bubble sheets</button>
+                    <button className="btn sm" onClick={() => setMarking(true)}>Mark from photos</button>
+                  </span>
+                </div>
+              )}
               <div style={{ flexWrap: 'wrap' }}>
                 <CalendarPlus size={19} weight="duotone" /><span style={{ flex: 1 }}>Attach to a lesson<small>{home?.lessons.length ? 'Listed with the lesson in your planner' : 'No upcoming lessons planned'}</small></span>
                 {!!home?.lessons.length && (
@@ -312,6 +340,7 @@ export default function Workspace({ id, students, home, onBack, onToast, onAnaly
           return `${r.right} of ${r.total} hands on the right answer. Saved for the class.`;
         }} />}
       <PrintSheet material={m} set={set} school={home?.school.name ?? ''} nameOf={nameOf} />
+      {bubbles && <BubbleSheets sheets={bubbles} school={home?.school.name ?? ''} title={m.title} cls={m.class} subject={m.subject} nameOf={nameOf} />}
     </div>
   );
 }

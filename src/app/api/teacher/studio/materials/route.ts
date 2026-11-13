@@ -228,7 +228,9 @@ async function assign(staff: Staff, db: any, m: any, set: QuestionSetContent, b:
 
   const isQuiz = set.setKind === 'quiz' && base.every(i => i.qtype === 'mcq' || i.qtype === 'assertion_reason');
   const allChoice = [...base, ...own.flatMap(o => o.items)].every(i => i.qtype === 'mcq' || i.qtype === 'assertion_reason');
-  const mode = allChoice ? 'typed' : set.handout === 'online' ? 'typed' : 'handwritten';
+  // A paper quiz (bubble sheets) is answered on paper and marked from photos; otherwise choice-only work is answered on Sthara.
+  const paper = b?.paper === true && allChoice;
+  const mode = paper ? 'handwritten' : allChoice ? 'typed' : set.handout === 'online' ? 'typed' : 'handwritten';
   const { questions } = sanitizeQuestions(base.map(toQuestion));
 
   const ctx = { db, schoolId: staff.schoolId, userId: staff.id, cls: m.class, subject: m.subject };

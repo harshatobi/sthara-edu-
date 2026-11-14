@@ -134,6 +134,7 @@ function PartRow({ p }: { p: Part }) {
 function Question({ q }: { q: PaperQuestion }) {
   return (
     <Row n={`${q.q}.`} marks={q.marks}>
+      {q.bank && <p className="bpp-bank no-print" title={q.bank.official ? 'An official CBSE question: students may have seen it.' : 'From the question bank'}>{q.bank.official ? `Official CBSE${q.bank.source ? ` · ${q.bank.source}` : ''}` : 'From the question bank'}</p>}
       <Body b={q} q={q} />
       {q.alt && <><p className="bpp-or">OR</p><Body b={q.alt} q={q} /></>}
     </Row>

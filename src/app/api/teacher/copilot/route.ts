@@ -10,6 +10,7 @@ import { enginesFor, labCatalogue } from '@/lib/lab/registry';
 import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconceptions';
 import { designsFor } from '@/lib/papers/designs';
 import { generatePaper } from '@/lib/papers/generate';
+import { paperBankFill } from '@/lib/kb/papers';
 import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
@@ -76,10 +77,14 @@ export async function POST(req: NextRequest) {
       if (hit?.reply) return NextResponse.json({ reply: { ...hit.reply, reused: hit.reused } });
     }
     try {
-      const paper = await generatePaper(design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, Math.floor(Math.random() * 1e9));
+      const seed = Math.floor(Math.random() * 1e9);
+      // The question bank fills every slot it can (official CBSE questions marked); the AI writes only the rest.
+      const { fill } = await paperBankFill(db, staff.schoolId, cls, subject, seed);
+      const { fromBank, ...paper } = await generatePaper(design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, seed, 270_000, fill);
       const total = paper.sections.reduce((n, sec) => n + sec.questions.length, 0);
+      const official = paper.sections.reduce((n, sec) => n + sec.questions.filter(q => q.bank?.official).length, 0);
       const reply = {
-        say: `Here is a full ${design.subject}${design.variant ? ` (${design.variant})` : ''} practice paper in the CBSE 2026-27 board pattern: ${total} questions, ${design.maxMarks} marks, with its marking scheme. Every question was checked against the board design; please read it through before you use it.`,
+        say: `Here is a full ${design.subject}${design.variant ? ` (${design.variant})` : ''} practice paper in the CBSE 2026-27 board pattern: ${total} questions, ${design.maxMarks} marks, with its marking scheme. ${fromBank ? `${fromBank} question${fromBank === 1 ? '' : 's'} came from the question bank${official ? ` (${official} official CBSE, marked: students may have seen them)` : ''}; the rest were written and checked against the board design.` : 'Every question was checked against the board design.'} Please read it through before you use it.`,
         ask: [], artifact: { kind: 'paper' as const, title: paper.title, paper },
         suggestions: ['Make a revision worksheet on the weakest chapter', 'Plan the revision lessons before the exam'],
       };

@@ -24,6 +24,7 @@
 .canon .bpp-pl { font-weight:700; }
 .canon .bpp-pm { text-align:right; }
 .canon .bpp-or { text-align:center; font-weight:700; margin:6px 0 !important; }
+.canon .bpp-bank { display:inline-block; font-size:11px; font-weight:700; color:#7A4B00; background:#FFF5DE; border:1px solid #F5DDA6; border-radius:6px; padding:1px 7px; margin:0 0 4px !important; }
 .canon .bpp-fig { margin:6px 0; text-align:center; }
 .canon .bpp-fig img { max-width:100%; max-height:260px; }
 .canon .bpp-fig figcaption { font-size:12px; color:#475569; }

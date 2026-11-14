@@ -11,7 +11,7 @@ import { topicKey } from '@/lib/teacher/topicKey';
 import { pageAll } from '@/lib/ops/page';
 import { defaultBlueprint, isNumericSubject, parseBlueprint, slotsOf } from '@/lib/studio/blueprint';
 import { abcSets, assembleClass, bandMid, perStudent, reasonFor, type Band, type Gap } from '@/lib/studio/pick';
-import { checkAndFix, classHistory, loadPool, topicEvidence, translateItems, writeGapItems, type StudioCtx } from '@/lib/studio/server';
+import { checkAndFix, classHistory, loadPool, saveToBank, topicEvidence, translateItems, writeGapItems, type StudioCtx } from '@/lib/studio/server';
 import { rankWeakTopics } from '@/lib/studio/weak';
 import { accessNeeds, createMaterial } from '@/lib/studio/materials';
 import { isLanguage } from '@/lib/studio/languages';
@@ -106,6 +106,11 @@ export async function POST(req: NextRequest) {
     for (const l of lists) for (const it of l) if (it) used.set(it.id, it);
     const fallbackGap = (it: StudioItem): Gap => gapOf.get(it.id) ?? { slotIndex: 0, slot: { competency: it.competency, marks: it.marks as 1, qtype: it.qtype }, topic: it.topic || null, count: 1 };
     let checked = await checkAndFix(ctx, [...used.values()], fallbackGap, history.past);
+    // New questions that passed their checks join the school's bank now, so the next request reuses them (2026-11-14).
+    {
+      const fresh = checked.filter(i => !i.bankId && i.check.status !== 'flagged');
+      if (fresh.length) { const ids = await saveToBank(ctx, fresh); for (const it of fresh) { const id = ids.get(it.id); if (id) it.bankId = id; } }
+    }
     if (language !== 'en') checked = await translateItems(ctx, checked, language);
     const byId = new Map(checked.map(i => [i.id, i]));
     const ids = (l: (StudioItem | null)[]) => l.filter((x): x is StudioItem => !!x && byId.has(x.id)).map(x => x.id);

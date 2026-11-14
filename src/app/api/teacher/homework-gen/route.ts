@@ -4,8 +4,13 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
+import { inScope } from '@/lib/teacher/scope';
+import { generatorQuestions, kbArgs } from '@/lib/kb/generators';
+import { asDifficulty, asKind } from '@/lib/kb/plan';
 
 export const dynamic = 'force-dynamic';
+// Bank-first builds can write and check several gap questions.
+export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
   // Each call spends model quota: teachers and admins only, rate-limited.
@@ -16,10 +21,33 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { topic, subject, studentClass, difficulty = 'medium', numQuestions = 5, questionType = 'mixed' } = await request.json();
+    const body = await request.json();
+    const { topic, subject, studentClass, difficulty = 'medium', numQuestions = 5, questionType = 'mixed' } = body;
     const aiBlocked = await aiGate(auth.staff.id, 'teacherTools');
     if (aiBlocked) return aiBlocked;
     if (!aiConfigured()) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
+
+    // Knowledge base first (2026-11-14): a saved set, near-identical offers, or a bank-first build with AI for gaps.
+    if (studentClass && subject && topic && (auth.staff.role !== 'teacher' || inScope(auth.staff.scope, studentClass, subject))) {
+      try {
+        const r = await generatorQuestions(request, auth.db, auth.staff, {
+          feature: 'homeworkGen', cls: String(studentClass).slice(0, 40), subject: String(subject).slice(0, 80), topics: [String(topic).slice(0, 200)],
+          count: Math.min(Math.max(Number(numQuestions) || 5, 1), 15), kind: asKind(questionType), difficulty: asDifficulty(difficulty), ...kbArgs(body), title: String(topic).slice(0, 120),
+        });
+        if (r && 'offers' in r) return NextResponse.json({ offers: r.offers });
+        if (r) {
+          return NextResponse.json({
+            kb: { ...r.kb, note: r.note },
+            questions: r.questions.map(q => (q.type === 'mcq'
+              ? { question: q.text, type: 'mcq', marks: q.marks, options: (q.options || []).map((o, i) => `${'ABCDEF'[i]}. ${o}`), correctOption: 'ABCDEF'[q.answer ?? 0], answer: q.scheme }
+              : { question: q.text, type: q.type, marks: q.marks, answer: q.scheme })),
+          });
+        }
+      } catch (e: any) {
+        if (e?.status === 404) return NextResponse.json({ error: e.message }, { status: 404 });
+        console.warn('[homework-gen] knowledge base path failed, writing afresh:', e?.message);
+      }
+    }
 
 
     const typeInstruction =

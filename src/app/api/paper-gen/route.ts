@@ -4,8 +4,12 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
+import { generatorQuestions, kbArgs } from '@/lib/kb/generators';
+import { asDifficulty, asKind } from '@/lib/kb/plan';
 
 export const dynamic = 'force-dynamic';
+// Bank-first builds can write and check several gap questions.
+export const maxDuration = 120;
 
 type PaperType = 'mcq' | 'saq' | 'laq' | 'mixed';
 
@@ -118,6 +122,26 @@ export async function POST(request: NextRequest) {
     const aiBlocked = await aiGate(user.id, 'teacherTools');
     if (aiBlocked) return aiBlocked;
     if (!aiConfigured()) return NextResponse.json({ error: 'Gemini API key not configured.' }, { status: 500 });
+
+    // Knowledge base first (2026-11-14): a saved set, near-identical offers, or a bank-first build with AI for gaps.
+    if (grade && subject && chapters.length) {
+      try {
+        const r = await generatorQuestions(request, auth.db, auth.staff, {
+          feature: 'paperGen', cls: grade, subject, topics: chapters, count: Math.min(numQuestions, 30), kind: asKind(paperType), difficulty: asDifficulty(difficulty),
+          ...kbArgs(body), title: `${subject} paper: ${chapters.slice(0, 3).join(', ')}${chapters.length > 3 ? '…' : ''}`,
+        });
+        if (r && 'offers' in r) return NextResponse.json({ offers: r.offers, paperType });
+        if (r) {
+          const questions = r.questions.map(q => (q.type === 'mcq'
+            ? { type: 'mcq', question: q.text, options: Object.fromEntries((q.options || []).slice(0, 4).map((o, i) => ['abcd'[i], o])), correctOptionId: 'abcd'[q.answer ?? 0], marks: q.marks, ...(q.sourceRef ? { source: q.sourceRef } : {}) }
+            : { type: q.type === 'long' ? 'laq' : 'saq', question: q.text, modelAnswer: q.scheme, marks: q.marks, ...(q.sourceRef ? { source: q.sourceRef } : {}) }));
+          return NextResponse.json({ questions, paperType, kb: { ...r.kb, note: r.note } });
+        }
+      } catch (e: any) {
+        if (e?.status === 404) return NextResponse.json({ error: e.message }, { status: 404 });
+        console.warn('[paper-gen] knowledge base path failed, writing afresh:', e?.message);
+      }
+    }
 
     const prompt = buildPrompt(grade, chapters, difficulty, numQuestions, paperType, subject);
 

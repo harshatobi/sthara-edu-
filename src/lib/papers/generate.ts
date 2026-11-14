@@ -5,7 +5,7 @@ import type { UsageMeta } from '@/lib/ai/usage';
 import { AI_MODELS } from '@/lib/settings/limits';
 import { pooled, withRetry } from '@/lib/ai/retry';
 import { buildBlueprint, type BlueprintItem } from './blueprint';
-import { paperTitle, readSection, type Paper, type PaperSection } from './paper';
+import { paperTitle, readSection, type Paper, type PaperQuestion, type PaperSection } from './paper';
 import type { PaperDesign, QType } from './designs';
 
 /**
@@ -101,13 +101,27 @@ async function writeSection(design: PaperDesign, section: { id: string; title: s
   return { id: section.id, title: section.title, questions: second.questions };
 }
 
-/** `budgetMs` keeps the whole paper inside the route's time limit, with room to answer. */
-export async function generatePaper(design: PaperDesign, cur: CurriculumSubject, meta: UsageMeta, seed: number, budgetMs = 270_000): Promise<Paper> {
+/** Fills one slot from the question bank, or null for the AI to write it (lib/kb/papers.ts). */
+export type BankFill = (item: BlueprintItem) => PaperQuestion | null;
+
+/**
+ * `budgetMs` keeps the whole paper inside the route's time limit, with room to answer. With `bank`, every slot the
+ * question bank can fill (checked against the design like any written question) is taken from it, and the AI writes
+ * only the rest; a section the bank fills completely costs no AI at all (decisions of 2026-11-14).
+ */
+export async function generatePaper(design: PaperDesign, cur: CurriculumSubject, meta: UsageMeta, seed: number, budgetMs = 270_000, bank?: BankFill): Promise<Paper & { fromBank: number }> {
   const plan = buildBlueprint(design, cur, seed);
   const budget: Budget = { deadline: Date.now() + budgetMs, stop: new AbortController() };
+  const filled = new Map<number, PaperQuestion>();
+  if (bank) for (const item of plan) { const q = bank(item); if (q) filled.set(item.q, q); }
   // Two sections at a time: all at once trips the providers' per-minute limits and makes overload worse.
   // The first section that fails stops the rest, so nothing more is billed for a paper that can't be finished.
-  const sections = await pooled(design.sections.map(sec => () => writeSection(design, sec, plan.filter(i => i.section === sec.id), meta, budget)
-    .catch(e => { budget.stop.abort(); throw e; })), 2);
-  return { design: design.key, title: paperTitle(design), seed, sections };
+  const sections = await pooled(design.sections.map(sec => async () => {
+    const items = plan.filter(i => i.section === sec.id);
+    const left = items.filter(i => !filled.has(i.q));
+    const written = left.length ? await writeSection(design, sec, left, meta, budget).catch(e => { budget.stop.abort(); throw e; }) : { id: sec.id, title: sec.title, questions: [] };
+    const byQ = new Map<number, PaperQuestion>([...written.questions.map(q => [q.q, q] as const), ...items.filter(i => filled.has(i.q)).map(i => [i.q, filled.get(i.q)!] as const)]);
+    return { id: sec.id, title: sec.title, questions: items.map(i => byQ.get(i.q)).filter((q): q is PaperQuestion => !!q) };
+  }), 2);
+  return { design: design.key, title: paperTitle(design), seed, sections, fromBank: filled.size };
 }

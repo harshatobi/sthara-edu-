@@ -43,10 +43,10 @@ export interface StudioCtx {
 // ── The bank ─────────────────────────────────────────────────────────────────
 const BANK_COLS = 'id, scope, school_id, class, subject, chapter_key, topic, outcome_code, competency, qtype, marks, language, body, status, checks, source_ref';
 
-/** Bank items for a chapter: Sthara's (any status but retired) and this school's own, in English. */
+/** Bank items for a chapter: Sthara's (any status but retired) and this school's own, in English; near-identical copies (dup_of, set by the nightly job) left out. */
 export async function loadPool(ctx: Pick<StudioCtx, 'db' | 'schoolId' | 'cls' | 'subject'>, chapterKey: string): Promise<StudioItem[]> {
   const { data } = await pageAll<any>((a, b) => ctx.db.from('bank_items').select(BANK_COLS)
-    .eq('chapter_key', chapterKey).eq('language', 'en').neq('status', 'retired')
+    .eq('chapter_key', chapterKey).eq('language', 'en').neq('status', 'retired').is('dup_of', null)
     .or(`school_id.is.null,school_id.eq.${ctx.schoolId}`).order('id').range(a, b), 3000);
   // A bank is per grade, not per section: Sthara's rows say "Class 10" and a school's own were saved from one section
   // ("Class 10-A"), and both serve every section of that grade.

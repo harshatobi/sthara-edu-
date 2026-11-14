@@ -1,16 +1,20 @@
 'use client';
 
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { equationText, parseFormula, pretty, solveReaction, type ReactionParams } from '@/lib/lab/engines/reactions';
+import { ATOM_COLOUR } from '@/lib/lab/molecules';
+import { BENCHES } from '@/lib/lab/benches';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
+import { use3d } from './use3d';
 import { useRun } from './useRun';
 
 const W = 1000, H = 480;
 
-const ATOM_COLOUR: Record<string, string> = {
-  H: '#E2E8F0', O: '#E11D48', C: '#334155', N: '#2F6BFF', Na: '#A855F7', Mg: '#94A3B8', Al: '#CBD5E1', S: '#EAB308', Cl: '#22C55E',
-  Ca: '#F97316', Fe: '#B45309', Cu: '#C2410C', Zn: '#64748B', Ag: '#D1D5DB', Ba: '#14B8A6', Pb: '#475569', K: '#8B5CF6',
-};
+// The 3D bench and its library load only when a 3D view is shown.
+const Reactions3D = dynamic(() => import('./Reactions3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
+const ReactionBench3D = dynamic(() => import('./ReactionBench3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 /** One molecule as a cluster of atoms, coloured by element. */
 function Molecule({ formula, x, y }: { formula: string; x: number; y: number }) {
@@ -26,7 +30,7 @@ function Molecule({ formula, x, y }: { formula: string; x: number; y: number }) 
   );
 }
 
-export default function ReactionsView({ params: p, conceal, runKey }: ViewProps<ReactionParams>) {
+function ReactionsDiagram({ params: p, conceal, runKey }: ViewProps<ReactionParams>) {
   const r = solveReaction(p);
   const k = useRun(runKey, conceal, 1400);
   // Molecule groups, laid out left (reactants) and right (products).
@@ -76,5 +80,36 @@ export default function ReactionsView({ params: p, conceal, runKey }: ViewProps<
       {conceal && <text className="lb-sm" x={500} y={330} textAnchor="middle">{r.rx.label}: one of each shown, before balancing</text>}
       <text className="lb-sm" x={960} y={470} textAnchor="end">Atomic masses from the NCERT table</text>
     </svg>
+  );
+}
+
+type Level = 'bench' | 'particles' | 'flat';
+const LEVELS: { value: Level; label: string }[] = [{ value: 'bench', label: 'Bench' }, { value: 'particles', label: 'Particles' }, { value: 'flat', label: 'Diagram' }];
+
+/**
+ * The reaction at three levels: what you see on the bench (3D, for the
+ * reactions that have a scene), the particles (3D), and the flat diagram with
+ * masses and atom counts. 3D is used where there is room and the browser can
+ * draw it; the diagram is what prints.
+ */
+export default function ReactionsView(props: ViewProps<ReactionParams>) {
+  const { box, can3d, fail } = use3d();
+  // What the teacher chose; null = the richest level this reaction has.
+  const [chosen, setChosen] = useState<Level | null>(null);
+  const hasBench = props.params.reaction in BENCHES;
+  const level: Level = !can3d ? 'flat' : chosen === 'bench' && !hasBench ? 'particles' : chosen ?? (hasBench ? 'bench' : 'particles');
+  return (
+    <div ref={box} className="lab-3d-wrap">
+      {can3d && (
+        <div className="lab-3d-switch" role="radiogroup" aria-label="How the reaction is shown">
+          {LEVELS.map(l => (
+            <button key={l.value} type="button" role="radio" aria-checked={level === l.value} className={level === l.value ? 'on' : ''}
+              disabled={l.value === 'bench' && !hasBench} title={l.value === 'bench' && !hasBench ? 'No bench scene for this reaction yet' : undefined}
+              onClick={() => setChosen(l.value)}>{l.label}</button>
+          ))}
+        </div>
+      )}
+      {level === 'bench' ? <ReactionBench3D {...props} onFail={fail} /> : level === 'particles' ? <Reactions3D {...props} onFail={fail} /> : <ReactionsDiagram {...props} />}
+    </div>
   );
 }

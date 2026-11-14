@@ -66,6 +66,66 @@
   .lab-svg .lb-flow { animation:none; }
 }
 
+/* ── 3D bench (prototype: reactions) ─────────────────────────────────────── */
+.lab-3d-wrap { position:relative; }
+.lab-3d-switch { position:absolute; top:4px; right:4px; z-index:3; display:flex; gap:2px; padding:3px; border-radius:999px; background:#EEF2F7; }
+.lab-3d-switch button { border:0; background:transparent; padding:5px 12px; border-radius:999px; font:700 12px 'Plus Jakarta Sans',system-ui,sans-serif; color:#556378; cursor:pointer; }
+.lab-3d-switch button.on { background:#fff; color:#002147; box-shadow:0 1px 3px rgba(0,33,71,.18); }
+.lab-3d { position:relative; width:100%; aspect-ratio:1000 / 480; border-radius:14px; overflow:hidden; background:radial-gradient(120% 90% at 50% 35%, #FFFFFF 0%, #EEF3FA 60%, #DDE6F2 100%); font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; user-select:none; }
+.lab-3d-wait { animation:lab-fade 1s ease-in-out infinite alternate; }
+.lab-3d-stage { position:absolute; inset:0; }
+.lab-3d-stage canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+.lab-3d-stage canvas:active { cursor:grabbing; }
+.lab-3d-top { position:absolute; top:12px; left:0; right:0; text-align:center; pointer-events:none; display:flex; flex-direction:column; gap:2px; }
+.lab-3d-top b { font-size:clamp(15px,2.2cqw,24px); font-weight:800; }
+.lab-3d-top span { font-size:12.5px; font-weight:600; color:#556378; }
+.lab-3d-label { position:absolute; top:0; left:0; pointer-events:none; white-space:nowrap; font-size:clamp(12px,1.6cqw,17px); font-weight:800; padding:2px 9px; border-radius:999px; background:rgba(255,255,255,.82); will-change:transform; }
+.lab-3d-foot { position:absolute; left:14px; right:14px; bottom:10px; display:flex; flex-direction:column; gap:6px; pointer-events:none; }
+.lab-3d-key { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12.5px; font-weight:700; color:#33415A; }
+.lab-3d-key span { display:inline-flex; align-items:center; gap:6px; }
+.lab-3d-key i { width:12px; height:12px; border-radius:50%; border:1px solid #002147; }
+.lab-3d-scrub { display:flex; align-items:center; gap:10px; font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#556378; pointer-events:auto; max-width:520px; }
+.lab-3d-scrub input { flex:1; accent-color:#0F766E; }
+.lab-3d-note { margin:0; font-size:13px; font-weight:700; min-height:18px; }
+.lab-3d-wrap { container-type:inline-size; }
+.lab-3d-switch button:disabled { opacity:.4; cursor:not-allowed; }
+.lab-3d-dim { position:absolute; inset:0; background:#060B16; opacity:0; pointer-events:none; }
+.lab-3d-top.lab-3d-plate b { align-self:center; padding:2px 14px; border-radius:999px; background:rgba(255,255,255,.84); }
+.lab-3d-top.lab-3d-plate span { align-self:center; padding:0 10px; border-radius:999px; background:rgba(255,255,255,.84); }
+.lab-3d-scrub.lab-3d-plate { align-self:flex-start; width:min(520px,100%); padding:4px 12px; border-radius:999px; background:rgba(255,255,255,.84); }
+.canon .lab-show .lab-3d { max-height:calc(100vh - 210px); }
+
+/* 3D physics scenes: labels on the apparatus and buttons for set views */
+.lab-3d-tag { font-size:clamp(11px,1.35cqw,15px); box-shadow:0 1px 3px rgba(0,33,71,.2); transition:opacity .15s; }
+.lab-3d-mini { border:1px solid #CBD5E1; background:#fff; border-radius:999px; padding:2px 10px; font:700 11px 'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; cursor:pointer; text-transform:none; letter-spacing:0; }
+.lab-3d-looks { position:absolute; left:12px; top:10px; display:flex; gap:6px; }
+.lab-3d-looks button { border:0; border-radius:999px; padding:5px 12px; background:rgba(255,255,255,.88); font:700 12px 'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; cursor:pointer; box-shadow:0 1px 3px rgba(0,33,71,.18); }
+
+/* ── 3D microscope (prototype) ───────────────────────────────────────────── */
+.lab-scope { display:grid; grid-template-columns:minmax(0,40fr) minmax(0,34fr) minmax(0,26fr); gap:0; }
+.lab-scope-model { position:relative; min-height:0; }
+.lab-scope-hint { position:absolute; left:12px; bottom:8px; margin:0; font-size:11.5px; font-weight:700; color:#556378; pointer-events:none; }
+.lab-scope-parts { position:absolute; left:10px; top:10px; border:0; border-radius:999px; padding:5px 12px; background:rgba(255,255,255,.86); font:700 12px 'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; cursor:pointer; box-shadow:0 1px 3px rgba(0,33,71,.18); }
+.lab-scope-tag { font-size:clamp(10px,1.15cqw,13px); padding:1px 8px; box-shadow:0 1px 3px rgba(0,33,71,.2); transition:opacity .2s; }
+.lab-scope-eye { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:34px 6px 10px; min-height:0; }
+.lab-scope-eye svg.lab-scope-field { width:auto; height:auto; max-width:100%; max-height:calc(100% - 30px); aspect-ratio:1; flex:1 1 auto; min-height:0; }
+.lab-scope-mag { margin:0; font-size:clamp(10.5px,1.2cqw,13px); font-weight:600; color:#556378; text-align:center; }
+.lab-scope-mag b { color:#002147; font-size:1.25em; }
+.lab-scope-side { display:flex; flex-direction:column; justify-content:center; gap:clamp(4px,.9cqw,10px); padding:38px 14px 10px 8px; min-height:0; font-size:clamp(10.5px,1.2cqw,13px); }
+.lab-scope-name { font-size:1.2em; font-weight:800; line-height:1.2; }
+.lab-scope-state { margin:0; font-weight:700; color:#B45309; min-height:2.6em; line-height:1.3; }
+.lab-scope-state.good { color:#0F766E; }
+.lab-scope-state.bad { color:#C01048; }
+.lab-scope-side label { display:flex; flex-direction:column; gap:2px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; font-size:.82em; color:#556378; }
+.lab-scope-side input[type=range] { width:100%; accent-color:#0F766E; margin:0; }
+.lab-scope-move { display:flex; flex-direction:column; gap:3px; }
+.lab-scope-move > span { font-weight:800; letter-spacing:.05em; text-transform:uppercase; font-size:.82em; color:#556378; }
+.lab-scope-move > div { display:flex; gap:4px; }
+.lab-scope-move button, .lab-scope-sharp { border:1px solid #CBD5E1; background:#fff; border-radius:8px; padding:3px 9px; font:700 1em 'Plus Jakarta Sans',system-ui,sans-serif; color:#002147; cursor:pointer; }
+.lab-scope-move button.wide { margin-left:auto; }
+.lab-scope-move small { color:#556378; font-weight:600; line-height:1.25; }
+.lab-scope-sharp { align-self:flex-start; }
+
 /* ── Builder ─────────────────────────────────────────────────────────────── */
 .canon .lab-qs { display:flex; flex-direction:column; gap:8px; }
 .canon .lab-q { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:12px; font-size:13px; cursor:pointer; text-align:left; }

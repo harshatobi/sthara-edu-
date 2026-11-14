@@ -1,14 +1,24 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { LEG, radiusFrom, solveInstrument, type InstrumentParams } from '@/lib/lab/engines/instruments';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
+import With3D from './With3D';
+
+const Instruments3D = dynamic(() => import('./Instruments3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 const W = 1000, H = 480;
 const HL = '#E11D48';
 
 /** The scales magnified, read the way a student reads them; the matching division is marked. */
-export default function InstrumentsView({ params: p, conceal }: ViewProps<InstrumentParams>) {
+export default function InstrumentsView(props: ViewProps<InstrumentParams>) {
+  // The spherometer has no 3D model yet.
+  if (props.params.tool === 'spherometer') return <InstrumentsDiagram {...props} />;
+  return <With3D label="How the instrument is shown" solid={fail => <Instruments3D {...props} onFail={fail} />} flat={<InstrumentsDiagram {...props} />} />;
+}
+
+function InstrumentsDiagram({ params: p, conceal }: ViewProps<InstrumentParams>) {
   const r = solveInstrument(p);
   return (
     <svg className="lab-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${p.tool} reading`}>

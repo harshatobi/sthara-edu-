@@ -1,14 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { induced, type EmiParams } from '@/lib/lab/engines/emi';
 import { fmt } from '@/lib/lab/types';
 import type { ViewProps } from './types';
 import { useRun } from './useRun';
+import With3D from './With3D';
+
+const Emi3D = dynamic(() => import('./Emi3D'), { ssr: false, loading: () => <div className="lab-3d lab-3d-wait" /> });
 
 const W = 1000, H = 480;
 
 /** The magnet moves along the coil's axis; the galvanometer swings while it moves, and the coil's face shows its pole. */
-export default function EmiView({ params: p, conceal, runKey }: ViewProps<EmiParams>) {
+export default function EmiView(props: ViewProps<EmiParams>) {
+  return <With3D label="How the experiment is shown" solid={fail => <Emi3D {...props} onFail={fail} />} flat={<EmiDiagram {...props} />} />;
+}
+
+function EmiDiagram({ params: p, conceal, runKey }: ViewProps<EmiParams>) {
   const k = useRun(runKey, conceal, 2500);
   const r = induced(p);
   const moving = !conceal && p.motion !== 'still' && k > 0 && k < 1;

@@ -1,7 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["bom1"],
+  "regions": [
+    "bom1"
+  ],
   "functions": {
-    "api/cpsat.py": { "maxDuration": 180 }
+    "api/cpsat.py": {
+      "maxDuration": 180
+    },
+    "api/kb_embed.py": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
   }
 }

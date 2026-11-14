@@ -1,0 +1,9 @@
+# Knowledge-base jobs (nightly on GitHub Actions; locally in scripts/kb/.venv). No AI SDKs: everything runs on our side.
+onnxruntime==1.32.0
+tokenizers==0.23.3
+numpy==2.5.4
+scikit-learn==1.9.1
+sympy==1.14.0
+psycopg[binary]==3.3.9
+jsonschema==4.26.0
+pytest==8.4.2

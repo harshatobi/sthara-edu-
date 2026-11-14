@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ExamIcon as Exam } from '@phosphor-icons/react/dist/ssr/Exam';
 import { StudentIcon } from '@phosphor-icons/react/dist/ssr/Student';
 import { Empty, PageBar, Skeleton } from '@/components/canon/ui';
@@ -16,7 +17,7 @@ import '@/styles/people.css';
 
 interface MySheet {
   id: string; status: 'open' | 'submitted' | 'locked'; code: string; assessment: string; term: string; termSeq: number; heldFrom: string | null; heldTo: string | null;
-  subject: string; cls: string; maxMarks: number; returnedNote: string | null; reopenedReason: string | null; marked: number; of: number;
+  subject: string; cls: string; maxMarks: number; returnedNote: string | null; reopenedReason: string | null; marked: number; of: number; practice?: boolean;
 }
 export interface MyExams {
   session: string; today: string; me: { id: string; name: string; manage: boolean };
@@ -31,7 +32,10 @@ const CT = { open: ['IN PROGRESS', 'n'], reviewed: ['REVIEWED', 'b'], published:
 export default function TeacherExams() {
   const { data, error, reload, call } = useApi<MyExams>('/api/teacher/exams');
   const [toast, toastEl] = useToast(3600);
-  const [sheet, setSheet] = useState<string | null>(null);
+  // ?sheet=&from= : opened from the Studio to fill a practice sheet from a Sthara test.
+  const params = useSearchParams();
+  const [sheet, setSheet] = useState<string | null>(() => (/^[0-9a-f-]{36}$/i.test(params.get('sheet') || '') ? params.get('sheet') : null));
+  const [fillFrom] = useState(() => (/^[0-9a-f-]{36}$/i.test(params.get('from') || '') ? params.get('from') : null));
   const [review, setReview] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
   const todo = data?.sheets.filter(s => s.status === 'open') ?? [];
@@ -66,7 +70,7 @@ export default function TeacherExams() {
                     <div key={s.id} className="ex-row hr-row" role="button" tabIndex={0} onClick={() => setSheet(s.id)} onKeyDown={e => { if (e.key === 'Enter') setSheet(s.id); }}>
                       <div className="grow">
                         <div className="t">{s.cls} · {s.subject}</div>
-                        <div className="s">{s.code} {s.assessment}, out of {s.maxMarks}{s.heldFrom ? ` · ${fmtDate(s.heldFrom, true)}` : ''}</div>
+                        <div className="s">{s.code} {s.assessment}, out of {s.maxMarks}{s.heldFrom ? ` · ${fmtDate(s.heldFrom, true)}` : ''}{s.practice ? ' · practice, not on report cards' : ''}</div>
                         {s.returnedNote && <div className="s" style={{ color: 'var(--red)' }}>Sent back: {s.returnedNote}</div>}
                         {s.reopenedReason && <div className="s" style={{ color: '#9A6B00' }}>Reopened: {s.reopenedReason}</div>}
                       </div>
@@ -78,7 +82,7 @@ export default function TeacherExams() {
               ))}
         </div>
       </>}
-      {sheet && <SheetView id={sheet} call={call} toast={toast} onChanged={reload} onClose={() => setSheet(null)} />}
+      {sheet && <SheetView id={sheet} fillFrom={fillFrom} call={call} toast={toast} onChanged={reload} onClose={() => setSheet(null)} />}
       {review && data?.myClass && <ReviewView termId={review} myClass={data.myClass} call={call} toast={toast} onChanged={reload} onClose={() => setReview(null)} />}
     </>
   );

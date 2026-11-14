@@ -164,7 +164,8 @@ export const toClassTerm = (r: any): ClassTermRow => (r
   : { id: null, status: 'open', version: 0, reviewedAt: null, publishedAt: null, reopenReason: null });
 
 /** Codes a term's result draws on (its own assessments and any earlier ones its components reuse). */
-export const termCodes = (t: Term, as: Assessment[]) => new Set([...t.components.flatMap(c => c.codes), ...as.filter(a => a.termId === t.id).map(a => a.code)]);
+// Practice assessments are left out: their sheets never hold up a term's review or publishing.
+export const termCodes = (t: Term, as: Assessment[]) => new Set([...t.components.flatMap(c => c.codes), ...as.filter(a => a.termId === t.id && a.kind !== 'practice').map(a => a.code)]);
 
 /** The mean of a student's subject percentages in one term (null until every subject has one). */
 export function termPctOf(r: ReturnType<typeof studentResult>, termId: string): number | null {

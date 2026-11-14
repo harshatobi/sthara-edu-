@@ -3,10 +3,11 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
-import { normalizeComponentType } from '@/lib/tml/engine';
 import { recomputeTml } from '@/lib/tml/recompute';
 import { studentOnRoster } from '@/lib/grading/server';
 import { CAPTURE_PREFIX, pathBelongs } from '@/lib/grading/handwritten';
+import { withVariant } from '@/lib/studio/variants';
+import { componentOf } from '@/lib/studio/after';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,9 @@ export async function POST(req: NextRequest) {
     else answers[k] = { file: f };
   }
 
-  const questions: any[] = Array.isArray(a.questions) ? a.questions : [];
+  // A student with their own version (Studio) is marked on their own questions.
+  const own = await withVariant(supabase, a, user.id);
+  const questions: any[] = Array.isArray(own.questions) ? own.questions : [];
   const mcq = questions.map((q, i) => ({ q, i })).filter(({ q }) => q?.type === 'mcq');
   const allMcq = questions.length > 0 && mcq.length === questions.length;
   const correct = (i: number) => {
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
     answers,
     submission_text: text,
     score: allMcq ? mcqScore : null,
-    max_score: allMcq ? mcq.length : (a.total_marks ?? questions.length),
+    max_score: allMcq ? mcq.length : (own.total_marks ?? questions.length),
     grade: allMcq ? `${mcqScore}/${mcq.length}` : null,
     ai_graded: false,
     teacher_approved: allMcq ? true : null,
@@ -87,9 +90,11 @@ export async function POST(req: NextRequest) {
   // Instantly-marked work is evidence now; anything with written answers
   // becomes evidence when the teacher confirms their marks (review-submission).
   if (allMcq) {
+    // A retention check's marks count as retention evidence (Studio follow-ups).
+    const component = await componentOf(supabase, a);
     const { error: itemsErr } = await supabase.from('submission_items').insert(mcq.map(({ i }) => ({
       submission_id: sub.id, assignment_id: assignmentId, student_id: user.id, school_id: me.school_id,
-      question_index: i, component_type: normalizeComponentType(a.type) === 'quiz' ? 'quiz' : 'homework', score: correct(i) ? 1 : 0, max_score: 1, teacher_confirmed: true,
+      question_index: i, component_type: component, score: correct(i) ? 1 : 0, max_score: 1, teacher_confirmed: true,
     })));
     if (itemsErr) console.error('[submit-typed] items insert failed:', itemsErr.message);
   }

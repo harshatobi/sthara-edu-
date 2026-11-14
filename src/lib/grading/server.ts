@@ -5,6 +5,7 @@ import { sanitizeQuestions } from '@/lib/teacher/questions';
 import { normClass } from '@/lib/teacher/scope';
 import { CAPTURE_PREFIX, gradingPrompt, isCapturePath, nameMatches, parseGrade, type HandwrittenGrade } from './handwritten';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
+import { withVariant } from '@/lib/studio/variants';
 
 export const BUCKET = 'captures';
 export const MAX_PAGES = 8;
@@ -74,13 +75,15 @@ async function download(db: SupabaseClient, path: string) {
 /** Reads the pages with the vision model and returns the parsed suggestion. */
 export async function gradePages(db: SupabaseClient, a: any, paths: string[], meta: { source: HandwrittenGrade['source']; capturedBy: string | null; studentName: string; studentId: string }): Promise<HandwrittenGrade> {
   if (!aiConfigured()) throw new GradingError('AI grading isn’t configured on this server (no AI key).', 503);
-  const { questions } = sanitizeQuestions(a.questions);
+  // A student with their own version (Studio) is read against their own questions.
+  const own = await withVariant(db, a, meta.studentId);
+  const { questions } = sanitizeQuestions(own.questions);
   const pages = await Promise.all(paths.map(p => download(db, p)));
   const model = AI_MODELS.handwriting;
   const res = await generateAi({
     model,
     contents: [{ role: 'user', parts: [
-      { text: gradingPrompt({ title: a.title || 'Homework', subject: a.subject || 'General', cls: a.class || '', questions, pages: pages.length, totalMarks: a.total_marks ?? null }) },
+      { text: gradingPrompt({ title: a.title || 'Homework', subject: a.subject || 'General', cls: a.class || '', questions, pages: pages.length, totalMarks: (own.total_marks as number | null) ?? null }) },
       ...pages.map(data => ({ inlineData: { data, mimeType: 'image/jpeg' } })),
     ] }],
     config: { responseMimeType: 'application/json', temperature: 0.1 },
@@ -88,7 +91,7 @@ export async function gradePages(db: SupabaseClient, a: any, paths: string[], me
   let raw: unknown;
   try { raw = JSON.parse((res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim()); }
   catch { throw new GradingError('The AI couldn’t read these pages. Try clearer photos, or mark this one by hand.', 502); }
-  const grade = parseGrade(raw, questions, { pages: pages.length, model, source: meta.source, capturedBy: meta.capturedBy, totalMarks: a.total_marks });
+  const grade = parseGrade(raw, questions, { pages: pages.length, model, source: meta.source, capturedBy: meta.capturedBy, totalMarks: own.total_marks as number | null });
   if (grade.nameOnPage && !nameMatches(grade.nameOnPage, meta.studentName)) {
     grade.flags.unshift(`The name on the page reads "${grade.nameOnPage}", not ${meta.studentName}. Check this is the right notebook.`);
   }

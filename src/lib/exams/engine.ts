@@ -26,7 +26,13 @@ export interface Term {
   subjectWeights: Record<string, Record<string, number>>;
 }
 
-export type AssessmentKind = 'written' | 'internal' | 'practical' | 'project' | 'oral';
+export type AssessmentKind = 'written' | 'internal' | 'practical' | 'project' | 'oral' | 'practice';
+/**
+ * A practice assessment (mocks, pre-boards, Studio practice tests) keeps marks in Exams for teachers and the class
+ * teacher to see, but never counts: no term component may draw on it, so it is never on a report card, and a term's
+ * review and publishing don't wait for its sheets.
+ */
+export const isPractice = (a: { kind: string }) => a.kind === 'practice';
 export interface Assessment {
   id: string; termId: string; code: string; name: string; kind: AssessmentKind; maxMarks: number; seq: number;
   /** Per-subject max marks or "not assessed"; the key "*" is the default for every subject not listed. */
@@ -334,7 +340,7 @@ export function rankBy<T>(items: T[], score: (x: T) => number | null): Map<T, nu
 export const CODE_RE = /^[A-Z][A-Z0-9]{0,11}$/;
 
 /** Problems with a term's components against the scheme's assessments, or null. */
-export function termProblem(t: Pick<Term, 'name' | 'components' | 'weight'>, codes: Set<string>): string | null {
+export function termProblem(t: Pick<Term, 'name' | 'components' | 'weight'>, codes: Set<string>, practice: Set<string> = new Set()): string | null {
   if (!t.components.length) return `${t.name}: add at least one component.`;
   const keys = new Set<string>();
   for (const c of t.components) {
@@ -343,6 +349,8 @@ export function termProblem(t: Pick<Term, 'name' | 'components' | 'weight'>, cod
     keys.add(c.key);
     if (!(c.weight >= 0 && c.weight <= 1000)) return `${t.name}: ${c.name} needs a weight from 0 to 1000.`;
     if (!c.codes.length) return `${t.name}: ${c.name} draws on no assessment.`;
+    const mock = c.codes.find(x => practice.has(x));
+    if (mock) return `${t.name}: ${c.name} uses ${mock}, a practice assessment. Practice marks never count towards a report card.`;
     const unknown = c.codes.find(x => !codes.has(x));
     if (unknown) return `${t.name}: ${c.name} uses ${unknown}, which isn't an assessment in this scheme.`;
     if (c.rule === 'best' && !(c.best && c.best >= 1 && c.best <= c.codes.length)) return `${t.name}: ${c.name} counts the best of how many?`;

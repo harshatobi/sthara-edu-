@@ -25,6 +25,7 @@ interface State {
   people: { id: string; role: string; name: string; email: string; cls: string | null; rollNo: string | null; left: boolean }[];
   plan: { classes: ClassLinkPlan[]; teachers: TeacherLinkPlan[] };
   sources: Record<string, Record<string, string[]>>;
+  moderation?: 'none' | 'common_tests' | 'all_shared';
 }
 
 /** A class subject to save; no kind means keep the current one (or the default for a new subject). */
@@ -56,6 +57,7 @@ export function SubjectsTab({ schoolId, onChanged }: { schoolId: string; onChang
       {!st.classes.length && <Empty icon={<LinkSimple size={26} weight="duotone" />} title="No classes yet">Add classes in Classes &amp; subjects first.</Empty>}
       <Electives st={st} post={post} done={done} />
       <Leads st={st} post={post} done={done} />
+      <Moderation st={st} post={post} done={done} />
     </>
   );
 }
@@ -293,6 +295,47 @@ function Leads({ st, post, done }: { st: State; post: Post; done: Done }) {
         })}
       </Table>
       {subjects.every(([k]) => leadsOf(k).length) && <p className="muted" style={{ fontSize: 12.5, marginTop: 8 }}><CheckCircle size={13} weight="fill" color="#10B981" /> Every subject has a lead.</p>}
+    </Section>
+  );
+}
+
+// ── What subject leads approve in the Studio ──────────────────────────────────
+
+const MODES = [
+  { v: 'none', label: 'Nothing needs approval', sub: 'Teachers share and hand out freely.' },
+  { v: 'common_tests', label: 'Common tests', sub: 'A test marked as common to the grade waits for the subject lead before any class gets it.' },
+  { v: 'all_shared', label: 'Everything shared', sub: 'Anything shared with the department, and every common test, waits for the subject lead.' },
+] as const;
+
+function Moderation({ st, post, done }: { st: State; post: Post; done: Done }) {
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const mode = st.moderation ?? 'none';
+  const subjects = new Map(st.classSubjects.map(x => [x.subject_key, x.subject_name]));
+  if (!subjects.size) return null;
+  const noLead = [...subjects].filter(([k]) => !st.leads.some(l => l.subject_key === k)).map(([, n]) => n).sort();
+  const set = async (v: string) => {
+    if (v === mode || busy) return;
+    setMsg(null); setBusy(true);
+    try { await post({ action: 'moderation', mode: v }); await done(`Studio approval: ${MODES.find(m => m.v === v)!.label.toLowerCase()}.`); } catch (e) { setMsg(errText(e)); }
+    setBusy(false);
+  };
+  return (
+    <Section title="Studio approval" sub="What a subject lead must approve before material made in the Copilot Studio reaches students. A teacher's own private material never needs approval.">
+      {msg && <div className="note err" role="alert" style={{ marginBottom: 10 }}>{msg}</div>}
+      <div role="radiogroup" aria-label="What subject leads approve" style={{ display: 'grid', gap: 8 }}>
+        {MODES.map(m => (
+          <label key={m.v} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: busy ? 'default' : 'pointer' }}>
+            <input type="radio" name="studio-moderation" checked={mode === m.v} disabled={busy} onChange={() => set(m.v)} style={{ marginTop: 3 }} />
+            <span><b style={{ fontSize: 13.5 }}>{m.label}</b><br /><span className="muted" style={{ fontSize: 12.5 }}>{m.sub}</span></span>
+          </label>
+        ))}
+      </div>
+      {mode !== 'none' && noLead.length > 0 && (
+        <div className="note warn" role="status" style={{ marginTop: 10 }}>
+          No lead yet for {noLead.join(', ')}: material waiting for approval there can&apos;t be approved until a lead is named above.
+        </div>
+      )}
     </Section>
   );
 }

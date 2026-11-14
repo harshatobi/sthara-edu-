@@ -159,7 +159,7 @@ function Progress({ data, call, reload, toast, goSetup, schoolName, onPrint }: {
       {term && <>
         <div className="kpis">
           <Kpi label="CLASSES" value={classes.length} note={`${classes.reduce((s, c) => s + c.students, 0)} students`} />
-          <Kpi label="SHEETS SUBMITTED" value={(() => { const xs = data.sheets.filter(s => termAs.some(a => a.id === s.assessmentId)); return xs.length ? `${Math.round((xs.filter(s => s.status !== 'open').length / xs.length) * 100)}%` : '—'; })()}
+          <Kpi label="SHEETS SUBMITTED" value={(() => { const xs = data.sheets.filter(s => termAs.some(a => a.id === s.assessmentId && a.kind !== 'practice')); return xs.length ? `${Math.round((xs.filter(s => s.status !== 'open').length / xs.length) * 100)}%` : '—'; })()}
             note={unopened.length ? `${unopened.length} assessment${unopened.length === 1 ? '' : 's'} not opened` : 'Every assessment is open'} noteColor={unopened.length ? 'var(--amber)' : undefined} />
           <Kpi label="REVIEWED" value={statuses.filter(s => s === 'reviewed').length} note="Waiting for the principal" />
           <Kpi label="PUBLISHED" value={statuses.filter(s => s === 'published').length} note={`of ${classes.length} classes`} valueColor={statuses.every(s => s === 'published') ? 'var(--green)' : undefined} />
@@ -178,7 +178,7 @@ function Progress({ data, call, reload, toast, goSetup, schoolName, onPrint }: {
                   <tr>
                     {data.can.publish && <th aria-label="Select" />}
                     <th>Class</th><th>Class teacher</th>
-                    {termAs.map(a => <th key={a.id} title={a.name}>{a.code}</th>)}
+                    {termAs.map(a => <th key={a.id} title={a.kind === 'practice' ? `${a.name}: practice, never on report cards` : a.name}>{a.code}{a.kind === 'practice' && <span className="muted" style={{ display: 'block', fontSize: 10.5, fontWeight: 600 }}>practice</span>}</th>)}
                     <th>Status</th>
                   </tr>
                 </thead>

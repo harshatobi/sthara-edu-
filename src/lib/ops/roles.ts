@@ -51,6 +51,8 @@ export const CAPABILITIES = [
   'debug.manage',      // resend a failed message, run a job now
   'qa.read',           // test runs, failing tests and the test workbooks
   'qa.manage',         // pin and delete runs, issue and revoke the test pack's upload tokens
+  'bank.read',         // Sthara's starter question bank: coverage and the review queue
+  'bank.manage',       // fill chapters with checked questions, approve or retire them
 ] as const;
 export type Capability = typeof CAPABILITIES[number];
 
@@ -91,7 +93,7 @@ export const ROLE_INFO: Record<OperatorRole, RoleInfo> = {
     label: 'Engineer', reach: 'all',
     note: 'Diagnoses the platform: errors, health, AI usage, requests, jobs. Can switch a feature off for a school; changes nothing else.',
     can: ['schools.read', 'schools.switches', 'people.search', 'errors.read', 'errors.manage', 'health.read', 'usage.read', 'settings.read', 'audit.read', 'breakglass',
-      'debug.read', 'debug.manage', 'crm.read', 'desk.read', 'desk.work', 'qa.read', 'qa.manage'],
+      'debug.read', 'debug.manage', 'crm.read', 'desk.read', 'desk.work', 'qa.read', 'qa.manage', 'bank.read'],
   },
   finance: {
     label: 'Finance', reach: 'all',

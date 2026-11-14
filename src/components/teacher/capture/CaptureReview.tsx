@@ -17,6 +17,7 @@ import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import type { Confidence } from '@/lib/grading/handwritten';
 import Reversals from './Reversals';
+import BankFigures from '@/components/studio/BankFigures';
 
 const CONF: Record<Confidence, { label: string; tone: 'g' | 'a' | 'r' }> = {
   high: { label: 'Clear', tone: 'g' }, medium: { label: 'Check', tone: 'a' }, low: { label: 'Check first', tone: 'r' },
@@ -55,10 +56,12 @@ export default function CaptureReview({ a, sub, onPick, onBack }: { a: TAssignme
   const [toast, toastEl] = useToast();
   const { pages, error: pagesError } = usePages(sub.id);
   const g = sub.grade;
-  const perQuestion = a.questions.length > 0;
-  const max = perQuestion ? a.questions.reduce((n, q) => n + marksOf(q), 0) : (g?.max ?? sub.max ?? a.totalMarks ?? 10);
+  // A student with their own version (Studio) is reviewed against their own questions.
+  const qs = sub.questions ?? a.questions;
+  const perQuestion = qs.length > 0;
+  const max = perQuestion ? qs.reduce((n, q) => n + marksOf(q), 0) : (g?.max ?? sub.max ?? a.totalMarks ?? 10);
   const aiMarks = useMemo(() => (g ? g.questions.map(q => q.awarded) : null), [g]);
-  const start = () => sub.confirmedByQuestion ?? (perQuestion ? (aiMarks && aiMarks.length === a.questions.length ? aiMarks : a.questions.map(() => null)) : null);
+  const start = () => sub.confirmedByQuestion ?? (perQuestion ? (aiMarks && aiMarks.length === qs.length ? aiMarks : qs.map(() => null)) : null);
   const [marks, setMarks] = useState<(number | null)[] | null>(start);
   const [overall, setOverall] = useState<number>(sub.score ?? g?.suggestedTotal ?? 0);
   const [note, setNote] = useState(sub.note ?? g?.feedback ?? '');
@@ -142,7 +145,7 @@ export default function CaptureReview({ a, sub, onPick, onBack }: { a: TAssignme
           {g?.flags.length ? <div className="note err" style={{ marginBottom: 12 }}><b>The AI flagged:</b> {g.flags.join(' · ')}</div> : null}
           {g?.summary && <p className="cr-summary"><Sparkle size={14} weight="fill" color="#7C5CFC" /> {g.summary}</p>}
 
-          {perQuestion ? a.questions.map((q, i) => {
+          {perQuestion ? qs.map((q, i) => {
             const ai = g?.questions[i];
             const m = marks?.[i] ?? null;
             const moved = ai && m !== null && Math.abs(m - ai.awarded) > 0.01;
@@ -159,6 +162,7 @@ export default function CaptureReview({ a, sub, onPick, onBack }: { a: TAssignme
                   </label>
                 </div>
                 <div className="cr-q-text">{q.questionText}</div>
+                <BankFigures figs={q.figures} scale={0.7} />
                 {ai ? (
                   <>
                     {ai.attempted ? <blockquote className="cr-read">{ai.transcription || '(nothing legible)'}</blockquote> : <div className="muted" style={{ fontSize: 13 }}>Not attempted</div>}

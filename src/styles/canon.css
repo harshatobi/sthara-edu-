@@ -174,6 +174,13 @@
 .canon .tab.on.blue { background:var(--ink); }
 .canon .note { background:#FFF8E7; border-left:3px solid var(--amber); border-radius:10px; padding:14px 16px; font-size:13px; color:#7A5A08; line-height:1.6; }
 .canon .note.info { background:#EFF6FF; border-left-color:var(--sky); color:#1E3A6B; }
+/* Knowledge base offers (2026-11-14): things already made, shown before anything new is built. */
+.canon .kb-offers { border:1px solid #A7F3D0; background:#F0FDF7; border-radius:12px; padding:12px 14px; margin-bottom:14px; display:flex; flex-direction:column; gap:8px; font-size:13px; }
+.canon .kb-offers > b { color:#0E6B4C; font-size:13px; }
+.canon .kb-offer { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.canon .kb-offer span { flex:1; min-width:180px; font-weight:700; display:flex; flex-direction:column; }
+.canon .kb-offer span i { font-style:normal; font-weight:500; font-size:12px; color:#5F6B7D; }
+.canon .kb-offer-foot { display:flex; gap:8px; flex-wrap:wrap; padding-top:4px; border-top:1px dashed #A7F3D0; }
 .canon .note.err { background:#FFF1F4; border-left-color:var(--red); color:#8A1030; }
 .canon .note.warn { background:#FFFBEB; border-left-color:var(--amber); color:#7A4A06; }
 .canon .mono-blk { background:var(--ink); color:#CFE0F5; border-radius:16px; padding:22px 24px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12.5px; line-height:2; white-space:pre-wrap; }

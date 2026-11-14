@@ -84,11 +84,16 @@ export default function PaperGenPage() {
 
   const totalMarks = questions.reduce((acc, q) => acc + (q.marks || 1), 0);
 
-  const handleGenerate = async () => {
+  // Knowledge base first (2026-11-14): papers already made are offered; a new one is built from the question bank,
+  // with the AI writing only what the bank can't fill.
+  const [offers, setOffers] = useState<{ type: string; id: string; title: string; by: 'you' | 'colleague'; at: string; similarity: number }[] | null>(null);
+  const [kbNote, setKbNote] = useState<string | null>(null);
+  const handleGenerate = async (how: { offer?: boolean; useSaved?: { type: string; id: string } } = { offer: true }) => {
     setGenerating(true);
     setError('');
     setQuestions([]);
     setExpandedKey(null);
+    setKbNote(null);
     try {
       const token = await getAuthToken();
       const res = await fetch('/api/paper-gen', {
@@ -101,6 +106,8 @@ export default function PaperGenPage() {
           difficulty,
           numQuestions,
           paperType,
+          offer: !!how.offer,
+          ...(how.useSaved ? { useSaved: how.useSaved } : {}),
         }),
       });
 
@@ -110,6 +117,9 @@ export default function PaperGenPage() {
       }
 
       const data = await res.json();
+      if (Array.isArray(data?.offers) && data.offers.length) { setOffers(data.offers); return; }
+      setOffers(null);
+      if (data?.kb?.note) setKbNote(data.kb.note);
       const parsed: Question[] = Array.isArray(data)
         ? data
         : Array.isArray(data.questions)
@@ -193,6 +203,26 @@ export default function PaperGenPage() {
             {error}
           </div>
         )}
+
+        {offers && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-sm flex flex-col gap-2" role="region" aria-label="Already made">
+            <b className="text-emerald-900">Already made for this, no AI needed</b>
+            {offers.map(o => (
+              <div key={o.id} className="flex items-center gap-3 flex-wrap">
+                <span className="flex-1 min-w-[180px] font-semibold text-slate-800">{o.title}
+                  <span className="block font-normal text-xs text-slate-600">{o.by === 'you' ? 'You' : 'A colleague'} · {new Date(o.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {Math.round(o.similarity * 100)}% match</span>
+                </span>
+                <button className="px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-bold disabled:opacity-50" disabled={generating} onClick={() => void handleGenerate({ useSaved: { type: o.type, id: o.id } })}>Use this paper</button>
+              </div>
+            ))}
+            <div className="flex gap-2 pt-1 border-t border-dashed border-emerald-200">
+              <button className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold disabled:opacity-50" disabled={generating} onClick={() => void handleGenerate({ offer: false })}>Make a new paper (from the bank first)</button>
+              <button className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold" onClick={() => setOffers(null)}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {kbNote && <div className="p-3 bg-sky-50 border border-sky-200 text-sky-900 text-sm rounded-2xl">{kbNote}</div>}
 
         {/* Paper Type Selector */}
         <div>
@@ -298,7 +328,7 @@ export default function PaperGenPage() {
         </div>
 
         <button
-          onClick={handleGenerate}
+          onClick={() => void handleGenerate()}
           disabled={generating}
           className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center gap-2 disabled:opacity-60"
         >

@@ -92,7 +92,10 @@ export async function nearSaved(db: SupabaseClient, me: KbCaller, asked: Asked, 
 export async function resolveChapters(db: SupabaseClient, me: KbCaller, asked: Asked, cls: string, subject: string, topics: string[]): Promise<CourseChapter[]> {
   const cur = getCurriculum(cls, subject);
   if (!cur) return [];
-  const chapters = courseChapters(cur);
+  const chapters = courseChapters(cur).filter(c => !c.formativeOnly);
+  // No topics, or just the subject's own name: the whole syllabus (a full paper), spread over every chapter.
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!topics.length || topics.every(t => norm(t) === norm(subject) || norm(t) === norm(cur.subject ?? ''))) return chapters;
   const { matched, unmatched } = chaptersNamed(topics, chapters);
   const out = chapters.filter(c => matched.includes(c.name));
   if (unmatched.length) {

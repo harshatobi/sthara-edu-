@@ -107,15 +107,20 @@ export default function LessonEditor({ course, cls, subject, lesson, prefill, on
     onClose();
   });
 
-  const draftWithAi = () => run('ai', async () => {
-    const r = await call('/api/teacher/lessons/draft', 'POST', { class: cls, subject, chapterKey: d.chapterKey, topics: d.topics, durationMin: d.durationMin, focus });
+  // Knowledge base first (2026-11-14): this chapter's plans (yours first, then the subject's teachers) are offered
+  // before a new draft; "Use as it is" costs no AI, "Adapt" is a small edit instead of a whole new plan.
+  const [lessonOffers, setLessonOffers] = useState<{ id: string; title: string; by: 'you' | 'colleague'; cls: string; durationMin: number; topics: string[]; at: string }[] | null>(null);
+  const draftWithAi = (how: { offer?: boolean; useLesson?: string; adaptLesson?: string } = { offer: true }) => run('ai', async () => {
+    const r = await call('/api/teacher/lessons/draft', 'POST', { class: cls, subject, chapterKey: d.chapterKey, topics: d.topics, durationMin: d.durationMin, focus, ...how });
+    if (Array.isArray(r?.offers) && r.offers.length) { setLessonOffers(r.offers); return; }
+    setLessonOffers(null);
     setD(x => ({
       ...x, title: x.title && x.title !== x.chapterName && !x.title.startsWith(x.chapterName) ? x.title : r.title,
       objectives: r.objectives, successCriteria: r.successCriteria, priorKnowledge: r.priorKnowledge, materials: r.materials,
       stages: r.stages.length ? r.stages : x.stages, differentiation: r.differentiation, checkForUnderstanding: r.checkForUnderstanding,
-      topics: r.topics?.length ? r.topics : x.topics, aiDrafted: true,
+      topics: r.topics?.length ? r.topics : x.topics, aiDrafted: !r?.kb?.reused,
     }));
-    onSaved('AI draft added — review before saving');
+    onSaved(r?.kb?.note ?? 'AI draft added — review before saving');
   });
 
   const duplicate = () => run('dup', async () => {
@@ -290,11 +295,24 @@ export default function LessonEditor({ course, cls, subject, lesson, prefill, on
               {confirm === 'ai'
                 ? <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                     <span className="muted" style={{ fontSize: 12 }}>Replaces the plan&apos;s current content.</span>
-                    <button className="btn sm ai" disabled={!!busy} onClick={draftWithAi}>{busy === 'ai' ? 'Drafting…' : 'Replace'} <AiTag /></button>
+                    <button className="btn sm ai" disabled={!!busy} onClick={() => draftWithAi()}>{busy === 'ai' ? 'Drafting…' : 'Replace'} <AiTag /></button>
                     <button className="btn sm" onClick={() => setConfirm(null)}>Keep mine</button>
                   </div>
                 : <button className="btn ai" style={{ marginTop: 10, width: '100%', justifyContent: 'center' }} disabled={!!busy || !d.chapterKey}
                     onClick={() => (hasContent ? setConfirm('ai') : draftWithAi())}>{busy === 'ai' ? 'Drafting…' : 'Draft this lesson'} <AiTag /></button>}
+              {lessonOffers && (
+                <div className="kb-offers" role="region" aria-label="Plans already made for this chapter" style={{ marginTop: 10 }}>
+                  <b>Plans already made for this chapter</b>
+                  {lessonOffers.map(o => (
+                    <div key={o.id} className="kb-offer">
+                      <span>{o.title}<i>{o.by === 'you' ? 'You' : 'A colleague'} · {o.cls} · {o.durationMin} min · {new Date(o.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</i></span>
+                      <button className="btn sm pri" disabled={!!busy} onClick={() => draftWithAi({ useLesson: o.id })}>Use as it is</button>
+                      <button className="btn sm ai" disabled={!!busy} onClick={() => draftWithAi({ adaptLesson: o.id })}>Adapt to this lesson <AiTag /></button>
+                    </div>
+                  ))}
+                  <div className="kb-offer-foot"><button className="btn sm" disabled={!!busy} onClick={() => draftWithAi({ offer: false })}>Write a new draft</button><button className="btn sm" onClick={() => setLessonOffers(null)}>Cancel</button></div>
+                </div>
+              )}
               {d.aiDrafted && <div className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>Contains AI-drafted content. Review every part before teaching it.</div>}
             </div>
 

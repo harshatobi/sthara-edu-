@@ -106,9 +106,14 @@ def run(grade: int, session: str, slug: str, cur_file: str, name: str, urls: dic
     mx = max_marks(pdf_q)
     flagged = sum(1 for it in items if it.get("flags"))
     figs = sum(len(it.get("figures") or []) for it in items)
-    ok = bool(mx) and got == mx and qs > 0
-    return {**entry, "ok": ok, "total": got, "max": mx, "questions": qs, "items_count": len(items), "flagged": flagged, "figures": figs,
-            **({} if ok else {"why": f"marks add up to {got}, paper says {mx}"})}
+    # Marks adding up isn't enough: a paper whose maths is drawn as pictures parses with empty wording.
+    blank = sum(1 for it in items if {"text_missing", "stem_missing"} & set(it.get("flags") or []) or not str(it.get("text") or "").strip())
+    adds_up = bool(mx) and got == mx and qs > 0
+    readable = blank <= 0.1 * max(1, len(items))
+    ok = adds_up and readable
+    why = None if ok else (f"marks add up to {got}, paper says {mx}" if not adds_up else f"{blank} of {len(items)} questions have no readable wording")
+    return {**entry, "ok": ok, "total": got, "max": mx, "questions": qs, "items_count": len(items), "flagged": flagged, "figures": figs, "blank": blank,
+            **({} if ok else {"why": why})}
 
 
 def main():

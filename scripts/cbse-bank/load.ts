@@ -68,6 +68,9 @@ function figSizes(seg: string): Map<string, Fig> {
 const garbled = (t: string) => /[√∑∫=+−×÷^]\s*$/m.test(t);
 
 const write = process.argv.includes('--write');
+// --skip-bad: a question with a problem is left out (and listed) instead of stopping the whole load.
+const skipBad = process.argv.includes('--skip-bad');
+const skipped: string[] = [];
 const plan: { row: Record<string, any>; uploads: { local: string; path: string }[] }[] = [];
 const problems: string[] = [];
 
@@ -105,10 +108,15 @@ for (const p of PAPERS) {
     if (it.optionFigures) body.optionFigures = Object.fromEntries(Object.entries(it.optionFigures).map(([k, f]) => [k, fig(f as string, 'sqp')]));
     if (it.access) body.access = it.access;
 
+    if (!String(it.text ?? '').trim()) problems.push(`${p.items} Q${it.q}: no wording (the PDF draws it as a picture)`);
     if (!it.chapter) problems.push(`${p.items} Q${it.q}: no chapter`);
     if (!['mcq', 'assertion_reason', 'short', 'long', 'case', 'numerical', 'diagram'].includes(it.type)) problems.push(`${p.items} Q${it.q}: type ${it.type}`);
     if (!(it.marks >= 1 && it.marks <= 10)) problems.push(`${p.items} Q${it.q}: marks ${it.marks}`);
     if (it.options && !(Number.isInteger(it.answer) && it.answer >= 0 && it.answer < it.options.length)) problems.push(`${p.items} Q${it.q}: answer out of range`);
+    if (skipBad && problems.some(x => x.startsWith(`${p.items} Q${it.q}:`))) {
+      for (const x of problems.filter(x => x.startsWith(`${p.items} Q${it.q}:`))) { skipped.push(x); problems.splice(problems.indexOf(x), 1); }
+      continue;
+    }
 
     plan.push({
       uploads,
@@ -137,6 +145,7 @@ const count = (f: (r: any) => string) => plan.reduce((m, x) => m.set(f(x.row), (
 console.log(`${plan.length} questions, ${plan.reduce((n, x) => n + x.uploads.length, 0)} figures, ${plan.filter(x => x.row.checks.status === 'flagged').length} flagged (can't be assigned until a reviewer fixes them)`);
 for (const [k, n] of count(r => `${r.subject} / ${r.chapter_key}`)) console.log(`  ${n.toString().padStart(3)}  ${k}`);
 if (problems.length) { console.log('\nProblems:'); problems.forEach(p => console.log('  ' + p)); }
+if (skipped.length) { console.log('\nLeft out (--skip-bad):'); skipped.forEach(p => console.log('  ' + p)); }
 
 async function main() {
   if (!write) { console.log('\nDry run: nothing written. Run with --write to load.'); return; }

@@ -4,6 +4,7 @@ import { verifyApiToken } from '@/lib/auth/verifyToken';
 import { pageAll } from '@/lib/ops/page';
 import { normClass } from '@/lib/teacher/scope';
 import { answerKeyRelease, mcqKey } from '@/lib/student/answerKey';
+import { withVariant } from '@/lib/studio/variants';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,8 @@ export async function GET(req: NextRequest) {
     : { data: [] as { question_index: number; score: number; max_score: number }[] };
   const marks = Object.fromEntries((items || []).map(i => [i.question_index, { score: Number(i.score), max: Number(i.max_score) }]));
 
-  const key = mcqKey(a.questions);
+  // A student with their own version (Studio) gets the key to their own questions.
+  const key = mcqKey((await withVariant(db, a, user.id)).questions);
   if (!confirmed || !Object.keys(key).length) return NextResponse.json({ marks, key: null, keyStatus: confirmed ? 'none' : 'awaiting-review' });
 
   const targeted: string[] = Array.isArray(a.assigned_student_ids) ? a.assigned_student_ids : [];

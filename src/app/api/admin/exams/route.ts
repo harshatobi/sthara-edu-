@@ -377,8 +377,8 @@ export async function POST(req: NextRequest) {
       if (!comps) return bad('Those components aren\'t valid.');
       const sw = weightsMap(b.subjectWeights);
       if (!sw) return bad('Those subject weights aren\'t valid.');
-      const { data: as } = await db.from('exam_assessments').select('code').eq('scheme_id', b.schemeId);
-      const problem = termProblem({ name, weight, components: comps }, new Set((as || []).map(a => a.code)));
+      const { data: as } = await db.from('exam_assessments').select('code, kind').eq('scheme_id', b.schemeId);
+      const problem = termProblem({ name, weight, components: comps }, new Set((as || []).map(a => a.code)), new Set((as || []).filter(a => a.kind === 'practice').map(a => a.code)));
       // A new term has no assessments yet: allow it to start empty.
       if (problem && (isUuid(b.id) || comps.length)) return bad(problem);
       if (isUuid(b.id)) {
@@ -415,7 +415,13 @@ export async function POST(req: NextRequest) {
       if (!CODE_RE.test(code)) return bad('A code is a capital letter then up to 11 capitals or digits, like PT1 or HY.');
       if (!name) return bad('Name the assessment.');
       if (!(max > 0 && max <= 1000)) return bad('Maximum marks are 1 to 1000.');
-      const kind = ['written', 'internal', 'practical', 'project', 'oral'].includes(b.kind) ? b.kind : 'written';
+      const kind = ['written', 'internal', 'practical', 'project', 'oral', 'practice'].includes(b.kind) ? b.kind : 'written';
+      // A practice assessment can't be one a term's result already draws on.
+      if (kind === 'practice') {
+        const { data: ts } = await db.from('exam_terms').select('name, components').eq('scheme_id', b.schemeId);
+        const usedIn = (ts || []).filter(t => (t.components || []).some((c: any) => (c.codes || []).includes(code))).map(t => t.name);
+        if (usedIn.length) return bad(`${code} counts in ${usedIn.join(' and ')}. Take it out of the term's components before making it practice.`, 409);
+      }
       const subjects = overrides(b.subjects);
       if (!subjects) return bad('Those per-subject settings aren\'t valid.');
       const heldFrom = DAY.test(b.heldFrom) ? b.heldFrom : null, heldTo = DAY.test(b.heldTo) ? b.heldTo : heldFrom;

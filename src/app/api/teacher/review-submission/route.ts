@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
 import { inScope } from '@/lib/teacher/scope';
 import { marksOf, sanitizeQuestions } from '@/lib/teacher/questions';
-import { normalizeComponentType, evidenceTopicName } from '@/lib/tml/engine';
+import { withVariant } from '@/lib/studio/variants';
+import { componentOf } from '@/lib/studio/after';
+import { evidenceTopicName } from '@/lib/tml/engine';
 import { recomputeTml } from '@/lib/tml/recompute';
 import { notifyGuardians } from '@/lib/parent/notify';
 import { agreement, gradeOf } from '@/lib/grading/handwritten';
@@ -42,9 +44,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'You can only review work for classes you teach.' }, { status: 403 });
   }
 
-  const { questions } = sanitizeQuestions(a.questions);
+  // A student with their own version (Studio) is reviewed against their own questions.
+  const own = await withVariant(db, a, sub.student_id);
+  const { questions } = sanitizeQuestions(own.questions);
   const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 4000) : '';
-  const component = normalizeComponentType(a.type) === 'quiz' ? 'quiz' : 'homework';
+  // A retention check's marks count as retention evidence (Studio follow-ups).
+  const component = await componentOf(db, a);
 
   let score: number;
   let max: number;
@@ -63,7 +68,7 @@ export async function POST(req: NextRequest) {
     score = items.reduce((n, x) => n + x.score, 0);
     max = items.reduce((n, x) => n + x.max_score, 0);
   } else {
-    max = Number(sub.max_score ?? a.total_marks) || (questions.length ? questions.reduce((n, q) => n + marksOf(q), 0) : 10);
+    max = Number(sub.max_score ?? own.total_marks) || (questions.length ? questions.reduce((n, q) => n + marksOf(q), 0) : 10);
     score = Number(body?.score);
     if (!Number.isFinite(score) || score < 0 || score > max) return NextResponse.json({ error: `Score must be between 0 and ${max}.` }, { status: 400 });
     // One overall mark: a single evidence row stands for the whole submission.

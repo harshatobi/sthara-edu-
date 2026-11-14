@@ -13,6 +13,7 @@ import { dmy, type TAssignment, type TSubmission } from '@/lib/teacher/desk';
 import { useTeacherDesk } from '@/lib/teacher/useTeacherDesk';
 import { useAuth } from '@/contexts/AuthContext';
 import Reversals from './capture/Reversals';
+import BankFigures from '@/components/studio/BankFigures';
 
 const LETTERS = 'ABCDEF';
 
@@ -89,8 +90,10 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
   const { call, reload } = useTeacherDesk();
   const links = useStoredLinks(sub);
   const [toast, toastEl] = useToast();
-  const perQuestion = sub.kind === 'typed' && a.questions.length > 0;
-  const max = perQuestion ? a.questions.reduce((n, q) => n + marksOf(q), 0) : (sub.max ?? a.totalMarks ?? 10);
+  // A student with their own version (Studio) is reviewed against their own questions.
+  const qs = sub.questions ?? a.questions;
+  const perQuestion = sub.kind === 'typed' && qs.length > 0;
+  const max = perQuestion ? qs.reduce((n, q) => n + marksOf(q), 0) : (sub.max ?? a.totalMarks ?? 10);
   // Re-opening a graded submission shows the marks that were confirmed; otherwise start from the key.
   const startMarks = () => sub.confirmedByQuestion ?? sub.suggestedByQuestion;
 
@@ -148,16 +151,16 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
                     <img src={u} alt={`Page ${i + 1} of ${sub.studentName}'s work`} style={{ width: '100%', borderRadius: 12, boxShadow: '0 10px 30px rgba(15,30,60,.14)' }} />
                   </a>
                 )) : <p className="muted" style={{ fontSize: 13 }}>No pages were uploaded with this submission.</p>}
-                {a.questions.length > 0 && (
+                {qs.length > 0 && (
                   <div style={{ marginTop: 6 }}>
                     <b style={{ fontSize: 12, letterSpacing: '.06em', color: 'var(--mut)' }}>QUESTIONS SET</b>
-                    {a.questions.map((q, i) => <div key={i} style={{ fontSize: 13.5, marginTop: 8 }}>Q{i + 1}. {q.questionText} <span className="muted">({marksOf(q)})</span></div>)}
+                    {qs.map((q, i) => <div key={i} style={{ fontSize: 13.5, marginTop: 8 }}>Q{i + 1}. {q.questionText} <span className="muted">({marksOf(q)})</span></div>)}
                   </div>
                 )}
               </div>
             ) : (
               <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {a.questions.map((q, i) => (
+                {qs.map((q, i) => (
                   <div key={i} style={{ padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
                       <div className="muted" style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em' }}>Q{i + 1} · {TYPE_LABEL[q.type]}</div>
@@ -172,6 +175,7 @@ export default function GradingPanel({ a, sub, onPick, onBack }: {
                       </label>
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 6, fontWeight: 600 }}>{q.questionText}</div>
+                    <BankFigures figs={q.figures} scale={0.7} />
                     <Answer q={q} value={sub.answers[i]} link={links === undefined ? undefined : links?.answers[i] ?? null} />
                   </div>
                 ))}

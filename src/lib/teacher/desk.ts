@@ -63,6 +63,8 @@ export interface TSubmission {
   source: 'student' | 'teacher_capture' | 'typed';
   /** Grades reopened for review (most recent last). */
   history: HistoryEntry[];
+  /** The student's own questions, when they had their own version (Studio); otherwise the assignment's apply. */
+  questions?: Question[];
 }
 
 export interface TAssignment {
@@ -126,6 +128,8 @@ export interface DeskRows {
   alerts: any[];
   /** Confirmed per-question marks (submission_items). */
   items: any[];
+  /** Students' own versions of an assignment (Studio per-student versions and A/B/C sets). */
+  variants?: any[];
 }
 
 const ts = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() || 0 : 0);
@@ -233,10 +237,19 @@ export function assembleDesk(rows: DeskRows, me: TeacherDesk['me'], scope: Scope
   const subsBy = new Map<string, any[]>();
   for (const s of rows.submissions) subsBy.set(s.assignment_id, [...(subsBy.get(s.assignment_id) || []), s]);
 
+  const ownBy = new Map<string, Question[]>();
+  for (const v of rows.variants ?? []) {
+    const { questions } = sanitizeQuestions(v.questions);
+    if (questions.length) ownBy.set(`${v.assignment_id}|${v.student_id}`, questions);
+  }
+
   const assignments: TAssignment[] = rows.assignments.map(a => {
     const { questions } = sanitizeQuestions(a.questions);
     const submissions = (subsBy.get(a.id) || [])
-      .map(s => shapeSubmission(s, questions, byId.get(s.student_id)?.name || 'Student', itemsBy.get(s.id) || []))
+      .map(s => {
+        const own = ownBy.get(`${a.id}|${s.student_id}`);
+        return { ...shapeSubmission(s, own ?? questions, byId.get(s.student_id)?.name || 'Student', itemsBy.get(s.id) || []), ...(own ? { questions: own } : {}) };
+      })
       .sort((x, y) => x.studentName.localeCompare(y.studentName));
     const type: WorkType = a.type === 'quiz' || a.type === 'classwork' ? a.type : 'homework';
     return {

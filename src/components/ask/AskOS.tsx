@@ -126,7 +126,8 @@ export default function AskOS({ audience }: { audience: Audience }) {
     const t = setTimeout(() => loadConvs(q.trim()), q ? 280 : 0);
     return () => clearTimeout(t);
   }, [q, loadConvs]);
-  useEffect(() => { streamEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [turns.length, busy]);
+  // Follow the conversation as it grows; the opening screen stays at the top.
+  useEffect(() => { if (turns.length || busy) streamEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [turns.length, busy]);
 
   const openConv = async (id: string) => {
     setActiveId(id); setOpenShared(null); setErr(null); setLoadingConv(true); setHistOpen(false);
@@ -243,7 +244,7 @@ export default function AskOS({ audience }: { audience: Audience }) {
         {histOpen && <div className="ask-scrim" onClick={() => setHistOpen(false)} />}
 
         <section className="ask-main">
-          <TodayStrip today={today} err={todayErr} compact={!empty} onAsk={send} busy={busy || outOfQuestions} />
+          {!empty && <TodayStrip today={today} err={todayErr} compact onAsk={send} busy={busy || outOfQuestions} />}
 
           <div className="card ask-chat">
             <div className="ask-chat-h">
@@ -269,7 +270,10 @@ export default function AskOS({ audience }: { audience: Audience }) {
                   <Answer id={openShared.turnId} reply={openShared.reply} last={false} onAsk={send} staff={staff} kids={today?.children} />
                 </div>
               ) : empty ? (
-                <Welcome audience={audience} today={today} onAsk={send} disabled={outOfQuestions} />
+<>
+                  <TodayStrip today={today} err={todayErr} compact={false} inline onAsk={send} busy={busy || outOfQuestions} />
+                  <Welcome audience={audience} today={today} onAsk={send} disabled={outOfQuestions} />
+                </>
               ) : loadingConv ? (
                 <div style={{ display: 'grid', gap: 12 }}><Skeleton h={40} w="60%" style={{ justifySelf: 'end' }} /><Skeleton h={140} /><Skeleton h={40} w="50%" style={{ justifySelf: 'end' }} /><Skeleton h={120} /></div>
               ) : turns.map((t, i) => t.role === 'me'
@@ -327,10 +331,10 @@ function HistRow({ c, on, onOpen }: { c: Conv; on: boolean; onOpen: () => void }
 }
 
 // ── Today ────────────────────────────────────────────────────────────────────
-function TodayStrip({ today, err, compact, onAsk, busy }: { today: TodayPayload | null; err: string | null; compact: boolean; onAsk: (t: string) => void; busy: boolean }) {
+function TodayStrip({ today, err, compact, inline, onAsk, busy }: { today: TodayPayload | null; err: string | null; compact: boolean; inline?: boolean; onAsk: (t: string) => void; busy: boolean }) {
   if (err) return null;
   return (
-    <section className={`card ask-today${compact ? ' compact' : ''}`} aria-label="Today for you">
+    <section className={`${inline ? 'ask-today inline' : 'card ask-today'}${compact ? ' compact' : ''}`} aria-label="Today for you">
       {!compact && <div className="ask-today-h"><h2>Today for you</h2><span>Built from the records, no AI used</span></div>}
       <div className="ask-tiles">
         {!today ? [0, 1, 2, 3].map(i => <Skeleton key={i} h={compact ? 52 : 118} />) : today.tiles.length ? today.tiles.map(t => (

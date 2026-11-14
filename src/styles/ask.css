@@ -39,6 +39,7 @@
 .canon .ask-main { display:flex; flex-direction:column; gap:16px; min-height:0; min-width:0; }
 .canon .ask-today { flex:none; padding:16px 18px; }
 .canon .ask-today.compact { padding:10px 12px; }
+.canon .ask-today.inline { padding:0; }
 .canon .ask-today-h { display:flex; align-items:baseline; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
 .canon .ask-today-h h2 { font-size:15px; font-weight:800; }
 .canon .ask-today-h span { font-size:12px; color:#5F6B7D; }

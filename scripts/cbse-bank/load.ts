@@ -12,7 +12,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { fingerprint } from '../../src/lib/studio/fingerprint';
-import { topicKey } from '../../src/lib/tml/engine';
+// The app's chapter key (lib/teacher/topicKey), not the mastery engine's: the Studio and generators look chapters up by it.
+import { topicKey } from '../../src/lib/teacher/topicKey';
 
 const ROOT = join(__dirname, 'work');
 const BUCKET = 'bank-figures';

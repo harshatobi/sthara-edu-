@@ -20,8 +20,10 @@ export async function POST(req: NextRequest) {
   if (!text) return NextResponse.json({ error: 'Ask something first.' }, { status: 400 });
   const cid = typeof b?.conversationId === 'string' && /^[0-9a-f-]{36}$/i.test(b.conversationId) ? b.conversationId : null;
   if (cid && !(await ownsConversation(db, asker.viewer.id, cid))) return NextResponse.json({ error: 'That conversation isn’t yours.' }, { status: 404 });
-  if (asker.kind === 'parent') {
-    const q = await parentQuestionsLeft(db, asker.viewer.id);
+  // Parents: today's count is read before answering (the meter is written in the background, so a read just after
+  // the answer can miss it); the answer returns that count less one.
+  const q = asker.kind === 'parent' ? await parentQuestionsLeft(db, asker.viewer.id) : null;
+  if (q) {
     if (!q.left) return NextResponse.json({ error: `You’ve asked ${q.limit} questions today, the daily limit. Ask again tomorrow, or message the school directly.`, quota: { left: 0, limit: q.limit } }, { status: 429 });
   }
   const blocked = await aiGate(asker.viewer.id, 'ask');
@@ -35,8 +37,7 @@ export async function POST(req: NextRequest) {
       if (!cid) await deleteConversation(db, asker.viewer.id, conversationId).catch(() => {});
       throw e;
     });
-    const quota = asker.kind === 'parent' ? await parentQuestionsLeft(db, asker.viewer.id) : null;
-    return NextResponse.json({ conversationId, questionId: ids.questionId, answerId: ids.answerId, reply: outcome.reply, quota: quota && { left: quota.left, limit: quota.limit } });
+    return NextResponse.json({ conversationId, questionId: ids.questionId, answerId: ids.answerId, reply: outcome.reply, quota: q && { left: Math.max(0, q.left - 1), limit: q.limit } });
   } catch (e: any) {
     if (e instanceof AskError) return NextResponse.json({ error: e.message }, { status: e.status });
     console.error('[ask]', e?.message);

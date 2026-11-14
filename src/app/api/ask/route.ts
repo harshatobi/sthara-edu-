@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { aiGate } from '@/lib/settings/server';
 import { AskError, askOS, requireAsker } from '@/lib/ask/engine';
-import { historyOf, ownsConversation, parentQuestionsLeft, saveTurns, startConversation } from '@/lib/ask/store';
+import { deleteConversation, historyOf, ownsConversation, parentQuestionsLeft, saveTurns, startConversation } from '@/lib/ask/store';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -30,12 +30,20 @@ export async function POST(req: NextRequest) {
     const history = cid ? await historyOf(db, cid) : [];
     const outcome = await askOS(db, asker, [...history, { role: 'me', text }]);
     const conversationId = cid ?? await startConversation(db, asker, text);
-    const ids = await saveTurns(db, asker, conversationId, text, outcome);
+    const ids = await saveTurns(db, asker, conversationId, text, outcome).catch(async e => {
+      // A new conversation whose first turns couldn't be saved is removed, so history never shows an empty one.
+      if (!cid) await deleteConversation(db, asker.viewer.id, conversationId).catch(() => {});
+      throw e;
+    });
     const quota = asker.kind === 'parent' ? await parentQuestionsLeft(db, asker.viewer.id) : null;
     return NextResponse.json({ conversationId, questionId: ids.questionId, answerId: ids.answerId, reply: outcome.reply, quota: quota && { left: quota.left, limit: quota.limit } });
   } catch (e: any) {
     if (e instanceof AskError) return NextResponse.json({ error: e.message }, { status: e.status });
     console.error('[ask]', e?.message);
+    // The AI provider is busy or out of quota: say so plainly (it is not the school's allowance, and not the question).
+    if (e?.status === 429 || /\b429\b|quota|RESOURCE_EXHAUSTED|overloaded|rate.?limit/i.test(String(e?.message))) {
+      return NextResponse.json({ error: 'The AI service is busy right now. Wait a minute and try again; your question was not used up.' }, { status: 503 });
+    }
     return NextResponse.json({ error: 'The School OS didn’t come back with a usable answer. Try again, or put it another way.' }, { status: 502 });
   }
 }

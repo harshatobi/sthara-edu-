@@ -63,7 +63,8 @@
 .canon .ask-scope { display:inline-flex; gap:5px; align-items:center; font-size:12px; color:#5F6B7D; }
 .canon .ask-scope svg { color:#0E8A61; }
 .canon .ask-chat-h .r { margin-left:auto; display:flex; gap:6px; align-items:center; flex:none; }
-.canon .ask-chat-h .r .btn { padding:6px 10px; }
+.canon .ask-chat-h .r .btn { padding:6px 10px; display:inline-flex; align-items:center; gap:6px; line-height:1; font-size:12.5px; letter-spacing:0; text-transform:none; }
+.canon .ask-chat-h .r .btn .lbl { line-height:1; }
 .canon .ask-chat-h .btn.on { border-color:var(--role-deep); color:var(--role-deep); }
 .canon .ask-stream { flex:1; min-height:0; overflow:auto; padding:18px 18px 22px; display:flex; flex-direction:column; gap:18px; }
 .canon .ask-me { align-self:flex-end; background:var(--ink); color:#fff; padding:10px 14px; border-radius:14px 14px 4px 14px; max-width:72%; font-weight:500; white-space:pre-wrap; overflow-wrap:anywhere; }
@@ -72,7 +73,10 @@
 .canon .ask-body { display:flex; flex-direction:column; gap:12px; min-width:0; }
 .canon .ask-say { font-size:14.5px; line-height:1.6; max-width:72ch; }
 .canon .ask-say p + p, .canon .ask-say p + ul, .canon .ask-say ul + p { margin-top:8px; }
-.canon .ask-say ul, .canon .ask-say ol { padding-left:18px; }
+.canon .ask-say ul, .canon .ask-say ol { padding-left:20px; }
+.canon .ask-say ul { list-style:disc; }
+.canon .ask-say ol { list-style:decimal; }
+.canon .ask-say li::marker { color:var(--role-deep); }
 .canon .ask-say li { margin:3px 0; }
 .canon .ask-cite { display:inline-block; font-size:10px; font-weight:800; color:var(--blue); background:var(--pale); border-radius:5px; padding:0 4px; margin-left:2px; vertical-align:super; line-height:1.4; text-decoration:none; }
 .canon .ask-trace { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11.5px; color:#5F6B7D; }
@@ -225,7 +229,7 @@
   .canon .ask-main, .canon .ask-chat, .canon .ask-stream { overflow:visible; min-height:auto; }
   .canon .ask-chat { min-height:70vh; }
   .canon .ask-composer { position:sticky; bottom:0; border-radius:0 0 var(--r) var(--r); z-index:2; }
-  .canon .ask-hist, .canon .ask-rail { position:sticky; top:12px; max-height:calc(100dvh - 24px); align-self:start; }
+  .canon .ask-hist, .canon .ask-rail { position:sticky; top:12px; height:calc(100dvh - 24px); align-self:start; }
 }
 
 @media (prefers-reduced-motion: reduce) { .canon .ask-hist { transition:none; } }

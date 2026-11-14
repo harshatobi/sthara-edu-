@@ -17,7 +17,7 @@ type SchemeRow = ExamsData['schemes'][number];
 type TermRow = ExamsData['terms'][number];
 type AssessmentRow = ExamsData['assessments'][number];
 
-const KINDS: [Assessment['kind'], string][] = [['written', 'Written exam'], ['internal', 'Internal assessment'], ['practical', 'Practical'], ['project', 'Project'], ['oral', 'Oral / activity']];
+const KINDS: [Assessment['kind'], string][] = [['written', 'Written exam'], ['internal', 'Internal assessment'], ['practical', 'Practical'], ['project', 'Project'], ['oral', 'Oral / activity'], ['practice', 'Practice / mock (never on report cards)']];
 const RULES: [Component['rule'], string][] = [['sum', 'Add up'], ['avg', 'Average'], ['best', 'Best of']];
 
 /** The assessment schemes: start from a Sthara CBSE preset, then change anything. */

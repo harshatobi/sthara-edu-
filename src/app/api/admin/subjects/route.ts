@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireAdmin } from '@/lib/admin/serverAuth';
 import { loadSubjectState, setElectives, setSubjectLeads } from '@/lib/subjects/server';
+import { isModeration, moderationOf, setModeration } from '@/lib/studio/materials';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,7 @@ const isId = (v: unknown): v is string => typeof v === 'string' && UUID.test(v);
  * The school's subject links, for its own office.
  *   GET  what each class offers, who teaches it, electives, leads (academics.read or people.manage)
  *   POST { action: 'electives', classId, choices } | { action: 'leads', subjectKey, userIds }
+ *        | { action: 'moderation', mode: 'none' | 'common_tests' | 'all_shared' } (what subject leads approve in the Studio)
  *        (people.manage or schedule.academic: school admin, principal, academic coordinator)
  * What a class offers stays with Sthara (set up in ops with the class list); the school
  * chooses electives per student and names subject leads.
@@ -18,12 +20,12 @@ const isId = (v: unknown): v is string => typeof v === 'string' && UUID.test(v);
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req, ['academics.read', 'people.manage']);
   if ('res' in auth) return auth.res;
-  const st = await loadSubjectState(auth.db, auth.admin.schoolId);
+  const [st, moderation] = await Promise.all([loadSubjectState(auth.db, auth.admin.schoolId), moderationOf(auth.db, auth.admin.schoolId)]);
   if (!st.ok) return NextResponse.json({ error: st.error }, { status: st.status });
   // The school sees its own roster already; no linking plan (that's an ops tool).
   const { ok: _ok, plan: _plan, ...rest } = st;
   void _ok; void _plan;
-  return NextResponse.json(rest);
+  return NextResponse.json({ ...rest, moderation });
 }
 
 export async function POST(req: NextRequest) {
@@ -43,6 +45,9 @@ export async function POST(req: NextRequest) {
   } else if (b.action === 'leads') {
     if (typeof b.subjectKey !== 'string' || !Array.isArray(b.userIds) || !b.userIds.every(isId)) return NextResponse.json({ error: 'Pick a subject and its leads.' }, { status: 400 });
     r = await setSubjectLeads(db, admin.schoolId, admin.id, 'school_admin', b.subjectKey, b.userIds);
+  } else if (b.action === 'moderation') {
+    if (!isModeration(b.mode)) return NextResponse.json({ error: 'Pick what subject leads approve.' }, { status: 400 });
+    r = await setModeration(db, admin.schoolId, { id: admin.id, role: 'school_admin' }, b.mode);
   } else {
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   }

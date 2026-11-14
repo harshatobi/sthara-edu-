@@ -48,6 +48,9 @@ export async function loadTeacherRows(
     soft('proctor_alerts', all((a, b) => supabase.from('proctor_alerts').select('id, student_id, student_name, assignment_id, assignment_title, switch_count, flagged_at')
       .eq('school_id', school).gte('flagged_at', since).order('id').range(a, b)), none),
   ]);
+  // Students with their own version of an assignment (Studio): their questions replace the class set in review.
+  const variants = await soft('assignment_variants', allByIds(ids, (chunk, a, b) => supabase.from('assignment_variants')
+    .select('assignment_id, student_id, questions, label').in('assignment_id', chunk).order('id').range(a, b)), none);
   const gradedIds = subs.data.filter(x => x.teacher_approved === true).map(x => x.id);
   const items = await allByIds(gradedIds, (chunk, a, b) => supabase.from('submission_items').select('submission_id, question_index, score')
     .in('submission_id', chunk).eq('teacher_confirmed', true).order('submission_id').order('question_index').range(a, b));
@@ -55,7 +58,7 @@ export async function loadTeacherRows(
   if (alerts.missing) warn('[teacher desk] proctor_alerts table missing');
 
   const tmlRows = tml.data.filter(r => !subjects.length || subjects.some(s => s.toLowerCase() === String(r.subject || '').toLowerCase()));
-  return { students: students.data, assignments: assignments.data, submissions: subs.data, tml: tmlRows, alerts: alerts.data, items: items.data };
+  return { students: students.data, assignments: assignments.data, submissions: subs.data, tml: tmlRows, alerts: alerts.data, items: items.data, variants: variants.data };
 }
 
 /** A value for a PostgREST or() filter: quoted, with LIKE wildcards escaped so a subject name matches only itself. */

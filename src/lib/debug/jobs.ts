@@ -1,6 +1,8 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { runNoShowCheck } from '@/lib/attendance/server';
+import { runRetention } from '@/lib/studio/after';
+import { todayIso } from '@/lib/teacher/course';
 
 /**
  * Jobs the app itself performs (as opposed to the database scheduler's), and their run history in ops_job_runs.
@@ -11,6 +13,11 @@ export const APP_JOBS = {
     label: 'Staff no-show check',
     note: 'Alerts the office about staff who have not punched in, for every school with the alert on. Also runs whenever someone opens the cover or attendance board. Repeating it does not alert twice.',
     schedule: 'Every 15 minutes on school mornings, once a scheduler calls /api/cron/attendance (not set up yet)',
+  },
+  'studio-retention': {
+    label: 'Studio retention checks',
+    note: 'Hands out the retention checks that are due today: a few bank questions on what a class was taught about 17 days earlier, marked the moment students hand in. Also runs when a teacher opens the Studio. A check is handed out once, however often this runs.',
+    schedule: 'Each school morning, once a scheduler calls /api/cron/studio (not set up yet)',
   },
 } as const;
 export type AppJob = keyof typeof APP_JOBS;
@@ -25,6 +32,16 @@ async function perform(db: SupabaseClient, job: AppJob): Promise<Record<string, 
         try { alerted += (await runNoShowCheck(db, s.school_id)).alerted; } catch (e) { failed += 1; console.warn('[job attendance-noshow]', s.school_id, e instanceof Error ? e.message : e); }
       }
       return { schools: (schools || []).length, alerted, failed };
+    }
+    case 'studio-retention': {
+      let assigned = 0, failed = 0;
+      // Batches of 40 until nothing due is left (or a safe ceiling).
+      for (let i = 0; i < 10; i++) {
+        const r = await runRetention(db, { today: todayIso() });
+        assigned += r.assigned; failed += r.failed;
+        if (r.assigned + r.failed < 40) break;
+      }
+      return { assigned, failed: 0, couldNotHandOut: failed };
     }
   }
 }

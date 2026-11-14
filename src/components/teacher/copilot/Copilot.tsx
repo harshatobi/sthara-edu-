@@ -117,7 +117,16 @@ function InsightCard({ i, onAct, onWhy }: { i: Insight; onAct: (a: InsightAction
  * assumes, pushes back when a request doesn't fit the evidence, and hands back
  * artifacts with real actions (send to class, save to planner, print).
  */
-export default function Copilot() {
+/** Opening the Ask tab on one of the generators that stay here (lesson, ideas, visuals, parent note, board paper). */
+export interface AskStart { kind: StudioKind; preset: StudioPreset | null; key: number }
+
+export default function Copilot({ embedded = false, start = null, onQuestionSet }: {
+  /** Inside the Studio's Ask tab: no page bar or tile grid of its own. */
+  embedded?: boolean;
+  start?: AskStart | null;
+  /** Question sets (worksheet, quiz, catch-up, exit tickets) are made in the Studio now: hand those requests over. */
+  onQuestionSet?: (p: { chapter?: string; setKind: string; audience?: string; students?: string[]; basis?: string }) => void;
+} = {}) {
   const { profile } = useAuth();
   const { desk, error: deskError, call } = useTeacherDesk();
   const { classes, cls, subjects, subject, go } = useScopeSelection(desk?.scope ?? []);
@@ -128,7 +137,10 @@ export default function Copilot() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState<string | null>(null);
   const [failed, setFailed] = useState<{ message: string; text: string; opts: SendOpts } | null>(null);
-  const [studio, setStudio] = useState<{ kind: StudioKind; preset: StudioPreset | null; key: number } | null>(null);
+  const [studio, setStudio] = useState<{ kind: StudioKind; preset: StudioPreset | null; key: number } | null>(start);
+  // A new start from the Studio (another tool clicked) opens that generator.
+  const [seenStart, setSeenStart] = useState(start);
+  if (start !== seenStart) { setSeenStart(start); if (start) setStudio(start); }
   const [ctx, setCtx] = useState<{ students: number; chaptersWithEvidence: number; assignments: number } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -197,6 +209,12 @@ export default function Copilot() {
   function onInsightAction(a: InsightAction) {
     if (a.href) { window.location.assign(a.href); return; }
     if (!a.studio) return;
+    const QS: Record<string, string> = { worksheet: 'worksheet', quiz: 'quiz', remedial: 'catchup', exit_tickets: 'exit_ticket' };
+    if (embedded && onQuestionSet && QS[a.studio.kind]) {
+      if (normClass(a.studio.cls) !== normClass(cls) || (a.studio.subject && a.studio.subject !== subject)) go({ class: a.studio.cls, subject: a.studio.subject || null });
+      onQuestionSet({ chapter: a.studio.chapter, setKind: QS[a.studio.kind], audience: a.studio.who === 'below' ? 'per_student' : 'class', basis: a.studio.note });
+      return;
+    }
     if (normClass(a.studio.cls) !== normClass(cls) || (a.studio.subject && a.studio.subject !== subject)) go({ class: a.studio.cls, subject: a.studio.subject || null });
     openStudio(a.studio.kind, { chapter: a.studio.chapter, who: a.studio.who, student: a.studio.student, note: a.studio.note });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -216,7 +234,7 @@ export default function Copilot() {
   if (!desk) {
     return (
       <div aria-busy="true">
-        <PageBar eyebrow="AI ASSISTANT" title="Teacher Copilot" sub={<Skeleton h={14} w={360} />} />
+        {!embedded && <PageBar eyebrow="AI ASSISTANT" title="Teacher Copilot" sub={<Skeleton h={14} w={360} />} />}
         <div className="cp-grid"><div className="card"><Skeleton h={420} /></div><div className="card"><Skeleton h={320} /></div></div>
       </div>
     );
@@ -237,27 +255,28 @@ export default function Copilot() {
 
   return (
     <>
-      <PageBar eyebrow="AI ASSISTANT" title="Teacher Copilot"
+      {!embedded && <PageBar eyebrow="AI ASSISTANT" title="Teacher Copilot"
         sub="Make something for your class, or just ask. It works from your class's real results and checks with you before it assumes."
         actions={<>
           <ScopePicker classes={classes} cls={cls} subjects={subjects} subject={subject} onChange={n => { go({ class: n.class ?? cls, subject: n.subject ?? (n.class ? null : subject) }); setActiveId(null); setStudio(null); }} />
           {turns.length > 0 && <button className="btn" onClick={newChat}><Plus size={14} weight="bold" /> New conversation</button>}
-        </>} />
+        </>} />}
+      {embedded && turns.length > 0 && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}><button className="btn sm" onClick={newChat}><Plus size={14} weight="bold" /> New conversation</button></div>}
 
       <div className="cp-grid">
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* ── Make something ────────────────────────────────────────────── */}
-          <div className="card" style={{ padding: 18 }}>
+          {(!embedded || studio) && <div className="card" style={{ padding: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
               <h3 style={{ fontSize: 17, fontWeight: 800 }}>Make something for {cls}</h3>
               {!studio && <span className="muted" style={{ fontSize: 12.5 }}>Pick one to see an example first. Nothing is generated until you say so.</span>}
             </div>
-            <StudioTiles selected={studio?.kind ?? null} compact={!!studio} onSelect={k => openStudio(k)} subject={subject} cls={cls} />
+            {!embedded && <StudioTiles selected={studio?.kind ?? null} compact={!!studio} onSelect={k => openStudio(k)} subject={subject} cls={cls} />}
             {studio && (
               <StudioPanel key={studio.key} kind={studio.kind} preset={studio.preset} cls={cls} subject={subject} chapters={chapters}
                 students={students} belowForty={belowForty} sending={!!sending} onGenerate={onGenerate} onClose={() => setStudio(null)} />
             )}
-          </div>
+          </div>}
 
           {/* ── Conversation ──────────────────────────────────────────────── */}
           <div className="card cp-chat" style={{ padding: 0 }} ref={chatRef}>

@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import StaffAskPage from '@/components/staff/AskPage';
+import AskOS from '@/components/ask/AskOS';
+import '@/styles/ask.css';
 
 export const metadata: Metadata = { title: 'Ask the School OS' };
 
 export default function Page() {
-  return <StaffAskPage role="teacher" />;
+  return <AskOS audience="teacher" />;
 }

@@ -64,9 +64,11 @@ export function toPrintGrid(o: { title: string; subtitle: string; school: string
  * Days across, bell rows down. Read-only, or editable for a draft section: a cell opens the editor,
  * and dragging a lesson onto another cell swaps the two periods.
  */
-export default function WeekGrid({ bells, wingId, slots, mode, names, rooms, clashing, today, onCell, onSwap }: {
+export default function WeekGrid({ bells, wingId, slots, mode, names, rooms, clashing, today, onCell, onSwap, marks }: {
   bells: BellSchedule[]; wingId: string | null; slots: Slot[]; mode: GridMode; names: Map<string, string>; rooms: Room[];
   clashing?: Set<Slot>; today?: number;
+  /** Moving a lesson: how each cell ("weekday|period") is shown, and why a cell can't take it. */
+  marks?: Map<string, { mark: 'pick' | 'can' | 'can-swap' | 'cant'; why?: string }>;
   onCell?: (weekday: number, period: number) => void;
   onSwap?: (a: { weekday: number; period_no: number }, b: { weekday: number; period_no: number }) => void;
 }) {
@@ -106,14 +108,15 @@ export default function WeekGrid({ bells, wingId, slots, mode, names, rooms, cla
                   <td key={d} className={today === d ? 'today' : undefined}>
                     {editable ? (
                       // A div, not a button: Firefox doesn't start drags on elements inside a button.
-                      <div role="button" tabIndex={0} className={`sch-cell edit${over === k ? ' drop' : ''}`}
-                        aria-label={`${DAY_NAMES[d]} ${r.label}: ${here.length ? here.map(s => s.subject).join(', ') : 'empty'}. Edit`}
+                      <div role="button" tabIndex={0} className={`sch-cell edit${over === k ? ' drop' : ''}${marks?.get(k) ? ` ${marks.get(k)!.mark}` : ''}`}
+                        title={marks?.get(k)?.why}
+                        aria-label={`${DAY_NAMES[d]} ${r.label}: ${here.length ? here.map(s => s.subject).join(', ') : 'empty'}. ${marks ? (marks.get(k)?.mark === 'pick' ? 'Picked up' : marks.get(k)?.mark === 'cant' ? `Can't move here: ${marks.get(k)?.why ?? ''}` : marks.get(k) ? 'Move here' : 'Pick up') : 'Edit'}`}
                         onClick={() => onCell!(d, r.no!)}
                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCell!(d, r.no!); } }}
                         onDragOver={e => { if (drag && onSwap) { e.preventDefault(); setOver(k); } }}
                         onDragLeave={() => setOver(o => (o === k ? null : o))}
                         onDrop={e => { e.preventDefault(); setOver(null); if (drag && onSwap) onSwap(drag, { weekday: d, period_no: r.no! }); setDrag(null); }}>
-                        {lessons.length ? lessons : <span className="sch-add"><Plus size={12} weight="bold" /> Add</span>}
+                        {lessons.length ? lessons : <span className="sch-add">{marks ? (marks.get(k)?.mark === 'can' ? 'Move here' : '') : <><Plus size={12} weight="bold" /> Add</>}</span>}
                       </div>
                     ) : <div className="sch-cell">{lessons}</div>}
                   </td>

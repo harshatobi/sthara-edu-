@@ -5,7 +5,7 @@
  */
 import { normClass, displayClass, normSubject, teachingScope } from '@/lib/teacher/scope';
 import { classOrder, minutes, sectionsOf, wingOf } from './engine';
-import type { SolverInput, SolverLesson, SolverRequirement, SolverRule, SolverSection } from './solver';
+import { DEFAULT_WEIGHTS, type SolverInput, type SolverLesson, type SolverRequirement, type SolverRule, type SolverSection, type SolverWeights } from './solver';
 import { personKey, slotPerson, slotTeacher, type BellSchedule, type PersonKey, type RoomKind, type ScheduleRows, type Slot } from './types';
 
 /** A requirement row as stored (sched_requirements). */
@@ -13,6 +13,8 @@ export interface RequirementRow {
   id: string; session: string; class: string; subject: string; group_label: string;
   teacher_id: string | null; staff_member_id: string | null; periods_per_week: number; doubles: number;
   room_kind: RoomKind | null; room_id: string | null; max_per_day: number; combined_key: string | null; notes: string | null;
+  /** Placement rules (20261112090000_solver_rules.sql); absent until that migration is in the database. */
+  time_pref?: 'morning' | 'afternoon' | null; never_last?: boolean; not_after?: string | null;
 }
 /** A load rule row as stored (teacher_load_rules). */
 export interface LoadRuleRow {
@@ -20,13 +22,19 @@ export interface LoadRuleRow {
   max_per_day: number | null; max_per_week: number | null; max_consecutive: number | null;
   /** Times off: a whole day (no periods, no times), period numbers, or a clock window "HH:MM"-"HH:MM". */
   unavailable: { weekday: number; periods: number[]; from?: string | null; to?: string | null }[];
+  max_days?: number | null; avoid_first?: boolean; avoid_last?: boolean;
 }
 export interface SolverSettingsRow {
   default_target_per_week: number; default_max_per_day: number; default_max_consecutive: number;
   class_teacher_first: boolean; subject_spread: boolean;
+  no_student_gaps?: boolean; weights?: Partial<SolverWeights> | null;
 }
+/** A school's priorities with every level filled in. */
+export const weightsOf = (s: Pick<SolverSettingsRow, 'weights'>): SolverWeights => ({ ...DEFAULT_WEIGHTS, ...(s.weights ?? {}) });
+export { DEFAULT_WEIGHTS };
+export type { SolverWeights };
 export const DEFAULT_SOLVER_SETTINGS: SolverSettingsRow = {
-  default_target_per_week: 30, default_max_per_day: 7, default_max_consecutive: 4, class_teacher_first: true, subject_spread: true,
+  default_target_per_week: 30, default_max_per_day: 7, default_max_consecutive: 4, class_teacher_first: true, subject_spread: true, no_student_gaps: false, weights: null,
 };
 
 export const ruleKey = (r: Pick<LoadRuleRow, 'user_id' | 'staff_member_id'>) => personKey(r.user_id, r.staff_member_id)!;
@@ -70,6 +78,10 @@ export function buildInput(rows: ScheduleRows, reqs: RequirementRow[], rules: Lo
   /** Repair: this version's locked lessons stay put and the others are the starting point. Fresh: nothing kept. */
   base?: { slots: Slot[]; mode: 'repair' | 'fresh' };
   seed?: number; timeLimitMs?: number;
+  /** Priorities for this run, over the school's saved ones (comparing alternatives). */
+  weights?: Partial<SolverWeights>;
+  /** Re-solving: what moving one lesson costs (0 = free to move). */
+  stability?: number;
 }): SolverInput {
   const classTeacher = new Map<string, PersonKey>();
   for (const p of rows.people) if (p.role === 'teacher' && p.teacher_class) classTeacher.set(normClass(p.teacher_class), p.id);
@@ -86,17 +98,20 @@ export function buildInput(rows: ScheduleRows, reqs: RequirementRow[], rules: Lo
     requirements: reqs.map<SolverRequirement>(r => ({
       id: r.id, cls: displayClass(r.class), subject: r.subject, group: r.group_label || '', teacher: reqTeacher(r),
       periods: r.periods_per_week, doubles: r.doubles, roomKind: r.room_kind, roomId: r.room_id, maxPerDay: r.max_per_day, combinedKey: r.combined_key,
+      timePref: r.time_pref ?? null, neverLast: !!r.never_last, notAfter: r.not_after || null,
     })),
     rules: rules.map<SolverRule>(r => ({
       person: ruleKey(r), maxPerDay: r.max_per_day, maxPerWeek: r.max_per_week, maxConsecutive: r.max_consecutive,
+      maxDays: r.max_days ?? null, avoidFirst: !!r.avoid_first, avoidLast: !!r.avoid_last,
       unavailable: (r.unavailable || []).map(u => ({
         weekday: Number(u.weekday), periods: (u.periods || []).map(Number),
         ...(u.from && u.to ? { window: [minutes(u.from), minutes(u.to)] as [number, number] } : {}),
       })),
     })),
-    defaults: { maxPerDay: settings.default_max_per_day, maxConsecutive: settings.default_max_consecutive, classTeacherFirst: settings.class_teacher_first, spread: settings.subject_spread },
+    defaults: { maxPerDay: settings.default_max_per_day, maxConsecutive: settings.default_max_consecutive, classTeacherFirst: settings.class_teacher_first, spread: settings.subject_spread,
+      noStudentGaps: !!settings.no_student_gaps, weights: { ...weightsOf(settings), ...(opts.weights ?? {}) } },
     rooms: rows.rooms.map(r => ({ id: r.id, kind: r.kind, active: r.active, homeClass: r.home_class })),
-    locked, start, seed: opts.seed, timeLimitMs: opts.timeLimitMs,
+    locked, start, seed: opts.seed, timeLimitMs: opts.timeLimitMs, ...(opts.stability ? { stability: opts.stability } : {}),
   };
 }
 

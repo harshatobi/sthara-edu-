@@ -1,5 +1,6 @@
 'use client';
 
+import { Stat, Stats } from '@/components/schedule/Stats';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
@@ -8,7 +9,7 @@ import { UsersFourIcon as UsersFour } from '@phosphor-icons/react/dist/ssr/Users
 import { DownloadSimpleIcon as DownloadSimple } from '@phosphor-icons/react/dist/ssr/DownloadSimple';
 import { Pager, usePaged } from '@/components/canon/Pager';
 import { Chip, Empty } from '@/components/canon/ui';
-import { CardHead, Kpi, downloadCsv } from '@/components/admin/kit';
+import { CardHead, downloadCsv } from '@/components/admin/kit';
 import { daysBetween, fmtDate, isoDay } from '@/lib/admin/format';
 import { EMPLOYMENT, STAFF_CATEGORIES, type Employment, type ScheduleRows, type StaffCategory, type StaffMember } from '@/lib/schedule/types';
 import Pop, { run } from '@/components/schedule/Pop';
@@ -50,12 +51,12 @@ export default function StaffTab({ rows, call, reload, toast, canEdit }: { rows:
 
   return (
     <>
-      <div className="kpis">
-        <Kpi label="ON THE REGISTER" value={active.length} note={`${active.filter(p => !p.login).length} without a Sthara login`} />
-        <Kpi label="TEACHING" value={count('teaching')} />
-        <Kpi label="OFFICE" value={count('office')} />
-        <Kpi label="SUPPORT, LAB, LIBRARY AND IT" value={count('support') + count('assistant')} note={`${active.filter(p => (p.category === 'support' || p.category === 'assistant') && !p.member?.phone_e164).length} with no phone number`} />
-      </div>
+      <Stats>
+        <Stat label="ON THE REGISTER" value={active.length} note={`${active.filter(p => !p.login).length} without a Sthara login`} />
+        <Stat label="TEACHING" value={count('teaching')} />
+        <Stat label="OFFICE" value={count('office')} />
+        <Stat label="SUPPORT, LAB, LIBRARY AND IT" value={count('support') + count('assistant')} note={`${active.filter(p => (p.category === 'support' || p.category === 'assistant') && !p.member?.phone_e164).length} with no phone number`} />
+      </Stats>
       {ending.length > 0 && (
         <div className="note" style={{ marginBottom: 18 }}>
           <b>Contracts ending soon:</b> {ending.map(m => `${m.name} (${fmtDate(m.contract_to, true)})`).join(', ')}. Renew them in the register, or they drop off schedules after that date.

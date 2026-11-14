@@ -37,6 +37,13 @@ const TABS: { key: Tab; label: string; see: Perm[] }[] = [
   { key: 'staff', label: 'Staff register', see: ['schedule.workforce', 'workforce.read'] },
 ];
 
+/** The tabs in the order the work happens: running today, building the timetable, and what both are built on. */
+const GROUPS: { label: string; keys: Tab[] }[] = [
+  { label: 'Day to day', keys: ['mine', 'cover', 'duties', 'attendance', 'shifts'] },
+  { label: 'Timetable', keys: ['timetable', 'build', 'load'] },
+  { label: 'Set up', keys: ['calendar', 'setup', 'staff'] },
+];
+
 export default function SchedulePage() {
   return <DeskGate>{desk => <Schedule desk={desk} />}</DeskGate>;
 }
@@ -60,9 +67,16 @@ function Schedule({ desk }: { desk: AdminDesk }) {
     <>
       {toastEl}
       <PageBar eyebrow="SCHEDULING" title="Schedule"
-        sub="The timetable, bells, the academic calendar and the staff register. Every teacher and office account sees their own schedule from it." />
-      <div className="tabs" role="tablist" aria-label="Scheduling">
-        {tabs.map(t => <button key={t.key} role="tab" aria-selected={tab === t.key} className={`tab${tab === t.key ? ' on' : ''}`} onClick={() => go(t.key)}>{t.label}</button>)}
+        sub="Run the day, build the timetable, and keep the bells, calendar and staff register it is built on. Teachers, students and parents see a timetable from the day it is published." />
+      <div className="sch-nav" role="tablist" aria-label="Scheduling">
+        {GROUPS.map(g => ({ ...g, tabs: g.keys.map(k => tabs.find(t => t.key === k)).filter((t): t is (typeof TABS)[number] => !!t) })).filter(g => g.tabs.length).map(g => (
+          <div className="sch-nav-g" key={g.label}>
+            <span>{g.label}</span>
+            <div className="tabs">
+              {g.tabs.map(t => <button key={t.key} role="tab" aria-selected={tab === t.key} className={`tab${tab === t.key ? ' on' : ''}`} onClick={() => go(t.key)}>{t.label}</button>)}
+            </div>
+          </div>
+        ))}
       </div>
       {error ? <div className="note err" role="alert">Couldn&apos;t load the schedule: {error}</div>
         : !common ? <div className="card" aria-busy="true">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} h={44} style={{ marginBottom: 12 }} />)}</div>

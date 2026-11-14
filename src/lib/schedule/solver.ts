@@ -31,13 +31,29 @@ export interface SolverRequirement {
   roomId: string | null;
   maxPerDay: number;
   combinedKey: string | null;  // requirements that share it are one lesson taught to several sections together
+  /** Better in the first or second half of the day (soft). */
+  timePref?: 'morning' | 'afternoon' | null;
+  /** Never the section's last period of the day (hard). */
+  neverLast?: boolean;
+  /** Not in the period straight after this subject in the same section (soft; the CP-SAT engine weighs it). */
+  notAfter?: string | null;
 }
 export interface SolverRule {
   person: PersonKey;
   maxPerDay: number | null; maxPerWeek: number | null; maxConsecutive: number | null;
   /** No periods and no window = the whole day; `window` = clock time [start, end) in minutes, checked against each lesson's own time. */
   unavailable: { weekday: number; periods: number[]; window?: [number, number] }[];
+  /** At most this many days in school a week (hard). */
+  maxDays?: number | null;
+  /** Would rather not teach the first / last period (soft). */
+  avoidFirst?: boolean; avoidLast?: boolean;
 }
+/** How much each soft rule matters: 0 off, 1 low, 2 normal, 3 high. */
+export interface SolverWeights { classTeacher: number; spread: number; gaps: number; balance: number; prefs: number }
+export const DEFAULT_WEIGHTS: SolverWeights = { classTeacher: 2, spread: 2, gaps: 2, balance: 2, prefs: 2 };
+const LEVEL = [0, 0.5, 1, 2];
+/** Other classes' rooms a split group may borrow (both engines use the same few, so one's result is a valid start for the other). */
+const BORROW = 4;
 export interface SolverSection {
   cls: string;
   classTeacher: PersonKey | null;
@@ -57,11 +73,20 @@ export interface SolverInput {
   sections: SolverSection[];
   requirements: SolverRequirement[];
   rules: SolverRule[];
-  defaults: { maxPerDay: number; maxConsecutive: number; classTeacherFirst: boolean; spread: boolean };
+  defaults: {
+    maxPerDay: number; maxConsecutive: number; classTeacherFirst: boolean; spread: boolean;
+    /** Lessons run from period 1 with free periods only at the end of a section's day (soft; CP-SAT engine). */
+    noStudentGaps?: boolean;
+    weights?: Partial<SolverWeights>;
+  };
   rooms: SolverRoom[];
   locked: SolverLesson[];
   /** Repair mode: the current (unlocked) lessons, used as starting positions where they still fit. */
   start?: SolverLesson[];
+  /** Re-solving: the cost of moving one lesson away from where `start` has it (0 = free to move). CP-SAT engine. */
+  stability?: number;
+  /** A finished timetable to start the search from (the in-browser solver's result, handed to CP-SAT). */
+  hint?: SolverLesson[];
   seed?: number;
   timeLimitMs?: number;
 }
@@ -72,6 +97,10 @@ export interface SolverResult {
   score: { total: number; soft: Record<string, number> };
   stats: { units: number; placed: number; iterations: number; ms: number; moved: number };
   warnings: string[];
+  /** Which engine built it: Google OR-Tools CP-SAT on the server, or the in-browser search. */
+  engine?: 'cpsat' | 'local';
+  /** CP-SAT only: whether it proved this the best possible, and if not how far the proof was from closing. */
+  proof?: { status: 'optimal' | 'feasible' | 'unknown'; gap: number };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -103,6 +132,7 @@ interface Unit {
   start: number | null;
   periods: number[];              // the period numbers it occupies
   room: string | null;
+  neverLast: boolean;
 }
 
 interface Pos { day: number; start: number; periods: number[] }
@@ -205,7 +235,7 @@ export function solve(input: SolverInput): SolverResult {
     for (let i = 0; i < need - doubles * 2 + doubles; i++) {
       units.push({
         id: units.length, req: r, reqIds: rs.map(x => x.id), sections: [...new Set(rs.map(x => norm(x.cls)))], group: r.group.toLowerCase(),
-        len: i < doubles ? 2 : 1, teacher: r.teacher, day: null, start: null, periods: [], room: null,
+        len: i < doubles ? 2 : 1, teacher: r.teacher, day: null, start: null, periods: [], room: null, neverLast: rs.some(x => x.neverLast),
       });
     }
   }
@@ -221,6 +251,7 @@ export function solve(input: SolverInput): SolverResult {
         const periods = u.len === 1 ? [p] : (() => { const pr = d.pairs.find(x => x[0] === p); return pr ? [pr[0], pr[1]] : null; })();
         if (!periods) continue;
         if (others.some(o => !periods.every(q => o!.periods.includes(q)))) continue;
+        if (u.neverLast && [d, ...others].some(o => o!.periods[o!.periods.length - 1] === periods[periods.length - 1])) continue;
         if (u.len === 2 && others.some(o => !o!.pairs.some(x => x[0] === periods[0] && x[1] === periods[1]))) continue;
         // A combined lesson is one lesson: its sections must ring those periods at the same time.
         if (u.sections.length > 1 && periods.some(q => { const t = timeOf(u.sections[0], d.weekday, q); return u.sections.slice(1).some(k => { const o = timeOf(k, d.weekday, q); return o[0] !== t[0] || o[1] !== t[1]; }); })) continue;
@@ -257,15 +288,18 @@ export function solve(input: SolverInput): SolverResult {
 
   const kindRooms = (kind: RoomKind) => input.rooms.filter(r => r.active && r.kind === kind && !r.homeClass).map(r => r.id);
   const spareClassrooms = kindRooms('classroom');
-  const allHomes = [...new Set(homeRoomOf.values())];
   /** Rooms a lesson may use, best first; null = it claims no room. */
   const roomPool = (u: Unit): string[] | null => {
     if (u.req.roomId) return [u.req.roomId];
     if (u.req.roomKind) return kindRooms(u.req.roomKind);
     if (!homesKnown) return null;
     if (u.group === '') return u.sections.map(homeOf);
+    // Its own class's room, a spare classroom, then a few other classes' rooms when theirs are empty (same grade first).
     const own = homeOf(u.sections[0]);
-    return [own, ...spareClassrooms, ...allHomes.filter(h => h !== own)];
+    const grade = u.sections[0].replace(/\D/g, '');
+    const near = [...homeRoomOf.keys()].filter(k => homeRoomOf.get(k) !== own)
+      .sort((a, b) => Number(a.replace(/\D/g, '') !== grade) - Number(b.replace(/\D/g, '') !== grade) || (a < b ? -1 : a > b ? 1 : 0));
+    return [own, ...spareClassrooms, ...near.slice(0, BORROW).map(k => homeRoomOf.get(k)!)];
   };
 
   /** Why a unit can't go at a position (null = it can, with the room it would get). */
@@ -322,6 +356,12 @@ export function solve(input: SolverInput): SolverResult {
       const week = (teacherWeek.get(u.teacher) || 0) - (u.day !== null ? u.periods.length : 0) + u.len;
       if (week > maxWeek(u.teacher)) return { ok: false, conflicts, hard: 'teacher week cap' };
       if (runWith(u.teacher, pos.day, pos.periods.map(p => timeOf(u.sections[0], pos.day, p))) > maxRun(u.teacher)) return { ok: false, conflicts, hard: 'in a row' };
+      const maxDays = ruleOf.get(u.teacher)?.maxDays;
+      if (maxDays && !((teacherDay.get(`${u.teacher}|${pos.day}`) || 0) - mine > 0)) {
+        let days = 0;
+        for (const d of dayGrid.keys()) if (d !== pos.day && (teacherDay.get(`${u.teacher}|${d}`) || 0) - (u.day === d ? u.periods.length : 0) > 0) days++;
+        if (days + 1 > maxDays) return { ok: false, conflicts, hard: 'teacher days' };
+      }
     }
     return { ok: true, room };
   };
@@ -369,7 +409,25 @@ export function solve(input: SolverInput): SolverResult {
   const unitsOfReq = new Map<string, Unit[]>();
   for (const u of units) unitsOfReq.set(u.req.id, [...(unitsOfReq.get(u.req.id) ?? []), u]);
 
-  const W = { classTeacher: 30, spread: 6, gaps: 1, balance: 2 };
+  const lv = { ...DEFAULT_WEIGHTS, ...(input.defaults.weights ?? {}) };
+  const m = (k: keyof SolverWeights) => LEVEL[Math.max(0, Math.min(3, Math.round(lv[k])))] ?? 1;
+  const W = { classTeacher: 30 * m('classTeacher'), spread: 6 * m('spread'), gaps: 1 * m('gaps'), balance: 2 * m('balance'), timePref: 4 * m('prefs'), edge: 4 * m('prefs') };
+  const lastPeriod = new Map<string, number>();
+  for (const s of input.sections) for (const d of s.days) if (d.periods.length) lastPeriod.set(`${norm(s.cls)}|${d.weekday}`, d.periods[d.periods.length - 1]);
+  /** What a lesson's own place costs: a morning subject after lunch, a teacher opening or closing the day against their wish. */
+  const placeCost = (u: Unit) => {
+    if (u.day === null) return 0;
+    let c = 0;
+    const sk = u.sections[0];
+    const periods = sectionByKey.get(sk)?.days.find(d => d.weekday === u.day)?.periods ?? [];
+    const i = periods.indexOf(u.periods[0]);
+    if (u.req.timePref === 'morning' && i >= Math.ceil(periods.length / 2)) c += W.timePref;
+    if (u.req.timePref === 'afternoon' && i < Math.floor(periods.length / 2)) c += W.timePref;
+    const rule = u.teacher ? ruleOf.get(u.teacher) : undefined;
+    if (rule?.avoidFirst && u.periods.includes(periods[0])) c += W.edge;
+    if (rule?.avoidLast && u.periods.includes(lastPeriod.get(`${sk}|${u.day}`) ?? -1)) c += W.edge;
+    return c;
+  };
   /** Soft cost of one teacher's week: idle gaps inside each day, and days far from their average load. */
   const teacherCost = (t: PersonKey) => {
     let gaps = 0, balance = 0;
@@ -421,7 +479,8 @@ export function solve(input: SolverInput): SolverResult {
   }
 
   const totalSoft = () => {
-    const out = { classTeacher: 0, spread: 0, teachers: 0 };
+    const out = { classTeacher: 0, spread: 0, teachers: 0, prefs: 0 };
+    for (const u of units) out.prefs += placeCost(u);
     for (const s of input.sections) for (const d of s.days) out.classTeacher += classTeacherCost(norm(s.cls), d.weekday);
     for (const r of unitsOfReq.keys()) out.spread += spreadCost(r);
     for (const t of teachers) out.teachers += teacherCost(t);
@@ -429,7 +488,7 @@ export function solve(input: SolverInput): SolverResult {
   };
   /** Soft cost of what a unit's position touches (for comparing two positions of one unit). */
   const localCost = (u: Unit, day: number | null) => {
-    let c = spreadCost(u.req.id);
+    let c = spreadCost(u.req.id) + placeCost(u);
     if (u.teacher) c += teacherCost(u.teacher);
     if (day !== null) for (const sk of u.sections) c += classTeacherCost(sk, day);
     return c;
@@ -573,6 +632,7 @@ export function solve(input: SolverInput): SolverResult {
       'teacher day cap': 'The teacher would go over their periods-a-day cap.',
       'teacher week cap': 'The teacher would go over their periods-a-week cap.',
       'in a row': 'The teacher would teach too many periods in a row.',
+      'teacher days': 'The teacher would be in school on more days than their cap.',
       'per day': 'The subject already meets as often as allowed on every free day.',
       'section': 'The section is full at every period the teacher is free.',
       'room': u.req.roomKind || u.req.roomId ? `Every ${u.req.roomKind ?? 'named'} room is taken at the free periods.`
@@ -588,8 +648,9 @@ export function solve(input: SolverInput): SolverResult {
   return {
     lessons,
     unplaced: [...unplaced.values()],
-    score: { total: Math.round((unplacedPeriods * 1000 + soft.classTeacher + soft.spread + soft.teachers) * 10) / 10, soft: { classTeacher: soft.classTeacher, spread: soft.spread, teachers: Math.round(soft.teachers * 10) / 10 } },
+    score: { total: Math.round((unplacedPeriods * 1000 + soft.classTeacher + soft.spread + soft.teachers + soft.prefs) * 10) / 10, soft: { classTeacher: soft.classTeacher, spread: soft.spread, teachers: Math.round(soft.teachers * 10) / 10, prefs: soft.prefs } },
     stats: { units: units.length, placed: units.filter(u => u.day !== null).length, iterations, ms: Date.now() - t0, moved },
     warnings,
+    engine: 'local',
   };
 }

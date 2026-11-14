@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LockSimpleIcon as LockSimple } from '@phosphor-icons/react/dist/ssr/LockSimple';
 import { SparkleIcon as Sparkle } from '@phosphor-icons/react/dist/ssr/Sparkle';
@@ -13,8 +13,10 @@ import { ArchiveIcon as Archive } from '@phosphor-icons/react/dist/ssr/Archive';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { TableIcon as Table } from '@phosphor-icons/react/dist/ssr/Table';
+import { ArrowsOutCardinalIcon as ArrowsOut } from '@phosphor-icons/react/dist/ssr/ArrowsOutCardinal';
+import { ArrowCounterClockwiseIcon as UndoIcon } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
+import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { Chip, Empty, type Tone } from '@/components/canon/ui';
-import { Kpi } from '@/components/admin/kit';
 import { fmtDate, isoDay, plural } from '@/lib/admin/format';
 import { addDays, clashesFor, findClashes, homeRoom, namesOf, periodClock, sectionsOf, teacherLoad, versionOn, weekdayOf, wingOf } from '@/lib/schedule/engine';
 import { DAY_NAMES, slotPerson, slotTeacher, type ScheduleRows, type Slot, type TimetableVersion } from '@/lib/schedule/types';
@@ -23,6 +25,11 @@ import WeekGrid, { toPrintGrid, type GridMode } from '@/components/schedule/Week
 import Pop, { run } from '@/components/schedule/Pop';
 import { printGrids } from '@/components/schedule/print';
 import ImportWizard from './ImportWizard';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSolverData } from '@/lib/schedule/useSolverData';
+import { buildInput, gridFor, toSlots } from '@/lib/schedule/solverInput';
+import { solveBest } from '@/lib/schedule/runSolver';
+import { cellKey, changedLessons, moveOptions, type Cell } from '@/lib/schedule/moves';
 
 type Call = <T = any>(path: string, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', body: unknown) => Promise<T>;
 const STATUS: Record<TimetableVersion['status'], { t: string; tone: Tone }> = {
@@ -69,9 +76,67 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const swap = async (a: { weekday: number; period_no: number }, b: { weekday: number; period_no: number }) => {
-    try { await call(API, 'PUT', { action: 'swap', versionId: version!.id, class: focusKey, a, b }); reload(); toast('Periods swapped'); }
-    catch (e: any) { toast(e.message); }
+  // ── Moving lessons: pick one up, see where it can go, and let the solver make room where it can't. ──
+  const { getAuthToken } = useAuth();
+  const solver = useSolverData();
+  const [moving, setMoving] = useState(false);
+  const [lift, setLift] = useState<Cell | null>(null);
+  const [undo, setUndo] = useState<{ label: string; run: () => Promise<unknown> } | null>(null);
+  const [fix, setFix] = useState<null | { from: Cell; to: Cell; why: string; state: 'ask' | 'busy' | 'ready' | 'failed'; next?: Slot[]; changed?: Slot[]; msg?: string }>(null);
+  const movable = draft && mode === 'class';
+  useEffect(() => { setLift(null); }, [focusKey, version?.id, moving]);
+  useEffect(() => { setUndo(null); setMoving(false); }, [version?.id]);
+  const cells = useMemo<Cell[]>(() => (movable && focusKey ? gridFor(focusKey, rows).flatMap(d => d.periods.map(p => ({ weekday: d.weekday, period_no: p }))) : []), [movable, focusKey, rows]);
+  const marks = useMemo(() => (!moving || !movable ? undefined : lift ? moveOptions(focusKey, lift, slots, cells, rows.rooms, clock, names) : new Map()), [moving, movable, lift, focusKey, slots, cells, rows.rooms, clock, names]);
+  const cellName = (c: Cell) => `${DAY_NAMES[c.weekday]} P${c.period_no}`;
+  const bare = (xs: Slot[]) => xs.map(s => ({ class: s.class, group_label: s.group_label, weekday: s.weekday, period_no: s.period_no, subject: s.subject, teacher_id: s.teacher_id, staff_member_id: s.staff_member_id ?? null, room_id: s.room_id, combined: s.combined, locked: !!s.locked }));
+
+  const swap = async (a: Cell, b: Cell) => {
+    try {
+      await call(API, 'PUT', { action: 'swap', versionId: version!.id, class: focusKey, a, b });
+      const cls = focusKey, id = version!.id;
+      setUndo({ label: `${cellName(a)} and ${cellName(b)} swapped`, run: () => call(API, 'PUT', { action: 'swap', versionId: id, class: cls, a, b }) });
+      setLift(null); reload(); toast('Moved');
+    } catch (e: any) { toast(e.message); }
+  };
+  const onMoveCell = (weekday: number, period: number) => {
+    const c = { weekday, period_no: period };
+    if (!lift) { if (shown.some(s => s.weekday === weekday && s.period_no === period)) setLift(c); return; }
+    const o = marks?.get(cellKey(c));
+    if (!o || o.mark === 'pick') { setLift(null); return; }
+    if (o.mark === 'cant') { setFix({ from: lift, to: c, why: o.why || 'It clashes with another lesson.', state: 'ask' }); return; }
+    void swap(lift, c);
+  };
+  /** The picked-up period can't go there as things stand: pin it there and let the solver move as few other lessons as it can. */
+  const makeRoom = async () => {
+    if (!fix || !version) return;
+    setFix(f => f && { ...f, state: 'busy' });
+    try {
+      const data = solver.data;
+      if (!data?.available || !data.requirements.length) throw new Error('The solver needs the requirements sheet to know what may move. Fill it in under Auto-build first.');
+      const ck = normClass(focusKey);
+      const picked = new Set(slots.filter(s => normClass(s.class) === ck && s.weekday === fix.from.weekday && s.period_no === fix.from.period_no));
+      const staged = slots.map(s => (picked.has(s) ? { ...s, weekday: fix.to.weekday, period_no: fix.to.period_no, locked: true } : s));
+      const input = buildInput(rows, data.requirements, data.rules, data.settings, { base: { slots: staged, mode: 'repair' }, seed: 1, timeLimitMs: 20_000, stability: 40 });
+      const r = await solveBest(input, { token: await getAuthToken().catch(() => '') });
+      const left = r.unplaced.reduce((n, u) => n + u.periods, 0);
+      if (left) throw new Error(`There is no way to make room without leaving ${plural(left, 'period')} out (${r.unplaced[0].cls} ${r.unplaced[0].subject}: ${r.unplaced[0].reason})`);
+      // The pin was only for this move: the lesson keeps the lock it had.
+      const wasLocked = [...picked].some(s => s.locked);
+      const next: Slot[] = toSlots(r.lessons).map(s => (normClass(s.class) === ck && s.weekday === fix.to.weekday && s.period_no === fix.to.period_no && [...picked].some(x => x.subject === s.subject && x.group_label === s.group_label) ? { ...s, locked: wasLocked } : s));
+      if (findClashes(next, rows.rooms, clock).length) throw new Error('The lesson at that period is fixed there (locked, or not on the requirements sheet), so nothing can make room for this one.');
+      setFix(f => f && { ...f, state: 'ready', next, changed: changedLessons(slots, next) });
+    } catch (e: any) { setFix(f => f && { ...f, state: 'failed', msg: e?.message || 'The solver could not make room.' }); }
+  };
+  const applyFix = async () => {
+    if (!fix?.next || !version) return;
+    const before = bare(slots), id = version.id;
+    setFix(f => f && { ...f, state: 'busy' });
+    try {
+      await call(API, 'PUT', { action: 'apply', versionId: id, lessons: bare(fix.next) });
+      setUndo({ label: `Moved to ${cellName(fix.to)}, with ${plural(Math.max(0, (fix.changed?.length ?? 1) - 1), 'other lesson')} shifted`, run: () => call(API, 'PUT', { action: 'apply', versionId: id, lessons: before }) });
+      setFix(null); setLift(null); reload(); toast('Moved, and the rest rearranged');
+    } catch (e: any) { setFix(f => f && { ...f, state: 'failed', msg: e?.message || 'Could not save the change.' }); }
   };
   const printAll = () => {
     try {
@@ -123,82 +188,132 @@ export default function TimetableTab({ rows, call, reload, toast, canEdit }: { r
           </>}
           {slots.length > 0 && <button className="btn sm" onClick={printAll}><Printer size={13} /> Print all classes</button>}
         </div>
+        <div className="sch-stats" style={{ marginTop: 14 }}>
+          <span className="sch-stat"><b>{slots.length}</b> lessons a week</span>
+          <span className="sch-stat"><b>{new Set(slots.map(s => normClass(s.class))).size}</b> of {sections.length} sections</span>
+          <span className={`sch-stat ${clashes.length ? 'bad' : 'good'}`}><b>{clashes.length}</b> {clashes.length === 1 ? 'clash' : 'clashes'}</span>
+          <span className="sch-stat"><b>{load.size}</b> teachers timetabled{teachers.filter(t => !load.has(t.id)).length ? `, ${teachers.filter(t => !load.has(t.id)).length} with none` : ''}</span>
+          {slots.some(s => !slotPerson(s)) && <span className="sch-stat bad"><b>{slots.filter(s => !slotPerson(s)).length}</b> with no teacher</span>}
+        </div>
         {version?.status !== 'draft' && canEdit && (
           <p className="muted" style={{ marginTop: 12 }}>Published timetables are kept as they were. To change this one, copy it to a draft, edit, and publish the draft from the day it should take effect.</p>
         )}
       </div>
 
       {version?.source === 'solver' && version.solver_report && <SolverReport version={version} locked={slots.filter(s => s.locked).length} />}
-      {draft && (
-        <div className="note info" style={{ marginBottom: 18, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ flex: 1, minWidth: 240 }}>
-            <LockSimple size={13} weight="fill" style={{ verticalAlign: -2 }} /> {plural(slots.filter(s => s.locked).length, 'lesson')} locked. Lock the periods you want to keep (open a period), then let the solver rearrange the rest around them.
-          </span>
-          <button className="btn sm pri" onClick={() => router.replace(`/admin/schedule?tab=build&base=${version!.id}`, { scroll: false })}><Sparkle size={13} weight="fill" /> Re-solve unlocked lessons</button>
-        </div>
-      )}
 
-      <div className="kpis">
-        <Kpi label="LESSONS A WEEK" value={slots.length} note={`${plural(new Set(slots.map(s => normClass(s.class))).size, 'section')} of ${sections.length}`} />
-        <Kpi label="CLASHES" value={clashes.length} valueColor={clashes.length ? 'var(--red)' : 'var(--green)'} note={clashes.length ? 'Must be fixed before publishing' : 'No teacher, room or section is double-booked'} />
-        <Kpi label="TEACHERS TIMETABLED" value={load.size} note={`${teachers.filter(t => !load.has(t.id)).length} with no periods`} />
-        <Kpi label="NO TEACHER" value={slots.filter(s => !slotPerson(s)).length} valueColor={slots.some(s => !slotPerson(s)) ? 'var(--amber)' : undefined} note="Lessons still to staff" />
-      </div>
-
-      <div className="card" style={{ marginBottom: 18 }}>
-        <div className="sch-bar">
-          <div className="sch-seg" role="tablist" aria-label="View by">
-            {(['class', 'teacher', 'room'] as GridMode[]).map(m => (
-              <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? 'on' : ''} onClick={() => { setMode(m); setFocus(''); }}>{m === 'class' ? 'By class' : m === 'teacher' ? 'By teacher' : 'By room'}</button>
-            ))}
-          </div>
-          <select className="sch-sel" aria-label={mode} value={focusKey} onChange={e => setFocus(e.target.value)}>
-            {mode === 'class' && sections.map(c => <option key={c} value={c}>{c}</option>)}
-            {mode === 'teacher' && teachers.map(t => <option key={t.id} value={t.id}>{t.name} ({load.get(t.id) || 0})</option>)}
-            {mode === 'room' && rows.rooms.map(r => <option key={r.id} value={r.id}>{r.name}{r.active ? '' : ' (retired)'}</option>)}
-          </select>
-          <span className="sp" />
-          {draft && mode === 'class' && <span className="muted" style={{ fontSize: 12.5 }}>Click a period to edit. Drag a lesson onto another period to swap them.</span>}
-          {draft && mode !== 'class' && <span className="muted" style={{ fontSize: 12.5 }}>Switch to By class to edit.</span>}
-        </div>
-        {mode === 'class' && !sections.length ? (
-          <Empty icon={<Table size={26} weight="duotone" />} title="No sections yet">Sections come from enrolled students and teachers&apos; classes in the user directory. Enrol students and assign teachers first.</Empty>
-        ) : !focusKey ? <p className="muted">Nothing to show yet.</p> : (
-          <WeekGrid bells={rows.bells} wingId={wing} slots={shown} mode={mode} names={names} rooms={rows.rooms} clashing={clashing}
-            onCell={draft && mode === 'class' ? (weekday, period) => setEditing({ weekday, period }) : undefined}
-            onSwap={draft && mode === 'class' ? swap : undefined} />
-        )}
-      </div>
-
-      <div className="g2">
-        <div className="card">
-          <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 10 }}>Clashes</h3>
-          {clashes.length ? clashes.slice(0, 30).map((c, i) => (
-            <button key={i} type="button" className="row-btn" onClick={() => { setMode('class'); setFocus(c.slots[0].class); }}>
-              <Warning size={16} weight="fill" color="var(--red)" />
-              <span style={{ flex: 1, fontSize: 13 }}>
-                <b>{DAY_NAMES[c.weekday]} P{c.period_no}</b> · {c.kind === 'teacher' ? `${names.get(c.key) || 'A teacher'} in ${c.slots.map(s => s.class).join(', ')}`
-                  : c.kind === 'room' ? `${rows.rooms.find(r => r.id === c.key)?.name || 'A room'} for ${c.slots.map(s => s.class).join(', ')}` : `${c.slots[0].class} has ${c.slots.length} lessons`}
-              </span>
-            </button>
-          )) : <p className="muted">None. Every teacher, room and section is in one place at a time.</p>}
-        </div>
-        <div className="card">
-          <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 10 }}>Teaching load</h3>
-          {[...load].sort((a, b) => b[1] - a[1]).map(([id, n]) => {
-            const max = Math.max(...load.values());
-            return (
-              <div className="sch-load" key={id}>
-                <button type="button" style={{ textAlign: 'left', fontWeight: 700 }} onClick={() => { setMode('teacher'); setFocus(id); }}>{names.get(id) || 'Teacher'}</button>
-                <div className="bar"><i style={{ width: `${(n / max) * 100}%`, background: n > 36 ? 'var(--red)' : n > 30 ? 'var(--amber)' : 'var(--blue)' }} /></div>
-                <b className="num" style={{ textAlign: 'right' }}>{n}</b>
+      <div className="sch-work">
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="sch-bar" style={{ marginBottom: 12 }}>
+            <div className="sch-seg" role="tablist" aria-label="View by">
+              {(['class', 'teacher', 'room'] as GridMode[]).map(m => (
+                <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? 'on' : ''} onClick={() => { setMode(m); setFocus(''); }}>{m === 'class' ? 'By class' : m === 'teacher' ? 'By teacher' : 'By room'}</button>
+              ))}
+            </div>
+            <select className="sch-sel" aria-label={mode} value={focusKey} onChange={e => setFocus(e.target.value)}>
+              {mode === 'class' && sections.map(c => <option key={c} value={c}>{c}</option>)}
+              {mode === 'teacher' && teachers.map(t => <option key={t.id} value={t.id}>{t.name} ({load.get(t.id) || 0})</option>)}
+              {mode === 'room' && rows.rooms.map(r => <option key={r.id} value={r.id}>{r.name}{r.active ? '' : ' (retired)'}</option>)}
+            </select>
+            <span className="sp" />
+            {undo && draft && (
+              <button className="btn sm" title={undo.label} onClick={async () => {
+                try { await undo.run(); setUndo(null); reload(); toast('Undone'); } catch (e: any) { toast(e.message); }
+              }}><UndoIcon size={13} weight="bold" /> Undo</button>
+            )}
+            {movable && (
+              <div className="sch-seg" role="radiogroup" aria-label="What a click does">
+                <button role="radio" aria-checked={!moving} className={!moving ? 'on' : ''} onClick={() => setMoving(false)}>Edit</button>
+                <button role="radio" aria-checked={moving} className={moving ? 'on' : ''} onClick={() => setMoving(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><ArrowsOut size={13} />Move</button>
               </div>
-            );
-          })}
-          {!load.size && <p className="muted">No teachers timetabled yet.</p>}
-          {load.size > 0 && <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>Periods a week. Amber above 30, red above 36.</p>}
+            )}
+          </div>
+          {movable && moving && (
+            <div className="sch-movebar" role="status">
+              <b>{lift ? `${cellName(lift)} picked up.` : 'Click a lesson to pick it up.'}</b>
+              {lift && <>
+                <span className="k"><i style={{ background: '#6FCFA9' }} /> free to move here</span>
+                <span className="k"><i style={{ background: '#E9B949' }} /> swaps with what is there</span>
+                <span className="k"><i style={{ background: 'rgba(255,255,255,.35)' }} /> blocked: click to let the solver make room</span>
+                <span style={{ flex: 1 }} />
+                <button className="btn sm" onClick={() => setLift(null)}>Put it back</button>
+              </>}
+            </div>
+          )}
+          {draft && !moving && <p className="muted" style={{ fontSize: 12.5, margin: '-4px 0 12px' }}>{mode === 'class' ? 'Click a period to edit it or lock it. Drag a lesson onto another period to swap them.' : 'Switch to By class to edit.'}</p>}
+          {mode === 'class' && !sections.length ? (
+            <Empty icon={<Table size={26} weight="duotone" />} title="No sections yet">Sections come from enrolled students and teachers&apos; classes in the user directory. Enrol students and assign teachers first.</Empty>
+          ) : !focusKey ? <p className="muted">Nothing to show yet.</p> : (
+            <WeekGrid bells={rows.bells} wingId={wing} slots={shown} mode={mode} names={names} rooms={rows.rooms} clashing={clashing} marks={marks}
+              onCell={movable ? (moving ? onMoveCell : (weekday, period) => setEditing({ weekday, period })) : undefined}
+              onSwap={movable && !moving ? swap : undefined} />
+          )}
         </div>
+
+        <aside className="sch-side" aria-label="Clashes and teaching load">
+          {draft && (
+            <div className="card">
+              <h3><LockSimple size={15} weight="fill" /> {plural(slots.filter(s => s.locked).length, 'lesson')} locked</h3>
+              <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>Lock the periods you want to keep (open a period), then let the solver rearrange the rest around them.</p>
+              <button className="btn sm pri" style={{ marginTop: 10 }} onClick={() => router.replace(`/admin/schedule?tab=build&base=${version!.id}`, { scroll: false })}><Sparkle size={13} weight="fill" /> Re-solve unlocked lessons</button>
+            </div>
+          )}
+          <div className="card">
+            <h3>{clashes.length ? <Warning size={15} weight="fill" color="var(--red)" /> : <CheckCircle size={15} weight="fill" color="var(--green)" />} {clashes.length ? plural(clashes.length, 'clash', 'clashes') : 'No clashes'}</h3>
+            {clashes.length ? clashes.slice(0, 30).map((c, i) => (
+              <button key={i} type="button" className="sch-clash" onClick={() => { setMode('class'); setFocus(c.slots[0].class); }}>
+                <span>
+                  <b>{DAY_NAMES[c.weekday]} P{c.period_no}</b> · {c.kind === 'teacher' ? `${names.get(c.key) || 'A teacher'} in ${c.slots.map(s => s.class).join(', ')}`
+                    : c.kind === 'room' ? `${rows.rooms.find(r => r.id === c.key)?.name || 'A room'} for ${c.slots.map(s => s.class).join(', ')}` : `${c.slots[0].class} has ${c.slots.length} lessons`}
+                </span>
+              </button>
+            )) : <p className="muted" style={{ fontSize: 12.5 }}>Every teacher, room and section is in one place at a time.</p>}
+          </div>
+          <div className="card">
+            <h3>Teaching load</h3>
+            {[...load].sort((a, b) => b[1] - a[1]).map(([id, n]) => {
+              const max = Math.max(...load.values());
+              return (
+                <div className="sch-load" key={id}>
+                  <button type="button" style={{ textAlign: 'left', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => { setMode('teacher'); setFocus(id); }}>{names.get(id) || 'Teacher'}</button>
+                  <div className="bar"><i style={{ width: `${(n / max) * 100}%`, background: n > 36 ? 'var(--red)' : n > 30 ? 'var(--amber)' : 'var(--blue)' }} /></div>
+                  <b className="num" style={{ textAlign: 'right' }}>{n}</b>
+                </div>
+              );
+            })}
+            {!load.size && <p className="muted" style={{ fontSize: 12.5 }}>No teachers timetabled yet.</p>}
+            {load.size > 0 && <p className="muted" style={{ fontSize: 11.5, marginTop: 10 }}>Periods a week. Amber above 30, red above 36.</p>}
+          </div>
+        </aside>
       </div>
+
+      {fix && (
+        <Pop title={`Move to ${cellName(fix.to)}?`} sub={`${focusKey} · ${cellName(fix.from)} can't go there as things stand.`} onClose={() => fix.state !== 'busy' && setFix(null)}>
+          {fix.state === 'ask' && <>
+            <div className="note" style={{ marginBottom: 14 }}>{fix.why}</div>
+            <p style={{ fontSize: 13.5, lineHeight: 1.55 }}>The solver can put it there and move as few other lessons as it can to make room. You see every change before anything is saved.</p>
+          </>}
+          {fix.state === 'busy' && <p className="muted" role="status">Working out the smallest set of changes…</p>}
+          {fix.state === 'failed' && <div className="err" role="alert">{fix.msg}</div>}
+          {fix.state === 'ready' && <>
+            <p style={{ fontSize: 13.5, marginBottom: 10 }}><b>{plural(fix.changed!.length, 'lesson')}</b> would be where {fix.changed!.length === 1 ? 'it wasn\'t' : 'they weren\'t'} before:</p>
+            <div style={{ maxHeight: 260, overflow: 'auto', border: '1px solid var(--line)', borderRadius: 12, padding: '4px 12px' }}>
+              {fix.changed!.slice(0, 60).map((c, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, padding: '7px 0', borderTop: i ? '1px solid var(--line)' : 0, fontSize: 13 }}>
+                  <b style={{ flex: 1, minWidth: 0 }}>{c.class} · {c.subject}{c.group_label ? ` (${c.group_label})` : ''}</b>
+                  <span className="muted">{names.get(slotPerson(c) ?? '') || ''}</span>
+                  <span className="num" style={{ fontWeight: 700 }}>{DAY_NAMES[c.weekday].slice(0, 3)} P{c.period_no}</span>
+                </div>
+              ))}
+            </div>
+          </>}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+            <button className="btn" disabled={fix.state === 'busy'} onClick={() => setFix(null)}>{fix.state === 'failed' ? 'Close' : 'Cancel'}</button>
+            {fix.state === 'ask' && <button className="btn pri" onClick={makeRoom}><Sparkle size={13} weight="fill" /> Make room</button>}
+            {fix.state === 'ready' && <button className="btn pri" onClick={applyFix}>Apply {plural(fix.changed!.length, 'change')}</button>}
+          </div>
+        </Pop>
+      )}
 
       {editing && version && (
         <CellEditor rows={rows} version={version} cls={focusKey} weekday={editing.weekday} period={editing.period} slots={slots} call={call}

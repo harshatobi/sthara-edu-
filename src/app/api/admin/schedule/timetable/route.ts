@@ -24,6 +24,7 @@ export const dynamic = 'force-dynamic';
  *          replaces what one section has in one period (lessons: [] clears it)
  *   PUT    { action: 'swap', versionId, class, a: { weekday, period_no }, b: { weekday, period_no } }   drag and drop within a section
  *   PUT    { action: 'lock', versionId, class, weekday, period_no, locked }  keep a period's lessons where they are when re-solving
+ *   PUT    { action: 'apply', versionId, lessons: Slot[] (with locked) }      the whole draft at once: a move the solver made room for, or its undo
  *   DELETE { id }                                                    a draft only
  * Lessons live only in drafts; a published timetable changes by copying it to a new draft.
  */
@@ -218,6 +219,44 @@ export async function PUT(req: NextRequest) {
   const v = await draftOf(db, admin.schoolId, b?.versionId);
   if (!v) return bad('Unknown timetable.', 404);
   if (v.status !== 'draft') return bad('This timetable is published. Copy it to a new draft to change it.', 409);
+
+  if (b.action === 'apply') {
+    const raw = Array.isArray(b.lessons) ? b.lessons : [];
+    if (!raw.length) return bad('There are no lessons to save.');
+    if (raw.length > MAX_SLOTS) return bad(`That is over ${MAX_SLOTS} lessons.`);
+    const [staffSet, roomSet] = await Promise.all([staffIds(db, admin.schoolId), roomIds(db, admin.schoolId)]);
+    const next: (Slot & { locked: boolean })[] = [];
+    for (const r of raw) {
+      const s = cleanSlot(r, staffSet, roomSet);
+      if (typeof s === 'string') return bad(s);
+      next.push({ ...s, locked: !!r?.locked });
+    }
+    const { data: roomList } = await db.from('rooms').select('id, name, kind, capacity, home_class, active').eq('school_id', admin.schoolId);
+    const clash = findClashes(next, roomList || [], await scheduleClock(db, admin.schoolId))[0];
+    if (clash) return NextResponse.json({ error: `Clash on ${clashWords(clash, await staffNames(db, admin.schoolId))}. Nothing was changed.` }, { status: 409 });
+    // The draft as it is, so a failure part-way puts it back rather than leaving half a week.
+    const { data: old, error: readErr } = await versionSlots(db, v.id, 'class, group_label, weekday, period_no, subject, teacher_id, staff_member_id, room_id, combined, locked');
+    if (readErr) return dbError(readErr, 'Could not read the timetable.');
+    const write = async (rows: any[]) => {
+      for (let i = 0; i < rows.length; i += 500) {
+        const { error } = await db.from('timetable_slots').insert(rows.slice(i, i + 500).map(r => ({ ...r, version_id: v.id, school_id: admin.schoolId })));
+        if (error) return error;
+      }
+      return null;
+    };
+    const { error: delErr } = await db.from('timetable_slots').delete().eq('version_id', v.id);
+    if (delErr) return dbError(delErr, 'Could not change the timetable.');
+    const failed = await write(next);
+    if (failed) {
+      await db.from('timetable_slots').delete().eq('version_id', v.id);
+      const restore = await write(old);
+      if (restore) console.error('[schedule] could not restore a draft after a failed apply:', restore.message);
+      return dbError(failed, 'Could not save the change. The timetable is as it was.');
+    }
+    await db.from('timetable_versions').update({ updated_at: new Date().toISOString() }).eq('id', v.id);
+    return NextResponse.json({ ok: true, lessons: next.length });
+  }
+
   const cls = displayClass(str(b.class, 40));
   const ck = normClass(cls);
   if (!ck) return bad('Pick a section.');

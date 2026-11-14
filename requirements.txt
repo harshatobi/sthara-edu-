@@ -1,0 +1,2 @@
+# The timetable solver (api/cpsat.py), a Vercel Python function. Nothing else in the app uses Python.
+ortools==9.15.6755

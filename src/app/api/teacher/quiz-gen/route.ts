@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         if (r) {
           return NextResponse.json({
             title: r.title, subject, kb: { ...r.kb, note: r.note },
-            questions: r.questions.filter(q => q.type === 'mcq').map(q => ({ question: q.text, options: q.options, correctAnswerIndex: q.answer, explanation: q.scheme, difficulty: (q.level || 'MEDIUM').toLowerCase() })),
+            questions: r.questions.filter(q => q.type === 'mcq').map(q => ({ question: q.text, options: q.options, correctAnswerIndex: q.answer, explanation: q.scheme, difficulty: (q.level || 'MEDIUM').toLowerCase(), ...(q.figures?.length ? { figures: q.figures } : {}) })),
           });
         }
       } catch (e: any) {

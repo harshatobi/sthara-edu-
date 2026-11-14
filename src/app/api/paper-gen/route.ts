@@ -133,8 +133,8 @@ export async function POST(request: NextRequest) {
         if (r && 'offers' in r) return NextResponse.json({ offers: r.offers, paperType });
         if (r) {
           const questions = r.questions.map(q => (q.type === 'mcq'
-            ? { type: 'mcq', question: q.text, options: Object.fromEntries((q.options || []).slice(0, 4).map((o, i) => ['abcd'[i], o])), correctOptionId: 'abcd'[q.answer ?? 0], marks: q.marks, ...(q.sourceRef ? { source: q.sourceRef } : {}) }
-            : { type: q.type === 'long' ? 'laq' : 'saq', question: q.text, modelAnswer: q.scheme, marks: q.marks, ...(q.sourceRef ? { source: q.sourceRef } : {}) }));
+            ? { type: 'mcq', question: q.text, options: Object.fromEntries((q.options || []).slice(0, 4).map((o, i) => ['abcd'[i], o])), correctOptionId: 'abcd'[q.answer ?? 0], marks: q.marks, ...(q.sourceRef ? { source: q.sourceRef } : {}), ...(q.figures?.length ? { figures: q.figures, vi: q.textVersion ?? undefined } : {}) }
+            : { type: q.type === 'long' ? 'laq' : 'saq', question: q.text, modelAnswer: q.scheme, marks: q.marks, ...(q.sourceRef ? { source: q.sourceRef } : {}), ...(q.figures?.length ? { figures: q.figures, vi: q.textVersion ?? undefined } : {}) }));
           return NextResponse.json({ questions, paperType, kb: { ...r.kb, note: r.note } });
         }
       } catch (e: any) {

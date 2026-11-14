@@ -1,5 +1,7 @@
 'use client';
 
+import BankFigures from '@/components/studio/BankFigures';
+
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
@@ -290,6 +292,12 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
               </div>
               <textarea className="cmp-in" rows={2} value={q.questionText} disabled={locked} maxLength={2000} placeholder="Question"
                 onChange={e => setQ(i, { questionText: e.target.value })} />
+              {q.figures?.length ? (
+                <div className="cmp-figs">
+                  <BankFigures figs={q.figures} label={`Figure for question ${i + 1}`} />
+                  {!locked && <button className="btn sm" onClick={() => setQ(i, { figures: undefined })}>Remove the diagram</button>}
+                </div>
+              ) : null}
               {q.lab && <LabQuestionSim lab={q.lab} />}
               {q.lab && (
                 <div className="cmp-opts">

@@ -11,6 +11,7 @@ import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconcept
 import { designsFor } from '@/lib/papers/designs';
 import { generatePaper } from '@/lib/papers/generate';
 import { paperBankFill } from '@/lib/kb/papers';
+import { nearSaved } from '@/lib/kb/server';
 import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
@@ -110,6 +111,17 @@ export async function POST(req: NextRequest) {
   if (!regenerate) {
     const hit = await findSaved(db, staff, 'reply', replyKey);
     if (hit?.reply) return NextResponse.json({ reply: { ...hit.reply, reused: hit.reused } });
+    // A labelled diagram the teacher made before, asked for again in other words ("eye diagram" / "structure of the
+    // human eye"): the saved one, found by meaning (free model, no AI). Diagrams don't depend on class results.
+    if (studioKind === 'diagram') {
+      const ask = `${messages[messages.length - 1].text} ${str(b?.chapter, 200)}`;
+      const near = (await nearSaved(db, staff, { authorization: req.headers.get('authorization'), origin: req.nextUrl.origin }, { text: ask, cls, subject, types: ['copilot'], min: 0.9, limit: 3 }))
+        .find(o => o.kind === 'diagram' && o.by === 'you');
+      if (near) {
+        const { data: row } = await db.from('copilot_outputs').select('reply, created_at').eq('id', near.id).eq('teacher_id', staff.id).maybeSingle();
+        if ((row?.reply as any)?.artifact?.kind === 'diagram') return NextResponse.json({ reply: { ...(row!.reply as any), reused: { id: near.id, at: row!.created_at, by: 'you' } } });
+      }
+    }
   }
 
   // ── The brief: this class + subject, from the database ────────────────────

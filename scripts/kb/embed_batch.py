@@ -51,6 +51,10 @@ def gather(cur):
         text = item_text(body or {})
         if topic:
             text = f"{topic}. {text}"
+        # Diagram and map questions: CBSE's text-only version describes the picture, so search finds them by it.
+        tv = ((body or {}).get("textVersion") or {}).get("text")
+        if tv:
+            text = f"{text} [diagram] {tv}"
         out.append(("bank", i, school, owner, grade_of(cls), subj, ch, qt, text))
     cur.execute("SELECT id, school_id, teacher_id, class, subject, chapter_key, chapter_name, kind, title, content FROM studio_materials")
     for i, school, owner, cls, subj, ch, chn, kind, title, content in cur.fetchall():

@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             kb: { ...r.kb, note: r.note },
             questions: r.questions.map(q => (q.type === 'mcq'
-              ? { question: q.text, type: 'mcq', marks: q.marks, options: (q.options || []).map((o, i) => `${'ABCDEF'[i]}. ${o}`), correctOption: 'ABCDEF'[q.answer ?? 0], answer: q.scheme }
-              : { question: q.text, type: q.type, marks: q.marks, answer: q.scheme })),
+              ? { question: q.text, type: 'mcq', marks: q.marks, options: (q.options || []).map((o, i) => `${'ABCDEF'[i]}. ${o}`), correctOption: 'ABCDEF'[q.answer ?? 0], answer: q.scheme, ...(q.figures?.length ? { figures: q.figures } : {}) }
+              : { question: q.text, type: q.type, marks: q.marks, answer: q.scheme, ...(q.figures?.length ? { figures: q.figures } : {}) })),
           });
         }
       } catch (e: any) {

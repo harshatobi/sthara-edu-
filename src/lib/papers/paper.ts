@@ -21,6 +21,8 @@ export interface QBody {
   figure?: Figure;
   /** The version for visually impaired candidates, required whenever there is a figure or map. */
   vi?: string;
+  /** CBSE's own diagrams and maps (from the question bank), shown with the question. */
+  figures?: import('@/lib/studio/figures').BankFigure[];
   parts?: Part[];
   scheme: string;
 }

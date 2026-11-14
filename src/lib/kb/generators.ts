@@ -5,6 +5,7 @@ import { normCls, normText } from '@/lib/teacher/copilotKeys';
 import { findSaved, keyOf, saveOutput, type Reused } from '@/lib/teacher/copilotSaved';
 import type { CopilotReply } from '@/lib/teacher/copilot';
 import type { StudioItem } from '@/lib/studio/types';
+import { parseFigures, type BankFigure } from '@/lib/studio/figures';
 import { groundedNote, groundedQuestions, nearSaved, resolveChapters, type KbCaller, type Offer } from './server';
 import type { ReqDifficulty, ReqKind } from './plan';
 
@@ -26,6 +27,9 @@ export interface GenQ {
   level?: 'EASY' | 'MEDIUM' | 'HARD';
   source: 'bank' | 'ai';
   sourceRef?: string | null;
+  /** CBSE's diagrams and maps (bank pictures), and its text-only version for students who can't use them. */
+  figures?: BankFigure[];
+  textVersion?: string | null;
 }
 
 export type GenResult =
@@ -40,19 +44,20 @@ export function fromStudioItem(it: StudioItem): GenQ {
   return {
     type: choice ? 'mcq' : it.marks >= 5 ? 'long' : 'short', text: it.text, ...(choice ? { options: it.options, answer: it.answer ?? 0 } : {}),
     marks: it.marks, scheme: it.scheme || '', level: levelOf(it.difficulty), source: it.source === 'bank' ? 'bank' : 'ai', sourceRef: it.sourceRef ?? null,
+    ...(it.figures?.length ? { figures: it.figures } : {}), ...(it.textVersion?.text ? { textVersion: it.textVersion.text } : {}),
   };
 }
 
 /** The Copilot's question format (what the saved copy holds), to and from. */
 function toCopilotQuestions(qs: GenQ[]) {
   return qs.map(q => (q.type === 'mcq'
-    ? { type: 'mcq', questionText: q.text, options: q.options, answer: q.answer, marks: q.marks, ...(q.level ? { level: q.level } : {}), why: q.scheme }
-    : { type: 'short', questionText: q.text, marks: q.marks, why: q.scheme }));
+    ? { type: 'mcq', questionText: q.text, options: q.options, answer: q.answer, marks: q.marks, ...(q.level ? { level: q.level } : {}), why: q.scheme, ...(q.figures ? { figures: q.figures } : {}) }
+    : { type: 'short', questionText: q.text, marks: q.marks, why: q.scheme, ...(q.figures ? { figures: q.figures } : {}) }));
 }
 function fromCopilotQuestions(qs: any[]): GenQ[] {
   return (qs || []).map((q: any) => (q?.type === 'mcq' && Array.isArray(q.options)
-    ? { type: 'mcq' as const, text: String(q.questionText || ''), options: q.options, answer: Number(q.answer) || 0, marks: Number(q.marks) || 1, scheme: String(q.why || ''), level: q.level, source: 'bank' as const }
-    : { type: (Number(q?.marks) >= 5 ? 'long' : 'short') as GenQ['type'], text: String(q?.questionText || ''), marks: Number(q?.marks) || 2, scheme: String(q?.why || ''), source: 'bank' as const }))
+    ? { type: 'mcq' as const, text: String(q.questionText || ''), options: q.options, answer: Number(q.answer) || 0, marks: Number(q.marks) || 1, scheme: String(q.why || ''), level: q.level, source: 'bank' as const, figures: parseFigures(q.figures) }
+    : { type: (Number(q?.marks) >= 5 ? 'long' : 'short') as GenQ['type'], text: String(q?.questionText || ''), marks: Number(q?.marks) || 2, scheme: String(q?.why || ''), source: 'bank' as const, figures: parseFigures(q?.figures) }))
     .filter(q => q.text);
 }
 

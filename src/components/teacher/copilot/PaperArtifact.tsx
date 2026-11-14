@@ -1,5 +1,7 @@
 'use client';
 
+import BankFigures from '@/components/studio/BankFigures';
+
 import { useState, type ReactNode } from 'react';
 import { PrinterIcon as Printer } from '@phosphor-icons/react/dist/ssr/Printer';
 import { ArrowsClockwiseIcon as ArrowsClockwise } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
@@ -110,6 +112,7 @@ function Body({ b, q }: { b: QBody; q: PaperQuestion }) {
           {b.figure.caption && <figcaption>{b.figure.caption}</figcaption>}
         </figure>
       )}
+      {b.figures?.length ? <BankFigures figs={b.figures} eager /> : null}
       <Options options={b.options} />
       {b.parts && <ol className="bpp-parts">{b.parts.map((p, i) => <PartRow key={i} p={p} />)}</ol>}
       {b.vi && <p className="bpp-vi"><b>For visually impaired candidates:</b> {b.vi}</p>}

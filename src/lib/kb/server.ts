@@ -69,10 +69,11 @@ export async function nearSaved(db: SupabaseClient, me: KbCaller, asked: Asked, 
   const hits = await kbMatch(db, vecs[0], { schoolId: me.schoolId, ownerId: me.id, types: q.types, cls: q.cls, subject: q.subject, limit: 12, min: q.min ?? OFFER_MIN });
   if (!hits.length) return [];
   const ids = (t: string) => hits.filter(h => h.itemType === t).map(h => h.itemId);
+  // bounded: at most 12 hits, by id
   const [co, mats, les] = await Promise.all([
-    ids('copilot').length + ids('paper').length ? db.from('copilot_outputs').select('id, teacher_id, title, artifact_kind, created_at').in('id', [...ids('copilot'), ...ids('paper')]) : Promise.resolve({ data: [] as any[] }),
-    ids('material').length ? db.from('studio_materials').select('id, teacher_id, title, kind, share, created_at').in('id', ids('material')) : Promise.resolve({ data: [] as any[] }),
-    ids('lesson').length ? db.from('lesson_plans').select('id, teacher_id, title, created_at').in('id', ids('lesson')) : Promise.resolve({ data: [] as any[] }),
+    ids('copilot').length + ids('paper').length ? db.from('copilot_outputs').select('id, teacher_id, title, artifact_kind, created_at').in('id', [...ids('copilot'), ...ids('paper')]).limit(12) : Promise.resolve({ data: [] as any[] }),
+    ids('material').length ? db.from('studio_materials').select('id, teacher_id, title, kind, share, created_at').in('id', ids('material')).limit(12) : Promise.resolve({ data: [] as any[] }),
+    ids('lesson').length ? db.from('lesson_plans').select('id, teacher_id, title, created_at').in('id', ids('lesson')).limit(12) : Promise.resolve({ data: [] as any[] }),
   ]);
   const row = new Map<string, any>([...(co.data || []), ...(mats.data || []), ...(les.data || [])].map(r => [r.id, r]));
   const out: Offer[] = [];

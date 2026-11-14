@@ -525,6 +525,8 @@
 .canon .md table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13px; }
 .canon .md th, .canon .md td { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
 .canon .cp-ask { border:1.5px solid #D8CCFF; background:#FBFAFF; border-radius:16px; padding:14px 16px; }
+.canon .cp-reused { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px; color:#0E6B4C; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:12px; padding:8px 12px; }
+.canon .cp-reused span { flex:1; min-width:180px; }
 .canon .cp-ask .q { font-weight:700; font-size:13.5px; margin:10px 0 8px; }
 .canon .cp-ask .q:first-child { margin-top:0; }
 .canon .opt { border:1.5px solid var(--line); background:#fff; border-radius:99px; padding:7px 13px; font-size:12.5px; font-weight:700; color:var(--ink); margin:0 6px 6px 0; }

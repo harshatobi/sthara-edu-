@@ -104,6 +104,23 @@ test('ledger totals, ageing and instalment runs', () => {
   assert.equal(L.families[0].name, 'Diya');
   assert.equal(L.families[0].tone, 'final');
   assert.equal(L.families.find(f => f.name === 'Aarav')!.lateHistory.late, 1);
+
+  // A family owing two instalments of different ages is counted once, at the older one; amounts still age by instalment.
+  const M = assembleLedger({
+    session: '2026-27', today: '2026-11-09',
+    students: [{ id: 'a', name: 'Aarav', cls: 'Class 10-A' }, { id: 'b', name: 'Diya', cls: 'Class 10-A' }],
+    structures: [{ id: 'fs', grade: 10, annual_fee: 100000, schedule }],
+    invoices: [
+      { id: 'j1', student_id: 'a', instalment_no: 1, label: 'Term 1', invoice_no: 'INV/1', due_on: '2026-04-10', amount: 50000, concession: 0 },
+      { id: 'j2', student_id: 'a', instalment_no: 2, label: 'Term 2', invoice_no: 'INV/2', due_on: '2026-10-10', amount: 50000, concession: 0 },
+      { id: 'j3', student_id: 'b', instalment_no: 2, label: 'Term 2', invoice_no: 'INV/3', due_on: '2026-10-10', amount: 50000, concession: 0 },
+    ],
+    payments: [], reminders: [],
+  });
+  const fam = (k: string) => M.ageing.find(b => b.key === k)!;
+  assert.deepEqual([fam('1-30').families, fam('1-30').amount], [1, 100000], 'Diya, plus Aarav\'s Term 2 amount');
+  assert.deepEqual([fam('90+').families, fam('90+').amount], [1, 50000], 'Aarav, at his oldest instalment');
+  assert.equal(M.ageing.reduce((t, b) => t + b.families, 0), M.totals.familiesOverdue, 'bucket counts add up to the overdue card');
 });
 
 test('admissions: funnel counts furthest stage reached, next steps follow the stages a school sets', () => {
@@ -139,11 +156,13 @@ test('admissions: funnel counts furthest stage reached, next steps follow the st
   });
   assert.deepEqual(P.funnel.map(f => f.reached), [6, 5, 4, 2, 1]);
   assert.deepEqual(P.funnel.map(f => f.label), ['Enquiry', 'Application', 'Assessment', 'Offer', 'Enrolled']);
-  assert.equal(P.funnel[1].fromPrev, 83);
+  assert.equal(P.funnel[1].fromPrev, 100, 'd is still at enquiry: waiting, not a drop');
+  assert.deepEqual([P.funnel[1].decided, P.funnel[1].waiting], [5, 1]);
+  assert.equal(P.funnel[4].fromPrev, null, 'only one family has left offer (e is still deciding): too few to judge');
   assert.equal(P.enrolled, 1);
   assert.equal(P.conversion, 50, '1 enrolled of 2 decided');
   assert.equal(P.stale.map(a => a.id).join(), 'c', 'f waits on the principal, not on the office');
-  assert.deepEqual(P.leak && [P.leak.from, P.leak.to, P.leak.rate], ['assessment', 'offer', 50]);
+  assert.deepEqual(P.leak && [P.leak.from, P.leak.to, P.leak.rate], ['assessment', 'offer', 67], 'a, b, e left assessment; b was rejected');
   assert.deepEqual(P.seats.map(s => [s.grade, s.capacity, s.held, s.left, s.proposed]), [[6, 3, 2, 1, 1]], 'Offer and Enrolled hold seats');
   assert.deepEqual(P.approvals.map(a => a.id), ['f']);
   assert.deepEqual(P.expiring.map(a => [a.id, a.offer?.daysLeft]), [['e', 2]]);

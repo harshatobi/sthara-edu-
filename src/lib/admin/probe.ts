@@ -491,11 +491,11 @@ function admissions(d: AdminDesk, today: string): Finding[] {
   }
   for (let i = 1; i < P.funnel.length; i++) {
     const f = P.funnel[i], prev = P.funnel[i - 1];
-    if (prev.reached < 5 || f.fromPrev === null || f.fromPrev >= 50) continue;
+    if (f.decided < 5 || f.fromPrev === null || f.fromPrev >= 50) continue;
     out.push(make({
       key: `leak:${f.stage}`, module: 'admissions', severity: 30 + (50 - f.fromPrev) * 0.6,
       title: `Only ${f.fromPrev}% move from ${prev.label.toLowerCase()} to ${f.label.toLowerCase()}`,
-      summary: `${prev.reached} reached ${prev.label.toLowerCase()}, ${f.reached} went on.`,
+      summary: `Of ${f.decided} who left ${prev.label.toLowerCase()}, ${Math.round((f.fromPrev / 100) * f.decided)} reached ${f.label.toLowerCase()}${f.waiting ? `; ${f.waiting} still at ${prev.label.toLowerCase()} aren't counted yet` : ''}.`,
       evidence: [{ label: 'Step conversion', value: `${f.fromPrev}%`, tone: 'a' }],
       actions: [{ kind: 'link', label: 'Open admissions', href: '/admin/admissions' }],
       fingerprint: `${band(f.fromPrev, 10)}`,

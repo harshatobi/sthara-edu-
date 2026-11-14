@@ -6,12 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { UserPlusIcon as UserPlus } from '@phosphor-icons/react/dist/ssr/UserPlus';
 import { UsersThreeIcon as UsersThree } from '@phosphor-icons/react/dist/ssr/UsersThree';
-import { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react/dist/ssr/CheckCircle';
-import { HourglassIcon as Hourglass } from '@phosphor-icons/react/dist/ssr/Hourglass';
 import { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { ArrowUpIcon as ArrowUp } from '@phosphor-icons/react/dist/ssr/ArrowUp';
 import { ArrowDownIcon as ArrowDown } from '@phosphor-icons/react/dist/ssr/ArrowDown';
-import { ArmchairIcon as Armchair } from '@phosphor-icons/react/dist/ssr/Armchair';
 import { SealCheckIcon as SealCheck } from '@phosphor-icons/react/dist/ssr/SealCheck';
 import { GearSixIcon as GearSix } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { PlusIcon as Plus } from '@phosphor-icons/react/dist/ssr/Plus';
@@ -42,14 +39,7 @@ import { suggestRteSeats } from '@/lib/admin/rteFees';
 const OFFER_TONE: Record<OfferStatus, Tone> = {
   proposed: 'a', returned: 'r', waitlisted: 'p', issued: 'a', accepted: 'g', declined: 'n', lapsed: 'n', withdrawn: 'n', enrolled: 'g',
 };
-type View = string; // a stage key, or 'open' | 'all' | 'approval' | 'waitlist' | 'rejected' | 'withdrawn'
-
-const stageTone = (stages: StageDef[], key: string): Tone => {
-  if (key === 'rejected') return 'r';
-  if (key === 'withdrawn') return 'n';
-  const s = stages.find(x => x.key === key);
-  return s?.system === 'enrolled' ? 'g' : s?.system === 'offer' ? 'a' : 'b';
-};
+type View = string; // a stage key, or 'open' | 'all' | 'idle' | 'approval' | 'waitlist' | 'rejected' | 'withdrawn'
 
 export default function AdmissionsPage() {
   return <DeskGate full need="admissions.read">{desk => <Admissions desk={desk} />}</DeskGate>;
@@ -77,6 +67,9 @@ function Admissions({ desk }: { desk: AdminDesk }) {
   const today = isoDay();
   const dups = useMemo(() => duplicateMap(P.applicants), [P.applicants]);
   const queue = useMemo(() => followUps(P.applicants, today), [P.applicants, today]);
+  const stale = useMemo(() => new Set(P.stale.map(a => a.id)), [P.stale]);
+  // Offers a family has accepted but the office hasn't enrolled yet: the closest thing to a sure seat.
+  const toEnrol = useMemo(() => P.applicants.filter(a => a.open && a.offer?.status === 'accepted'), [P.applicants]);
   const mine = useMemo(() => followUps(P.applicants, today, meId), [P.applicants, today, meId]);
   const officeNames = useMemo(() => new Map(desk.workforce.admins.map(x => [x.id, x.name])), [desk.workforce.admins]);
   const rows = useMemo(() => P.applicants.filter(a =>
@@ -85,9 +78,10 @@ function Admissions({ desk }: { desk: AdminDesk }) {
       : view === 'mine' ? a.open && a.ownerId === meId
       : view === 'unowned' ? a.open && !a.ownerId
       : view === 'dups' ? dups.has(a.id)
+      : view === 'idle' ? stale.has(a.id)
       : view === 'approval' ? a.offer?.status === 'proposed'
       : view === 'waitlist' ? a.offer?.status === 'waitlisted'
-      : a.stage === view), [P.applicants, view, today, meId, dups]);
+      : a.stage === view), [P.applicants, view, today, meId, dups, stale]);
   const { shown: shownRows, pager } = usePaged(rows, view);
 
   const capped = P.seats.filter(s => s.capacity !== null);
@@ -104,6 +98,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
   const views: [View, string][] = [['open', 'Open'],
     ...(due ? [['due', `Due · ${due}`] as [View, string]] : []), ['mine', 'Mine'],
     ...(queue.unowned.length ? [['unowned', `Unassigned · ${queue.unowned.length}`] as [View, string]] : []),
+    ...(P.stale.length ? [['idle', `Idle · ${P.stale.length}`] as [View, string]] : []),
     ...(dups.size ? [['dups', `Possible duplicates · ${dups.size}`] as [View, string]] : []), ...(P.approvals.length ? [['approval', `Approval · ${P.approvals.length}`] as [View, string]] : []),
     ...(P.waitlisted ? [['waitlist', `Waitlist · ${P.waitlisted}`] as [View, string]] : []),
     ...shown.map(s => [s.key, s.label] as [View, string]), ['rejected', 'Rejected'], ['withdrawn', 'Withdrawn'], ['all', 'All']];
@@ -123,27 +118,31 @@ function Admissions({ desk }: { desk: AdminDesk }) {
       <MissingNotice desk={desk} tables={['admission_applicants']} />
       <OnlineNotice canSetup={can('admissions.setup')} onSetup={() => setSetup(true)} />
 
-      <div className="kpis">
-        <Kpi label="APPLICANTS" value={P.total} icon={UsersThree} note={`${P.applicants.filter(a => a.open).length} still open${P.conversion !== null ? ` · ${P.conversion}% of decided enrolled` : ''}`} onClick={() => setView('open')} />
-        <Kpi label="ENROLLED" value={P.enrolled} icon={CheckCircle} valueColor="var(--green)" note={`for AY ${P.session.replace('-', '–')}`} onClick={() => setView('enrolled')} />
-        <Kpi label="SEATS LEFT" value={capped.length ? seatsLeft : '—'} icon={Armchair}
-          valueColor={capped.length && !seatsLeft ? 'var(--amber)' : undefined}
-          note={capped.length ? `${plural(capped.length, 'grade')} with a limit${P.waitlisted ? ` · ${P.waitlisted} waitlisted` : ''}` : 'No seat limits set'}
-          onClick={P.waitlisted ? () => setView('waitlist') : undefined} />
-        <Kpi label="OFFERS TO APPROVE" value={P.approvals.length} icon={SealCheck} valueColor={P.approvals.length ? 'var(--amber)' : undefined}
+      <div className="kpis five">
+        <Kpi label="APPLICANTS" value={P.total} note={`${P.applicants.filter(a => a.open).length} still open${P.conversion !== null ? ` · ${P.conversion}% of decided enrolled` : ''}`} onClick={() => setView('open')} />
+        <Kpi label="ENROLLED" value={P.enrolled} valueColor={P.enrolled ? 'var(--green)' : undefined}
+          note={toEnrol.length ? `${plural(toEnrol.length, 'accepted offer')} still to enrol` : `for AY ${P.session.replace('-', '–')}`}
+          noteColor={toEnrol.length ? 'var(--amber)' : undefined} onClick={() => setView('enrolled')} />
+        <Kpi label="SEATS LEFT" value={capped.length ? seatsLeft : 'Not set'} small={!capped.length}
+          valueColor={capped.length && !seatsLeft ? 'var(--amber)' : !capped.length ? 'var(--mut)' : undefined}
+          note={capped.length ? `${plural(capped.length, 'grade')} with a limit${P.waitlisted ? ` · ${P.waitlisted} waitlisted` : ''}` : can('admissions.setup') ? 'Set seat limits per grade' : 'No seat limits set'}
+          onClick={P.waitlisted ? () => setView('waitlist') : !capped.length && can('admissions.setup') ? () => setSetup(true) : undefined} />
+        <Kpi label="OFFERS TO APPROVE" value={P.approvals.length} valueColor={P.approvals.length ? 'var(--amber)' : undefined}
           note={P.approvals.length ? `Oldest: ${P.approvals[0].name}, ${ago(P.approvals[0].offer!.proposedAt)}` : 'None waiting'}
           onClick={P.approvals.length ? () => setView('approval') : undefined} />
-        <Kpi label="IDLE OVER 2 WEEKS" value={P.stale.length} icon={Hourglass} valueColor={P.stale.length ? 'var(--amber)' : undefined}
+        <Kpi label="IDLE OVER 2 WEEKS" value={P.stale.length} valueColor={P.stale.length ? 'var(--amber)' : undefined}
           note={P.stale.length ? `Longest: ${P.stale[0].name}, ${P.stale[0].daysInStage} days` : 'Every open applicant moved recently'}
-          noteColor={P.stale.length ? 'var(--amber)' : 'var(--mut)'} />
+          onClick={P.stale.length ? () => setView('idle') : undefined} />
       </div>
 
-      {(mine.overdue.length + mine.today.length > 0 || queue.overdue.length > 0 || queue.unowned.length > 0) && (
-        <div className="card" style={{ marginBottom: 22, borderLeft: `4px solid ${queue.overdue.length ? 'var(--red)' : 'var(--blue)'}` }}>
+      {(mine.overdue.length + mine.today.length > 0 || queue.overdue.length > 0 || queue.unowned.length > 0 || queue.unset.length > 0) && (
+        <div className="card" style={{ marginBottom: 22, borderLeft: `4px solid ${queue.overdue.length ? 'var(--red)' : queue.unset.length ? 'var(--amber)' : 'var(--ink)'}` }}>
           <CardHead title="Follow-ups"
-            sub={`Yours: ${plural(mine.overdue.length, 'overdue')}, ${mine.today.length} due today. Everyone: ${plural(queue.overdue.length, 'overdue')}, ${queue.today.length} due today, ${queue.unowned.length} with no counsellor.`}
+            sub={queue.unset.length
+              ? `${plural(queue.unset.length, 'open applicant')} ${queue.unset.length === 1 ? 'has' : 'have'} no follow-up date, so ${queue.unset.length === 1 ? 'it' : 'they'} won't show as due. ${queue.unowned.length} with no counsellor. Yours: ${plural(mine.overdue.length, 'overdue')}, ${mine.today.length} due today.`
+              : `Yours: ${plural(mine.overdue.length, 'overdue')}, ${mine.today.length} due today. Everyone: ${plural(queue.overdue.length, 'overdue')}, ${queue.today.length} due today, ${queue.unowned.length} with no counsellor.`}
             right={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="btn sm pri" onClick={() => setView('due')}>Due now</button>
+              {due > 0 && <button className="btn sm pri" onClick={() => setView('due')}>Due now</button>}
               <button className="btn sm" onClick={() => setView('mine')}>Mine</button>
               {queue.unowned.length > 0 && <button className="btn sm" onClick={() => setView('unowned')}>Unassigned</button>}
             </div>} />
@@ -163,20 +162,28 @@ function Admissions({ desk }: { desk: AdminDesk }) {
 
       <div className="g2" style={{ marginBottom: 22 }}>
         <div className="card">
-          <CardHead title="Funnel" sub="Everyone who reached each stage, including those later rejected or withdrawn. Pick a stage to list who's there now." />
+          <CardHead title="Funnel" sub="Everyone who reached each stage, including those later rejected or withdrawn. The rate counts only families who have left the stage before, not those still in it." />
           {P.funnel.map((f, i) => (
             <button key={f.stage} className="row-btn" onClick={() => setView(f.stage)} aria-pressed={view === f.stage}>
               <b style={{ flex: '0 0 150px', fontSize: 14 }}>{f.label}</b>
-              <Bar value={f.share ?? 0} color={f.color} />
+              <Bar value={f.share ?? 0} color="var(--ink)" />
               <b className="num" style={{ width: 40, textAlign: 'right' }}>{f.reached}</b>
-              <span className="muted num" style={{ width: 70, textAlign: 'right', fontSize: 12.5 }}>{i && f.fromPrev !== null ? `${f.fromPrev}% on` : f.share !== null ? `${f.share}%` : ''}</span>
+              <span className="muted num" style={{ width: 86, textAlign: 'right', fontSize: 12.5 }}
+                title={i ? `Of ${f.decided} who left ${P.funnel[i - 1].label.toLowerCase()}${f.waiting ? `; ${f.waiting} still there` : ''}` : undefined}>
+                {!i ? (f.share !== null ? `${f.share}%` : '') : f.fromPrev !== null ? `${f.fromPrev}% on` : f.waiting ? `${f.waiting} waiting` : ''}</span>
             </button>
           ))}
-          {P.leak ? (
+          {P.leak && P.leak.rate < 100 ? (
             <div className="note" style={{ marginTop: 16 }}>
-              <b>Biggest drop: {P.leak.fromLabel.toLowerCase()} to {P.leak.toLabel.toLowerCase()}</b>. Only {P.leak.rate}% move on at that step.
+              <b>Weakest step: {P.leak.fromLabel.toLowerCase()} to {P.leak.toLabel.toLowerCase()}</b>. {P.leak.rate}% of families who left {P.leak.fromLabel.toLowerCase()} went on.
             </div>
-          ) : P.total > 0 && <div className="note" style={{ marginTop: 16 }}>Conversion between stages is shown once at least three applicants reach a stage.</div>}
+          ) : P.total > 0 && !P.leak && <div className="note" style={{ marginTop: 16 }}>A step&apos;s rate shows once three families have left the stage before it.</div>}
+          {toEnrol.length > 0 && (
+            <button className="row-btn" style={{ marginTop: 12 }} onClick={() => setOpen(toEnrol[0].id)}>
+              <span style={{ flex: 1, fontSize: 13.5 }}><b>{plural(toEnrol.length, 'family has', 'families have')} accepted an offer</b> and {toEnrol.length === 1 ? 'is' : 'are'} not enrolled yet{toEnrol.length === 1 ? `: ${toEnrol[0].name}` : ''}.</span>
+              <ArrowRight size={14} weight="bold" />
+            </button>
+          )}
         </div>
         <div className="card">
           <CardHead title="Seats by grade" sub={capped.length ? 'Held: at Offer or enrolled. When a grade is full, approved offers wait on the list and go out as seats free.' : undefined}
@@ -186,14 +193,14 @@ function Admissions({ desk }: { desk: AdminDesk }) {
               <div className="tbl-wrap">
                 <table className="tbl">
                   <thead><tr><th>Class</th><th className="c">Seats</th><th className="c">Held</th><th className="c">Accepted</th><th className="c">Waitlist</th><th className="c">Left</th></tr></thead>
-                  <tbody>{P.seats.map(s => (
+                  <tbody>{P.seats.filter(s => s.capacity !== null || s.held || s.waitlisted || P.applicants.some(a => a.grade === s.grade && a.open)).map(s => (
                     <tr key={s.grade}>
                       <td><b>{gradeLabel(s.grade)}</b></td>
                       <td className="c num">{s.capacity ?? <span className="muted">No limit</span>}</td>
                       <td className="c num">{s.held}</td>
                       <td className="c num">{s.accepted + s.enrolled}</td>
                       <td className="c num">{s.waitlisted || ''}</td>
-                      <td className="c num" style={{ color: s.left !== null && s.left <= 0 ? 'var(--amber)' : undefined, fontWeight: 700 }}>{s.left ?? '—'}</td>
+                      <td className="c num" style={{ color: s.left !== null && s.left <= 0 ? 'var(--amber)' : undefined, fontWeight: 700 }}>{s.left ?? ''}</td>
                     </tr>
                   ))}</tbody>
                 </table>
@@ -202,7 +209,7 @@ function Admissions({ desk }: { desk: AdminDesk }) {
               {P.bySource.map(s => (
                 <div className="row" key={s.source}>
                   <span style={{ flex: '0 0 130px', fontSize: 13.5 }}>{SOURCES[s.source] || s.source}</span>
-                  <Bar value={(s.total / Math.max(1, P.total)) * 100} color="#7C5CFC" />
+                  <Bar value={(s.total / Math.max(1, P.total)) * 100} color="var(--ink)" />
                   <span className="muted num" style={{ width: 100, textAlign: 'right', fontSize: 12.5 }}>{s.total} · {s.enrolled} enrolled</span>
                 </div>
               ))}
@@ -275,11 +282,11 @@ function ApplicantRow({ a, stages, canManage, onOpen, onAdvance, owner, dup, tod
     <tr className="click" onClick={onOpen} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(); }}>
       <td><b style={{ fontSize: 14 }}>{a.name}</b>{dup && <> <Chip tone="a">POSSIBLE DUPLICATE</Chip></>}
         <div className="muted" style={{ fontSize: 12 }}>{a.previousSchool || 'Previous school not recorded'}</div>
-        {a.open && <div className="muted" style={{ fontSize: 12 }}>{owner ?? 'No counsellor'}{a.followUpOn
-          ? <span style={{ color: a.followUpOn < today ? 'var(--red)' : undefined }}> · follow up {a.followUpOn < today ? `overdue (${fmtDate(a.followUpOn)})` : a.followUpOn === today ? 'today' : fmtDate(a.followUpOn)}</span> : ''}</div>}
+        {a.open && (owner || a.followUpOn) && <div className="muted" style={{ fontSize: 12 }}>{owner ?? ''}{a.followUpOn
+          ? <span style={{ color: a.followUpOn < today ? 'var(--red)' : undefined }}>{owner ? ' · ' : ''}follow up {a.followUpOn < today ? `overdue (${fmtDate(a.followUpOn)})` : a.followUpOn === today ? 'today' : fmtDate(a.followUpOn)}</span> : ''}</div>}
         {err && <div style={{ color: 'var(--red)', fontSize: 12 }}>{err}</div>}</td>
       <td className="c num">{a.grade}</td>
-      <td><Chip tone={stageTone(stages, a.stage)}>{stageName(stages, a.stage).toUpperCase()}</Chip></td>
+      <td style={{ fontSize: 13.5, fontWeight: 700, color: a.open ? undefined : 'var(--mut)' }}>{stageName(stages, a.stage)}</td>
       <td><OfferChip o={a.offer?.live || a.offer?.status === 'returned' ? a.offer : null} /></td>
       <td className="c num" style={{ color: a.daysInStage > STALE_DAYS ? 'var(--amber)' : undefined }}>{a.open ? `${a.daysInStage} d` : '—'}</td>
       <td className="muted" style={{ fontSize: 13 }}>{SOURCES[a.source] || a.source}</td>

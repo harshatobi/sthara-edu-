@@ -81,12 +81,20 @@ export const isScienceSubject = (subject: string) => /science|physics|chemistry/
 export const studioFor = (subject: string, cls = '') => STUDIO.filter(t =>
   (t.kind !== 'lab_demo' || isScienceSubject(subject)) && (t.kind !== 'board_paper' || designsFor(cls, subject).length > 0));
 
-export interface CopilotReply { say: string; ask: AskItem[]; artifact: Artifact | null; suggestions: string[] }
+export interface CopilotReply {
+  say: string; ask: AskItem[]; artifact: Artifact | null; suggestions: string[];
+  /** Kept in the Copilot's library (copilot_outputs). */
+  savedId?: string | null;
+  /** Served from a saved copy, no AI used: when it was made and by whom. */
+  reused?: { id: string; at: string; by: 'you' | 'colleague'; versions?: number };
+}
 
 export interface ChatTurn {
   role: 'teacher' | 'copilot'; text: string; reply?: CopilotReply; at: number;
   /** Students a Studio request was for (their ids), so "Send to class" targets them. */
   targets?: string[];
+  /** The Studio settings a teacher request was sent with, so "Make a fresh one" can send it again. */
+  studio?: Record<string, unknown>;
 }
 
 // ── Sanitising what the model returns ───────────────────────────────────────

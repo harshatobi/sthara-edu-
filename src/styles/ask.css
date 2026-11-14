@@ -1,0 +1,247 @@
+/* Ask the School OS (revamp of 2026-11-13). Canon tokens only; one accent per role (--role-deep), crimson = AI or risk.
+   The page fills the screen: each column scrolls inside itself, so there is no empty band below the content, and spare
+   space carries what the School OS noticed (Worth a look) and trends (At a glance). */
+
+.canon > main:has(> .ask-os) { display:flex; flex-direction:column; height:100vh; height:100dvh; padding-bottom:20px; overflow:hidden; }
+.canon > main:has(> .ask-os) > .pbar { flex:none; margin-bottom:16px; padding:16px 22px; }
+.canon > main:has(> .ask-os) > .pbar h1 { font-size:24px; }
+
+.canon .ask-os { flex:1; min-height:0; display:grid; grid-template-columns:264px minmax(0,1fr) 300px; gap:16px; }
+.canon .ask-os .card { padding:0; }
+
+/* ── page bar ───────────────────────────────────────────── */
+.canon .ask-chip { display:inline-flex; align-items:center; gap:7px; padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--body); font-size:12.5px; font-weight:700; color:var(--ink); text-decoration:none; }
+.canon .ask-chip:hover { border-color:color-mix(in srgb, var(--role-deep) 40%, var(--line)); }
+.canon .ask-hist-btn { display:none; }
+
+/* ── history ────────────────────────────────────────────── */
+.canon .ask-hist { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+.canon .ask-hist-top { display:flex; gap:6px; align-items:center; padding:14px 14px 6px; }
+.canon .ask-search { flex:1; display:flex; gap:8px; align-items:center; border:1px solid var(--line); border-radius:10px; padding:8px 10px; color:var(--mut); background:#fff; }
+.canon .ask-search input { border:0; outline:0; flex:1; min-width:0; font:inherit; font-size:13px; color:var(--ink); background:none; }
+.canon .ask-search:focus-within { border-color:var(--role-deep); box-shadow:0 0 0 3px color-mix(in srgb, var(--role-deep) 14%, transparent); }
+.canon .ask-x { display:none; width:32px; height:32px; border-radius:9px; place-items:center; color:var(--mut); }
+.canon .ask-hist-list { flex:1; min-height:0; overflow:auto; padding-bottom:6px; }
+.canon .ask-hist h4 { font-size:10.5px; letter-spacing:.12em; color:#5F6B7D; padding:12px 16px 4px; font-weight:800; display:flex; align-items:center; gap:8px; }
+.canon .ask-badge { background:var(--ai); color:#fff; border-radius:999px; padding:1px 7px; font-size:10px; letter-spacing:0; }
+.canon .ask-hrow { display:flex; flex-direction:column; width:100%; text-align:left; padding:8px 16px 8px 13px; border-left:3px solid transparent; gap:1px; }
+.canon .ask-hrow b { font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.canon .ask-hrow span { font-size:11.5px; color:#5F6B7D; }
+.canon .ask-hrow:hover { background:var(--body); }
+.canon .ask-hrow.on { background:var(--role-w6); border-left-color:var(--role-deep); }
+.canon .ask-hint { font-size:12px; color:#5F6B7D; padding:2px 16px 6px; }
+.canon .ask-hist-foot { border-top:1px solid var(--line); padding:10px 16px 12px; font-size:11.5px; color:#5F6B7D; display:grid; gap:6px; }
+.canon .ask-link-danger { justify-self:start; color:var(--red); font-size:12px; font-weight:700; }
+.canon .ask-confirm { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12px; color:var(--ink); }
+.canon .btn.danger { background:var(--red); border-color:var(--red); color:#fff; }
+
+/* ── main column ────────────────────────────────────────── */
+.canon .ask-main { display:flex; flex-direction:column; gap:16px; min-height:0; min-width:0; }
+.canon .ask-today { flex:none; padding:16px 18px; }
+.canon .ask-today.compact { padding:10px 12px; }
+.canon .ask-today.inline { padding:0; }
+.canon .ask-today-h { display:flex; align-items:baseline; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.canon .ask-today-h h2 { font-size:15px; font-weight:800; }
+.canon .ask-today-h span { font-size:12px; color:#5F6B7D; }
+.canon .ask-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; }
+.canon .ask-tile { border:1px solid var(--line); border-radius:14px; padding:12px 13px; display:flex; flex-direction:column; gap:5px; min-width:0; }
+.canon .ask-tile .k { display:flex; gap:6px; align-items:center; font-size:11px; font-weight:800; letter-spacing:.03em; }
+.canon .ask-tile .v { font-size:20px; font-weight:800; line-height:1.15; }
+.canon .ask-tile .d { font-size:12.5px; color:#5F6B7D; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.canon .ask-tile .a { display:flex; gap:6px; margin-top:auto; padding-top:4px; flex-wrap:wrap; }
+.canon .ask-tile .a > * { font-size:12px; font-weight:700; padding:5px 9px; border-radius:8px; border:1px solid var(--line); color:var(--ink); text-decoration:none; display:inline-flex; gap:5px; align-items:center; }
+.canon .ask-tile .a .ask { border-color:#F7C3CE; color:var(--ai-ink); background:var(--ai-wash); }
+.canon .ask-today.compact .ask-tile { flex-direction:row; align-items:center; gap:10px; padding:8px 10px; flex-wrap:wrap; }
+.canon .ask-today.compact .ask-tile .v { font-size:15px; }
+.canon .ask-today.compact .ask-tile .a { margin:0 0 0 auto; padding:0; }
+.canon .ask-today.compact .ask-tile .a a { display:none; }
+
+.canon .ask-chat { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; container-type:inline-size; }
+.canon .ask-chat-h { display:flex; gap:10px; align-items:center; padding:10px 14px 10px 18px; border-bottom:1px solid var(--line); flex-wrap:nowrap; min-height:52px; }
+.canon .ask-chat-h .t { flex:1; font-weight:800; font-size:14.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.canon .ask-chat-h .ask-scope { flex:none; white-space:nowrap; }
+.canon .ask-scope { display:inline-flex; gap:5px; align-items:center; font-size:12px; color:#5F6B7D; }
+.canon .ask-scope svg { color:#0E8A61; }
+.canon .ask-chat-h .r { margin-left:auto; display:flex; gap:6px; align-items:center; flex:none; }
+.canon .ask-chat-h .r .btn { padding:6px 10px; display:inline-flex; align-items:center; gap:6px; line-height:1; font-size:12.5px; letter-spacing:0; text-transform:none; }
+.canon .ask-chat-h .r .btn .ask-bl { line-height:1; display:block; }
+.canon .ask-chat-h .r .btn { height:32px; min-height:32px; padding-top:0; padding-bottom:0; }
+.canon .ask-chat-h .r .btn svg { display:block; flex:none; }
+.canon .ask-chat-h .btn.on { border-color:var(--role-deep); color:var(--role-deep); }
+.canon .ask-stream { flex:1; min-height:0; overflow:auto; padding:18px 18px 22px; display:flex; flex-direction:column; gap:18px; }
+.canon .ask-me { align-self:flex-end; background:var(--ink); color:#fff; padding:10px 14px; border-radius:14px 14px 4px 14px; max-width:72%; font-weight:500; white-space:pre-wrap; overflow-wrap:anywhere; }
+.canon .ask-os-turn { display:grid; grid-template-columns:32px minmax(0,1fr); gap:10px; }
+.canon .ask-av { width:32px; height:32px; border-radius:10px; background:var(--ai-wash); color:var(--ai); display:grid; place-items:center; }
+.canon .ask-body { display:flex; flex-direction:column; gap:12px; min-width:0; }
+.canon .ask-say { font-size:14.5px; line-height:1.6; max-width:72ch; }
+.canon .ask-say p + p, .canon .ask-say p + ul, .canon .ask-say ul + p { margin-top:8px; }
+.canon .ask-say ul, .canon .ask-say ol { padding-left:20px; }
+.canon .ask-say ul { list-style:disc; }
+.canon .ask-say ol { list-style:decimal; }
+.canon .ask-say li::marker { color:var(--role-deep); }
+.canon .ask-say li { margin:3px 0; }
+.canon .ask-cite { display:inline-block; font-size:10px; font-weight:800; color:var(--blue); background:var(--pale); border-radius:5px; padding:0 4px; margin-left:2px; vertical-align:super; line-height:1.4; text-decoration:none; }
+.canon .ask-trace { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11.5px; color:#5F6B7D; }
+.canon .ask-trace .s { display:inline-flex; gap:4px; align-items:center; padding:3px 8px; border-radius:7px; background:var(--body); border:1px solid var(--line); font-weight:600; }
+.canon .ask-trace .s svg { color:#0E8A61; }
+.canon .ask-facts { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; }
+.canon .ask-facts > div { border-left:3px solid; background:var(--body); border-radius:10px; padding:8px 12px; display:flex; flex-direction:column; }
+.canon .ask-facts span { font-size:11.5px; color:#5F6B7D; }
+.canon .ask-facts b { font-size:16px; }
+.canon .ask-viz { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:0; display:flex; flex-direction:column; gap:6px; }
+.canon .ask-viz figcaption { font-size:12.5px; font-weight:800; margin-bottom:4px; }
+.canon .ask-viz .bar { display:grid; grid-template-columns:minmax(60px, 120px) minmax(0,1fr) 64px; gap:10px; align-items:center; font-size:12.5px; }
+.canon .ask-viz .bar > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.canon .ask-viz .tr { height:10px; background:var(--body); border-radius:5px; overflow:hidden; }
+.canon .ask-viz .fl { height:100%; background:var(--ink); border-radius:5px; }
+.canon .ask-viz .fl.w { background:var(--red); }
+.canon .ask-viz .bar b { text-align:right; font-variant-numeric:tabular-nums; }
+.canon .ask-tbl { border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.canon .ask-tbl .cap { font-size:12.5px; font-weight:800; padding:10px 12px 6px; }
+.canon .ask-tbl .scroll { overflow:auto; }
+.canon .ask-tbl table { border-collapse:collapse; width:100%; font-size:13px; }
+.canon .ask-tbl th { text-align:left; font-size:11px; letter-spacing:.05em; color:#5F6B7D; font-weight:800; background:var(--body); padding:8px 12px; white-space:nowrap; }
+.canon .ask-tbl td { padding:8px 12px; border-top:1px solid var(--line); white-space:nowrap; }
+.canon .ask-tbl td.n { text-align:right; font-variant-numeric:tabular-nums; }
+.canon .ask-tbl .note-t { font-size:12px; color:#5F6B7D; padding:8px 12px; border-top:1px solid var(--line); }
+.canon .ask-q .q { font-weight:700; font-size:13.5px; margin-bottom:6px; }
+.canon .ask-q .opts { display:flex; gap:6px; flex-wrap:wrap; }
+.canon .ask-q .opts button, .canon .ask-sugg button, .canon .ask-after .sg { padding:7px 12px; border-radius:999px; border:1px solid var(--line); font-size:12.5px; font-weight:600; background:#fff; text-align:left; }
+.canon .ask-q .opts button:hover:not(:disabled), .canon .ask-sugg button:hover:not(:disabled), .canon .ask-after .sg:hover { border-color:var(--role-deep); color:var(--role-deep); }
+.canon .ask-sources { border-top:1px dashed var(--line); padding-top:10px; display:flex; flex-direction:column; gap:4px; }
+.canon .ask-sources .h { font-size:10.5px; letter-spacing:.12em; font-weight:800; color:#5F6B7D; }
+.canon .ask-sources a, .canon .ask-sources .nolink { display:flex; gap:8px; align-items:center; font-size:12.5px; color:var(--ink); text-decoration:none; padding:3px 0; scroll-margin-top:60px; }
+.canon .ask-sources a:hover b { text-decoration:underline; }
+.canon .ask-sources a:target, .canon .ask-sources .nolink:target { background:var(--pale); border-radius:6px; }
+.canon .ask-sources sup { font-size:10px; font-weight:800; color:var(--blue); background:var(--pale); border-radius:5px; padding:0 4px; vertical-align:baseline; }
+.canon .ask-sources span { color:#5F6B7D; }
+.canon .ask-sources svg { margin-left:auto; color:#5F6B7D; flex:none; }
+.canon .ask-after { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.canon .ask-after .share { margin-left:auto; }
+.canon .ask-draft { border:1px solid var(--line); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px; }
+.canon .ask-draft .h { display:flex; gap:8px; align-items:center; font-size:13.5px; }
+.canon .ask-draft .h svg { color:#0E8A61; }
+.canon .ask-draft .sub { font-size:12px; color:#5F6B7D; margin-top:-4px; }
+.canon .ask-draft textarea, .canon .ask-note-in { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 11px; font:inherit; font-size:13px; resize:vertical; background:var(--body); }
+.canon .ask-draft .kid { font-size:12.5px; display:flex; gap:8px; align-items:center; }
+.canon .ask-draft .kid select { border:1px solid var(--line); border-radius:8px; padding:5px 8px; font:inherit; font-size:12.5px; }
+.canon .ask-draft .f, .canon .ask-modal .f { display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap; }
+.canon .ask-draft .f span, .canon .ask-modal .f span { font-size:12px; color:#5F6B7D; margin-right:auto; }
+.canon .ask-done { display:flex; gap:10px; align-items:center; font-size:13px; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px; padding:10px 12px; }
+.canon .ask-hidden { display:flex; gap:8px; align-items:center; font-size:12.5px; color:#7A4B00; background:#FFF5DE; border:1px solid #F5DDA6; border-radius:10px; padding:9px 12px; }
+.canon .ask-note { font-size:13px; font-style:italic; color:#5F6B7D; }
+.canon .ask-shared { display:flex; flex-direction:column; gap:14px; }
+
+/* composer */
+.canon .ask-composer { border-top:1px solid var(--line); padding:10px 14px 8px; display:flex; flex-direction:column; gap:6px; flex:none; background:#fff; }
+.canon .ask-cin { display:flex; gap:10px; align-items:flex-end; border:1.5px solid var(--line); border-radius:14px; padding:8px 8px 8px 14px; }
+.canon .ask-cin:focus-within { border-color:var(--role-deep); box-shadow:0 0 0 3px color-mix(in srgb, var(--role-deep) 12%, transparent); }
+.canon .ask-cin textarea { flex:1; border:0; outline:0; resize:none; font:inherit; font-size:14.5px; line-height:1.45; padding:8px 0; min-height:38px; max-height:160px; background:none; color:var(--ink); }
+.canon .ask-cin textarea::placeholder { color:#6B7687; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.canon .ask-send { position:relative; width:40px; height:40px; border-radius:11px; background:var(--ai); color:#fff; display:grid; place-items:center; flex:none; }
+.canon .ask-send:disabled { opacity:.45; cursor:not-allowed; }
+.canon .ask-send .ai-tag { position:absolute; top:-6px; right:-6px; }
+.canon .ask-cmeta { display:flex; gap:10px; align-items:center; font-size:11.5px; color:#5F6B7D; flex-wrap:nowrap; white-space:nowrap; min-width:0; }
+.canon .ask-cmeta .priv { display:inline-flex; gap:5px; align-items:center; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.canon .ask-cmeta svg { flex:none; color:#0E8A61; }
+.canon .ask-quota { margin-left:auto; font-weight:700; color:var(--ink); display:inline-flex; align-items:center; gap:8px; }
+.canon .ask-quota i { display:inline-block; width:70px; height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
+.canon .ask-quota b { display:block; height:100%; background:var(--role-deep); }
+
+/* welcome: what the School OS noticed fills the space before the first question */
+.canon .ask-welcome { display:flex; flex-direction:column; gap:18px; }
+.canon .ask-sugg { display:flex; gap:6px; flex-wrap:wrap; }
+.canon .ask-worth h3, .canon .ask-glance h3 { font-size:13px; font-weight:800; letter-spacing:.01em; margin-bottom:10px; }
+.canon .ask-worth.card, .canon .ask-glance.card { padding:14px 16px; }
+.canon .ask-worth-list { display:flex; flex-direction:column; gap:8px; }
+.canon .ask-worth.grid .ask-worth-list { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px; }
+.canon .ask-insight { border:1px solid var(--line); border-left:3px solid; border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:4px; background:#fff; }
+.canon .ask-insight b { font-size:13px; line-height:1.35; }
+.canon .ask-insight p { font-size:12.5px; color:#5F6B7D; line-height:1.45; }
+.canon .ask-insight .a { display:flex; gap:10px; margin-top:4px; align-items:center; }
+.canon .ask-insight .a button { display:inline-flex; gap:5px; align-items:center; font-size:12px; font-weight:700; color:var(--ai-ink); }
+.canon .ask-insight .a a { display:inline-flex; gap:3px; align-items:center; font-size:12px; font-weight:700; color:var(--ink); text-decoration:none; }
+.canon .ask-glance-inline { display:none; }
+
+/* rail */
+.canon .ask-rail { display:flex; flex-direction:column; gap:16px; min-height:0; overflow:auto; padding-bottom:2px; }
+.canon .ask-gl { display:block; padding:10px 0; border-top:1px solid var(--line); text-decoration:none; color:var(--ink); }
+.canon .ask-glance h3 + .ask-gl { border-top:0; padding-top:0; }
+.canon .ask-gl:hover .gl-top span { text-decoration:underline; }
+.canon .gl-top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:12.5px; font-weight:700; }
+.canon .gl-top b { font-size:16px; }
+.canon .gl-spark { width:100%; height:44px; display:block; margin:6px 0 2px; }
+.canon .gl-hint, .canon .gl-none { font-size:11.5px; color:#5F6B7D; }
+.canon .gl-none { padding:12px 0; }
+
+/* dialogs */
+.canon .ask-modal { position:fixed; inset:0; background:rgba(10,19,36,.45); display:grid; place-items:center; z-index:60; padding:16px; }
+.canon .ask-modal-box { position:relative; background:#fff; border-radius:var(--r); box-shadow:0 30px 80px rgba(0,33,71,.25); width:min(480px, 100%); max-height:calc(100dvh - 32px); overflow:auto; padding:22px; display:flex; flex-direction:column; gap:8px; }
+.canon .ask-modal-box > .card { box-shadow:none; padding:0; }
+.canon .ask-modal-box h3 { display:flex; gap:8px; align-items:center; font-size:16px; }
+.canon .ask-modal-box .ask-x { display:grid; position:absolute; top:12px; right:12px; }
+.canon .ask-people { max-height:260px; overflow:auto; border:1px solid var(--line); border-radius:10px; }
+.canon .ask-people label { display:grid; grid-template-columns:20px minmax(0,1fr) auto; gap:8px; align-items:center; padding:8px 12px; border-top:1px solid var(--line); font-size:13px; cursor:pointer; }
+.canon .ask-people label:first-child { border-top:0; }
+.canon .ask-people label span { font-size:11.5px; color:#5F6B7D; }
+.canon .ask-scrim { display:none; }
+
+/* ── narrower screens ───────────────────────────────────── */
+@media (max-width:1400px) {
+  .canon .ask-os { grid-template-columns:248px minmax(0,1fr); }
+  .canon .ask-rail { display:none; }
+  .canon .ask-glance-inline { display:block; }
+  .canon .ask-glance-inline .ask-glance { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0 16px; }
+  .canon .ask-glance-inline .ask-glance h3 { grid-column:1 / -1; }
+  .canon .ask-glance-inline .ask-gl { border-top:0; padding-top:0; }
+}
+@media (max-width:1100px) {
+  .canon .ask-os { grid-template-columns:minmax(0,1fr); }
+  .canon .ask-hist-btn { display:inline-flex; }
+  .canon .ask-hist { position:fixed; top:0; bottom:0; left:0; width:min(320px, 86vw); z-index:55; border-radius:0 var(--r) var(--r) 0; transform:translateX(-105%); transition:transform .2s ease; }
+  .canon .ask-hist.open { transform:none; }
+  .canon .ask-hist .ask-x { display:grid; }
+  .canon .ask-scrim { display:block; position:fixed; inset:0; background:rgba(10,19,36,.35); z-index:54; }
+}
+@media (max-width:900px) {
+  /* Phone: the page scrolls as a whole (the bottom tab bar needs room); the composer stays in reach. */
+  .canon > main:has(> .ask-os) { height:auto; overflow:visible; padding-bottom:90px; }
+  .canon .ask-main, .canon .ask-chat, .canon .ask-stream { overflow:visible; min-height:auto; }
+  .canon .ask-chat { min-height:60vh; }
+  .canon .ask-composer { position:sticky; bottom:76px; border-radius:0 0 var(--r) var(--r); }
+  .canon .ask-tiles { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .canon .ask-me { max-width:90%; }
+  .canon .ask-chat-h .t { max-width:100%; }
+  .canon > main:has(> .ask-os) > .pbar .acts { width:100%; }
+}
+
+/* A narrow conversation column: header buttons become icons, the scope line goes (the page bar already says it). */
+@container (max-width:620px) {
+  .canon .ask-chat-h .ask-scope, .canon .ask-chat-h .btn .ask-bl { display:none; }
+  .canon .ask-stream { padding:14px 14px 18px; }
+  .canon .ask-os-turn { grid-template-columns:28px minmax(0,1fr); gap:8px; }
+  .canon .ask-av { width:28px; height:28px; }
+}
+/* Short screens (a laptop with the browser bars, or zoomed in): the answer always gets the room. Today's strip steps
+   aside once a conversation is open (it leads the opening screen), and below 760px tall the page scrolls as a whole. */
+@media (max-height:920px) { .canon .ask-today.compact { display:none; } }
+@media (max-height:760px) and (min-width:901px) {
+  .canon > main:has(> .ask-os) { height:auto; overflow:visible; }
+  .canon .ask-os { min-height:calc(100dvh - 40px); }
+  .canon .ask-main, .canon .ask-chat, .canon .ask-stream { overflow:visible; min-height:auto; }
+  .canon .ask-chat { min-height:70vh; }
+  .canon .ask-composer { position:sticky; bottom:0; border-radius:0 0 var(--r) var(--r); z-index:2; }
+  .canon .ask-hist, .canon .ask-rail { position:sticky; top:12px; height:calc(100dvh - 24px); align-self:start; }
+}
+
+@media (prefers-reduced-motion: reduce) { .canon .ask-hist { transition:none; } }
+
+/* ── print / Save PDF: the conversation only ────────────── */
+@media print {
+  .canon > main:has(> .ask-os) { height:auto !important; overflow:visible !important; display:block; }
+  .canon .ask-os { display:block; }
+  .canon .ask-hist, .canon .ask-rail, .canon .ask-today, .canon .ask-scrim, .canon .ask-chip, .canon .ask-hist-btn { display:none !important; }
+  .canon .ask-chat, .canon .ask-stream, .canon .ask-main { overflow:visible !important; height:auto !important; display:block; }
+  .canon .ask-stream > * { margin-bottom:14px; break-inside:avoid; }
+  .canon .ask-me { background:#fff; color:var(--ink); border:1px solid #CBD5E1; }
+}

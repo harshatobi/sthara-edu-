@@ -100,7 +100,7 @@ ${brief}`;
 }
 
 /** Each child's year-by-year timeline (brief 08), as the parent may see it. A child without one is left out. */
-async function histories(db: SupabaseClient, parent: ParentCaller, view: FamilyView): Promise<Map<string, string>> {
+export async function histories(db: SupabaseClient, parent: ParentCaller, view: FamilyView): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   await Promise.all(view.children.map(async c => {
     try {

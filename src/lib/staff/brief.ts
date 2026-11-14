@@ -1,9 +1,9 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { assembleDesk } from '@/lib/teacher/desk';
+import { assembleDesk, type TeacherDesk } from '@/lib/teacher/desk';
 import { loadTeacherRows } from '@/lib/teacher/loadRows';
 import { displayClass, normClass } from '@/lib/teacher/scope';
-import { assembleAdminDesk } from '@/lib/admin/desk';
+import { assembleAdminDesk, type AdminDesk } from '@/lib/admin/desk';
 import { loadAdminRows } from '@/lib/admin/loadRows';
 import { probe } from '@/lib/admin/probe';
 import { inr } from '@/lib/admin/format';
@@ -71,23 +71,31 @@ async function threadLines(db: SupabaseClient, me: FeedCaller, book: Book, offic
   });
 }
 
-export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Book): Promise<string> {
+/**
+ * Optional hooks for Ask the School OS (revamp of 2026-11-13): `src` tags each section with its source number
+ * (e.g. " [3]"), and `keep` receives the desk so live lookups reuse it instead of loading it again.
+ */
+export interface BriefHooks { src?: (key: string, detail?: string) => string; keep?: { teacher?: TeacherDesk; admin?: AdminDesk } }
+
+export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Book, hooks: BriefHooks = {}): Promise<string> {
+  const src = hooks.src ?? (() => '');
   const rows = await loadTeacherRows(db, { schoolId: me.schoolId, uid: me.id }, me.scope);
   const desk = assembleDesk(rows, { id: me.id, name: me.name, subject: me.scope[0]?.subject || '' }, me.scope, 'live');
+  if (hooks.keep) hooks.keep.teacher = desk;
   const today = istDay();
   const S = (id: string, name: string) => personToken(book, 'S', id, name);
   const out: string[] = [`TODAY: ${today} (IST) · YOU: a teacher${me.classTeacherOf ? `, class teacher of ${displayClass(me.classTeacherOf)}` : ''} · teaching ${me.scope.map(e => `${e.cls}${e.subject ? ` ${e.subject}` : ''}`).join(', ') || 'no classes on record'}`];
 
   for (const c of desk.classes) {
     out.push([
-      `CLASS ${c.cls} (${c.subjects.join(', ') || 'class teacher'}): ${c.students.length} students, mastery ${pct(c.tml)} (${c.evidenced} with evidence), ${c.pendingReview} submissions waiting for your review, ${c.proctorFlags} proctoring flags (14 days).`,
+      `CLASS ${c.cls}${src('class', c.cls)} (${c.subjects.join(', ') || 'class teacher'}): ${c.students.length} students, mastery ${pct(c.tml)} (${c.evidenced} with evidence), ${c.pendingReview} submissions waiting for your review, ${c.proctorFlags} proctoring flags (14 days).`,
       `Below 40%: ${c.belowForty.slice(0, 10).map(s => `${S(s.id, s.name)} ${pct(Object.values(s.tml).filter((v): v is number => v !== null)[0])}`).join(', ') || 'none'}.`,
     ].join('\n'));
   }
 
   const recent = desk.assignments.filter(a => a.status === 'published' && (!a.dueAt || ageDays(a.dueAt) <= 14 || a.dueAt.slice(0, 10) >= today)).slice(0, 12);
   if (recent.length) {
-    out.push(`YOUR WORK (last two weeks and upcoming):\n${recent.map(a => {
+    out.push(`YOUR WORK (last two weeks and upcoming)${src('homework')}:\n${recent.map(a => {
       const done = new Set(a.submissions.map(s => s.studentId));
       const missing = a.roster.filter(s => !done.has(s.id));
       const late = a.dueAt && a.dueAt.slice(0, 10) < today;
@@ -104,8 +112,8 @@ export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Boo
     const marks = (att || []).filter(a => ids.has(a.student_id));
     const absent = marks.filter(a => a.status === 'absent').map(a => roster.find(s => s.id === a.student_id)!);
     out.push(marks.length
-      ? `ATTENDANCE TODAY (${displayClass(me.classTeacherOf)}): marked, ${absent.length} absent${absent.length ? `: ${absent.map(s => S(s.id, s.name)).join(', ')}` : ''}.`
-      : `ATTENDANCE TODAY (${displayClass(me.classTeacherOf)}): NOT MARKED yet (${roster.length} students).`);
+      ? `ATTENDANCE TODAY (${displayClass(me.classTeacherOf)})${src('attendance', me.classTeacherOf)}: marked, ${absent.length} absent${absent.length ? `: ${absent.map(s => S(s.id, s.name)).join(', ')}` : ''}.`
+      : `ATTENDANCE TODAY (${displayClass(me.classTeacherOf)})${src('attendance', me.classTeacherOf)}: NOT MARKED yet (${roster.length} students).`);
   }
 
   // Wellness, teacher-safe: energy only, never journal text.
@@ -115,19 +123,21 @@ export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Boo
       .gte('created_at', new Date(Date.now() - 7 * DAY_MS).toISOString()).not('energy', 'is', null).order('id').range(f, t));
     const low = new Map<string, number>();
     for (const r of w || []) if ((r.energy ?? 5) <= 2) low.set(r.student_id, (low.get(r.student_id) || 0) + 1);
-    out.push(`WELLNESS (last 7 days, energy 1–5 only; journals are private): ${(w || []).length} check-ins from your students; low (2 or below): ${[...low].map(([id, n]) => `${S(id, kids.find(k => k.id === id)!.name)} ×${n}`).join(', ') || 'none'}.`);
+    out.push(`WELLNESS (last 7 days, energy 1–5 only; journals are private)${src('wellness')}: ${(w || []).length} check-ins from your students; low (2 or below): ${[...low].map(([id, n]) => `${S(id, kids.find(k => k.id === id)!.name)} ×${n}`).join(', ') || 'none'}.`);
   }
 
   const feed = await feedLines(db, me, book, 12);
-  out.push(`SITUATIONAL FEED: ${feed.open} open (${feed.critical} critical, ${feed.escalated} escalated)${feed.lines.length ? `\n${feed.lines.join('\n')}` : ''}`);
+  out.push(`SITUATIONAL FEED${src('feed')}: ${feed.open} open (${feed.critical} critical, ${feed.escalated} escalated)${feed.lines.length ? `\n${feed.lines.join('\n')}` : ''}`);
   const threads = await threadLines(db, me, book, false);
-  out.push(threads.length ? `PARENT CONVERSATIONS WITH YOU:\n${threads.join('\n')}` : 'PARENT CONVERSATIONS WITH YOU: none open.');
+  out.push(threads.length ? `PARENT CONVERSATIONS WITH YOU${src('messages')}:\n${threads.join('\n')}` : 'PARENT CONVERSATIONS WITH YOU: none open.');
   return tokenize(out.join('\n\n'), book);
 }
 
-export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: Book): Promise<string> {
+export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: Book, hooks: BriefHooks = {}): Promise<string> {
+  const src = hooks.src ?? (() => '');
   const rows = await loadAdminRows(db, { schoolId: me.schoolId, uid: me.id, superadmin: false });
   const d = assembleAdminDesk(rows);
+  if (hooks.keep) hooks.keep.admin = d;
   const a = d.me.access;
   const today = istDay();
   const S = (id: string, name: string) => personToken(book, 'S', id, name);
@@ -136,12 +146,12 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
   const cannot: string[] = [];
 
   const pr = probe(d);
-  if (pr.findings.length) out.push(`PROBE (what the School OS noticed, most severe first):\n${pr.findings.slice(0, 8).map(f => `- [${f.severity}] ${f.title}. ${f.summary}`).join('\n')}`);
+  if (pr.findings.length) out.push(`PROBE (what the School OS noticed, most severe first)${src('probe')}:\n${pr.findings.slice(0, 8).map(f => `- [${f.severity}] ${f.title}. ${f.summary}`).join('\n')}`);
 
   if (a.can('academics.read')) {
     const A = d.academics;
     out.push([
-      `ACADEMICS: school mastery ${pct(A.schoolTml)} (two weeks ago ${pct(A.schoolTmlBefore)}); ${A.evidenced} students with evidence, ${A.noEvidence} without.`,
+      `ACADEMICS${src('academics')}: school mastery ${pct(A.schoolTml)} (two weeks ago ${pct(A.schoolTmlBefore)}); ${A.evidenced} students with evidence, ${A.noEvidence} without.`,
       `By class: ${A.sections.map(s => `${s.cls} ${pct(s.tml)} (${s.atRisk} at risk)`).join('; ') || 'no data'}.`,
       A.weakest ? `Weakest: Class ${A.weakest.grade} ${A.weakest.subject} ${pct(A.weakest.tml)}.` : '',
       `At risk (lowest first): ${A.atRisk.slice(0, 10).map(s => `${S(s.id, s.name)} ${s.cls} ${pct(s.overall)}`).join(', ') || 'none'}.`,
@@ -151,7 +161,7 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
   if (a.can('workforce.read')) {
     const W = d.workforce;
     out.push([
-      `STAFF: ${W.teachers.length} teachers, ratio ${W.ratio ?? '—'}:1, ${W.backlog} submissions waiting to be graded school-wide.`,
+      `STAFF${src('staff')}: ${W.teachers.length} teachers, ratio ${W.ratio ?? '—'}:1, ${W.backlog} submissions waiting to be graded school-wide.`,
       `On leave today: ${W.onLeaveToday.map(l => T(l.staffId, l.staffName)).join(', ') || 'nobody'}. Leave awaiting approval: ${W.pendingLeave.length}.`,
       `Inactive teachers (nothing in 30 days): ${W.teachers.filter(t => t.activity === 'none').map(t => T(t.id, t.name)).join(', ') || 'none'}.`,
       `Biggest grading backlogs: ${W.teachers.filter(t => t.backlog > 0).sort((x, y) => y.backlog - x.backlog).slice(0, 5).map(t => `${T(t.id, t.name)} ${t.backlog}${t.oldestPendingDays ? ` (oldest ${t.oldestPendingDays} days)` : ''}`).join(', ') || 'none'}.`,
@@ -164,14 +174,14 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
     const monthIn = d.fees.receipts.filter(r => !r.voided && r.paidOn.slice(0, 7) === month).reduce((n, r) => n + r.amount, 0);
     const worst = d.fees.families.filter(f => f.overdue > 0).sort((x, y) => y.overdue - x.overdue).slice(0, 6);
     out.push([
-      `FEES (${d.fees.session}): billed ${inr(F.billed)}, collected ${inr(F.collected)} (${pct(F.collectionRate)}), outstanding ${inr(F.outstanding)}, overdue ${inr(F.overdue)} across ${F.familiesOverdue} families. Collected this month: ${inr(monthIn)}.`,
+      `FEES (${d.fees.session})${src('fees')}: billed ${inr(F.billed)}, collected ${inr(F.collected)} (${pct(F.collectionRate)}), outstanding ${inr(F.outstanding)}, overdue ${inr(F.overdue)} across ${F.familiesOverdue} families. Collected this month: ${inr(monthIn)}.`,
       `Largest overdue: ${worst.map(f => `${S(f.studentId, f.name)} ${f.cls} ${inr(f.overdue)} (${f.maxDaysOverdue} days)`).join(', ') || 'none'}.`,
     ].join('\n'));
   } else cannot.push('fees');
 
   if (a.can('admissions.read')) {
     const P = d.admissions;
-    out.push(`ADMISSIONS (${P.session}): ${P.total} applicants, ${P.enrolled} enrolled, conversion ${pct(P.conversion)}, ${P.stale.length} idle too long. Funnel: ${P.funnel.map(f => `${f.stage} ${f.reached}`).join(' → ')}.`);
+    out.push(`ADMISSIONS (${P.session})${src('admissions')}: ${P.total} applicants, ${P.enrolled} enrolled, conversion ${pct(P.conversion)}, ${P.stale.length} idle too long. Funnel: ${P.funnel.map(f => `${f.stage} ${f.reached}`).join(' → ')}.`);
   } else cannot.push('admissions');
 
   if (a.can('wellness.read')) {
@@ -181,22 +191,22 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
     const n = new Set((w || []).map(r => r.student_id)).size;
     const avg = n >= 5 ? (w || []).reduce((s, r) => s + (r.energy ?? 0), 0) / (w || []).length : null;
     const low = n >= 5 ? (w || []).filter(r => (r.energy ?? 5) <= 2).length / (w || []).length : null;
-    out.push(`WELLNESS (anonymised, 14 days): ${n} students checked in${avg !== null ? `, average energy ${avg.toFixed(1)}/5, ${pct(low! * 100)} of check-ins low` : ' (too few to report without identifying anyone)'}. CBSE wellness filing: ${d.filing.status}${d.filing.dueOn ? `, due ${d.filing.dueOn}` : ''}.`);
+    out.push(`WELLNESS (anonymised, 14 days)${src('wellness')}: ${n} students checked in${avg !== null ? `, average energy ${avg.toFixed(1)}/5, ${pct(low! * 100)} of check-ins low` : ' (too few to report without identifying anyone)'}. CBSE wellness filing: ${d.filing.status}${d.filing.dueOn ? `, due ${d.filing.dueOn}` : ''}.`);
   } else cannot.push('wellness');
 
   if (a.can('compliance.read')) {
-    out.push(`COMPLIANCE (DPDP): ${d.compliance.flags.map(f => `[${f.tone === 'r' ? 'urgent' : 'watch'}] ${f.title}`).join('; ') || 'no flags'}. Guardian coverage ${pct(d.compliance.guardianCoverage)}.`);
+    out.push(`COMPLIANCE (DPDP)${src('compliance')}: ${d.compliance.flags.map(f => `[${f.tone === 'r' ? 'urgent' : 'watch'}] ${f.title}`).join('; ') || 'no flags'}. Guardian coverage ${pct(d.compliance.guardianCoverage)}.`);
   }
 
   if (a.any('feed.read', 'incidents.manage')) {
     const feed = await feedLines(db, me, book, 10);
-    out.push(`SITUATIONAL FEED: ${feed.open} open across the school (${feed.critical} critical, ${feed.escalated} escalated to you)${feed.lines.length ? `\n${feed.lines.join('\n')}` : ''}`);
+    out.push(`SITUATIONAL FEED${src('feed')}: ${feed.open} open across the school (${feed.critical} critical, ${feed.escalated} escalated to you)${feed.lines.length ? `\n${feed.lines.join('\n')}` : ''}`);
   }
   if (a.can('incidents.manage')) {
     const { data: inc } = await db.from('incidents').select('id, category, severity, summary, student_id, class_name, parent_notice, status, created_at')
       .eq('school_id', me.schoolId).eq('status', 'open').neq('category', 'child_protection').order('created_at', { ascending: false }).limit(20);
     const waiting = (inc || []).filter(i => i.parent_notice === 'principal_decides');
-    out.push(`INCIDENTS: ${(inc || []).length} open; waiting for your decision on parents: ${waiting.map(i => `${i.category} "${i.summary}" (${i.class_name || 'no class'}, ${ageDays(i.created_at)} days)`).join('; ') || 'none'}.`);
+    out.push(`INCIDENTS${src('incidents')}: ${(inc || []).length} open; waiting for your decision on parents: ${waiting.map(i => `${i.category} "${i.summary}" (${i.class_name || 'no class'}, ${ageDays(i.created_at)} days)`).join('; ') || 'none'}.`);
   }
   if (a.can('attendance.read') && isSunday(today)) out.push('ATTENDANCE TODAY: it is Sunday, no school and no registers today.');
   else if (a.can('attendance.read')) {
@@ -204,11 +214,11 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
     const classes = [...new Set(d.students.map(s => normClass(s.cls)).filter(Boolean))];
     const marked = new Set((att || []).map(r => normClass(r.class_name)));
     const absent = (att || []).filter(r => r.status === 'absent').length;
-    out.push(`ATTENDANCE TODAY: ${marked.size} of ${classes.length} classes marked, ${absent} students absent. Not marked: ${classes.filter(c => !marked.has(c)).map(c => displayClass(c)).join(', ') || 'none'}.`);
+    out.push(`ATTENDANCE TODAY${src('attendance')}: ${marked.size} of ${classes.length} classes marked, ${absent} students absent. Not marked: ${classes.filter(c => !marked.has(c)).map(c => displayClass(c)).join(', ') || 'none'}.`);
   }
   if (a.can('messages.office')) {
     const threads = await threadLines(db, me, book, true);
-    out.push(threads.length ? `PARENT MESSAGES TO THE OFFICE:\n${threads.join('\n')}` : 'PARENT MESSAGES TO THE OFFICE: none open.');
+    out.push(threads.length ? `PARENT MESSAGES TO THE OFFICE${src('messages')}:\n${threads.join('\n')}` : 'PARENT MESSAGES TO THE OFFICE: none open.');
   }
   if (cannot.length) out.push(`OUTSIDE THIS PERSON'S OFFICE ROLE (if asked, tell them it is outside their role and who can see it, e.g. the finance head or principal): ${cannot.join(', ')}.`);
   return tokenize(out.join('\n\n'), book);

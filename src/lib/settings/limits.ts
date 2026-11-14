@@ -39,6 +39,7 @@ export const RATE_LIMITS = {
   feed:            { limit: 120, windowMs: MIN,      per: 'user',    route: '/api/feed',                    label: 'Situational feed, attendance and incidents' },
   copilot:         { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/copilot',         label: 'Teaching copilot' },
   copilotImage:    { limit: 12,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/copilot/image',   label: 'Copilot illustrations' },
+  copilotSaved:    { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/copilot/saved',   label: 'Copilot: saved things (made before)' },
   boardPaper:      { limit: 6,   windowMs: 60 * MIN, per: 'user',    route: '/api/teacher/copilot',         label: 'Board exam papers (Copilot)' },
   lessons:         { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lessons',         label: 'Lesson plan writes' },
   lab:             { limit: 60,  windowMs: 10 * MIN, per: 'user',    route: '/api/teacher/lab',             label: 'Live Lab saved demos' },
@@ -56,6 +57,8 @@ export const RATE_LIMITS = {
   parentDesk:      { limit: 60,  windowMs: 5 * MIN,  per: 'user',    route: '/api/parent/desk',             label: 'Parent portal data' },
   parentAsk:       { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/ask',              label: 'Ask the School OS (web)' },
   staffAsk:        { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/staff/ask',               label: 'Ask the School OS (teachers and leadership)' },
+  ask:             { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/ask',                     label: 'Ask the School OS (everyone, web)' },
+  askHistory:      { limit: 120, windowMs: 10 * MIN, per: 'user',    route: '/api/ask/conversations, /api/ask/share, /api/ask/today', label: 'Ask the School OS: history, sharing and today' },
   timelineAsk:     { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/timeline',                label: 'Ask about a student\u2019s timeline' },
   staffWhatsapp:   { limit: 30,  windowMs: 10 * MIN, per: 'user',    route: '/api/staff/whatsapp',          label: 'Staff WhatsApp settings' },
   schoolMessages:  { limit: 40,  windowMs: 10 * MIN, per: 'user',    route: '/api/parent/messages, /api/staff/messages', label: 'Parent and staff messages' },
@@ -119,6 +122,7 @@ export const CLAUDE_BY_FEATURE: Partial<Record<AiFeature, ClaudeChoice>> = {
   parentAsk: { model: 'claude-haiku-5-5', effort: 'low' },
   teacherAsk: { model: 'claude-haiku-5-5', effort: 'low' },
   leadershipAsk: { model: 'claude-haiku-5-5', effort: 'low' },
+  officeAsk: { model: 'claude-haiku-5-5', effort: 'low' },
   timelineAsk: { model: 'claude-haiku-5-5', effort: 'low' },
   tutorSession: { model: 'claude-haiku-5-5', effort: 'medium' },
   // Socratic engine: Sonnet judges only the stages that set the score; seeding runs once per chapter per school.
@@ -150,7 +154,10 @@ export const claudeChoice = (job: AiJob, feature: AiFeature): ClaudeChoice =>
  * input price. One-shot features stay uncached, because a cache write costs
  * 1.25x and would never be read.
  */
-export const CLAUDE_CACHED_FEATURES: readonly AiFeature[] = ['copilot', 'parentAsk', 'teacherAsk', 'leadershipAsk', 'timelineAsk', 'tutorSession', 'tutorJudge'];
+export const CLAUDE_CACHED_FEATURES: readonly AiFeature[] = ['copilot', 'parentAsk', 'teacherAsk', 'leadershipAsk', 'officeAsk', 'timelineAsk', 'tutorSession', 'tutorJudge'];
 
 /** Plans that run on Gemini alone (no Claude). */
 export const GEMINI_ONLY_PLANS: readonly string[] = ['aadhara'];
+
+/** Questions a parent may ask the School OS in one day (IST), counted from metered calls (Moses, 2026-11-13). */
+export const PARENT_ASK_DAILY = 10;

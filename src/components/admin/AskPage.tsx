@@ -1,9 +1,9 @@
 'use client';
 
-import StaffAskPage from '@/components/staff/AskPage';
+import AskOS from '@/components/ask/AskOS';
 import { DeskGate } from './kit';
 
-/** Ask the School OS for school leadership (os.ask: school admin, principal, vice principal). */
+/** Ask the School OS for every office role, scoped to what each role can see (revamp of 2026-11-13). */
 export default function AdminAskPage() {
-  return <DeskGate need="os.ask">{() => <StaffAskPage role="leadership" />}</DeskGate>;
+  return <DeskGate need="dashboard.view">{() => <AskOS audience="office" />}</DeskGate>;
 }

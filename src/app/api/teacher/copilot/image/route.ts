@@ -7,6 +7,8 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateGeminiMetered } from '@/lib/ai/usage';
+import { imageKeySource } from '@/lib/teacher/copilotKeys';
+import { findSaved, keyOf, saveOutput } from '@/lib/teacher/copilotSaved';
 import { aiFailure, withRetry } from '@/lib/ai/retry';
 import { IMAGE_PATH } from '@/lib/teacher/copilot';
 
@@ -19,8 +21,9 @@ const str = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0
 
 /**
  * Copilot illustrations.
- *   POST { class, subject, prompt }  generate one image (costs money: the teacher asks for it), store it privately
- *                                     -> { path, url }
+ *   POST { class, subject, prompt, regenerate? }  generate one image (costs money: the teacher asks for it), store it
+ *                                     privately -> { path, url }. The same description again (same class level and
+ *                                     subject, anyone in the school) returns the kept file, { reused }, at no cost.
  *   GET  ?path=<school>/<teacher>/<id>.png   a fresh signed link (10 minutes), staff of that school only
  *
  * Labels are never drawn by the model (image models misspell them); diagrams with labels are the SVG kind.
@@ -36,6 +39,16 @@ export async function POST(req: NextRequest) {
   const cls = str(b?.class, 40), subject = str(b?.subject, 60), prompt = str(b?.prompt, 800);
   if (!cls || !subject || prompt.length < 8) return NextResponse.json({ error: 'Describe the picture you want.' }, { status: 400 });
   if (staff.role === 'teacher' && !inScope(staff.scope, cls, subject)) return NextResponse.json({ error: `You don't teach ${subject} to ${cls}.` }, { status: 403 });
+
+  // The same picture asked for again (same description, class level and subject, anyone in the school): the kept file.
+  const imgKey = keyOf(imageKeySource(prompt, cls, subject));
+  if (b?.regenerate !== true) {
+    const hit = await findSaved(db, staff, 'image', imgKey);
+    if (hit?.imagePath) {
+      const { data: link } = await db.storage.from(BUCKET).createSignedUrl(hit.imagePath, LINK_SECONDS);
+      if (link?.signedUrl) return NextResponse.json({ path: hit.imagePath, url: link.signedUrl, reused: hit.reused });
+    }
+  }
 
   const aiBlocked = await aiGate(staff.id, 'teacherTools');
   if (aiBlocked) return aiBlocked;
@@ -64,6 +77,7 @@ export async function POST(req: NextRequest) {
     const { error: upErr } = await db.storage.from(BUCKET).upload(path, bytes, { contentType: part.inlineData.mimeType || 'image/png', upsert: false });
     if (upErr) { console.error('[copilot image] upload', upErr.message); return NextResponse.json({ error: 'Could not keep the picture. Try again.' }, { status: 500 }); }
     const { data: link } = await db.storage.from(BUCKET).createSignedUrl(path, LINK_SECONDS);
+    await saveOutput(db, staff, { kind: 'image', cls, subject, key: imgKey, title: prompt.slice(0, 120), artifactKind: 'image', imagePath: path });
     return NextResponse.json({ path, url: link?.signedUrl ?? null });
   } catch (e: any) {
     console.error('[copilot image]', e?.message);

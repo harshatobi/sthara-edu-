@@ -77,6 +77,8 @@ export const AI_FEATURES = {
   teacherAsk:       { label: 'Ask the School OS (teachers)', who: 'Teacher' },
   leadershipAsk:    { label: 'Ask the School OS (leadership)', who: 'Admin' },
   timelineAsk:      { label: 'Ask about a student\u2019s timeline', who: 'Any' },
+  officeAsk:        { label: 'Ask the School OS (office roles)', who: 'Admin' },
+  askPlan:          { label: 'Ask the School OS: choosing live lookups', who: 'Any' },
 } as const;
 
 export type AiFeature = keyof typeof AI_FEATURES;

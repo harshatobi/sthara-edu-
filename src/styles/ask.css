@@ -64,7 +64,7 @@
 .canon .ask-scope svg { color:#0E8A61; }
 .canon .ask-chat-h .r { margin-left:auto; display:flex; gap:6px; align-items:center; flex:none; }
 .canon .ask-chat-h .r .btn { padding:6px 10px; display:inline-flex; align-items:center; gap:6px; line-height:1; font-size:12.5px; letter-spacing:0; text-transform:none; }
-.canon .ask-chat-h .r .btn .lbl { line-height:1; display:block; }
+.canon .ask-chat-h .r .btn .ask-bl { line-height:1; display:block; }
 .canon .ask-chat-h .r .btn { height:32px; min-height:32px; padding-top:0; padding-bottom:0; }
 .canon .ask-chat-h .r .btn svg { display:block; flex:none; }
 .canon .ask-chat-h .btn.on { border-color:var(--role-deep); color:var(--role-deep); }
@@ -217,7 +217,7 @@
 
 /* A narrow conversation column: header buttons become icons, the scope line goes (the page bar already says it). */
 @container (max-width:620px) {
-  .canon .ask-chat-h .ask-scope, .canon .ask-chat-h .btn .lbl { display:none; }
+  .canon .ask-chat-h .ask-scope, .canon .ask-chat-h .btn .ask-bl { display:none; }
   .canon .ask-stream { padding:14px 14px 18px; }
   .canon .ask-os-turn { grid-template-columns:28px minmax(0,1fr); gap:8px; }
   .canon .ask-av { width:28px; height:28px; }

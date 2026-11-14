@@ -252,8 +252,8 @@ export default function AskOS({ audience }: { audience: Audience }) {
               <span className="ask-scope"><Shield size={14} weight="duotone" />{today?.scope ?? (audience === 'parent' ? 'Your children only' : 'What your role can see')}</span>
               {active && !openShared && (
                 <div className="r no-print">
-                  <button className={`btn sm${active.pinned ? ' on' : ''}`} onClick={() => void togglePin()} aria-pressed={active.pinned}><Pin size={14} weight={active.pinned ? 'fill' : 'bold'} /><span className="lbl">{active.pinned ? 'Pinned' : 'Pin'}</span></button>
-                  <button className="btn sm" onClick={() => window.print()} aria-label="Save PDF" title="Save PDF"><FilePdf size={14} weight="bold" /><span className="lbl">Save PDF</span></button>
+                  <button className={`btn sm${active.pinned ? ' on' : ''}`} onClick={() => void togglePin()} aria-pressed={active.pinned}><Pin size={14} weight={active.pinned ? 'fill' : 'bold'} /><span className="ask-bl">{active.pinned ? 'Pinned' : 'Pin'}</span></button>
+                  <button className="btn sm" onClick={() => window.print()} aria-label="Save PDF" title="Save PDF"><FilePdf size={14} weight="bold" /><span className="ask-bl">Save PDF</span></button>
                   {confirmDel === 'one'
                     ? <span className="ask-confirm"><span>Delete this conversation?</span><button className="btn sm" onClick={() => setConfirmDel(null)}>Keep</button><button className="btn sm danger" onClick={() => void remove(false)}>Delete</button></span>
                     : <button className="btn sm" onClick={() => setConfirmDel('one')} aria-label="Delete conversation" title="Delete conversation"><Trash size={14} weight="bold" /></button>}

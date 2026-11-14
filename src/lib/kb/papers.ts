@@ -46,7 +46,7 @@ export async function paperBankFill(db: SupabaseClient, schoolId: string, cls: s
       if (figs.length) {
         body.figures = figs;
         // CBSE prints a text-only version for visually impaired candidates; keep it, as the board paper does.
-        const tv = r.body?.textVersion?.text;
+        const tv = (r.body?.textVersion ?? r.body?.access)?.text;
         if (typeof tv === 'string' && tv.trim()) body.vi = tv.trim().slice(0, 2000);
       }
       if (problems(item, body, 'bank').length) continue;

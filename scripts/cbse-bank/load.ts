@@ -19,11 +19,14 @@ const ROOT = join(__dirname, 'work');
 const BUCKET = 'bank-figures';
 
 /** Each parsed file: the paper's segment outputs (figures live beside them) and how it is named. */
-const PAPERS = [
-  { items: 'X_sci', sqp: 'Science-SQP', ms: 'Science-MS', name: 'Science', slug: 'science' },
-  { items: 'X_sst', sqp: 'SocialScience-SQP', ms: 'SocialScience-MS', name: 'Social Science', slug: 'social-science' },
-  { items: 'X_maths', sqp: 'MathsStandard-SQP', ms: 'MathsStandard-MS', name: 'Mathematics (Standard)', slug: 'mathematics-standard' },
+const DEFAULT_PAPERS = [
+  { items: 'X_sci', sqp: 'Science-SQP', ms: 'Science-MS', name: 'Science', slug: 'science', grade: 10 },
+  { items: 'X_sst', sqp: 'SocialScience-SQP', ms: 'SocialScience-MS', name: 'Social Science', slug: 'social-science', grade: 10 },
+  { items: 'X_maths', sqp: 'MathsStandard-SQP', ms: 'MathsStandard-MS', name: 'Mathematics (Standard)', slug: 'mathematics-standard', grade: 10 },
 ];
+/** Papers batch.py checked (marks add up to the printed total) are listed in work/manifest.json; else the first three. */
+const PAPERS: { items: string; sqp: string; ms: string; name: string; slug: string; grade: number }[] =
+  existsSync(join(ROOT, 'manifest.json')) ? JSON.parse(readFileSync(join(ROOT, 'manifest.json'), 'utf8')).filter((p: any) => p.ok) : DEFAULT_PAPERS;
 
 /** Parser flags, as the reviewer reads them. Blocking ones mark the item 'flagged': it can't be assigned until fixed. */
 const FLAG_NOTE: Record<string, { note: string; blocks: boolean }> = {
@@ -73,7 +76,7 @@ for (const p of PAPERS) {
   const sizes = { sqp: figSizes(p.sqp), ms: figSizes(p.ms) };
   for (const it of items) {
     const session: string = it.session;
-    const base = `cbse/${session}/class-10/${p.slug}`;
+    const base = `cbse/${session}/class-${p.grade}/${p.slug}`;
     const uploads: { local: string; path: string }[] = [];
     const fig = (file: string, from: 'sqp' | 'ms') => {
       const local = join(ROOT, 'seg', `fig_${from === 'sqp' ? p.sqp : p.ms}`, file);
@@ -113,7 +116,7 @@ for (const p of PAPERS) {
         scope: 'sthara', school_id: null, class: it.cls, subject: it.subject, chapter_key: topicKey(it.chapter || ''),
         topic: null, outcome_code: null, competency: it.competency, qtype: it.type, marks: it.marks, language: it.language || 'en',
         body, status: 'unreviewed', source: it.source, session,
-        source_ref: `CBSE Sample Question Paper ${session}, Class X ${p.name}, Q${it.q}`,
+        source_ref: `CBSE Sample Question Paper ${session}, Class ${p.grade === 12 ? 'XII' : p.grade === 11 ? 'XI' : p.grade === 9 ? 'IX' : 'X'} ${p.name}, Q${it.q}`,
         checks: { status: blocked ? 'flagged' : 'passed', notes },
         fingerprint: fingerprint(it.text, it.options ?? []),
         created_by: null,

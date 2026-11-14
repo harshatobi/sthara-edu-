@@ -52,7 +52,7 @@ def gather(cur):
         if topic:
             text = f"{topic}. {text}"
         # Diagram and map questions: CBSE's text-only version describes the picture, so search finds them by it.
-        tv = ((body or {}).get("textVersion") or {}).get("text")
+        tv = ((body or {}).get("textVersion") or (body or {}).get("access") or {}).get("text")
         if tv:
             text = f"{text} [diagram] {tv}"
         out.append(("bank", i, school, owner, grade_of(cls), subj, ch, qt, text))

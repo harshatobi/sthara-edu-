@@ -63,7 +63,11 @@ def main():
                 tags = out[r[0]]
                 cur.execute("UPDATE bank_items SET auto_tags = %s::jsonb WHERE id = %s", (json.dumps(tags), r[0]))
                 ch = tags.get("chapter_key")
-                if r[3] == "untagged" and ch and ch["p"] >= SURE:
+                # A school upload whose chapter isn't one the curriculum-tagged bank knows ("Ch 5 Life Processes") is
+                # treated as untagged: the classifier's chapter replaces it when it is sure enough.
+                known = {t[3] for t in train}
+                unsure = r[3] == "untagged" or (r[5] == "school_upload" and r[3] not in known)
+                if unsure and ch and ch["p"] >= SURE:
                     cur.execute("UPDATE bank_items SET chapter_key = %s WHERE id = %s", (ch["value"], r[0]))
                 tagged += 1
         conn.commit()

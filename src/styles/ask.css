@@ -56,19 +56,21 @@
 .canon .ask-today.compact .ask-tile .a { margin:0 0 0 auto; padding:0; }
 .canon .ask-today.compact .ask-tile .a a { display:none; }
 
-.canon .ask-chat { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
-.canon .ask-chat-h { display:flex; gap:12px; align-items:center; padding:12px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
-.canon .ask-chat-h .t { font-weight:800; font-size:14.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:46ch; }
+.canon .ask-chat { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; container-type:inline-size; }
+.canon .ask-chat-h { display:flex; gap:10px; align-items:center; padding:10px 14px 10px 18px; border-bottom:1px solid var(--line); flex-wrap:nowrap; min-height:52px; }
+.canon .ask-chat-h .t { flex:1; font-weight:800; font-size:14.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.canon .ask-chat-h .ask-scope { flex:none; white-space:nowrap; }
 .canon .ask-scope { display:inline-flex; gap:5px; align-items:center; font-size:12px; color:#5F6B7D; }
 .canon .ask-scope svg { color:#0E8A61; }
-.canon .ask-chat-h .r { margin-left:auto; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.canon .ask-chat-h .r { margin-left:auto; display:flex; gap:6px; align-items:center; flex:none; }
+.canon .ask-chat-h .r .btn { padding:6px 10px; }
 .canon .ask-chat-h .btn.on { border-color:var(--role-deep); color:var(--role-deep); }
-.canon .ask-stream { flex:1; min-height:0; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:18px; }
+.canon .ask-stream { flex:1; min-height:0; overflow:auto; padding:18px 18px 22px; display:flex; flex-direction:column; gap:18px; }
 .canon .ask-me { align-self:flex-end; background:var(--ink); color:#fff; padding:10px 14px; border-radius:14px 14px 4px 14px; max-width:72%; font-weight:500; white-space:pre-wrap; overflow-wrap:anywhere; }
 .canon .ask-os-turn { display:grid; grid-template-columns:32px minmax(0,1fr); gap:10px; }
 .canon .ask-av { width:32px; height:32px; border-radius:10px; background:var(--ai-wash); color:var(--ai); display:grid; place-items:center; }
 .canon .ask-body { display:flex; flex-direction:column; gap:12px; min-width:0; }
-.canon .ask-say { font-size:14px; line-height:1.55; }
+.canon .ask-say { font-size:14.5px; line-height:1.6; max-width:72ch; }
 .canon .ask-say p + p, .canon .ask-say p + ul, .canon .ask-say ul + p { margin-top:8px; }
 .canon .ask-say ul, .canon .ask-say ol { padding-left:18px; }
 .canon .ask-say li { margin:3px 0; }
@@ -125,15 +127,17 @@
 .canon .ask-shared { display:flex; flex-direction:column; gap:14px; }
 
 /* composer */
-.canon .ask-composer { border-top:1px solid var(--line); padding:12px 14px; display:flex; flex-direction:column; gap:8px; flex:none; background:#fff; }
+.canon .ask-composer { border-top:1px solid var(--line); padding:10px 14px 8px; display:flex; flex-direction:column; gap:6px; flex:none; background:#fff; }
 .canon .ask-cin { display:flex; gap:10px; align-items:flex-end; border:1.5px solid var(--line); border-radius:14px; padding:8px 8px 8px 14px; }
 .canon .ask-cin:focus-within { border-color:var(--role-deep); box-shadow:0 0 0 3px color-mix(in srgb, var(--role-deep) 12%, transparent); }
-.canon .ask-cin textarea { flex:1; border:0; outline:0; resize:none; font:inherit; font-size:14px; padding:6px 0; max-height:160px; background:none; color:var(--ink); }
+.canon .ask-cin textarea { flex:1; border:0; outline:0; resize:none; font:inherit; font-size:14.5px; line-height:1.45; padding:8px 0; min-height:38px; max-height:160px; background:none; color:var(--ink); }
+.canon .ask-cin textarea::placeholder { color:#6B7687; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .canon .ask-send { position:relative; width:40px; height:40px; border-radius:11px; background:var(--ai); color:#fff; display:grid; place-items:center; flex:none; }
 .canon .ask-send:disabled { opacity:.45; cursor:not-allowed; }
 .canon .ask-send .ai-tag { position:absolute; top:-6px; right:-6px; }
-.canon .ask-cmeta { display:flex; gap:10px; align-items:center; font-size:11.5px; color:#5F6B7D; flex-wrap:wrap; }
-.canon .ask-cmeta svg { vertical-align:-2px; }
+.canon .ask-cmeta { display:flex; gap:10px; align-items:center; font-size:11.5px; color:#5F6B7D; flex-wrap:nowrap; white-space:nowrap; min-width:0; }
+.canon .ask-cmeta .priv { display:inline-flex; gap:5px; align-items:center; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.canon .ask-cmeta svg { flex:none; color:#0E8A61; }
 .canon .ask-quota { margin-left:auto; font-weight:700; color:var(--ink); display:inline-flex; align-items:center; gap:8px; }
 .canon .ask-quota i { display:inline-block; width:70px; height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
 .canon .ask-quota b { display:block; height:100%; background:var(--role-deep); }
@@ -203,6 +207,25 @@
   .canon .ask-me { max-width:90%; }
   .canon .ask-chat-h .t { max-width:100%; }
   .canon > main:has(> .ask-os) > .pbar .acts { width:100%; }
+}
+
+/* A narrow conversation column: header buttons become icons, the scope line goes (the page bar already says it). */
+@container (max-width:620px) {
+  .canon .ask-chat-h .ask-scope, .canon .ask-chat-h .btn .lbl { display:none; }
+  .canon .ask-stream { padding:14px 14px 18px; }
+  .canon .ask-os-turn { grid-template-columns:28px minmax(0,1fr); gap:8px; }
+  .canon .ask-av { width:28px; height:28px; }
+}
+/* Short screens (a laptop with the browser bars, or zoomed in): the answer always gets the room. Today's strip steps
+   aside once a conversation is open (it leads the opening screen), and below 760px tall the page scrolls as a whole. */
+@media (max-height:920px) { .canon .ask-today.compact { display:none; } }
+@media (max-height:760px) and (min-width:901px) {
+  .canon > main:has(> .ask-os) { height:auto; overflow:visible; }
+  .canon .ask-os { min-height:calc(100dvh - 40px); }
+  .canon .ask-main, .canon .ask-chat, .canon .ask-stream { overflow:visible; min-height:auto; }
+  .canon .ask-chat { min-height:70vh; }
+  .canon .ask-composer { position:sticky; bottom:0; border-radius:0 0 var(--r) var(--r); z-index:2; }
+  .canon .ask-hist, .canon .ask-rail { position:sticky; top:12px; max-height:calc(100dvh - 24px); align-self:start; }
 }
 
 @media (prefers-reduced-motion: reduce) { .canon .ask-hist { transition:none; } }

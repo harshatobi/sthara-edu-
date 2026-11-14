@@ -56,9 +56,9 @@ const ICON: Record<TodayTile['icon'], ReactNode> = {
 };
 const TITLE: Record<Audience, string> = { teacher: 'Ask anything about your classes', office: 'Ask anything about the school', parent: 'Ask the school' };
 const PH: Record<Audience, string> = {
-  teacher: 'Ask about a class, a student, homework or a parent…',
-  office: 'Ask about classes, students, staff, fees, admissions…',
-  parent: 'Ask about marks, homework, attendance, fees, the timetable…',
+  teacher: 'Ask about your classes…',
+  office: 'Ask about the school…',
+  parent: 'Ask about your child…',
 };
 
 function useApi() {
@@ -252,11 +252,11 @@ export default function AskOS({ audience }: { audience: Audience }) {
               <span className="ask-scope"><Shield size={14} weight="duotone" />{today?.scope ?? (audience === 'parent' ? 'Your children only' : 'What your role can see')}</span>
               {active && !openShared && (
                 <div className="r no-print">
-                  <button className={`btn sm${active.pinned ? ' on' : ''}`} onClick={() => void togglePin()} aria-pressed={active.pinned}><Pin size={14} weight={active.pinned ? 'fill' : 'bold'} />{active.pinned ? 'Pinned' : 'Pin'}</button>
-                  <button className="btn sm" onClick={() => window.print()}><FilePdf size={14} weight="bold" />Save PDF</button>
+                  <button className={`btn sm${active.pinned ? ' on' : ''}`} onClick={() => void togglePin()} aria-pressed={active.pinned}><Pin size={14} weight={active.pinned ? 'fill' : 'bold'} /><span className="lbl">{active.pinned ? 'Pinned' : 'Pin'}</span></button>
+                  <button className="btn sm" onClick={() => window.print()} aria-label="Save PDF" title="Save PDF"><FilePdf size={14} weight="bold" /><span className="lbl">Save PDF</span></button>
                   {confirmDel === 'one'
                     ? <span className="ask-confirm"><span>Delete this conversation?</span><button className="btn sm" onClick={() => setConfirmDel(null)}>Keep</button><button className="btn sm danger" onClick={() => void remove(false)}>Delete</button></span>
-                    : <button className="btn sm" onClick={() => setConfirmDel('one')} aria-label="Delete conversation"><Trash size={14} weight="bold" /></button>}
+                    : <button className="btn sm" onClick={() => setConfirmDel('one')} aria-label="Delete conversation" title="Delete conversation"><Trash size={14} weight="bold" /></button>}
                 </div>
               )}
             </div>
@@ -300,8 +300,8 @@ export default function AskOS({ audience }: { audience: Audience }) {
                 <button className="ask-send" type="submit" disabled={busy || !draft.trim() || outOfQuestions} aria-label="Send"><Send size={17} weight="fill" /><AiTag /></button>
               </div>
               <div className="ask-cmeta">
-                <span><Shield size={13} weight="bold" /> Names never leave Sthara’s servers.{audience !== 'office' ? ' Wellness journals stay private.' : ''}</span>
-                {quota && <span className="ask-quota">{quota.left} of {quota.limit} questions left today<i><b style={{ width: `${(quota.left / quota.limit) * 100}%` }} /></i></span>}
+                <span className="priv" title={`Names never leave Sthara’s servers.${audience !== 'office' ? ' Wellness journals stay private.' : ''}`}><Shield size={13} weight="bold" />Names never leave Sthara’s servers</span>
+                {quota && <span className="ask-quota">{quota.left} of {quota.limit} left today<i><b style={{ width: `${(quota.left / quota.limit) * 100}%` }} /></i></span>}
               </div>
             </form>
           </div>

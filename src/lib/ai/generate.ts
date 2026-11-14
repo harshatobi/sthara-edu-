@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import { AI_MODELS, CLAUDE_CACHED_FEATURES, CLAUDE_MODELS, GEMINI_ONLY_PLANS, claudeChoice, type AiJob } from '@/lib/settings/limits';
 import { getSchoolPolicy, schoolIdOfUser } from '@/lib/settings/server';
 import { generateGeminiMetered, recordUsage, type UsageMeta } from './usage';
+import { withRetry } from './retry';
 import { toClaudeMessages, type AiRequest } from './messages';
 
 /**
@@ -117,7 +118,12 @@ async function runGemini(req: AiRequest, meta: UsageMeta): Promise<AiResult> {
   if (!key) throw Object.assign(new Error('AI isn’t configured on this server (no Gemini key).'), { status: 503 });
   // Economy (past 70% of a student's AI allowance): text work drops to Flash-Lite.
   const r = meta.economy && req.model !== AI_MODELS.fast ? { ...req, model: AI_MODELS.fast } : req;
-  const res = await generateGeminiMetered(gemini(key), r, meta);
+  // One more try when Google is briefly busy ("high demand" 503): the backup shouldn't fail a whole request on
+  // a blip. A stopped request is never retried. Each attempt is metered on its own.
+  const res = await withRetry(() => {
+    if (req.config?.abortSignal?.aborted) throw new Error('aborted');
+    return generateGeminiMetered(gemini(key), r, meta);
+  }, { tries: 2, baseMs: 1500, maxWaitS: 5 });
   return { text: res.text ?? '', provider: 'gemini', model: r.model };
 }
 

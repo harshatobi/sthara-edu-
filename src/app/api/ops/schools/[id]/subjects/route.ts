@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { operatorFor } from '@/lib/ops/auth';
 import type { SubjectKind } from '@/lib/subjects/catalog';
+import { isModeration, moderationOf, setModeration } from '@/lib/studio/materials';
 import { dropLegacyClassSubject, linkSchool, loadSubjectState, setClassSubjects, setElectives, setSubjectLeads } from '@/lib/subjects/server';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (op instanceof Response) return op;
   const { id } = await params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'School not found' }, { status: 404 });
-  return reply(await loadSubjectState(createAdminClient(), id));
+  const db = createAdminClient();
+  const [st, moderation] = await Promise.all([loadSubjectState(db, id), moderationOf(db, id)]);
+  return reply(st.ok ? { ...st, moderation } : st);
 }
 
 /**
@@ -33,6 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
  *   drop-legacy { classId, name }        remove an unlinkable name from a class's list
  *   electives { classId, choices: { studentId: classSubjectId[] } }
  *   leads { subjectKey, userIds }
+ *   moderation { mode }                  what subject leads approve in the Studio: none | common_tests | all_shared
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const op = await operatorFor(req, 'schools.manage', (await params).id);
@@ -68,6 +72,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     case 'leads':
       if (typeof b.subjectKey !== 'string' || !Array.isArray(b.userIds) || !b.userIds.every(isId)) return NextResponse.json({ error: 'Pick a subject and its leads.' }, { status: 400 });
       return reply(await setSubjectLeads(db, id, op.id, 'operator', b.subjectKey, b.userIds));
+    case 'moderation':
+      if (!isModeration(b.mode)) return NextResponse.json({ error: 'Pick what subject leads approve.' }, { status: 400 });
+      return reply(await setModeration(db, id, { id: op.id, role: 'operator' }, b.mode));
     default:
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   }

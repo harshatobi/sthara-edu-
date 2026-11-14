@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
         const roll = sheetStudents(roster, cs);
         const m = marks.get(sh.id) ?? new Map();
         return {
-          id: sh.id, status: sh.status, code: a.code, assessment: a.name, term: tById.get(a.termId)?.name ?? '', termSeq: tById.get(a.termId)?.seq ?? 0,
+          id: sh.id, status: sh.status, code: a.code, assessment: a.name, practice: a.kind === 'practice', term: tById.get(a.termId)?.name ?? '', termSeq: tById.get(a.termId)?.seq ?? 0,
           heldFrom: a.heldFrom, heldTo: a.heldTo, subject: cs.name, cls: cls.name, maxMarks: sh.maxMarks, returnedNote: sh.status === 'open' ? sh.returnedNote : null,
           reopenedReason: sh.status === 'open' ? sh.reopenedReason : null,
           marked: roll.filter(s => { const x = m.get(s.id); return x && (x.marks !== null || x.code); }).length, of: roll.length,

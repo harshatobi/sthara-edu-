@@ -232,3 +232,13 @@ test('a subject excused throughout (medical in its only counted paper) is left o
   assert.equal(year.aggregate!.counted.length, 5);
   assert.equal(year.result, 'pass');
 });
+
+test('practice assessments: never drawn on by a term component', async () => {
+  const { isPractice } = await import('./engine');
+  const codes = new Set(['PT1', 'HY', 'MOCK1']);
+  const t = { name: 'T1', weight: 50, components: [{ key: 'b', name: 'Exam', weight: 80, codes: ['HY', 'MOCK1'], rule: 'sum' as const }] };
+  assert.match(termProblem(t, codes, new Set(['MOCK1'])) ?? '', /MOCK1, a practice assessment/);
+  assert.equal(termProblem({ ...t, components: [{ ...t.components[0], codes: ['HY'] }] }, codes, new Set(['MOCK1'])), null);
+  assert.equal(isPractice({ kind: 'practice' }), true);
+  assert.equal(isPractice({ kind: 'written' }), false);
+});

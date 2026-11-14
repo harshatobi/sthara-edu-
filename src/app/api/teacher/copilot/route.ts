@@ -11,7 +11,7 @@ import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconcept
 import { designsFor } from '@/lib/papers/designs';
 import { generatePaper } from '@/lib/papers/generate';
 import { paperBankFill } from '@/lib/kb/papers';
-import { nearSaved } from '@/lib/kb/server';
+import { indexNow, nearSaved } from '@/lib/kb/server';
 import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
@@ -264,6 +264,13 @@ ${brief.join('\n\n')}`;
     const savedId = reply.artifact
       ? await saveOutput(db, staff, { kind: 'reply', cls, subject, chapter: str(b?.chapter, 200) || null, key: replyKey, title: reply.artifact.title || 'Copilot', artifactKind: reply.artifact.kind, reply })
       : null;
+    if (savedId && reply.artifact) {
+      const a = reply.artifact as any;
+      await indexNow(db, { authorization: req.headers.get('authorization'), origin: req.nextUrl.origin }, [{
+        type: 'copilot', id: savedId, schoolId: staff.schoolId, ownerId: staff.id, cls, subject, chapterKey: null, kind: a.kind,
+        text: `${a.title}. ${a.caption ?? ''} ${messages[messages.length - 1].text} ${(a.questions ?? []).slice(0, 20).map((q: any) => q.questionText).join(' ')}`.slice(0, 2000),
+      }]);
+    }
     return NextResponse.json({ reply: { ...reply, ...(savedId ? { savedId } : {}) }, context: { students: roster.length, chaptersWithEvidence: byChapter.size, assignments: work.length } });
   } catch (e: any) {
     console.error('[copilot]', e?.message);

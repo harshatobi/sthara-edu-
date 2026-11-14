@@ -44,6 +44,26 @@ export async function embedTexts(texts: string[], asked: Asked): Promise<number[
 
 const vecText = (v: number[]) => `[${v.map(x => x.toFixed(6)).join(',')}]`;
 
+export interface IndexRow { type: 'bank' | 'material' | 'copilot' | 'lesson' | 'paper'; id: string; schoolId: string | null; ownerId: string | null; cls: string; subject: string; chapterKey?: string | null; kind?: string | null; text: string }
+
+/**
+ * Makes new things findable at once (the nightly job would otherwise pick them up only overnight): their vectors go
+ * into kb_vectors now. Best effort: nothing fails if vectors are unavailable.
+ */
+export async function indexNow(db: SupabaseClient, asked: Asked, rows: IndexRow[]): Promise<void> {
+  const list = rows.filter(r => r.text.trim()).slice(0, 64);
+  if (!list.length) return;
+  const vecs = await embedTexts(list.map(r => r.text), asked);
+  if (!vecs || vecs.length !== list.length) return;
+  const { createHash } = await import('node:crypto');
+  const { error } = await db.from('kb_vectors').upsert(list.map((r, i) => ({
+    item_type: r.type, item_id: r.id, school_id: r.schoolId, owner_id: r.ownerId, grade: String(gradeOf(r.cls) ?? 'any'), subject: r.subject.slice(0, 80),
+    chapter_key: r.chapterKey?.slice(0, 200) ?? null, kind: r.kind?.slice(0, 40) ?? null,
+    text_hash: createHash('sha256').update(r.text).digest('hex'), embedding: vecText(vecs[i]), updated_at: new Date().toISOString(),
+  })), { onConflict: 'item_type,item_id' });
+  if (error) console.warn('[kb] index', error.message);
+}
+
 export interface KbHit { itemType: string; itemId: string; ownerId: string | null; chapterKey: string | null; kind: string | null; similarity: number }
 
 export async function kbMatch(db: SupabaseClient, vec: number[], o: { schoolId: string; ownerId?: string | null; types: string[]; cls: string; subject: string; limit?: number; min?: number }): Promise<KbHit[]> {
@@ -120,7 +140,7 @@ export interface Grounded { items: StudioItem[]; fromBank: number; written: numb
  * question is checked, and saved to the school's bank as soon as it passes (unreviewed), so the next request reuses it.
  */
 export async function groundedQuestions(db: SupabaseClient, me: KbCaller, p: {
-  cls: string; subject: string; chapters: CourseChapter[]; count: number; kind: ReqKind; difficulty: ReqDifficulty; signal?: AbortSignal;
+  cls: string; subject: string; chapters: CourseChapter[]; count: number; kind: ReqKind; difficulty: ReqDifficulty; signal?: AbortSignal; asked?: Asked;
 }): Promise<Grounded> {
   const shares = apportion(Math.max(1, Math.min(30, p.count)), Object.fromEntries(p.chapters.map(c => [c.name, 1])));
   const all: StudioItem[] = [];
@@ -152,6 +172,10 @@ export async function groundedQuestions(db: SupabaseClient, me: KbCaller, p: {
     if (fresh.length) {
       const ids = await saveToBank(ctx, fresh);
       for (const it of fresh) { const id = ids.get(it.id); if (id) it.bankId = id; }
+      if (p.asked) await indexNow(db, p.asked, fresh.filter(it => it.bankId).map(it => ({
+        type: 'bank' as const, id: it.bankId!, schoolId: me.schoolId, ownerId: me.id, cls: p.cls, subject: p.subject, chapterKey: it.chapterKey, kind: it.qtype,
+        text: `${it.topic ? `${it.topic}. ` : ''}${it.text} ${(it.options ?? []).join(' ')}`,
+      })));
     }
     all.push(...checked);
   }

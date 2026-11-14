@@ -6,7 +6,7 @@ import { findSaved, keyOf, saveOutput, type Reused } from '@/lib/teacher/copilot
 import type { CopilotReply } from '@/lib/teacher/copilot';
 import type { StudioItem } from '@/lib/studio/types';
 import { parseFigures, type BankFigure } from '@/lib/studio/figures';
-import { groundedNote, groundedQuestions, nearSaved, resolveChapters, type KbCaller, type Offer } from './server';
+import { groundedNote, groundedQuestions, indexNow, nearSaved, resolveChapters, type KbCaller, type Offer } from './server';
 import type { ReqDifficulty, ReqKind } from './plan';
 
 /**
@@ -105,13 +105,15 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
   }
   const chapters = await resolveChapters(db, me, asked, a.cls, a.subject, a.topics);
   if (!chapters.length) return null;
-  const g = await groundedQuestions(db, me, { cls: a.cls, subject: a.subject, chapters, count: a.count, kind: a.kind, difficulty: a.difficulty, signal: a.signal });
+  const g = await groundedQuestions(db, me, { cls: a.cls, subject: a.subject, chapters, count: a.count, kind: a.kind, difficulty: a.difficulty, signal: a.signal, asked });
   const questions = g.items.map(fromStudioItem);
   const reply: CopilotReply = {
     say: groundedNote(g), ask: [], suggestions: [],
     artifact: { kind: 'questions', title: a.title, purpose: a.feature === 'quizGen' ? 'quiz' : 'worksheet', chapter: chapters[0]?.name ?? null, questions: toCopilotQuestions(questions) as any, notes: '' },
   };
   const savedId = questions.length ? await saveOutput(db, me, { kind: 'reply', cls: a.cls, subject: a.subject, chapter: chapters[0]?.name ?? null, key, title: a.title, artifactKind: 'questions', reply }) : null;
+  // Findable for the next "similar" request straight away, not only after the nightly job.
+  if (savedId) await indexNow(db, asked, [{ type: 'copilot', id: savedId, schoolId: me.schoolId, ownerId: me.id, cls: a.cls, subject: a.subject, chapterKey: null, kind: 'questions', text: `${a.title}. ${questions.slice(0, 30).map(q => q.text).join(' ')}` }]);
   return { questions, title: a.title, note: groundedNote(g), kb: { fromBank: g.fromBank, written: g.written, chapters: g.chapters, savedId } };
 }
 

@@ -68,7 +68,8 @@ export async function ownsConversation(db: SupabaseClient, userId: string, id: s
 export async function saveTurns(db: SupabaseClient, a: Asker, conversationId: string, question: string, answer: { reply: AskReply; needs: string[] }): Promise<{ questionId: string; answerId: string }> {
   const now = Date.now();
   const { data, error } = await db.from('ask_turns').insert([
-    { conversation_id: conversationId, school_id: a.viewer.schoolId, role: 'me', text: question.slice(0, 6000), created_at: new Date(now).toISOString() },
+    // Every row names every column: a bulk insert fills a column one row leaves out with null, not its default.
+    { conversation_id: conversationId, school_id: a.viewer.schoolId, role: 'me', text: question.slice(0, 6000), reply: null, needs: [], created_at: new Date(now).toISOString() },
     { conversation_id: conversationId, school_id: a.viewer.schoolId, role: 'os', text: answer.reply.say.slice(0, 6000) || answer.reply.ask.map(q => q.question).join(' ').slice(0, 6000), reply: answer.reply, needs: answer.needs.slice(0, 40), created_at: new Date(now + 1).toISOString() },
   ]).select('id, role');
   if (error || !data) throw new Error(error?.message || 'could not save');

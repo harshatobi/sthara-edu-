@@ -156,8 +156,10 @@ export async function groundedQuestions(db: SupabaseClient, me: KbCaller, p: {
     let pool = pool0;
     const first = assembleClass(slots, pool, opts);
     const gapOf = new Map<string, Gap>();
+    let aiDown = false;
     if (first.gaps.length) {
-      const written = await writeGapItems(ctx, first.gaps);
+      // The AI being busy or out of quota doesn't sink the set: the bank's questions still come back, the gaps say so.
+      const written = await writeGapItems(ctx, first.gaps).catch(e => { aiDown = true; console.warn('[kb] gaps not written:', e instanceof Error ? e.message.slice(0, 200) : e); return [] as StudioItem[]; });
       let k = 0;
       for (const g of first.gaps) for (let c = 0; c < g.count && k < written.length; c++, k++) gapOf.set(written[k].id, g);
       pool = [...pool, ...written];
@@ -166,7 +168,8 @@ export async function groundedQuestions(db: SupabaseClient, me: KbCaller, p: {
     const picked = again.picked.filter((x): x is StudioItem => !!x);
     unfilled += again.picked.length - picked.length;
     const fallbackGap = (it: StudioItem): Gap => gapOf.get(it.id) ?? { slotIndex: 0, slot: { competency: it.competency, marks: it.marks as 1, qtype: it.qtype }, topic: it.topic || null, count: 1 };
-    const checked = await checkAndFix(ctx, picked, fallbackGap, history.past);
+    // Bank questions were checked when they joined the bank; new ones are checked now (skipped only if the AI is down).
+    const checked = aiDown || picked.every(i => i.source === 'bank') ? picked : await checkAndFix(ctx, picked, fallbackGap, history.past).catch(() => picked.filter(i => i.source === 'bank'));
     // New questions that passed their checks join the school's bank now (decision of 2026-11-14), not only when used.
     const fresh = checked.filter(i => !i.bankId && i.check.status !== 'flagged');
     if (fresh.length) {

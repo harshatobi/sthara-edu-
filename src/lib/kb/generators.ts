@@ -105,8 +105,10 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
   }
   const chapters = await resolveChapters(db, me, asked, a.cls, a.subject, a.topics);
   if (!chapters.length) return null;
+  // (an empty build below falls back to the route's own path)
   const g = await groundedQuestions(db, me, { cls: a.cls, subject: a.subject, chapters, count: a.count, kind: a.kind, difficulty: a.difficulty, signal: a.signal, asked });
   const questions = g.items.map(fromStudioItem);
+  if (!questions.length) return null;
   const reply: CopilotReply = {
     say: groundedNote(g), ask: [], suggestions: [],
     artifact: { kind: 'questions', title: a.title, purpose: a.feature === 'quizGen' ? 'quiz' : 'worksheet', chapter: chapters[0]?.name ?? null, questions: toCopilotQuestions(questions) as any, notes: '' },

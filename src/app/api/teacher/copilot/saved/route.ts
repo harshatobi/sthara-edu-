@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireStaff } from '@/lib/teacher/serverAuth';
-import { inScope } from '@/lib/teacher/scope';
+import { inScope, normSubject } from '@/lib/teacher/scope';
+import { gradeOf } from '@/lib/admin/format';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { limitOf } from '@/lib/settings/limits';
 import { deleteSaved, getSaved, listSaved } from '@/lib/teacher/copilotSaved';
@@ -26,7 +27,9 @@ export async function GET(req: NextRequest) {
   if (id) {
     if (!isId(id)) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
     const r = await getSaved(db, staff, id);
-    if (!r || (staff.role === 'teacher' && !inScope(staff.scope, r.class, r.subject))) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+    // Board papers and pictures are shared by class level: any teacher of that subject at that level (any section).
+    const levelOk = r && r.kind !== 'reply' && staff.scope.some(e => gradeOf(e.cls) != null && gradeOf(e.cls) === gradeOf(r.class) && (!e.subject || normSubject(e.subject) === normSubject(r.subject)));
+    if (!r || (staff.role === 'teacher' && !inScope(staff.scope, r.class, r.subject) && !levelOk)) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
     return NextResponse.json({ item: { id: r.id, kind: r.kind, cls: r.class, subject: r.subject, chapter: r.chapter, title: r.title, reply: r.reply, imagePath: r.image_path, at: r.created_at, mine: r.teacher_id === staff.id } });
   }
   const cls = str(p.get('class'), 40), subject = str(p.get('subject'), 60);

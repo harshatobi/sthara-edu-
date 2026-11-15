@@ -1,3 +1,4 @@
+import { parseFigures } from '@/lib/studio/figures';
 import { sanitizeSvg } from '@/lib/teacher/svg';
 import type { BlueprintItem } from './blueprint';
 import { designByKey, slotsOf, type PaperDesign, type QType } from './designs';
@@ -72,6 +73,8 @@ export function bodyOf(v: any): QBody {
     answer: Number.isInteger(v?.answer) ? v.answer : undefined, assertion: s(v?.assertion, 800) || undefined, reason: s(v?.reason, 800) || undefined,
     figure: figureOf(v?.figure), vi: s(v?.vi, 2000) || undefined, parts: Array.isArray(v?.parts) ? v.parts.slice(0, 14).map(partOf) : undefined,
     scheme: s(v?.scheme, 4000),
+    // CBSE's own diagrams from the question bank: only bank-figure paths pass (parseFigures).
+    ...(Array.isArray(v?.figures) && parseFigures(v.figures).length ? { figures: parseFigures(v.figures) } : {}),
   };
 }
 
@@ -144,7 +147,8 @@ export function checkPaper(raw: unknown): Paper | null {
     id: sec.id, title: sec.title,
     questions: sec.slots.map(slot => {
       const q = qs.find(x => Number(x?.q) === slot.q);
-      return q ? { ...bodyOf(q), q: slot.q, type: slot.type, marks: slot.marks, chapter: s(q.chapter, 200), ...(q.alt ? { alt: bodyOf(q.alt) } : {}) } : null;
+      const bank = q?.bank && typeof q.bank === 'object' ? { bank: { source: s(q.bank.source, 300) || null, official: q.bank.official === true } } : {};
+      return q ? { ...bodyOf(q), q: slot.q, type: slot.type, marks: slot.marks, chapter: s(q.chapter, 200), ...(q.alt ? { alt: bodyOf(q.alt) } : {}), ...bank } : null;
     }),
   }));
   if (sections.some(x => x.questions.some(q => !q))) return null;

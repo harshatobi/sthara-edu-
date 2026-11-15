@@ -61,7 +61,9 @@ def gather(cur):
         out.append(("material", i, school, owner, grade_of(cls), subj, ch, kind, f"{title}. {chn or ''}. {_questions(content)}"))
     cur.execute("SELECT id, school_id, teacher_id, kind, class, subject, chapter, title, artifact_kind, reply FROM copilot_outputs WHERE kind <> 'image'")
     for i, school, owner, kind, cls, subj, ch, title, ak, reply in cur.fetchall():
-        out.append(("paper" if kind == "paper" else "copilot", i, school, owner, grade_of(cls), subj, ch, ak, f"{title}. {_artifact_text(reply)}"))
+        # Saved with the request that made it (kbText): indexed by that, as the next request is matched.
+        text = (reply or {}).get("kbText") or f"{title}. {_artifact_text(reply)}"
+        out.append(("paper" if kind == "paper" else "copilot", i, school, owner, grade_of(cls), subj, ch, ak, text))
     cur.execute("""SELECT id, school_id, teacher_id, class, subject, chapter_key, chapter_name, title, topics, objectives
                    FROM lesson_plans WHERE status <> 'archived'""")
     for i, school, owner, cls, subj, ch, chn, title, topics, objs in cur.fetchall():

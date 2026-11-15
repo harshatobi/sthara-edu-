@@ -103,7 +103,7 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
     }
   }
   if (a.offer && !a.fresh) {
-    const offers = await nearSaved(db, me, asked, { text: `${a.kind} questions on ${a.topics.join(', ')} (${a.subject})`, cls: a.cls, subject: a.subject, types: ['copilot', 'material'] });
+    const offers = await nearSaved(db, me, asked, { text: requestText(a), cls: a.cls, subject: a.subject, types: ['copilot', 'material'] });
     if (offers.length) return { offers };
   }
   { const blocked = await a.gate(); if (blocked) return { blocked }; }
@@ -117,11 +117,16 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
     say: groundedNote(g), ask: [], suggestions: [],
     artifact: { kind: 'questions', title: a.title, purpose: a.feature === 'quizGen' ? 'quiz' : 'worksheet', chapter: chapters[0]?.name ?? null, questions: toCopilotQuestions(questions) as any, notes: '' },
   };
-  const savedId = questions.length ? await saveOutput(db, me, { kind: 'reply', cls: a.cls, subject: a.subject, chapter: chapters[0]?.name ?? null, key, title: a.title, artifactKind: 'questions', reply }) : null;
+  // Indexed by the request that made it (kbText), so a reworded request matches it like for like (a request vs the
+  // set's content scores ~0.57; vs the earlier request ~0.90). The nightly job keeps kbText too.
+  const savedId = questions.length ? await saveOutput(db, me, { kind: 'reply', cls: a.cls, subject: a.subject, chapter: chapters[0]?.name ?? null, key, title: a.title, artifactKind: 'questions', reply: { ...reply, kbText: requestText(a) } as CopilotReply }) : null;
   // Findable for the next "similar" request straight away, not only after the nightly job.
-  if (savedId) await indexNow(db, asked, [{ type: 'copilot', id: savedId, schoolId: me.schoolId, ownerId: me.id, cls: a.cls, subject: a.subject, chapterKey: null, kind: 'questions', text: `${a.title}. ${questions.slice(0, 30).map(q => q.text).join(' ')}` }]);
+  if (savedId) await indexNow(db, asked, [{ type: 'copilot', id: savedId, schoolId: me.schoolId, ownerId: me.id, cls: a.cls, subject: a.subject, chapterKey: null, kind: 'questions', text: requestText(a) }]);
   return { questions, title: a.title, note: groundedNote(g), kb: { fromBank: g.fromBank, written: g.written, chapters: g.chapters, savedId } };
 }
+
+/** How a generator request reads for meaning search: the same words for the saved copy and for the next request. */
+export const requestText = (a: { kind: string; topics: string[]; subject: string }) => `${a.kind} questions on ${a.topics.join(', ')} (${a.subject})`;
 
 /** The request fields every generator route accepts for the knowledge-base path. */
 export function kbArgs(b: any): { offer: boolean; fresh: boolean; useSaved: { type: string; id: string } | null } {

@@ -270,13 +270,14 @@ ${brief.join('\n\n')}`;
     if (!reply.say && !reply.artifact && !reply.ask.length) throw new Error('empty reply');
     // Anything it made is kept (questions back to the teacher are not: they aren't a thing to reuse).
     const savedId = reply.artifact
-      ? await saveOutput(db, staff, { kind: 'reply', cls, subject, chapter: str(b?.chapter, 200) || null, key: replyKey, title: reply.artifact.title || 'Copilot', artifactKind: reply.artifact.kind, reply })
+      ? await saveOutput(db, staff, { kind: 'reply', cls, subject, chapter: str(b?.chapter, 200) || null, key: replyKey, title: reply.artifact.title || 'Copilot', artifactKind: reply.artifact.kind, reply: { ...reply, kbText: `${messages[messages.length - 1].text} ${str(b?.chapter, 200)}`.slice(0, 2000) } as typeof reply })
       : null;
     if (savedId && reply.artifact) {
       const a = reply.artifact as any;
       await indexNow(db, { authorization: req.headers.get('authorization'), origin: req.nextUrl.origin }, [{
         type: 'copilot', id: savedId, schoolId: staff.schoolId, ownerId: staff.id, cls, subject, chapterKey: null, kind: a.kind,
-        text: `${a.title}. ${a.caption ?? ''} ${messages[messages.length - 1].text} ${(a.questions ?? []).slice(0, 20).map((q: any) => q.questionText).join(' ')}`.slice(0, 2000),
+        // The request that made it, as the next request is matched (see nearSaved below).
+        text: `${messages[messages.length - 1].text} ${str(b?.chapter, 200)}`.slice(0, 2000),
       }]);
     }
     return NextResponse.json({ reply: { ...reply, ...(savedId ? { savedId } : {}) }, context: { students: roster.length, chaptersWithEvidence: byChapter.size, assignments: work.length } });

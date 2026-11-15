@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from common import connect, grade_of, item_text, log, sha, vec_literal
+from common import connect, grade_of, item_text, log, sha, topic_key, vec_literal
 
 BATCH = 64
 
@@ -63,7 +63,7 @@ def gather(cur):
     for i, school, owner, kind, cls, subj, ch, title, ak, reply in cur.fetchall():
         # Saved with the request that made it (kbText): indexed by that, as the next request is matched.
         text = (reply or {}).get("kbText") or f"{title}. {_artifact_text(reply)}"
-        out.append(("paper" if kind == "paper" else "copilot", i, school, owner, grade_of(cls), subj, ch, ak, text))
+        out.append(("paper" if kind == "paper" else "copilot", i, school, owner, grade_of(cls), subj, topic_key(ch), ak, text))
     cur.execute("""SELECT id, school_id, teacher_id, class, subject, chapter_key, chapter_name, title, topics, objectives
                    FROM lesson_plans WHERE status <> 'archived'""")
     for i, school, owner, cls, subj, ch, chn, title, topics, objs in cur.fetchall():

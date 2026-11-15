@@ -83,10 +83,13 @@ export interface Offer { type: 'copilot' | 'material' | 'lesson' | 'paper'; id: 
  * Saved things that mean (nearly) the same as the request: the teacher's own Copilot and generator outputs, Studio
  * materials that are theirs or shared with the department, lesson plans of the subject's teachers, the school's papers.
  */
-export async function nearSaved(db: SupabaseClient, me: KbCaller, asked: Asked, q: { text: string; cls: string; subject: string; types: Offer['type'][]; min?: number; limit?: number }): Promise<Offer[]> {
+export async function nearSaved(db: SupabaseClient, me: KbCaller, asked: Asked, q: { text: string; cls: string; subject: string; types: Offer['type'][]; min?: number; limit?: number; chapterKeys?: string[] }): Promise<Offer[]> {
   const vecs = await embedTexts([q.text], asked);
   if (!vecs?.[0]) return [];
-  const hits = await kbMatch(db, vecs[0], { schoolId: me.schoolId, ownerId: me.id, types: q.types, cls: q.cls, subject: q.subject, limit: 12, min: q.min ?? OFFER_MIN });
+  const all = await kbMatch(db, vecs[0], { schoolId: me.schoolId, ownerId: me.id, types: q.types, cls: q.cls, subject: q.subject, limit: 12, min: q.min ?? OFFER_MIN });
+  // Meaning alone can't tell neighbouring chapters apart (0.74 between two chapters vs 0.64 for a rewording of one,
+  // measured 2026-11-15): with the request's chapters known, only saved things of those chapters are offered.
+  const hits = q.chapterKeys?.length ? all.filter(h => h.chapterKey && q.chapterKeys!.includes(h.chapterKey)) : all;
   if (!hits.length) return [];
   const ids = (t: string) => hits.filter(h => h.itemType === t).map(h => h.itemId);
   // bounded: at most 12 hits, by id

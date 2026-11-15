@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server';
 import { normCls, normText } from '@/lib/teacher/copilotKeys';
+import { topicKey } from '@/lib/teacher/topicKey';
 import { findSaved, keyOf, saveOutput, type Reused } from '@/lib/teacher/copilotSaved';
 import type { CopilotReply } from '@/lib/teacher/copilot';
 import type { StudioItem } from '@/lib/studio/types';
@@ -102,12 +103,12 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
       if (questions.length) return { questions, title: art.title, note: `You made this set before; here it is again. No AI used.`, kb: { fromBank: questions.length, written: 0, chapters: [], reused: hit.reused } };
     }
   }
-  if (a.offer && !a.fresh) {
-    const offers = await nearSaved(db, me, asked, { text: requestText(a), cls: a.cls, subject: a.subject, types: ['copilot', 'material'] });
+  const chapters = await resolveChapters(db, me, asked, a.cls, a.subject, a.topics);
+  if (a.offer && !a.fresh && chapters.length) {
+    const offers = await nearSaved(db, me, asked, { text: requestText(a), cls: a.cls, subject: a.subject, types: ['copilot', 'material'], min: 0.6, chapterKeys: chapters.map(c => topicKey(c.name)) });
     if (offers.length) return { offers };
   }
   { const blocked = await a.gate(); if (blocked) return { blocked }; }
-  const chapters = await resolveChapters(db, me, asked, a.cls, a.subject, a.topics);
   if (!chapters.length) return null;
   // (an empty build below falls back to the route's own path)
   const g = await groundedQuestions(db, me, { cls: a.cls, subject: a.subject, chapters, count: a.count, kind: a.kind, difficulty: a.difficulty, signal: a.signal, asked });
@@ -121,7 +122,7 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
   // set's content scores ~0.57; vs the earlier request ~0.90). The nightly job keeps kbText too.
   const savedId = questions.length ? await saveOutput(db, me, { kind: 'reply', cls: a.cls, subject: a.subject, chapter: chapters[0]?.name ?? null, key, title: a.title, artifactKind: 'questions', reply: { ...reply, kbText: requestText(a) } as CopilotReply }) : null;
   // Findable for the next "similar" request straight away, not only after the nightly job.
-  if (savedId) await indexNow(db, asked, [{ type: 'copilot', id: savedId, schoolId: me.schoolId, ownerId: me.id, cls: a.cls, subject: a.subject, chapterKey: null, kind: 'questions', text: requestText(a) }]);
+  if (savedId) await indexNow(db, asked, [{ type: 'copilot', id: savedId, schoolId: me.schoolId, ownerId: me.id, cls: a.cls, subject: a.subject, kind: 'questions', text: requestText(a), chapterKey: chapters[0] ? topicKey(chapters[0].name) : null }]);
   return { questions, title: a.title, note: groundedNote(g), kb: { fromBank: g.fromBank, written: g.written, chapters: g.chapters, savedId } };
 }
 

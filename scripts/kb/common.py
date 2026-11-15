@@ -55,6 +55,14 @@ def grade_of(cls: str | None) -> str:
     return "any"
 
 
+def topic_key(name: str | None) -> str | None:
+    """Same as src/lib/teacher/topicKey.ts: the app's chapter key ("Ch 4 · Quadratic Equations" -> "quadratic equations")."""
+    if not name:
+        return None
+    t = re.sub(r"^ch(apter)?\s*\d+\s*[·:.-]?\s*", "", name.lower())
+    return re.sub(r"[^a-z0-9]+", " ", t).strip() or None
+
+
 def norm(text: str) -> str:
     """Same as src/lib/studio/fingerprint.ts normalise(): lower case, letters/digits/spaces in any script."""
     t = unicodedata.normalize("NFKC", text).lower()

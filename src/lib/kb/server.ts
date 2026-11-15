@@ -122,14 +122,20 @@ export async function resolveChapters(db: SupabaseClient, me: KbCaller, asked: A
   const { matched, unmatched } = chaptersNamed(topics, chapters);
   const out = chapters.filter(c => matched.includes(c.name));
   if (unmatched.length) {
-    const vecs = await embedTexts(unmatched, asked);
-    for (const v of vecs ?? []) {
-      const hits = await kbMatch(db, v, { schoolId: me.schoolId, types: ['bank'], cls, subject, limit: 15, min: 0.4 });
-      const votes = new Map<string, number>();
-      for (const h of hits) if (h.chapterKey) votes.set(h.chapterKey, (votes.get(h.chapterKey) ?? 0) + h.similarity);
-      const best = [...votes].sort((a, b) => b[1] - a[1])[0]?.[0];
-      const ch = best ? chapters.find(c => topicKey(c.name) === best) : null;
-      if (ch && !out.includes(ch)) out.push(ch);
+    // A topic that names no chapter is placed by meaning against the curriculum's own chapters (name + content points),
+    // in one call. Voting with the bank's questions would favour whichever chapter has the most questions in the bank
+    // ("how traits are inherited" landed in Life Processes that way, 2026-11-15).
+    const docs = chapters.map(c => `${c.name}: ${c.topics.join('; ')}`.slice(0, 1500));
+    const vecs = await embedTexts([...unmatched, ...docs].slice(0, 64), asked);
+    if (vecs && vecs.length === Math.min(64, unmatched.length + docs.length)) {
+      const chVecs = vecs.slice(unmatched.length);
+      for (let i = 0; i < unmatched.length; i++) {
+        const q = vecs[i];
+        let best = -1, bi = -1;
+        chVecs.forEach((v, j) => { const sim = v.reduce((acc, x, k) => acc + x * q[k], 0); if (sim > best) { best = sim; bi = j; } });
+        const ch = bi >= 0 && best >= 0.35 ? chapters[bi] : null;
+        if (ch && !out.includes(ch)) out.push(ch);
+      }
     }
   }
   return out.slice(0, 6);

@@ -76,9 +76,9 @@ export const featureOf = (a: Asker): AiFeature =>
 // ── Brief sources ───────────────────────────────────────────────────────────
 const SOURCE_STAFF: Record<'teacher' | 'office', Record<string, (d?: string) => SourceDef>> = {
   teacher: {
-    class: d => ({ label: 'Mastery Tracker', detail: d || 'your classes', href: '/teacher/mastery', need: `class:${d || ''}` }),
+    class: d => ({ label: 'Mastery Tracker', detail: d || 'your classes', href: '/teacher/mastery', need: `acad:${d || ''}` }),
     homework: () => ({ label: 'Homework desk', detail: 'your work, last two weeks', href: '/teacher/homework', need: 'self|perm:academics.read' }),
-    attendance: d => ({ label: 'Attendance register', detail: `${d || 'your class'} · today`, href: '/teacher/attendance', need: `class:${d || ''}` }),
+    attendance: d => ({ label: 'Attendance register', detail: `${d || 'your class'} · today`, href: '/teacher/attendance', need: `att:${d || ''}` }),
     wellness: () => ({ label: 'Student wellness', detail: 'energy check-ins, 7 days', href: '/teacher/wellness', need: 'self' }),
     feed: () => ({ label: 'Situational feed', detail: 'open items', href: '/teacher/feed', need: 'self|perm:feed.read' }),
     messages: () => ({ label: 'Parent messages', detail: 'open conversations', href: '/teacher/messages', need: 'self|perm:messages.office' }),
@@ -235,7 +235,10 @@ async function askStaff(db: SupabaseClient, a: Extract<Asker, { kind: 'staff' }>
 }
 
 async function askParent(db: SupabaseClient, a: Extract<Asker, { kind: 'parent' }>, history: Turn[]): Promise<AskOutcome> {
+  const t0 = Date.now(), laps: Record<string, number> = {};
+  const lap = (k: string) => { laps[k] = Date.now() - t0; };
   const view = await loadFamily(db, a.parent);
+  lap('family');
   if (!view.children.length) {
     return {
       needs: ['self'],
@@ -259,13 +262,16 @@ async function askParent(db: SupabaseClient, a: Extract<Asker, { kind: 'parent' 
   ];
   const sourceList = `[${summary[0]}] mastery and subjects, [${summary[1]}] work and marks, [${summary[2]}] fees, [${summary[3]}] conversations, [${summary[4]}] wellbeing, [${summary[5]}] year by year`;
   const brief = buildBrief(view, probeFamily(view), book, await histories(db, a.parent, view));
+  lap('brief');
   const contents = history.slice(-12).map(m => ({ role: m.role === 'os' ? 'model' as const : 'user' as const, parts: [{ text: tokenizeParent(m.text, book) }] }));
   const asker: Asker = { ...a, viewer };
   const planned = await plan(asker, outlineOf(brief), contents);
+  lap('plan');
   const tokenOfChild = (id: string) => `[[${[...book.children].find(([, c]) => c.id === id)?.[0] ?? 'C1'}]]`;
   const looked = planned.length
     ? await runParentLookups({ db, viewer, view, sources, tokenOfChild, childOf: t => book.children.get(t)?.id ?? null }, planned)
     : { text: '', labels: [] };
+  lap('lookups');
   const res = await generateAi({
     model: AI_MODELS.standard, contents,
     config: { systemInstruction: parentSystem(view, brief, looked.text, sourceList), responseMimeType: 'application/json', temperature: 0.4 },
@@ -275,6 +281,8 @@ async function askParent(db: SupabaseClient, a: Extract<Asker, { kind: 'parent' 
   for (const [k, v] of book.staff) actionBook.staff.set(k, v);
   const { reply, needs } = parseAnswer(json(res.text), sources, actionBook, looked.labels);
   const out = restoreParent(reply, book);
+  lap('answer');
+  console.info('[ask] parent timings ms', JSON.stringify(laps));
   if (!out.say && !out.ask.length) throw new AskError('The School OS didn’t come back with a usable answer. Try again, or put it another way.', 502);
   return { reply: out, needs: needs.length ? needs : ['self'] };
 }

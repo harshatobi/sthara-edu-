@@ -77,7 +77,10 @@ def main(limit: int | None = None):
         cur.execute("SELECT item_type, item_id::text, text_hash FROM kb_vectors")
         have = {(t, i): h for t, i, h in cur.fetchall()}
         want = {(r[0], str(r[1])) for r in rows}
-        todo = [r for r in rows if have.get((r[0], str(r[1]))) != sha(r[8])]
+        # The hash covers what filters the vector too (school, owner, level, subject, chapter, kind), so a re-tag or a
+        # class change refreshes the row even when the wording didn't change.
+        h = lambda r: sha("|".join(str(x) for x in (r[2], r[3], r[4], r[5], r[6], r[7])) + "\n" + r[8])  # noqa: E731
+        todo = [r for r in rows if have.get((r[0], str(r[1]))) != h(r)]
         if limit:
             todo = todo[:limit]
         for i in range(0, len(todo), BATCH):
@@ -90,7 +93,7 @@ def main(limit: int | None = None):
                   ON CONFLICT (item_type, item_id) DO UPDATE SET school_id = EXCLUDED.school_id, owner_id = EXCLUDED.owner_id,
                     grade = EXCLUDED.grade, subject = EXCLUDED.subject, chapter_key = EXCLUDED.chapter_key, kind = EXCLUDED.kind,
                     text_hash = EXCLUDED.text_hash, embedding = EXCLUDED.embedding, updated_at = now()""",
-                            (r[0], r[1], r[2], r[3], r[4], r[5][:80], (r[6] or None) and r[6][:200], (r[7] or None) and str(r[7])[:40], sha(r[8]), vec_literal(v)))
+                            (r[0], r[1], r[2], r[3], r[4], r[5][:80], (r[6] or None) and r[6][:200], (r[7] or None) and str(r[7])[:40], h(r), vec_literal(v)))
             conn.commit()
         gone = [k for k in have if k not in want]
         for t, i in gone:

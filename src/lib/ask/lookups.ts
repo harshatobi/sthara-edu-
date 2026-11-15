@@ -125,12 +125,14 @@ export async function masteryWeeks(db: SupabaseClient, schoolId: string, ids: st
     subject,
     points: [...weeks].sort((a, b) => a[0].localeCompare(b[0])).map(([week, studs]) => ({ week, score: mean([...studs.values()].map(xs => mean(xs)!)) })),
   }));
-  const perStudent = new Map<string, number>();
+  // Each student's overall: the mean of their subject means in the latest week (every subject counts once).
+  const subjMeans = new Map<string, number[]>();
   for (const [, weeks] of bySubWeek) {
     const w = weeks.get(lastWeek);
     if (!w) continue;
-    for (const [sid, xs] of w) perStudent.set(sid, mean([...(perStudent.has(sid) ? [perStudent.get(sid)!] : []), mean(xs)!])!);
+    for (const [sid, xs] of w) subjMeans.set(sid, [...(subjMeans.get(sid) || []), mean(xs)!]);
   }
+  const perStudent = new Map<string, number>([...subjMeans].map(([sid, xs]) => [sid, mean(xs)!]));
   const weakest = [...topics.values()].map(t => ({ name: t.name, subject: t.subject, score: mean([...t.scores.values()]), n: t.scores.size }))
     .filter(t => t.score !== null).sort((a, b) => a.score! - b.score!);
   return { series, weakest, perStudent, lastWeek };
@@ -158,7 +160,14 @@ async function workFor(db: SupabaseClient, schoolId: string, classes: string[], 
   return work.map(a => ({ ...a, subs: byA.get(a.id) || [] }));
 }
 
-async function attendanceFor(db: SupabaseClient, schoolId: string, from: string, to: string, filter: { studentId?: string; classes?: string[] }) {
+async function attendanceFor(db: SupabaseClient, schoolId: string, from: string, to: string, filter: { studentId?: string; classes?: string[]; studentIds?: string[] }) {
+  // A class or a few classes: read by their students (a 1,000-student school's whole register over months is ~100k rows).
+  if (!filter.studentId && filter.studentIds?.length) {
+    const wanted = filter.classes ? new Set(filter.classes.map(normCls)) : null;
+    const { data } = await byIds<any>(filter.studentIds, (chunk, f, t) => db.from('attendance').select('id, student_id, class_name, day, status')
+      .eq('school_id', schoolId).in('student_id', chunk).gte('day', from).lte('day', to).order('id').range(f, t));
+    return wanted ? data.filter(r => wanted.has(normCls(r.class_name))) : data;
+  }
   // bounded: paged below with pageAll (at most 120,000 rows)
   let q = db.from('attendance').select('id, student_id, class_name, day, status').eq('school_id', schoolId).gte('day', from).lte('day', to);
   if (filter.studentId) q = q.eq('student_id', filter.studentId);
@@ -205,23 +214,23 @@ const student: Runner = async (c, args) => {
   const out: string[] = [`STUDENT ${t} · ${displayClass(k.cls)} · ${from} to ${to}`];
   const academic = isTeacher(c) ? c.viewer.classes.includes(normCls(k.cls)) : has(c, 'academics.read');
   const href = (teacher: string, office: string) => (isTeacher(c) ? teacher : office);
-  const need = `class:${k.cls}`;
+  const acad = `acad:${k.cls}`, exam = `exam:${k.cls}`, att = `att:${k.cls}`;
   if (academic) {
     const m = await masteryWeeks(c.db, c.me.schoolId, [k.id], from);
-    const n = c.sources.add({ label: 'Mastery Tracker', detail: `${k.name} · trend`, href: href('/teacher/mastery', '/admin/academic'), need });
+    const n = c.sources.add({ label: 'Mastery Tracker', detail: `${k.name} · trend`, href: href('/teacher/mastery', '/admin/academic'), need: acad });
     out.push(`MASTERY BY WEEK [${n}]:\n${seriesText(m.series)}\nWeakest chapters now: ${m.weakest.slice(0, 5).map(w => `${w.subject} ${w.name} ${round(w.score)}`).join('; ') || 'none'}`);
     const work = await workFor(c.db, c.me.schoolId, [k.cls], from, to);
     const mine = work.filter(a => !a.assigned_student_ids?.length || a.assigned_student_ids.includes(k.id));
     const handed = mine.filter(a => a.subs.some((x: any) => x.student_id === k.id));
     const scored = handed.map(a => a.subs.find((x: any) => x.student_id === k.id)).filter((x: any) => x && x.score !== null && Number(x.max_score) > 0);
     const missing = mine.filter(a => a.due_date < istDay() && !a.subs.some((x: any) => x.student_id === k.id));
-    const n2 = c.sources.add({ label: 'Homework desk', detail: `${k.name} · ${short(from)}–${short(to)}`, href: href('/teacher/homework', '/admin/academic'), need });
+    const n2 = c.sources.add({ label: 'Homework desk', detail: `${k.name} · ${short(from)}–${short(to)}`, href: href('/teacher/homework', '/admin/academic'), need: acad });
     out.push(`HOMEWORK [${n2}]: handed in ${handed.length} of ${mine.length}; average on handed-in work ${round(mean(scored.map((x: any) => (Number(x.score) / Number(x.max_score)) * 100)))}. Missing (overdue): ${missing.slice(0, 8).map(a => `${a.subject} "${a.title}" due ${a.due_date}`).join('; ') || 'none'}.`);
   }
   if (isTeacher(c) ? c.viewer.classes.includes(normCls(k.cls)) : has(c, 'attendance.read')) {
     const rows = await attendanceFor(c.db, c.me.schoolId, from, to, { studentId: k.id });
     const ab = rows.filter(r => r.status === 'absent');
-    const n = c.sources.add({ label: 'Attendance register', detail: `${k.name} · ${short(from)}–${short(to)}`, href: href('/teacher/attendance', '/admin/attendance'), need });
+    const n = c.sources.add({ label: 'Attendance register', detail: `${k.name} · ${short(from)}–${short(to)}`, href: href('/teacher/attendance', '/admin/attendance'), need: att });
     out.push(`ATTENDANCE [${n}]: ${rows.length} days marked, present ${pct(rows.filter(r => r.status !== 'absent').length, rows.length)}, absent ${ab.length}${ab.length ? ` (${ab.slice(-10).map(r => short(r.day)).join(', ')})` : ''}, late ${rows.filter(r => r.status === 'late').length}.`);
   }
   if (has(c, 'fees.read') && c.admin) {
@@ -232,14 +241,14 @@ const student: Runner = async (c, args) => {
   if (isTeacher(c) ? c.viewer.classes.includes(normCls(k.cls)) : has(c, 'exams.read')) {
     const ex = await examRows(c.db, c.me.schoolId, { studentIds: [k.id], classes: [k.cls] });
     if (ex.length) {
-      const n = c.sources.add({ label: 'Exams', detail: `${k.name} · marks`, href: href('/teacher/exams', '/admin/exams'), need });
+      const n = c.sources.add({ label: 'Exams', detail: `${k.name} · marks`, href: href('/teacher/exams', '/admin/exams'), need: exam });
       out.push(`EXAM MARKS [${n}]: ${ex.slice(0, 14).map(e => `${e.assessment} ${e.subject} ${e.marks === null ? (e.code || 'not entered') : `${e.marks}/${e.max ?? '?'}`}`).join('; ')}`);
     }
   }
   if (isTeacher(c) && c.viewer.classes.includes(normCls(k.cls))) {
     const { data: w } = await c.db.from('wellness_logs').select('energy, created_at').eq('student_id', k.id).gte('created_at', new Date(Date.now() - 14 * DAY_MS).toISOString()).not('energy', 'is', null).limit(60);
     if (w?.length) {
-      const n = c.sources.add({ label: 'Student wellness', detail: `${k.name} · energy only`, href: '/teacher/wellness', need });
+      const n = c.sources.add({ label: 'Student wellness', detail: `${k.name} · energy only`, href: '/teacher/wellness', need: 'self' });
       out.push(`WELLNESS [${n}] (energy 1–5 only, journals private): ${w.length} check-ins in 14 days, ${w.filter(x => (x.energy ?? 5) <= 2).length} low.`);
     }
   }
@@ -252,10 +261,9 @@ const klass: Runner = async (c, args) => {
   if (!cls || !mayReadClass(c, cls, 'academics.read')) return `CLASS: "${args.class || ''}" is not a class this person can see.`;
   const kids = roster(c).filter(k => normCls(k.cls) === normCls(cls));
   const from = daysAgo(56), to = istDay();
-  const need = `class:${cls}`;
   const href = (t: string, o: string) => (isTeacher(c) ? t : o);
   const m = await masteryWeeks(c.db, c.me.schoolId, kids.map(k => k.id), from, args.subject);
-  const n1 = c.sources.add({ label: 'Mastery Tracker', detail: `${displayClass(cls)}${args.subject ? ` · ${args.subject}` : ''} · trend`, href: href('/teacher/mastery', '/admin/academic'), need });
+  const n1 = c.sources.add({ label: 'Mastery Tracker', detail: `${displayClass(cls)}${args.subject ? ` · ${args.subject}` : ''} · trend`, href: href('/teacher/mastery', '/admin/academic'), need: `acad:${cls}` });
   const work = await workFor(c.db, c.me.schoolId, [cls], daysAgo(42), to, { subject: args.subject });
   const byWeek = new Map<string, { due: number; done: number }>();
   for (const a of work.filter(x => x.due_date <= to)) {
@@ -263,8 +271,8 @@ const klass: Runner = async (c, args) => {
     const w = byWeek.get(weekOf(a.due_date)) ?? { due: 0, done: 0 };
     w.due += size; w.done += new Set(a.subs.map((x: any) => x.student_id)).size; byWeek.set(weekOf(a.due_date), w);
   }
-  const n2 = c.sources.add({ label: 'Homework desk', detail: `${displayClass(cls)} · 6 weeks`, href: href('/teacher/homework', '/admin/academic'), need });
-  const att = await attendanceFor(c.db, c.me.schoolId, daysAgo(42), to, { classes: [cls] });
+  const n2 = c.sources.add({ label: 'Homework desk', detail: `${displayClass(cls)} · 6 weeks`, href: href('/teacher/homework', '/admin/academic'), need: `acad:${cls}` });
+  const att = await attendanceFor(c.db, c.me.schoolId, daysAgo(42), to, { classes: [cls], studentIds: kids.map(k => k.id) });
   const attWeek = new Map<string, { n: number; present: number }>();
   const absences = new Map<string, number>();
   for (const r of att) {
@@ -272,7 +280,7 @@ const klass: Runner = async (c, args) => {
     w.n++; if (r.status !== 'absent') w.present++; attWeek.set(weekOf(r.day), w);
     if (r.status === 'absent') absences.set(r.student_id, (absences.get(r.student_id) || 0) + 1);
   }
-  const n3 = c.sources.add({ label: 'Attendance register', detail: `${displayClass(cls)} · 6 weeks`, href: href('/teacher/attendance', '/admin/attendance'), need });
+  const n3 = c.sources.add({ label: 'Attendance register', detail: `${displayClass(cls)} · 6 weeks`, href: href('/teacher/attendance', '/admin/attendance'), need: `att:${cls}` });
   const missed = new Map<string, number>();
   for (const a of work.filter(x => x.due_date < to)) {
     const done = new Set(a.subs.map((x: any) => x.student_id));
@@ -295,8 +303,10 @@ const attendance: Runner = async (c, args) => {
   if (args.class && (!one || !mayReadClass(c, one, 'attendance.read'))) return `ATTENDANCE: "${args.class}" is not a class this person can see.`;
   const classes = one ? [one] : classesSeen(c, 'attendance.read');
   if (!classes.length) return 'ATTENDANCE: no classes in this person\'s view.';
-  const rows = await attendanceFor(c.db, c.me.schoolId, from, to, { classes });
-  const n = c.sources.add({ label: 'Attendance register', detail: `${one ? displayClass(one) : 'all classes'} · ${short(from)}–${short(to)}`, href: isTeacher(c) ? '/teacher/attendance' : '/admin/attendance', need: one ? `class:${one}` : 'self|perm:attendance.read' });
+  const kidsOf = roster(c).filter(k => classes.some(x => normCls(x) === normCls(k.cls)));
+  // A handful of classes: by their students; the whole school: the register for the window.
+  const rows = await attendanceFor(c.db, c.me.schoolId, from, to, { classes, ...(classes.length <= 6 ? { studentIds: kidsOf.map(k => k.id) } : {}) });
+  const n = c.sources.add({ label: 'Attendance register', detail: `${one ? displayClass(one) : 'all classes'} · ${short(from)}–${short(to)}`, href: isTeacher(c) ? '/teacher/attendance' : '/admin/attendance', need: one ? `att:${one}` : 'self|perm:attendance.read' });
   const byClass = new Map<string, { days: Set<string>; n: number; present: number }>();
   const absent = new Map<string, number>();
   const byDay = new Map<string, { n: number; present: number }>();
@@ -324,7 +334,7 @@ const homework: Runner = async (c, args) => {
   const classes = one ? [one] : classesSeen(c, 'academics.read');
   const to = istDay(new Date(Date.now() + 14 * DAY_MS));
   const work = await workFor(c.db, c.me.schoolId, classes, daysAgo(weeks * 7), to, { teacherId: isTeacher(c) ? c.me.id : undefined, subject: args.subject });
-  const n = c.sources.add({ label: 'Homework desk', detail: `${one ? displayClass(one) : 'all classes'} · ${weeks} weeks`, href: isTeacher(c) ? '/teacher/homework' : '/admin/academic', need: one ? `class:${one}` : 'self|perm:academics.read' });
+  const n = c.sources.add({ label: 'Homework desk', detail: `${one ? displayClass(one) : 'all classes'} · ${weeks} weeks`, href: isTeacher(c) ? '/teacher/homework' : '/admin/academic', need: one ? `acad:${one}` : 'self|perm:academics.read' });
   const size = new Map<string, number>();
   for (const k of roster(c)) size.set(normCls(k.cls), (size.get(normCls(k.cls)) || 0) + 1);
   const today = istDay();
@@ -398,7 +408,7 @@ const exams: Runner = async (c, args) => {
   const classes = one ? [one] : classesSeen(c, 'exams.read');
   if (!classes.length) return 'EXAMS: no classes in this person\'s view.';
   const rows = await examRows(c.db, c.me.schoolId, { classes, subject: args.subject });
-  const n = c.sources.add({ label: 'Exams', detail: `${one ? displayClass(one) : 'all classes'}${args.subject ? ` · ${args.subject}` : ''}`, href: isTeacher(c) ? '/teacher/exams' : '/admin/exams', need: one ? `class:${one}` : 'self|perm:exams.read' });
+  const n = c.sources.add({ label: 'Exams', detail: `${one ? displayClass(one) : 'all classes'}${args.subject ? ` · ${args.subject}` : ''}`, href: isTeacher(c) ? '/teacher/exams' : '/admin/exams', need: one ? `exam:${one}` : 'self|perm:exams.read' });
   const kids = new Map(roster(c).map(k => [k.id, k]));
   const groups = new Map<string, typeof rows>();
   for (const r of rows) { const k = `${r.assessment} · ${displayClass(r.cls)} · ${r.subject}`; groups.set(k, [...(groups.get(k) || []), r]); }

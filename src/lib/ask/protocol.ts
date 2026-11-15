@@ -39,12 +39,15 @@ export type Viewer =
 /** Pure stand-in for normClass (lib/teacher/scope), so this file has no server imports. */
 export const normCls = (c: string | null | undefined) => (c || '').toLowerCase().replace(/class|[^a-z0-9]/g, '');
 
-const CLASS_READERS = ['academics.read', 'attendance.read', 'students.read'];
+/** Which office permission reads each kind of a class's records (a teacher of the class reads all three). */
+const CLASS_READER: Record<string, string> = { class: 'academics.read', acad: 'academics.read', exam: 'exams.read', att: 'attendance.read' };
 
 /**
  * Whether this viewer may see data that needed `need`:
  *   perm:<p>        an office permission
- *   class:<cls>     a class's records: a teacher of that class, or office staff who read classes
+ *   acad:<cls>      a class's mastery and homework: a teacher of that class, or academics.read (class: is the same)
+ *   exam:<cls>      a class's exam marks: a teacher of that class, or exams.read
+ *   att:<cls>       a class's attendance: a teacher of that class, or attendance.read
  *   child:<id>      one child's records: that child's parent (parents never receive shares)
  *   staff           anyone on the school's staff (timetable)
  *   school          anyone in the school (the calendar)
@@ -59,7 +62,7 @@ export function canSee(need: string, v: Viewer, askerId?: string): boolean {
   const [kind, val] = [need.slice(0, need.indexOf(':')), need.slice(need.indexOf(':') + 1)];
   if (v.kind === 'parent') return kind === 'child' && v.childIds.includes(val);
   if (kind === 'perm') return v.perms.includes(val);
-  if (kind === 'class') return v.classes.includes(normCls(val)) || v.perms.some(p => CLASS_READERS.includes(p));
+  if (CLASS_READER[kind]) return v.classes.includes(normCls(val)) || v.perms.includes(CLASS_READER[kind]);
   return false;
 }
 export const canSeeAll = (needs: string[], v: Viewer, askerId?: string) => needs.every(n => canSee(n, v, askerId));
@@ -263,7 +266,9 @@ export function parseAnswer(raw: unknown, sources: Sources, book: ActionBook, lo
         : { kind: 'message', audience: 'office', to: null, toName: 'School office', childId: child?.id ?? null, topic, subject, draft });
     }
   }
-  const needs = [...new Set(used.map(d => d.need))];
+  // What a colleague must be able to see: every source the model was given, cited or not (a table or a sentence can
+  // carry data without a citation).
+  const needs = [...new Set(sources.list.map(d => d.need))];
   return {
     reply: { say, ask, facts, table, chart, sources: out, actions, suggestions: list(r.suggestions, 4, 120), lookups: lookups.slice(0, 6) },
     needs,

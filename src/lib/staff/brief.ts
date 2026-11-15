@@ -123,7 +123,7 @@ export async function teacherBrief(db: SupabaseClient, me: FeedCaller, book: Boo
       .gte('created_at', new Date(Date.now() - 7 * DAY_MS).toISOString()).not('energy', 'is', null).order('id').range(f, t));
     const low = new Map<string, number>();
     for (const r of w || []) if ((r.energy ?? 5) <= 2) low.set(r.student_id, (low.get(r.student_id) || 0) + 1);
-    out.push(`WELLNESS (last 7 days, energy 1–5 only; journals are private)${src('wellness')}: ${(w || []).length} check-ins from your students; low (2 or below): ${[...low].map(([id, n]) => `${S(id, kids.find(k => k.id === id)!.name)} ×${n}`).join(', ') || 'none'}.`);
+    out.push(`WELLNESS (last 7 days, energy 1–5 only; journals are private)${low.size ? src('wellness') : ''}: ${(w || []).length} check-ins from your students; low (2 or below): ${[...low].map(([id, n]) => `${S(id, kids.find(k => k.id === id)!.name)} ×${n}`).join(', ') || 'none'}.`);
   }
 
   const feed = await feedLines(db, me, book, 12);
@@ -146,7 +146,8 @@ export async function leadershipBrief(db: SupabaseClient, me: FeedCaller, book: 
   const cannot: string[] = [];
 
   const pr = probe(d);
-  if (pr.findings.length) out.push(`PROBE (what the School OS noticed, most severe first)${src('probe')}:\n${pr.findings.slice(0, 8).map(f => `- [${f.severity}] ${f.title}. ${f.summary}`).join('\n')}`);
+  // Probe findings only for roles that may open Probe (Ask is open to every office role since 2026-11-13).
+  if (a.can('probe.view') && pr.findings.length) out.push(`PROBE (what the School OS noticed, most severe first)${src('probe')}:\n${pr.findings.slice(0, 8).map(f => `- [${f.severity}] ${f.title}. ${f.summary}`).join('\n')}`);
 
   if (a.can('academics.read')) {
     const A = d.academics;

@@ -33,7 +33,13 @@ def db_url() -> str:
 def connect():
     import psycopg
 
-    return psycopg.connect(db_url(), autocommit=False, prepare_threshold=None)
+    conn = psycopg.connect(db_url(), autocommit=False, prepare_threshold=None)
+    # Marks this session as a knowledge-base job: bank_items' touch trigger then leaves updated_at alone, so tags,
+    # difficulty and checks never make an uploaded question look edited (and survive an import undo).
+    with conn.cursor() as cur:
+        cur.execute("SELECT set_config('sthara.kb_job', 'on', false)")
+    conn.commit()
+    return conn
 
 
 def grade_of(cls: str | None) -> str:

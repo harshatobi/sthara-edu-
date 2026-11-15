@@ -37,6 +37,11 @@ test('canSee: permissions, classes, either-of, self and school', () => {
   assert.ok(canSee('perm:fees.read', cashier));
   assert.ok(!canSee('perm:fees.read', teacher));
   assert.ok(canSee('class:9-B', teacher));
+  // A class's marks, exams and attendance each need their own office permission (a teacher of the class sees all).
+  const registrar: Viewer = { kind: 'staff', id: 'r1', name: 'R', schoolId: 's', role: 'admin', classes: [], classTeacherOf: '', perms: ['students.read'], label: 'Registrar' };
+  assert.ok(!canSee('acad:9-B', registrar) && !canSee('exam:9-B', registrar) && !canSee('att:9-B', registrar));
+  assert.ok(canSee('exam:9-B', principal) && canSee('att:9-B', principal) && canSee('acad:9-B', teacher) && canSee('exam:9-B', teacher));
+  assert.ok(!canSee('exam:8-A', teacher));
   assert.ok(!canSee('class:8-A', teacher));
   assert.ok(canSee('class:8-A', principal));
   assert.ok(!canSee('class:8-A', cashier));
@@ -73,7 +78,8 @@ test('parseAnswer: cited sources only, renumbered, with what they need', () => {
   assert.deepEqual(reply.actions, [{ kind: 'open', href: '/admin/fees', label: 'Fees' }]);
   assert.deepEqual(reply.suggestions, ['Compare with 9-A', '42']);
   assert.deepEqual(reply.lookups, ['class overview, 9-B']);
-  assert.deepEqual(needs, ['class:9-B']);
+  // Sharing checks every source the model saw, cited or not (an uncited table could still carry fees).
+  assert.deepEqual(needs.sort(), ['class:9-B', 'perm:fees.read']);
 });
 
 test('parseAnswer: parent message actions resolve tokens or fall back to the office', () => {

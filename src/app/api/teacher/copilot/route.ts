@@ -56,9 +56,14 @@ export async function POST(req: NextRequest) {
   const studioKind = STUDIO.some(x => x.kind === b?.studio?.kind) ? (b.studio.kind as StudioKind) : null;
   const regenerate = b?.regenerate === true;
 
-  const aiBlocked = await aiGate(staff.id, 'teacherTools');
-  if (aiBlocked) return aiBlocked;
-  if (!aiConfigured()) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
+  // The AI gate (paused school, cost cap, no key) applies only to work that calls the AI: a saved copy is served even
+  // when the school's AI is paused.
+  const gate = async () => {
+    const blocked = await aiGate(staff.id, 'teacherTools');
+    if (blocked) return blocked;
+    if (!aiConfigured()) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
+    return null;
+  };
 
   // A board paper is its own job: the design fixes every question, so the class brief isn't needed.
   if (studioKind === 'board_paper') {
@@ -77,6 +82,7 @@ export async function POST(req: NextRequest) {
       const hit = await findSaved(db, staff, 'paper', paperKey);
       if (hit?.reply) return NextResponse.json({ reply: { ...hit.reply, reused: hit.reused } });
     }
+    { const g = await gate(); if (g) return g; }
     try {
       const seed = Math.floor(Math.random() * 1e9);
       // The question bank fills every slot it can (official CBSE questions marked); the AI writes only the rest.
@@ -123,6 +129,8 @@ export async function POST(req: NextRequest) {
       }
     }
   }
+
+  { const g = await gate(); if (g) return g; }
 
   // ── The brief: this class + subject, from the database ────────────────────
   const [{ data: users }, { data: assignments }, { data: progress }, { data: lessons }] = await Promise.all([

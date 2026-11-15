@@ -23,17 +23,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { topic, subject, studentClass, difficulty = 'medium', numQuestions = 5, questionType = 'mixed' } = body;
-    const aiBlocked = await aiGate(auth.staff.id, 'teacherTools');
-    if (aiBlocked) return aiBlocked;
-    if (!aiConfigured()) return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 });
+    // The AI gate applies to work that calls the AI; saved sets and offers are served even when the school's AI is paused.
+    const kbGate = async () => { const blocked = await aiGate(auth.staff.id, 'teacherTools'); if (blocked) return blocked; return aiConfigured() ? null : NextResponse.json({ error: 'AI isn’t configured on this server.' }, { status: 503 }); };
 
     // Knowledge base first (2026-11-14): a saved set, near-identical offers, or a bank-first build with AI for gaps.
     if (studentClass && subject && topic && (auth.staff.role !== 'teacher' || inScope(auth.staff.scope, studentClass, subject))) {
       try {
         const r = await generatorQuestions(request, auth.db, auth.staff, {
           feature: 'homeworkGen', cls: String(studentClass).slice(0, 40), subject: String(subject).slice(0, 80), topics: [String(topic).slice(0, 200)],
-          count: Math.min(Math.max(Number(numQuestions) || 5, 1), 15), kind: asKind(questionType), difficulty: asDifficulty(difficulty), ...kbArgs(body), title: String(topic).slice(0, 120),
+          count: Math.min(Math.max(Number(numQuestions) || 5, 1), 15), kind: asKind(questionType), difficulty: asDifficulty(difficulty), ...kbArgs(body), gate: kbGate, title: String(topic).slice(0, 120),
         });
+        if (r && 'blocked' in r) return r.blocked as NextResponse;
         if (r && 'offers' in r) return NextResponse.json({ offers: r.offers });
         if (r) {
           return NextResponse.json({
@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+
+    { const blocked = await kbGate(); if (blocked) return blocked; }
 
     const typeInstruction =
       questionType === 'mcq'

@@ -35,6 +35,7 @@ export interface GenQ {
 export type GenResult =
   | { offers: Offer[] }
   | { questions: GenQ[]; title: string; note: string; kb: { fromBank: number; written: number; chapters: string[]; reused?: Reused; savedId?: string | null } }
+  | { blocked: Response }
   | null; // nothing in the curriculum to ground on: the route keeps its old AI path
 
 const levelOf = (d: number | null | undefined): GenQ['level'] => (d == null ? undefined : d >= 0.7 ? 'EASY' : d >= 0.4 ? 'MEDIUM' : 'HARD');
@@ -83,6 +84,8 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
   feature: 'quizGen' | 'homeworkGen' | 'paperGen'; cls: string; subject: string; topics: string[]; count: number; kind: ReqKind; difficulty: ReqDifficulty;
   /** Offer near-identical saved sets before building (the first ask); false once the teacher says "make new". */
   offer: boolean; fresh: boolean; useSaved?: { type: string; id: string } | null; title: string; signal?: AbortSignal;
+  /** The AI gate (paused school, cost cap): checked only before a build that may call the AI, never for saved copies. */
+  gate: () => Promise<Response | null>;
 }): Promise<GenResult> {
   const asked = { authorization: req.headers.get('authorization'), origin: req.nextUrl.origin };
   if (a.useSaved) {
@@ -103,6 +106,7 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
     const offers = await nearSaved(db, me, asked, { text: `${a.kind} questions on ${a.topics.join(', ')} (${a.subject})`, cls: a.cls, subject: a.subject, types: ['copilot', 'material'] });
     if (offers.length) return { offers };
   }
+  { const blocked = await a.gate(); if (blocked) return { blocked }; }
   const chapters = await resolveChapters(db, me, asked, a.cls, a.subject, a.topics);
   if (!chapters.length) return null;
   // (an empty build below falls back to the route's own path)

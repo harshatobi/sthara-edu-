@@ -27,7 +27,8 @@ export async function listConversations(db: SupabaseClient, userId: string, q?: 
     return (data || []).map(conv);
   }
   const like = `%${term.replace(/[%_\\]/g, m => `\\${m}`)}%`;
-  const { data: mine } = await db.from('ask_conversations').select('id').eq('user_id', userId).limit(2000);
+  // The person's newest conversations first, so a search over turns covers the recent ones.
+  const { data: mine } = await db.from('ask_conversations').select('id').eq('user_id', userId).order('last_at', { ascending: false }).limit(2000);
   const ids = (mine || []).map(r => r.id);
   if (!ids.length) return [];
   const [{ data: byTitle }, { data: byText }] = await Promise.all([

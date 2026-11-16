@@ -1,3 +1,4 @@
+-- Applied to the live database 2026-11-15 (approved by Moses).
 -- Review fixes for the knowledge base (2026-11-15).
 --   bank_items' touch trigger skips the knowledge-base jobs (they set sthara.kb_job = 'on'): auto-tags, difficulty,
 --   duplicate marks and answer checks are not edits, so they must not make an uploaded question look "changed since"

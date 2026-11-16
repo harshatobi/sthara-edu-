@@ -26,6 +26,9 @@ COMP_RULES = [
 ]
 
 
+SECTION_HEAD = re.compile(r'^\s*section\s*[–—-]?\s*([A-F])\s*(\(.*\))?\s*$', re.I)
+TOTAL = re.compile(r'\(\s*(\d+)\s*[x×X]\s*(\d+)\s*=\s*(\d+)\s*(?:marks?)?\s*\)', re.I)
+EACH = re.compile(r'section\s*[–—-]?\s*([A-F])\b[^.;]{0,40}?\b(\d+)\s*questions?\s*(?:of|carrying)\s*(\d+)\s*marks?\s*each', re.I)
 AR_INTRO = re.compile(r'consist of two statements|selecting the appropriate option|Assertion \(A\) and Reason \(R\)\.?\s*$', re.I)
 
 
@@ -298,18 +301,30 @@ def build(paper, scheme, cur, meta, vocab=None):
         discipline = section_of(t, by_letter) or discipline
     out = []
     section = None
+    totals, each = {}, {}
+    pending = None  # the section whose "(a x b = t)" may follow on the next line
     for t in paper['pre']:
-        ms_ = re.match(r'^\s*SECTION\s*[–-]?\s*([A-F])\b', t)
-        if ms_:
-            section = ms_.group(1)
+        hs = SECTION_HEAD.match(t)
+        if hs:
+            section = hs.group(1).upper()
+        for m in EACH.finditer(t):
+            each.setdefault(m.group(1).upper(), int(m.group(3)))
+    for m in EACH.finditer(' '.join(paper['pre'])):
+        each.setdefault(m.group(1).upper(), int(m.group(3)))
     for q in paper['questions']:
         # A heading inside this question's lines belongs to the next question (it is printed after this one).
         here = discipline
         here_section = section
         for it in q['items']:
-            ms_ = re.match(r'^\s*SECTION\s*[–-]?\s*([A-F])\b', it.get('t', '')) if it['k'] == 'text' else None
-            if ms_:
-                section = ms_.group(1)
+            t_ = it.get('t', '') if it['k'] == 'text' else ''
+            hs = SECTION_HEAD.match(t_)
+            if hs:
+                section = hs.group(1).upper()
+                pending = section
+            tot = TOTAL.search(t_)
+            if tot and pending:
+                totals.setdefault(pending, int(tot.group(3)))
+                pending = None
         for it in q['items']:
             if it['k'] == 'text':
                 d = section_of(it['t'], by_letter)
@@ -407,17 +422,45 @@ def build(paper, scheme, cur, meta, vocab=None):
             item['flags'] = flags
             item.update(meta)
             out.append(item)
-    # A question whose marks couldn't be read takes its section's: every question in a CBSE section carries the same
-    # marks (e.g. SECTION B, 5 x 2). Flagged so a reviewer checks it.
-    # Also a mark that disagrees with every other question of its section (read from the wrong cell) is replaced.
+    # Marks per question in each section: CBSE gives every question of a section the same marks. Stated by the paper
+    # (its instructions "N questions of M marks each", or a heading's total "(… = 24)" over the questions found in that
+    # section), else the agreement of the section's other questions. A question whose marks are unreadable or disagree
+    # takes the section's (flagged marks_from_section, for the reviewer).
     qnum = lambda it: re.match(r'\d+', it['q']).group(0)  # noqa: E731
-    for k, it in enumerate(out):
-        if it.get('_section') is None:
+    per = {}
+    for sec in {it.get('_section') for it in out if it.get('_section')}:
+        nums = {qnum(it) for it in out if it.get('_section') == sec}
+        if sec in each:
+            per[sec] = each[sec]
+        elif sec in totals and nums and totals[sec] % len(nums) == 0:
+            per[sec] = totals[sec] // len(nums)
+    for it in out:
+        sec = it.get('_section')
+        if sec is None:
             continue
-        others = [o['marks'] for o in out if o.get('_section') == it['_section'] and qnum(o) != qnum(it) and o.get('marks')]
-        if len(others) >= 2 and len(set(others)) == 1 and it.get('marks') != others[0]:
-            it['marks'] = others[0]
+        want = per.get(sec)
+        if want is None:
+            others = [o['marks'] for o in out if o.get('_section') == sec and qnum(o) != qnum(it) and o.get('marks')]
+            if len(others) >= 2 and len(set(others)) == 1:
+                want = others[0]
+        if want and it.get('marks') != want:
+            it['marks'] = want
             it['flags'] = [f for f in it.get('flags', []) if f != 'marks_missing'] + ['marks_from_section']
+    for it in out:
+        # A 1-mark question printed with its options on the stem's own line ("… are respectively (A) 3, 1 (B) 2, 1 …"):
+        # the options are split out and the answer read from the marking scheme's "(B)".
+        if it.get('marks') == 1 and not it.get('options') and it.get('type') != 'assertion_reason':
+            parts = re.split(r'\(([A-D])\)\s*', it.get('text') or '')
+            letters = parts[1::2]
+            if letters == ['A', 'B', 'C', 'D'] and all(x.strip() for x in parts[2::2]):
+                stem = parts[0].strip()
+                opts = [x.strip().rstrip(',;') for x in parts[2::2]]
+                ans = re.match(r'^\s*\(?([A-D])\)?[.)\s]', it.get('scheme') or '')
+                if stem and ans:
+                    it.update(text=stem, options=opts, answer='ABCD'.index(ans.group(1)), type='mcq')
+        # A written question's type follows its (possibly corrected) marks.
+        if it.get('type') == 'short' and (it.get('marks') or 0) >= 5:
+            it['type'] = 'long'
     for it in out:
         it.pop('_section', None)
     return out

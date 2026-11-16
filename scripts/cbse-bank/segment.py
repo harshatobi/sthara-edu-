@@ -412,18 +412,8 @@ def segment(path, figdir=None, prefix='q'):
     doc = pymupdf.open(path)
     pages = [page_lines(p) for p in doc]
     w = doc[0].rect.width
-    # Some papers print "Q10." / "Q.10" instead of "10": the Q is dropped so the number reads as a question number.
-    for ls in pages:
-        for l in ls:
-            l['t'] = re.sub(r'^Q\.?\s*(?=\d{1,2}\s*[.)(]|\d{1,2}$)', '', l['t'])
     labels = sorted(l['x1'] for ls in pages for l in ls if LABEL.match(l['t']) and l['x0'] < w * 0.12 and l['x1'] < w * 0.2)
     left = labels[int(len(labels) * 0.95) - 1] + 4 if labels else 80
-    # No numbers column (the number runs into the question, "7.  The binding energy…"): the text starts just after
-    # the numbers, so the column edge is placed from those inline numbers instead.
-    if len(labels) < 5:
-        inline = sorted(l['x0'] for ls in pages for l in ls if PREFIX.match(l['t']) and l['x0'] < w * 0.15)
-        if len(inline) >= 5:
-            left = inline[len(inline) // 2] + 16
     marks = [l['x0'] for ls in pages for l in ls if MARK.match(l['t']) and l['x0'] > w * 0.8]
     right = (min(marks) - 3) if marks else w * 0.9
     xs = rule_xs(doc)

@@ -105,6 +105,8 @@ export async function nearSaved(db: SupabaseClient, me: KbCaller, asked: Asked, 
     if (!r) continue;
     // A Studio material is offered to others only once its teacher shares it with the department.
     if (h.itemType === 'material' && r.teacher_id !== me.id && r.share !== 'department') continue;
+    // The same set made twice (a fresh copy) is offered once: the closest.
+    if (out.some(o => o.title === r.title && o.type === h.itemType)) continue;
     out.push({ type: h.itemType as Offer['type'], id: r.id, title: r.title, kind: r.artifact_kind ?? r.kind ?? null, at: r.created_at, by: r.teacher_id === me.id ? 'you' : 'colleague', similarity: Math.round(h.similarity * 100) / 100 });
   }
   return out.slice(0, q.limit ?? 4);

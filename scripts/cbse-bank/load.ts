@@ -39,6 +39,7 @@ const FLAG_NOTE: Record<string, { note: string; blocks: boolean }> = {
   scheme_missing: { note: 'The marking scheme for this question wasn’t found.', blocks: true },
   text_missing: { note: 'The question wording wasn’t found.', blocks: true },
   marks_missing: { note: 'The marks weren’t found.', blocks: true },
+  marks_from_section: { note: 'The marks were taken from the section’s pattern (the paper prints them elsewhere); check them.', blocks: false },
   maths_garbled: { note: 'Some maths in the wording didn’t come out cleanly from the PDF; compare with the paper.', blocks: true },
 };
 

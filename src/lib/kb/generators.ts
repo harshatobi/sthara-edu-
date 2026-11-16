@@ -105,7 +105,7 @@ export async function generatorQuestions(req: NextRequest, db: SupabaseClient, m
   }
   const chapters = await resolveChapters(db, me, asked, a.cls, a.subject, a.topics);
   if (a.offer && !a.fresh && chapters.length) {
-    const offers = await nearSaved(db, me, asked, { text: requestText(a), cls: a.cls, subject: a.subject, types: ['copilot', 'material'], min: 0.6, chapterKeys: chapters.map(c => topicKey(c.name)) });
+    const offers = await nearSaved(db, me, asked, { text: requestText(a), cls: a.cls, subject: a.subject, types: ['copilot', 'material'], min: 0.5, chapterKeys: chapters.map(c => topicKey(c.name)) });
     if (offers.length) return { offers };
   }
   { const blocked = await a.gate(); if (blocked) return { blocked }; }

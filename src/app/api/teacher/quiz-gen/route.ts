@@ -4,9 +4,13 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { AI_MODELS, limitOf } from '@/lib/settings/limits';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
+import { inScope } from '@/lib/teacher/scope';
+import { generatorQuestions, kbArgs } from '@/lib/kb/generators';
+import { asDifficulty } from '@/lib/kb/plan';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Bank-first builds can write and check several gap questions.
+export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
   // Each call spends model quota: teachers and admins only, rate-limited.
@@ -26,11 +30,33 @@ export async function POST(request: NextRequest) {
       className,
     } = body;
 
-    const aiBlocked = await aiGate(auth.staff.id, 'teacherTools');
-    if (aiBlocked) return aiBlocked;
-    if (!aiConfigured()) {
-      return NextResponse.json({ error: 'AI isn’t configured on this server.' }, { status: 500 });
+    // The AI gate applies to work that calls the AI; saved sets and offers are served even when the school's AI is paused.
+    const kbGate = async () => { const blocked = await aiGate(auth.staff.id, 'teacherTools'); if (blocked) return blocked; return aiConfigured() ? null : NextResponse.json({ error: 'AI isn’t configured on this server.' }, { status: 503 }); };
+
+    // Knowledge base first (2026-11-14): a saved set, near-identical offers, or a bank-first build with AI for gaps.
+    const n0 = Math.min(Math.max(Number(numQuestions) || 10, 1), 20);
+    if (className && subject && (auth.staff.role !== 'teacher' || inScope(auth.staff.scope, className, subject))) {
+      try {
+        const topicNames: string[] = (Array.isArray(topics) ? topics : []).map((t: unknown) => String(t).slice(0, 200)).filter(Boolean).slice(0, 8);
+        const r = await generatorQuestions(request, auth.db, auth.staff, {
+          feature: 'quizGen', cls: String(className).slice(0, 40), subject: String(subject).slice(0, 80), topics: topicNames, count: n0, kind: 'mcq',
+          difficulty: asDifficulty(difficulty), ...kbArgs(body), gate: kbGate, title: `${topicNames.join(', ') || subject} — Quiz`,
+        });
+        if (r && 'blocked' in r) return r.blocked as NextResponse;
+        if (r && 'offers' in r) return NextResponse.json({ offers: r.offers });
+        if (r) {
+          return NextResponse.json({
+            title: r.title, subject, kb: { ...r.kb, note: r.note },
+            questions: r.questions.filter(q => q.type === 'mcq').map(q => ({ question: q.text, options: q.options, correctAnswerIndex: q.answer, explanation: q.scheme, difficulty: (q.level || 'MEDIUM').toLowerCase(), ...(q.figures?.length ? { figures: q.figures } : {}) })),
+          });
+        }
+      } catch (e: any) {
+        if (e?.status === 404) return NextResponse.json({ error: e.message }, { status: 404 });
+        console.warn('[quiz-gen] knowledge base path failed, writing afresh:', e?.message);
+      }
     }
+
+    { const blocked = await kbGate(); if (blocked) return blocked; }
 
     const topicList = (topics || []).join(', ');
     // Truncate syllabusData to avoid overly long prompts

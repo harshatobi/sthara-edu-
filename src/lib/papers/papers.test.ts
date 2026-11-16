@@ -146,3 +146,10 @@ test('a seed plans the same paper however the engine sorts (no randomness inside
     assert.equal(buildBlueprint(sci, cur, 7).map(i => i.chapter).join(), plain);
   } finally { Array.prototype.sort = realSort; }
 });
+
+test('a stored question keeps CBSE bank diagrams; other addresses are dropped', async () => {
+  const { bodyOf } = await import('./paper');
+  const b = bodyOf({ text: 'Identify the part labelled X.', scheme: 'Cornea', figures: [{ path: 'cbse/2026-27/class-10/science/sqp/q12.png', w: 200 }, { path: 'https://evil.example/x.png' }] });
+  assert.deepEqual(b.figures?.map(f => f.path), ['cbse/2026-27/class-10/science/sqp/q12.png']);
+  assert.equal(bodyOf({ text: 'x', scheme: 'y' }).figures, undefined);
+});

@@ -38,6 +38,7 @@ export type Guard =
   | 'staff'         // requireStaff: teacher or office account
   | 'feed'          // requireFeedCaller: teacher or office account (feed, incidents, WhatsApp)
   | 'parent'        // requireParent
+  | 'asker'         // requireAsker: teacher, office account with a role, or parent (Ask the School OS)
   | 'signed-in'     // verifyApiToken + the route's own role checks
   | 'operator'      // operatorFromRequest: Sthara operators only, 404 for everyone else
   | 'cron'          // Authorization: Bearer <CRON_SECRET>, or the import worker's x-worker-secret (IMPORT_WORKER_SECRET)
@@ -87,6 +88,7 @@ function guardOf(route: string, src: string): { guard: Guard; perms: string[] } 
   if (/requireAdmin\(/.test(src)) return { guard: 'office', perms: all };
   if (/requireParent\(/.test(src)) return { guard: 'parent', perms: [] };
   if (/requireFeedCaller\(/.test(src)) return { guard: 'feed', perms: [] };
+  if (/requireAsker\(/.test(src)) return { guard: 'asker', perms: [] };
   if (/requireStaff\(/.test(src)) return { guard: 'staff', perms: [] };
   if (/verifyApiToken\(/.test(src)) return { guard: 'signed-in', perms: all };
   return { guard: 'unguarded', perms: [] };

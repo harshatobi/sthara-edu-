@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.sthara.in/schemas/bank-file.v1.json",
+  "title": "Sthara question bank file, version 1",
+  "description": "One file is one source (a CBSE sample paper, a question bank chapter, NCERT exemplar, or a school's past paper). Loaded by scripts/kb/load_bank.py (Sthara) or Data Import (a school's own uploads). Questions whose wording and options match one already in the bank update it instead of adding a copy.",
+  "type": "object",
+  "required": ["version", "source", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "source": {
+      "type": "object",
+      "required": ["kind", "title", "class", "subject"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["cbse_sqp", "cbse_board", "cbse_qbank", "cbse_practice", "cbse_competency", "cbse_skill", "ncert", "ncert_exemplar", "school_upload"] },
+        "title": { "type": "string", "minLength": 3, "maxLength": 200 },
+        "session": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
+        "class": { "type": "string", "minLength": 1, "maxLength": 40, "description": "e.g. \"Class 10\"" },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "language": { "type": "string", "minLength": 2, "maxLength": 8, "default": "en" },
+        "url": { "type": "string", "maxLength": 500 }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "required": ["qtype", "marks", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "qtype": { "enum": ["mcq", "assertion_reason", "short", "long", "case", "numerical", "diagram"] },
+          "marks": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "chapter_key": { "type": "string", "minLength": 1, "maxLength": 200, "description": "The app's chapter key; leave out and the auto-tagger fills it" },
+          "chapter": { "type": "string", "maxLength": 200, "description": "Chapter name as printed (matched to the curriculum on import)" },
+          "topic": { "type": "string", "maxLength": 300 },
+          "competency": { "enum": ["remember_understand", "apply", "analyse_evaluate"] },
+          "outcome_code": { "type": "string", "maxLength": 40 },
+          "text": { "type": "string", "minLength": 3, "maxLength": 6000 },
+          "options": { "type": "array", "minItems": 2, "maxItems": 6, "items": { "type": "string", "minLength": 1, "maxLength": 1000 } },
+          "answer": { "type": "integer", "minimum": 0, "maximum": 5, "description": "Index of the right option" },
+          "value": { "type": "number", "description": "Numerical answer" },
+          "unit": { "type": "string", "maxLength": 40 },
+          "scheme": { "type": "string", "maxLength": 6000, "description": "Value points, model answer or explanation" },
+          "source_ref": { "type": "string", "maxLength": 300, "description": "e.g. \"CBSE SQP 2026-27, Class X Science, Q12\"" },
+          "figures": { "type": "array", "maxItems": 8, "items": { "type": "object", "required": ["src", "alt"], "additionalProperties": false, "properties": { "src": { "type": "string", "maxLength": 500 }, "alt": { "type": "string", "maxLength": 1000 } } } },
+          "difficulty": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "allOf": [
+          { "if": { "properties": { "qtype": { "enum": ["mcq", "assertion_reason"] } } }, "then": { "required": ["options", "answer"] } }
+        ]
+      }
+    }
+  }
+}

@@ -50,7 +50,7 @@ test('signed-in routes under /api/admin check the caller’s school and role the
 });
 
 test('every handler passes its gate before it touches the database', () => {
-  const GATE = /require(Admin|Staff|Parent|FeedCaller)\(|verifyApiToken\(|operatorFromRequest\(|operatorFor\(/;
+  const GATE = /require(Admin|Staff|Parent|FeedCaller|Asker)\(|verifyApiToken\(|operatorFromRequest\(|operatorFor\(/;
   const DB = /createAdminClient\(|\bdb\.(from|rpc|storage)\b|supabase\.(from|rpc|storage)\b/;
   const early: string[] = [];
   for (const r of routes.filter(r => !['public', 'meta', 'cron', 'device'].includes(r.guard))) {

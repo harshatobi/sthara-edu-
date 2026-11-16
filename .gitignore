@@ -59,3 +59,9 @@ models.txt
 /public/workers/
 scripts/.sandbox/
 scripts/cbse-bank/work/
+# Knowledge-base scripts: local venv and model files (the model lives in storage bucket kb-models)
+scripts/kb/.venv/
+scripts/kb/.model/
+__pycache__/
+# Hand-typed bank seed kept locally, not shipped (2026-11-11)
+src/lib/studio/seed/

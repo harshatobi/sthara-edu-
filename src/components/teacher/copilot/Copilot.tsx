@@ -10,6 +10,8 @@ import { MagnifyingGlassIcon as MagnifyingGlass } from '@phosphor-icons/react/di
 import { WarningIcon as Warning } from '@phosphor-icons/react/dist/ssr/Warning';
 import { TrashIcon as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
 import { ArrowClockwiseIcon as ArrowClockwise } from '@phosphor-icons/react/dist/ssr/ArrowClockwise';
+import { BookmarkSimpleIcon as Bookmark } from '@phosphor-icons/react/dist/ssr/BookmarkSimple';
+import { RecycleIcon as Recycle } from '@phosphor-icons/react/dist/ssr/Recycle';
 import { AiTag, Chip, Empty, PageBar, Skeleton } from '@/components/canon/ui';
 import { useToast } from '@/components/canon/useToast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,7 +26,9 @@ import ArtifactView from './ArtifactView';
 import StudioPanel, { StudioTiles, type StudioPreset, type StudioRequest } from './StudioPanel';
 
 interface Thread { id: string; title: string; cls: string; subject: string; turns: ChatTurn[]; updated: number }
-interface SendOpts { studio?: StudioRequest | null; cls?: string; subject?: string; fresh?: boolean }
+interface SendOpts { studio?: StudioRequest | null; cls?: string; subject?: string; fresh?: boolean; regenerate?: boolean; replaceFrom?: number }
+interface SavedItem { id: string; kind: 'reply' | 'paper' | 'image'; title: string; artifactKind: string | null; chapter: string | null; at: string; reuseCount: number; mine: boolean }
+const SAVED_KIND: Record<string, string> = { questions: 'Questions', lesson: 'Lesson plan', rubric: 'Rubric', document: 'Document', lab: 'Live Lab demo', diagram: 'Diagram', image: 'Picture', paper: 'Board paper', bundle: 'Lesson bundle' };
 
 const STORE = 'sthara.copilot.v1';
 const MAX_THREADS = 20;
@@ -127,7 +131,7 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
   /** Question sets (worksheet, quiz, catch-up, exit tickets) are made in the Studio now: hand those requests over. */
   onQuestionSet?: (p: { chapter?: string; setKind: string; audience?: string; students?: string[]; basis?: string }) => void;
 } = {}) {
-  const { profile } = useAuth();
+  const { profile, getAuthToken } = useAuth();
   const { desk, error: deskError, call } = useTeacherDesk();
   const { classes, cls, subjects, subject, go } = useScopeSelection(desk?.scope ?? []);
   const [toast, toastEl] = useToast();
@@ -142,6 +146,22 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
   const [seenStart, setSeenStart] = useState(start);
   if (start !== seenStart) { setSeenStart(start); if (start) setStudio(start); }
   const [ctx, setCtx] = useState<{ students: number; chaptersWithEvidence: number; assignments: number } | null>(null);
+  // "Made before": everything the Copilot made for this class and subject, kept on the server (opens with no AI).
+  const [saved, setSaved] = useState<SavedItem[] | null>(null);
+  const [savedNonce, setSavedNonce] = useState(0);
+  useEffect(() => {
+    if (!cls || !subject) return;
+    let alive = true;
+    (async () => {
+      try {
+        const token = await getAuthToken();
+        const r = await fetch(`/api/teacher/copilot/saved?${new URLSearchParams({ class: cls, subject })}`, { headers: { Authorization: `Bearer ${token}` } });
+        const j = await r.json().catch(() => ({}));
+        if (alive) setSaved(r.ok ? j.items ?? [] : []);
+      } catch { if (alive) setSaved([]); }
+    })();
+    return () => { alive = false; };
+  }, [cls, subject, savedNonce, getAuthToken]);
   const endRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -167,9 +187,11 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
     if (!useCls || !useSubject) { setFailed({ message: 'Pick a class and subject first.', text: body, opts }); return; }
     setFailed(null); setInput('');
     const st = opts.studio ?? null;
-    const teacherTurn: ChatTurn = { role: 'teacher', text: body, at: now(), ...(st?.targets.length ? { targets: st.targets } : {}) };
-    const base: Thread = !opts.fresh && active && active.cls === useCls && active.subject === useSubject
+    const teacherTurn: ChatTurn = { role: 'teacher', text: body, at: now(), ...(st?.targets.length ? { targets: st.targets } : {}), ...(st ? { studio: st as unknown as Record<string, unknown> } : {}) };
+    const found: Thread = !opts.fresh && active && active.cls === useCls && active.subject === useSubject
       ? active : { id: newId(), title: threadTitle(body), cls: useCls, subject: useSubject, turns: [], updated: now() };
+    // "Make a fresh one": the request and its saved answer come off, and the request is sent again for a new answer.
+    const base: Thread = opts.replaceFrom !== undefined ? { ...found, turns: found.turns.slice(0, opts.replaceFrom) } : found;
     const withTeacher: Thread = { ...base, turns: [...base.turns, teacherTurn], updated: now() };
     const others = threads.filter(t => t.id !== withTeacher.id);
     persist([withTeacher, ...others]);
@@ -183,7 +205,9 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
         class: useCls, subject: useSubject, chapter: st?.chapter || undefined,
         studio: st ? { kind: st.kind, count: st.count, difficulty: st.difficulty, durationMin: st.duration, targets: st.targets, design: st.design } : undefined,
         messages: withTeacher.turns.map((t, i) => ({ role: t.role, text: turnText(t, i === lastArtifactIdx) })),
+        ...(opts.regenerate ? { regenerate: true } : {}),
       });
+      if (res.reply.savedId) setSavedNonce(n => n + 1);
       if (res.context) setCtx(res.context); // a board paper reply carries no class summary
       // A reply inherits the targets of the request it answers (so "Send to class" goes to those students).
       const inherited = [...withTeacher.turns].reverse().find(t => t.role === 'teacher' && t.targets)?.targets;
@@ -192,7 +216,7 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
     } catch (e: any) {
       // Take the unanswered request back off the thread; "Try again" re-sends it.
       persist([{ ...withTeacher, turns: withTeacher.turns.slice(0, -1) }, ...others].filter(t => t.turns.length));
-      setFailed({ message: e?.message || 'The Copilot didn’t answer.', text: body, opts: { ...opts, fresh: !base.turns.length } });
+      setFailed({ message: e?.message || 'The Copilot didn’t answer.', text: body, opts: { ...opts, replaceFrom: undefined, fresh: !base.turns.length } });
     } finally {
       setSending(null);
     }
@@ -225,6 +249,37 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
     if (elsewhere) go({ class: i.cls, subject: sub || null });
     send(`You flagged: "${i.title}" (${i.detail}). What's most likely behind it, what should I check first, and what would you do this week?`, { cls: i.cls, subject: sub, fresh: true });
   };
+
+  async function openSaved(item: SavedItem) {
+    try {
+      const token = await getAuthToken();
+      const r = await fetch(`/api/teacher/copilot/saved?id=${item.id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Couldn’t open that.');
+      const it = j.item;
+      const reply: CopilotReply = it.kind === 'image'
+        ? { say: 'A picture made earlier, ready to use again.', ask: [], artifact: { kind: 'image', title: it.title, prompt: it.title, caption: '', path: it.imagePath }, suggestions: [] }
+        : it.reply;
+      const by: 'you' | 'colleague' = it.mine ? 'you' : 'colleague';
+      const th: Thread = { id: newId(), title: it.title, cls, subject, updated: now(), turns: [
+        { role: 'teacher', text: `Open "${it.title}" from Made before`, at: now() },
+        { role: 'copilot', text: reply.say, reply: { ...reply, reused: { id: it.id, at: it.at, by } }, at: now() },
+      ] };
+      persist([th, ...threads]); setActiveId(th.id); setFailed(null);
+      chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e: any) { toast(e?.message || 'Couldn’t open that.'); }
+  }
+  async function removeSaved(item: SavedItem) {
+    try { await call('/api/teacher/copilot/saved?id=' + item.id, 'DELETE', undefined); setSaved(x => (x || []).filter(y => y.id !== item.id)); }
+    catch (e: any) { toast(e?.message || 'Couldn’t remove it.'); }
+  }
+  /** The answer at `idx` was served from a saved copy: ask for a new one (this costs AI). */
+  function regenerateAt(idx: number) {
+    const req = turns[idx - 1];
+    if (!req || req.role !== 'teacher') return;
+    if (req.text.startsWith('Open "') && req.text.endsWith('from Made before')) { toast('This was opened from Made before. Ask for a new version in your own words.'); return; }
+    send(req.text, { studio: (req.studio as unknown as StudioRequest) ?? null, regenerate: true, replaceFrom: idx - 1 });
+  }
 
   const newChat = () => { setActiveId(null); setFailed(null); setInput(''); inputRef.current?.focus(); };
   const removeThread = (id: string) => { persist(threads.filter(t => t.id !== id)); if (activeId === id) setActiveId(null); };
@@ -307,6 +362,13 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
                   <div key={idx} className="cp-ai">
                     <div className="cp-av"><Sparkle size={17} weight="fill" /></div>
                     <div className="cp-body">
+                      {t.reply?.reused && (
+                        <div className="cp-reused">
+                          <Recycle size={15} weight="bold" />
+                          <span>Saved copy {t.reply.reused.by === 'you' ? 'you made' : 'a colleague made'} on {new Date(t.reply.reused.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}{t.reply.artifact?.kind === 'paper' && (t.reply.reused.versions ?? 1) > 1 ? ` (${t.reply.reused.versions} versions in the school)` : ''}. No AI used.</span>
+                          <button className="btn sm" disabled={!!sending} onClick={() => regenerateAt(idx)}><ArrowClockwise size={13} weight="bold" /> {t.reply.artifact?.kind === 'paper' ? 'Write a new version' : 'Make a fresh one'}</button>
+                        </div>
+                      )}
                       {t.reply?.say && <div className="cp-say md"><ReactMarkdown remarkPlugins={[remarkGfm]}>{t.reply.say}</ReactMarkdown></div>}
                       {t.reply?.ask.length ? <AskCard items={t.reply.ask} disabled={!!sending || idx !== turns.length - 1} onAnswer={a => send(a)} /> : null}
                       {t.reply?.artifact && (
@@ -362,6 +424,18 @@ export default function Copilot({ embedded = false, start = null, onQuestionSet 
                 {otherInsights.slice(0, 3).map(i => <InsightCard key={i.id} i={i} onAct={onInsightAction} onWhy={onWhy} />)}
               </>
             )}
+          </div>
+          <div className="card" style={{ padding: 16 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}><Bookmark size={16} weight="bold" /> Made before · {cls} {subject}</h3>
+            <p className="muted" style={{ fontSize: 12, margin: '4px 0 10px' }}>Everything the Copilot makes is kept here, with the school&apos;s board papers and pictures. Opening one uses no AI.</p>
+            {saved === null ? <Skeleton h={60} /> : saved.length ? saved.slice(0, 12).map(it => (
+              <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button className="thread" onClick={() => void openSaved(it)}>
+                  {it.title}<span>{SAVED_KIND[it.artifactKind ?? it.kind] ?? 'Saved'} · {new Date(it.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}{it.mine ? '' : ' · by a colleague'}{it.reuseCount ? ` · used again ${it.reuseCount}×` : ''}</span>
+                </button>
+                {it.mine && <button className="btn sm" aria-label={`Remove ${it.title}`} onClick={() => void removeSaved(it)}><Trash size={12} weight="bold" /></button>}
+              </div>
+            )) : <p className="muted" style={{ fontSize: 12.5 }}>Nothing yet. Worksheets, lessons, papers and pictures you make will appear here.</p>}
           </div>
           <div className="card" style={{ padding: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>Past conversations · {cls}</h3>

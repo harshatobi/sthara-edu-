@@ -1,5 +1,7 @@
 'use client';
 
+import BankFigures from '@/components/studio/BankFigures';
+
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
@@ -95,19 +97,25 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
     setPickingLab(false);
   };
 
-  async function generate() {
+  // Knowledge base first (2026-11-14): near-identical sets already made are offered before anything is built; a new
+  // set is built from the question bank, with the AI writing only what the bank can't fill.
+  const [offers, setOffers] = useState<{ type: string; id: string; title: string; by: 'you' | 'colleague'; at: string; similarity: number }[] | null>(null);
+  async function generate(how: { offer?: boolean; useSaved?: { type: string; id: string } } = { offer: true }) {
     const focus = topic || chapter;
     if (!focus) { setError('Pick a chapter (and a topic if you like) to generate from.'); return; }
     setError(null); setGenerating(true); setGeneratedNote(null);
     try {
+      const kb = { offer: !!how.offer, ...(how.useSaved ? { useSaved: how.useSaved } : {}) };
       const raw = isQuiz
-        ? await call('/api/teacher/quiz-gen', 'POST', { topics: [focus], subject, className: cls, numQuestions: genCount, difficulty: 'mixed' })
-        : await call('/api/teacher/homework-gen', 'POST', { topic: focus, subject, studentClass: cls, numQuestions: genCount, questionType: mode === 'typed' ? 'mixed' : 'short' });
+        ? await call('/api/teacher/quiz-gen', 'POST', { topics: [focus], subject, className: cls, numQuestions: genCount, difficulty: 'mixed', ...kb })
+        : await call('/api/teacher/homework-gen', 'POST', { topic: focus, subject, studentClass: cls, numQuestions: genCount, questionType: mode === 'typed' ? 'mixed' : 'short', ...kb });
+      if (Array.isArray(raw?.offers) && raw.offers.length) { setOffers(raw.offers); return; }
+      setOffers(null);
       const got = fromGenerated(raw).filter(q => !isQuiz || q.type === 'mcq');
       if (!got.length) throw new Error('The generator returned nothing usable. Try again, or add questions by hand.');
       setQuestions(qs => [...qs, ...got]);
       if (!title) setTitle(isQuiz ? `${focus} — Quiz` : focus);
-      setGeneratedNote(`Added ${got.length} AI-drafted question${got.length === 1 ? '' : 's'} on ${focus}. Check each one and its answer before posting.`);
+      setGeneratedNote(`Added ${got.length} question${got.length === 1 ? '' : 's'} on ${focus}: ${raw?.kb?.note ?? 'AI-drafted.'} Check each one and its answer before posting.`);
     } catch (e: any) {
       setError(e?.message || 'Generation failed.');
     } finally {
@@ -241,13 +249,25 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
           {!locked && canLab && pickingLab && <LabQuestionPicker cls={cls} chapter={chapter} onAdd={addLab} onClose={() => setPickingLab(false)} />}
           {!locked && (
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-              <button className="btn ai" disabled={generating || (!chapter && !topic)} onClick={generate}>
+              <button className="btn ai" disabled={generating || (!chapter && !topic)} onClick={() => void generate()}>
                 <Sparkle size={15} weight="fill" /> {generating ? 'Generating…' : `Generate ${genCount} with AI`} <AiTag />
               </button>
               <select className="cmp-sel" style={{ width: 'auto' }} aria-label="How many questions to generate" value={genCount} onChange={e => setGenCount(Number(e.target.value))}>
                 {[3, 4, 5, 8, 10].map(n => <option key={n} value={n}>{n} questions</option>)}
               </select>
               {!chapter && !topic && <span className="muted" style={{ fontSize: 12.5 }}>Pick a chapter to generate from it.</span>}
+            </div>
+          )}
+          {offers && (
+            <div className="kb-offers" role="region" aria-label="Already made">
+              <b>Already made for this, no AI needed</b>
+              {offers.map(o => (
+                <div key={o.id} className="kb-offer">
+                  <span>{o.title}<i>{o.by === 'you' ? 'You' : 'A colleague'} · {new Date(o.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {Math.round(o.similarity * 100)}% match</i></span>
+                  <button className="btn sm pri" disabled={generating} onClick={() => void generate({ useSaved: { type: o.type, id: o.id } })}>Use these questions</button>
+                </div>
+              ))}
+              <div className="kb-offer-foot"><button className="btn sm" disabled={generating} onClick={() => void generate({ offer: false })}>Make a new set (from the bank first)</button><button className="btn sm" onClick={() => setOffers(null)}>Cancel</button></div>
             </div>
           )}
           {generatedNote && <div className="note info" style={{ marginBottom: 14 }}>{generatedNote}</div>}
@@ -272,6 +292,12 @@ export default function Composer({ kind, initial, defaultClass, defaultSubject, 
               </div>
               <textarea className="cmp-in" rows={2} value={q.questionText} disabled={locked} maxLength={2000} placeholder="Question"
                 onChange={e => setQ(i, { questionText: e.target.value })} />
+              {q.figures?.length ? (
+                <div className="cmp-figs">
+                  <BankFigures figs={q.figures} label={`Figure for question ${i + 1}`} />
+                  {!locked && <button className="btn sm" onClick={() => setQ(i, { figures: undefined })}>Remove the diagram</button>}
+                </div>
+              ) : null}
               {q.lab && <LabQuestionSim lab={q.lab} />}
               {q.lab && (
                 <div className="cmp-opts">

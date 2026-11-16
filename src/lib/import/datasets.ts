@@ -11,6 +11,8 @@
  * set up is refused, never created.
  */
 import { normClass } from '@/lib/teacher/scope';
+import { topicKey } from '@/lib/teacher/topicKey';
+import { fingerprint } from '@/lib/studio/fingerprint';
 import { evenSchedule, validateSchedule } from '@/lib/admin/fees';
 import { parseAmount, parseDate, parseSession } from './parse';
 import { parseAadhaar } from '@/lib/students/aadhaar';
@@ -748,7 +750,68 @@ const kirti: Dataset = {
   },
 };
 
-export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, documents, certificates, housePlacements, memberships, kirti, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants];
+// ── Question bank (a school's own past papers), decisions of 2026-11-14 ──────────────────────────────────────
+const QTYPES: Record<string, string> = {
+  mcq: 'mcq', 'multiple choice': 'mcq', objective: 'mcq', 'assertion reason': 'assertion_reason', assertion_reason: 'assertion_reason', ar: 'assertion_reason',
+  short: 'short', saq: 'short', 'short answer': 'short', vsa: 'short', sa: 'short', long: 'long', laq: 'long', 'long answer': 'long', la: 'long',
+  numerical: 'numerical', numeric: 'numerical', case: 'case', 'case based': 'case', 'case study': 'case',
+};
+const COMPETENCY: Record<string, string> = {
+  remember: 'remember_understand', understand: 'remember_understand', remember_understand: 'remember_understand', knowledge: 'remember_understand',
+  apply: 'apply', application: 'apply', analyse: 'analyse_evaluate', analyze: 'analyse_evaluate', evaluate: 'analyse_evaluate', analyse_evaluate: 'analyse_evaluate', hots: 'analyse_evaluate',
+};
+const OPTION_KEYS = ['option_a', 'option_b', 'option_c', 'option_d'] as const;
+
+const questionBank: Dataset = {
+  key: 'question_bank', label: 'Question bank (past papers)', writer: 'import_question_bank', needs: [],
+  about: 'One row per question from the school\u2019s own past papers and tests. Its teachers\u2019 generators pick from these before the AI writes anything.',
+  lands: 'The school\u2019s private question bank, marked \u201cschool upload, unreviewed\u201d until a subject lead approves. Usable at once.',
+  matching: 'The question\u2019s wording and options (spacing, case and option order don\u2019t matter): a question already uploaded is updated.',
+  columns: [
+    { key: 'class', required: true, kind: 'text', max: 40, aliases: ['grade', 'standard'], example: 'Class 10', guide: 'The class level the question is for: Class 10, 10 or X.' },
+    { key: 'subject', required: true, kind: 'text', max: 80, example: 'Science', guide: 'The subject, as the school names it in Sthara.' },
+    { key: 'chapter', required: false, kind: 'text', max: 200, aliases: ['lesson', 'unit'], example: 'Life Processes', guide: 'The NCERT chapter name. Leave blank and Sthara works it out from the question.' },
+    { key: 'topic', required: false, kind: 'text', max: 300, example: 'Nutrition in human beings', guide: 'Optional. The topic within the chapter.' },
+    { key: 'type', required: true, kind: 'enum', values: QTYPES, aliases: ['question_type', 'qtype'], example: 'MCQ', guide: 'MCQ, Assertion-Reason, Short, Long, Numerical or Case.' },
+    { key: 'marks', required: true, kind: 'int', min: 1, maxValue: 10, example: '1', guide: '1 to 10.' },
+    { key: 'question', required: true, kind: 'text', max: 6000, aliases: ['question_text', 'text'], example: 'Which organelle is called the powerhouse of the cell?', guide: 'The question as printed.' },
+    { key: 'option_a', required: false, kind: 'text', max: 1000, aliases: ['a'], example: 'Nucleus', guide: 'MCQ only: option (a).' },
+    { key: 'option_b', required: false, kind: 'text', max: 1000, aliases: ['b'], example: 'Mitochondria', guide: 'MCQ only: option (b).' },
+    { key: 'option_c', required: false, kind: 'text', max: 1000, aliases: ['c'], example: 'Ribosome', guide: 'MCQ only: option (c).' },
+    { key: 'option_d', required: false, kind: 'text', max: 1000, aliases: ['d'], example: 'Golgi body', guide: 'MCQ only: option (d).' },
+    { key: 'answer', required: false, kind: 'text', max: 60, aliases: ['correct', 'correct_option', 'key'], example: 'B', guide: 'MCQ: the right option letter (A to D). Numerical: the answer\u2019s value.' },
+    { key: 'model_answer', required: false, kind: 'text', max: 6000, aliases: ['marking_scheme', 'scheme', 'value_points', 'explanation'], example: 'Mitochondria release energy as ATP.', guide: 'Value points, model answer or why the right option is right.' },
+    { key: 'competency', required: false, kind: 'enum', values: COMPETENCY, aliases: ['thinking_level', 'level'], example: 'Remember', guide: 'Remember/Understand, Apply or Analyse/Evaluate. Leave blank for Remember/Understand.' },
+    { key: 'source', required: false, kind: 'text', max: 300, aliases: ['source_ref', 'paper'], example: 'Half-yearly 2025, Q3', guide: 'Where it came from, for teachers.' },
+    { key: 'session', required: false, kind: 'session', example: '2025-26', guide: 'Optional. The year of the paper.' },
+  ],
+  identity: c => fingerprint(String(c.question ?? ''), OPTION_KEYS.map(k => s(c, k)).filter((x): x is string => !!x)),
+  build(c, n) {
+    const qtype = String(c.type);
+    const options = OPTION_KEYS.map(k => s(c, k)).filter((x): x is string => !!x && !!x.trim());
+    const choice = qtype === 'mcq' || qtype === 'assertion_reason';
+    let answer: number | null = null;
+    let value: number | null = null;
+    if (choice) {
+      if (options.length < 2) return fail({ n, column: 'option_a', error: 'A multiple-choice question needs at least two options.' });
+      const a = String(c.answer ?? '').trim().toUpperCase().replace(/[().]/g, '');
+      answer = 'ABCD'.indexOf(a.charAt(0));
+      if (!a || answer < 0 || answer >= options.length) return fail({ n, column: 'answer', error: 'Give the right option\u2019s letter (A to D).' });
+    } else if (qtype === 'numerical' && c.answer != null && String(c.answer).trim()) {
+      const v = Number(String(c.answer).replace(/[^0-9.+-]/g, ''));
+      if (Number.isFinite(v)) value = v;
+    }
+    const chapter = s(c, 'chapter')?.trim();
+    return { ok: true, row: {
+      class: String(c.class).trim(), subject: String(c.subject).trim(), chapter_key: chapter ? topicKey(chapter) : 'untagged', topic: s(c, 'topic') ?? chapter ?? null,
+      competency: c.competency ?? 'remember_understand', qtype, marks: c.marks, language: 'en',
+      body: { text: String(c.question).trim(), ...(choice ? { options, answer } : {}), ...(value !== null ? { value } : {}), scheme: s(c, 'model_answer') ?? '' },
+      fingerprint: fingerprint(String(c.question), options), source_ref: s(c, 'source'), session: c.session ?? null,
+    } };
+  },
+};
+
+export const DATASETS: Dataset[] = [students, enrolments, family, health, healthEvents, documents, certificates, housePlacements, memberships, kirti, attendance, examMarks, legacyResults, feeStructures, feeInvoices, feePayments, applicants, questionBank];
 export const datasetOf = (key: unknown) => DATASETS.find(d => d.key === key) ?? null;
 
 // ── Cells ───────────────────────────────────────────────────────────────────

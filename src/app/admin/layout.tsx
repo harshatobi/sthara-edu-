@@ -40,7 +40,7 @@ import type { Perm } from '@/lib/admin/rbac';
 // generator) keep their URLs but are off the canon nav.
 const NAV: (CanonNavItem & { need: Perm[] })[] = [
   { href: '/admin', label: 'Dashboard', short: 'Home', icon: SquaresFour, exact: true, group: 'Today', need: ['dashboard.view'] },
-  { href: '/admin/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle, ai: true, group: 'Today', need: ['os.ask'] },
+  { href: '/admin/ask', label: 'Ask the School OS', short: 'Ask', icon: ChatsCircle, ai: true, group: 'Today', need: ['dashboard.view'] },
   { href: '/admin/probe', label: 'Probe', icon: Sparkle, ai: true, group: 'Today', need: ['probe.view'] },
   { href: '/admin/feed', label: 'Situational Feed', short: 'Feed', icon: Bell, group: 'Today', need: ['feed.read', 'incidents.manage', 'safeguarding.read'] },
   { href: '/admin/fees', label: 'Admissions & Fees', short: 'Fees', icon: CurrencyInr, also: ['/admin/admissions'], group: 'Admissions and fees', need: ['fees.read'] },

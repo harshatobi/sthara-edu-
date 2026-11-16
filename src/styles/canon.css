@@ -174,6 +174,15 @@
 .canon .tab.on.blue { background:var(--ink); }
 .canon .note { background:#FFF8E7; border-left:3px solid var(--amber); border-radius:10px; padding:14px 16px; font-size:13px; color:#7A5A08; line-height:1.6; }
 .canon .note.info { background:#EFF6FF; border-left-color:var(--sky); color:#1E3A6B; }
+/* A bank diagram under a question in the composer. */
+.canon .cmp-figs { display:flex; flex-direction:column; align-items:flex-start; gap:6px; margin:6px 0 4px; }
+/* Knowledge base offers (2026-11-14): things already made, shown before anything new is built. */
+.canon .kb-offers { border:1px solid #A7F3D0; background:#F0FDF7; border-radius:12px; padding:12px 14px; margin-bottom:14px; display:flex; flex-direction:column; gap:8px; font-size:13px; }
+.canon .kb-offers > b { color:#0E6B4C; font-size:13px; }
+.canon .kb-offer { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.canon .kb-offer span { flex:1; min-width:180px; font-weight:700; display:flex; flex-direction:column; }
+.canon .kb-offer span i { font-style:normal; font-weight:500; font-size:12px; color:#5F6B7D; }
+.canon .kb-offer-foot { display:flex; gap:8px; flex-wrap:wrap; padding-top:4px; border-top:1px dashed #A7F3D0; }
 .canon .note.err { background:#FFF1F4; border-left-color:var(--red); color:#8A1030; }
 .canon .note.warn { background:#FFFBEB; border-left-color:var(--amber); color:#7A4A06; }
 .canon .mono-blk { background:var(--ink); color:#CFE0F5; border-radius:16px; padding:22px 24px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12.5px; line-height:2; white-space:pre-wrap; }
@@ -525,6 +534,8 @@
 .canon .md table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13px; }
 .canon .md th, .canon .md td { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
 .canon .cp-ask { border:1.5px solid #D8CCFF; background:#FBFAFF; border-radius:16px; padding:14px 16px; }
+.canon .cp-reused { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px; color:#0E6B4C; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:12px; padding:8px 12px; }
+.canon .cp-reused span { flex:1; min-width:180px; }
 .canon .cp-ask .q { font-weight:700; font-size:13.5px; margin:10px 0 8px; }
 .canon .cp-ask .q:first-child { margin-top:0; }
 .canon .opt { border:1.5px solid var(--line); background:#fff; border-radius:99px; padding:7px 13px; font-size:12.5px; font-weight:700; color:var(--ink); margin:0 6px 6px 0; }

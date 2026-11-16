@@ -1,3 +1,4 @@
+import { parseFigures } from '@/lib/studio/figures';
 import { sanitizeSvg } from '@/lib/teacher/svg';
 import type { BlueprintItem } from './blueprint';
 import { designByKey, slotsOf, type PaperDesign, type QType } from './designs';
@@ -21,10 +22,16 @@ export interface QBody {
   figure?: Figure;
   /** The version for visually impaired candidates, required whenever there is a figure or map. */
   vi?: string;
+  /** CBSE's own diagrams and maps (from the question bank), shown with the question. */
+  figures?: import('@/lib/studio/figures').BankFigure[];
   parts?: Part[];
   scheme: string;
 }
-export interface PaperQuestion extends QBody { q: number; type: QType; marks: number; chapter: string; alt?: QBody }
+export interface PaperQuestion extends QBody {
+  q: number; type: QType; marks: number; chapter: string; alt?: QBody;
+  /** Taken from the question bank (no AI): where it came from, and whether it is an official CBSE question students may have seen. */
+  bank?: { source: string | null; official: boolean };
+}
 export interface PaperSection { id: string; title: string; questions: PaperQuestion[] }
 export interface Paper { design: string; title: string; seed: number; sections: PaperSection[] }
 
@@ -60,17 +67,19 @@ function partOf(v: any, i: number): Part {
   };
 }
 
-function bodyOf(v: any): QBody {
+export function bodyOf(v: any): QBody {
   return {
     text: s(v?.text, 3000), passage: s(v?.passage, 6000) || undefined, options: optionsOf(v?.options),
     answer: Number.isInteger(v?.answer) ? v.answer : undefined, assertion: s(v?.assertion, 800) || undefined, reason: s(v?.reason, 800) || undefined,
     figure: figureOf(v?.figure), vi: s(v?.vi, 2000) || undefined, parts: Array.isArray(v?.parts) ? v.parts.slice(0, 14).map(partOf) : undefined,
     scheme: s(v?.scheme, 4000),
+    // CBSE's own diagrams from the question bank: only bank-figure paths pass (parseFigures).
+    ...(Array.isArray(v?.figures) && parseFigures(v.figures).length ? { figures: parseFigures(v.figures) } : {}),
   };
 }
 
 /** What's wrong with one body against its slot, in words the model can act on. */
-function problems(item: BlueprintItem, b: QBody, what: string): string[] {
+export function problems(item: BlueprintItem, b: QBody, what: string): string[] {
   const p: string[] = [];
   const t = item.type;
   if (t === 'mcq' && (b.options?.length !== 4 || b.answer === undefined || b.answer < 0 || b.answer > 3 || !b.text)) p.push(`${what}: an MCQ needs text, exactly 4 options and answer 0–3`);
@@ -138,7 +147,8 @@ export function checkPaper(raw: unknown): Paper | null {
     id: sec.id, title: sec.title,
     questions: sec.slots.map(slot => {
       const q = qs.find(x => Number(x?.q) === slot.q);
-      return q ? { ...bodyOf(q), q: slot.q, type: slot.type, marks: slot.marks, chapter: s(q.chapter, 200), ...(q.alt ? { alt: bodyOf(q.alt) } : {}) } : null;
+      const bank = q?.bank && typeof q.bank === 'object' ? { bank: { source: s(q.bank.source, 300) || null, official: q.bank.official === true } } : {};
+      return q ? { ...bodyOf(q), q: slot.q, type: slot.type, marks: slot.marks, chapter: s(q.chapter, 200), ...(q.alt ? { alt: bodyOf(q.alt) } : {}), ...bank } : null;
     }),
   }));
   if (sections.some(x => x.questions.some(q => !q))) return null;

@@ -10,10 +10,14 @@ import { enginesFor, labCatalogue } from '@/lib/lab/registry';
 import { findMisconceptions, misconceptionBrief } from '@/lib/teacher/misconceptions';
 import { designsFor } from '@/lib/papers/designs';
 import { generatePaper } from '@/lib/papers/generate';
+import { paperBankFill } from '@/lib/kb/papers';
+import { indexNow, nearSaved } from '@/lib/kb/server';
 import { aiFailure } from '@/lib/ai/retry';
 import { aiGate } from '@/lib/settings/server';
 import { generateAi, aiConfigured } from '@/lib/ai/generate';
 import { byIds, pageAll } from '@/lib/ops/page';
+import { paperKeySource, replyKeySource } from '@/lib/teacher/copilotKeys';
+import { findSaved, keyOf, saveOutput } from '@/lib/teacher/copilotSaved';
 
 export const dynamic = 'force-dynamic';
 // A lesson bundle is a long reply, and a board paper writes its sections in parallel with one retry each.
@@ -30,6 +34,10 @@ const str = (v: unknown, n = 4000) => (typeof v === 'string' ? v.trim().slice(0,
  * assignments and results, syllabus coverage, upcoming lessons, the official
  * curriculum). Students are sent to the model as [[S1]]…[[Sn]] tokens and the
  * names are restored in the reply — no student name ever leaves the server.
+ *
+ * Everything it makes is saved (copilot_outputs), and the same request again is answered from the saved copy at no AI
+ * cost: a board paper per design (shared by the school's teachers of that level), a worksheet, lesson or document per
+ * identical request (the teacher's own, for 30 days). { regenerate: true } writes a fresh one instead.
  */
 export async function POST(req: NextRequest) {
   const auth = await requireStaff(req, { academic: true });
@@ -46,10 +54,16 @@ export async function POST(req: NextRequest) {
     .map((m: any) => ({ role: m?.role === 'copilot' ? 'model' : 'user', text: str(m?.text, 6000) })).filter((m: any) => m.text);
   if (!messages.length || messages[messages.length - 1].role !== 'user') return NextResponse.json({ error: 'Ask the Copilot something.' }, { status: 400 });
   const studioKind = STUDIO.some(x => x.kind === b?.studio?.kind) ? (b.studio.kind as StudioKind) : null;
+  const regenerate = b?.regenerate === true;
 
-  const aiBlocked = await aiGate(staff.id, 'teacherTools');
-  if (aiBlocked) return aiBlocked;
-  if (!aiConfigured()) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
+  // The AI gate (paused school, cost cap, no key) applies only to work that calls the AI: a saved copy is served even
+  // when the school's AI is paused.
+  const gate = async () => {
+    const blocked = await aiGate(staff.id, 'teacherTools');
+    if (blocked) return blocked;
+    if (!aiConfigured()) return NextResponse.json({ error: 'The Copilot isn’t configured on this server (no AI key).' }, { status: 503 });
+    return null;
+  };
 
   // A board paper is its own job: the design fixes every question, so the class brief isn't needed.
   if (studioKind === 'board_paper') {
@@ -60,16 +74,29 @@ export async function POST(req: NextRequest) {
     const design = options.find(d => d.key === b?.studio?.design) ?? options[0];
     const cur = getCurriculum(cls, subject);
     if (!design || !cur) return NextResponse.json({ error: `There's no board paper design for ${subject} in ${cls} yet.` }, { status: 400 });
+    // A paper the school already has for this design is handed back (no AI); "Write a new version" sends regenerate.
+    // Asking to change a paper ("refine") is a new conversation turn, so it never matches a saved paper.
+    const refining = messages.length > 1;
+    const paperKey = keyOf(paperKeySource(design.key, cls, subject));
+    if (!regenerate && !refining) {
+      const hit = await findSaved(db, staff, 'paper', paperKey);
+      if (hit?.reply) return NextResponse.json({ reply: { ...hit.reply, reused: hit.reused } });
+    }
+    { const g = await gate(); if (g) return g; }
     try {
-      const paper = await generatePaper(design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, Math.floor(Math.random() * 1e9));
+      const seed = Math.floor(Math.random() * 1e9);
+      // The question bank fills every slot it can (official CBSE questions marked); the AI writes only the rest.
+      const { fill } = await paperBankFill(db, staff.schoolId, cls, subject, seed);
+      const { fromBank, ...paper } = await generatePaper(design, cur, { feature: 'boardPaper', userId: staff.id, schoolId: staff.schoolId }, seed, 270_000, fill);
       const total = paper.sections.reduce((n, sec) => n + sec.questions.length, 0);
-      return NextResponse.json({
-        reply: {
-          say: `Here is a full ${design.subject}${design.variant ? ` (${design.variant})` : ''} practice paper in the CBSE 2026-27 board pattern: ${total} questions, ${design.maxMarks} marks, with its marking scheme. Every question was checked against the board design; please read it through before you use it.`,
-          ask: [], artifact: { kind: 'paper', title: paper.title, paper },
-          suggestions: ['Make a revision worksheet on the weakest chapter', 'Plan the revision lessons before the exam'],
-        },
-      });
+      const official = paper.sections.reduce((n, sec) => n + sec.questions.filter(q => q.bank?.official).length, 0);
+      const reply = {
+        say: `Here is a full ${design.subject}${design.variant ? ` (${design.variant})` : ''} practice paper in the CBSE 2026-27 board pattern: ${total} questions, ${design.maxMarks} marks, with its marking scheme. ${fromBank ? `${fromBank} question${fromBank === 1 ? '' : 's'} came from the question bank${official ? ` (${official} official CBSE, marked: students may have seen them)` : ''}; the rest were written and checked against the board design.` : 'Every question was checked against the board design.'} Please read it through before you use it.`,
+        ask: [], artifact: { kind: 'paper' as const, title: paper.title, paper },
+        suggestions: ['Make a revision worksheet on the weakest chapter', 'Plan the revision lessons before the exam'],
+      };
+      const savedId = await saveOutput(db, staff, { kind: 'paper', cls, subject, key: paperKey, title: paper.title, artifactKind: 'paper', reply: reply as any });
+      return NextResponse.json({ reply: { ...reply, savedId } });
     } catch (e: any) {
       console.error('[copilot paper]', e?.message);
       const kind = aiFailure(e);
@@ -81,6 +108,29 @@ export async function POST(req: NextRequest) {
       }, { status: kind === 'quota' ? 429 : kind === 'busy' ? 503 : 502 });
     }
   }
+
+  // The same request again (same class, subject, chapter, settings and conversation): the saved answer, no AI.
+  const replyKey = keyOf(replyKeySource({
+    cls, subject, chapter: str(b?.chapter, 200) || null, messages,
+    studio: studioKind ? { kind: studioKind, count: Number(b.studio.count) || undefined, difficulty: str(b.studio.difficulty, 20) || undefined, durationMin: Number(b.studio.durationMin) || undefined, targets: Array.isArray(b.studio.targets) ? b.studio.targets.filter((x: unknown) => typeof x === 'string') : [], design: str(b.studio.design, 60) || undefined } : null,
+  }));
+  if (!regenerate) {
+    const hit = await findSaved(db, staff, 'reply', replyKey);
+    if (hit?.reply) return NextResponse.json({ reply: { ...hit.reply, reused: hit.reused } });
+    // A labelled diagram the teacher made before, asked for again in other words ("eye diagram" / "structure of the
+    // human eye"): the saved one, found by meaning (free model, no AI). Diagrams don't depend on class results.
+    if (studioKind === 'diagram') {
+      const ask = `${messages[messages.length - 1].text} ${str(b?.chapter, 200)}`;
+      const near = (await nearSaved(db, staff, { authorization: req.headers.get('authorization'), origin: req.nextUrl.origin }, { text: ask, cls, subject, types: ['copilot'], min: 0.9, limit: 3 }))
+        .find(o => o.kind === 'diagram' && o.by === 'you');
+      if (near) {
+        const { data: row } = await db.from('copilot_outputs').select('reply, created_at').eq('id', near.id).eq('teacher_id', staff.id).maybeSingle();
+        if ((row?.reply as any)?.artifact?.kind === 'diagram') return NextResponse.json({ reply: { ...(row!.reply as any), reused: { id: near.id, at: row!.created_at, by: 'you' } } });
+      }
+    }
+  }
+
+  { const g = await gate(); if (g) return g; }
 
   // ── The brief: this class + subject, from the database ────────────────────
   const [{ data: users }, { data: assignments }, { data: progress }, { data: lessons }] = await Promise.all([
@@ -218,7 +268,19 @@ ${brief.join('\n\n')}`;
     const raw = (res.text || '{}').replace(/^```(json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const reply = restoreNames(parseReply(JSON.parse(raw)), names);
     if (!reply.say && !reply.artifact && !reply.ask.length) throw new Error('empty reply');
-    return NextResponse.json({ reply, context: { students: roster.length, chaptersWithEvidence: byChapter.size, assignments: work.length } });
+    // Anything it made is kept (questions back to the teacher are not: they aren't a thing to reuse).
+    const savedId = reply.artifact
+      ? await saveOutput(db, staff, { kind: 'reply', cls, subject, chapter: str(b?.chapter, 200) || null, key: replyKey, title: reply.artifact.title || 'Copilot', artifactKind: reply.artifact.kind, reply: { ...reply, kbText: `${messages[messages.length - 1].text} ${str(b?.chapter, 200)}`.slice(0, 2000) } as typeof reply })
+      : null;
+    if (savedId && reply.artifact) {
+      const a = reply.artifact as any;
+      await indexNow(db, { authorization: req.headers.get('authorization'), origin: req.nextUrl.origin }, [{
+        type: 'copilot', id: savedId, schoolId: staff.schoolId, ownerId: staff.id, cls, subject, chapterKey: null, kind: a.kind,
+        // The request that made it, as the next request is matched (see nearSaved below).
+        text: `${messages[messages.length - 1].text} ${str(b?.chapter, 200)}`.slice(0, 2000),
+      }]);
+    }
+    return NextResponse.json({ reply: { ...reply, ...(savedId ? { savedId } : {}) }, context: { students: roster.length, chaptersWithEvidence: byChapter.size, assignments: work.length } });
   } catch (e: any) {
     console.error('[copilot]', e?.message);
     return NextResponse.json({ error: 'The Copilot didn’t come back with a usable answer. Try again, or rephrase.' }, { status: 502 });

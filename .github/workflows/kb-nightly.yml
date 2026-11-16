@@ -1,0 +1,44 @@
+# Knowledge base, nightly: vectorise new questions and materials, remove duplicates, auto-tag, work out real
+# difficulty from students' answers and check maths answers with sympy. No AI is called. See scripts/kb/nightly.py.
+#
+# Needs repo secret SUPABASE_DB_URL (the database connection string).
+# Scheduled runs only fire from the default branch (main).
+name: Knowledge base nightly
+
+on:
+  schedule:
+    - cron: '30 21 * * *'   # 03:00 IST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kb-nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/kb/requirements.txt
+      - name: Model files (pinned by checksum in api/_kb_embedder.py)
+        uses: actions/cache@v4
+        with:
+          path: /tmp/kb-model
+          key: kb-model-paraphrase-multilingual-minilm-int8-v1
+      - run: pip install -r scripts/kb/requirements.txt
+      - name: Unit tests
+        run: python -m pytest -q scripts/kb/tests
+      - name: Nightly jobs
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then echo "SUPABASE_DB_URL secret is not set; skipping"; exit 0; fi
+          cd scripts/kb && python nightly.py

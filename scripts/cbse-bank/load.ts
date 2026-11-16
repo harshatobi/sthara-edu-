@@ -12,17 +12,21 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { fingerprint } from '../../src/lib/studio/fingerprint';
-import { topicKey } from '../../src/lib/tml/engine';
+// The app's chapter key (lib/teacher/topicKey), not the mastery engine's: the Studio and generators look chapters up by it.
+import { topicKey } from '../../src/lib/teacher/topicKey';
 
 const ROOT = join(__dirname, 'work');
 const BUCKET = 'bank-figures';
 
 /** Each parsed file: the paper's segment outputs (figures live beside them) and how it is named. */
-const PAPERS = [
-  { items: 'X_sci', sqp: 'Science-SQP', ms: 'Science-MS', name: 'Science', slug: 'science' },
-  { items: 'X_sst', sqp: 'SocialScience-SQP', ms: 'SocialScience-MS', name: 'Social Science', slug: 'social-science' },
-  { items: 'X_maths', sqp: 'MathsStandard-SQP', ms: 'MathsStandard-MS', name: 'Mathematics (Standard)', slug: 'mathematics-standard' },
+const DEFAULT_PAPERS = [
+  { items: 'X_sci', sqp: 'Science-SQP', ms: 'Science-MS', name: 'Science', slug: 'science', grade: 10 },
+  { items: 'X_sst', sqp: 'SocialScience-SQP', ms: 'SocialScience-MS', name: 'Social Science', slug: 'social-science', grade: 10 },
+  { items: 'X_maths', sqp: 'MathsStandard-SQP', ms: 'MathsStandard-MS', name: 'Mathematics (Standard)', slug: 'mathematics-standard', grade: 10 },
 ];
+/** Papers batch.py checked (marks add up to the printed total) are listed in work/manifest.json; else the first three. */
+const PAPERS: { items: string; sqp: string; ms: string; name: string; slug: string; grade: number }[] =
+  existsSync(join(ROOT, 'manifest.json')) ? JSON.parse(readFileSync(join(ROOT, 'manifest.json'), 'utf8')).filter((p: any) => p.ok) : DEFAULT_PAPERS;
 
 /** Parser flags, as the reviewer reads them. Blocking ones mark the item 'flagged': it can't be assigned until fixed. */
 const FLAG_NOTE: Record<string, { note: string; blocks: boolean }> = {
@@ -64,6 +68,9 @@ function figSizes(seg: string): Map<string, Fig> {
 const garbled = (t: string) => /[√∑∫=+−×÷^]\s*$/m.test(t);
 
 const write = process.argv.includes('--write');
+// --skip-bad: a question with a problem is left out (and listed) instead of stopping the whole load.
+const skipBad = process.argv.includes('--skip-bad');
+const skipped: string[] = [];
 const plan: { row: Record<string, any>; uploads: { local: string; path: string }[] }[] = [];
 const problems: string[] = [];
 
@@ -72,7 +79,7 @@ for (const p of PAPERS) {
   const sizes = { sqp: figSizes(p.sqp), ms: figSizes(p.ms) };
   for (const it of items) {
     const session: string = it.session;
-    const base = `cbse/${session}/class-10/${p.slug}`;
+    const base = `cbse/${session}/class-${p.grade}/${p.slug}`;
     const uploads: { local: string; path: string }[] = [];
     const fig = (file: string, from: 'sqp' | 'ms') => {
       const local = join(ROOT, 'seg', `fig_${from === 'sqp' ? p.sqp : p.ms}`, file);
@@ -101,10 +108,15 @@ for (const p of PAPERS) {
     if (it.optionFigures) body.optionFigures = Object.fromEntries(Object.entries(it.optionFigures).map(([k, f]) => [k, fig(f as string, 'sqp')]));
     if (it.access) body.access = it.access;
 
+    if (!String(it.text ?? '').trim()) problems.push(`${p.items} Q${it.q}: no wording (the PDF draws it as a picture)`);
     if (!it.chapter) problems.push(`${p.items} Q${it.q}: no chapter`);
     if (!['mcq', 'assertion_reason', 'short', 'long', 'case', 'numerical', 'diagram'].includes(it.type)) problems.push(`${p.items} Q${it.q}: type ${it.type}`);
     if (!(it.marks >= 1 && it.marks <= 10)) problems.push(`${p.items} Q${it.q}: marks ${it.marks}`);
     if (it.options && !(Number.isInteger(it.answer) && it.answer >= 0 && it.answer < it.options.length)) problems.push(`${p.items} Q${it.q}: answer out of range`);
+    if (skipBad && problems.some(x => x.startsWith(`${p.items} Q${it.q}:`))) {
+      for (const x of problems.filter(x => x.startsWith(`${p.items} Q${it.q}:`))) { skipped.push(x); problems.splice(problems.indexOf(x), 1); }
+      continue;
+    }
 
     plan.push({
       uploads,
@@ -112,7 +124,7 @@ for (const p of PAPERS) {
         scope: 'sthara', school_id: null, class: it.cls, subject: it.subject, chapter_key: topicKey(it.chapter || ''),
         topic: null, outcome_code: null, competency: it.competency, qtype: it.type, marks: it.marks, language: it.language || 'en',
         body, status: 'unreviewed', source: it.source, session,
-        source_ref: `CBSE Sample Question Paper ${session}, Class X ${p.name}, Q${it.q}`,
+        source_ref: `CBSE Sample Question Paper ${session}, Class ${p.grade === 12 ? 'XII' : p.grade === 11 ? 'XI' : p.grade === 9 ? 'IX' : 'X'} ${p.name}, Q${it.q}`,
         checks: { status: blocked ? 'flagged' : 'passed', notes },
         fingerprint: fingerprint(it.text, it.options ?? []),
         created_by: null,
@@ -133,6 +145,7 @@ const count = (f: (r: any) => string) => plan.reduce((m, x) => m.set(f(x.row), (
 console.log(`${plan.length} questions, ${plan.reduce((n, x) => n + x.uploads.length, 0)} figures, ${plan.filter(x => x.row.checks.status === 'flagged').length} flagged (can't be assigned until a reviewer fixes them)`);
 for (const [k, n] of count(r => `${r.subject} / ${r.chapter_key}`)) console.log(`  ${n.toString().padStart(3)}  ${k}`);
 if (problems.length) { console.log('\nProblems:'); problems.forEach(p => console.log('  ' + p)); }
+if (skipped.length) { console.log('\nLeft out (--skip-bad):'); skipped.forEach(p => console.log('  ' + p)); }
 
 async function main() {
   if (!write) { console.log('\nDry run: nothing written. Run with --write to load.'); return; }

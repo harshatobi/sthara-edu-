@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import AskOS from '@/components/parent/AskOS';
+import AskOS from '@/components/ask/AskOS';
+import '@/styles/ask.css';
 
 export const metadata: Metadata = { title: 'Ask the School OS' };
 
 export default function Page() {
-  return <Suspense><AskOS /></Suspense>;
+  return <AskOS audience="parent" />;
 }

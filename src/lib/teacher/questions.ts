@@ -102,6 +102,9 @@ export function fromGenerated(raw: unknown): Question[] {
   for (const g of list.slice(0, MAX_QUESTIONS)) {
     const text = clip(g?.questionText ?? g?.question ?? g?.prompt);
     if (!text) continue;
+    // Diagrams and maps from the question bank travel with the question (only bank-figure paths pass).
+    const figures = parseFigures(g?.figures);
+    const figs = figures.length ? { figures } : {};
     const opts: string[] = Array.isArray(g?.options) ? g.options.map((o: unknown) => clip(o, 500).replace(/^[A-D][.)]\s*/i, '')) : [];
     if (opts.length >= 2) {
       let answer = Number(g?.correctAnswerIndex);
@@ -113,9 +116,10 @@ export function fromGenerated(raw: unknown): Question[] {
         type: 'mcq', questionText: text, options: opts.slice(0, 6), answer, marks: 1,
         ...(level === 'EASY' || level === 'MEDIUM' || level === 'HARD' ? { level } : {}),
         ...(clip(g?.explanation ?? g?.why, 1000) ? { why: clip(g?.explanation ?? g?.why, 1000) } : {}),
+        ...figs,
       });
     } else {
-      out.push({ type: 'short', questionText: text, marks: Math.min(20, marksOf({ marks: g?.marks })) });
+      out.push({ type: 'short', questionText: text, marks: Math.min(20, marksOf({ marks: g?.marks })), ...figs });
     }
   }
   return out;

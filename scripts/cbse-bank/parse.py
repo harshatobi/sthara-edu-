@@ -116,6 +116,10 @@ def marks_of(items):
     m = re.search(r'=\s*(\d+)', joined)
     if m:
         return int(m.group(1))
+    # Marks printed as a sum of the parts ("2+2+1", "3 + 2"): the question's total (OR alternatives print the same).
+    for it in items:
+        if it['k'] == 'mark' and re.fullmatch(r'\d+(\.5)?(\s*\+\s*\d+(\.5)?)+', it['t'].strip()):
+            return int(sum(float(x) for x in re.findall(r'\d+(?:\.5)?', it['t'])))
     for it in items:
         if it['k'] == 'mark':
             t = it['t']
@@ -293,9 +297,19 @@ def build(paper, scheme, cur, meta, vocab=None):
     for t in paper['pre']:
         discipline = section_of(t, by_letter) or discipline
     out = []
+    section = None
+    for t in paper['pre']:
+        ms_ = re.match(r'^\s*SECTION\s*[–-]?\s*([A-F])\b', t)
+        if ms_:
+            section = ms_.group(1)
     for q in paper['questions']:
         # A heading inside this question's lines belongs to the next question (it is printed after this one).
         here = discipline
+        here_section = section
+        for it in q['items']:
+            ms_ = re.match(r'^\s*SECTION\s*[–-]?\s*([A-F])\b', it.get('t', '')) if it['k'] == 'text' else None
+            if ms_:
+                section = ms_.group(1)
         for it in q['items']:
             if it['k'] == 'text':
                 d = section_of(it['t'], by_letter)
@@ -312,7 +326,7 @@ def build(paper, scheme, cur, meta, vocab=None):
             flags = []
             figs = [it['file'] for it in main if it['k'] == 'fig'] + [f['file'] for f in q['figs'] if f.get('map')]
             figs = list(dict.fromkeys(figs))
-            item = {'q': f"{q['n']}{key}", 'marks': marks}
+            item = {'q': f"{q['n']}{key}", 'marks': marks, '_section': here_section}
             options = None
             if marks == 1:
                 options, stem, ofigs = options_of(main)
@@ -393,6 +407,19 @@ def build(paper, scheme, cur, meta, vocab=None):
             item['flags'] = flags
             item.update(meta)
             out.append(item)
+    # A question whose marks couldn't be read takes its section's: every question in a CBSE section carries the same
+    # marks (e.g. SECTION B, 5 x 2). Flagged so a reviewer checks it.
+    # Also a mark that disagrees with every other question of its section (read from the wrong cell) is replaced.
+    qnum = lambda it: re.match(r'\d+', it['q']).group(0)  # noqa: E731
+    for k, it in enumerate(out):
+        if it.get('_section') is None:
+            continue
+        others = [o['marks'] for o in out if o.get('_section') == it['_section'] and qnum(o) != qnum(it) and o.get('marks')]
+        if len(others) >= 2 and len(set(others)) == 1 and it.get('marks') != others[0]:
+            it['marks'] = others[0]
+            it['flags'] = [f for f in it.get('flags', []) if f != 'marks_missing'] + ['marks_from_section']
+    for it in out:
+        it.pop('_section', None)
     return out
 
 

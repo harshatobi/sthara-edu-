@@ -9,7 +9,7 @@ import json, re, sys
 import pymupdf
 
 # 1. | 1 | 21(A). | 6A | 8.1. | 8.2 | 36 (i)
-PREFIX = re.compile(r'^(\d{1,2})\s*(?:\(([A-Z])\)|\.(\d{1,2}))?[.)]\s*(?:\(([A-Z])\)\s*)?(\S.*)$')
+PREFIX = re.compile(r'^(\d{1,2})\s*(?:\(([A-Z])\)\s*[.)]?|\.(\d{1,2})[.)]|[.)])\s*(?:\(([A-Z])\)\s*)?(\S.*)$')
 LABEL = re.compile(r'^(\d{1,2})\s*\.?\s*(?:\(([A-Z])\)|([A-Z])|\.(\d{1,2}))?\s*\.?$')
 MARK = re.compile(r'^(\d(\.\d)?|\d\s*[x×+]\s*\d|\(\d\)|\d+\s*marks?)$', re.I)
 NOISE = re.compile(r'^\*$|Please note that the assessment scheme|There is no change in the Question Paper Design|^Page \d+ of \d+$|^\d+\s*\|\s*Page|^Q\.\s*No\.?$|^Questions?$|^Marks$|^S\.?\s*No\.?$', re.I)
@@ -412,8 +412,20 @@ def segment(path, figdir=None, prefix='q'):
     doc = pymupdf.open(path)
     pages = [page_lines(p) for p in doc]
     w = doc[0].rect.width
+    # Some papers print "Q10." / "Q.10" instead of "10": the Q is dropped so the number reads as a question number.
+    for ls in pages:
+        for l in ls:
+            l['t'] = re.sub(r'^Q\.?\s*(?=\d{1,2}\s*[.)(]|\d{1,2}$)', '', l['t'])
+            # "Q23 A line passing…": after a Q the number needs no full stop, so one is added.
+            l['t'] = re.sub(r'^Q\.?\s*(\d{1,2})\s+(?=\S)', r'\1. ', l['t'])
     labels = sorted(l['x1'] for ls in pages for l in ls if LABEL.match(l['t']) and l['x0'] < w * 0.12 and l['x1'] < w * 0.2)
     left = labels[int(len(labels) * 0.95) - 1] + 4 if labels else 80
+    # No numbers column (the number runs into the question, "7.  The binding energy…"): the text starts just after
+    # the numbers, so the column edge is placed from those inline numbers instead.
+    if len(labels) < 5:
+        inline = sorted(l['x0'] for ls in pages for l in ls if PREFIX.match(l['t']) and l['x0'] < w * 0.15)
+        if len(inline) >= 5:
+            left = inline[len(inline) // 2] + 16
     marks = [l['x0'] for ls in pages for l in ls if MARK.match(l['t']) and l['x0'] > w * 0.8]
     right = (min(marks) - 3) if marks else w * 0.9
     xs = rule_xs(doc)
@@ -430,7 +442,9 @@ def segment(path, figdir=None, prefix='q'):
         split = []
         for l in ls:
             m = PREFIX.match(l['t']) if l['x0'] < left - 8 and l['x1'] > left + 10 else None
-            if m and int(m.group(1)) in (expected, cur['n'] if cur else -1):
+            # Any number from the next one expected up: a page holds several questions, and the numbers are only taken
+            # in order when the page is walked below (so a stray number further on can't jump ahead).
+            if m and (expected <= int(m.group(1)) <= expected + 30 or int(m.group(1)) == (cur['n'] if cur else -1)):
                 n, alt, part, alt2, rest = m.groups()
                 lab = n + (f'({alt or alt2})' if (alt or alt2) else '') + (f'.{part}' if part else '')
                 split.append({**l, 't': lab, 'x1': left - 2})
